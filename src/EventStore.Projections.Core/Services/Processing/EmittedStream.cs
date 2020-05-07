@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -698,13 +699,13 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_pendingWrites.Dequeue();
 				}
 
-				if (report is EmittedEventResolutionNeeded resolution) {
-					_ioDispatcher.ReadEvent(resolution.StreamId, resolution.Revision, _writeAs, resp => {
-						OnEmittedLinkEventResolved(anyFound, eventToWrite, resolution.TopCommitted, resp);
-					});
-					
-					break;
-				}
+				// if (report is EmittedEventResolutionNeeded resolution) {
+				// 	_ioDispatcher.ReadEvent(resolution.StreamId, resolution.Revision, _writeAs, resp => {
+				// 		OnEmittedLinkEventResolved(anyFound, eventToWrite, resolution.TopCommitted, resp);
+				// 	});
+				// 	
+				// 	break;
+				// }
 			}
 
 			if (_pendingWrites.Count == 0)
@@ -726,8 +727,27 @@ namespace EventStore.Projections.Core.Services.Processing {
 				var streamId = parts[1];
 				if (!long.TryParse(parts[0], out long eventNumber))
 					throw new Exception($"Unexpected exception: Emitted event is an invalid link event: Body ({eventToWrite.Data}) CausedByTag ({eventToWrite.CausedByTag}) StreamId ({eventToWrite.StreamId})");
+
+				var source = new TaskCompletionSource<ClientMessage.ReadEventCompleted>();
+				_ioDispatcher.ReadEvent(streamId, eventNumber, _writeAs, resp => {
+					//OnEmittedLinkEventResolved(anyFound, eventToWrite, resolution.TopCommitted, resp);
+					source.SetResult(resp);
+				});
 				
-				return new EmittedEventResolutionNeeded(streamId, eventNumber, topAlreadyCommitted);
+				source.Task.Wait();
+				var resp = source.Task.Result;
+				
+				if (resp.Result != ReadEventResult.StreamDeleted && resp.Result != ReadEventResult.NotFound && resp.Result != ReadEventResult.NoStream && resp.Result != ReadEventResult.Success) {
+					return new ErroredEmittedEvent(CreateSequenceException(topAlreadyCommitted, eventToWrite));
+				}
+
+				if (resp.Result == ReadEventResult.Success) {
+					return new ValidEmittedEvent(topAlreadyCommitted.Item1, topAlreadyCommitted.Item2, topAlreadyCommitted.Item3);
+				}
+				
+				//Log.Verbose($"Emitted event ignored after resolution because it links to an event that no longer exists: eventId: {eventToWrite.EventId}, eventType: {eventToWrite.EventId}, checkpoint: {eventToWrite.CorrelationId}, causedBy: {eventToWrite.CausedBy}");
+				
+				return new IgnoredEmittedEvent();
 			}
 
 			if (failed) {
