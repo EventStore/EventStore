@@ -6,8 +6,9 @@ using System.Reflection;
 using System.Runtime.Loader;
 
 namespace EventStore.ClusterNode {
-	public class PluginLoader {
+	public class PluginLoader : IDisposable {
 		private readonly DirectoryInfo _rootPluginDirectory;
+		private readonly PluginLoadContext[] _contexts;
 
 		private IEnumerable<DirectoryInfo> PluginDirectories {
 			get {
@@ -27,20 +28,27 @@ namespace EventStore.ClusterNode {
 				throw new ArgumentNullException(nameof(rootPluginDirectory));
 			}
 			_rootPluginDirectory = rootPluginDirectory;
+			_contexts = PluginDirectories.Select(directory => new PluginLoadContext(directory)).ToArray();
 		}
 
 		public IEnumerable<T> Load<T>() where T : class =>
-			from loadContext in PluginDirectories.Select(directory => new PluginLoadContext(directory))
+			from loadContext in _contexts
 			from pluginType in loadContext.Assemblies.SelectMany(assembly => assembly.GetExportedTypes())
 				.Where(typeof(T).IsAssignableFrom)
 				.ToArray()
 			select (T)Activator.CreateInstance(pluginType);
 
+		public void Dispose() {
+			foreach (var context in _contexts) {
+				context.Unload();
+			}
+		}
+
 		private class PluginLoadContext : AssemblyLoadContext {
 			private static readonly string[] Shared = {"Serilog", "YamlDotNet", "EventStore.Plugins"};
 			private readonly AssemblyDependencyResolver _resolver;
 
-			public PluginLoadContext(DirectoryInfo directory) {
+			public PluginLoadContext(DirectoryInfo directory) : base(true) {
 				_resolver = new AssemblyDependencyResolver(directory.FullName);
 				foreach (var library in directory.GetFiles("*.dll")
 					.Where(file => !Shared.Contains(Path.GetFileNameWithoutExtension(file.Name)))) {

@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests {
 			var rootPluginDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
 
 			Assert.False(rootPluginDirectory.Exists);
-			var sut = new PluginLoader(rootPluginDirectory);
+			using var sut = new PluginLoader(rootPluginDirectory);
 			Assert.IsEmpty(sut.Load<ICloneable>());
 		}
 
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests {
 				rootPluginDirectory.Create();
 
 				Assert.True(rootPluginDirectory.Exists);
-				var sut = new PluginLoader(rootPluginDirectory);
+				using var sut = new PluginLoader(rootPluginDirectory);
 				Assert.IsEmpty(sut.Load<ICloneable>());
 			} finally {
 				rootPluginDirectory.Delete(true);
@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests {
 				var subPluginDirectory = rootPluginDirectory.CreateSubdirectory(Guid.NewGuid().ToString());
 
 				Assert.True(subPluginDirectory.Exists);
-				var sut = new PluginLoader(rootPluginDirectory);
+				using var sut = new PluginLoader(rootPluginDirectory);
 				Assert.IsEmpty(sut.Load<ICloneable>());
 			} finally {
 				rootPluginDirectory.Delete(true);
@@ -57,9 +57,11 @@ namespace EventStore.Core.Tests {
 				rootPluginDirectory.Create();
 				await BuildFakePlugin(rootPluginDirectory);
 
-				var sut = new PluginLoader(rootPluginDirectory);
+				using var sut = new PluginLoader(rootPluginDirectory);
 				Assert.IsNotEmpty(sut.Load<ICloneable>());
 			} finally {
+				GC.Collect();
+				GC.WaitForPendingFinalizers();
 				rootPluginDirectory.Delete(true);
 			}
 		}
@@ -74,9 +76,11 @@ namespace EventStore.Core.Tests {
 				subPluginDirectory.Create();
 				await BuildFakePlugin(subPluginDirectory);
 
-				var sut = new PluginLoader(rootPluginDirectory);
+				using var sut = new PluginLoader(rootPluginDirectory);
 				Assert.IsNotEmpty(sut.Load<ICloneable>());
 			} finally {
+				GC.Collect();
+				GC.WaitForPendingFinalizers();
 				rootPluginDirectory.Delete(true);
 			}
 		}
@@ -93,7 +97,7 @@ namespace EventStore.Core.Tests {
 				subSubPluginDirectory.Create();
 				await BuildFakePlugin(subSubPluginDirectory);
 
-				var sut = new PluginLoader(rootPluginDirectory);
+				using var sut = new PluginLoader(rootPluginDirectory);
 				Assert.IsEmpty(sut.Load<ICloneable>());
 			} finally {
 				rootPluginDirectory.Delete(true);
