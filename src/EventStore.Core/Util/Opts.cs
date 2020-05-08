@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.TransactionLog.Chunks;
 
@@ -288,7 +289,7 @@ namespace EventStore.Core.Util {
 		public const int ExternalTcpPortDefault = 1113;
 
 		public const string ExternalIpAdvertiseAsDescr = "Advertise External Tcp Address As.";
-		public static readonly IPAddress ExternalIpAdvertiseAsDefault = null;
+		public static readonly string ExternalHostAdvertiseAsDefault = null;
 
 		public const string ExternalTcpPortAdvertiseAsDescr = "Advertise External Tcp Port As.";
 		public static readonly int ExternalTcpPortAdvertiseAsDefault = 0;
@@ -297,7 +298,7 @@ namespace EventStore.Core.Util {
 		public static readonly int ExternalHttpPortAdvertiseAsDefault = 0;
 
 		public const string InternalIpAdvertiseAsDescr = "Advertise Internal Tcp Address As.";
-		public static readonly IPAddress InternalIpAdvertiseAsDefault = null;
+		public static readonly string InternalHostAdvertiseAsDefault = null;
 
 		public const string InternalTcpPortAdvertiseAsDescr = "Advertise Internal Tcp Port As.";
 		public static readonly int InternalTcpPortAdvertiseAsDefault = 0;
@@ -347,7 +348,7 @@ namespace EventStore.Core.Util {
 		public const string ClusterGossipPortDescr = "The port on which cluster nodes' managers are running.";
 
 		public const string GossipSeedDescr = "Endpoints for other cluster nodes from which to seed gossip";
-		public static readonly IPEndPoint[] GossipSeedDefault = new IPEndPoint[0];
+		public static readonly EndPoint[] GossipSeedDefault = Array.Empty<EndPoint>();
 
 		public const string ReadOnlyReplicaDescr = 
 			"Sets this node as a read only replica that is not allowed to participate in elections or accept writes from clients.";

@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.Gossip {
 
 		public NodeGossipService(IPublisher bus,
 			IGossipSeedSource gossipSeedSource,
-			VNodeInfo nodeInfo,
+			MemberInfo memberInfo,
 			ICheckpoint writerCheckpoint,
 			ICheckpoint chaserCheckpoint,
 			IEpochManager epochManager,
@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Gossip {
 			TimeSpan deadMemberRemovalPeriod,
 			ITimeProvider timeProvider,
 			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null)
-			: base(bus, gossipSeedSource, nodeInfo, gossipInterval, allowedTimeDifference, gossipTimeout, deadMemberRemovalPeriod, timeProvider, getNodeToGossipTo) {
+			: base(bus, gossipSeedSource, memberInfo, gossipInterval, allowedTimeDifference, gossipTimeout, deadMemberRemovalPeriod, timeProvider, getNodeToGossipTo) {
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
 			Ensure.NotNull(epochManager, nameof(epochManager));
@@ -47,17 +47,17 @@ namespace EventStore.Core.Services.Gossip {
 
 		protected override MemberInfo GetInitialMe() {
 			var lastEpoch = _epochManager.GetLastEpoch();
-			var initialState = NodeInfo.IsReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
-			return MemberInfo.ForVNode(NodeInfo.InstanceId,
+			var initialState = _memberInfo.IsReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
+			return MemberInfo.ForVNode(_memberInfo.InstanceId,
 				_timeProvider.UtcNow,
 				initialState,
 				true,
-				NodeInfo.InternalTcp,
-				NodeInfo.InternalSecureTcp,
-				NodeInfo.ExternalTcp,
-				NodeInfo.ExternalSecureTcp,
-				NodeInfo.InternalHttp,
-				NodeInfo.ExternalHttp,
+				_memberInfo.InternalTcpEndPoint,
+				_memberInfo.InternalSecureTcpEndPoint,
+				_memberInfo.ExternalTcpEndPoint,
+				_memberInfo.ExternalSecureTcpEndPoint,
+				_memberInfo.InternalHttpEndPoint,
+				_memberInfo.ExternalHttpEndPoint,
 				_getLastCommitPosition(),
 				_writerCheckpoint.Read(),
 				_chaserCheckpoint.Read(),
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Gossip {
 				lastEpoch == null ? -1 : lastEpoch.EpochNumber,
 				lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,
 				_nodePriority,
-				NodeInfo.IsReadOnlyReplica);
+				_memberInfo.IsReadOnlyReplica);
 		}
 
 		protected override MemberInfo GetUpdatedMe(MemberInfo me) {

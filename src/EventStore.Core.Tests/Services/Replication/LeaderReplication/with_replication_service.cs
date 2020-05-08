@@ -122,12 +122,6 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.BecomeUnknown(Guid.NewGuid()));
 		}
 
-		protected void BecomeFollower() {
-			var leaderIpEndPoint = new IPEndPoint(IPAddress.Loopback, 2113);
-			Service.Handle(new SystemMessage.BecomeFollower(Guid.NewGuid(), new VNodeInfo(Guid.NewGuid(), 1,
-				leaderIpEndPoint, leaderIpEndPoint, leaderIpEndPoint,
-				leaderIpEndPoint, leaderIpEndPoint, leaderIpEndPoint, false)));
-		}
 		private TFChunkDbConfig CreateDbConfig() {
 			ICheckpoint writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 			ICheckpoint chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);

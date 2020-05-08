@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			RandTestQueueItem item,
 			ElectionsInstance[] instances,
 			MemberInfo[] initialGossip,
-			Dictionary<IPEndPoint, MemberInfo[]> previousGossip);
+			Dictionary<EndPoint, MemberInfo[]> previousGossip);
 
 		private readonly CreateInitialGossip _createInitialGossip;
 		private readonly CreateUpdatedGossip _createUpdatedGossip;

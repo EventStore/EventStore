@@ -19,11 +19,11 @@ namespace EventStore.Transport.Tcp {
 
 		private Action<TcpTypedConnection<T>, T> _receiveCallback;
 
-		public IPEndPoint RemoteEndPoint {
+		public EndPoint RemoteEndPoint {
 			get { return _connection.RemoteEndPoint; }
 		}
 
-		public IPEndPoint LocalEndPoint {
+		public EndPoint LocalEndPoint {
 			get { return _connection.LocalEndPoint; }
 		}
 

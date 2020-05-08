@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
@@ -11,10 +12,10 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Cluster {
 	public class EventStoreClientCacheTests {
-		private static readonly Func<IPEndPoint, IPublisher, EventStoreClusterClient> EventStoreClusterClientFactory =
+		private static readonly Func<EndPoint, IPublisher, EventStoreClusterClient> EventStoreClusterClientFactory =
 			(endpoint, bus) =>
 				new EventStoreClusterClient(
-					new UriBuilder(Uri.UriSchemeHttps, endpoint.Address.ToString(), endpoint.Port).Uri, bus,
+					new UriBuilder(Uri.UriSchemeHttps, endpoint.GetHost(), endpoint.GetPort()).Uri, bus,
 					delegate { return (true, null); }, null);
 
 		[Test]

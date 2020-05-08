@@ -121,7 +121,7 @@ namespace EventStore.Core {
 			.BuildServiceProvider();
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
-			var bridge = new KestrelToInternalBridgeMiddleware(_externalHttpService.UriRouter, _externalHttpService.LogHttpRequests, _externalHttpService.AdvertiseAsAddress, _externalHttpService.AdvertiseAsPort);
+			var bridge = new KestrelToInternalBridgeMiddleware(_externalHttpService.UriRouter, _externalHttpService.LogHttpRequests, _externalHttpService.AdvertiseAsHost, _externalHttpService.AdvertiseAsPort);
 			return _subsystems
 				.Aggregate(services
 						.AddRouting()

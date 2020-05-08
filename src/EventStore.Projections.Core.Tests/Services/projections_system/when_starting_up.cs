@@ -6,6 +6,8 @@ using NUnit.Framework;
 using EventStore.Core.Messages;
 using System;
 using System.Net;
+using EventStore.Core.Cluster;
+using EventStore.Core.Data;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system {
 	namespace startup {
@@ -46,13 +48,14 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 		public class when_starting_as_follower : with_projections_subsystem {
 			protected override IEnumerable<WhenStep> PreWhen() {
 				yield return (new SystemMessage.BecomeFollower(Guid.NewGuid(),
-					new EventStore.Core.Data.VNodeInfo(Guid.NewGuid(), 1,
+					MemberInfo.Initial(Guid.NewGuid(), DateTime.UtcNow, VNodeState.Unknown, true,
 						new IPEndPoint(IPAddress.Loopback, 1111),
 						new IPEndPoint(IPAddress.Loopback, 1112),
 						new IPEndPoint(IPAddress.Loopback, 1113),
 						new IPEndPoint(IPAddress.Loopback, 1114),
 						new IPEndPoint(IPAddress.Loopback, 1115),
 						new IPEndPoint(IPAddress.Loopback, 1116),
+						1,
 						false
 					)));
 				yield return (new SystemMessage.SystemCoreReady());

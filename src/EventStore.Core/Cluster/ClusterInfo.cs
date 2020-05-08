@@ -10,7 +10,7 @@ using EventStore.Core.Services.Transport.Grpc;
 
 namespace EventStore.Core.Cluster {
 	public class ClusterInfo {
-		private static readonly IPEndPointComparer Comparer = new IPEndPointComparer();
+		private static readonly EndPointComparer Comparer = new EndPointComparer();
 
 		public readonly MemberInfo[] Members;
 
@@ -18,13 +18,13 @@ namespace EventStore.Core.Cluster {
 		}
 
 		public ClusterInfo(IEnumerable<MemberInfo> members) {
-			Members = members.Safe().OrderByDescending<MemberInfo, IPEndPoint>(x => x.InternalHttpEndPoint, Comparer)
+			Members = members.Safe().OrderByDescending<MemberInfo, EndPoint>(x => x.InternalHttpEndPoint, Comparer)
 				.ToArray();
 		}
 
 		public ClusterInfo(ClusterInfoDto dto) {
 			Members = dto.Members.Safe().Select(x => new MemberInfo(x))
-				.OrderByDescending<MemberInfo, IPEndPoint>(x => x.InternalHttpEndPoint, Comparer).ToArray();
+				.OrderByDescending<MemberInfo, EndPoint>(x => x.InternalHttpEndPoint, Comparer).ToArray();
 		}
 
 		public override string ToString() {
@@ -51,12 +51,12 @@ namespace EventStore.Core.Cluster {
 				new MemberInfo(
 					Uuid.FromDto(x.InstanceId).ToGuid(), x.TimeStamp.FromTicksSinceEpoch(), (VNodeState)x.State,
 					x.IsAlive,
-					!x.InternalTcpUsesTls ? new IPEndPoint(IPAddress.Parse(x.InternalTcp.Address), (int)x.InternalTcp.Port) : null,
-					x.InternalTcpUsesTls ? new IPEndPoint(IPAddress.Parse(x.InternalTcp.Address), (int)x.InternalTcp.Port) : null,
-					!x.ExternalTcpUsesTls && x.ExternalTcp != null ? new IPEndPoint(IPAddress.Parse(x.ExternalTcp.Address), (int)x.ExternalTcp.Port) : null,
-					x.ExternalTcpUsesTls && x.ExternalTcp != null ? new IPEndPoint(IPAddress.Parse(x.ExternalTcp.Address), (int)x.ExternalTcp.Port) : null,
-					new IPEndPoint(IPAddress.Parse(x.InternalHttp.Address), (int)x.InternalHttp.Port),
-					new IPEndPoint(IPAddress.Parse(x.ExternalHttp.Address), (int)x.ExternalHttp.Port),
+					!x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
+					x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
+					!x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
+					x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
+					new DnsEndPoint(x.InternalHttp.Address, (int)x.InternalHttp.Port),
+					new DnsEndPoint(x.ExternalHttp.Address, (int)x.ExternalHttp.Port),
 					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 					x.EpochPosition, x.EpochNumber, Uuid.FromDto(x.EpochId).ToGuid(), x.NodePriority,
 					x.IsReadOnlyReplica
@@ -71,27 +71,27 @@ namespace EventStore.Core.Cluster {
 				State = (EventStore.Cluster.MemberInfo.Types.VNodeState)x.State,
 				IsAlive = x.IsAlive,
 				ExternalHttp = new EventStore.Cluster.EndPoint(
-					x.ExternalHttpEndPoint.Address.ToString(),
-					(uint)x.ExternalHttpEndPoint.Port),
+					x.ExternalHttpEndPoint.GetHost(),
+					(uint)x.ExternalHttpEndPoint.GetPort()),
 				InternalHttp = new EventStore.Cluster.EndPoint(
-					x.InternalHttpEndPoint.Address.ToString(),
-					(uint)x.InternalHttpEndPoint.Port),
+					x.InternalHttpEndPoint.GetHost(),
+					(uint)x.InternalHttpEndPoint.GetPort()),
 				InternalTcp = x.InternalSecureTcpEndPoint != null ?
 					new EventStore.Cluster.EndPoint(
-						x.InternalSecureTcpEndPoint.Address.ToString(),
-						(uint)x.InternalSecureTcpEndPoint.Port) :
+						x.InternalSecureTcpEndPoint.GetHost(),
+						(uint)x.InternalSecureTcpEndPoint.GetPort()) :
 					new EventStore.Cluster.EndPoint(
-					x.InternalTcpEndPoint.Address.ToString(),
-					(uint)x.InternalTcpEndPoint.Port),
+					x.InternalTcpEndPoint.GetHost(),
+					(uint)x.InternalTcpEndPoint.GetPort()),
 				InternalTcpUsesTls = x.InternalSecureTcpEndPoint != null,
 				ExternalTcp = x.ExternalSecureTcpEndPoint != null ?
 					new EventStore.Cluster.EndPoint(
-						x.ExternalSecureTcpEndPoint.Address.ToString(),
-						(uint)x.ExternalSecureTcpEndPoint.Port) :
+						x.ExternalSecureTcpEndPoint.GetHost(),
+						(uint)x.ExternalSecureTcpEndPoint.GetPort()) :
 					x.ExternalTcpEndPoint != null ?
 					new EventStore.Cluster.EndPoint(
-					x.ExternalTcpEndPoint.Address.ToString(),
-					(uint)x.ExternalTcpEndPoint.Port) : null,
+					x.ExternalTcpEndPoint.GetHost(),
+					(uint)x.ExternalTcpEndPoint.GetPort()) : null,
 				ExternalTcpUsesTls = x.ExternalSecureTcpEndPoint != null,
 				LastCommitPosition = x.LastCommitPosition,
 				WriterCheckpoint = x.WriterCheckpoint,

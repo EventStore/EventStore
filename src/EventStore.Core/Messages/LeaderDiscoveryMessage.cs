@@ -1,6 +1,6 @@
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
+using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
@@ -12,9 +12,9 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly VNodeInfo Leader;
+			public readonly MemberInfo Leader;
 
-			public LeaderFound(VNodeInfo leader) {
+			public LeaderFound(MemberInfo leader) {
 				Ensure.NotNull(leader, "leader");
 				Leader = leader;
 			}

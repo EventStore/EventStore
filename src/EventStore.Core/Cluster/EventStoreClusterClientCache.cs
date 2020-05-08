@@ -16,12 +16,12 @@ namespace EventStore.Core.Cluster {
 		//TODO: Align with Gossip Dead Member Removal Time once the options is in ClusterNodeOptions
 		private readonly TimeSpan _oldCacheItemThreshold = TimeSpan.FromMinutes(30);
 		private readonly IPublisher _bus;
-		private readonly Func<IPEndPoint, IPublisher, EventStoreClusterClient> _clientFactory;
+		private readonly Func<EndPoint, IPublisher, EventStoreClusterClient> _clientFactory;
 		private readonly PublishEnvelope _publishEnvelope;
 		private readonly MemoryCache _cache;
 
 		public EventStoreClusterClientCache(IPublisher bus,
-			Func<IPEndPoint, IPublisher, EventStoreClusterClient> clientFactory, TimeSpan? cacheCleaningInterval = null,
+			Func<EndPoint, IPublisher, EventStoreClusterClient> clientFactory, TimeSpan? cacheCleaningInterval = null,
 			TimeSpan? oldCacheItemThreshold = null) {
 			_bus = bus ?? throw new ArgumentNullException(nameof(bus));
 			_clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
@@ -40,7 +40,7 @@ namespace EventStore.Core.Cluster {
 				new ClusterClientMessage.CleanCache()));
 		}
 
-		public EventStoreClusterClient Get(IPEndPoint endpoint) {
+		public EventStoreClusterClient Get(EndPoint endpoint) {
 			return _cache.GetOrCreate(endpoint, item => {
 				item.SlidingExpiration = _oldCacheItemThreshold;
 				item.RegisterPostEvictionCallback(callback: EvictionCallback);

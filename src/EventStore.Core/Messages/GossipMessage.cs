@@ -21,9 +21,9 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly IPEndPoint[] GossipSeeds;
+			public readonly EndPoint[] GossipSeeds;
 
-			public GotGossipSeedSources(IPEndPoint[] gossipSeeds) {
+			public GotGossipSeedSources(EndPoint[] gossipSeeds) {
 				GossipSeeds = gossipSeeds;
 			}
 		}
@@ -51,9 +51,9 @@ namespace EventStore.Core.Messages {
 
 			public readonly IEnvelope Envelope;
 			public readonly ClusterInfo ClusterInfo;
-			public readonly IPEndPoint Server;
+			public readonly EndPoint Server;
 
-			public GossipReceived(IEnvelope envelope, ClusterInfo clusterInfo, IPEndPoint server) {
+			public GossipReceived(IEnvelope envelope, ClusterInfo clusterInfo, EndPoint server) {
 				Envelope = envelope;
 				ClusterInfo = clusterInfo;
 				Server = server;
@@ -68,9 +68,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly ClusterInfo ClusterInfo;
-			public readonly IPEndPoint ServerEndPoint;
+			public readonly EndPoint ServerEndPoint;
 
-			public SendGossip(ClusterInfo clusterInfo, IPEndPoint serverEndPoint) {
+			public SendGossip(ClusterInfo clusterInfo, EndPoint serverEndPoint) {
 				ClusterInfo = clusterInfo;
 				ServerEndPoint = serverEndPoint;
 			}
@@ -98,9 +98,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly string Reason;
-			public readonly IPEndPoint Recipient;
+			public readonly EndPoint Recipient;
 
-			public GossipSendFailed(string reason, IPEndPoint recipient) {
+			public GossipSendFailed(string reason, EndPoint recipient) {
 				Reason = reason;
 				Recipient = recipient;
 			}
@@ -128,9 +128,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly string Reason;
-			public readonly IPEndPoint Recipient;
+			public readonly EndPoint Recipient;
 
-			public GetGossipFailed(string reason, IPEndPoint recipient) {
+			public GetGossipFailed(string reason, EndPoint recipient) {
 				Reason = reason;
 				Recipient = recipient;
 			}
@@ -148,9 +148,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly ClusterInfo ClusterInfo;
-			public readonly IPEndPoint Server;
+			public readonly EndPoint Server;
 
-			public GetGossipReceived(ClusterInfo clusterInfo, IPEndPoint server) {
+			public GetGossipReceived(ClusterInfo clusterInfo, EndPoint server) {
 				ClusterInfo = clusterInfo;
 				Server = server;
 			}

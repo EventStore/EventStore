@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Helpers {
 			bool skipInitializeStandardUsersCheck = true,
 			int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false,
-			IPAddress advertisedExtIPAddress = null, int advertisedExtHttpPort = 0,
+			string advertisedExtHostAddress = null, int advertisedExtHttpPort = 0,
 			int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false) {
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Helpers {
 				.MaximumMemoryTableSizeOf(memTableSize)
 				.DoNotVerifyDbHashes()
 				.WithStatsStorage(StatsStorage.None)
-				.AdvertiseExternalIPAs(advertisedExtIPAddress)
+				.AdvertiseExternalHostAs(advertisedExtHostAddress)
 				.AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
 				.WithIndexBitnessVersion(indexBitnessVersion)

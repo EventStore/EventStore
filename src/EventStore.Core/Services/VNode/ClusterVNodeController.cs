@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.VNode {
 		private readonly ClusterVNode _node;
 
 		private VNodeState _state = VNodeState.Initializing;
-		private VNodeInfo _leader;
+		private MemberInfo _leader;
 		private Guid _stateCorrelationId = Guid.NewGuid();
 		private Guid _subscriptionId = Guid.Empty;
 		private readonly int _clusterSize;
@@ -386,7 +386,7 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information(
 				"========== [{internalHttp}] PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{masterInternalHttp},{masterId:B}]",
-				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
+				_nodeInfo.InternalHttp, _leader.InternalHttpEndPoint, _leader.InstanceId);
 			_state = VNodeState.PreReplica;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
@@ -399,7 +399,7 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information(
 				"========== [{internalHttp}] READ ONLY PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
-				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
+				_nodeInfo.InternalHttp, _leader.InternalHttpEndPoint, _leader.InstanceId);
 			_state = VNodeState.PreReadOnlyReplica;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
@@ -411,7 +411,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 
 			Log.Information("========== [{internalHttp}] IS CATCHING UP... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
-				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
+				_nodeInfo.InternalHttp, _leader.InternalHttpEndPoint, _leader.InstanceId);
 			_state = VNodeState.CatchingUp;
 			_outputBus.Publish(message);
 		}
@@ -422,7 +422,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 
 			Log.Information("========== [{internalHttp}] IS CLONE... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
-				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
+				_nodeInfo.InternalHttp, _leader.InternalHttpEndPoint, _leader.InstanceId);
 			_state = VNodeState.Clone;
 			_outputBus.Publish(message);
 		}
@@ -433,7 +433,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 
 			Log.Information("========== [{internalHttp}] IS FOLLOWER... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
-				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
+				_nodeInfo.InternalHttp, _leader.InternalHttpEndPoint, _leader.InstanceId);
 			_state = VNodeState.Follower;
 			_outputBus.Publish(message);
 		}
@@ -451,7 +451,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 
 			Log.Information("========== [{internalHttp}] IS READ ONLY REPLICA... LEADER IS [{leaderInternalHttp},{leaderId:B}]",
-				_nodeInfo.InternalHttp, _leader.InternalHttp, _leader.InstanceId);
+				_nodeInfo.InternalHttp, _leader.InternalHttpEndPoint, _leader.InstanceId);
 			_state = VNodeState.ReadOnlyReplica;
 			_outputBus.Publish(message);
 		}
@@ -525,7 +525,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 			}
 
-			_leader = VNodeInfoHelper.FromMemberInfo(message.Leader);
+			_leader = message.Leader;
 			_subscriptionId = Guid.NewGuid();
 			_stateCorrelationId = Guid.NewGuid();
 			_outputBus.Publish(message);
@@ -743,13 +743,20 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void DenyRequestBecauseNotLeader(Guid correlationId, IEnvelope envelope) {
-			var leader = _leader ?? _nodeInfo;
+			var endpoints = _leader != null
+				? (ExternalTcpEndPoint: _leader.ExternalTcpEndPoint, 
+					ExternalSecureTcpEndPoint: _leader.ExternalSecureTcpEndPoint,
+					ExternalHttpEndPoint: _leader.ExternalHttpEndPoint)
+				: (ExternalTcpEndPoint: _nodeInfo.ExternalTcp,
+					ExternalSecureTcpEndPoint: _nodeInfo.ExternalSecureTcp,
+					ExternalHttpEndPoint: _nodeInfo.ExternalHttp);
+				
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
 					TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader,
-					new TcpClientMessageDto.NotHandled.LeaderInfo(leader.ExternalTcp,
-						leader.ExternalSecureTcp,
-						leader.ExternalHttp)));
+					new TcpClientMessageDto.NotHandled.LeaderInfo(endpoints.ExternalTcpEndPoint,
+						endpoints.ExternalSecureTcpEndPoint,
+						endpoints.ExternalHttpEndPoint)));
 		}
 
 		private void HandleAsReadOnlyReplica(ClientMessage.WriteEvents message) {
@@ -826,13 +833,20 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void DenyRequestBecauseReadOnly(Guid correlationId, IEnvelope envelope) {
-			var leader = _leader ?? _nodeInfo;
+			var endpoints = _leader != null
+				? (ExternalTcpEndPoint: _leader.ExternalTcpEndPoint,
+					ExternalSecureTcpEndPoint: _leader.ExternalSecureTcpEndPoint,
+					ExternalHttpEndPoint: _leader.ExternalHttpEndPoint)
+				: (ExternalTcpEndPoint: _nodeInfo.ExternalTcp,
+					ExternalSecureTcpEndPoint: _nodeInfo.ExternalSecureTcp,
+					ExternalHttpEndPoint: _nodeInfo.ExternalHttp);
+				
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
 					TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly,
-					new TcpClientMessageDto.NotHandled.LeaderInfo(leader.ExternalTcp,
-						leader.ExternalSecureTcp,
-						leader.ExternalHttp)));
+					new TcpClientMessageDto.NotHandled.LeaderInfo(endpoints.ExternalTcpEndPoint,
+						endpoints.ExternalSecureTcpEndPoint,
+						endpoints.ExternalHttpEndPoint)));
 		}
 
 		private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId) {
@@ -901,7 +915,7 @@ namespace EventStore.Core.Services.VNode {
 			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
 			var leaderCount = aliveLeaders.Count();
 			if (leaderCount == 1) {
-				_leader = VNodeInfoHelper.FromMemberInfo(aliveLeaders.First());
+				_leader = aliveLeaders.First();
 				Log.Information("LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to READ ONLY PRE-REPLICA state.", _leader);
 				_stateCorrelationId = Guid.NewGuid();
 				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leader));
@@ -938,7 +952,7 @@ namespace EventStore.Core.Services.VNode {
 			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
 			var leaderCount = aliveLeaders.Count();
 			if (leaderCount == 1) {
-				_leader = VNodeInfoHelper.FromMemberInfo(aliveLeaders.First());
+				_leader = aliveLeaders.First();
 				Log.Information("Existing LEADER found during LEADER DISCOVERY stage. LEADER: [{leader}]. Proceeding to PRE-REPLICA state.", _leader);
 				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
 				_stateCorrelationId = Guid.NewGuid();
@@ -1035,8 +1049,8 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information(
 					"========== [{internalHttp}] FOLLOWER ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
 					_nodeInfo.InternalHttp,
-					_leader.InternalTcp == null ? "n/a" : _leader.InternalTcp.ToString(),
-					_leader.InternalSecureTcp == null ? "n/a" : _leader.InternalSecureTcp.ToString(),
+					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
+					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
 				_outputBus.Publish(message);
 				_fsm.Handle(new SystemMessage.BecomeFollower(_stateCorrelationId, _leader));
@@ -1048,8 +1062,8 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information(
 					"========== [{internalHttp}] CLONE ASSIGNMENT RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}].",
 					_nodeInfo.InternalHttp,
-					_leader.InternalTcp == null ? "n/a" : _leader.InternalTcp.ToString(),
-					_leader.InternalSecureTcp == null ? "n/a" : _leader.InternalSecureTcp.ToString(),
+					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
+					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
 				_outputBus.Publish(message);
 				_fsm.Handle(new SystemMessage.BecomeClone(_stateCorrelationId, _leader));
@@ -1061,8 +1075,8 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information(
 					"========== [{internalHttp}] DROP SUBSCRIPTION REQUEST RECEIVED FROM [{internalTcp},{internalSecureTcp},{leaderId:B}]. THIS MEANS THAT THERE IS A SURPLUS OF NODES IN THE CLUSTER, SHUTTING DOWN.",
 					_nodeInfo.InternalHttp,
-					_leader.InternalTcp == null ? "n/a" : _leader.InternalTcp.ToString(),
-					_leader.InternalSecureTcp == null ? "n/a" : _leader.InternalSecureTcp.ToString(),
+					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
+					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
 				_fsm.Handle(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
 			}

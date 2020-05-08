@@ -8,7 +8,7 @@ using EventStore.Core.Tests.Infrastructure;
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 	internal class SendOverGrpcProcessor : IHandle<GrpcMessage.SendOverGrpc> {
 		private readonly Random _rnd;
-		private readonly Dictionary<IPEndPoint, IPublisher> _httpBuses = new Dictionary<IPEndPoint, IPublisher>();
+		private readonly Dictionary<EndPoint, IPublisher> _httpBuses = new Dictionary<EndPoint, IPublisher>();
 		private readonly RandomTestRunner _runner;
 		private readonly double _lossProb;
 		private readonly double _dupProb;
@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			_maxDelay = maxDelay;
 		}
 
-		public void RegisterEndPoint(IPEndPoint endPoint, IPublisher bus) {
+		public void RegisterEndPoint(EndPoint endPoint, IPublisher bus) {
 			_httpBuses.Add(endPoint, bus);
 		}
 

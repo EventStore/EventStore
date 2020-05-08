@@ -58,7 +58,7 @@ namespace EventStore.Core {
 
 		protected bool _discoverViaDns;
 		protected string _clusterDns;
-		protected List<IPEndPoint> _gossipSeeds;
+		protected List<EndPoint> _gossipSeeds;
 
 		protected TimeSpan _minFlushDelay;
 
@@ -125,8 +125,8 @@ namespace EventStore.Core {
 		protected TFChunkDb _db;
 		protected ClusterVNodeSettings _vNodeSettings;
 		protected TFChunkDbConfig _dbConfig;
-		private IPAddress _advertiseInternalIPAs;
-		private IPAddress _advertiseExternalIPAs;
+		private string _advertiseInternalHostAs;
+		private string _advertiseExternalHostAs;
 		private int _advertiseInternalHttpPortAs;
 		private int _advertiseExternalHttpPortAs;
 		private int _advertiseInternalSecureTcpPortAs;
@@ -177,7 +177,7 @@ namespace EventStore.Core {
 
 			_discoverViaDns = Opts.DiscoverViaDnsDefault;
 			_clusterDns = Opts.ClusterDnsDefault;
-			_gossipSeeds = new List<IPEndPoint>();
+			_gossipSeeds = new List<EndPoint>();
 
 			_minFlushDelay = TimeSpan.FromMilliseconds(Opts.MinFlushDelayMsDefault);
 
@@ -366,20 +366,20 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets up the Internal IP that would be advertised
+		/// Sets up the Internal Host that would be advertised
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AdvertiseInternalIPAs(IPAddress intIpAdvertiseAs) {
-			_advertiseInternalIPAs = intIpAdvertiseAs;
+		public VNodeBuilder AdvertiseInternalHostAs(string intHostAdvertiseAs) {
+			_advertiseInternalHostAs = intHostAdvertiseAs;
 			return this;
 		}
 
 		/// <summary>
-		/// Sets up the External IP that would be advertised
+		/// Sets up the External Host that would be advertised
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AdvertiseExternalIPAs(IPAddress extIpAdvertiseAs) {
-			_advertiseExternalIPAs = extIpAdvertiseAs;
+		public VNodeBuilder AdvertiseExternalHostAs(string extHostAdvertiseAs) {
+			_advertiseExternalHostAs = extHostAdvertiseAs;
 			return this;
 		}
 
@@ -560,7 +560,7 @@ namespace EventStore.Core {
 		/// </summary>
 		/// <param name="endpoints">The gossip seeds this node should try to talk to</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithGossipSeeds(params IPEndPoint[] endpoints) {
+		public VNodeBuilder WithGossipSeeds(params EndPoint[] endpoints) {
 			_gossipSeeds.Clear();
 			_gossipSeeds.AddRange(endpoints);
 			_discoverViaDns = false;
@@ -1325,56 +1325,56 @@ namespace EventStore.Core {
 				IPAddress intIpAddress = _internalHttp.Address; //this value is just opts.IntIP
 				IPAddress extIpAddress = _externalHttp.Address; //this value is just opts.ExtIP
 
-				IPAddress intIpAddressToAdvertise = _advertiseInternalIPAs ?? intIpAddress;
-				IPAddress extIpAddressToAdvertise = _advertiseExternalIPAs ?? extIpAddress;
+				string intHostToAdvertise = _advertiseInternalHostAs ?? intIpAddress.ToString();
+				string extHostToAdvertise = _advertiseExternalHostAs ?? extIpAddress.ToString();
 
 				if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) || extIpAddress.Equals(IPAddress.Parse("0.0.0.0"))) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = _clusterNodeCount > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
-					if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalIPAs == null) {
-						intIpAddressToAdvertise = addressToAdvertise;
+					if (intIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseInternalHostAs == null) {
+						intHostToAdvertise = addressToAdvertise.ToString();
 					}
 
-					if (extIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalIPAs == null) {
-						extIpAddressToAdvertise = addressToAdvertise;
+					if (extIpAddress.Equals(IPAddress.Parse("0.0.0.0")) && _advertiseExternalHostAs == null) {
+						extHostToAdvertise = addressToAdvertise.ToString();
 					}
 				}
 
-				IPEndPoint intTcpEndPoint = null;
+				DnsEndPoint intTcpEndPoint = null;
 				if (_internalTcp != null) {
 					var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
-					intTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intTcpPort);
+					intTcpEndPoint = new DnsEndPoint(intHostToAdvertise, intTcpPort);
 				}
 
-				IPEndPoint intSecureTcpEndPoint = null;
+				DnsEndPoint intSecureTcpEndPoint = null;
 				if (_internalSecureTcp != null) {
 					var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs : _internalSecureTcp.Port;
-					intSecureTcpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intSecureTcpPort);
+					intSecureTcpEndPoint = new DnsEndPoint(intHostToAdvertise, intSecureTcpPort);
 				}
 
-				IPEndPoint extTcpEndPoint = null;
+				DnsEndPoint extTcpEndPoint = null;
 				if (_externalTcp != null) {
 					int extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
-					extTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extTcpPort);
+					extTcpEndPoint = new DnsEndPoint(extHostToAdvertise, extTcpPort);
 				}
 
-				IPEndPoint extSecureTcpEndPoint = null;
+				DnsEndPoint extSecureTcpEndPoint = null;
 				if (_externalSecureTcp != null) {
 					int extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs : _externalSecureTcp.Port;
-					extSecureTcpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extSecureTcpPort);
+					extSecureTcpEndPoint = new DnsEndPoint(extHostToAdvertise, extSecureTcpPort);
 				}
 
 				var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
 				var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port;
 
-				var intHttpEndPoint = new IPEndPoint(intIpAddressToAdvertise, intHttpPort);
-				var extHttpEndPoint = new IPEndPoint(extIpAddressToAdvertise, extHttpPort);
+				var intHttpEndPoint = new DnsEndPoint(intHostToAdvertise, intHttpPort);
+				var extHttpEndPoint = new DnsEndPoint(extHostToAdvertise, extHttpPort);
 
 				_gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
 					extTcpEndPoint, extSecureTcpEndPoint,
 					intHttpEndPoint, extHttpEndPoint,
-					_advertiseInternalIPAs, _advertiseExternalIPAs,
+					_advertiseInternalHostAs, _advertiseExternalHostAs,
 					_advertiseInternalHttpPortAs, _advertiseExternalHttpPortAs);
 			}
 

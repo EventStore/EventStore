@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Cluster;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -17,6 +18,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Plugins.Authentication;
 using EventStore.Transport.Tcp;
+using EndPoint = System.Net.EndPoint;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {
@@ -34,7 +36,8 @@ namespace EventStore.Core.Services.Replication {
 		private readonly IPublisher _networkSendQueue;
 		private readonly IAuthenticationProvider _authProvider;
 		private readonly AuthorizationGateway _authorizationGateway;
-		private readonly VNodeInfo _nodeInfo;
+		private readonly EndPoint _internalTcp;
+		private readonly bool _isReadOnlyReplica;
 		private readonly bool _useSsl;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslServerCertValidator;
 		private readonly X509Certificate _sslClientCertificate;
@@ -52,7 +55,8 @@ namespace EventStore.Core.Services.Replication {
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,
 			AuthorizationGateway authorizationGateway,
-			VNodeInfo nodeInfo,
+			EndPoint internalTcp,
+			bool isReadOnlyReplica,
 			bool useSsl,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
 			X509Certificate sslClientCertificate,
@@ -65,7 +69,7 @@ namespace EventStore.Core.Services.Replication {
 			Ensure.NotNull(networkSendQueue, "networkSendQueue");
 			Ensure.NotNull(authProvider, "authProvider");
 			Ensure.NotNull(authorizationGateway, "authorizationGateway");
-			Ensure.NotNull(nodeInfo, "nodeInfo");
+			Ensure.NotNull(internalTcp, nameof(internalTcp));
 
 			_publisher = publisher;
 			_db = db;
@@ -74,7 +78,8 @@ namespace EventStore.Core.Services.Replication {
 			_authProvider = authProvider;
 			_authorizationGateway = authorizationGateway;
 
-			_nodeInfo = nodeInfo;
+			_internalTcp = internalTcp;
+			_isReadOnlyReplica = isReadOnlyReplica;
 			_useSsl = useSsl;
 			_sslServerCertValidator = sslServerCertValidator;
 			_sslClientCertificate = sslClientCertificate;
@@ -143,7 +148,7 @@ namespace EventStore.Core.Services.Replication {
 			ConnectToLeader(message.Leader);
 		}
 
-		private void ConnectToLeader(VNodeInfo leader) {
+		private void ConnectToLeader(MemberInfo leader) {
 			Debug.Assert(_state == VNodeState.PreReplica || _state == VNodeState.PreReadOnlyReplica);
 
 			var leaderEndPoint = GetLeaderEndPoint(leader, _useSsl);
@@ -160,6 +165,7 @@ namespace EventStore.Core.Services.Replication {
 				Guid.NewGuid(),
 				_tcpDispatcher,
 				_publisher,
+				leaderEndPoint.GetHost(),
 				leaderEndPoint,
 				_connector,
 				_useSsl,
@@ -175,17 +181,17 @@ namespace EventStore.Core.Services.Replication {
 			_connection.StartReceiving();
 		}
 
-		private static IPEndPoint GetLeaderEndPoint(VNodeInfo leader, bool useSsl) {
+		private static EndPoint GetLeaderEndPoint(MemberInfo leader, bool useSsl) {
 			Ensure.NotNull(leader, "leader");
-			if (useSsl && leader.InternalSecureTcp == null)
+			if (useSsl && leader.InternalSecureTcpEndPoint == null)
 				Log.Error(
 					"Internal secure connections are required, but no internal secure TCP end point is specified for leader [{leader}]!",
 					leader);
-			if (!useSsl && leader.InternalTcp == null)
+			if (!useSsl && leader.InternalTcpEndPoint == null)
 				Log.Error(
 					"Internal connections are required, but no internal TCP end point is specified for leader [{leader}]!",
 					leader);
-			return useSsl ? leader.InternalSecureTcp : leader.InternalTcp;
+			return useSsl ? leader.InternalSecureTcpEndPoint : leader.InternalTcpEndPoint;
 		}
 
 		public void Handle(ReplicationMessage.SubscribeToLeader message) {
@@ -208,8 +214,8 @@ namespace EventStore.Core.Services.Replication {
 				throw new Exception(string.Format("Chunk was null during subscribing at {0} (0x{0:X}).", logPosition));
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
-					logPosition, chunk.ChunkHeader.ChunkId, epochs, _nodeInfo.InternalTcp ?? _nodeInfo.InternalSecureTcp ?? _connection.LocalEndPoint,
-					message.LeaderId, message.SubscriptionId, isPromotable: !_nodeInfo.IsReadOnlyReplica));
+					logPosition, chunk.ChunkHeader.ChunkId, epochs, _internalTcp,
+					message.LeaderId, message.SubscriptionId, isPromotable: !_isReadOnlyReplica));
 		}
 
 		public void Handle(ReplicationMessage.AckLogPosition message) {

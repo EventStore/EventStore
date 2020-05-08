@@ -50,11 +50,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			_node = node;
 			_nodeTwo = nodeTwo;
 			_nodeThree = nodeThree;
-			_sut = new Core.Services.ElectionsService(_publisher, _node, 3,
+			_sut = new Core.Services.ElectionsService(_publisher,
+				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId), 3,
 				new InMemoryCheckpoint(0),
 				new InMemoryCheckpoint(0),
 				new FakeEpochManager(), () => 0L, 0, _timeProvider);
-
 			_sut.SubscribeMessages(_bus);
 		}
 	}
@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
-	
+
 	public class when_system_init : ElectionsFixture {
 		public when_system_init()
 			: base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
@@ -162,7 +162,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
-	
+
 	public class when_elections_timeout_for_a_different_view_than_last_attempted_view : ElectionsFixture {
 		public when_elections_timeout_for_a_different_view_than_last_attempted_view() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
-	
+
 	public class when_elections_timeout : ElectionsFixture {
 		public when_elections_timeout() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
@@ -214,7 +214,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
 	}
-	
+
 	public class when_node_is_shutting_down_and_view_change_proof_is_triggered : ElectionsFixture {
 		public when_node_is_shutting_down_and_view_change_proof_is_triggered() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
@@ -232,7 +232,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
-	
+
 	public class when_view_change_proof_is_triggered_and_the_first_election_has_not_completed : ElectionsFixture {
 		public when_view_change_proof_is_triggered_and_the_first_election_has_not_completed() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
@@ -854,7 +854,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
-	
+
 	public class when_receiving_accept_for_not_the_current_installed_view : ElectionsFixture {
 		public when_receiving_accept_for_not_the_current_installed_view() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
@@ -878,7 +878,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
-	
+
 	public class when_receiving_accept_without_a_leader_having_been_proposed : ElectionsFixture {
 		public when_receiving_accept_without_a_leader_having_been_proposed() :
 			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
@@ -901,7 +901,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
-	
+
 	public class when_receiving_accept_and_leader_proposal_does_not_match_accept_leader : ElectionsFixture {
 		public when_receiving_accept_and_leader_proposal_does_not_match_accept_leader() :
 			base(NodeFactory(1), NodeFactory(2), NodeFactory(3)) {
@@ -927,7 +927,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Assert.IsEmpty(_publisher.Messages);
 		}
 	}
-	
+
 	public class when_receiving_majority_accept : ElectionsFixture {
 		public when_receiving_majority_accept() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
@@ -1182,13 +1182,16 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_alive : ElectionsFixture {
+	public class
+		when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_alive :
+			ElectionsFixture {
 		public when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_alive() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
-			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
+			var info = MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Leader, true, _epochId);
+			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(info));
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Leader, true, _epochId),
+				info,
 				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
 		}
 
@@ -1209,13 +1212,16 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 	}
 
-	public class when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_dead : ElectionsFixture {
+	public class
+		when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_dead :
+			ElectionsFixture {
 		public when_a_leader_is_found_during_leader_discovery_and_new_elections_occur_with_previous_leader_dead() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
-			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
+			var info = MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Leader, false, _epochId);
+			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(info));
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Leader, false, _epochId),
+				info,
 				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
 		}
 
@@ -1239,10 +1245,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 	public class when_a_leader_is_found_during_leader_discovery : ElectionsFixture {
 		public when_a_leader_is_found_during_leader_discovery() :
 			base(NodeFactory(3), NodeFactory(2), NodeFactory(1)) {
-			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(_nodeTwo));
+			var info = MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId);
+			_sut.Handle(new LeaderDiscoveryMessage.LeaderFound(info));
 			_sut.Handle(new GossipMessage.GossipUpdated(new ClusterInfo(
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
-				MemberInfoFromVNode(_nodeTwo, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId),
+				info,
 				MemberInfoFromVNode(_nodeThree, _timeProvider.UtcNow, VNodeState.Unknown, true, _epochId))));
 		}
 
@@ -1262,14 +1269,15 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		[Test]
 		public void should_throw_argument_exception() {
 			var endpoint = new IPEndPoint(IPAddress.Loopback, 1234);
-			var nodeInfo = new VNodeInfo(Guid.NewGuid(),
+			var nodeInfo = MemberInfo.Initial(Guid.NewGuid(),
+				DateTime.UtcNow, VNodeState.ReadOnlyLeaderless, true,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
+				endpoint,
 				0,
-				endpoint,
-				endpoint,
-				endpoint,
-				endpoint,
-				endpoint,
-				endpoint,
 				true);
 
 			Assert.Throws<ArgumentException>(() => {
@@ -1280,5 +1288,4 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			});
 		}
 	}
-
 }

@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.Gossip {
 			return Dns.BeginGetHostAddresses(_hostname, requestCallback, state);
 		}
 
-		public IPEndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
+		public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
 			var addresses = Dns.EndGetHostAddresses(asyncResult);
 
 			return addresses.Select(address => new IPEndPoint(address, _managerHttpPort)).ToArray();

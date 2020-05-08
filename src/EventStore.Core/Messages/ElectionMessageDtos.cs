@@ -1,4 +1,5 @@
 using System;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Messages {
 	public static class ElectionMessageDto {
@@ -14,8 +15,8 @@ namespace EventStore.Core.Messages {
 
 			public ViewChangeDto(ElectionMessage.ViewChange message) {
 				ServerId = message.ServerId;
-				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.GetHost();
+				ServerInternalHttpPort = message.ServerInternalHttp.GetPort();
 
 				AttemptedView = message.AttemptedView;
 			}
@@ -33,8 +34,8 @@ namespace EventStore.Core.Messages {
 
 			public ViewChangeProofDto(ElectionMessage.ViewChangeProof message) {
 				ServerId = message.ServerId;
-				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.GetHost();
+				ServerInternalHttpPort = message.ServerInternalHttp.GetPort();
 
 				InstalledView = message.InstalledView;
 			}
@@ -52,8 +53,8 @@ namespace EventStore.Core.Messages {
 
 			public PrepareDto(ElectionMessage.Prepare message) {
 				ServerId = message.ServerId;
-				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.GetHost();
+				ServerInternalHttpPort = message.ServerInternalHttp.GetPort();
 
 				View = message.View;
 			}
@@ -80,8 +81,8 @@ namespace EventStore.Core.Messages {
 
 			public PrepareOkDto(ElectionMessage.PrepareOk message) {
 				ServerId = message.ServerId;
-				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.GetHost();
+				ServerInternalHttpPort = message.ServerInternalHttp.GetPort();
 
 				View = message.View;
 
@@ -123,10 +124,10 @@ namespace EventStore.Core.Messages {
 				ServerId = message.ServerId;
 				LeaderId = message.LeaderId;
 
-				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-				ServerInternalHttpPort = message.ServerInternalHttp.Port;
-				LeaderInternalHttpAddress = message.LeaderInternalHttp.Address.ToString();
-				LeaderInternalHttpPort = message.LeaderInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.GetHost();
+				ServerInternalHttpPort = message.ServerInternalHttp.GetPort();
+				LeaderInternalHttpAddress = message.LeaderInternalHttp.GetHost();
+				LeaderInternalHttpPort = message.LeaderInternalHttp.GetPort();
 
 				View = message.View;
 				EpochNumber = message.EpochNumber;
@@ -158,10 +159,10 @@ namespace EventStore.Core.Messages {
 				ServerId = message.ServerId;
 				LeaderId = message.LeaderId;
 
-				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-				ServerInternalHttpPort = message.ServerInternalHttp.Port;
-				LeaderInternalHttpAddress = message.LeaderInternalHttp.Address.ToString();
-				LeaderInternalHttpPort = message.LeaderInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.GetHost();
+				ServerInternalHttpPort = message.ServerInternalHttp.GetPort();
+				LeaderInternalHttpAddress = message.LeaderInternalHttp.GetHost();
+				LeaderInternalHttpPort = message.LeaderInternalHttp.GetPort();
 
 				View = message.View;
 			}
@@ -176,8 +177,8 @@ namespace EventStore.Core.Messages {
 
 			public LeaderIsResigningDto(ElectionMessage.LeaderIsResigning message) {
 				LeaderId = message.LeaderId;
-				LeaderInternalHttpAddress = message.LeaderInternalHttp.Address.ToString();
-				LeaderInternalHttpPort = message.LeaderInternalHttp.Port;
+				LeaderInternalHttpAddress = message.LeaderInternalHttp.GetHost();
+				LeaderInternalHttpPort = message.LeaderInternalHttp.GetPort();
 			}
 		}
 		
@@ -193,11 +194,11 @@ namespace EventStore.Core.Messages {
 
 			public LeaderIsResigningOkDto(ElectionMessage.LeaderIsResigningOk message) {
 				ServerId = message.ServerId;
-				ServerInternalHttpAddress = message.ServerInternalHttp.Address.ToString();
-				ServerInternalHttpPort = message.ServerInternalHttp.Port;
+				ServerInternalHttpAddress = message.ServerInternalHttp.GetHost();
+				ServerInternalHttpPort = message.ServerInternalHttp.GetPort();
 				LeaderId = message.LeaderId;
-				LeaderInternalHttpAddress = message.LeaderInternalHttp.Address.ToString();
-				LeaderInternalHttpPort = message.LeaderInternalHttp.Port;
+				LeaderInternalHttpAddress = message.LeaderInternalHttp.GetHost();
+				LeaderInternalHttpPort = message.LeaderInternalHttp.GetPort();
 			}
 		}
 	}

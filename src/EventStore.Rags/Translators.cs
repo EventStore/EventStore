@@ -13,6 +13,15 @@ namespace EventStore.Rags {
 			var parts = val.Split(':');
 			return new IPEndPoint(IPAddress.Parse(parts[0]), Int32.Parse(parts[1]));
 		}
+		
+		public static EndPoint TranslateEndPoint(string prop, string val) {
+			var parts = val.Split(':');
+			if (IPAddress.TryParse(parts[0], out var ip)) {
+				return new IPEndPoint(ip, Int32.Parse(parts[1]));
+			}
+
+			return new DnsEndPoint(parts[0], Int32.Parse(parts[1]));
+		}
 
 		public static IPAddress TranlateIPAddress(string prop, string val) {
 			return IPAddress.Parse(val);

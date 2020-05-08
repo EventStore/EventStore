@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using EventStore.Common.Utils;
+using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using EndPoint = System.Net.EndPoint;
 
 namespace EventStore.Core.Messages {
 	public static class ReplicationMessage {
@@ -20,13 +21,13 @@ namespace EventStore.Core.Messages {
 			public readonly long LogPosition;
 			public readonly Guid ChunkId;
 			public readonly EpochRecord[] LastEpochs;
-			public readonly IPEndPoint ReplicaEndPoint;
+			public readonly EndPoint ReplicaEndPoint;
 			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 			public readonly bool IsPromotable;
 
 			public SubscribeReplica(long logPosition, Guid chunkId, EpochRecord[] lastEpochs,
-				IPEndPoint replicaEndPoint,
+				EndPoint replicaEndPoint,
 				Guid leaderId, Guid subscriptionId, bool isPromotable) {
 				Ensure.Nonnegative(logPosition, "logPosition");
 				Ensure.NotNull(lastEpochs, "lastEpochs");
@@ -93,7 +94,7 @@ namespace EventStore.Core.Messages {
 			public readonly long LogPosition;
 			public readonly Guid ChunkId;
 			public readonly Epoch[] LastEpochs;
-			public readonly IPEndPoint ReplicaEndPoint;
+			public readonly EndPoint ReplicaEndPoint;
 			public readonly Guid LeaderId;
 			public readonly Guid SubscriptionId;
 			public readonly bool IsPromotable;
@@ -104,7 +105,7 @@ namespace EventStore.Core.Messages {
 				long logPosition,
 				Guid chunkId,
 				Epoch[] lastEpochs,
-				IPEndPoint replicaEndPoint,
+				EndPoint replicaEndPoint,
 				Guid leaderId,
 				Guid subscriptionId,
 				bool isPromotable) {
@@ -137,10 +138,10 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly VNodeInfo Leader;
+			public readonly MemberInfo Leader;
 			public readonly Guid StateCorrelationId;
 
-			public ReconnectToLeader(Guid stateCorrelationId, VNodeInfo leader) {
+			public ReconnectToLeader(Guid stateCorrelationId, MemberInfo leader) {
 				Ensure.NotEmptyGuid(stateCorrelationId, "stateCorrelationId");
 				Ensure.NotNull(leader, "leader");
 				StateCorrelationId = stateCorrelationId;
@@ -228,7 +229,7 @@ namespace EventStore.Core.Messages {
 			public readonly Guid SubscriptionId;
 			public readonly long SubscriptionPosition;
 
-			public readonly IPEndPoint LeaderEndPoint;
+			public readonly EndPoint LeaderEndPoint;
 
 			public ReplicaSubscribed(Guid leaderId, Guid subscriptionId, long subscriptionPosition) {
 				Ensure.NotEmptyGuid(leaderId, "leaderId");
@@ -241,7 +242,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public ReplicaSubscribed(Guid leaderId, Guid subscriptionId, long subscriptionPosition,
-				IPEndPoint leaderEndPoint) {
+				EndPoint leaderEndPoint) {
 				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.Nonnegative(subscriptionPosition, "subscriptionPosition");

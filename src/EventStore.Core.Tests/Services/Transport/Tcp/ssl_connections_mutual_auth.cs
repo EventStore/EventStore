@@ -7,6 +7,7 @@ using System.Net.Security;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Transport.Tcp;
@@ -96,6 +97,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
+				serverEndPoint.GetHost(),
 				serverEndPoint,
 				(cert, chain, err) => validateServerCertificate ? ClusterVNode.ValidateServerCertificateWithTrustedRootCerts(cert, chain, err, rootCertificates) : (true, null),
 				new X509CertificateCollection{clientCertificate},

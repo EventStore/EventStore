@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var clusterInfo = EventStore.Core.Cluster.ClusterInfo.FromGrpcClusterInfo(request.Info);
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(msg => GossipResponse(msg, tcs)),
-				clusterInfo, new IPEndPoint(IPAddress.Parse(request.Server.Address), (int)request.Server.Port)));
+				clusterInfo, new DnsEndPoint(request.Server.Address, (int)request.Server.Port)));
 			return await tcs.Task.ConfigureAwait(false);
 		}
 

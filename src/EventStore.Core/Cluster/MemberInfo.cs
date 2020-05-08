@@ -13,12 +13,12 @@ namespace EventStore.Core.Cluster {
 		public readonly VNodeState State;
 		public readonly bool IsAlive;
 
-		public readonly IPEndPoint InternalTcpEndPoint;
-		public readonly IPEndPoint InternalSecureTcpEndPoint;
-		public readonly IPEndPoint ExternalTcpEndPoint;
-		public readonly IPEndPoint ExternalSecureTcpEndPoint;
-		public readonly IPEndPoint InternalHttpEndPoint;
-		public readonly IPEndPoint ExternalHttpEndPoint;
+		public readonly EndPoint InternalTcpEndPoint;
+		public readonly EndPoint InternalSecureTcpEndPoint;
+		public readonly EndPoint ExternalTcpEndPoint;
+		public readonly EndPoint ExternalSecureTcpEndPoint;
+		public readonly EndPoint InternalHttpEndPoint;
+		public readonly EndPoint ExternalHttpEndPoint;
 
 		public readonly long LastCommitPosition;
 		public readonly long WriterCheckpoint;
@@ -29,9 +29,9 @@ namespace EventStore.Core.Cluster {
 
 		public readonly int NodePriority;
 		public readonly bool IsReadOnlyReplica;
-
+		
 		public static MemberInfo ForManager(Guid instanceId, DateTime timeStamp, bool isAlive,
-			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint) {
+			EndPoint internalHttpEndPoint, EndPoint externalHttpEndPoint) {
 			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, isAlive,
 				internalHttpEndPoint, null, externalHttpEndPoint, null,
 				internalHttpEndPoint, externalHttpEndPoint,
@@ -42,12 +42,12 @@ namespace EventStore.Core.Cluster {
 			DateTime timeStamp,
 			VNodeState state,
 			bool isAlive,
-			IPEndPoint internalTcpEndPoint,
-			IPEndPoint internalSecureTcpEndPoint,
-			IPEndPoint externalTcpEndPoint,
-			IPEndPoint externalSecureTcpEndPoint,
-			IPEndPoint internalHttpEndPoint,
-			IPEndPoint externalHttpEndPoint,
+			EndPoint internalTcpEndPoint,
+			EndPoint internalSecureTcpEndPoint,
+			EndPoint externalTcpEndPoint,
+			EndPoint externalSecureTcpEndPoint,
+			EndPoint internalHttpEndPoint,
+			EndPoint externalHttpEndPoint,
 			long lastCommitPosition,
 			long writerCheckpoint,
 			long chaserCheckpoint,
@@ -65,11 +65,32 @@ namespace EventStore.Core.Cluster {
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
 				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica);
 		}
+		
+		public static MemberInfo Initial(Guid instanceId,
+			DateTime timeStamp,
+			VNodeState state,
+			bool isAlive,
+			EndPoint internalTcpEndPoint,
+			EndPoint internalSecureTcpEndPoint,
+			EndPoint externalTcpEndPoint,
+			EndPoint externalSecureTcpEndPoint,
+			EndPoint internalHttpEndPoint,
+			EndPoint externalHttpEndPoint,
+			int nodePriority,
+			bool isReadOnlyReplica) {
+			if (state == VNodeState.Manager)
+				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
+			return new MemberInfo(instanceId, timeStamp, state, isAlive,
+				internalTcpEndPoint, internalSecureTcpEndPoint,
+				externalTcpEndPoint, externalSecureTcpEndPoint,
+				internalHttpEndPoint, externalHttpEndPoint,
+				-1, -1, -1, -1, -1, Guid.Empty, nodePriority, isReadOnlyReplica);
+		}
 
 		internal MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
-			IPEndPoint internalTcpEndPoint, IPEndPoint internalSecureTcpEndPoint,
-			IPEndPoint externalTcpEndPoint, IPEndPoint externalSecureTcpEndPoint,
-			IPEndPoint internalHttpEndPoint, IPEndPoint externalHttpEndPoint,
+			EndPoint internalTcpEndPoint, EndPoint internalSecureTcpEndPoint,
+			EndPoint externalTcpEndPoint, EndPoint externalSecureTcpEndPoint,
+			EndPoint internalHttpEndPoint, EndPoint externalHttpEndPoint,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
 			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
@@ -106,18 +127,16 @@ namespace EventStore.Core.Cluster {
 			TimeStamp = dto.TimeStamp;
 			State = dto.State;
 			IsAlive = dto.IsAlive;
-			var internalTcpIp = IPAddress.Parse(dto.InternalTcpIp);
-			var externalTcpIp = dto.ExternalTcpIp != null ? IPAddress.Parse(dto.ExternalTcpIp) : null;
-			InternalTcpEndPoint = new IPEndPoint(internalTcpIp, dto.InternalTcpPort);
+			InternalTcpEndPoint = new DnsEndPoint(dto.InternalTcpIp, dto.InternalTcpPort);
 			InternalSecureTcpEndPoint = dto.InternalSecureTcpPort > 0
-				? new IPEndPoint(internalTcpIp, dto.InternalSecureTcpPort)
+				? new DnsEndPoint(dto.InternalTcpIp, dto.InternalSecureTcpPort)
 				: null;
-			ExternalTcpEndPoint = externalTcpIp != null ? new IPEndPoint(externalTcpIp, dto.ExternalTcpPort) : null;
-			ExternalSecureTcpEndPoint = externalTcpIp != null && dto.ExternalSecureTcpPort > 0
-				? new IPEndPoint(externalTcpIp, dto.ExternalSecureTcpPort)
+			ExternalTcpEndPoint = dto.ExternalTcpIp != null ? new DnsEndPoint(dto.ExternalTcpIp, dto.ExternalTcpPort) : null;
+			ExternalSecureTcpEndPoint = dto.ExternalTcpIp != null && dto.ExternalSecureTcpPort > 0
+				? new DnsEndPoint(dto.ExternalTcpIp, dto.ExternalSecureTcpPort)
 				: null;
-			InternalHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.InternalHttpIp), dto.InternalHttpPort);
-			ExternalHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ExternalHttpIp), dto.ExternalHttpPort);
+			InternalHttpEndPoint = new DnsEndPoint(dto.InternalHttpIp, dto.InternalHttpPort);
+			ExternalHttpEndPoint = new DnsEndPoint(dto.ExternalHttpIp, dto.ExternalHttpPort);
 			LastCommitPosition = dto.LastCommitPosition;
 			WriterCheckpoint = dto.WriterCheckpoint;
 			ChaserCheckpoint = dto.ChaserCheckpoint;
@@ -128,16 +147,16 @@ namespace EventStore.Core.Cluster {
 			IsReadOnlyReplica = dto.IsReadOnlyReplica;
 		}
 
-		public bool Is(IPEndPoint endPoint) {
+		public bool Is(EndPoint endPoint) {
 			return endPoint != null
-			       && (InternalHttpEndPoint.Equals(endPoint)
-			           || ExternalHttpEndPoint.Equals(endPoint)
-			           || (InternalTcpEndPoint != null && InternalTcpEndPoint.Equals(endPoint))
-			           || (InternalSecureTcpEndPoint != null && InternalSecureTcpEndPoint.Equals(endPoint))
-			           || (ExternalTcpEndPoint != null && ExternalTcpEndPoint.Equals(endPoint))
-			           || (ExternalSecureTcpEndPoint != null && ExternalSecureTcpEndPoint.Equals(endPoint)));
+			       && (InternalHttpEndPoint.EndPointEquals(endPoint)
+			           || ExternalHttpEndPoint.EndPointEquals(endPoint)
+			           || (InternalTcpEndPoint != null && InternalTcpEndPoint.EndPointEquals(endPoint))
+			           || (InternalSecureTcpEndPoint != null && InternalSecureTcpEndPoint.EndPointEquals(endPoint))
+			           || (ExternalTcpEndPoint != null && ExternalTcpEndPoint.EndPointEquals(endPoint))
+			           || (ExternalSecureTcpEndPoint != null && ExternalSecureTcpEndPoint.EndPointEquals(endPoint)));
 		}
-
+		
 		public MemberInfo Updated(DateTime utcNow,
 			VNodeState? state = null,
 			bool? isAlive = null,

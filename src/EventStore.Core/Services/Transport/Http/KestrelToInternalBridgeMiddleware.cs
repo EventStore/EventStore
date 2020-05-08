@@ -16,16 +16,16 @@ namespace EventStore.Core.Services.Transport.Http {
 		private static readonly ILogger Log = Serilog.Log.ForContext<KestrelToInternalBridgeMiddleware>();
 		private readonly IUriRouter _uriRouter;
 		private readonly bool _logHttpRequests;
-		private readonly IPAddress _advertiseAsAddress;
+		private readonly string _advertiseAsAddress;
 		private readonly int _advertiseAsPort;
 
-		public KestrelToInternalBridgeMiddleware(IUriRouter uriRouter, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort) {
+		public KestrelToInternalBridgeMiddleware(IUriRouter uriRouter, bool logHttpRequests, string advertiseAsAddress, int advertiseAsPort) {
 			_uriRouter = uriRouter;
 			_logHttpRequests = logHttpRequests;
-			_advertiseAsAddress =advertiseAsAddress;
+			_advertiseAsAddress = advertiseAsAddress;
 			_advertiseAsPort = advertiseAsPort;
 		}
-		private static bool TryMatch(HttpContext context, IUriRouter uriRouter, bool logHttpRequests, IPAddress advertiseAsAddress, int advertiseAsPort) {
+		private static bool TryMatch(HttpContext context, IUriRouter uriRouter, bool logHttpRequests, string advertiseAsAddress, int advertiseAsPort) {
 			var tcs = new TaskCompletionSource<bool>();
 			var httpEntity = new HttpEntity(context, logHttpRequests, advertiseAsAddress, advertiseAsPort,
 				() => tcs.TrySetResult(true));

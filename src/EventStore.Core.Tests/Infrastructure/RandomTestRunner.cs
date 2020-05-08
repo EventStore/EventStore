@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Infrastructure {
 			return finishCondition.Success;
 		}
 
-		public void Enqueue(IPEndPoint endPoint, Message message, IPublisher bus, int timeDelay = 1) {
+		public void Enqueue(EndPoint endPoint, Message message, IPublisher bus, int timeDelay = 1) {
 			System.Diagnostics.Debug.Assert(timeDelay >= 1);
 			_queue.Add(new RandTestQueueItem(_curLogicalTime + timeDelay, _globalMsgId++, endPoint, message, bus));
 		}

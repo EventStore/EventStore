@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
-			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, IPEndPoint[] gossipSeeds,
+			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, EndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
@@ -114,9 +114,11 @@ namespace EventStore.Core.Tests.Helpers {
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
 				ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
-				new Data.GossipAdvertiseInfo(InternalTcpEndPoint, InternalTcpSecEndPoint,
-					ExternalTcpEndPoint, ExternalTcpSecEndPoint,
-					InternalHttpEndPoint, ExternalHttpEndPoint,
+				new Data.GossipAdvertiseInfo(
+					InternalTcpEndPoint.ToDnsEndPoint(),
+					InternalTcpSecEndPoint.ToDnsEndPoint(),
+					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(),
+					InternalHttpEndPoint.ToDnsEndPoint(), ExternalHttpEndPoint.ToDnsEndPoint(),
 					null, null, 0, 0), enableTrustedAuth,
 				certificate, trustedRootCertificates, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Integration {
 	public class specification_with_cluster : SpecificationWithDirectoryPerTestFixture {
@@ -152,7 +153,7 @@ namespace EventStore.Core.Tests.Integration {
 			return _nodes[nodeNum].Shutdown(keepDb: true);
 		}
 
-		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds,
+		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
 			bool wait = true) {
 			var node = new MiniClusterNode(
 				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,

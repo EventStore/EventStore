@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 
 namespace EventStore.Core.Messages {
@@ -11,10 +12,10 @@ namespace EventStore.Core.Messages {
 		public ClusterInfoDto() {
 		}
 
-		public ClusterInfoDto(ClusterInfo clusterInfo, IPEndPoint serverEndPoint) {
+		public ClusterInfoDto(ClusterInfo clusterInfo, EndPoint serverEndPoint) {
 			Members = clusterInfo.Members.Select(x => new MemberInfoDto(x)).ToArray();
-			ServerIp = serverEndPoint.Address.ToString();
-			ServerPort = serverEndPoint.Port;
+			ServerIp = serverEndPoint.GetHost();
+			ServerPort = serverEndPoint.GetPort();
 		}
 
 		public override string ToString() {

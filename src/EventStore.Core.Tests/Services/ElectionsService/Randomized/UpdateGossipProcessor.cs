@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		private readonly List<RandTestQueueItem> _processedItems;
 
 		private MemberInfo[] _initialGossip;
-		private Dictionary<IPEndPoint, MemberInfo[]> _previousGossip;
+		private Dictionary<EndPoint, MemberInfo[]> _previousGossip;
 
 		public UpdateGossipProcessor(IEnumerable<ElectionsInstance> allInstances,
 			SendOverGrpcBlockingProcessor sendOverGrpcProcessor,
@@ -55,8 +55,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 
 						previousMembers[leaderIndex] =
 							MemberInfo.ForVNode(previousLeaderInfo.InstanceId, DateTime.UtcNow, VNodeState.Leader,
-								previousLeaderInfo.IsAlive,
-								leaderEndPoint, null, leaderEndPoint, null, leaderEndPoint, leaderEndPoint,
+								previousLeaderInfo.IsAlive, leaderEndPoint, null, leaderEndPoint, null, leaderEndPoint, leaderEndPoint,
 								-1, 0, 0, -1, -1, Guid.Empty, 0, false);
 					}
 				}

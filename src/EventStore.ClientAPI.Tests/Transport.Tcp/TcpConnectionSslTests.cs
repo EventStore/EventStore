@@ -9,6 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.Common.Utils;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
@@ -96,6 +97,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 
 					clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 						Guid.NewGuid(),
+						listeningSocket.LocalEndPoint.GetHost(),
 						(IPEndPoint)listeningSocket.LocalEndPoint,
 						delegate { return (true, null); },
 						null,

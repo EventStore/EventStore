@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
 
@@ -20,8 +21,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 
 		private readonly int _majorityCount;
 
-		protected readonly Dictionary<IPEndPoint, Tuple<int, IPEndPoint>> ElectionsResults =
-			new Dictionary<IPEndPoint, Tuple<int, IPEndPoint>>();
+		protected readonly Dictionary<EndPoint, Tuple<int, EndPoint>> ElectionsResults =
+			new Dictionary<EndPoint, Tuple<int, EndPoint>>();
 
 		public ElectionsProgressCondition(int instancesCount) {
 			_majorityCount = instancesCount / 2 + 1;
@@ -41,9 +42,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			Console.WriteLine("node - (installed view, leader)");
 			foreach (var electionsResult in ElectionsResults) {
 				Console.WriteLine("{0} - ({1}, {2})",
-					electionsResult.Key.Port,
+					electionsResult.Key.GetPort(),
 					electionsResult.Value.Item1,
-					electionsResult.Value.Item2.Port);
+					electionsResult.Value.Item2.GetPort());
 			}
 
 			Console.WriteLine("end.");

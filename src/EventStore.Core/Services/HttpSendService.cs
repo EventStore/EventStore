@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Histograms;
@@ -26,7 +27,7 @@ namespace EventStore.Core.Services {
 		private readonly bool _forwardRequests;
 		private readonly HttpClient _forwardClient;
 		private const string _httpSendHistogram = "http-send";
-		private VNodeInfo _leaderInfo;
+		private MemberInfo _leaderInfo;
 
 		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> externServerCertValidator) {
 			Ensure.NotNull(httpPipe, "httpPipe");
@@ -129,7 +130,7 @@ namespace EventStore.Core.Services {
 				var srcUrl = manager.RequestedUrl;
 				var srcBase = new Uri($"{srcUrl.Scheme}://{srcUrl.Host}:{srcUrl.Port}/",
 					UriKind.Absolute);
-				var baseUri = new Uri($"{srcUrl.Scheme}://{leaderInfo.ExternalHttp}/");
+				var baseUri = new Uri(leaderInfo.ExternalHttpEndPoint.ToHttpUrl(srcUrl.Scheme));
 				var forwardUri = new Uri(baseUri, srcBase.MakeRelativeUri(srcUrl));
 				ForwardRequest(manager, forwardUri);
 				return true;

@@ -26,12 +26,12 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly IPEndPoint ServerInternalHttp;
+			public readonly EndPoint ServerInternalHttp;
 
 			public readonly int AttemptedView;
 
 			public ViewChange(Guid serverId,
-				IPEndPoint serverInternalHttp,
+				EndPoint serverInternalHttp,
 				int attemptedView) {
 				ServerId = serverId;
 				ServerInternalHttp = serverInternalHttp;
@@ -60,10 +60,10 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly IPEndPoint ServerInternalHttp;
+			public readonly EndPoint ServerInternalHttp;
 			public readonly int InstalledView;
 
-			public ViewChangeProof(Guid serverId, IPEndPoint serverInternalHttp, int installedView) {
+			public ViewChangeProof(Guid serverId, EndPoint serverInternalHttp, int installedView) {
 				ServerId = serverId;
 				ServerInternalHttp = serverInternalHttp;
 				InstalledView = installedView;
@@ -120,10 +120,10 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly IPEndPoint ServerInternalHttp;
+			public readonly EndPoint ServerInternalHttp;
 			public readonly int View;
 
-			public Prepare(Guid serverId, IPEndPoint serverInternalHttp, int view) {
+			public Prepare(Guid serverId, EndPoint serverInternalHttp, int view) {
 				ServerId = serverId;
 				ServerInternalHttp = serverInternalHttp;
 				View = view;
@@ -151,7 +151,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly int View;
 			public readonly Guid ServerId;
-			public readonly IPEndPoint ServerInternalHttp;
+			public readonly EndPoint ServerInternalHttp;
 			public readonly int EpochNumber;
 			public readonly long EpochPosition;
 			public readonly Guid EpochId;
@@ -162,7 +162,7 @@ namespace EventStore.Core.Messages {
 
 			public PrepareOk(int view,
 				Guid serverId,
-				IPEndPoint serverInternalHttp,
+				EndPoint serverInternalHttp,
 				int epochNumber,
 				long epochPosition,
 				Guid epochId,
@@ -213,9 +213,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly IPEndPoint ServerInternalHttp;
+			public readonly EndPoint ServerInternalHttp;
 			public readonly Guid LeaderId;
-			public readonly IPEndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderInternalHttp;
 
 			public readonly int View;
 			public readonly int EpochNumber;
@@ -226,7 +226,7 @@ namespace EventStore.Core.Messages {
 			public readonly long ChaserCheckpoint;
 			public readonly int NodePriority;
 
-			public Proposal(Guid serverId, IPEndPoint serverInternalHttp, Guid leaderId, IPEndPoint leaderInternalHttp,
+			public Proposal(Guid serverId, EndPoint serverInternalHttp, Guid leaderId, EndPoint leaderInternalHttp,
 				int view, int epochNumber, long epochPosition, Guid epochId,
 				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, int nodePriority) {
 				ServerId = serverId;
@@ -278,12 +278,12 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly IPEndPoint ServerInternalHttp;
+			public readonly EndPoint ServerInternalHttp;
 			public readonly Guid LeaderId;
-			public readonly IPEndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderInternalHttp;
 			public readonly int View;
 
-			public Accept(Guid serverId, IPEndPoint serverInternalHttp, Guid leaderId, IPEndPoint leaderInternalHttp,
+			public Accept(Guid serverId, EndPoint serverInternalHttp, Guid leaderId, EndPoint leaderInternalHttp,
 				int view) {
 				ServerId = serverId;
 				ServerInternalHttp = serverInternalHttp;
@@ -318,9 +318,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid LeaderId;
-			public readonly IPEndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderInternalHttp;
 
-			public LeaderIsResigning(Guid leaderId, IPEndPoint leaderInternalHttp) {
+			public LeaderIsResigning(Guid leaderId, EndPoint leaderInternalHttp) {
 				LeaderId = leaderId;
 				LeaderInternalHttp = leaderInternalHttp;
 			}
@@ -344,9 +344,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid LeaderId;
-			public readonly IPEndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderInternalHttp;
 			public readonly Guid ServerId;
-			public readonly IPEndPoint ServerInternalHttp;
+			public readonly EndPoint ServerInternalHttp;
 			
 			public LeaderIsResigningOk(ElectionMessageDto.LeaderIsResigningOkDto dto) {
 				LeaderId = dto.LeaderId;
@@ -357,7 +357,7 @@ namespace EventStore.Core.Messages {
 					dto.ServerInternalHttpPort);
 			}
 
-			public LeaderIsResigningOk(Guid leaderId, IPEndPoint leaderInternalHttp, Guid serverId, IPEndPoint serverInternalHttp) {
+			public LeaderIsResigningOk(Guid leaderId, EndPoint leaderInternalHttp, Guid serverId, EndPoint serverInternalHttp) {
 				LeaderId = leaderId;
 				LeaderInternalHttp = leaderInternalHttp;
 				ServerId = serverId;

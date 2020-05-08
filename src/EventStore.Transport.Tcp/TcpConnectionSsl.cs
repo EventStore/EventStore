@@ -8,7 +8,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Rags;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
@@ -16,6 +15,7 @@ namespace EventStore.Transport.Tcp {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TcpConnectionSsl>();
 
 		public static ITcpConnection CreateConnectingConnection(Guid connectionId,
+			string targetHost,
 			IPEndPoint remoteEndPoint,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator,
 			X509CertificateCollection clientCertificates,
@@ -31,7 +31,7 @@ namespace EventStore.Transport.Tcp {
 					connection.InitClientSocket(socket);
 				},
 				(_, socket) => {
-					connection.InitSslStream(remoteEndPoint.Address.ToString(), serverCertValidator, clientCertificates, verbose);
+					connection.InitSslStream(targetHost, serverCertValidator, clientCertificates, verbose);
 					if (onConnectionEstablished != null)
 						onConnectionEstablished(connection);
 				},

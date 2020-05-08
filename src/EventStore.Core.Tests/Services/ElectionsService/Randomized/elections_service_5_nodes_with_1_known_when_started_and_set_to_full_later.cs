@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -41,8 +42,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			RandTestQueueItem item,
 			ElectionsInstance[] instances,
 			MemberInfo[] initialGossip,
-			Dictionary<IPEndPoint, MemberInfo[]> previousGossip) {
-			if (iteration == 1 || (iteration % 100 != (item.EndPoint.Port % 1000) && _randomCase.Next(100) < 30))
+			Dictionary<EndPoint, MemberInfo[]> previousGossip) {
+			if (iteration == 1 || (iteration % 100 != (item.EndPoint.GetPort() % 1000) && _randomCase.Next(100) < 30))
 				return null;
 
 			if (previousGossip[item.EndPoint].Length < 5) {

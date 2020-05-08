@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
 using EventStore.Core.Bus;
@@ -36,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.ViewChange(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.AttemptedView));
 			return EmptyResult;
 		}
@@ -48,7 +47,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.ViewChangeProof(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.InstalledView));
 			return EmptyResult;
 		}
@@ -60,7 +59,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Prepare(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.View));
 			return EmptyResult;
 		}
@@ -73,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_bus.Publish(new ElectionMessage.PrepareOk(
 				request.View,
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.EpochNumber,
 				request.EpochPosition,
 				Uuid.FromDto(request.EpochId).ToGuid(),
@@ -91,9 +90,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Proposal(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address), (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.LeaderInternalHttp.Address), (int)request.LeaderInternalHttp.Port),
+				new DnsEndPoint(request.LeaderInternalHttp.Address, (int)request.LeaderInternalHttp.Port),
 				request.View,
 				request.EpochNumber,
 				request.EpochPosition,
@@ -112,10 +111,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Accept(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address),
+				new DnsEndPoint(request.ServerInternalHttp.Address,
 					(int)request.ServerInternalHttp.Port),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.LeaderInternalHttp.Address),
+				new DnsEndPoint(request.LeaderInternalHttp.Address,
 					(int)request.LeaderInternalHttp.Port),
 				request.View));
 			return EmptyResult;
@@ -128,7 +127,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.LeaderIsResigning(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.LeaderInternalHttp.Address),
+				new DnsEndPoint(request.LeaderInternalHttp.Address,
 					(int)request.LeaderInternalHttp.Port)));
 			return EmptyResult;
 		}
@@ -140,10 +139,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.LeaderIsResigningOk(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.LeaderInternalHttp.Address),
+				new DnsEndPoint(request.LeaderInternalHttp.Address,
 					(int)request.LeaderInternalHttp.Port),
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new IPEndPoint(IPAddress.Parse(request.ServerInternalHttp.Address),
+				new DnsEndPoint(request.ServerInternalHttp.Address,
 					(int)request.ServerInternalHttp.Port)));
 			return EmptyResult;
 		}
