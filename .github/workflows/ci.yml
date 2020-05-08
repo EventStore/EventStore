@@ -8,6 +8,8 @@ on:
     tags:
     - oss-v*
 
+env:
+  DOTNET_SDK_VERSION: 3.1.201
 jobs:
   vulnerability-scan:
     runs-on: ubuntu-latest
@@ -33,15 +35,15 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+    - shell: bash
+      run: |
+        git fetch --prune --unshallow
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1.4.0
       with:
-        dotnet-version: '3.1.201'
+        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     - name: Calculate Version
       run: |
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
         echo "::set-env name=VERSION::${version}"
@@ -107,16 +109,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+    - shell: bash
+      run: |
+        git fetch --prune --unshallow
     - name: Install Dotnet
       uses: actions/setup-dotnet@v1.4.0
       with:
-        dotnet-version: '3.1.201'
+        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     - name: Calculate Version
       shell: bash
       run: |
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)
         echo "::set-env name=VERSION::${version}"
@@ -145,3 +147,35 @@ jobs:
       with:
         name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
         path: test-results
+  package:
+    needs: [vulnerability-scan, build]
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    name: ci/github/package
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - shell: bash
+      run: |
+        git fetch --prune --unshallow
+    - name: Install Dotnet
+      uses: actions/setup-dotnet@v1.4.0
+      with:
+        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+    - name: Pack
+      shell: bash
+      run: |
+        dotnet tool restore
+        dotnet pack --configuration=Release --output=./packages \
+          /p:Version=$(dotnet tool run minver -- --tag-prefix=oss-v) \
+          /p:NoWarn=NU5105 \
+          /p:RepositoryUrl=https://github.com/EventStore/EventStore \
+          /p:RepositoryType=git \
+          ./src
+    - name: Push
+      shell: bash
+      if: github.event_name == 'push'
+      run: |
+        find . -name "*.nupkg" | xargs -n1 dotnet tool run gpr -- push --api-key=${{ secrets.github_token }}
+

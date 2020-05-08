@@ -5,12 +5,17 @@
 		<DebugType Condition=" '$(Configuration)' == 'Release' ">pdbonly</DebugType>
 		<OutputPath>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
 		<Authors>Event Store Ltd</Authors>
-		<PackageLicenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</PackageLicenseUrl>
+		<PackageIconUrl>ouro.png</PackageIconUrl>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
-		<PackageIconUrl>https://eventstore.com/images/ouro.svg</PackageIconUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<Copyright>Copyright 2012-2019 Event Store Ltd</Copyright>
+		<Copyright>Copyright 2012-2020 Event Store Ltd</Copyright>
 		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
 		<LangVersion>8.0</LangVersion>
+		<IsPackable>false</IsPackable>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\"/>
+		<None Include="..\..\ouro.png" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 </Project>

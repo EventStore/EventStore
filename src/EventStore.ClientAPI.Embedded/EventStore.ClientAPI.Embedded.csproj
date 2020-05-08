@@ -10,6 +10,7 @@
 		<PackageId>EventStore.Client.Embedded</PackageId>
 		<Description>The embedded client API for Event Store. Get the open source or commercial versions of Event Store server from https://eventstore.com/</Description>
 		<PackageTags>eventstore client embedded</PackageTags>
+		<IsPackable>true</IsPackable>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
 		<DocumentationFile>$(OutputPath)\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
