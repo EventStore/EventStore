@@ -272,12 +272,19 @@ namespace EventStore.ClientAPI.Internal {
 				_connectingPhase = ConnectingPhase.Authentication;
 
 				_authInfo = new AuthInfo(Guid.NewGuid(), _stopwatch.Elapsed);
-				_connection.EnqueueSend(new TcpPackage(TcpCommand.Authenticate,
-					TcpFlags.Authenticated,
-					_authInfo.CorrelationId,
-					_settings.DefaultUserCredentials.Username,
-					_settings.DefaultUserCredentials.Password,
-					null));
+				var package = _settings.DefaultUserCredentials.AuthToken != null
+					? new TcpPackage(TcpCommand.Authenticate,
+						TcpFlags.Authenticated,
+						_authInfo.CorrelationId,
+						_settings.DefaultUserCredentials.AuthToken,
+						default)
+					: new TcpPackage(TcpCommand.Authenticate,
+						TcpFlags.Authenticated,
+						_authInfo.CorrelationId,
+						_settings.DefaultUserCredentials.Username,
+						_settings.DefaultUserCredentials.Password,
+						null);
+				_connection.EnqueueSend(package);
 			} else {
 				GoToIdentifyState();
 			}

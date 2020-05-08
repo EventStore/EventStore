@@ -29,12 +29,15 @@ namespace EventStore.ClientAPI.ClientOperations {
 
 		protected override TcpPackage CreateSubscriptionPackage() {
 			var dto = new ClientMessage.ConnectToPersistentSubscription(_groupName, _streamId, _bufferSize);
-			return new TcpPackage(TcpCommand.ConnectToPersistentSubscription,
-				_userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-				_correlationId,
-				_userCredentials != null ? _userCredentials.Username : null,
-				_userCredentials != null ? _userCredentials.Password : null,
-				dto.Serialize());
+			return _userCredentials?.AuthToken != null
+				? new TcpPackage(TcpCommand.ConnectToPersistentSubscription, TcpFlags.Authenticated,
+					_correlationId, _userCredentials.AuthToken, dto.Serialize())
+				: new TcpPackage(TcpCommand.ConnectToPersistentSubscription,
+					_userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+					_correlationId,
+					_userCredentials?.Username,
+					_userCredentials?.Password,
+					dto.Serialize());
 		}
 
 		protected override bool InspectPackage(TcpPackage package, out InspectionResult result) {
@@ -103,12 +106,18 @@ namespace EventStore.ClientAPI.ClientOperations {
 				_subscriptionId,
 				processedEvents.Select(x => x.ToByteArray()).ToArray());
 
-			var package = new TcpPackage(TcpCommand.PersistentSubscriptionAckEvents,
-				_userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-				_correlationId,
-				_userCredentials != null ? _userCredentials.Username : null,
-				_userCredentials != null ? _userCredentials.Password : null,
-				dto.Serialize());
+			var package = _userCredentials?.AuthToken != null
+				? new TcpPackage(TcpCommand.PersistentSubscriptionAckEvents,
+					TcpFlags.Authenticated,
+					_correlationId,
+					_userCredentials.AuthToken,
+					dto.Serialize())
+				: new TcpPackage(TcpCommand.PersistentSubscriptionAckEvents,
+					_userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+					_correlationId,
+					_userCredentials?.Username,
+					_userCredentials?.Password,
+					dto.Serialize());
 			EnqueueSend(package);
 		}
 
@@ -122,12 +131,18 @@ namespace EventStore.ClientAPI.ClientOperations {
 				reason,
 				(ClientMessage.PersistentSubscriptionNakEvents.NakAction)action);
 
-			var package = new TcpPackage(TcpCommand.PersistentSubscriptionNakEvents,
-				_userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-				_correlationId,
-				_userCredentials != null ? _userCredentials.Username : null,
-				_userCredentials != null ? _userCredentials.Password : null,
-				dto.Serialize());
+			var package = _userCredentials?.AuthToken != null
+				? new TcpPackage(TcpCommand.PersistentSubscriptionNakEvents,
+					TcpFlags.Authenticated,
+					_correlationId,
+					_userCredentials.AuthToken,
+					dto.Serialize())
+				: new TcpPackage(TcpCommand.PersistentSubscriptionNakEvents,
+					_userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+					_correlationId,
+					_userCredentials?.Username,
+					_userCredentials?.Password,
+					dto.Serialize());
 			EnqueueSend(package);
 		}
 	}
