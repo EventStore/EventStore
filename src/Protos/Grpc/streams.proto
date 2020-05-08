@@ -86,6 +86,7 @@ message ReadResp {
 		ReadEvent event = 1;
 		SubscriptionConfirmation confirmation = 2;
 		Checkpoint checkpoint = 3;
+		StreamNotFound stream_not_found = 4;
 	}
 
 	message ReadEvent {
@@ -113,6 +114,9 @@ message ReadResp {
 	message Checkpoint {
 		uint64 commit_position = 1;
 		uint64 prepare_position = 2;
+	}
+	message StreamNotFound {
+	  	string stream_name = 1;
 	}
 }
 

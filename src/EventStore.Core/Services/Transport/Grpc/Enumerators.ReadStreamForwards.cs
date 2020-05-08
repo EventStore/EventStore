@@ -8,7 +8,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client;
+using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
@@ -23,11 +23,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly CancellationTokenSource _disposedTokenSource;
 			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
 			private readonly CancellationTokenRegistration _tokenRegistration;
+			private readonly Func<RpcException, Task> _handleFailure;
 
 			private StreamRevision _nextRevision;
 			private bool _isEnd;
 			private ResolvedEvent _current;
 			private ulong _readCount;
+			private RpcException _currentException;
 
 			public ResolvedEvent Current => _current;
 
@@ -39,6 +41,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				DateTime deadline,
+				Func<RpcException, Task> handleFailure,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -58,6 +61,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_deadline = deadline;
 				_disposedTokenSource = new CancellationTokenSource();
 				_buffer = new ConcurrentQueue<ResolvedEvent>();
+				_handleFailure = handleFailure;
 				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 			}
 
@@ -91,6 +95,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					(int)Math.Min(32, _maxCount), _resolveLinks, _requiresLeader, default, _user, expires: _deadline));
 
 				if (!await readNextSource.Task.ConfigureAwait(false)) {
+					if (_currentException == null) return false;
+					
+					await _handleFailure(_currentException).ConfigureAwait(false);
+					_currentException = null;
+
 					return false;
 				}
 
@@ -126,7 +135,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							readNextSource.TrySetResult(true);
 							return;
 						case ReadStreamResult.NoStream:
-							readNextSource.TrySetException(RpcExceptions.StreamNotFound(_streamName));
+							_currentException = RpcExceptions.StreamNotFound(_streamName);
+							readNextSource.TrySetResult(false);
 							return;
 						case ReadStreamResult.StreamDeleted:
 							readNextSource.TrySetException(RpcExceptions.StreamDeleted(_streamName));

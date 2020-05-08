@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
@@ -7,6 +8,7 @@ using EventStore.Core.Util;
 using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using Google.Protobuf;
 using Grpc.Core;
@@ -17,7 +19,6 @@ using StreamOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.St
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
-		
 		public override async Task Read(
 			ReadReq request,
 			IServerStreamWriter<ReadResp> responseStream,
@@ -59,6 +60,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						context.Deadline,
+						HandleFailure,
 						context.CancellationToken),
 					(StreamOptionOneofCase.Stream,
 					CountOptionOneofCase.Count,
@@ -72,6 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						context.Deadline,
+						HandleFailure,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Count,
@@ -158,6 +161,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}).ConfigureAwait(false);
 				}
 			}
+
+			Task HandleFailure(RpcException exception) =>
+				exception.StatusCode switch {
+					StatusCode.NotFound => responseStream.WriteAsync(new ReadResp {
+						StreamNotFound = new ReadResp.Types.StreamNotFound {
+							StreamName = exception.Trailers.First(x => x.Key == Constants.Exceptions.StreamName).Value
+						}
+					}),
+					_ => throw new InvalidOperationException(
+						$"Attempted to handle an unknown RPC Exception ({exception.StatusCode})")
+				};
 
 			Task FilteredReadCheckpointReached(Position checkpoint)
 				=> responseStream.WriteAsync(new ReadResp {
