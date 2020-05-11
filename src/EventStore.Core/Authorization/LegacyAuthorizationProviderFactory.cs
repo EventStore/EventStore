@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Services;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
 using Serilog;
 
@@ -40,17 +42,18 @@ namespace EventStore.Core.Authorization {
 			policy.AllowAnonymous(Operations.Node.Statistics.Tcp);
 			policy.AllowAnonymous(Operations.Node.Statistics.Custom);
 
-			policy.AllowAnonymous(Operations.Node.Elections.Prepare);
-			policy.AllowAnonymous(Operations.Node.Elections.PrepareOk);
-			policy.AllowAnonymous(Operations.Node.Elections.ViewChange);
-			policy.AllowAnonymous(Operations.Node.Elections.ViewChangeProof);
-			policy.AllowAnonymous(Operations.Node.Elections.Proposal);
-			policy.AllowAnonymous(Operations.Node.Elections.Accept);
-			policy.AllowAnonymous(Operations.Node.Elections.LeaderIsResigning);
-			policy.AllowAnonymous(Operations.Node.Elections.LeaderIsResigningOk);
+			var isSystem = new MultipleClaimMatchAssertion(Grant.Allow, MultipleMatchMode.All, SystemAccounts.System.Claims.ToArray());
+			policy.Add(Operations.Node.Elections.Prepare, isSystem);
+			policy.Add(Operations.Node.Elections.PrepareOk, isSystem);
+			policy.Add(Operations.Node.Elections.ViewChange, isSystem);
+			policy.Add(Operations.Node.Elections.ViewChangeProof, isSystem);
+			policy.Add(Operations.Node.Elections.Proposal, isSystem);
+			policy.Add(Operations.Node.Elections.Accept, isSystem);
+			policy.Add(Operations.Node.Elections.LeaderIsResigning, isSystem);
+			policy.Add(Operations.Node.Elections.LeaderIsResigningOk, isSystem);
 
 			policy.AllowAnonymous(Operations.Node.Gossip.Read);
-			policy.AllowAnonymous(Operations.Node.Gossip.Update);
+			policy.Add(Operations.Node.Gossip.Update, isSystem);
 
 			policy.AddMatchAnyAssertion(Operations.Node.Shutdown, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.MergeIndexes, Grant.Allow, OperationsOrAdmins);

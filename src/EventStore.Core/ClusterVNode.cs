@@ -120,6 +120,7 @@ namespace EventStore.Core {
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalServerCertificateValidator;
+		private readonly Func<X509Chain, ValueTuple<bool, string>> _nodeClientCertificateValidator;
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
@@ -167,6 +168,7 @@ namespace EventStore.Core {
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
 			_externalClientCertificateValidator = delegate { return (true, null); };
 			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
+			_nodeClientCertificateValidator = (certChain) => ValidateNodeClientCertificateWithTrustedRootCerts(certChain, _vNodeSettings.TrustedRootCerts);
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -451,6 +453,7 @@ namespace EventStore.Core {
 			});
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
+				new ClientCertificateAuthenticationProvider(_nodeClientCertificateValidator, _vNodeSettings.TrustedRootCerts),
 				new BasicHttpAuthenticationProvider(_authenticationProvider),
 			};
 			if (vNodeSettings.EnableTrustedAuth)
@@ -830,7 +833,6 @@ namespace EventStore.Core {
 			return await tcs.Task.ConfigureAwait(false);
 		}
 
-
 		public static ValueTuple<bool, string> ValidateServerCertificateWithTrustedRootCerts(X509Certificate certificate,
 			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
 			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCerts,"server");
@@ -875,24 +877,29 @@ namespace EventStore.Core {
 
 			//client certificates need to be strictly validated against the set of trusted root certificates
 			//but this is not required for server certificates since the client is already validating the CN/SAN against the IP address/hostname it's connecting to
-			if (certificateOrigin == "client") {
-				var chainRoot = newChain.ChainElements[^1].Certificate;
-				var chainRootIsTrusted = false;
-				if (trustedRootCerts != null) {
-					foreach (var rootCert in trustedRootCerts) {
-						if (chainRoot.RawData.SequenceEqual(rootCert.RawData)) {
-							chainRootIsTrusted = true;
-							break;
-						}
+			if (certificateOrigin == "client")
+				return ValidateNodeClientCertificateWithTrustedRootCerts(newChain, trustedRootCerts);
+			return (true, null);
+		}
+		
+		public static ValueTuple<bool, string> ValidateNodeClientCertificateWithTrustedRootCerts(
+			X509Chain certificateChain, X509Certificate2Collection trustedCerts) {
+			var chainRoot = certificateChain.ChainElements[^1].Certificate;
+			var chainRootIsTrusted = false;
+			if (trustedCerts != null) {
+				foreach (var rootCert in trustedCerts) {
+					if (chainRoot.RawData.SequenceEqual(rootCert.RawData)) {
+						chainRootIsTrusted = true;
+						break;
 					}
-				}
-
-				if (!chainRootIsTrusted) {
-					return (false,
-						$"The certificate provided by the {certificateOrigin} does not have a root certificate present in the list of trusted root certificates");
 				}
 			}
 
+			if (!chainRootIsTrusted) {
+				return (false,
+					$"The certificate provided by the client does not have a root certificate present in the list of trusted root certificates");
+			}
+			
 			return (true, null);
 		}
 
