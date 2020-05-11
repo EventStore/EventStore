@@ -233,7 +233,7 @@ namespace EventStore.Core.Util {
 		/*
 		 *  SINGLE NODE OPTIONS
 		 */
-		public const string IpDescr = "The IP address to bind to.";
+		public const string HostDescr = "The Host to bind to.";
 		public static readonly IPAddress IpDefault = IPAddress.Loopback;
 
 		public const string TcpPortDescr = "The port to run the TCP server on.";

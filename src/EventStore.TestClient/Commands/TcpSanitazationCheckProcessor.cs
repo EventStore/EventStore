@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Threading;
 using EventStore.Core.Services.Transport.Tcp;
 using System.Linq;
+using EventStore.Common.Utils;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 
@@ -104,13 +105,11 @@ namespace EventStore.TestClient.Commands {
 			return true;
 		}
 
-		private void SendRaw(IPEndPoint endPoint, byte[] package) {
-			using (var client = new TcpClient()) {
-				client.Connect(endPoint);
-				using (var stream = client.GetStream()) {
-					stream.Write(package, 0, package.Length);
-				}
-			}
+		private void SendRaw(EndPoint endPoint, byte[] package) {
+			using var client = new TcpClient();
+			client.Connect(endPoint.ResolveDnsToIPAddress());
+			using var stream = client.GetStream();
+			stream.Write(package, 0, package.Length);
 		}
 	}
 }
