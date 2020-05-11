@@ -10,19 +10,17 @@ namespace EventStore.Core.Data {
 		public readonly IPEndPoint InternalSecureTcp;
 		public readonly IPEndPoint ExternalTcp;
 		public readonly IPEndPoint ExternalSecureTcp;
-		public readonly EndPoint InternalHttp;
-		public readonly EndPoint ExternalHttp;
+		public readonly EndPoint HttpEndPoint;
 		public readonly bool IsReadOnlyReplica;
 
 		public VNodeInfo(Guid instanceId, int debugIndex,
 			IPEndPoint internalTcp, IPEndPoint internalSecureTcp,
 			IPEndPoint externalTcp, IPEndPoint externalSecureTcp,
-			EndPoint internalHttp, EndPoint externalHttp,
+			EndPoint httpEndPoint,
 			bool isReadOnlyReplica) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.Equal(false, internalTcp == null && internalSecureTcp == null, "Both internal TCP endpoints are null");
-			Ensure.NotNull(internalHttp, "internalHttp");
-			Ensure.NotNull(externalHttp, "externalHttp");
+			Ensure.NotNull(httpEndPoint, nameof(httpEndPoint));
 
 			DebugIndex = debugIndex;
 			InstanceId = instanceId;
@@ -30,32 +28,29 @@ namespace EventStore.Core.Data {
 			InternalSecureTcp = internalSecureTcp;
 			ExternalTcp = externalTcp;
 			ExternalSecureTcp = externalSecureTcp;
-			InternalHttp = internalHttp;
-			ExternalHttp = externalHttp;
+			HttpEndPoint = httpEndPoint;
 			IsReadOnlyReplica = isReadOnlyReplica;
 		}
 
 		public bool Is(EndPoint endPoint) {
 			return endPoint != null
-			       && (InternalHttp.Equals(endPoint)
-			           || ExternalHttp.Equals(endPoint)
+			       && HttpEndPoint.Equals(endPoint)
 			           || (InternalTcp != null && InternalTcp.Equals(endPoint))
 			           || (InternalSecureTcp != null && InternalSecureTcp.Equals(endPoint))
 			           || (ExternalTcp != null && ExternalTcp.Equals(endPoint))
-			           || (ExternalSecureTcp != null && ExternalSecureTcp.Equals(endPoint)));
+			           || (ExternalSecureTcp != null && ExternalSecureTcp.Equals(endPoint));
 		}
 
 		public override string ToString() {
 			return string.Format("InstanceId: {0:B}, InternalTcp: {1}, InternalSecureTcp: {2}, " +
-			                     "ExternalTcp: {3}, ExternalSecureTcp: {4}, InternalHttp: {5}, ExternalHttp: {6}," +
-								 "IsReadOnlyReplica: {7}",
+			                     "ExternalTcp: {3}, ExternalSecureTcp: {4}, HttpEndPoint: {5}," +
+								 "IsReadOnlyReplica: {6}",
 				InstanceId,
 				InternalTcp,
 				InternalSecureTcp,
 				ExternalTcp,
 				ExternalSecureTcp,
-				InternalHttp,
-				ExternalHttp,
+				HttpEndPoint,
 				IsReadOnlyReplica);
 		}
 	}

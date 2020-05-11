@@ -28,11 +28,8 @@ namespace EventStore.ClientAPI.Messages {
 			public int ExternalTcpPort { get; set; }
 			public int ExternalSecureTcpPort { get; set; }
 
-			public string InternalHttpIp { get; set; }
-			public int InternalHttpPort { get; set; }
-
-			public string ExternalHttpIp { get; set; }
-			public int ExternalHttpPort { get; set; }
+			public string HttpAddress { get; set; }
+			public int HttpPort { get; set; }
 
 			public long LastCommitPosition { get; set; }
 			public long WriterCheckpoint { get; set; }
@@ -46,19 +43,18 @@ namespace EventStore.ClientAPI.Messages {
 
 			public override string ToString() {
 				if (State == VNodeState.Manager)
-					return string.Format("MAN {0:B} <{1}> [{2}, {3}:{4}, {5}:{6}] | {7:yyyy-MM-dd HH:mm:ss.fff}",
+					return string.Format("MAN {0:B} <{1}> [{2}, {3}:{4}] | {5:yyyy-MM-dd HH:mm:ss.fff}",
 						InstanceId, IsAlive ? "LIVE" : "DEAD", State,
-						InternalHttpIp, InternalHttpPort,
-						ExternalHttpIp, ExternalHttpPort,
+						HttpAddress, HttpPort,
 						TimeStamp);
 				return string.Format(
-					"VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}, {11}:{12}] {13}/{14}/{15}/E{16}@{17}:{18:B} | {19:yyyy-MM-dd HH:mm:ss.fff}",
+					"VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}] {11}/{12}/{13}/E{14}@{15}:{16:B} | {17:yyyy-MM-dd HH:mm:ss.fff}",
 					InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 					InternalTcpIp, InternalTcpPort,
 					InternalSecureTcpPort > 0 ? string.Format("{0}:{1}", InternalTcpIp, InternalSecureTcpPort) : "n/a",
 					ExternalTcpIp, ExternalTcpPort,
 					ExternalSecureTcpPort > 0 ? string.Format("{0}:{1}", ExternalTcpIp, ExternalSecureTcpPort) : "n/a",
-					InternalHttpIp, InternalHttpPort, ExternalHttpIp, ExternalHttpPort,
+					HttpAddress, HttpPort,
 					LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 					EpochNumber, EpochPosition, EpochId,
 					TimeStamp);

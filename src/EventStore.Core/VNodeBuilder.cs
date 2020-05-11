@@ -48,8 +48,7 @@ namespace EventStore.Core {
 		protected IPEndPoint _internalSecureTcp;
 		protected IPEndPoint _externalTcp;
 		protected IPEndPoint _externalSecureTcp;
-		protected IPEndPoint _internalHttp;
-		protected IPEndPoint _externalHttp;
+		protected IPEndPoint _httpEndPoint;
 
 		protected bool _enableTrustedAuth;
 		protected X509Certificate2 _certificate;
@@ -127,8 +126,7 @@ namespace EventStore.Core {
 		protected TFChunkDbConfig _dbConfig;
 		private string _advertiseInternalHostAs;
 		private string _advertiseExternalHostAs;
-		private int _advertiseInternalHttpPortAs;
-		private int _advertiseExternalHttpPortAs;
+		private int _advertiseHttpPortAs;
 		private int _advertiseInternalSecureTcpPortAs;
 		private int _advertiseExternalSecureTcpPortAs;
 		private int _advertiseInternalTcpPortAs;
@@ -167,8 +165,7 @@ namespace EventStore.Core {
 			_externalSecureTcp = null;
 			_internalTcp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalTcpPortDefault);
 			_internalSecureTcp = null;
-			_externalHttp = new IPEndPoint(Opts.ExternalIpDefault, Opts.ExternalHttpPortDefault);
-			_internalHttp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalHttpPortDefault);
+			_httpEndPoint = new IPEndPoint(Opts.ExternalIpDefault, Opts.HttpPortDefault);
 
 			_enableTrustedAuth = Opts.EnableTrustedAuthDefault;
 			_readerThreadsCount = Opts.ReaderThreadsCountDefault;
@@ -358,9 +355,8 @@ namespace EventStore.Core {
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder OnDefaultEndpoints() {
-			_internalHttp = new IPEndPoint(Opts.InternalIpDefault, 2112);
 			_internalTcp = new IPEndPoint(Opts.InternalIpDefault, 1112);
-			_externalHttp = new IPEndPoint(Opts.ExternalIpDefault, 2113);
+			_httpEndPoint = new IPEndPoint(Opts.ExternalIpDefault, 2113);
 			_externalTcp = new IPEndPoint(Opts.InternalIpDefault, 1113);
 			return this;
 		}
@@ -384,16 +380,6 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets up the Internal Http Port that would be advertised
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AdvertiseInternalHttpPortAs(int intHttpPortAdvertiseAs) {
-			_advertiseInternalHttpPortAs = intHttpPortAdvertiseAs;
-			return this;
-		}
-
-
-		/// <summary>
 		/// Sets the number of reader threads to process read requests.
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -404,11 +390,11 @@ namespace EventStore.Core {
 
 
 		/// <summary>
-		/// Sets up the External Http Port that would be advertised
+		/// Sets up the Http Port that would be advertised
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder AdvertiseExternalHttpPortAs(int extHttpPortAdvertiseAs) {
-			_advertiseExternalHttpPortAs = extHttpPortAdvertiseAs;
+		public VNodeBuilder AdvertiseHttpPortAs(int httpPortAdvertiseAs) {
+			_advertiseHttpPortAs = httpPortAdvertiseAs;
 			return this;
 		}
 
@@ -460,7 +446,7 @@ namespace EventStore.Core {
 
 
 		/// <summary>
-		/// Sets the internal gossip port (used when using cluster dns, this should point to a known port gossip will be running on)
+		/// Sets the gossip port (used when using cluster dns, this should point to a known port gossip will be running on)
 		/// </summary>
 		/// <param name="port">The cluster gossip to use</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -470,22 +456,12 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the internal http endpoint to the specified value
+		/// Sets the http endpoint to the specified value
 		/// </summary>
-		/// <param name="endpoint">The internal endpoint to use</param>
+		/// <param name="endpoint">The endpoint to use</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithInternalHttpOn(IPEndPoint endpoint) {
-			_internalHttp = endpoint;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets the external http endpoint to the specified value
-		/// </summary>
-		/// <param name="endpoint">The external endpoint to use</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithExternalHttpOn(IPEndPoint endpoint) {
-			_externalHttp = endpoint;
+		public VNodeBuilder WithHttpOn(IPEndPoint endpoint) {
+			_httpEndPoint = endpoint;
 			return this;
 		}
 
@@ -1322,8 +1298,8 @@ namespace EventStore.Core {
 			if (_gossipAdvertiseInfo == null) {
 				Ensure.Equal(false, _internalTcp == null && _internalSecureTcp == null, "Both internal TCP endpoints are null");
 
-				IPAddress intIpAddress = _internalHttp.Address; //this value is just opts.IntIP
-				IPAddress extIpAddress = _externalHttp.Address; //this value is just opts.ExtIP
+				IPAddress intIpAddress = (_internalSecureTcp ?? _internalTcp)?.Address; //this value is just opts.IntIP
+				IPAddress extIpAddress = _httpEndPoint.Address; //this value is just opts.ExtIP
 
 				string intHostToAdvertise = _advertiseInternalHostAs ?? intIpAddress.ToString();
 				string extHostToAdvertise = _advertiseExternalHostAs ?? extIpAddress.ToString();
@@ -1365,17 +1341,13 @@ namespace EventStore.Core {
 					extSecureTcpEndPoint = new DnsEndPoint(extHostToAdvertise, extSecureTcpPort);
 				}
 
-				var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
-				var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port;
+				var httpPort = _advertiseHttpPortAs > 0 ? _advertiseHttpPortAs : _httpEndPoint.Port;
 
-				var intHttpEndPoint = new DnsEndPoint(intHostToAdvertise, intHttpPort);
-				var extHttpEndPoint = new DnsEndPoint(extHostToAdvertise, extHttpPort);
+				var httpEndPoint = new DnsEndPoint(extHostToAdvertise, httpPort);
 
 				_gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
-					extTcpEndPoint, extSecureTcpEndPoint,
-					intHttpEndPoint, extHttpEndPoint,
-					_advertiseInternalHostAs, _advertiseExternalHostAs,
-					_advertiseInternalHttpPortAs, _advertiseExternalHttpPortAs);
+					extTcpEndPoint, extSecureTcpEndPoint, httpEndPoint,
+					_advertiseInternalHostAs, _advertiseExternalHostAs, _advertiseHttpPortAs);
 			}
 
 			return _gossipAdvertiseInfo;
@@ -1426,8 +1398,7 @@ namespace EventStore.Core {
 				_internalSecureTcp,
 				_externalTcp,
 				_externalSecureTcp,
-				_internalHttp,
-				_externalHttp,
+				_httpEndPoint,
 				_gossipAdvertiseInfo,
 				_enableTrustedAuth,
 				_certificate,

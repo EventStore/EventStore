@@ -437,13 +437,13 @@ namespace EventStore.Core.Services.Transport.Http {
 					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
 					if (leaderInfo == null)
 						return InternalServerError("No leader info available in response");
-					return TemporaryRedirect(requestedUri, leaderInfo.ExternalHttpAddress, leaderInfo.ExternalHttpPort);
+					return TemporaryRedirect(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
 				}
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly: {
 					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
 					if (leaderInfo == null)
 						return InternalServerError("No leader info available in response");
-					return DenyRequestBecauseReadOnly(requestedUri, leaderInfo.ExternalHttpAddress, leaderInfo.ExternalHttpPort);
+					return DenyRequestBecauseReadOnly(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
 				}
 				default:
 					return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));

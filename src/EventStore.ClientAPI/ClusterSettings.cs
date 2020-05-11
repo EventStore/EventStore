@@ -25,9 +25,9 @@ namespace EventStore.ClientAPI {
 		public readonly int MaxDiscoverAttempts;
 
 		/// <summary>
-		/// The well-known endpoint on which cluster managers are running.
+		/// The well-known endpoint on which cluster nodes are running.
 		/// </summary>
-		public readonly int ExternalGossipPort;
+		public readonly int HttpPort;
 
 		/// <summary>
 		/// Endpoints for seeding gossip if not using DNS.
@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI {
 			NodePreference nodePreference) {
 			ClusterDns = "";
 			MaxDiscoverAttempts = maxDiscoverAttempts;
-			ExternalGossipPort = 0;
+			HttpPort = 0;
 			GossipTimeout = gossipTimeout;
 			GossipSeeds = gossipSeeds;
 			NodePreference = nodePreference;
@@ -66,21 +66,21 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		/// <param name="clusterDns">The DNS name to use for discovering endpoints</param>.
 		/// <param name="maxDiscoverAttempts">The maximum number of attempts for discovering endpoints</param>.
-		/// <param name="externalGossipPort">The well-known endpoint on which cluster managers are running</param>.
+		/// <param name="httpPort">The well-known endpoint on which cluster nodes are running</param>.
 		/// <param name="gossipTimeout">Timeout for cluster gossip</param>.
 		/// <param name="nodePreference">Whether to prefer follower, random, or leader node selection</param>.
-		internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int externalGossipPort,
+		internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int httpPort,
 			TimeSpan gossipTimeout, NodePreference nodePreference) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
 			if (maxDiscoverAttempts < -1)
 				throw new ArgumentOutOfRangeException("maxDiscoverAttempts",
 					string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [-1, infinity].",
 						maxDiscoverAttempts));
-			Ensure.Positive(externalGossipPort, "externalGossipPort");
+			Ensure.Positive(httpPort, nameof(httpPort));
 
 			ClusterDns = clusterDns;
 			MaxDiscoverAttempts = maxDiscoverAttempts;
-			ExternalGossipPort = externalGossipPort;
+			HttpPort = httpPort;
 			GossipTimeout = gossipTimeout;
 			GossipSeeds = new GossipSeed[0];
 			NodePreference = nodePreference;

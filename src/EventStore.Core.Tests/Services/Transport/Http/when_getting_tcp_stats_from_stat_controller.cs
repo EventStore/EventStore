@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		private HttpResponseMessage _response;
 
 		protected override async Task Given() {
-			_url = _node.ExtHttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/stats/tcp");
+			_url = _node.HttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/stats/tcp");
 
 			var settings = ConnectionSettings.Create();
 			_connection = EventStoreConnection.Create(settings, _node.TcpEndPoint, _clientConnectionName);
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				Encoding.ASCII.GetBytes("{'Test' : 'OneTwoThree'}"), null);
 			await _connection.AppendToStreamAsync("tests", ExpectedVersion.Any, testEvent);
 
-			_portableServer = new PortableServer(_node.ExtHttpEndPoint);
+			_portableServer = new PortableServer(_node.HttpEndPoint);
 			_portableServer.SetUp();
 		}
 

@@ -33,27 +33,25 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		protected class Endpoints {
 			public readonly IPEndPoint InternalTcp;
 			public readonly IPEndPoint InternalTcpSec;
-			public readonly IPEndPoint InternalHttp;
 			public readonly IPEndPoint ExternalTcp;
 			public readonly IPEndPoint ExternalTcpSec;
-			public readonly IPEndPoint ExternalHttp;
+			public readonly IPEndPoint HttpEndPoint;
 			private readonly int[] _ports;
 
 			public Endpoints(
-				int internalTcp, int internalTcpSec, int internalHttp, int externalTcp,
-				int externalTcpSec, int externalHttp) {
+				int internalTcp, int internalTcpSec, int externalTcp,
+				int externalTcpSec, int httpPort) {
 				var testIp = Environment.GetEnvironmentVariable("ES-TESTIP");
 
 				var address = string.IsNullOrEmpty(testIp) ? IPAddress.Loopback : IPAddress.Parse(testIp);
 				InternalTcp = new IPEndPoint(address, internalTcp);
 				InternalTcpSec = new IPEndPoint(address, internalTcpSec);
-				InternalHttp = new IPEndPoint(address, internalHttp);
 				ExternalTcp = new IPEndPoint(address, externalTcp);
 				ExternalTcpSec = new IPEndPoint(address, externalTcpSec);
-				ExternalHttp = new IPEndPoint(address, externalHttp);
+				HttpEndPoint = new IPEndPoint(address, httpPort);
 
 				_ports = new[]
-					{internalHttp, internalTcp, internalTcpSec, externalHttp, externalTcp, externalTcpSec};
+					{internalTcp, internalTcpSec, httpPort, externalTcp, externalTcpSec};
 			}
 
 			public IEnumerable<int> Ports => _ports;
@@ -68,22 +66,22 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 			_nodeEndpoints[0] = new Endpoints(
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
+				PortsHelper.GetAvailablePort(IPAddress.Loopback));
 			_nodeEndpoints[1] = new Endpoints(
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
+				PortsHelper.GetAvailablePort(IPAddress.Loopback));
 			_nodeEndpoints[2] = new Endpoints(
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
 				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback),
-				PortsHelper.GetAvailablePort(IPAddress.Loopback), PortsHelper.GetAvailablePort(IPAddress.Loopback));
+				PortsHelper.GetAvailablePort(IPAddress.Loopback));
 
 			_nodes[0] = CreateNode(0,
-				_nodeEndpoints[0], new[] { _nodeEndpoints[1].InternalHttp, _nodeEndpoints[2].InternalHttp });
+				_nodeEndpoints[0], new[] { _nodeEndpoints[0].HttpEndPoint });
 			_nodes[1] = CreateNode(1,
-				_nodeEndpoints[1], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[2].InternalHttp });
+				_nodeEndpoints[1], new[] { _nodeEndpoints[1].HttpEndPoint });
 			_nodes[2] = CreateNode(2,
-				_nodeEndpoints[2], new[] { _nodeEndpoints[0].InternalHttp, _nodeEndpoints[1].InternalHttp });
+				_nodeEndpoints[2], new[] { _nodeEndpoints[2].HttpEndPoint });
 			WaitIdle();
 
 			var projectionsStarted = _projections.Select(p => SystemProjections.Created(p.LeaderMainBus)).ToArray();
@@ -100,7 +98,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 			_manager = new ProjectionsManager(
 				new ConsoleLogger(),
-				_nodes.Single(x => x.NodeState == VNodeState.Leader).ExternalHttpEndPoint,
+				_nodes.Single(x => x.NodeState == VNodeState.Leader).HttpEndPoint,
 				TimeSpan.FromMilliseconds(10000));
 
 			if (GivenStandardProjectionsRunning()) {
@@ -130,9 +128,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
 			var node = new MiniClusterNode(
-				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,
+				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec,
 				endpoints.ExternalTcp,
-				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
+				endpoints.ExternalTcpSec, endpoints.HttpEndPoint, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] { _projections[index] }, gossipSeeds: gossipSeeds);
 			return node;
 		}

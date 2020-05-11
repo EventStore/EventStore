@@ -20,7 +20,7 @@ namespace EventStore.ClientAPI.Messages {
 				}
 
 				public EndPoint ExternalHttpEndPoint {
-					get { return new DnsEndPoint(ExternalHttpAddress, ExternalHttpPort); }
+					get { return new DnsEndPoint(HttpAddress, HttpPort); }
 				}
 			}
 		}

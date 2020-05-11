@@ -7,37 +7,33 @@ namespace EventStore.Core.Data {
 		public DnsEndPoint InternalSecureTcp { get; set; }
 		public DnsEndPoint ExternalTcp { get; set; }
 		public DnsEndPoint ExternalSecureTcp { get; set; }
-		public DnsEndPoint InternalHttp { get; set; }
-		public DnsEndPoint ExternalHttp { get; set; }
+		public DnsEndPoint HttpEndPoint { get; set; }
 		public string AdvertiseInternalHostAs { get; set; }
 		public string AdvertiseExternalHostAs { get; set; }
-		public int AdvertiseInternalHttpPortAs { get; set; }
-		public int AdvertiseExternalHttpPortAs { get; set; }
+		public int AdvertiseHttpPortAs { get; set; }
 
 		public GossipAdvertiseInfo(DnsEndPoint internalTcp, DnsEndPoint internalSecureTcp,
 			DnsEndPoint externalTcp, DnsEndPoint externalSecureTcp,
-			DnsEndPoint internalHttp, DnsEndPoint externalHttp,
+			DnsEndPoint httpEndPointEndPoint,
 			string advertiseInternalHostAs, string advertiseExternalHostAs,
-			int advertiseInternalHttpPortAs, int advertiseExternalHttpPortAs) {
+			int advertiseHttpPortAs) {
 			Ensure.Equal(false, internalTcp == null && internalSecureTcp == null, "Both internal TCP endpoints are null");
 
 			InternalTcp = internalTcp;
 			InternalSecureTcp = internalSecureTcp;
 			ExternalTcp = externalTcp;
 			ExternalSecureTcp = externalSecureTcp;
-			InternalHttp = internalHttp;
-			ExternalHttp = externalHttp;
+			HttpEndPoint = httpEndPointEndPoint;
 			AdvertiseInternalHostAs = advertiseInternalHostAs;
 			AdvertiseExternalHostAs = advertiseExternalHostAs;
-			AdvertiseInternalHttpPortAs = advertiseInternalHttpPortAs;
-			AdvertiseExternalHttpPortAs = advertiseExternalHttpPortAs;
+			AdvertiseHttpPortAs = advertiseHttpPortAs;
 		}
 
 		public override string ToString() {
 			return string.Format(
-				"IntTcp: {0}, IntSecureTcp: {1}\nExtTcp: {2}, ExtSecureTcp: {3}\nIntHttp: {4}, ExtHttp: {5}, IntAdvertiseAs: {6}:{7}, ExtAdvertiseAs: {8}:{9}",
-				InternalTcp, InternalSecureTcp, ExternalTcp, ExternalSecureTcp, InternalHttp, ExternalHttp,
-				AdvertiseInternalHostAs, AdvertiseInternalHttpPortAs, AdvertiseExternalHostAs, AdvertiseExternalHttpPortAs);
+				$"IntTcp: {InternalTcp}, IntSecureTcp: {InternalSecureTcp}\n" +
+				$"ExtTcp: {ExternalTcp}, ExtSecureTcp: {ExternalSecureTcp}\n" +
+				$"Http: {HttpEndPoint}, HttpAdvertiseAs: {AdvertiseExternalHostAs}:{AdvertiseHttpPortAs}");
 		}
 	}
 }

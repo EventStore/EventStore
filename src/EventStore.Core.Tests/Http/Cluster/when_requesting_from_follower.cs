@@ -20,12 +20,12 @@ namespace EventStore.Core.Tests.Http.Cluster {
 
 		protected override async Task Given() {
 			var leader = GetLeader();
-			_leaderEndPoint = leader.ExternalHttpEndPoint;
+			_leaderEndPoint = leader.HttpEndPoint;
 			
 			// Wait for the admin user to be created
 			await leader.AdminUserCreated;
 			var replica = GetFollowers().First();
-			_followerEndPoint = replica.ExternalHttpEndPoint;
+			_followerEndPoint = replica.HttpEndPoint;
 			_client = replica.CreateHttpClient();
 
 			// Wait for the admin user created event to be replicated before starting our tests

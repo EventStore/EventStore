@@ -1344,11 +1344,11 @@ namespace EventStore.Core.Messages
     [ProtoMember(2, IsRequired = true, Name=@"external_tcp_port", DataFormat = DataFormat.TwosComplement)]
     public readonly int? ExternalTcpPort;
   
-    [ProtoMember(3, IsRequired = true, Name=@"external_http_address", DataFormat = DataFormat.Default)]
-    public readonly string ExternalHttpAddress;
+    [ProtoMember(3, IsRequired = true, Name=@"http_address", DataFormat = DataFormat.Default)]
+    public readonly string HttpAddress;
   
-    [ProtoMember(4, IsRequired = true, Name=@"external_http_port", DataFormat = DataFormat.TwosComplement)]
-    public readonly int ExternalHttpPort;
+    [ProtoMember(4, IsRequired = true, Name=@"http_port", DataFormat = DataFormat.TwosComplement)]
+    public readonly int HttpPort;
   
     [ProtoMember(5, IsRequired = false, Name=@"external_secure_tcp_address", DataFormat = DataFormat.Default)]
     public readonly string ExternalSecureTcpAddress;
@@ -1358,12 +1358,12 @@ namespace EventStore.Core.Messages
   
     private LeaderInfo() {}
   
-    public LeaderInfo(string externalTcpAddress, int externalTcpPort, string externalHttpAddress, int externalHttpPort, string externalSecureTcpAddress, int? externalSecureTcpPort)
+    public LeaderInfo(string externalTcpAddress, int externalTcpPort, string httpAddress, int httpPort, string externalSecureTcpAddress, int? externalSecureTcpPort)
     {
         ExternalTcpAddress = externalTcpAddress;
         ExternalTcpPort = externalTcpPort;
-        ExternalHttpAddress = externalHttpAddress;
-        ExternalHttpPort = externalHttpPort;
+        HttpAddress = httpAddress;
+        HttpPort = httpPort;
         ExternalSecureTcpAddress = externalSecureTcpAddress;
         ExternalSecureTcpPort = externalSecureTcpPort;
     }

@@ -113,8 +113,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly:
 					switch (notHandled.AdditionalInfo) {
 						case TcpClientMessageDto.NotHandled.LeaderInfo leaderInfo:
-							exception = LeaderInfo(new IPEndPoint(IPAddress.Parse(leaderInfo.ExternalHttpAddress),
-									leaderInfo.ExternalHttpPort));
+							exception = LeaderInfo(new IPEndPoint(IPAddress.Parse(leaderInfo.HttpAddress),
+									leaderInfo.HttpPort));
 							return true;
 						default:
 							exception = NoLeaderInfo();

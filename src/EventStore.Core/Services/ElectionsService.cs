@@ -115,7 +115,7 @@ namespace EventStore.Core.Services {
 					true,
 					memberInfo.InternalTcpEndPoint, memberInfo.InternalSecureTcpEndPoint,
 					memberInfo.ExternalTcpEndPoint, memberInfo.ExternalSecureTcpEndPoint,
-					memberInfo.InternalHttpEndPoint, memberInfo.ExternalHttpEndPoint,
+					memberInfo.HttpEndPoint,
 					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
 					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority,
 					memberInfo.IsReadOnlyReplica)
@@ -159,44 +159,44 @@ namespace EventStore.Core.Services {
 				_resigningLeaderInstanceId = _leader;
 				var leaderIsResigningMessageOk = new ElectionMessage.LeaderIsResigningOk(
 					_memberInfo.InstanceId,
-					_memberInfo.InternalHttpEndPoint,
+					_memberInfo.HttpEndPoint,
 					_memberInfo.InstanceId,
-					_memberInfo.InternalHttpEndPoint);
+					_memberInfo.HttpEndPoint);
 				_leaderIsResigningOkReceived.Clear();
 				Handle(leaderIsResigningMessageOk);
 				SendToAllExceptMe(new ElectionMessage.LeaderIsResigning(
-					_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint));
+					_memberInfo.InstanceId, _memberInfo.HttpEndPoint));
 			} else {
 				Log.Information("ELECTIONS: ONLY LEADER RESIGNATION IS SUPPORTED AT THE MOMENT. IGNORING RESIGNATION.");
 			}
 		}
 
 		public void Handle(ElectionMessage.LeaderIsResigning message) {
-			Log.Information("ELECTIONS: LEADER IS RESIGNING [{leaderInternalHttpEndPoint}, {leaderId:B}].",
-				message.LeaderInternalHttp, message.LeaderId);
+			Log.Information("ELECTIONS: LEADER IS RESIGNING [{leaderHttpEndPoint}, {leaderId:B}].",
+				message.LeaderHttpEndPoint, message.LeaderId);
 			var leaderIsResigningMessageOk = new ElectionMessage.LeaderIsResigningOk(
 				message.LeaderId,
-				message.LeaderInternalHttp,
+				message.LeaderHttpEndPoint,
 				_memberInfo.InstanceId,
-				_memberInfo.InternalHttpEndPoint);
+				_memberInfo.HttpEndPoint);
 
 			_resigningLeaderInstanceId = message.LeaderId;
-			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.LeaderInternalHttp, leaderIsResigningMessageOk,
+			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.LeaderHttpEndPoint, leaderIsResigningMessageOk,
 				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
 		public void Handle(ElectionMessage.LeaderIsResigningOk message) {
 			Log.Information(
-				"ELECTIONS: LEADER IS RESIGNING OK FROM [{serverInternalHttpEndPoint},{serverId:B}] M=[{leaderInternalHttpEndPoint},{leaderId:B}]).",
-				message.ServerInternalHttp,
+				"ELECTIONS: LEADER IS RESIGNING OK FROM [{serverHttpEndPoint},{serverId:B}] M=[{leaderHttpEndPoint},{leaderId:B}]).",
+				message.ServerHttpEndPoint,
 				message.ServerId,
-				message.LeaderInternalHttp,
+				message.LeaderHttpEndPoint,
 				message.LeaderId);
 			if (_leaderIsResigningOkReceived.Add(message.ServerId) &&
 					_leaderIsResigningOkReceived.Count == _clusterSize / 2 + 1) {
 				Log.Information(
-					"ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF LEADER [{leaderInternalHttpEndPoint},{leaderId:B}]. NOW INITIATING LEADER RESIGNATION.",
-					message.LeaderInternalHttp, message.LeaderId);
+					"ELECTIONS: MAJORITY OF ACCEPTANCE OF RESIGNATION OF LEADER [{leaderHttpEndPoint},{leaderId:B}]. NOW INITIATING LEADER RESIGNATION.",
+					message.LeaderHttpEndPoint, message.LeaderId);
 				_publisher.Publish(new SystemMessage.InitiateLeaderResignation());
 			}
 		}
@@ -208,7 +208,7 @@ namespace EventStore.Core.Services {
 		public void Handle(GossipMessage.GossipUpdated message) {
 			_servers = message.ClusterInfo.Members.Where(x => x.State != VNodeState.Manager)
 				.Where(x => x.IsAlive)
-				.OrderByDescending(x => x.InternalHttpEndPoint, IPComparer)
+				.OrderByDescending(x => x.HttpEndPoint, IPComparer)
 				.ToArray();
 		}
 
@@ -242,7 +242,7 @@ namespace EventStore.Core.Services {
 			_leader = null;
 			_acceptsReceived.Clear();
 
-			var viewChangeMsg = new ElectionMessage.ViewChange(_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint, view);
+			var viewChangeMsg = new ElectionMessage.ViewChange(_memberInfo.InstanceId, _memberInfo.HttpEndPoint, view);
 			Handle(viewChangeMsg);
 			SendToAllExceptMe(viewChangeMsg);
 			_publisher.Publish(TimerMessage.Schedule.Create(LeaderElectionProgressTimeout,
@@ -252,7 +252,7 @@ namespace EventStore.Core.Services {
 
 		private void SendToAllExceptMe(Message message) {
 			foreach (var server in _servers.Where(x => x.InstanceId != _memberInfo.InstanceId)) {
-				_publisher.Publish(new GrpcMessage.SendOverGrpc(server.InternalHttpEndPoint, message,
+				_publisher.Publish(new GrpcMessage.SendOverGrpc(server.HttpEndPoint, message,
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 			}
 		}
@@ -263,8 +263,8 @@ namespace EventStore.Core.Services {
 
 			if (message.AttemptedView <= _lastInstalledView) return;
 
-			Log.Information("ELECTIONS: (V={view}) VIEWCHANGE FROM [{serverInternalHttpEndPoint}, {serverId:B}].",
-				message.AttemptedView, message.ServerInternalHttp, message.ServerId);
+			Log.Information("ELECTIONS: (V={view}) VIEWCHANGE FROM [{serverHttpEndPoint}, {serverId:B}].",
+				message.AttemptedView, message.ServerHttpEndPoint, message.ServerId);
 
 			if (message.AttemptedView > _lastAttemptedView)
 				ShiftToLeaderElection(message.AttemptedView);
@@ -280,7 +280,7 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.Shutdown) return;
 
 			if (_lastInstalledView >= 0)
-				SendToAllExceptMe(new ElectionMessage.ViewChangeProof(_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint,
+				SendToAllExceptMe(new ElectionMessage.ViewChangeProof(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
 					_lastInstalledView));
 
 			_publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
@@ -301,14 +301,14 @@ namespace EventStore.Core.Services {
 
 			if (AmILeaderOf(_lastAttemptedView)) {
 				Log.Information(
-					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverInternalHttpEndPoint}, {serverId:B}]. JUMPING TO LEADER STATE.",
-					message.InstalledView, message.ServerInternalHttp, message.ServerId);
+					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverHttpEndPoint}, {serverId:B}]. JUMPING TO LEADER STATE.",
+					message.InstalledView, message.ServerHttpEndPoint, message.ServerId);
 
 				ShiftToPreparePhase();
 			} else {
 				Log.Information(
-					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverInternalHttpEndPoint}, {serverId:B}]. JUMPING TO NON-LEADER STATE.",
-					message.InstalledView, message.ServerInternalHttp, message.ServerId);
+					"ELECTIONS: (IV={installedView}) VIEWCHANGEPROOF FROM [{serverHttpEndPoint}, {serverId:B}]. JUMPING TO NON-LEADER STATE.",
+					message.InstalledView, message.ServerHttpEndPoint, message.ServerId);
 
 				ShiftToAcceptor();
 			}
@@ -328,7 +328,7 @@ namespace EventStore.Core.Services {
 			_prepareOkReceived.Clear();
 
 			Handle(CreatePrepareOk(_lastInstalledView));
-			SendToAllExceptMe(new ElectionMessage.Prepare(_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint,
+			SendToAllExceptMe(new ElectionMessage.Prepare(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
 				_lastInstalledView));
 		}
 
@@ -338,20 +338,20 @@ namespace EventStore.Core.Services {
 			if (message.View != _lastAttemptedView) return;
 			if (_servers.All(x => x.InstanceId != message.ServerId)) return; // unknown instance
 
-			Log.Information("ELECTIONS: (V={lastAttemptedView}) PREPARE FROM [{serverInternalHttpEndPoint}, {serverId:B}].",
-				_lastAttemptedView, message.ServerInternalHttp, message.ServerId);
+			Log.Information("ELECTIONS: (V={lastAttemptedView}) PREPARE FROM [{serverHttpEndPoint}, {serverId:B}].",
+				_lastAttemptedView, message.ServerHttpEndPoint, message.ServerId);
 
 			if (_state == ElectionsState.ElectingLeader) // install the view
 				ShiftToAcceptor();
 
 			var prepareOk = CreatePrepareOk(message.View);
-			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.ServerInternalHttp, prepareOk,
+			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.ServerHttpEndPoint, prepareOk,
 				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {
 			var ownInfo = GetOwnInfo();
-			return new ElectionMessage.PrepareOk(view, ownInfo.InstanceId, ownInfo.InternalHttpEndPoint,
+			return new ElectionMessage.PrepareOk(view, ownInfo.InstanceId, ownInfo.HttpEndPoint,
 				ownInfo.EpochNumber, ownInfo.EpochPosition, ownInfo.EpochId,
 				ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
 				ownInfo.NodePriority);
@@ -370,7 +370,7 @@ namespace EventStore.Core.Services {
 			if (msg.View != _lastAttemptedView) return;
 
 			Log.Information("ELECTIONS: (V={view}) PREPARE_OK FROM {nodeInfo}.", msg.View,
-				FormatNodeInfo(msg.ServerInternalHttp, msg.ServerId,
+				FormatNodeInfo(msg.ServerHttpEndPoint, msg.ServerId,
 					msg.LastCommitPosition, msg.WriterCheckpoint, msg.ChaserCheckpoint,
 					msg.EpochNumber, msg.EpochPosition, msg.EpochId, msg.NodePriority));
 
@@ -405,13 +405,13 @@ namespace EventStore.Core.Services {
 			Log.Information("ELECTIONS: (V={lastAttemptedView}) SENDING PROPOSAL CANDIDATE: {formatNodeInfo}, ME: {ownInfo}.",
 				_lastAttemptedView, FormatNodeInfo(leader), FormatNodeInfo(GetOwnInfo()));
 
-			var proposal = new ElectionMessage.Proposal(_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint,
-				leader.InstanceId, leader.InternalHttpEndPoint,
+			var proposal = new ElectionMessage.Proposal(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
+				leader.InstanceId, leader.HttpEndPoint,
 				_lastInstalledView,
 				leader.EpochNumber, leader.EpochPosition, leader.EpochId,
 				leader.LastCommitPosition, leader.WriterCheckpoint, leader.ChaserCheckpoint, leader.NodePriority);
-			Handle(new ElectionMessage.Accept(_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint,
-				leader.InstanceId, leader.InternalHttpEndPoint, _lastInstalledView));
+			Handle(new ElectionMessage.Accept(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
+				leader.InstanceId, leader.HttpEndPoint, _lastInstalledView));
 			SendToAllExceptMe(proposal);
 		}
 
@@ -419,7 +419,7 @@ namespace EventStore.Core.Services {
 			MemberInfo[] servers, Guid? lastElectedLeader, Guid? resigningLeaderInstanceId) {
 			if (lastElectedLeader.HasValue && lastElectedLeader.Value != resigningLeaderInstanceId) {
 				if (received.TryGetValue(lastElectedLeader.Value, out var leaderMsg)) {
-					return new LeaderCandidate(leaderMsg.ServerId, leaderMsg.ServerInternalHttp,
+					return new LeaderCandidate(leaderMsg.ServerId, leaderMsg.ServerHttpEndPoint,
 						leaderMsg.EpochNumber, leaderMsg.EpochPosition, leaderMsg.EpochId,
 						leaderMsg.LastCommitPosition, leaderMsg.WriterCheckpoint, leaderMsg.ChaserCheckpoint,
 						leaderMsg.NodePriority);
@@ -428,7 +428,7 @@ namespace EventStore.Core.Services {
 				var leader = servers.FirstOrDefault(x =>
 					x.IsAlive && x.InstanceId == lastElectedLeader && x.State == VNodeState.Leader);
 				if (leader != null) {
-					return new LeaderCandidate(leader.InstanceId, leader.InternalHttpEndPoint,
+					return new LeaderCandidate(leader.InstanceId, leader.HttpEndPoint,
 						leader.EpochNumber, leader.EpochPosition, leader.EpochId,
 						leader.LastCommitPosition, leader.WriterCheckpoint, leader.ChaserCheckpoint,
 						leader.NodePriority);
@@ -445,7 +445,7 @@ namespace EventStore.Core.Services {
 				.FirstOrDefault();
 			if (best == null)
 				return null;
-			return new LeaderCandidate(best.ServerId, best.ServerInternalHttp,
+			return new LeaderCandidate(best.ServerId, best.ServerHttpEndPoint,
 				best.EpochNumber, best.EpochPosition, best.EpochId,
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
 		}
@@ -465,9 +465,9 @@ namespace EventStore.Core.Services {
 
 				Log.Information(
 					"ELECTIONS: (V={view}) NOT LEGITIMATE LEADER PROPOSAL FROM [{proposingServerEndPoint},{proposingServerId:B}] M={candidateInfo}. "
-					+ "PREVIOUS LEADER IS ALIVE: [{leaderInternalHttpEndPoint},{leaderId:B}].",
+					+ "PREVIOUS LEADER IS ALIVE: [{leaderHttpEndPoint},{leaderId:B}].",
 					view, proposingServerEndPoint, proposingServerId, FormatNodeInfo(candidate),
-					leader.InternalHttpEndPoint, leader.InstanceId);
+					leader.HttpEndPoint, leader.InstanceId);
 				return false;
 			}
 
@@ -505,20 +505,20 @@ namespace EventStore.Core.Services {
 			if (_servers.All(x => x.InstanceId != message.ServerId)) return;
 			if (_servers.All(x => x.InstanceId != message.LeaderId)) return;
 
-			var candidate = new LeaderCandidate(message.LeaderId, message.LeaderInternalHttp,
+			var candidate = new LeaderCandidate(message.LeaderId, message.LeaderHttpEndPoint,
 				message.EpochNumber, message.EpochPosition, message.EpochId,
 				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.NodePriority);
 
 			var ownInfo = GetOwnInfo();
-			if (!IsLegitimateLeader(message.View, message.ServerInternalHttp, message.ServerId,
+			if (!IsLegitimateLeader(message.View, message.ServerHttpEndPoint, message.ServerId,
 				candidate, _servers, _lastElectedLeader, _memberInfo.InstanceId, ownInfo,
 				_resigningLeaderInstanceId))
 				return;
 
 			Log.Information(
-				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverInternalHttpEndPoint},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
+				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverHttpEndPoint},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
 				_lastAttemptedView,
-				message.ServerInternalHttp, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()),
+				message.ServerHttpEndPoint, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()),
 				message.NodePriority);
 
 			if (_leaderProposal == null) {
@@ -528,10 +528,10 @@ namespace EventStore.Core.Services {
 
 			if (_leaderProposal.InstanceId == message.LeaderId) {
 				// NOTE: proposal from other server is also implicit Accept from that server
-				Handle(new ElectionMessage.Accept(message.ServerId, message.ServerInternalHttp,
-					message.LeaderId, message.LeaderInternalHttp, message.View));
-				var accept = new ElectionMessage.Accept(_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint,
-					message.LeaderId, message.LeaderInternalHttp, message.View);
+				Handle(new ElectionMessage.Accept(message.ServerId, message.ServerHttpEndPoint,
+					message.LeaderId, message.LeaderHttpEndPoint, message.View));
+				var accept = new ElectionMessage.Accept(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
+					message.LeaderId, message.LeaderHttpEndPoint, message.View);
 				Handle(accept); // implicitly sent accept to ourselves
 				SendToAllExceptMe(accept);
 			}
@@ -544,9 +544,9 @@ namespace EventStore.Core.Services {
 			if (_leaderProposal.InstanceId != message.LeaderId) return;
 
 			Log.Information(
-				"ELECTIONS: (V={view}) ACCEPT FROM [{serverInternalHttpEndPoint},{serverId:B}] M=[{leaderInternalHttpEndPoint},{leaderId:B}]).",
+				"ELECTIONS: (V={view}) ACCEPT FROM [{serverHttpEndPoint},{serverId:B}] M=[{leaderHttpEndPoint},{leaderId:B}]).",
 				message.View,
-				message.ServerInternalHttp, message.ServerId, message.LeaderInternalHttp, message.LeaderId);
+				message.ServerHttpEndPoint, message.ServerId, message.LeaderHttpEndPoint, message.LeaderId);
 
 			if (_acceptsReceived.Add(message.ServerId) && _acceptsReceived.Count == _clusterSize / 2 + 1) {
 				var leader = _servers.FirstOrDefault(x => x.InstanceId == _leaderProposal.InstanceId);
@@ -565,7 +565,7 @@ namespace EventStore.Core.Services {
 			if (_leader != null || _lastElectedLeader != null || _state != ElectionsState.Idle)
 				return;
 
-			Log.Information("ELECTIONS: Existing LEADER was discovered, updating information. M=[{leaderInternalHttpEndPoint},{leaderId:B}])", message.Leader.InternalHttpEndPoint, message.Leader.InstanceId);
+			Log.Information("ELECTIONS: Existing LEADER was discovered, updating information. M=[{leaderHttpEndPoint},{leaderId:B}])", message.Leader.HttpEndPoint, message.Leader.InstanceId);
 			_leader = message.Leader.InstanceId;
 			_lastElectedLeader = message.Leader.InstanceId;
 			_lastAttemptedView = 0;
@@ -578,7 +578,7 @@ namespace EventStore.Core.Services {
 			var writerCheckpoint = _writerCheckpoint.Read();
 			var chaserCheckpoint = _chaserCheckpoint.Read();
 			var lastCommitPosition = _getLastCommitPosition();
-			return new LeaderCandidate(_memberInfo.InstanceId, _memberInfo.InternalHttpEndPoint,
+			return new LeaderCandidate(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
 				lastEpoch == null ? -1 : lastEpoch.EpochNumber,
 				lastEpoch == null ? -1 : lastEpoch.EpochPosition,
 				lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,
@@ -586,7 +586,7 @@ namespace EventStore.Core.Services {
 		}
 		
 		private static string FormatNodeInfo(LeaderCandidate candidate) {
-			return FormatNodeInfo(candidate.InternalHttpEndPoint, candidate.InstanceId,
+			return FormatNodeInfo(candidate.HttpEndPoint, candidate.InstanceId,
 				candidate.LastCommitPosition, candidate.WriterCheckpoint, candidate.ChaserCheckpoint,
 				candidate.EpochNumber, candidate.EpochPosition, candidate.EpochId, candidate.NodePriority);
 		}
@@ -602,7 +602,7 @@ namespace EventStore.Core.Services {
 
 		public class LeaderCandidate {
 			public readonly Guid InstanceId;
-			public readonly EndPoint InternalHttpEndPoint;
+			public readonly EndPoint HttpEndPoint;
 
 			public readonly int EpochNumber;
 			public readonly long EpochPosition;
@@ -614,12 +614,12 @@ namespace EventStore.Core.Services {
 
 			public readonly int NodePriority;
 
-			public LeaderCandidate(Guid instanceId, EndPoint internalHttp,
+			public LeaderCandidate(Guid instanceId, EndPoint httpEndPoint,
 				int epochNumber, long epochPosition, Guid epochId,
 				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
 				int nodePriority) {
 				InstanceId = instanceId;
-				InternalHttpEndPoint = internalHttp;
+				HttpEndPoint = httpEndPoint;
 				EpochNumber = epochNumber;
 				EpochPosition = epochPosition;
 				EpochId = epochId;

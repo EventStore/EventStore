@@ -54,7 +54,6 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 						new IPEndPoint(IPAddress.Loopback, 1113),
 						new IPEndPoint(IPAddress.Loopback, 1114),
 						new IPEndPoint(IPAddress.Loopback, 1115),
-						new IPEndPoint(IPAddress.Loopback, 1116),
 						1,
 						false
 					)));

@@ -35,7 +35,7 @@ namespace EventStore.Core {
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex _readIndex;
 		private readonly int _maxAppendSize;
-		private readonly KestrelHttpService _externalHttpService;
+		private readonly KestrelHttpService _httpService;
 		private readonly StatusCheck _statusCheck;
 
 		private bool _ready;
@@ -51,7 +51,7 @@ namespace EventStore.Core {
 			IAuthorizationProvider authorizationProvider,
 			IReadIndex readIndex,
 			int maxAppendSize,
-			KestrelHttpService externalHttpService) {
+			KestrelHttpService httpService) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
 			}
@@ -73,8 +73,8 @@ namespace EventStore.Core {
 
 			Ensure.Positive(maxAppendSize, nameof(maxAppendSize));
 
-			if (externalHttpService == null) {
-				throw new ArgumentNullException(nameof(externalHttpService));
+			if (httpService == null) {
+				throw new ArgumentNullException(nameof(httpService));
 			}
 
 			if (mainBus == null) {
@@ -88,7 +88,7 @@ namespace EventStore.Core {
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;
-			_externalHttpService = externalHttpService;
+			_httpService = httpService;
 
 			_statusCheck = new StatusCheck(this);
 		}
@@ -104,7 +104,7 @@ namespace EventStore.Core {
 					b => b
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
 						.UseMiddleware<AuthorizationMiddleware>()
-						.UseLegacyHttp(internalDispatcher.InvokeAsync, _externalHttpService)
+						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
 					)
 				.UseEndpoints(ep => ep.MapGrpcService<PersistentSubscriptions>())
 				.UseEndpoints(ep => ep.MapGrpcService<Users>())
@@ -121,7 +121,7 @@ namespace EventStore.Core {
 			.BuildServiceProvider();
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) {
-			var bridge = new KestrelToInternalBridgeMiddleware(_externalHttpService.UriRouter, _externalHttpService.LogHttpRequests, _externalHttpService.AdvertiseAsHost, _externalHttpService.AdvertiseAsPort);
+			var bridge = new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort);
 			return _subsystems
 				.Aggregate(services
 						.AddRouting()

@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Http {
 			if (supplied.IsAbsoluteUri && !supplied.IsFile) // NOTE: is file imporant for mono
 				return supplied;
 
-			var httpEndPoint = _node.ExtHttpEndPoint;
+			var httpEndPoint = _node.HttpEndPoint;
 			var x = new UriBuilder("http", httpEndPoint.Address.ToString(), httpEndPoint.Port, path);
 			x.Query = extra;
 			Console.WriteLine(new string('*', 50) + Environment.NewLine + path + Environment.NewLine + extra +

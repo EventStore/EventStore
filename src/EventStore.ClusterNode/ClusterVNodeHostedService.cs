@@ -73,7 +73,7 @@ namespace EventStore.ClusterNode {
 		protected override string GetLogsDirectory(ClusterNodeOptions options) => options.Log;
 
 		protected override string GetComponentName(ClusterNodeOptions options) =>
-			$"{options.ExtIp}-{options.ExtHttpPort}-cluster-node";
+			$"{options.ExtIp}-{options.HttpPort}-cluster-node";
 
 		protected override void PreInit(ClusterNodeOptions options) {
 			base.PreInit(options);
@@ -112,9 +112,9 @@ namespace EventStore.ClusterNode {
 				"External TCP (Protobuf)\n" +
 				$"\tEnabled\t: {opts.EnableExternalTCP}\n" +
 				$"\tPort\t: {(opts.ExtTcpPort)}\n" +
-				"External HTTP (AtomPub)\n" +
+				"HTTP (AtomPub)\n" +
 				$"\tEnabled\t: {opts.EnableAtomPubOverHTTP}\n" +
-				$"\tPort\t: {opts.ExtHttpPort}\n");
+				$"\tPort\t: {opts.HttpPort}\n");
 
 			if (opts.EnableAtomPubOverHTTP) {
 				Log.Warning(
@@ -162,7 +162,7 @@ namespace EventStore.ClusterNode {
 
 		private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterNodeOptions options) {
 			if (options.AdminOnExt) {
-				Node.ExternalHttpService.SetupController(new ClusterWebUiController(Node.MainQueue,
+				Node.HttpService.SetupController(new ClusterWebUiController(Node.MainQueue,
 					enabledNodeSubsystems));
 			}
 		}
@@ -176,8 +176,7 @@ namespace EventStore.ClusterNode {
 		private static ClusterVNode BuildNode(ClusterNodeOptions options) {
 			var quorumSize = GetQuorumSize(options.ClusterSize);
 
-			var intHttp = new IPEndPoint(options.IntIp, options.IntHttpPort);
-			var extHttp = new IPEndPoint(options.ExtIp, options.ExtHttpPort);
+			var httpEndPoint = new IPEndPoint(options.ExtIp, options.HttpPort);
 			var intTcp = options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
 			var intSecTcp = !options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
 			var extTcp = options.EnableExternalTCP && options.DisableExternalTls
@@ -230,8 +229,7 @@ namespace EventStore.ClusterNode {
 				.WithInternalSecureTcpOn(intSecTcp)
 				.WithExternalTcpOn(extTcp)
 				.WithExternalSecureTcpOn(extSecTcp)
-				.WithInternalHttpOn(intHttp)
-				.WithExternalHttpOn(extHttp)
+				.WithHttpOn(httpEndPoint)
 				.WithWorkerThreads(options.WorkerThreads)
 				.WithInternalHeartbeatTimeout(TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout))
 				.WithInternalHeartbeatInterval(TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval))
@@ -263,8 +261,7 @@ namespace EventStore.ClusterNode {
 				.WithTfChunksCacheSize(options.ChunksCacheSize)
 				.AdvertiseInternalHostAs(options.IntHostAdvertiseAs)
 				.AdvertiseExternalHostAs(options.ExtHostAdvertiseAs)
-				.AdvertiseInternalHttpPortAs(options.IntHttpPortAdvertiseAs)
-				.AdvertiseExternalHttpPortAs(options.ExtHttpPortAdvertiseAs)
+				.AdvertiseHttpPortAs(options.HttpPortAdvertiseAs)
 				.AdvertiseInternalTCPPortAs(intTcpPortAdvertiseAs)
 				.AdvertiseExternalTCPPortAs(extTcpPortAdvertiseAs)
 				.AdvertiseInternalSecureTCPPortAs(intSecTcpPortAdvertiseAs)

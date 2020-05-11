@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		public virtual void Process(int iteration, RandTestQueueItem item) {
 			var msg = item.Message as ElectionMessage.ElectionsDone;
 			if (msg != null) {
-				var leader = msg.Leader.ExternalHttpEndPoint;
+				var leader = msg.Leader.HttpEndPoint;
 				ElectionsResults[item.EndPoint] = Tuple.Create(msg.InstalledView, leader);
 				Done = ElectionsResults.Values.Count(x => x.Item1 == msg.InstalledView) >= _majorityCount;
 			}

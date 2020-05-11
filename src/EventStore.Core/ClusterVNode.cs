@@ -66,8 +66,8 @@ namespace EventStore.Core {
 			get { return _mainBus; }
 		}
 
-		public IHttpService ExternalHttpService {
-			get { return _externalHttpService; }
+		public IHttpService HttpService {
+			get { return _httpService; }
 		}
 
 		public IReadIndex ReadIndex => _readIndex;
@@ -102,7 +102,7 @@ namespace EventStore.Core {
 
 		private readonly ClusterVNodeController _controller;
 		private readonly TimerService _timerService;
-		private readonly KestrelHttpService _externalHttpService;
+		private readonly KestrelHttpService _httpService;
 		private readonly ITimeProvider _timeProvider;
 		private readonly ISubsystem[] _subsystems;
 		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
@@ -222,7 +222,7 @@ namespace EventStore.Core {
 				db.Config.WriterCheckpoint,
 				db.Config.Path,
 				vNodeSettings.StatsPeriod,
-				_nodeInfo.ExternalHttp,
+				_nodeInfo.HttpEndPoint,
 				vNodeSettings.StatsStorage,
 				_nodeInfo.ExternalTcp,
 				_nodeInfo.ExternalSecureTcp);
@@ -357,13 +357,12 @@ namespace EventStore.Core {
 				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
 			});
 
-			// EXTERNAL HTTP
-			_externalHttpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
+			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
 				_workersHandler, vNodeSettings.LogHttpRequests,
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHostAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHttpPortAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortAs,
 				vNodeSettings.DisableFirstLevelHttpAuthorization,
-				vNodeSettings.NodeInfo.ExternalHttp);
+				vNodeSettings.NodeInfo.HttpEndPoint);
 
 			var components = new AuthenticationProviderFactoryComponents {
 				MainBus = _mainBus,
@@ -371,7 +370,7 @@ namespace EventStore.Core {
 				WorkerBuses = _workerBuses,
 				WorkersQueue = _workersHandler,
 				HttpSendService = httpSendService,
-				ExternalHttpService = _externalHttpService,
+				HttpService = _httpService,
 			};
 
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
@@ -471,21 +470,21 @@ namespace EventStore.Core {
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 
-			_externalHttpService.SetupController(persistentSubscriptionController);
+			_httpService.SetupController(persistentSubscriptionController);
 			if (vNodeSettings.AdminOnPublic)
-				_externalHttpService.SetupController(adminController);
-			_externalHttpService.SetupController(pingController);
-			_externalHttpService.SetupController(infoController);
+				_httpService.SetupController(adminController);
+			_httpService.SetupController(pingController);
+			_httpService.SetupController(infoController);
 			if (vNodeSettings.StatsOnPublic)
-				_externalHttpService.SetupController(statController);
+				_httpService.SetupController(statController);
 			if (vNodeSettings.EnableAtomPubOverHTTP)
-				_externalHttpService.SetupController(atomController);
+				_httpService.SetupController(atomController);
 			if (vNodeSettings.GossipOnPublic)
-				_externalHttpService.SetupController(gossipController);
-			_externalHttpService.SetupController(histogramController);
+				_httpService.SetupController(gossipController);
+			_httpService.SetupController(histogramController);
 
-			_mainBus.Subscribe<SystemMessage.SystemInit>(_externalHttpService);
-			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_externalHttpService);
+			_mainBus.Subscribe<SystemMessage.SystemInit>(_httpService);
+			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_httpService);
 
 			SubscribeWorkers(KestrelHttpService.CreateAndSubscribePipeline);
 
@@ -612,7 +611,7 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 
 			// STORAGE SCAVENGER
-			var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.ExternalHttp.ToString(),
+			var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.HttpEndPoint.ToString(),
 				TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
 			var storageScavenger = new StorageScavenger(db,
 				tableIndex,
@@ -642,8 +641,7 @@ namespace EventStore.Core {
 				vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
 				vNodeSettings.GossipAdvertiseInfo.ExternalTcp,
 				vNodeSettings.GossipAdvertiseInfo.ExternalSecureTcp,
-				vNodeSettings.GossipAdvertiseInfo.InternalHttp,
-				vNodeSettings.GossipAdvertiseInfo.ExternalHttp,
+				vNodeSettings.GossipAdvertiseInfo.HttpEndPoint,
 				vNodeSettings.NodePriority, vNodeSettings.ReadOnlyReplica);
 			
 			if (!isSingleNode) {
@@ -717,14 +715,14 @@ namespace EventStore.Core {
 
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {
-					var http = new[] { _externalHttpService };
+					var http = new[] { _httpService };
 					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
 						httpSendService, http, _workersHandler, _queueStatsManager));
 				}
 			}
 
 			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, httpAuthenticationProviders, _authorizationProvider, _readIndex,
-				_vNodeSettings.MaxAppendSize, _externalHttpService);
+				_vNodeSettings.MaxAppendSize, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}
@@ -897,8 +895,8 @@ namespace EventStore.Core {
 		}
 
 		public override string ToString() {
-			return string.Format("[{0:B}, {1}, {2}, {3}, {4}]", _nodeInfo.InstanceId,
-				_nodeInfo.InternalTcp, _nodeInfo.ExternalTcp, _nodeInfo.InternalHttp, _nodeInfo.ExternalHttp);
+			return
+				$"[{_nodeInfo.InstanceId:B}, {_nodeInfo.InternalTcp}, {_nodeInfo.ExternalTcp}, {_nodeInfo.HttpEndPoint}]";
 		}
 	}
 }

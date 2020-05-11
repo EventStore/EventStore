@@ -200,13 +200,12 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(new DnsEndPoint("196.168.1.1", 1113),
 				_settings.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("196.168.1.1", 2113),
-				_settings.GossipAdvertiseInfo.ExternalHttp);
+				_settings.GossipAdvertiseInfo.HttpEndPoint);
 		}
 
 		[Test]
 		public void should_set_the_loopback_address_as_advertise_info_for_internal() {
 			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 1112), _settings.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 2112), _settings.GossipAdvertiseInfo.InternalHttp);
 		}
 	}
 
@@ -223,13 +222,12 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 1113),
 				_settings.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 2113),
-				_settings.GossipAdvertiseInfo.ExternalHttp);
+				_settings.GossipAdvertiseInfo.HttpEndPoint);
 		}
 
 		[Test]
 		public void should_set_the_loopback_address_as_advertise_info_for_internal() {
 			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 1112), _settings.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 2112), _settings.GossipAdvertiseInfo.InternalHttp);
 		}
 	}
 
@@ -237,8 +235,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set : ClusterMemberScenario {
 		public override void Given() {
 			_builder
-				.WithInternalHttpOn(new IPEndPoint(IPAddress.Loopback, 2112))
-				.WithExternalHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2113))
+				.WithHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2113))
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, 1112))
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113));
 		}
@@ -248,13 +245,12 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 1113),
 				_settings.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 2113),
-				_settings.GossipAdvertiseInfo.ExternalHttp);
+				_settings.GossipAdvertiseInfo.HttpEndPoint);
 		}
 
 		[Test]
 		public void should_use_loopback_ip_as_advertise_info_for_internal() {
 			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 1112), _settings.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(new DnsEndPoint(IPAddress.Loopback.ToString(), 2112), _settings.GossipAdvertiseInfo.InternalHttp);
 		}
 	}
 
@@ -263,8 +259,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external : ClusterMemberScenario {
 		public override void Given() {
 			_builder
-				.WithInternalHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2112))
-				.WithExternalHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2113))
+				.WithHttpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 2113))
 				.WithInternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1112))
 				.WithExternalTcpOn(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 1113))
 				.AdvertiseExternalHostAs("10.0.0.1");
@@ -275,15 +270,13 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 1113),
 				_settings.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(new DnsEndPoint("10.0.0.1", 2113),
-				_settings.GossipAdvertiseInfo.ExternalHttp);
+				_settings.GossipAdvertiseInfo.HttpEndPoint);
 		}
 
 		[Test]
 		public void should_use_the_non_default_loopback_ip_as_advertise_info_for_internal() {
 			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 1112),
 				_settings.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(new DnsEndPoint(IPFinder.GetNonLoopbackAddress().ToString(), 2112),
-				_settings.GossipAdvertiseInfo.InternalHttp);
 		}
 	}
 }

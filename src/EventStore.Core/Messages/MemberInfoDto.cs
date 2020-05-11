@@ -19,11 +19,8 @@ namespace EventStore.Core.Messages {
 		public int ExternalTcpPort { get; set; }
 		public int ExternalSecureTcpPort { get; set; }
 
-		public string InternalHttpIp { get; set; }
-		public int InternalHttpPort { get; set; }
-
-		public string ExternalHttpIp { get; set; }
-		public int ExternalHttpPort { get; set; }
+		public string HttpEndPointIp { get; set; }
+		public int HttpEndPointPort { get; set; }
 
 		public long LastCommitPosition { get; set; }
 		public long WriterCheckpoint { get; set; }
@@ -56,11 +53,8 @@ namespace EventStore.Core.Messages {
 			ExternalSecureTcpPort =
 				member.ExternalSecureTcpEndPoint == null ? 0 : member.ExternalSecureTcpEndPoint.GetPort();
 
-			InternalHttpIp = member.InternalHttpEndPoint.GetHost();
-			InternalHttpPort = member.InternalHttpEndPoint.GetPort();
-
-			ExternalHttpIp = member.ExternalHttpEndPoint.GetHost();
-			ExternalHttpPort = member.ExternalHttpEndPoint.GetPort();
+			HttpEndPointIp = member.HttpEndPoint.GetHost();
+			HttpEndPointPort = member.HttpEndPoint.GetPort();
 
 			LastCommitPosition = member.LastCommitPosition;
 			WriterCheckpoint = member.WriterCheckpoint;
@@ -75,19 +69,14 @@ namespace EventStore.Core.Messages {
 		}
 
 		public override string ToString() {
-			return string.Format("InstanceId: {0:B}, TimeStamp: {1:yyyy-MM-dd HH:mm:ss.fff}, State: {2}, IsAlive: {3}, "
-			                     + "InternalTcpIp: {4}, InternalTcpPort: {5}, InternalSecureTcpPort: {6}, "
-			                     + "ExternalTcpIp: {7}, ExternalTcpPort: {8}, ExternalSecureTcpPort: {9}, "
-			                     + "InternalHttpIp: {10}, InternalHttpPort: {11}, ExternalHttpIp: {12}, ExternalHttpPort: {13}, "
-			                     + "LastCommitPosition: {14}, WriterCheckpoint: {15}, ChaserCheckpoint: {16}, "
-			                     + "EpochPosition: {17}, EpochNumber: {18}, EpochId: {19:B}, NodePriority: {20}, "
-			                     + "IsReadOnlyReplica: {21}",
-				InstanceId, TimeStamp, State, IsAlive,
-				InternalTcpIp, InternalTcpPort, InternalSecureTcpPort,
-				ExternalTcpIp, ExternalTcpPort, ExternalSecureTcpPort,
-				InternalHttpIp, InternalHttpPort, ExternalHttpIp, ExternalHttpPort,
-				LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
-				EpochPosition, EpochNumber, EpochId, NodePriority, IsReadOnlyReplica);
+			return
+				$"InstanceId: {InstanceId:B}, TimeStamp: {TimeStamp:yyyy-MM-dd HH:mm:ss.fff}, State: {State}, IsAlive: {IsAlive}, " +
+				$"InternalTcpIp: {InternalTcpIp}, InternalTcpPort: {InternalTcpPort}, InternalSecureTcpPort: {InternalSecureTcpPort}, " +
+				$"ExternalTcpIp: {ExternalTcpIp}, ExternalTcpPort: {ExternalTcpPort}, ExternalSecureTcpPort: {ExternalSecureTcpPort}, " +
+				$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
+				$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, " +
+				$"EpochPosition: {EpochPosition}, EpochNumber: {EpochNumber}, EpochId: {EpochId:B}, NodePriority: {NodePriority}, " +
+				$"IsReadOnlyReplica: {IsReadOnlyReplica}";
 		}
 	}
 }

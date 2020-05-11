@@ -109,7 +109,7 @@ namespace EventStore.Core.Services.Gossip {
 		public void Handle(GossipMessage.GotGossipSeedSources message) {
 			var now = _timeProvider.UtcNow;
 			var dnsCluster = new ClusterInfo(
-				message.GossipSeeds.Select(x => MemberInfo.ForManager(Guid.Empty, now, true, x, x)).ToArray());
+				message.GossipSeeds.Select(x => MemberInfo.ForManager(Guid.Empty, now, true, x)).ToArray());
 			
 			var oldCluster = _cluster;
 			_cluster = MergeClusters(_cluster, dnsCluster, null, x => x, _timeProvider.UtcNow, _memberInfo,
@@ -129,8 +129,8 @@ namespace EventStore.Core.Services.Gossip {
 			if (node != null) {
 				_cluster = UpdateCluster(_cluster, x => x.InstanceId == _memberInfo.InstanceId ? GetUpdatedMe(x) : x,
 					_timeProvider, DeadMemberRemovalPeriod);
-				_bus.Publish(new GrpcMessage.SendOverGrpc(node.InternalHttpEndPoint,
-					new GossipMessage.SendGossip(_cluster, _memberInfo.InternalHttpEndPoint),
+				_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
+					new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint),
 					_timeProvider.LocalTime.Add(GossipInterval)));
 			}
 
@@ -164,7 +164,7 @@ namespace EventStore.Core.Services.Gossip {
 				_timeProvider.UtcNow, _memberInfo, CurrentLeader?.InstanceId, AllowedTimeDifference,
 				DeadMemberRemovalPeriod);
 
-			message.Envelope.ReplyWith(new GossipMessage.SendGossip(_cluster, _memberInfo.InternalHttpEndPoint));
+			message.Envelope.ReplyWith(new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint));
 
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, $"gossip received from [{message.Server}]");
@@ -212,7 +212,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			Log.Information("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
 				message.VNodeEndPoint);
-			_bus.Publish(new GrpcMessage.SendOverGrpc(node.InternalHttpEndPoint,
+			_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
 				new GossipMessage.GetGossip(), _timeProvider.LocalTime.Add(GossipTimeout)));
 		}
 
@@ -283,10 +283,10 @@ namespace EventStore.Core.Services.Gossip {
 			EndPoint peerEndPoint, Func<MemberInfo, MemberInfo> update, DateTime utcNow,
 			MemberInfo me, Guid? currentLeaderInstanceId, TimeSpan allowedTimeDifference,
 			TimeSpan deadMemberRemovalTimeout) {
-			var members = myCluster.Members.ToDictionary(member => member.InternalHttpEndPoint, 
+			var members = myCluster.Members.ToDictionary(member => member.HttpEndPoint, 
 				new EndPointEqualityComparer());
 			foreach (var member in othersCluster.Members) {
-				if (member.InstanceId == me.InstanceId || member.Is(me.InternalHttpEndPoint)
+				if (member.InstanceId == me.InstanceId || member.Is(me.HttpEndPoint)
 				) // we know about ourselves better
 					continue;
 				if (peerEndPoint != null && member.Is(peerEndPoint)) // peer knows about itself better
@@ -297,20 +297,20 @@ namespace EventStore.Core.Services.Gossip {
 							peerEndPoint, utcNow, member.TimeStamp);
 					}
 
-					members[member.InternalHttpEndPoint] = member;
+					members[member.HttpEndPoint] = member;
 				} else {
 					MemberInfo existingMem;
 					// if there is no data about this member or data is stale -- update
-					if (!members.TryGetValue(member.InternalHttpEndPoint, out existingMem) ||
+					if (!members.TryGetValue(member.HttpEndPoint, out existingMem) ||
 					    IsMoreUpToDate(member, existingMem)) {
 						// we do not trust leader's alive status and state to come from outside
 						if (currentLeaderInstanceId != null && existingMem != null &&
 						    member.InstanceId == currentLeaderInstanceId)
-							members[member.InternalHttpEndPoint] =
+							members[member.HttpEndPoint] =
 								member.Updated(utcNow: utcNow, isAlive: existingMem.IsAlive,
 									state: existingMem.State);
 						else
-							members[member.InternalHttpEndPoint] = member;
+							members[member.HttpEndPoint] = member;
 					}
 				}
 			}
@@ -341,9 +341,9 @@ namespace EventStore.Core.Services.Gossip {
 			var endPointComparer = new EndPointComparer();
 
 			List<MemberInfo> oldMembers = oldCluster.Members
-				.OrderByDescending(x => x.InternalHttpEndPoint, endPointComparer).ToList();
+				.OrderByDescending(x => x.HttpEndPoint, endPointComparer).ToList();
 			List<MemberInfo> newMembers = newCluster.Members
-				.OrderByDescending(x => x.InternalHttpEndPoint, endPointComparer).ToList();
+				.OrderByDescending(x => x.HttpEndPoint, endPointComparer).ToList();
 			Log.Information(
 				"CLUSTER HAS CHANGED {source}"
 				+ "\nOld:"

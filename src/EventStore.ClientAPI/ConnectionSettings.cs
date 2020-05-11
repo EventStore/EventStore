@@ -130,9 +130,9 @@ namespace EventStore.ClientAPI {
 		public readonly int MaxDiscoverAttempts;
 
 		/// <summary>
-		/// The well-known endpoint on which cluster managers are running.
+		/// The well-known endpoint on which cluster nodes are running.
 		/// </summary>
-		public readonly int ExternalGossipPort;
+		public readonly int GossipPort;
 
 		/// <summary>
 		/// Endpoints for seeding gossip if not using DNS.
@@ -175,7 +175,7 @@ namespace EventStore.ClientAPI {
 			string clusterDns,
 			GossipSeed[] gossipSeeds,
 			int maxDiscoverAttempts,
-			int externalGossipPort,
+			int gossipPort,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
 			HttpMessageHandler customHttpMessageHandler) {
@@ -219,7 +219,7 @@ namespace EventStore.ClientAPI {
 			ClusterDns = clusterDns;
 			GossipSeeds = gossipSeeds;
 			MaxDiscoverAttempts = maxDiscoverAttempts;
-			ExternalGossipPort = externalGossipPort;
+			GossipPort = gossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
 			CustomHttpMessageHandler = customHttpMessageHandler;

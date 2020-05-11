@@ -30,7 +30,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 			var usersController =
 				new UsersController(components.HttpSendService, components.MainQueue, components.WorkersQueue);
-			components.ExternalHttpService.SetupController(usersController);
+			components.HttpService.SetupController(usersController);
 		}
 
 		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) {

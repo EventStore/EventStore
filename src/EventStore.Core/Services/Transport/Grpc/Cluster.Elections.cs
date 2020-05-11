@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.ViewChange(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
 				request.AttemptedView));
 			return EmptyResult;
 		}
@@ -47,7 +47,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.ViewChangeProof(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
 				request.InstalledView));
 			return EmptyResult;
 		}
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Prepare(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
 				request.View));
 			return EmptyResult;
 		}
@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_bus.Publish(new ElectionMessage.PrepareOk(
 				request.View,
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
 				request.EpochNumber,
 				request.EpochPosition,
 				Uuid.FromDto(request.EpochId).ToGuid(),
@@ -90,9 +90,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Proposal(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address, (int)request.LeaderInternalHttp.Port),
+				new DnsEndPoint(request.LeaderHttp.Address, (int)request.LeaderHttp.Port),
 				request.View,
 				request.EpochNumber,
 				request.EpochPosition,
@@ -111,11 +111,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Accept(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address,
-					(int)request.ServerInternalHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address,
+					(int)request.ServerHttp.Port),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address,
-					(int)request.LeaderInternalHttp.Port),
+				new DnsEndPoint(request.LeaderHttp.Address,
+					(int)request.LeaderHttp.Port),
 				request.View));
 			return EmptyResult;
 		}
@@ -127,8 +127,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.LeaderIsResigning(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address,
-					(int)request.LeaderInternalHttp.Port)));
+				new DnsEndPoint(request.LeaderHttp.Address,
+					(int)request.LeaderHttp.Port)));
 			return EmptyResult;
 		}
 		
@@ -139,11 +139,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.LeaderIsResigningOk(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address,
-					(int)request.LeaderInternalHttp.Port),
+				new DnsEndPoint(request.LeaderHttp.Address,
+					(int)request.LeaderHttp.Port),
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address,
-					(int)request.ServerInternalHttp.Port)));
+				new DnsEndPoint(request.ServerHttp.Address,
+					(int)request.ServerHttp.Port)));
 			return EmptyResult;
 		}
 	}

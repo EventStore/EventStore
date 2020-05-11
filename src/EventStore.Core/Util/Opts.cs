@@ -259,14 +259,14 @@ namespace EventStore.Core.Util {
 		public const string GossipTimeoutMsDescr = "The timeout, in ms, on gossip to another node.";
 		public const int GossipTimeoutMsDefault = 2500;
 
-		public const string AdminOnExtDescr = "Whether or not to run the admin ui on the external HTTP endpoint";
+		public const string AdminOnExtDescr = "Whether or not to run the admin ui on the HTTP endpoint";
 		public const bool AdminOnExtDefault = true;
 
-		public const string GossipOnExtDescr = "Whether or not to accept gossip requests on the external HTTP endpoint";
+		public const string GossipOnExtDescr = "Whether or not to accept gossip requests on the HTTP endpoint";
 		public const bool GossipOnExtDefault = true;
 
 		public const string StatsOnExtDescr =
-			"Whether or not to accept statistics requests on the external HTTP endpoint, needed if you use admin ui";
+			"Whether or not to accept statistics requests on the HTTP endpoint, needed if you use admin ui";
 
 		public const bool StatsOnExtDefault = true;
 
@@ -275,12 +275,6 @@ namespace EventStore.Core.Util {
 
 		public const string ExternalIpDescr = "External IP Address.";
 		public static readonly IPAddress ExternalIpDefault = IPAddress.Loopback;
-
-		public const string InternalHttpPortDescr = "Internal HTTP Port.";
-		public const int InternalHttpPortDefault = 2112;
-
-		public const string ExternalHttpPortDescr = "External HTTP Port.";
-		public const int ExternalHttpPortDefault = 2113;
 
 		public const string InternalTcpPortDescr = "Internal TCP Port.";
 		public const int InternalTcpPortDefault = 1112;
@@ -294,17 +288,14 @@ namespace EventStore.Core.Util {
 		public const string ExternalTcpPortAdvertiseAsDescr = "Advertise External Tcp Port As.";
 		public static readonly int ExternalTcpPortAdvertiseAsDefault = 0;
 
-		public const string ExternalHttpPortAdvertiseAsDescr = "Advertise External Http Port As.";
-		public static readonly int ExternalHttpPortAdvertiseAsDefault = 0;
+		public const string HttpPortAdvertiseAsDescr = "Advertise Http Port As.";
+		public static readonly int HttpPortAdvertiseAsDefault = 0;
 
 		public const string InternalIpAdvertiseAsDescr = "Advertise Internal Tcp Address As.";
 		public static readonly string InternalHostAdvertiseAsDefault = null;
 
 		public const string InternalTcpPortAdvertiseAsDescr = "Advertise Internal Tcp Port As.";
 		public static readonly int InternalTcpPortAdvertiseAsDefault = 0;
-
-		public const string InternalHttpPortAdvertiseAsDescr = "Advertise Internal Http Port As.";
-		public static readonly int InternalHttpPortAdvertiseAsDefault = 0;
 
 		public const string ClusterSizeDescr = "The number of nodes in the cluster.";
 		public const int ClusterSizeDefault = 1;
@@ -316,18 +307,6 @@ namespace EventStore.Core.Util {
 
 		public const string PrepareCountDescr = "The number of nodes which must acknowledge prepares.";
 		public const int PrepareCountDefault = -1;
-
-		public const string InternalManagerIpDescr = null;
-		public static readonly IPAddress InternalManagerIpDefault = IPAddress.Loopback;
-
-		public const string ExternalManagerIpDescr = null;
-		public static readonly IPAddress ExternalManagerIpDefault = IPAddress.Loopback;
-
-		public const string InternalManagerHttpPortDescr = null;
-		public const int InternalManagerHttpPortDefault = 30777;
-
-		public const string ExternalManagerHttpPortDescr = null;
-		public const int ExternalManagerHttpPortDefault = 30778;
 
 		public const string DisableInternalTlsDescr = "Whether to disable secure internal communication.";
 		public const bool DisableInternalTlsDefault = false;
@@ -359,25 +338,6 @@ namespace EventStore.Core.Util {
 		
 		public const string DeadMemberRemovalPeriodDescr = "The number of seconds a dead node will remain in the gossip before being pruned";
 		public const int DeadMemberRemovalPeriodDefault = 1800;
-
-		/*
-		 *  MANAGER OPTIONS
-		 */
-		public const string EnableWatchdogDescr = "Enable the node supervisor";
-		public const bool EnableWatchdogDefault = true;
-
-		public const string WatchdogConfigDescr = "Location of the watchdog configuration";
-		public static readonly string WatchdogConfigDefault = string.Empty;
-
-		public const string WatchdogFailureTimeWindowDescr =
-			"The time window for which to track supervised node failures.";
-
-		public static readonly int WatchdogFailureTimeWindowDefault = -1;
-
-		public const string WatchdogFailureCountDescr =
-			"The maximum allowed supervised node failures within specified time window.";
-
-		public static readonly int WatchdogFailureCountDefault = -1;
 
 		public const string HistogramDescr =
 			"Enables the tracking of various histograms in the backend, typically only used for debugging etc";

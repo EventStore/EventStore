@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 			var tcpPort = _node.TcpEndPoint.Port;
 			var tcpSecPort = _node.TcpSecEndPoint.Port;
-			var httpPort = _node.ExtHttpEndPoint.Port;
+			var httpPort = _node.HttpEndPoint.Port;
 			await _node.Shutdown(keepDb: true);
 
 			//Restart the node to ensure the read index stream info cache is empty

@@ -15,9 +15,9 @@ namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
 			bool wait = true) {
 			var isReadOnly = index == 2;
 			var node = new MiniClusterNode(
-				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec, endpoints.InternalHttp,
+				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec,
 				endpoints.ExternalTcp,
-				endpoints.ExternalTcpSec, endpoints.ExternalHttp, skipInitializeStandardUsersCheck: false,
+				endpoints.ExternalTcpSec, endpoints.HttpEndPoint, skipInitializeStandardUsersCheck: false,
 				subsystems: new ISubsystem[] { }, gossipSeeds: gossipSeeds, inMemDb: false,
 				readOnlyReplica: isReadOnly);
 			if (wait && !isReadOnly)

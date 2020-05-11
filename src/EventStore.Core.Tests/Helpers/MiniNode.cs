@@ -29,10 +29,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public IPEndPoint TcpEndPoint { get; private set; }
 		public IPEndPoint TcpSecEndPoint { get; private set; }
-		public IPEndPoint IntHttpEndPoint { get; private set; }
 		public IPEndPoint IntTcpEndPoint { get; private set; }
 		public IPEndPoint IntSecTcpEndPoint { get; private set; }
-		public IPEndPoint ExtHttpEndPoint { get; private set; }
+		public IPEndPoint HttpEndPoint { get; private set; }
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
@@ -48,7 +47,7 @@ namespace EventStore.Core.Tests.Helpers {
 			bool skipInitializeStandardUsersCheck = true,
 			int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false,
-			string advertisedExtHostAddress = null, int advertisedExtHttpPort = 0,
+			string advertisedExtHostAddress = null, int advertisedHttpPort = 0,
 			int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false) {
@@ -60,14 +59,13 @@ namespace EventStore.Core.Tests.Helpers {
 
 			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
 			int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
-			int extHttpPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
+			int httpEndPointPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 			int intTcpPort = PortsHelper.GetAvailablePort(ip);
 			int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
-			int intHttpPort = PortsHelper.GetAvailablePort(ip);
 
 			if (string.IsNullOrEmpty(dbPath)) {
 				DbPath = Path.Combine(pathname,
-					$"mini-node-db-{extTcpPort}-{extSecTcpPort}-{extHttpPort}");
+					$"mini-node-db-{extTcpPort}-{extSecTcpPort}-{httpEndPointPort}");
 			} else {
 				DbPath = dbPath;
 			}
@@ -76,8 +74,7 @@ namespace EventStore.Core.Tests.Helpers {
 			TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
 			IntTcpEndPoint = new IPEndPoint(ip, intTcpPort);
 			IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
-			IntHttpEndPoint = new IPEndPoint(ip, intHttpPort);
-			ExtHttpEndPoint = new IPEndPoint(ip, extHttpPort);
+			HttpEndPoint = new IPEndPoint(ip, httpEndPointPort);
 
 			var builder = TestVNodeBuilder.AsSingleNode();
 			if (inMemDb)
@@ -89,8 +86,7 @@ namespace EventStore.Core.Tests.Helpers {
 				.WithInternalSecureTcpOn(IntSecTcpEndPoint)
 				.WithExternalTcpOn(TcpEndPoint)
 				.WithExternalSecureTcpOn(TcpSecEndPoint)
-				.WithInternalHttpOn(IntHttpEndPoint)
-				.WithExternalHttpOn(ExtHttpEndPoint)
+				.WithHttpOn(HttpEndPoint)
 				.WithTfChunkSize(chunkSize ?? ChunkSize)
 				.WithTfChunksCacheSize(cachedChunkSize ?? CachedChunkSize)
 				.WithServerCertificate(ssl_connections.GetServerCertificate())
@@ -100,7 +96,6 @@ namespace EventStore.Core.Tests.Helpers {
 				.WithCommitTimeout(TimeSpan.FromSeconds(10))
 				.WithStatsPeriod(TimeSpan.FromHours(1))
 				.DisableScavengeMerging()
-				.NoGossipOnPublicInterface()
 				.WithInternalHeartbeatInterval(TimeSpan.FromSeconds(10))
 				.WithInternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
 				.WithExternalHeartbeatInterval(TimeSpan.FromSeconds(10))
@@ -109,7 +104,7 @@ namespace EventStore.Core.Tests.Helpers {
 				.DoNotVerifyDbHashes()
 				.WithStatsStorage(StatsStorage.None)
 				.AdvertiseExternalHostAs(advertisedExtHostAddress)
-				.AdvertiseExternalHttpPortAs(advertisedExtHttpPort)
+				.AdvertiseHttpPortAs(advertisedHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
 				.WithIndexBitnessVersion(indexBitnessVersion)
 				.EnableExternalTCP();
@@ -145,12 +140,12 @@ namespace EventStore.Core.Tests.Helpers {
 				"DBPATH:", DbPath,
 				"TCP ENDPOINT:", TcpEndPoint,
 				"TCP SECURE ENDPOINT:", TcpSecEndPoint,
-				"HTTP ENDPOINT:", ExtHttpEndPoint);
+				"HTTP ENDPOINT:", HttpEndPoint);
 
 			Node = builder.Build();
 			Db = builder.GetDb();
 
-			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
+			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
 				.UseKestrel()
 				.UseStartup(Node.Startup));

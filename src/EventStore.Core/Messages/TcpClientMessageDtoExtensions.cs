@@ -53,7 +53,7 @@ namespace EventStore.Core.Messages {
 		public partial class NotHandled {
 			public partial class LeaderInfo {
 				public LeaderInfo(EndPoint externalTcpEndPoint, EndPoint externalSecureTcpEndPoint,
-					EndPoint externalHttpEndPoint) {
+					EndPoint httpEndPoint) {
 					ExternalTcpAddress = externalTcpEndPoint == null ? null : externalTcpEndPoint.GetHost();
 					ExternalTcpPort = externalTcpEndPoint == null ? (int?) null : externalTcpEndPoint.GetPort();
 					ExternalSecureTcpAddress = externalSecureTcpEndPoint == null
@@ -61,8 +61,8 @@ namespace EventStore.Core.Messages {
 						: externalSecureTcpEndPoint.GetHost();
 					ExternalSecureTcpPort =
 						externalSecureTcpEndPoint == null ? (int?)null : externalSecureTcpEndPoint.GetPort();
-					ExternalHttpAddress = externalHttpEndPoint.GetHost();
-					ExternalHttpPort = externalHttpEndPoint.GetPort();
+					HttpAddress = httpEndPoint.GetHost();
+					HttpPort = httpEndPoint.GetPort();
 				}
 			}
 		}

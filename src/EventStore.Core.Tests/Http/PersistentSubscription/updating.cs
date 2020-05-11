@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void location_header_is_present() {
 			Assert.AreEqual(
-				string.Format("http://{0}/subscriptions/{1}/{2}", _node.ExtHttpEndPoint, _stream, _groupName),
+				string.Format("http://{0}/subscriptions/{1}/{2}", _node.HttpEndPoint, _stream, _groupName),
 				_response.Headers.Location.ToString());
 		}
 	}

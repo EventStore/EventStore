@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 		public void Process(int iteration, RandTestQueueItem item) {
 			var electionsMsg = item.Message as ElectionMessage.ElectionsDone;
 			if (electionsMsg != null) {
-				_electionsResults[item.EndPoint] = electionsMsg.Leader.ExternalHttpEndPoint;
+				_electionsResults[item.EndPoint] = electionsMsg.Leader.HttpEndPoint;
 				Done = _electionsResults.Count == _instancesCount;
 			}
 		}

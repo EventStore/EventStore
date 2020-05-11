@@ -16,7 +16,7 @@ namespace EventStore.ClientAPI.Internal {
 		private readonly ILogger _log;
 		private readonly string _clusterDns;
 		private readonly int _maxDiscoverAttempts;
-		private readonly int _managerExternalHttpPort;
+		private readonly int _httpGossipPort;
 		private readonly GossipSeed[] _gossipSeeds;
 
 		private readonly IHttpClient _client;
@@ -28,7 +28,7 @@ namespace EventStore.ClientAPI.Internal {
 		public ClusterDnsEndPointDiscoverer(ILogger log,
 			string clusterDns,
 			int maxDiscoverAttempts,
-			int managerExternalHttpPort,
+			int httpGossipPort,
 			GossipSeed[] gossipSeeds,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
@@ -38,7 +38,7 @@ namespace EventStore.ClientAPI.Internal {
 			_log = log;
 			_clusterDns = clusterDns;
 			_maxDiscoverAttempts = maxDiscoverAttempts;
-			_managerExternalHttpPort = managerExternalHttpPort;
+			_httpGossipPort = httpGossipPort;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
 			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
@@ -103,7 +103,7 @@ namespace EventStore.ClientAPI.Internal {
 				endpoints = _gossipSeeds;
 			} else {
 				endpoints = ResolveDns(_clusterDns)
-					.Select(x => new GossipSeed(new IPEndPoint(x, _managerExternalHttpPort))).ToArray();
+					.Select(x => new GossipSeed(new IPEndPoint(x, _httpGossipPort))).ToArray();
 			}
 
 			RandomShuffle(endpoints, 0, endpoints.Length - 1);
@@ -139,11 +139,11 @@ namespace EventStore.ClientAPI.Internal {
 			int j = members.Length;
 			for (int k = 0; k < members.Length; ++k) {
 				if (members[k].State == ClusterMessages.VNodeState.Manager)
-					result[--j] = new GossipSeed(new DnsEndPoint(members[k].ExternalHttpIp,
-						members[k].ExternalHttpPort));
+					result[--j] = new GossipSeed(new DnsEndPoint(members[k].HttpAddress,
+						members[k].HttpPort));
 				else
-					result[++i] = new GossipSeed(new DnsEndPoint(members[k].ExternalHttpIp,
-						members[k].ExternalHttpPort));
+					result[++i] = new GossipSeed(new DnsEndPoint(members[k].HttpAddress,
+						members[k].HttpPort));
 			}
 
 			RandomShuffle(result, 0, i); // shuffle nodes

@@ -34,11 +34,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		public void should_not_throw_when_only_gossip_seeds_is_set() {
-			string connectionString = string.Format("GossipSeeds={0};", _node.IntHttpEndPoint);
+			string connectionString = string.Format("GossipSeeds={0};", _node.HttpEndPoint);
 			IEventStoreConnection connection = null;
 
 			Assert.DoesNotThrow(() => connection = EventStoreConnection.Create(connectionString));
-			Assert.AreEqual(_node.IntHttpEndPoint, connection.Settings.GossipSeeds.First().EndPoint);
+			Assert.AreEqual(_node.HttpEndPoint, connection.Settings.GossipSeeds.First().EndPoint);
 
 			connection.Dispose();
 		}
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void should_throw_when_gossip_seeds_and_connect_to_is_set() {
 			string connectionString = string.Format("ConnectTo=tcp://{0};GossipSeeds={1}", _node.TcpEndPoint,
-				_node.IntHttpEndPoint);
+				_node.HttpEndPoint);
 			Assert.Throws<NotSupportedException>(() => EventStoreConnection.Create(connectionString));
 		}
 
