@@ -21,8 +21,8 @@ namespace EventStore.TestClient {
 		public readonly bool InteractiveMode;
 
 		public readonly ClientOptions Options;
-		public readonly IPEndPoint TcpEndpoint;
-		public readonly IPEndPoint HttpEndpoint;
+		public readonly EndPoint TcpEndpoint;
+		public readonly EndPoint HttpEndpoint;
 		public readonly bool UseSsl;
 		public readonly bool ValidateServer;
 
@@ -36,8 +36,8 @@ namespace EventStore.TestClient {
 		public Client(ClientOptions options) {
 			Options = options;
 
-			TcpEndpoint = new IPEndPoint(options.Ip, options.TcpPort);
-			HttpEndpoint = new IPEndPoint(options.Ip, options.HttpPort);
+			TcpEndpoint = new DnsEndPoint(options.Host, options.TcpPort);
+			HttpEndpoint = new DnsEndPoint(options.Host, options.HttpPort);
 
 			UseSsl = options.UseTls;
 			ValidateServer = options.TlsValidateServer;
@@ -177,8 +177,8 @@ namespace EventStore.TestClient {
 			if (UseSsl) {
 				connection = _connector.ConnectSslTo(
 					Guid.NewGuid(),
-					endpoint.Address.ToString(),
-					endpoint,
+					endpoint.GetHost(),
+					endpoint.ResolveDnsToIPAddress(),
 					TcpConnectionManager.ConnectionTimeout,
 					(cert,chain,err) => (err == SslPolicyErrors.None, err.ToString()),
 					null,
@@ -188,7 +188,7 @@ namespace EventStore.TestClient {
 			} else {
 				connection = _connector.ConnectTo(
 					Guid.NewGuid(),
-					endpoint,
+					endpoint.ResolveDnsToIPAddress(),
 					TcpConnectionManager.ConnectionTimeout,
 					onConnectionEstablished,
 					onConnectionFailed,

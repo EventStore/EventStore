@@ -21,7 +21,7 @@ namespace EventStore.TestClient {
 		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
 		public bool WhatIf { get; set; }
 
-		[ArgDescription(Opts.IpDescr)] public IPAddress Ip { get; set; }
+		[ArgDescription(Opts.HostDescr)] public string Host { get; set; }
 		[ArgDescription(Opts.TcpPortDescr)] public int TcpPort { get; set; }
 		[ArgDescription(Opts.HttpPortDescr)] public int HttpPort { get; set; }
 		public int Timeout { get; set; }
@@ -41,7 +41,7 @@ namespace EventStore.TestClient {
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultTestClientLogDirectory;
 			WhatIf = Opts.WhatIfDefault;
-			Ip = IPAddress.Loopback;
+			Host = IPAddress.Loopback.ToString();
 			TcpPort = 1113;
 			HttpPort = 2113;
 			Timeout = -1;

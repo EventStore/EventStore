@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.Common.Utils;
 using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 
 namespace EventStore.TestClient.Commands {
@@ -69,8 +70,7 @@ namespace EventStore.TestClient.Commands {
 					.FailOnNoServerResponse();
 
 				var client = EventStoreConnection.Create(settings,
-					new Uri(string.Format("tcp://{0}:{1}", context.Client.TcpEndpoint.Address,
-						context.Client.TcpEndpoint.Port)));
+					new Uri($"tcp://{context.Client.TcpEndpoint.GetHost()}:{context.Client.TcpEndpoint.GetPort()}"));
 				clients.Add(client);
 
 				threads.Add(new Thread(_ => {

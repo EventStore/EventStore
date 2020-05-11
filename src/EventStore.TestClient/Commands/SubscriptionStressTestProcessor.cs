@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using EventStore.Common.Utils;
 
 namespace EventStore.TestClient.Commands {
 	internal class SubscriptionStressTestProcessor : ICmdProcessor {
@@ -29,8 +30,7 @@ namespace EventStore.TestClient.Commands {
 					.UseCustomLogger(new ClientApiLoggerBridge(context.Log))
 					.FailOnNoServerResponse()
 				/*.EnableVerboseLogging()*/,
-				new Uri(string.Format("tcp://{0}:{1}", context.Client.TcpEndpoint.Address,
-					context.Client.TcpEndpoint.Port)));
+				new Uri($"tcp://{context.Client.TcpEndpoint.GetHost()}:{context.Client.TcpEndpoint.GetPort()}"));
 			conn.ConnectAsync().Wait();
 
 			long appearedCnt = 0;
