@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				{Constants.Exceptions.LeaderEndpoint, leaderEndpoint.ToString()}
 			});
 
-		public static Exception StreamNotFound(string streamName) =>
+		public static RpcException StreamNotFound(string streamName) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' is not found."), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.StreamNotFound},
 				{Constants.Exceptions.StreamName, streamName}
