@@ -45,7 +45,7 @@ namespace EventStore.ClientAPI.Internal {
 			_nodePreference = nodePreference;
 		}
 
-		public Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint) {
+		public Task<NodeEndPoints> DiscoverAsync(EndPoint failedTcpEndPoint) {
 			return Task.Factory.StartNew(() => {
 				var maxDiscoverAttemptsStr = "";
 				if (_maxDiscoverAttempts != Int32.MaxValue)
@@ -76,7 +76,7 @@ namespace EventStore.ClientAPI.Internal {
 			});
 		}
 
-		private NodeEndPoints? DiscoverEndPoint(IPEndPoint failedEndPoint) {
+		private NodeEndPoints? DiscoverEndPoint(EndPoint failedEndPoint) {
 			var oldGossip = Interlocked.Exchange(ref _oldGossip, null);
 			var gossipCandidates = oldGossip != null
 				? GetGossipCandidatesFromOldGossip(oldGossip, failedEndPoint)
@@ -124,12 +124,11 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private GossipSeed[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip,
-			IPEndPoint failedTcpEndPoint) {
-			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromOldGossip, failedTcpEndPoint: {0}.", failedTcpEndPoint);
+			EndPoint failedTcpEndPoint) {
 			var gossipCandidates = failedTcpEndPoint == null
 				? oldGossip.ToArray()
-				: oldGossip.Where(x => !(x.ExternalTcpPort == failedTcpEndPoint.Port
-				                         && IPAddress.Parse(x.ExternalTcpIp).Equals(failedTcpEndPoint.Address)))
+				: oldGossip.Where(x => !(x.ExternalTcpPort == failedTcpEndPoint.GetPort()
+				                         && x.ExternalTcpIp.Equals(failedTcpEndPoint.GetHost())))
 					.ToArray();
 			return ArrangeGossipCandidates(gossipCandidates);
 		}
@@ -140,10 +139,10 @@ namespace EventStore.ClientAPI.Internal {
 			int j = members.Length;
 			for (int k = 0; k < members.Length; ++k) {
 				if (members[k].State == ClusterMessages.VNodeState.Manager)
-					result[--j] = new GossipSeed(new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp),
+					result[--j] = new GossipSeed(new DnsEndPoint(members[k].ExternalHttpIp,
 						members[k].ExternalHttpPort));
 				else
-					result[++i] = new GossipSeed(new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp),
+					result[++i] = new GossipSeed(new DnsEndPoint(members[k].ExternalHttpIp,
 						members[k].ExternalHttpPort));
 			}
 
@@ -171,13 +170,16 @@ namespace EventStore.ClientAPI.Internal {
 			ClusterMessages.ClusterInfoDto result = null;
 			var completed = new ManualResetEventSlim(false);
 
-			var url = endPoint.EndPoint.ToHttpUrl(endPoint.SeedOverTls ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA, "/gossip?format=json");
+			var url = endPoint.EndPoint.ToHttpUrl(
+				endPoint.SeedOverTls ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA,
+				"/gossip?format=json");
 			_client.Get(
 				url,
 				null,
 				response => {
 					if (response.HttpStatusCode != HttpStatusCode.OK) {
-						_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode, response.StatusDescription);
+						_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode,
+							response.StatusDescription);
 						completed.Set();
 						return;
 					}
@@ -226,13 +228,13 @@ namespace EventStore.ClientAPI.Internal {
 						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
 					break;
 				case NodePreference.Follower:
-					nodes = nodes.OrderBy(nodeEntry => 
+					nodes = nodes.OrderBy(nodeEntry =>
 							nodeEntry.State != ClusterMessages.VNodeState.Follower &&
-							 nodeEntry.State != ClusterMessages.VNodeState.Slave)
+							nodeEntry.State != ClusterMessages.VNodeState.Slave)
 						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
 					RandomShuffle(nodes, 0,
 						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Follower ||
-						                          nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
+						                         nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
 					break;
 				case NodePreference.ReadOnlyReplica:
 					nodes = nodes.OrderBy(nodeEntry => !IsReadOnlyReplicaState(nodeEntry.State))
@@ -249,9 +251,9 @@ namespace EventStore.ClientAPI.Internal {
 				return null;
 			}
 
-			var normTcp = new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
+			var normTcp = new DnsEndPoint(node.ExternalTcpIp, node.ExternalTcpPort);
 			var secTcp = node.ExternalSecureTcpPort > 0
-				? new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalSecureTcpPort)
+				? new DnsEndPoint(node.ExternalTcpIp, node.ExternalSecureTcpPort)
 				: null;
 			_log.Info("Discovering: found best choice [{0},{1}] ({2}).", normTcp,
 				secTcp == null ? "n/a" : secTcp.ToString(), node.State);
@@ -260,8 +262,8 @@ namespace EventStore.ClientAPI.Internal {
 
 		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {
 			return state == ClusterMessages.VNodeState.ReadOnlyLeaderless
-				|| state == ClusterMessages.VNodeState.PreReadOnlyReplica
-				|| state == ClusterMessages.VNodeState.ReadOnlyReplica;
+			       || state == ClusterMessages.VNodeState.PreReadOnlyReplica
+			       || state == ClusterMessages.VNodeState.ReadOnlyReplica;
 		}
 	}
 }

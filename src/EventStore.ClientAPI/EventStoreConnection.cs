@@ -168,9 +168,9 @@ namespace EventStore.ClientAPI {
 		/// Creates a new <see cref="IEventStoreConnection"/> to single node using default <see cref="ConnectionSettings"/>
 		/// </summary>
 		/// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
-		/// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
+		/// <param name="tcpEndPoint">The <see cref="EndPoint"/> to connect to.</param>
 		/// <returns>a new <see cref="IEventStoreConnection"/></returns>
-		public static IEventStoreConnection Create(IPEndPoint tcpEndPoint, string connectionName = null) {
+		public static IEventStoreConnection Create(EndPoint tcpEndPoint, string connectionName = null) {
 			return Create(ConnectionSettings.Default, tcpEndPoint, connectionName);
 		}
 
@@ -178,10 +178,10 @@ namespace EventStore.ClientAPI {
 		/// Creates a new <see cref="IEventStoreConnection"/> to single node using specific <see cref="ConnectionSettings"/>
 		/// </summary>
 		/// <param name="connectionSettings">The <see cref="ConnectionSettings"/> to apply to the new connection</param>
-		/// <param name="tcpEndPoint">The <see cref="IPEndPoint"/> to connect to.</param>
+		/// <param name="tcpEndPoint">The <see cref="EndPoint"/> to connect to.</param>
 		/// <param name="connectionName">Optional name of connection (will be generated automatically, if not provided)</param>
 		/// <returns>a new <see cref="IEventStoreConnection"/></returns>
-		public static IEventStoreConnection Create(ConnectionSettings connectionSettings, IPEndPoint tcpEndPoint,
+		public static IEventStoreConnection Create(ConnectionSettings connectionSettings, EndPoint tcpEndPoint,
 			string connectionName = null) {
 			Ensure.NotNull(connectionSettings, "settings");
 			Ensure.NotNull(tcpEndPoint, "tcpEndPoint");

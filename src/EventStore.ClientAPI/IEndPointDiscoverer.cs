@@ -7,9 +7,9 @@ namespace EventStore.ClientAPI {
 	/// </summary>
 	public interface IEndPointDiscoverer {
 		/// <summary>
-		/// Called to discover a new <see cref="IPEndPoint"/>
+		/// Called to discover a new <see cref="EndPoint"/>
 		/// </summary>
-		/// <param name="failedTcpEndPoint">The <see cref="IPEndPoint"/>The recently failed endpoint</param>
-		Task<NodeEndPoints> DiscoverAsync(IPEndPoint failedTcpEndPoint);
+		/// <param name="failedTcpEndPoint">The <see cref="EndPoint"/>The recently failed endpoint</param>
+		Task<NodeEndPoints> DiscoverAsync(EndPoint failedTcpEndPoint);
 	}
 }

@@ -166,7 +166,7 @@ namespace EventStore.ClientAPI.Internal {
 			_connectingPhase = ConnectingPhase.ConnectionEstablishing;
 			_connection = new TcpPackageConnection(
 				_settings.Log,
-				endPoint,
+				endPoint.ResolveDnsToIPAddress(),
 				Guid.NewGuid(),
 				_settings.UseSslConnection,
 				_settings.ValidateServer,
@@ -624,8 +624,8 @@ namespace EventStore.ClientAPI.Internal {
 
 		private void ReconnectTo(NodeEndPoints endPoints) {
 			IPEndPoint endPoint = _settings.UseSslConnection
-				? endPoints.SecureTcpEndPoint ?? endPoints.TcpEndPoint
-				: endPoints.TcpEndPoint;
+				? endPoints.SecureTcpEndPoint.ResolveDnsToIPAddress() ?? endPoints.TcpEndPoint.ResolveDnsToIPAddress()
+				: endPoints.TcpEndPoint.ResolveDnsToIPAddress();
 			if (endPoint == null) {
 				CloseConnection("No end point is specified while trying to reconnect.");
 				return;

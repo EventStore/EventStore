@@ -8,15 +8,14 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
-using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Common.Utils;
-using System.Collections.Concurrent;
 using EventStore.ClientAPI.Common.Utils.Threading;
 
 namespace EventStore.ClientAPI.Transport.Tcp {
 	internal class TcpConnectionSsl : TcpConnectionBase, ITcpConnection {
 		public static ITcpConnection CreateConnectingConnection(ILogger log,
 			Guid connectionId,
+			string targetHost,
 			IPEndPoint remoteEndPoint,
 			bool validateServer,
 			TcpClientConnector connector,
@@ -31,7 +30,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 					connection.InitClientSocket(socket);
 				},
 				(_, socket) => {
-					connection.InitSslStream(remoteEndPoint.Address.ToString(), validateServer);
+					connection.InitSslStream(targetHost, validateServer);
 					if (onConnectionEstablished != null)
 						ThreadPool.QueueUserWorkItem(o => onConnectionEstablished(connection));
 				},

@@ -6,21 +6,21 @@ namespace EventStore.ClientAPI.Messages {
 	internal static partial class ClientMessage {
 		public partial class NotHandled {
 			public partial class LeaderInfo {
-				public IPEndPoint ExternalTcpEndPoint {
+				public EndPoint ExternalTcpEndPoint {
 					get { return ExternalTcpAddress == null ? null :
-						new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort); }
+						new DnsEndPoint(ExternalTcpAddress, ExternalTcpPort); }
 				}
 
-				public IPEndPoint ExternalSecureTcpEndPoint {
+				public EndPoint ExternalSecureTcpEndPoint {
 					get {
 						return ExternalSecureTcpAddress == null || ExternalSecureTcpPort == null
 							? null
-							: new IPEndPoint(IPAddress.Parse(ExternalSecureTcpAddress), ExternalSecureTcpPort.Value);
+							: new DnsEndPoint(ExternalSecureTcpAddress, ExternalSecureTcpPort.Value);
 					}
 				}
 
-				public IPEndPoint ExternalHttpEndPoint {
-					get { return new IPEndPoint(IPAddress.Parse(ExternalHttpAddress), ExternalHttpPort); }
+				public EndPoint ExternalHttpEndPoint {
+					get { return new DnsEndPoint(ExternalHttpAddress, ExternalHttpPort); }
 				}
 			}
 		}

@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Internal;
 
 namespace EventStore.ClientAPI.Transport.Tcp {
 	//TODO GFY THIS CODE NEEDS SOME LOVE ITS KIND OF CONVOLUTED HOW ITS WORKING WITH TCP CONNECTIONS
@@ -31,7 +32,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		public ITcpConnection ConnectTo(ILogger log,
 			Guid connectionId,
-			IPEndPoint remoteEndPoint,
+			EndPoint remoteEndPoint,
 			bool ssl,
 			bool validateServer,
 			TimeSpan timeout,
@@ -41,12 +42,12 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			if (ssl) {
 				return TcpConnectionSsl.CreateConnectingConnection(
-					log, connectionId, remoteEndPoint, validateServer,
+					log, connectionId, remoteEndPoint.GetHost(), remoteEndPoint.ResolveDnsToIPAddress(), validateServer,
 					this, timeout, onConnectionEstablished, onConnectionFailed, onConnectionClosed);
 			}
 
 			return TcpConnection.CreateConnectingConnection(
-				log, connectionId, remoteEndPoint, this, timeout,
+				log, connectionId, remoteEndPoint.ResolveDnsToIPAddress(), this, timeout,
 				onConnectionEstablished, onConnectionFailed, onConnectionClosed);
 		}
 
