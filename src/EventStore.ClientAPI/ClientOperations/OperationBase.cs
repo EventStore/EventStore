@@ -35,14 +35,19 @@ namespace EventStore.ClientAPI.ClientOperations {
 			UserCredentials = userCredentials;
 		}
 
-		public TcpPackage CreateNetworkPackage(Guid correlationId) {
-			return new TcpPackage(_requestCommand,
-				UserCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-				correlationId,
-				UserCredentials != null ? UserCredentials.Username : null,
-				UserCredentials != null ? UserCredentials.Password : null,
-				CreateRequestDto().Serialize());
-		}
+		public TcpPackage CreateNetworkPackage(Guid correlationId) =>
+			UserCredentials?.AuthToken != null
+				? new TcpPackage(_requestCommand,
+					TcpFlags.Authenticated,
+					correlationId,
+					UserCredentials.AuthToken,
+					CreateRequestDto().Serialize())
+				: new TcpPackage(_requestCommand,
+					UserCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+					correlationId,
+					UserCredentials?.Username,
+					UserCredentials?.Password,
+					CreateRequestDto().Serialize());
 
 		public virtual InspectionResult InspectPackage(TcpPackage package) {
 			try {

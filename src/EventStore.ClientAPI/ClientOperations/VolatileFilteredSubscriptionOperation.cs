@@ -32,10 +32,14 @@ namespace EventStore.ClientAPI.ClientOperations {
 			var dto = new ClientMessage.FilteredSubscribeToStream(_streamId, _resolveLinkTos,
 				_filter.Value, _checkpointInterval);
 
-			return new TcpPackage(
-				TcpCommand.SubscribeToStreamFiltered, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-				_correlationId, _userCredentials != null ? _userCredentials.Username : null,
-				_userCredentials != null ? _userCredentials.Password : null, dto.Serialize());
+			return _userCredentials?.AuthToken != null
+				? new TcpPackage(
+					TcpCommand.SubscribeToStreamFiltered, TcpFlags.Authenticated,
+					_correlationId, _userCredentials.AuthToken, dto.Serialize())
+				: new TcpPackage(
+					TcpCommand.SubscribeToStreamFiltered,
+					_userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+					_correlationId, _userCredentials?.Username, _userCredentials?.Password, dto.Serialize());
 		}
 
 		protected override bool InspectPackage(TcpPackage package, out InspectionResult result) {

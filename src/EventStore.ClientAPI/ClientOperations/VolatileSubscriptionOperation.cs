@@ -18,10 +18,13 @@ namespace EventStore.ClientAPI.ClientOperations {
 
 		protected override TcpPackage CreateSubscriptionPackage() {
 			var dto = new ClientMessage.SubscribeToStream(_streamId, _resolveLinkTos);
-			return new TcpPackage(
-				TcpCommand.SubscribeToStream, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
-				_correlationId, _userCredentials != null ? _userCredentials.Username : null,
-				_userCredentials != null ? _userCredentials.Password : null, dto.Serialize());
+			return _userCredentials?.AuthToken != null
+				? new TcpPackage(
+					TcpCommand.SubscribeToStream, TcpFlags.Authenticated,
+					_correlationId, _userCredentials.AuthToken, dto.Serialize())
+				: new TcpPackage(
+					TcpCommand.SubscribeToStream, _userCredentials != null ? TcpFlags.Authenticated : TcpFlags.None,
+					_correlationId, _userCredentials?.Username, _userCredentials?.Password, dto.Serialize());
 		}
 
 		protected override bool InspectPackage(TcpPackage package, out InspectionResult result) {

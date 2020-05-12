@@ -116,9 +116,11 @@ namespace EventStore.ClientAPI.Transport.Http {
 		private void AddAuthenticationHeader(HttpRequestMessage request, UserCredentials userCredentials) {
 			Ensure.NotNull(userCredentials, "userCredentials");
 
-			var httpAuthentication = string.Format("{0}:{1}", userCredentials.Username, userCredentials.Password);
-			var encodedCredentials = Convert.ToBase64String(Helper.UTF8NoBom.GetBytes(httpAuthentication));
-			request.Headers.Authorization = new AuthenticationHeaderValue("Basic", encodedCredentials);
+			request.Headers.Authorization = userCredentials.AuthToken != null
+				? new AuthenticationHeaderValue("Bearer", userCredentials.AuthToken)
+				: new AuthenticationHeaderValue("Basic",
+					Convert.ToBase64String(
+						Helper.UTF8NoBom.GetBytes($"{userCredentials.Username}:{userCredentials.Password}")));
 		}
 
 		private Action<Task<HttpResponseMessage>> RequestSent(ClientOperationState state) {
