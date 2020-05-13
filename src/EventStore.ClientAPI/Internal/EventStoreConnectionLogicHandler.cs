@@ -277,7 +277,7 @@ namespace EventStore.ClientAPI.Internal {
 						TcpFlags.Authenticated,
 						_authInfo.CorrelationId,
 						_settings.DefaultUserCredentials.AuthToken,
-						default)
+						null)
 					: new TcpPackage(TcpCommand.Authenticate,
 						TcpFlags.Authenticated,
 						_authInfo.CorrelationId,

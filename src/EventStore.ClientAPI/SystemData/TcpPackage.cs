@@ -100,6 +100,11 @@ namespace EventStore.ClientAPI.SystemData {
 			: this(command, flags, correlationId, login, password, new ArraySegment<byte>(data ?? Empty.ByteArray)) {
 		}
 
+		public TcpPackage(TcpCommand command, TcpFlags flags, Guid correlationId, string authToken,
+			byte[] data)
+			: this(command, flags, correlationId, authToken, new ArraySegment<byte>(data ?? Empty.ByteArray)) {
+		}
+
 		public TcpPackage(TcpCommand command, TcpFlags flags, Guid correlationId, string login, string password,
 			ArraySegment<byte> data) : this(command, flags, correlationId, data) {
 			if ((flags & TcpFlags.Authenticated) != 0) {
