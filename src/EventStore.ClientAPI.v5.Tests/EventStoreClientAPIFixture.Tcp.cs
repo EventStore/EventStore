@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-using EventStore.ClientAPI;
 
 namespace EventStore.ClientAPI.Tests {
 	partial class EventStoreClientAPIFixture {
@@ -8,7 +7,7 @@ namespace EventStore.ClientAPI.Tests {
 
 		public IEventStoreConnection CreateConnection(
 			Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureSettings = default,
-			int? port = default) {
+			int? port = default, bool useDnsEndPoint = false) {
 			var settings = (configureSettings ?? DefaultConfigureSettings)(DefaultBuilder).Build();
 			return EventStoreConnection.Create(
 				settings,

@@ -40,7 +40,7 @@ namespace EventStore.ClientAPI.Tests {
 				new TestMessageHandler(response.ToJson()));
 
 			var result = await sut.DiscoverAsync(new IPEndPoint(IPAddress.Any, 1113));
-			Assert.Equal(1113, result.TcpEndPoint.Port);
+			Assert.Equal(1113, EndPointExtensions.GetPort(result.TcpEndPoint));
 		}
 	}
 

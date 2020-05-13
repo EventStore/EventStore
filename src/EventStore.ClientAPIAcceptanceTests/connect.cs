@@ -1,8 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace EventStore.ClientAPI.Tests {
 	public class connect : EventStoreClientAPITest {
@@ -69,6 +67,23 @@ namespace EventStore.ClientAPI.Tests {
 				nameof(closes_after_configured_amount_of_failed_reconnections),
 				ExpectedVersion.NoStream,
 				_fixture.CreateTestEvents()).WithTimeout());
+		}
+
+		[Theory, MemberData(nameof(UseSslTestCases))]
+		public async Task can_connect_to_dns_endpoint(bool useSsl) {
+			var streamName = $"{GetStreamName()}_{useSsl}";
+			using var connection = _fixture.CreateConnection(
+				builder => builder.UseSsl(useSsl)
+					.LimitReconnectionsTo(1)
+					.WithConnectionTimeoutOf(TimeSpan.FromSeconds(10))
+					.SetReconnectionDelayTo(TimeSpan.Zero)
+					.FailOnNoServerResponse(),
+				useSsl ? EventStoreClientAPIFixture.ExternalSecurePort : EventStoreClientAPIFixture.ExternalPort,
+				useDnsEndPoint: true);
+			await connection.ConnectAsync().WithTimeout();
+			var writeResult =
+				await connection.AppendToStreamAsync(streamName, ExpectedVersion.Any, _fixture.CreateTestEvents());
+			Assert.True(writeResult.LogPosition.PreparePosition > 0);
 		}
 	}
 }

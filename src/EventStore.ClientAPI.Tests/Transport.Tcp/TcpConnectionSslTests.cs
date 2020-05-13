@@ -38,6 +38,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 				var clientTcpConnection = ClientAPI.Transport.Tcp.TcpConnectionSsl.CreateConnectingConnection(
 					new NoopLogger(),
 					Guid.NewGuid(),
+					listeningSocket.LocalEndPoint.GetHost(),
 					(IPEndPoint)listeningSocket.LocalEndPoint,
 					false,
 					new ClientAPI.Transport.Tcp.TcpClientConnector(),
