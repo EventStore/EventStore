@@ -1,0 +1,20 @@
+name: Initiate Release
+ 
+on:
+  push:
+    tags:
+      - "v*"
+ 
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=version::${GITHUB_REF:11}
+      - name: Perform Release 
+        run: |
+          curl -X POST https://api.github.com/repos/EventStore/TrainStation/dispatches \
+          -H 'Accept: application/vnd.github.everest-preview+json' \
+          -u ${{ secrets.GH_PAT }} \
+          --data '{"event_type": "release", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'", "version": "${{ steps.get_version.outputs.version }}" }}'
