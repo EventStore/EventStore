@@ -36,7 +36,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private readonly ITcpConnection _connection;
 
 		public TcpPackageConnection(ILogger log,
-			IPEndPoint remoteEndPoint,
+			EndPoint remoteEndPoint,
 			Guid connectionId,
 			bool ssl,
 			bool validateServer,
