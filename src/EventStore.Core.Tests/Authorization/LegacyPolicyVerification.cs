@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authorization;
 using NUnit.Framework;
 
@@ -73,12 +74,30 @@ namespace EventStore.Core.Tests.Authorization {
 			ClaimsPrincipal userOps = CreatePrincipal("opsuser", SystemRoles.Operations);
 			ClaimsPrincipal user1 = CreatePrincipal("test");
 			ClaimsPrincipal user2 = CreatePrincipal("test2");
+			ClaimsPrincipal userSystem = SystemAccounts.System;
 
 			var admins = new[] {admin, userAdmin};
 			var operations = new[] {ops, userOps};
 			var users = new[] {user1, user2};
+			var system = new[] {userSystem};
 			var anonymous = new[]{new ClaimsPrincipal(), new ClaimsPrincipal(new ClaimsIdentity(new Claim[]{new Claim(ClaimTypes.Anonymous, ""), })), };
+			foreach (var user in system) {
+				foreach (var operation in SystemOperations()) {
+					yield return new PolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						true,
+						false
+					);
+				}
+			}
 			foreach (var user in admins) {
+				foreach (var operation in SystemOperations()) {
+					yield return new PolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						false,
+						false
+					);
+				}
 				foreach (var operation in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
@@ -120,6 +139,13 @@ namespace EventStore.Core.Tests.Authorization {
 			}
 
 			foreach (var user in operations) {
+				foreach (var operation in SystemOperations()) {
+					yield return new PolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						false,
+						false
+					);
+				}
 				foreach (var operation in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
@@ -161,6 +187,13 @@ namespace EventStore.Core.Tests.Authorization {
 			}
 
 			foreach (var user in users) {
+				foreach (var operation in SystemOperations()) {
+					yield return new PolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						false,
+						false
+					);
+				}
 				foreach (var operation in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
@@ -201,6 +234,13 @@ namespace EventStore.Core.Tests.Authorization {
 			}
 
 			foreach (var user in anonymous) {
+				foreach (var operation in SystemOperations()) {
+					yield return new PolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						false,
+						false
+					);
+				}
 				foreach (var operation in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
@@ -238,6 +278,19 @@ namespace EventStore.Core.Tests.Authorization {
 						operation.Item3 != null
 					);
 				}
+			}
+
+			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> SystemOperations() {
+				yield return CreateOperation(Operations.Node.Gossip.Update);
+
+				yield return CreateOperation(Operations.Node.Elections.Prepare);
+				yield return CreateOperation(Operations.Node.Elections.PrepareOk);
+				yield return CreateOperation(Operations.Node.Elections.ViewChange);
+				yield return CreateOperation(Operations.Node.Elections.ViewChangeProof);
+				yield return CreateOperation(Operations.Node.Elections.Proposal);
+				yield return CreateOperation(Operations.Node.Elections.Accept);
+				yield return CreateOperation(Operations.Node.Elections.LeaderIsResigning);
+				yield return CreateOperation(Operations.Node.Elections.LeaderIsResigningOk);
 			}
 
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AdminOperations() {
@@ -312,17 +365,7 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.Statistics.Tcp);
 				yield return CreateOperation(Operations.Node.Statistics.Custom);
 
-				yield return CreateOperation(Operations.Node.Elections.Prepare);
-				yield return CreateOperation(Operations.Node.Elections.PrepareOk);
-				yield return CreateOperation(Operations.Node.Elections.ViewChange);
-				yield return CreateOperation(Operations.Node.Elections.ViewChangeProof);
-				yield return CreateOperation(Operations.Node.Elections.Proposal);
-				yield return CreateOperation(Operations.Node.Elections.Accept);
-				yield return CreateOperation(Operations.Node.Elections.LeaderIsResigning);
-				yield return CreateOperation(Operations.Node.Elections.LeaderIsResigningOk);
-
 				yield return CreateOperation(Operations.Node.Gossip.Read);
-				yield return CreateOperation(Operations.Node.Gossip.Update);
 
 				yield return (new Operation(Operations.Streams.Read).WithParameter(
 						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),

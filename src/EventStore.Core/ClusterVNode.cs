@@ -451,6 +451,7 @@ namespace EventStore.Core {
 			});
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
+				new ClientCertificateAuthenticationProvider(),
 				new BasicHttpAuthenticationProvider(_authenticationProvider),
 			};
 			if (vNodeSettings.EnableTrustedAuth)
@@ -829,7 +830,6 @@ namespace EventStore.Core {
 
 			return await tcs.Task.ConfigureAwait(false);
 		}
-
 
 		public static ValueTuple<bool, string> ValidateServerCertificateWithTrustedRootCerts(X509Certificate certificate,
 			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
