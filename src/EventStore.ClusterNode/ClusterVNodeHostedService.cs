@@ -83,6 +83,13 @@ namespace EventStore.ClusterNode {
 					"The given database path starts with a '~'. Event Store does not expand '~'.");
 			}
 
+			string absolutePathIndex = Path.GetFullPath(options.Index);
+			string absolutePathDb = Path.GetFullPath(options.Db);
+			if(absolutePathDb.Equals(absolutePathIndex))
+			{
+				throw new ApplicationInitializationException($"The given database ({absolutePathDb}) and index ({absolutePathIndex}) paths cannot point to the same directory.");
+			}
+
 			if (options.Log.StartsWith("~")) {
 				throw new ApplicationInitializationException(
 					"The given log path starts with a '~'. Event Store does not expand '~'.");
