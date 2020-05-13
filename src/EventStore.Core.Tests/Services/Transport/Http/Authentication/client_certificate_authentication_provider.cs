@@ -11,18 +11,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	public class TestFixtureWithClientCertificateHttpAuthenticationProvider {
 		protected ClientCertificateAuthenticationProvider _provider;
 
-		protected void SetUpProvider(bool validationResult = true) {
-			_provider = new ClientCertificateAuthenticationProvider(x => (validationResult, null),
-				new X509Certificate2Collection());
-		}
-
-		protected static X509Certificate2 LoadTestClientCertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream(
-					"EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node2.node2.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
+		protected void SetUpProvider() {
+			_provider = new ClientCertificateAuthenticationProvider();
 		}
 	}
 
@@ -34,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 		[SetUp]
 		public void SetUp() {
-			SetUpProvider(true);
+			SetUpProvider();
 			var context = new DefaultHttpContext();
 			Assert.IsNull(context.Connection.ClientCertificate);
 			_authenticateResult = _provider.Authenticate(context, out _);
@@ -48,28 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 	[TestFixture]
 	public class
-		when_handling_a_request_with_a_client_certificate_that_fails_validation :
-			TestFixtureWithClientCertificateHttpAuthenticationProvider {
-		private bool _authenticateResult;
-
-		[SetUp]
-		public void SetUp() {
-			SetUpProvider(validationResult: false);
-			var context = new DefaultHttpContext();
-			context.Connection.ClientCertificate = LoadTestClientCertificate();
-			_authenticateResult = _provider.Authenticate(context, out _);
-		}
-
-		[Test]
-		public void returns_false() {
-			Assert.IsFalse(_authenticateResult);
-		}
-	}
-
-
-	[TestFixture]
-	public class
-		when_handling_a_request_with_a_client_certificate_that_passes_validation :
+		when_handling_a_request_with_a_client_certificate :
 			TestFixtureWithClientCertificateHttpAuthenticationProvider {
 		private HttpAuthenticationRequest _authenticateRequest;
 		private bool _authenticateResult;
@@ -77,9 +46,9 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 		[SetUp]
 		public void SetUp() {
-			SetUpProvider(validationResult: true);
+			SetUpProvider();
 			_context = new DefaultHttpContext();
-			_context.Connection.ClientCertificate = LoadTestClientCertificate();
+			_context.Connection.ClientCertificate = new X509Certificate2();
 			_authenticateResult = _provider.Authenticate(_context, out _authenticateRequest);
 		}
 
