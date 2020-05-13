@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using EventStore.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -51,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private ReplicationMessage.ReplicaSubscriptionRequest UnwrapReplicaSubscriptionRequest(TcpPackage package,
 			IEnvelope envelope, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<ReplicationMessageDto.SubscribeReplica>();
-			var vnodeTcpEndPoint = new DnsEndPoint(Helper.UTF8NoBom.GetString(dto.Ip), dto.Port);
+			var vnodeTcpEndPoint = new EventStoreEndPoint(Helper.UTF8NoBom.GetString(dto.Ip), dto.Port);
 			var lastEpochs = dto.LastEpochs.Safe()
 				.Select(x => new Epoch(x.EpochPosition, x.EpochNumber, new Guid(x.EpochId))).ToArray();
 			return new ReplicationMessage.ReplicaSubscriptionRequest(package.CorrelationId,

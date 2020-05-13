@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using EventStore.Common;
 using EventStore.Core.Data;
 using NUnit.Framework;
 
@@ -12,15 +13,15 @@ namespace EventStore.Core.Tests.Cluster {
 			var port = 1113;
 			var memberWithDnsEndPoint = EventStore.Core.Cluster.MemberInfo.Initial(Guid.Empty, DateTime.UtcNow,
 				VNodeState.Unknown, true,
-				new DnsEndPoint(ipAddress, port),
-				new DnsEndPoint(ipAddress, port),
-				new DnsEndPoint(ipAddress, port),
-				new DnsEndPoint(ipAddress, port),
-				new DnsEndPoint(ipAddress, port),
-				new DnsEndPoint(ipAddress, port), 0, false);
+				new EventStoreEndPoint(ipAddress, port),
+				new EventStoreEndPoint(ipAddress, port),
+				new EventStoreEndPoint(ipAddress, port),
+				new EventStoreEndPoint(ipAddress, port),
+				new EventStoreEndPoint(ipAddress, port),
+				new EventStoreEndPoint(ipAddress, port), 0, false);
 
 			var ipEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
-			var dnsEndPoint = new DnsEndPoint(ipAddress, port);
+			var dnsEndPoint = new EventStoreEndPoint(ipAddress, port);
 
 			Assert.True(memberWithDnsEndPoint.Is(ipEndPoint));
 			Assert.True(memberWithDnsEndPoint.Is(dnsEndPoint));
@@ -40,7 +41,7 @@ namespace EventStore.Core.Tests.Cluster {
 				new IPEndPoint(IPAddress.Parse(ipAddress), port), 0, false);
 
 			var ipEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
-			var dnsEndPoint = new DnsEndPoint(ipAddress, port);
+			var dnsEndPoint = new EventStoreEndPoint(ipAddress, port);
 
 			Assert.True(memberWithDnsEndPoint.Is(ipEndPoint));
 			Assert.True(memberWithDnsEndPoint.Is(dnsEndPoint));

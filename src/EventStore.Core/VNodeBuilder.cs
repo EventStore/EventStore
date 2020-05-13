@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -58,7 +59,7 @@ namespace EventStore.Core {
 
 		protected bool _discoverViaDns;
 		protected string _clusterDns;
-		protected List<EndPoint> _gossipSeeds;
+		protected List<EventStoreEndPoint> _gossipSeeds;
 
 		protected TimeSpan _minFlushDelay;
 
@@ -177,7 +178,7 @@ namespace EventStore.Core {
 
 			_discoverViaDns = Opts.DiscoverViaDnsDefault;
 			_clusterDns = Opts.ClusterDnsDefault;
-			_gossipSeeds = new List<EndPoint>();
+			_gossipSeeds = new List<EventStoreEndPoint>();
 
 			_minFlushDelay = TimeSpan.FromMilliseconds(Opts.MinFlushDelayMsDefault);
 
@@ -562,7 +563,7 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithGossipSeeds(params EndPoint[] endpoints) {
 			_gossipSeeds.Clear();
-			_gossipSeeds.AddRange(endpoints);
+			_gossipSeeds.AddRange(endpoints.Select(x => new EventStoreEndPoint(x.GetHost(), x.GetPort())));
 			_discoverViaDns = false;
 			return this;
 		}
@@ -1341,35 +1342,35 @@ namespace EventStore.Core {
 					}
 				}
 
-				DnsEndPoint intTcpEndPoint = null;
+				EventStoreEndPoint intTcpEndPoint = null;
 				if (_internalTcp != null) {
 					var intTcpPort = _advertiseInternalTcpPortAs > 0 ? _advertiseInternalTcpPortAs : _internalTcp.Port;
-					intTcpEndPoint = new DnsEndPoint(intHostToAdvertise, intTcpPort);
+					intTcpEndPoint = new EventStoreEndPoint(intHostToAdvertise, intTcpPort);
 				}
 
-				DnsEndPoint intSecureTcpEndPoint = null;
+				EventStoreEndPoint intSecureTcpEndPoint = null;
 				if (_internalSecureTcp != null) {
 					var intSecureTcpPort = _advertiseInternalSecureTcpPortAs > 0 ? _advertiseInternalSecureTcpPortAs : _internalSecureTcp.Port;
-					intSecureTcpEndPoint = new DnsEndPoint(intHostToAdvertise, intSecureTcpPort);
+					intSecureTcpEndPoint = new EventStoreEndPoint(intHostToAdvertise, intSecureTcpPort);
 				}
 
-				DnsEndPoint extTcpEndPoint = null;
+				EventStoreEndPoint extTcpEndPoint = null;
 				if (_externalTcp != null) {
 					int extTcpPort = _advertiseExternalTcpPortAs > 0 ? _advertiseExternalTcpPortAs : _externalTcp.Port;
-					extTcpEndPoint = new DnsEndPoint(extHostToAdvertise, extTcpPort);
+					extTcpEndPoint = new EventStoreEndPoint(extHostToAdvertise, extTcpPort);
 				}
 
-				DnsEndPoint extSecureTcpEndPoint = null;
+				EventStoreEndPoint extSecureTcpEndPoint = null;
 				if (_externalSecureTcp != null) {
 					int extSecureTcpPort = _advertiseExternalSecureTcpPortAs > 0 ? _advertiseExternalSecureTcpPortAs : _externalSecureTcp.Port;
-					extSecureTcpEndPoint = new DnsEndPoint(extHostToAdvertise, extSecureTcpPort);
+					extSecureTcpEndPoint = new EventStoreEndPoint(extHostToAdvertise, extSecureTcpPort);
 				}
 
 				var intHttpPort = _advertiseInternalHttpPortAs > 0 ? _advertiseInternalHttpPortAs : _internalHttp.Port;
 				var extHttpPort = _advertiseExternalHttpPortAs > 0 ? _advertiseExternalHttpPortAs : _externalHttp.Port;
 
-				var intHttpEndPoint = new DnsEndPoint(intHostToAdvertise, intHttpPort);
-				var extHttpEndPoint = new DnsEndPoint(extHostToAdvertise, extHttpPort);
+				var intHttpEndPoint = new EventStoreEndPoint(intHostToAdvertise, intHttpPort);
+				var extHttpEndPoint = new EventStoreEndPoint(extHostToAdvertise, extHttpPort);
 
 				_gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
 					extTcpEndPoint, extSecureTcpEndPoint,

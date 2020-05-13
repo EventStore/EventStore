@@ -4,6 +4,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using EventStore.BufferManagement;
+using EventStore.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.TestClient.Commands;
@@ -36,8 +37,8 @@ namespace EventStore.TestClient {
 		public Client(ClientOptions options) {
 			Options = options;
 
-			TcpEndpoint = new DnsEndPoint(options.Host, options.TcpPort);
-			HttpEndpoint = new DnsEndPoint(options.Host, options.HttpPort);
+			TcpEndpoint = new EventStoreEndPoint(options.Host, options.TcpPort);
+			HttpEndpoint = new EventStoreEndPoint(options.Host, options.HttpPort);
 
 			UseSsl = options.UseTls;
 			ValidateServer = options.TlsValidateServer;

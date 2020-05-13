@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using EventStore.Client;
+using EventStore.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -51,12 +52,12 @@ namespace EventStore.Core.Cluster {
 				new MemberInfo(
 					Uuid.FromDto(x.InstanceId).ToGuid(), x.TimeStamp.FromTicksSinceEpoch(), (VNodeState)x.State,
 					x.IsAlive,
-					!x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
-					x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
-					!x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
-					x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
-					new DnsEndPoint(x.InternalHttp.Address, (int)x.InternalHttp.Port),
-					new DnsEndPoint(x.ExternalHttp.Address, (int)x.ExternalHttp.Port),
+					!x.InternalTcpUsesTls ? new EventStoreEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
+					x.InternalTcpUsesTls ? new EventStoreEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
+					!x.ExternalTcpUsesTls && x.ExternalTcp != null ? new EventStoreEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
+					x.ExternalTcpUsesTls && x.ExternalTcp != null ? new EventStoreEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
+					new EventStoreEndPoint(x.InternalHttp.Address, (int)x.InternalHttp.Port),
+					new EventStoreEndPoint(x.ExternalHttp.Address, (int)x.ExternalHttp.Port),
 					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 					x.EpochPosition, x.EpochNumber, Uuid.FromDto(x.EpochId).ToGuid(), x.NodePriority,
 					x.IsReadOnlyReplica

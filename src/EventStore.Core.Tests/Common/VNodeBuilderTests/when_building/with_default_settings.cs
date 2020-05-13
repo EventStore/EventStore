@@ -103,10 +103,10 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(internalHttp, _settings.NodeInfo.InternalHttp);
 			Assert.AreEqual(externalHttp, _settings.NodeInfo.ExternalHttp);
 
-			Assert.AreEqual(internalTcp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.InternalTcp);
-			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.ExternalTcp);
-			Assert.AreEqual(internalHttp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.InternalHttp);
-			Assert.AreEqual(externalHttp.ToDnsEndPoint(), _settings.GossipAdvertiseInfo.ExternalHttp);
+			Assert.True(internalTcp.EndPointEquals(_settings.GossipAdvertiseInfo.InternalTcp));
+			Assert.True(externalTcp.EndPointEquals(_settings.GossipAdvertiseInfo.ExternalTcp));
+			Assert.True(internalHttp.EndPointEquals(_settings.GossipAdvertiseInfo.InternalHttp));
+			Assert.True(externalHttp.EndPointEquals(_settings.GossipAdvertiseInfo.ExternalHttp));
 		}
 
 		[Test]

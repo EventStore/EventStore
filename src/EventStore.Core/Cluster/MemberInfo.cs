@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using EventStore.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -127,16 +128,16 @@ namespace EventStore.Core.Cluster {
 			TimeStamp = dto.TimeStamp;
 			State = dto.State;
 			IsAlive = dto.IsAlive;
-			InternalTcpEndPoint = new DnsEndPoint(dto.InternalTcpIp, dto.InternalTcpPort);
+			InternalTcpEndPoint = new EventStoreEndPoint(dto.InternalTcpIp, dto.InternalTcpPort);
 			InternalSecureTcpEndPoint = dto.InternalSecureTcpPort > 0
-				? new DnsEndPoint(dto.InternalTcpIp, dto.InternalSecureTcpPort)
+				? new EventStoreEndPoint(dto.InternalTcpIp, dto.InternalSecureTcpPort)
 				: null;
-			ExternalTcpEndPoint = dto.ExternalTcpIp != null ? new DnsEndPoint(dto.ExternalTcpIp, dto.ExternalTcpPort) : null;
+			ExternalTcpEndPoint = dto.ExternalTcpIp != null ? new EventStoreEndPoint(dto.ExternalTcpIp, dto.ExternalTcpPort) : null;
 			ExternalSecureTcpEndPoint = dto.ExternalTcpIp != null && dto.ExternalSecureTcpPort > 0
-				? new DnsEndPoint(dto.ExternalTcpIp, dto.ExternalSecureTcpPort)
+				? new EventStoreEndPoint(dto.ExternalTcpIp, dto.ExternalSecureTcpPort)
 				: null;
-			InternalHttpEndPoint = new DnsEndPoint(dto.InternalHttpIp, dto.InternalHttpPort);
-			ExternalHttpEndPoint = new DnsEndPoint(dto.ExternalHttpIp, dto.ExternalHttpPort);
+			InternalHttpEndPoint = new EventStoreEndPoint(dto.InternalHttpIp, dto.InternalHttpPort);
+			ExternalHttpEndPoint = new EventStoreEndPoint(dto.ExternalHttpIp, dto.ExternalHttpPort);
 			LastCommitPosition = dto.LastCommitPosition;
 			WriterCheckpoint = dto.WriterCheckpoint;
 			ChaserCheckpoint = dto.ChaserCheckpoint;

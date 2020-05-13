@@ -21,6 +21,7 @@ namespace EventStore.Common.Utils {
 			endpoint switch {
 				IPEndPoint ip => ip.Address.ToString(),
 				DnsEndPoint dns => dns.Host,
+				EventStoreEndPoint ep => ep.Host,
 				_ => throw new ArgumentOutOfRangeException(nameof(endpoint), endpoint?.GetType(),
 					"An invalid endpoint has been provided")
 			};
@@ -29,6 +30,7 @@ namespace EventStore.Common.Utils {
 			endpoint switch {
 				IPEndPoint ip => ip.Port,
 				DnsEndPoint dns => dns.Port,
+				EventStoreEndPoint ep => ep.Port,
 				_ => throw new ArgumentOutOfRangeException(nameof(endpoint), endpoint?.GetType(),
 					"An invalid endpoint has been provided")
 			};
@@ -43,8 +45,8 @@ namespace EventStore.Common.Utils {
 			return new IPEndPoint(ipaddress, endpoint.GetPort());
 		}
 
-		public static DnsEndPoint ToDnsEndPoint(this IPEndPoint ipEndPoint) {
-			return new DnsEndPoint(ipEndPoint.Address.ToString(), ipEndPoint.Port);
+		public static EventStoreEndPoint ToEventStoreEndPoint(this IPEndPoint ipEndPoint) {
+			return new EventStoreEndPoint(ipEndPoint.Address.ToString(), ipEndPoint.Port);
 		}
 
 		private static string CreateHttpUrl(string schema, string host, int port, string path) {

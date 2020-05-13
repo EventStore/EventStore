@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
+using EventStore.Common;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -28,7 +29,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var clusterInfo = EventStore.Core.Cluster.ClusterInfo.FromGrpcClusterInfo(request.Info);
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(msg => GossipResponse(msg, tcs)),
-				clusterInfo, new DnsEndPoint(request.Server.Address, (int)request.Server.Port)));
+				clusterInfo, new EventStoreEndPoint(request.Server.Address, (int)request.Server.Port)));
 			return await tcs.Task.ConfigureAwait(false);
 		}
 

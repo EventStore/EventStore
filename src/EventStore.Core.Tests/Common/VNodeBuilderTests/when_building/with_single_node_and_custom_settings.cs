@@ -557,9 +557,10 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			var intHttpEndpoint = new IPEndPoint(internalIPToAdvertise, 1115);
 			var extHttpEndpoint = new IPEndPoint(externalIPToAdvertise, 1116);
 
-			_advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint.ToDnsEndPoint(),
-				intSecTcpEndpoint.ToDnsEndPoint(), extTcpEndpoint.ToDnsEndPoint(),
-				extSecTcpEndpoint.ToDnsEndPoint(), intHttpEndpoint.ToDnsEndPoint(), extHttpEndpoint.ToDnsEndPoint(),
+			_advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint.ToEventStoreEndPoint(),
+				intSecTcpEndpoint.ToEventStoreEndPoint(), extTcpEndpoint.ToEventStoreEndPoint(),
+				extSecTcpEndpoint.ToEventStoreEndPoint(), intHttpEndpoint.ToEventStoreEndPoint(),
+				extHttpEndpoint.ToEventStoreEndPoint(),
 				internalHostAdvertiseAs, externalHostAdvertiseAs,
 				intHttpEndpoint.Port, extHttpEndpoint.Port);
 

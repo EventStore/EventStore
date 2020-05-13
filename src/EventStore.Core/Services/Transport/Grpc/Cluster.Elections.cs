@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
+using EventStore.Common;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authorization;
@@ -35,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.ViewChange(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new EventStoreEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.AttemptedView));
 			return EmptyResult;
 		}
@@ -47,7 +48,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.ViewChangeProof(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new EventStoreEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.InstalledView));
 			return EmptyResult;
 		}
@@ -59,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Prepare(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new EventStoreEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.View));
 			return EmptyResult;
 		}
@@ -72,7 +73,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_bus.Publish(new ElectionMessage.PrepareOk(
 				request.View,
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new EventStoreEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				request.EpochNumber,
 				request.EpochPosition,
 				Uuid.FromDto(request.EpochId).ToGuid(),
@@ -90,9 +91,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Proposal(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
+				new EventStoreEndPoint(request.ServerInternalHttp.Address, (int)request.ServerInternalHttp.Port),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address, (int)request.LeaderInternalHttp.Port),
+				new EventStoreEndPoint(request.LeaderInternalHttp.Address, (int)request.LeaderInternalHttp.Port),
 				request.View,
 				request.EpochNumber,
 				request.EpochPosition,
@@ -111,10 +112,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.Accept(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address,
+				new EventStoreEndPoint(request.ServerInternalHttp.Address,
 					(int)request.ServerInternalHttp.Port),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address,
+				new EventStoreEndPoint(request.LeaderInternalHttp.Address,
 					(int)request.LeaderInternalHttp.Port),
 				request.View));
 			return EmptyResult;
@@ -127,7 +128,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.LeaderIsResigning(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address,
+				new EventStoreEndPoint(request.LeaderInternalHttp.Address,
 					(int)request.LeaderInternalHttp.Port)));
 			return EmptyResult;
 		}
@@ -139,10 +140,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			_bus.Publish(new ElectionMessage.LeaderIsResigningOk(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderInternalHttp.Address,
+				new EventStoreEndPoint(request.LeaderInternalHttp.Address,
 					(int)request.LeaderInternalHttp.Port),
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerInternalHttp.Address,
+				new EventStoreEndPoint(request.ServerInternalHttp.Address,
 					(int)request.ServerInternalHttp.Port)));
 			return EmptyResult;
 		}
