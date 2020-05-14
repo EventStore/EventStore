@@ -161,7 +161,7 @@ namespace EventStore.ClusterNode {
 		}
 
 		private void RegisterWebControllers(NodeSubsystems[] enabledNodeSubsystems, ClusterNodeOptions options) {
-			if (options.AdminOnExt) {
+			if (!options.DisableAdminUi) {
 				Node.HttpService.SetupController(new ClusterWebUiController(Node.MainQueue,
 					enabledNodeSubsystems));
 			}
@@ -312,11 +312,11 @@ namespace EventStore.ClusterNode {
 				builder.DisableExternalTls();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
-			if (!options.AdminOnExt)
+			if (options.DisableAdminUi)
 				builder.NoAdminOnPublicInterface();
-			if (!options.StatsOnExt)
+			if (options.DisableStatsOnHttp)
 				builder.NoStatsOnPublicInterface();
-			if (!options.GossipOnExt)
+			if (options.DisableGossipOnHttp)
 				builder.NoGossipOnPublicInterface();
 			if (options.SkipDbVerify)
 				builder.DoNotVerifyDbHashes();

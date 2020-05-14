@@ -203,9 +203,9 @@ namespace EventStore.Core {
 
 			_disableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			_scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
-			_adminOnPublic = Opts.AdminOnExtDefault;
-			_statsOnPublic = Opts.StatsOnExtDefault;
-			_gossipOnPublic = Opts.GossipOnExtDefault;
+			_adminOnPublic = !Opts.DisableAdminUiDefault;
+			_statsOnPublic = !Opts.DisableStatsOnHttpDefault;
+			_gossipOnPublic = !Opts.DisableGossipOnHttpDefault;
 			_gossipInterval = TimeSpan.FromMilliseconds(Opts.GossipIntervalMsDefault);
 			_gossipAllowedTimeDifference = TimeSpan.FromMilliseconds(Opts.GossipAllowedDifferenceMsDefault);
 			_gossipTimeout = TimeSpan.FromMilliseconds(Opts.GossipTimeoutMsDefault);

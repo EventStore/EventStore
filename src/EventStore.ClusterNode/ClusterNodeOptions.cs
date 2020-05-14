@@ -96,14 +96,14 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.PrepareCountDescr, Opts.ClusterGroup)]
 		public int PrepareCount { get; set; }
 
-		[ArgDescription(Opts.AdminOnExtDescr, Opts.InterfacesGroup)]
-		public bool AdminOnExt { get; set; }
+		[ArgDescription(Opts.DisableAdminUiDescr, Opts.InterfacesGroup)]
+		public bool DisableAdminUi { get; set; }
 
-		[ArgDescription(Opts.StatsOnExtDescr, Opts.InterfacesGroup)]
-		public bool StatsOnExt { get; set; }
+		[ArgDescription(Opts.DisableStatsOnHttpDescr, Opts.InterfacesGroup)]
+		public bool DisableStatsOnHttp { get; set; }
 	
-		[ArgDescription(Opts.GossipOnExtDescr, Opts.InterfacesGroup)]
-		public bool GossipOnExt { get; set; }
+		[ArgDescription(Opts.DisableGossipOnHttpDescr, Opts.InterfacesGroup)]
+		public bool DisableGossipOnHttp { get; set; }
 
 		[ArgDescription(Opts.DisableScavengeMergeDescr, Opts.DbGroup)]
 		public bool DisableScavengeMerging { get; set; }
@@ -394,15 +394,15 @@ namespace EventStore.ClusterNode {
 			WriteTimeoutMs = Opts.WriteTimeoutMsDefault;
 			DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			ScavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
-			StatsOnExt = Opts.StatsOnExtDefault;
-			AdminOnExt = Opts.AdminOnExtDefault;
+			DisableStatsOnHttp = Opts.DisableStatsOnHttpDefault;
+			DisableAdminUi = Opts.DisableAdminUiDefault;
 			GossipIntervalMs = Opts.GossipIntervalMsDefault;
 			GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
 			GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
 			IndexCacheDepth = Opts.IndexCacheDepthDefault;
 			SkipIndexVerify = Opts.SkipIndexVerifyDefault;
 			OptimizeIndexMerge = Opts.OptimizeIndexMergeDefault;
-			GossipOnExt = Opts.GossipOnExtDefault;
+			DisableGossipOnHttp = Opts.DisableGossipOnHttpDefault;
 			EnableHistograms = Opts.HistogramEnabledDefault;
 			ReaderThreadsCount = Opts.ReaderThreadsCountDefault;
 

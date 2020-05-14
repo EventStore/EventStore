@@ -259,16 +259,14 @@ namespace EventStore.Core.Util {
 		public const string GossipTimeoutMsDescr = "The timeout, in ms, on gossip to another node.";
 		public const int GossipTimeoutMsDefault = 2500;
 
-		public const string AdminOnExtDescr = "Whether or not to run the admin ui on the HTTP endpoint";
-		public const bool AdminOnExtDefault = true;
+		public const string DisableAdminUiDescr = "Disables the admin ui on the HTTP endpoint";
+		public const bool DisableAdminUiDefault = false;
 
-		public const string GossipOnExtDescr = "Whether or not to accept gossip requests on the HTTP endpoint";
-		public const bool GossipOnExtDefault = true;
+		public const string DisableGossipOnHttpDescr = "Disables gossip requests on the HTTP endpoint";
+		public const bool DisableGossipOnHttpDefault = false;
 
-		public const string StatsOnExtDescr =
-			"Whether or not to accept statistics requests on the HTTP endpoint, needed if you use admin ui";
-
-		public const bool StatsOnExtDefault = true;
+		public const string DisableStatsOnHttpDescr = "Disables statistics requests on the HTTP endpoint";
+		public const bool DisableStatsOnHttpDefault = false;
 
 		public const string InternalIpDescr = "Internal IP Address.";
 		public static readonly IPAddress InternalIpDefault = IPAddress.Loopback;

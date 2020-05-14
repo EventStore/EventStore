@@ -48,9 +48,9 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				"ScavengeHistoryMaxAge");
 			Assert.AreEqual(Opts.DisableScavengeMergeDefault, _settings.DisableScavengeMerging,
 				"DisableScavengeMerging");
-			Assert.AreEqual(Opts.AdminOnExtDefault, _settings.AdminOnPublic, "AdminOnPublic");
-			Assert.AreEqual(Opts.StatsOnExtDefault, _settings.StatsOnPublic, "StatsOnPublic");
-			Assert.AreEqual(Opts.GossipOnExtDefault, _settings.GossipOnPublic, "GossipOnPublic");
+			Assert.AreEqual(Opts.DisableAdminUiDefault, _settings.AdminOnPublic, "AdminOnPublic");
+			Assert.AreEqual(Opts.DisableStatsOnHttpDefault, _settings.StatsOnPublic, "StatsOnPublic");
+			Assert.AreEqual(Opts.DisableGossipOnHttpDefault, _settings.GossipOnPublic, "GossipOnPublic");
 			Assert.AreEqual(Opts.MaxMemtableSizeDefault, _settings.MaxMemtableEntryCount, "MaxMemtableEntryCount");
 			Assert.AreEqual(Opts.StartStandardProjectionsDefault, _settings.StartStandardProjections,
 				"StartStandardProjections");
@@ -126,9 +126,9 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				"ScavengeHistoryMaxAge");
 			Assert.AreEqual(Opts.DisableScavengeMergeDefault, _settings.DisableScavengeMerging,
 				"DisableScavengeMerging");
-			Assert.AreEqual(Opts.AdminOnExtDefault, _settings.AdminOnPublic, "AdminOnPublic");
-			Assert.AreEqual(Opts.StatsOnExtDefault, _settings.StatsOnPublic, "StatsOnPublic");
-			Assert.AreEqual(Opts.GossipOnExtDefault, _settings.GossipOnPublic, "GossipOnPublic");
+			Assert.AreEqual(Opts.DisableAdminUiDefault, _settings.AdminOnPublic, "AdminOnPublic");
+			Assert.AreEqual(Opts.DisableStatsOnHttpDefault, _settings.StatsOnPublic, "StatsOnPublic");
+			Assert.AreEqual(Opts.DisableGossipOnHttpDefault, _settings.GossipOnPublic, "GossipOnPublic");
 			Assert.AreEqual(Opts.MaxMemtableSizeDefault, _settings.MaxMemtableEntryCount, "MaxMemtableEntryCount");
 			Assert.AreEqual(Opts.StartStandardProjectionsDefault, _settings.StartStandardProjections,
 				"StartStandardProjections");
