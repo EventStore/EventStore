@@ -29,9 +29,17 @@ namespace EventStore.ClientAPI {
 					typeof(GossipSeed[]), x => x.Split(',').Select(q => {
 						try {
 							var pieces = q.Trim().Split(':');
-							if (pieces.Length != 2) throw new Exception("Could not split IP address from port.");
+							if (pieces.Length != 2) throw new Exception("Could not split host from port.");
 
-							return new GossipSeed(new IPEndPoint(IPAddress.Parse(pieces[0]), int.Parse(pieces[1])));
+							string host = pieces[0];
+							int port = int.Parse(pieces[1]);
+							EndPoint endPoint;
+							if(IPAddress.TryParse(host, out IPAddress ip)) {
+								endPoint = new IPEndPoint(ip, port);
+							} else {
+								endPoint = new DnsEndPoint(host, port);
+							}
+							return new GossipSeed(endPoint);
 						} catch (Exception ex) {
 							throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
 						}

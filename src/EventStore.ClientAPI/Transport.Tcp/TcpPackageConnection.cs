@@ -18,9 +18,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			get { return _connection.SendQueueSize; }
 		}
 
-		public IPEndPoint RemoteEndPoint {
-			get { return _connection.RemoteEndPoint; }
-		}
+		public readonly EndPoint RemoteEndPoint;
 
 		public IPEndPoint LocalEndPoint {
 			get { return _connection.LocalEndPoint; }
@@ -36,7 +34,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private readonly ITcpConnection _connection;
 
 		public TcpPackageConnection(ILogger log,
-			IPEndPoint remoteEndPoint,
+			EndPoint remoteEndPoint,
 			Guid connectionId,
 			bool ssl,
 			bool validateServer,
@@ -51,6 +49,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Ensure.NotNull(handlePackage, "handlePackage");
 
 			ConnectionId = connectionId;
+			RemoteEndPoint = remoteEndPoint;
 			_log = log;
 			_handlePackage = handlePackage;
 			_onError = onError;
