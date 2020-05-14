@@ -8,7 +8,7 @@
 		<DefineConstants>CLIENT_API_V5</DefineConstants>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="EventStore.Client" Version="5.0.5" />
+		<PackageReference Include="EventStore.Client" Version="5.0.8" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
 		<PackageReference Include="xunit" Version="2.4.1" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
@@ -23,5 +23,7 @@
 	<ItemGroup>
 		<Compile Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs" Exclude="..\EventStore.ClientAPIAcceptanceTests\**\*filtered*.cs;..\EventStore.ClientAPIAcceptanceTests\**\*FilterCases.cs" />
 		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12" />
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\cluster\server.pfx" />
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\cluster\ca.pem" />
 	</ItemGroup>
 </Project>

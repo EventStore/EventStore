@@ -85,5 +85,26 @@ namespace EventStore.ClientAPI.Tests {
 				await connection.AppendToStreamAsync(streamName, ExpectedVersion.Any, _fixture.CreateTestEvents());
 			Assert.True(writeResult.LogPosition.PreparePosition > 0);
 		}
+
+
+		[Theory, MemberData(nameof(UseSslTestCases))]
+		public async Task can_connect_to_ip_endpoint_with_connection_string(bool useSsl) {
+			var streamName = $"{GetStreamName()}_{useSsl}";
+			using var connection = _fixture.CreateConnectionWithConnectionString(useSsl);
+			await connection.ConnectAsync().WithTimeout();
+			var writeResult =
+				await connection.AppendToStreamAsync(streamName, ExpectedVersion.Any, _fixture.CreateTestEvents());
+			Assert.True(writeResult.LogPosition.PreparePosition > 0);
+		}
+
+		[Theory, MemberData(nameof(UseSslTestCases))]
+		public async Task can_connect_to_dns_endpoint_with_connection_string(bool useSsl) {
+			var streamName = $"{GetStreamName()}_{useSsl}";
+			using var connection = _fixture.CreateConnectionWithConnectionString(useSsl, null, null, true);
+			await connection.ConnectAsync().WithTimeout();
+			var writeResult =
+				await connection.AppendToStreamAsync(streamName, ExpectedVersion.Any, _fixture.CreateTestEvents());
+			Assert.True(writeResult.LogPosition.PreparePosition > 0);
+		}
 	}
 }

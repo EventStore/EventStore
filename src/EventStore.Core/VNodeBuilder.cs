@@ -715,6 +715,17 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
+		/// Restricts trust to the specified root certificates
+		/// </summary>
+		/// <param name="trustedRootCertificates">A collection of trusted root certificates</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithTrustedRootCertificates(
+			X509Certificate2Collection trustedRootCertificates) {
+			_trustedRootCerts = trustedRootCertificates;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the heartbeat interval for the internal network interface.
 		/// </summary>
 		/// <param name="heartbeatInterval">The heartbeat interval</param>
