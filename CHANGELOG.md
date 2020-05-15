@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - The connection settings for the Tcp Client now accepts Dns EndPoint as a means to connect to the nodes in the cluster. [EventStore#2480](https://github.com/EventStore/EventStore/pull/2480)
 - Authenticate requests as the system user if they provide a valid client certificate with the provided trusted root certificate [EventStore#2475](https://github.com/EventStore/EventStore/pull/2475)
 - Require a system user for gossip update, and for all election operations [EventStore#2475](https://github.com/EventStore/EventStore/pull/2475)
+- Update UI submodule as well as the pre-built UI. [EventStore#2490](https://github.com/EventStore/EventStore/pull/2490)
 
 ### Removed
 - Unused HTTP messages. [#2362](https://github.com/EventStore/EventStore/pull/2363)
@@ -59,6 +60,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fix bug introduced by f87b317b78248638aba18a6173e63b809ece5d66 [EventStore#2406](https
 - //github.com/EventStore/EventStore/pull/2406)
+- When restarting each node one at a time, should keep db as the test fixture will remove the root directory. This test fails the CI quite often. [EventStore#2482](https://github.com/EventStore/EventStore/pull/2482)
 
 ### - Use TrySetResult instead of SetResult so that exceptions are not thrown if setting result twice [EventStore#2406](https
 - //github.com/EventStore/EventStore/pull/2406)
