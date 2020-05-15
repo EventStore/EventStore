@@ -28,6 +28,20 @@ namespace EventStore.ClientAPI {
 				{typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x, CultureInfo.InvariantCulture))}, {
 					typeof(GossipSeed[]), x => x.Split(',').Select(q => {
 						try {
+							q = q.Trim();
+							bool seedOverTls;
+							var HTTP_SCHEMA = Uri.UriSchemeHttp + "://";
+							var HTTPS_SCHEMA = Uri.UriSchemeHttps + "://";
+							if (q.StartsWith(HTTP_SCHEMA)) {
+								seedOverTls = false;
+								q = q.Substring(HTTP_SCHEMA.Length);
+							} else if(q.StartsWith(HTTPS_SCHEMA)) {
+								seedOverTls = true;
+								q = q.Substring(HTTPS_SCHEMA.Length);
+							} else {
+								seedOverTls = true; //seed over TLS by default
+							}
+
 							var pieces = q.Trim().Split(':');
 							if (pieces.Length != 2) throw new Exception("Could not split host from port.");
 
@@ -39,7 +53,8 @@ namespace EventStore.ClientAPI {
 							} else {
 								endPoint = new DnsEndPoint(host, port);
 							}
-							return new GossipSeed(endPoint);
+
+							return new GossipSeed(endPoint, "", seedOverTls);
 						} catch (Exception ex) {
 							throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
 						}
