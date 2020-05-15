@@ -31,7 +31,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public const string MaximumAppendSize = "maximum-append-size";
 			public const string RequiredMetadataProperties = "required-metadata-properties";
 			public const string ScavengeId = "scavenge-id";
-			public const string LeaderEndpoint = "leader-endpoint";
+			public const string LeaderEndpointHost = "leader-endpoint-host";
+			public const string LeaderEndpointPort = "leader-endpoint-port";
 
 			public const string LoginName = "login-name";
 		}

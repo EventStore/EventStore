@@ -3,6 +3,7 @@ using System.Net;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
+using EventStore.Common.Utils;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -18,10 +19,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static Exception NoLeaderInfo() =>
 			new RpcException(new Status(StatusCode.Unknown, "No leader info available in response"));
 		
-		private static Exception LeaderInfo(IPEndPoint leaderEndpoint) =>
+		private static Exception LeaderInfo(string host, int port) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Leader info available"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.NotLeader},
-				{Constants.Exceptions.LeaderEndpoint, leaderEndpoint.ToString()}
+				{Constants.Exceptions.LeaderEndpointHost, host},
+				{Constants.Exceptions.LeaderEndpointPort, port.ToString()},
 			});
 
 		public static RpcException StreamNotFound(string streamName) =>
@@ -113,8 +115,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly:
 					switch (notHandled.AdditionalInfo) {
 						case TcpClientMessageDto.NotHandled.LeaderInfo leaderInfo:
-							exception = LeaderInfo(new IPEndPoint(IPAddress.Parse(leaderInfo.HttpAddress),
-									leaderInfo.HttpPort));
+							exception = LeaderInfo(leaderInfo.HttpAddress, leaderInfo.HttpPort);
 							return true;
 						default:
 							exception = NoLeaderInfo();
