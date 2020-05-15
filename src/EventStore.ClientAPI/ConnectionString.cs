@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using EventStore.ClientAPI.SystemData;
@@ -72,6 +73,20 @@ namespace EventStore.ClientAPI {
 									"User credentials {0} is not in correct format. Expected format is username:password.",
 									x), ex);
 						}
+					}
+				},
+				{
+					typeof(HttpMessageHandler), x => {
+						#if NET452
+							throw new Exception("Setting the Http Message Handler via connection string is not supported in .NET 4.5.2");
+						#else
+							if (x.Trim().Equals("SkipCertificateValidation")) {
+								return new HttpClientHandler {
+									ServerCertificateCustomValidationCallback = delegate { return true; }
+								};
+							}
+							throw new Exception("The only supported value for Http Message Handler is: SkipCertificateValidation");
+						#endif
 					}
 				}
 			};

@@ -39,6 +39,8 @@ namespace EventStore.ClientAPI.Tests {
 				gossipSeedsString += host + ":" + gossipSeeds[i].GetPort();
 			}
 
+			settings += "CustomHttpMessageHandler=SkipCertificateValidation;";
+
 			var connectionString = $"GossipSeeds={gossipSeedsString};{settings}";
 			return EventStoreConnection.Create(connectionString);
 		}
