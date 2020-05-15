@@ -54,16 +54,10 @@ All notable changes to this project will be documented in this file.
 - Provide the ability to specify `DnsEndPoint`s as part of gossip seeds. [EventStore#2455](https://github.com/EventStore/EventStore/pull/2455)
 - Provide the ability to specify `DnsEndPoint`s as advertise information [EventStore#2455](https://github.com/EventStore/EventStore/pull/2455)
 - Extended the proto contract for read responses to include Stream Not Found. [EventStore#2473](https://github.com/EventStore/EventStore/pull/2473)
-
-### With the terminology changes we made, the class names have been changed but we just missed renaming the files. [EventStore#2383](https
-- //github.com/EventStore/EventStore/pull/2383)
-
-### Fix bug introduced by f87b317b78248638aba18a6173e63b809ece5d66 [EventStore#2406](https
-- //github.com/EventStore/EventStore/pull/2406)
+- With the terminology changes we made, the class names have been changed but we just missed renaming the files. [EventStore#2383](https://github.com/EventStore/EventStore/pull/2383)
+- Fix bug introduced by f87b317b78248638aba18a6173e63b809ece5d66 [EventStore#2406](https://github.com/EventStore/EventStore/pull/2406)
 - When restarting each node one at a time, should keep db as the test fixture will remove the root directory. This test fails the CI quite often. [EventStore#2482](https://github.com/EventStore/EventStore/pull/2482)
-
-### - Use TrySetResult instead of SetResult so that exceptions are not thrown if setting result twice [EventStore#2406](https
-- //github.com/EventStore/EventStore/pull/2406)
+- Use TrySetResult instead of SetResult so that exceptions are not thrown if setting result twice [EventStore#2406](https://github.com/EventStore/EventStore/pull/2406)
 
 ### Fixed
 - Connect to existing master when a node starts up instead of triggering unnecessary elections if a quorum of nodes is already present. [EventStore#2386](https://github.com/EventStore/EventStore/pull/2386)
