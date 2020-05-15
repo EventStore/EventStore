@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		[Test]
 		public void returns_location_header() {
-			Assert.AreEqual("http://" + _node.ExtHttpEndPoint + "/subscriptions/stream/groupname334",
+			Assert.AreEqual("http://" + _node.HttpEndPoint + "/subscriptions/stream/groupname334",
 				_response.Headers.Location.ToString());
 		}
 	}
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 		[Test]
 		public void returns_location_header() {
-			Assert.AreEqual("http://" + _node.ExtHttpEndPoint + "/subscriptions/stream/groupname334",
+			Assert.AreEqual("http://" + _node.HttpEndPoint + "/subscriptions/stream/groupname334",
 				_response.Headers.Location.ToString());
 		}
 	}

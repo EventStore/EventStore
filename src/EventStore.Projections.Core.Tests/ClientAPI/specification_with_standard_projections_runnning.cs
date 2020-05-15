@@ -52,13 +52,13 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 
 			_manager = new ProjectionsManager(
 				new ConsoleLogger(),
-				_node.ExtHttpEndPoint,
+				_node.HttpEndPoint,
 				TimeSpan.FromMilliseconds(20000),
 				_node.HttpMessageHandler);
 
 			_queryManager = new QueryManager(
 				new ConsoleLogger(),
-				_node.ExtHttpEndPoint,
+				_node.HttpEndPoint,
 				TimeSpan.FromMilliseconds(20000),
 				TimeSpan.FromMilliseconds(20000),
 				_node.HttpMessageHandler);

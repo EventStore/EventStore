@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureSetUp();
 			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
 			await _node.Start();
-			_HttpEndPoint = _node.ExtHttpEndPoint;
+			_HttpEndPoint = _node.HttpEndPoint;
 			_conn = BuildConnection(_node);
 			await _conn.ConnectAsync();
 

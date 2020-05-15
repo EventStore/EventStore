@@ -48,14 +48,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 				MemberInfo[] previousMembers;
 				if (_previousGossip.TryGetValue(item.EndPoint, out previousMembers)) {
 					var leaderIndex = Array.FindIndex(previousMembers,
-						x => x.Is(electionsDone.Leader.InternalHttpEndPoint));
+						x => x.Is(electionsDone.Leader.HttpEndPoint));
 					if (leaderIndex != -1) {
 						var previousLeaderInfo = previousMembers[leaderIndex];
-						var leaderEndPoint = previousLeaderInfo.InternalHttpEndPoint;
+						var leaderEndPoint = previousLeaderInfo.HttpEndPoint;
 
 						previousMembers[leaderIndex] =
 							MemberInfo.ForVNode(previousLeaderInfo.InstanceId, DateTime.UtcNow, VNodeState.Leader,
-								previousLeaderInfo.IsAlive, leaderEndPoint, null, leaderEndPoint, null, leaderEndPoint, leaderEndPoint,
+								previousLeaderInfo.IsAlive, leaderEndPoint, null, leaderEndPoint, null, leaderEndPoint,
 								-1, 0, 0, -1, -1, Guid.Empty, 0, false);
 					}
 				}

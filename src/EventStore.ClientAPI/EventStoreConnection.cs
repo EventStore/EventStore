@@ -101,7 +101,7 @@ namespace EventStore.ClientAPI {
 						connectionSettings.HeartbeatInterval, connectionSettings.HeartbeatTimeout,
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
 						connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
-						connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout,
+						connectionSettings.GossipPort, connectionSettings.GossipTimeout,
 						connectionSettings.NodePreference, connectionSettings.CustomHttpMessageHandler);
 				}
 
@@ -205,7 +205,7 @@ namespace EventStore.ClientAPI {
 			var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
 				clusterSettings.ClusterDns,
 				clusterSettings.MaxDiscoverAttempts,
-				clusterSettings.ExternalGossipPort,
+				clusterSettings.HttpPort,
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
 				clusterSettings.NodePreference,

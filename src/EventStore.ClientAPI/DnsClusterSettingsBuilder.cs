@@ -10,7 +10,7 @@ namespace EventStore.ClientAPI {
 	public class DnsClusterSettingsBuilder {
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
-		private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
+		private int _httpPort = Consts.DefaultHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private NodePreference _nodePreference = NodePreference.Leader;
 
@@ -90,12 +90,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Sets the well-known port on which the cluster gossip is taking place.
 		/// 
-		/// If you are using the commercial edition of Event Store HA, with Manager nodes in
-		/// place, this should be the port number of the External HTTP port on which the
-		/// managers are running.
-		/// 
-		/// If you are using the open source edition of Event Store HA, this should be the
-		/// External HTTP port that the nodes are running on. If you cannot use a well-known
+		/// This should be the HTTP port that the nodes are running on. If you cannot use a well-known
 		/// port for this across all nodes, you can instead use gossip seed discovery and set
 		/// the <see cref="IPEndPoint" /> of some seed nodes instead.
 		/// </summary>
@@ -103,7 +98,7 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		public DnsClusterSettingsBuilder SetClusterGossipPort(int clusterGossipPort) {
 			Ensure.Positive(clusterGossipPort, "clusterGossipPort");
-			_managerExternalHttpPort = clusterGossipPort;
+			_httpPort = clusterGossipPort;
 			return this;
 		}
 
@@ -122,7 +117,7 @@ namespace EventStore.ClientAPI {
 		public ClusterSettings Build() {
 			return new ClusterSettings(this._clusterDns,
 				this._maxDiscoverAttempts,
-				this._managerExternalHttpPort,
+				this._httpPort,
 				this._gossipTimeout,
 				this._nodePreference);
 		}

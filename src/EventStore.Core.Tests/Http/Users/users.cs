@@ -84,25 +84,25 @@ namespace EventStore.Core.Tests.Http.Users {
 								Password___ = false,
 								Links = new[] {
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint +
+										Href = "http://" + _node.HttpEndPoint +
 											   "/users/test1/command/reset-password",
 										Rel = "reset-password"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint +
+										Href = "http://" + _node.HttpEndPoint +
 											   "/users/test1/command/change-password",
 										Rel = "change-password"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint + "/users/test1",
+										Href = "http://" + _node.HttpEndPoint + "/users/test1",
 										Rel = "edit"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint + "/users/test1",
+										Href = "http://" + _node.HttpEndPoint + "/users/test1",
 										Rel = "delete"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint + "/users/test1/command/disable",
+										Href = "http://" + _node.HttpEndPoint + "/users/test1/command/disable",
 										Rel = "disable"
 									}
 								}
@@ -147,25 +147,25 @@ namespace EventStore.Core.Tests.Http.Users {
 							new {
 								Links = new[] {
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint +
+										Href = "http://" + _node.HttpEndPoint +
 											   "/users/test2/command/reset-password",
 										Rel = "reset-password"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint +
+										Href = "http://" + _node.HttpEndPoint +
 											   "/users/test2/command/change-password",
 										Rel = "change-password"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint + "/users/test2",
+										Href = "http://" + _node.HttpEndPoint + "/users/test2",
 										Rel = "edit"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint + "/users/test2",
+										Href = "http://" + _node.HttpEndPoint + "/users/test2",
 										Rel = "delete"
 									},
 									new {
-										Href = "http://" + _node.ExtHttpEndPoint + "/users/test2/command/enable",
+										Href = "http://" + _node.HttpEndPoint + "/users/test2/command/enable",
 										Rel = "enable"
 									}
 								}

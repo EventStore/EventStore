@@ -10,6 +10,6 @@ namespace EventStore.Core.Authentication
 		public IPublisher WorkersQueue { get; set; }
 		public InMemoryBus[] WorkerBuses { get; set; }
 		public HttpSendService HttpSendService { get; set; }
-		public IHttpService ExternalHttpService { get; set; }
+		public IHttpService HttpService { get; set; }
 	}
 }

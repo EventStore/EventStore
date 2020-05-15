@@ -54,10 +54,10 @@ namespace EventStore.ClusterNode {
 				.ConfigureLogging(logging => logging.AddSerilog())
 				.ConfigureWebHostDefaults(builder =>
 					builder.UseKestrel(server => {
-							server.Listen(hostedService.Options.IntIp, hostedService.Options.IntHttpPort,
+							server.Listen(hostedService.Options.ExtIp, hostedService.Options.HttpPort,
 								listenOptions => listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
 									ServerCertificate = hostedService.Node.Certificate,
-									ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+									ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 									ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 										var (isValid, error) = hostedService.Node.InternalClientCertificateValidator(certificate, chain,
 											sslPolicyErrors);
@@ -67,8 +67,6 @@ namespace EventStore.ClusterNode {
 										return isValid;
 									}
 								}));
-							server.Listen(hostedService.Options.ExtIp, hostedService.Options.ExtHttpPort,
-								listenOptions => listenOptions.UseHttps(hostedService.Node.Certificate));
 						})
 						.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 						.Configure(hostedService.Node.Startup.Configure));

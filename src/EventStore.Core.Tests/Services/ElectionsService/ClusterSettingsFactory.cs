@@ -20,8 +20,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		private static ClusterVNodeSettings CreateVNode(int nodeNumber, bool isReadOnlyReplica) {
 			int tcpIntPort = StartingPort + nodeNumber * 2,
 				tcpExtPort = tcpIntPort + 1,
-				httpIntPort = tcpIntPort + 10,
-				httpExtPort = tcpIntPort + 11;
+				httpPort = tcpIntPort + 11;
 
 			var certificate = ssl_connections.GetServerCertificate();
 			var trustedRootCertificate = ssl_connections.GetRootCertificate();
@@ -29,12 +28,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 0,
 				GetLoopbackForPort(tcpIntPort), null,
 				GetLoopbackForPort(tcpExtPort), null,
-				GetLoopbackForPort(httpIntPort), GetLoopbackForPort(httpExtPort),
+				GetLoopbackForPort(httpPort),
 				new Data.GossipAdvertiseInfo(GetLoopbackForPort(tcpIntPort).ToDnsEndPoint(), null,
 					GetLoopbackForPort(tcpExtPort).ToDnsEndPoint(), null,
-					GetLoopbackForPort(httpIntPort).ToDnsEndPoint(),
-					GetLoopbackForPort(httpExtPort).ToDnsEndPoint(),
-					null, null, 0, 0),
+					GetLoopbackForPort(httpPort).ToDnsEndPoint(),
+					null, null, 0),
 				false, certificate, new X509Certificate2Collection(trustedRootCertificate), 1, false, "dns", new[] {GetLoopbackForPort(ManagerPort)},
 				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
 				TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2), false, false,TimeSpan.FromHours(1),

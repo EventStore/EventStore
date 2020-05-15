@@ -98,8 +98,7 @@ namespace EventStore.Core.Cluster.Settings {
 			IPEndPoint internalSecureTcpEndPoint,
 			IPEndPoint externalTcpEndPoint,
 			IPEndPoint externalSecureTcpEndPoint,
-			IPEndPoint internalHttpEndPoint,
-			IPEndPoint externalHttpEndPoint,
+			IPEndPoint httpEndPoint,
 			GossipAdvertiseInfo gossipAdvertiseInfo,
 			bool enableTrustedAuth,
 			X509Certificate2 certificate,
@@ -171,8 +170,7 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 
-			Ensure.NotNull(internalHttpEndPoint, "internalHttpEndPoint");
-			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
+			Ensure.NotNull(httpEndPoint, nameof(httpEndPoint));
 			if (internalSecureTcpEndPoint != null || externalSecureTcpEndPoint != null)
 				Ensure.NotNull(certificate, "certificate");
 			Ensure.Positive(workerThreads, "workerThreads");
@@ -194,7 +192,7 @@ namespace EventStore.Core.Cluster.Settings {
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
-				internalHttpEndPoint, externalHttpEndPoint,
+				httpEndPoint,
 				readOnlyReplica);
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
 			EnableTrustedAuth = enableTrustedAuth;
@@ -280,8 +278,8 @@ namespace EventStore.Core.Cluster.Settings {
 		public override string ToString() =>
 			$"InstanceId: {NodeInfo.InstanceId}\n" + $"InternalTcp: {NodeInfo.InternalTcp}\n" +
 			$"InternalSecureTcp: {NodeInfo.InternalSecureTcp}\n" + $"ExternalTcp: {NodeInfo.ExternalTcp}\n" +
-			$"ExternalSecureTcp: {NodeInfo.ExternalSecureTcp}\n" + $"InternalHttp: {NodeInfo.InternalHttp}\n" +
-			$"ExternalHttp: {NodeInfo.ExternalHttp}\n" +
+			$"ExternalSecureTcp: {NodeInfo.ExternalSecureTcp}\n" +
+			$"HttpEndPoint: {NodeInfo.HttpEndPoint}\n" +
 			$"EnableTrustedAuth: {EnableTrustedAuth}\n" +
 			$"Certificate: {(Certificate == null ? "n/a" : Certificate.ToString(true))}\n" +
 			$"Trusted Root Certificates: {(TrustedRootCerts == null ? "n/a" : TrustedRootCerts.ToString())}\n" +

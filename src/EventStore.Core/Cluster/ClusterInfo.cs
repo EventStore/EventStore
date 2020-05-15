@@ -18,13 +18,13 @@ namespace EventStore.Core.Cluster {
 		}
 
 		public ClusterInfo(IEnumerable<MemberInfo> members) {
-			Members = members.Safe().OrderByDescending<MemberInfo, EndPoint>(x => x.InternalHttpEndPoint, Comparer)
+			Members = members.Safe().OrderByDescending<MemberInfo, EndPoint>(x => x.HttpEndPoint, Comparer)
 				.ToArray();
 		}
 
 		public ClusterInfo(ClusterInfoDto dto) {
 			Members = dto.Members.Safe().Select(x => new MemberInfo(x))
-				.OrderByDescending<MemberInfo, EndPoint>(x => x.InternalHttpEndPoint, Comparer).ToArray();
+				.OrderByDescending<MemberInfo, EndPoint>(x => x.HttpEndPoint, Comparer).ToArray();
 		}
 
 		public override string ToString() {
@@ -55,8 +55,7 @@ namespace EventStore.Core.Cluster {
 					x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
 					!x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
 					x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
-					new DnsEndPoint(x.InternalHttp.Address, (int)x.InternalHttp.Port),
-					new DnsEndPoint(x.ExternalHttp.Address, (int)x.ExternalHttp.Port),
+					new DnsEndPoint(x.HttpEndPoint.Address, (int)x.HttpEndPoint.Port),
 					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 					x.EpochPosition, x.EpochNumber, Uuid.FromDto(x.EpochId).ToGuid(), x.NodePriority,
 					x.IsReadOnlyReplica
@@ -70,12 +69,9 @@ namespace EventStore.Core.Cluster {
 				TimeStamp = x.TimeStamp.ToTicksSinceEpoch(),
 				State = (EventStore.Cluster.MemberInfo.Types.VNodeState)x.State,
 				IsAlive = x.IsAlive,
-				ExternalHttp = new EventStore.Cluster.EndPoint(
-					x.ExternalHttpEndPoint.GetHost(),
-					(uint)x.ExternalHttpEndPoint.GetPort()),
-				InternalHttp = new EventStore.Cluster.EndPoint(
-					x.InternalHttpEndPoint.GetHost(),
-					(uint)x.InternalHttpEndPoint.GetPort()),
+				HttpEndPoint = new EventStore.Cluster.EndPoint(
+					x.HttpEndPoint.GetHost(),
+					(uint)x.HttpEndPoint.GetPort()),
 				InternalTcp = x.InternalSecureTcpEndPoint != null ?
 					new EventStore.Cluster.EndPoint(
 						x.InternalSecureTcpEndPoint.GetHost(),

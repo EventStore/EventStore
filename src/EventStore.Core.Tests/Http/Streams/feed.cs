@@ -766,7 +766,7 @@ namespace EventStore.Core.Tests.Http {
 
 			protected override MiniNode CreateMiniNode() {
 				return new MiniNode(PathName, skipInitializeStandardUsersCheck: GivenSkipInitializeStandardUsersCheck(),
-					advertisedExtHostAddress: advertisedAddress, advertisedExtHttpPort: advertisedPort);
+					advertisedExtHostAddress: advertisedAddress, advertisedHttpPort: advertisedPort);
 			}
 
 			protected override async Task Given() {

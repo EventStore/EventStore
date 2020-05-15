@@ -33,11 +33,8 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.ExternalIpDescr, Opts.InterfacesGroup)]
 		public IPAddress ExtIp { get; set; }
 
-		[ArgDescription(Opts.InternalHttpPortDescr, Opts.InterfacesGroup)]
-		public int IntHttpPort { get; set; }
-
-		[ArgDescription(Opts.ExternalHttpPortDescr, Opts.InterfacesGroup)]
-		public int ExtHttpPort { get; set; }
+		[ArgDescription(Opts.HttpPortDescr, Opts.InterfacesGroup)]
+		public int HttpPort { get; set; }
 
 		[ArgDescription(Opts.EnableExternalTCPDescr, Opts.InterfacesGroup)]
 		public bool EnableExternalTCP { get; set; }
@@ -54,17 +51,14 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.ExternalTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public int ExtTcpPortAdvertiseAs { get; set; }
 
-		[ArgDescription(Opts.ExternalHttpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
-		public int ExtHttpPortAdvertiseAs { get; set; }
+		[ArgDescription(Opts.HttpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
+		public int HttpPortAdvertiseAs { get; set; }
 
 		[ArgDescription(Opts.InternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public string IntHostAdvertiseAs { get; set; }
 
 		[ArgDescription(Opts.InternalTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public int IntTcpPortAdvertiseAs { get; set; }
-
-		[ArgDescription(Opts.InternalHttpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
-		public int IntHttpPortAdvertiseAs { get; set; }
 
 		[ArgDescription(Opts.IntTcpHeartbeatTimeoutDescr, Opts.InterfacesGroup)]
 		public int IntTcpHeartbeatTimeout { get; set; }
@@ -102,14 +96,14 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.PrepareCountDescr, Opts.ClusterGroup)]
 		public int PrepareCount { get; set; }
 
-		[ArgDescription(Opts.AdminOnExtDescr, Opts.InterfacesGroup)]
-		public bool AdminOnExt { get; set; }
+		[ArgDescription(Opts.DisableAdminUiDescr, Opts.InterfacesGroup)]
+		public bool DisableAdminUi { get; set; }
 
-		[ArgDescription(Opts.StatsOnExtDescr, Opts.InterfacesGroup)]
-		public bool StatsOnExt { get; set; }
-
-		[ArgDescription(Opts.GossipOnExtDescr, Opts.InterfacesGroup)]
-		public bool GossipOnExt { get; set; }
+		[ArgDescription(Opts.DisableStatsOnHttpDescr, Opts.InterfacesGroup)]
+		public bool DisableStatsOnHttp { get; set; }
+	
+		[ArgDescription(Opts.DisableGossipOnHttpDescr, Opts.InterfacesGroup)]
+		public bool DisableGossipOnHttp { get; set; }
 
 		[ArgDescription(Opts.DisableScavengeMergeDescr, Opts.DbGroup)]
 		public bool DisableScavengeMerging { get; set; }
@@ -322,8 +316,7 @@ namespace EventStore.ClusterNode {
 
 			IntIp = Opts.InternalIpDefault;
 			ExtIp = Opts.ExternalIpDefault;
-			IntHttpPort = Opts.InternalHttpPortDefault;
-			ExtHttpPort = Opts.ExternalHttpPortDefault;
+			HttpPort = Opts.HttpPortDefault;
 			EnableExternalTCP = Opts.EnableExternalTCPDefault;
 			IntTcpPort = Opts.InternalTcpPortDefault;
 			ExtTcpPort = Opts.ExternalTcpPortDefault;
@@ -370,11 +363,10 @@ namespace EventStore.ClusterNode {
 
 			ExtHostAdvertiseAs = Opts.ExternalHostAdvertiseAsDefault;
 			ExtTcpPortAdvertiseAs = Opts.ExternalTcpPortAdvertiseAsDefault;
-			ExtHttpPortAdvertiseAs = Opts.ExternalHttpPortAdvertiseAsDefault;
+			HttpPortAdvertiseAs = Opts.HttpPortAdvertiseAsDefault;
 
 			IntHostAdvertiseAs = Opts.InternalHostAdvertiseAsDefault;
 			IntTcpPortAdvertiseAs = Opts.InternalTcpPortAdvertiseAsDefault;
-			IntHttpPortAdvertiseAs = Opts.InternalHttpPortAdvertiseAsDefault;
 
 			CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
 			CertificateStoreName = Opts.CertificateStoreNameDefault;
@@ -402,15 +394,15 @@ namespace EventStore.ClusterNode {
 			WriteTimeoutMs = Opts.WriteTimeoutMsDefault;
 			DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			ScavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
-			GossipOnExt = Opts.GossipOnExtDefault;
-			StatsOnExt = Opts.StatsOnExtDefault;
-			AdminOnExt = Opts.AdminOnExtDefault;
+			DisableStatsOnHttp = Opts.DisableStatsOnHttpDefault;
+			DisableAdminUi = Opts.DisableAdminUiDefault;
 			GossipIntervalMs = Opts.GossipIntervalMsDefault;
 			GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
 			GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
 			IndexCacheDepth = Opts.IndexCacheDepthDefault;
 			SkipIndexVerify = Opts.SkipIndexVerifyDefault;
 			OptimizeIndexMerge = Opts.OptimizeIndexMergeDefault;
+			DisableGossipOnHttp = Opts.DisableGossipOnHttpDefault;
 			EnableHistograms = Opts.HistogramEnabledDefault;
 			ReaderThreadsCount = Opts.ReaderThreadsCountDefault;
 

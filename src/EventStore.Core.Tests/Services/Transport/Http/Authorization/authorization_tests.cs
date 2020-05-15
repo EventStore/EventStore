@@ -92,7 +92,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 					content.Headers.Add("Content-Type", "application/json");
 
 					var res = await _httpClients["Admin"].PostAsync(
-						string.Format("https://{0}/users/", _nodes[_leaderId].ExternalHttpEndPoint),
+						string.Format("https://{0}/users/", _nodes[_leaderId].HttpEndPoint),
 						content
 					);
 					res.EnsureSuccessStatusCode();
@@ -214,7 +214,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			)] string httpEndpointDetails
 		) {
 			/*use the leader node endpoint to avoid any redirects*/
-			var nodeEndpoint = _nodes[_leaderId].ExternalHttpEndPoint;
+			var nodeEndpoint = _nodes[_leaderId].HttpEndPoint;
 			var httpEndpointTokens = httpEndpointDetails.Split(';');
 			var endpointUrl = httpEndpointTokens[0];
 			var httpMethod = GetHttpMethod(httpEndpointTokens[1]);

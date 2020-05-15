@@ -26,15 +26,15 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly EndPoint ServerInternalHttp;
+			public readonly EndPoint ServerHttpEndPoint;
 
 			public readonly int AttemptedView;
 
 			public ViewChange(Guid serverId,
-				EndPoint serverInternalHttp,
+				EndPoint serverHttpEndPoint,
 				int attemptedView) {
 				ServerId = serverId;
-				ServerInternalHttp = serverInternalHttp;
+				ServerHttpEndPoint = serverHttpEndPoint;
 
 				AttemptedView = attemptedView;
 			}
@@ -42,13 +42,13 @@ namespace EventStore.Core.Messages {
 			public ViewChange(ElectionMessageDto.ViewChangeDto dto) {
 				AttemptedView = dto.AttemptedView;
 				ServerId = dto.ServerId;
-				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
-					dto.ServerInternalHttpPort);
+				ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
+					dto.ServerHttpPort);
 			}
 
 			public override string ToString() {
-				return string.Format("---- ViewChange: attemptedView {0}, serverId {1}, serverInternalHttp {2}",
-					AttemptedView, ServerId, ServerInternalHttp);
+				return string.Format("---- ViewChange: attemptedView {0}, serverId {1}, serverHttp {2}",
+					AttemptedView, ServerId, ServerHttpEndPoint);
 			}
 		}
 
@@ -60,25 +60,25 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly EndPoint ServerInternalHttp;
+			public readonly EndPoint ServerHttpEndPoint;
 			public readonly int InstalledView;
 
-			public ViewChangeProof(Guid serverId, EndPoint serverInternalHttp, int installedView) {
+			public ViewChangeProof(Guid serverId, EndPoint serverHttpEndPoint, int installedView) {
 				ServerId = serverId;
-				ServerInternalHttp = serverInternalHttp;
+				ServerHttpEndPoint = serverHttpEndPoint;
 				InstalledView = installedView;
 			}
 
 			public ViewChangeProof(ElectionMessageDto.ViewChangeProofDto dto) {
 				ServerId = dto.ServerId;
-				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
-					dto.ServerInternalHttpPort);
+				ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
+					dto.ServerHttpPort);
 				InstalledView = dto.InstalledView;
 			}
 
 			public override string ToString() {
-				return string.Format("---- ViewChangeProof: serverId {0}, serverInternalHttp {1}, installedView {2}",
-					ServerId, ServerInternalHttp, InstalledView);
+				return string.Format("---- ViewChangeProof: serverId {0}, serverHttp {1}, installedView {2}",
+					ServerId, ServerHttpEndPoint, InstalledView);
 			}
 		}
 
@@ -120,25 +120,25 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly EndPoint ServerInternalHttp;
+			public readonly EndPoint ServerHttpEndPoint;
 			public readonly int View;
 
-			public Prepare(Guid serverId, EndPoint serverInternalHttp, int view) {
+			public Prepare(Guid serverId, EndPoint serverHttpEndPoint, int view) {
 				ServerId = serverId;
-				ServerInternalHttp = serverInternalHttp;
+				ServerHttpEndPoint = serverHttpEndPoint;
 				View = view;
 			}
 
 			public Prepare(ElectionMessageDto.PrepareDto dto) {
 				ServerId = dto.ServerId;
-				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
-					dto.ServerInternalHttpPort);
+				ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
+					dto.ServerHttpPort);
 				View = dto.View;
 			}
 
 			public override string ToString() {
-				return string.Format("---- Prepare: serverId {0}, serverInternalHttp {1}, view {2}", ServerId,
-					ServerInternalHttp, View);
+				return string.Format("---- Prepare: serverId {0}, serverHttp {1}, view {2}", ServerId,
+					ServerHttpEndPoint, View);
 			}
 		}
 
@@ -151,7 +151,7 @@ namespace EventStore.Core.Messages {
 
 			public readonly int View;
 			public readonly Guid ServerId;
-			public readonly EndPoint ServerInternalHttp;
+			public readonly EndPoint ServerHttpEndPoint;
 			public readonly int EpochNumber;
 			public readonly long EpochPosition;
 			public readonly Guid EpochId;
@@ -162,7 +162,7 @@ namespace EventStore.Core.Messages {
 
 			public PrepareOk(int view,
 				Guid serverId,
-				EndPoint serverInternalHttp,
+				EndPoint serverHttpEndPoint,
 				int epochNumber,
 				long epochPosition,
 				Guid epochId,
@@ -172,7 +172,7 @@ namespace EventStore.Core.Messages {
 				int nodePriority) {
 				View = view;
 				ServerId = serverId;
-				ServerInternalHttp = serverInternalHttp;
+				ServerHttpEndPoint = serverHttpEndPoint;
 				EpochNumber = epochNumber;
 				EpochPosition = epochPosition;
 				EpochId = epochId;
@@ -185,8 +185,8 @@ namespace EventStore.Core.Messages {
 			public PrepareOk(ElectionMessageDto.PrepareOkDto dto) {
 				View = dto.View;
 				ServerId = dto.ServerId;
-				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
-					dto.ServerInternalHttpPort);
+				ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
+					dto.ServerHttpPort);
 				EpochNumber = dto.EpochNumber;
 				EpochPosition = dto.EpochPosition;
 				EpochId = dto.EpochId;
@@ -198,9 +198,9 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return string.Format(
-					"---- PrepareOk: view {0}, serverId {1}, serverInternalHttp {2}, epochNumber {3}, " +
+					"---- PrepareOk: view {0}, serverId {1}, serverHttp {2}, epochNumber {3}, " +
 					"epochPosition {4}, epochId {5}, lastCommitPosition {6}, writerCheckpoint {7}, chaserCheckpoint {8}, nodePriority: {9}",
-					View, ServerId, ServerInternalHttp, EpochNumber,
+					View, ServerId, ServerHttpEndPoint, EpochNumber,
 					EpochPosition, EpochId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority);
 			}
 		}
@@ -213,9 +213,9 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly EndPoint ServerInternalHttp;
+			public readonly EndPoint ServerHttpEndPoint;
 			public readonly Guid LeaderId;
-			public readonly EndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderHttpEndPoint;
 
 			public readonly int View;
 			public readonly int EpochNumber;
@@ -226,13 +226,13 @@ namespace EventStore.Core.Messages {
 			public readonly long ChaserCheckpoint;
 			public readonly int NodePriority;
 
-			public Proposal(Guid serverId, EndPoint serverInternalHttp, Guid leaderId, EndPoint leaderInternalHttp,
+			public Proposal(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId, EndPoint leaderHttpEndPoint,
 				int view, int epochNumber, long epochPosition, Guid epochId,
 				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, int nodePriority) {
 				ServerId = serverId;
-				ServerInternalHttp = serverInternalHttp;
+				ServerHttpEndPoint = serverHttpEndPoint;
 				LeaderId = leaderId;
-				LeaderInternalHttp = leaderInternalHttp;
+				LeaderHttpEndPoint = leaderHttpEndPoint;
 				View = view;
 				EpochNumber = epochNumber;
 				EpochPosition = epochPosition;
@@ -245,11 +245,11 @@ namespace EventStore.Core.Messages {
 
 			public Proposal(ElectionMessageDto.ProposalDto dto) {
 				ServerId = dto.ServerId;
-				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
-					dto.ServerInternalHttpPort);
+				ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
+					dto.ServerHttpPort);
 				LeaderId = dto.LeaderId;
-				LeaderInternalHttp = new IPEndPoint(IPAddress.Parse(dto.LeaderInternalHttpAddress),
-					dto.LeaderInternalHttpPort);
+				LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
+					dto.LeaderHttpPort);
 				View = dto.View;
 				EpochNumber = dto.EpochNumber;
 				EpochPosition = dto.EpochPosition;
@@ -262,9 +262,9 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return string.Format(
-					"---- Proposal: serverId {0}, serverInternalHttp {1}, leaderId {2}, leaderInternalHttp {3}, "
+					"---- Proposal: serverId {0}, serverHttp {1}, leaderId {2}, leaderHttp {3}, "
 					+ "view {4}, lastCommitCheckpoint {5}, writerCheckpoint {6}, chaserCheckpoint {7}, epoch {8}@{9}:{10:B}, NodePriority {11}",
-					ServerId, ServerInternalHttp, LeaderId, LeaderInternalHttp,
+					ServerId, ServerHttpEndPoint, LeaderId, LeaderHttpEndPoint,
 					View, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 					EpochNumber, EpochPosition, EpochId, NodePriority);
 			}
@@ -278,35 +278,35 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid ServerId;
-			public readonly EndPoint ServerInternalHttp;
+			public readonly EndPoint ServerHttpEndPoint;
 			public readonly Guid LeaderId;
-			public readonly EndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderHttpEndPoint;
 			public readonly int View;
 
-			public Accept(Guid serverId, EndPoint serverInternalHttp, Guid leaderId, EndPoint leaderInternalHttp,
+			public Accept(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId, EndPoint leaderHttpEndPoint,
 				int view) {
 				ServerId = serverId;
-				ServerInternalHttp = serverInternalHttp;
+				ServerHttpEndPoint = serverHttpEndPoint;
 				LeaderId = leaderId;
-				LeaderInternalHttp = leaderInternalHttp;
+				LeaderHttpEndPoint = leaderHttpEndPoint;
 
 				View = view;
 			}
 
 			public Accept(ElectionMessageDto.AcceptDto dto) {
 				ServerId = dto.ServerId;
-				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
-					dto.ServerInternalHttpPort);
+				ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
+					dto.ServerHttpPort);
 				LeaderId = dto.LeaderId;
-				LeaderInternalHttp = new IPEndPoint(IPAddress.Parse(dto.LeaderInternalHttpAddress),
-					dto.LeaderInternalHttpPort);
+				LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
+					dto.LeaderHttpPort);
 				View = dto.View;
 			}
 
 			public override string ToString() {
 				return string.Format(
-					"---- Accept: serverId {0}, serverInternalHttp {1}, leaderId {2}, leaderInternalHttp {3}, view {4}",
-					ServerId, ServerInternalHttp, LeaderId, LeaderInternalHttp, View);
+					"---- Accept: serverId {0}, serverHttp {1}, leaderId {2}, leaderHttp {3}, view {4}",
+					ServerId, ServerHttpEndPoint, LeaderId, LeaderHttpEndPoint, View);
 			}
 		}
 		
@@ -318,17 +318,17 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid LeaderId;
-			public readonly EndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderHttpEndPoint;
 
-			public LeaderIsResigning(Guid leaderId, EndPoint leaderInternalHttp) {
+			public LeaderIsResigning(Guid leaderId, EndPoint leaderHttpEndPoint) {
 				LeaderId = leaderId;
-				LeaderInternalHttp = leaderInternalHttp;
+				LeaderHttpEndPoint = leaderHttpEndPoint;
 			}
 
 			public LeaderIsResigning(ElectionMessageDto.LeaderIsResigningDto dto) {
 				LeaderId = dto.LeaderId;
-				LeaderInternalHttp = new IPEndPoint(IPAddress.Parse(dto.LeaderInternalHttpAddress),
-					dto.LeaderInternalHttpPort);
+				LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
+					dto.LeaderHttpPort);
 			}
 
 			public override string ToString() {
@@ -344,24 +344,24 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid LeaderId;
-			public readonly EndPoint LeaderInternalHttp;
+			public readonly EndPoint LeaderHttpEndPoint;
 			public readonly Guid ServerId;
-			public readonly EndPoint ServerInternalHttp;
+			public readonly EndPoint ServerHttpEndPoint;
 			
 			public LeaderIsResigningOk(ElectionMessageDto.LeaderIsResigningOkDto dto) {
 				LeaderId = dto.LeaderId;
-				LeaderInternalHttp = new IPEndPoint(IPAddress.Parse(dto.LeaderInternalHttpAddress),
-					dto.LeaderInternalHttpPort);
+				LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
+					dto.LeaderHttpPort);
 				ServerId = dto.ServerId;
-				ServerInternalHttp = new IPEndPoint(IPAddress.Parse(dto.ServerInternalHttpAddress),
-					dto.ServerInternalHttpPort);
+				ServerHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.ServerHttpAddress),
+					dto.ServerHttpPort);
 			}
 
-			public LeaderIsResigningOk(Guid leaderId, EndPoint leaderInternalHttp, Guid serverId, EndPoint serverInternalHttp) {
+			public LeaderIsResigningOk(Guid leaderId, EndPoint leaderHttpEndPoint, Guid serverId, EndPoint serverHttpEndPoint) {
 				LeaderId = leaderId;
-				LeaderInternalHttp = leaderInternalHttp;
+				LeaderHttpEndPoint = leaderHttpEndPoint;
 				ServerId = serverId;
-				ServerInternalHttp = serverInternalHttp;
+				ServerHttpEndPoint = serverHttpEndPoint;
 			}
 
 			public override string ToString() {

@@ -46,10 +46,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public IPEndPoint InternalTcpEndPoint { get; private set; }
 		public IPEndPoint InternalTcpSecEndPoint { get; private set; }
-		public IPEndPoint InternalHttpEndPoint { get; private set; }
 		public IPEndPoint ExternalTcpEndPoint { get; private set; }
 		public IPEndPoint ExternalTcpSecEndPoint { get; private set; }
-		public IPEndPoint ExternalHttpEndPoint { get; private set; }
+		public IPEndPoint HttpEndPoint { get; private set; }
 
 		public readonly int DebugIndex;
 
@@ -73,8 +72,8 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		public MiniClusterNode(
-			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec, IPEndPoint internalHttp,
-			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint externalHttp, EndPoint[] gossipSeeds,
+			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec,
+			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, EndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
@@ -92,7 +91,7 @@ namespace EventStore.Core.Tests.Helpers {
 			_dbPath = Path.Combine(
 				pathname,
 				string.Format(
-					"mini-cluster-node-db-{0}-{1}-{2}", externalTcp.Port, externalTcpSec.Port, externalHttp.Port));
+					"mini-cluster-node-db-{0}-{1}-{2}", externalTcp.Port, externalTcpSec.Port, httpEndPoint.Port));
 
 			Directory.CreateDirectory(_dbPath);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
@@ -102,24 +101,22 @@ namespace EventStore.Core.Tests.Helpers {
 
 			InternalTcpEndPoint = internalTcp;
 			InternalTcpSecEndPoint = internalTcpSec;
-			InternalHttpEndPoint = internalHttp;
 
 			ExternalTcpEndPoint = externalTcp;
 			ExternalTcpSecEndPoint = externalTcpSec;
-			ExternalHttpEndPoint = externalHttp;
+			HttpEndPoint = httpEndPoint;
 
 			var certificate = ssl_connections.GetServerCertificate();
 			var trustedRootCertificates = new X509Certificate2Collection(ssl_connections.GetRootCertificate());
 
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
-				ExternalTcpSecEndPoint, InternalHttpEndPoint, ExternalHttpEndPoint,
+				ExternalTcpSecEndPoint, HttpEndPoint,
 				new Data.GossipAdvertiseInfo(
 					InternalTcpEndPoint.ToDnsEndPoint(),
 					InternalTcpSecEndPoint.ToDnsEndPoint(),
-					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(),
-					InternalHttpEndPoint.ToDnsEndPoint(), ExternalHttpEndPoint.ToDnsEndPoint(),
-					null, null, 0, 0), enableTrustedAuth,
+					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(), HttpEndPoint.ToDnsEndPoint(),
+					null, null, 0), enableTrustedAuth,
 				certificate, trustedRootCertificates, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
@@ -155,22 +152,22 @@ namespace EventStore.Core.Tests.Helpers {
 					? "NON-GENERATION (PROBABLY BOEHM)"
 					: string.Format("{0} GENERATIONS", GC.MaxGeneration + 1), "DBPATH:", _dbPath, "ExTCP ENDPOINT:",
 				ExternalTcpEndPoint, "ExTCP SECURE ENDPOINT:", ExternalTcpSecEndPoint, "ExHTTP ENDPOINT:",
-				ExternalHttpEndPoint);
+				HttpEndPoint);
 
 			Node = new ClusterVNode(Db, singleVNodeSettings,
 				infoController: new InfoController(null, new Dictionary<string, bool>()), subsystems: subsystems,
 				gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
-			Node.ExternalHttpService.SetupController(new TestController(Node.MainQueue));
+			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 
 			_host = new WebHostBuilder()
 				.UseKestrel(o => {
-					o.Listen(InternalHttpEndPoint, options => {
+					o.Listen(HttpEndPoint, options => {
 						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 							options.Protocols = HttpProtocols.Http2;
 						} else { 
 							options.UseHttps(new HttpsConnectionAdapterOptions {
 								ServerCertificate = certificate,
-								ClientCertificateMode = ClientCertificateMode.RequireCertificate,
+								ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 									var (isValid, error) =
 										ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertificates);
@@ -181,9 +178,6 @@ namespace EventStore.Core.Tests.Helpers {
 								}
 							});
 						}
-					});
-					o.Listen(ExternalHttpEndPoint, options => {
-						options.UseHttps(certificate);
 					});
 				})
 				.UseStartup(Node.Startup)

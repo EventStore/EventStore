@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			var tcpPort = miniNode.TcpEndPoint.Port;
 			var tcpSecPort = miniNode.TcpSecEndPoint.Port;
-			var httpPort = miniNode.ExtHttpEndPoint.Port;
+			var httpPort = miniNode.HttpEndPoint.Port;
 			const int cnt = 50;
 			var countdown = new CountdownEvent(cnt);
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			var tcpPort = miniNode.TcpEndPoint.Port;
 			var tcpSecPort = miniNode.TcpSecEndPoint.Port;
-			var httpPort = miniNode.ExtHttpEndPoint.Port;
+			var httpPort = miniNode.HttpEndPoint.Port;
 			const int cnt = 1;
 			var countdown = new CountdownEvent(cnt);
 

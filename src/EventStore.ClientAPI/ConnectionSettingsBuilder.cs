@@ -36,7 +36,7 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
-		private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
+		private int _httpPort = Consts.DefaultHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Leader;
@@ -366,13 +366,8 @@ namespace EventStore.ClientAPI {
 
 		/// <summary>
 		/// Sets the well-known port on which the cluster gossip is taking place.
-		///
-		/// If you are using the commercial edition of Event Store HA, with Manager nodes in
-		/// place, this should be the port number of the External HTTP port on which the
-		/// managers are running.
-		///
-		/// If you are using the open source edition of Event Store HA, this should be the
-		/// External HTTP port that the nodes are running on. If you cannot use a well-known
+		/// 
+		/// This should be the HTTP port that the nodes are running on. If you cannot use a well-known
 		/// port for this across all nodes, you can instead use gossip seed discovery and set
 		/// the <see cref="IPEndPoint" /> of some seed nodes instead.
 		/// </summary>
@@ -380,7 +375,7 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder SetClusterGossipPort(int clusterGossipPort) {
 			Ensure.Positive(clusterGossipPort, "clusterGossipPort");
-			_gossipExternalHttpPort = clusterGossipPort;
+			_httpPort = clusterGossipPort;
 			return this;
 		}
 
@@ -388,7 +383,7 @@ namespace EventStore.ClientAPI {
 		/// Sets gossip seed endpoints for the client.
 		///
 		/// <note>
-		/// This should be the external HTTP endpoint of the server, as it is required
+		/// This should be the HTTP endpoint of the server, as it is required
 		/// for the client to exchange gossip with the server. The standard port is 2113.
 		/// </note>
 		///
@@ -406,7 +401,7 @@ namespace EventStore.ClientAPI {
 		/// Sets gossip seed endpoints for the client.
 		///
 		/// <note>
-		/// This should be the external HTTP endpoint of the server, as it is required
+		/// This should be the HTTP endpoint of the server, as it is required
 		/// for the client to exchange gossip with the server. The standard port is 2113.
 		/// </note>
 		///
@@ -476,7 +471,7 @@ namespace EventStore.ClientAPI {
 				_clusterDns,
 				_gossipSeeds,
 				_maxDiscoverAttempts,
-				_gossipExternalHttpPort,
+				_httpPort,
 				_gossipTimeout,
 				_nodePreference,
 				_customHttpMessageHandler);

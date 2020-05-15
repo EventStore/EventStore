@@ -40,11 +40,9 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new IPEndPoint(IPAddress.Loopback, 1111),
 				new IPEndPoint(IPAddress.Loopback, 1111),
 				new IPEndPoint(IPAddress.Loopback, 1111),
-				new IPEndPoint(IPAddress.Loopback, 1111),
 				new IPEndPoint(IPAddress.Loopback, 1111), false);
 			_nodeTwo = new VNodeInfo(
 				Guid.Parse("00000000-0000-0000-0000-000000000002"), 2,
-				new IPEndPoint(IPAddress.Loopback, 2222),
 				new IPEndPoint(IPAddress.Loopback, 2222),
 				new IPEndPoint(IPAddress.Loopback, 2222),
 				new IPEndPoint(IPAddress.Loopback, 2222),
@@ -56,12 +54,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new IPEndPoint(IPAddress.Loopback, 3333),
 				new IPEndPoint(IPAddress.Loopback, 3333),
 				new IPEndPoint(IPAddress.Loopback, 3333),
-				new IPEndPoint(IPAddress.Loopback, 3333),
 				new IPEndPoint(IPAddress.Loopback, 3333), false);
 
-			_getNodeToGossipTo = infos => infos.First(x => Equals(x.InternalHttpEndPoint, _nodeTwo.InternalHttp));
+			_getNodeToGossipTo = infos => infos.First(x => Equals(x.HttpEndPoint, _nodeTwo.HttpEndPoint));
 			_gossipSeedSource = new KnownEndpointGossipSeedSource(new[]
-				{_currentNode.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp});
+				{_currentNode.HttpEndPoint, _nodeTwo.HttpEndPoint, _nodeThree.HttpEndPoint});
 		}
 
 		[SetUp]
@@ -96,7 +93,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			return new Message[] {
 				new SystemMessage.SystemInit(),
 				new GossipMessage.GotGossipSeedSources(new[]
-					{_currentNode.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp})
+					{_currentNode.HttpEndPoint, _nodeTwo.HttpEndPoint, _nodeThree.HttpEndPoint})
 			}.Concat(additionalGivens).ToArray();
 		}
 
@@ -105,7 +102,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			VNodeState nodeState = VNodeState.Initializing) {
 			return MemberInfo.ForVNode(nodeInfo.InstanceId, utcNow, nodeState, true,
 				nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp, nodeInfo.ExternalTcp,
-				nodeInfo.ExternalSecureTcp, nodeInfo.InternalHttp, nodeInfo.ExternalHttp,
+				nodeInfo.ExternalSecureTcp, nodeInfo.HttpEndPoint,
 				0, writerCheckpoint ?? 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0, false);
 		}
 
@@ -113,7 +110,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		/// The initial state for a node currently is represented as a Manager
 		/// </summary>
 		protected static MemberInfo InitialStateForVNode(VNodeInfo nodeInfo, DateTime utcNow, bool isAlive = true) {
-			return MemberInfo.ForManager(Guid.Empty, utcNow, isAlive, nodeInfo.InternalHttp, nodeInfo.InternalHttp);
+			return MemberInfo.ForManager(Guid.Empty, utcNow, isAlive, nodeInfo.HttpEndPoint);
 		}
 	}
 
@@ -128,7 +125,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_get_gossip_sources() {
 			ExpectMessages(
 				new GossipMessage.GotGossipSeedSources(new[]
-					{_currentNode.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}));
+					{_currentNode.HttpEndPoint, _nodeTwo.HttpEndPoint, _nodeThree.HttpEndPoint}));
 		}
 	}
 
@@ -158,7 +155,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_get_gossip_seeds() {
 			ExpectMessages(
 				new GossipMessage.GotGossipSeedSources(new[]
-					{_currentNode.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp}));
+					{_currentNode.HttpEndPoint, _nodeTwo.HttpEndPoint, _nodeThree.HttpEndPoint}));
 		}
 	}
 
@@ -199,16 +196,16 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		protected override Message When() =>
 			new GossipMessage.GotGossipSeedSources(new[]
-				{_currentNode.InternalHttp, _nodeTwo.InternalHttp, _nodeThree.InternalHttp});
+				{_currentNode.HttpEndPoint, _nodeTwo.HttpEndPoint, _nodeThree.HttpEndPoint});
 
 		[Test]
 		public void should_start_gossiping_and_schedule_another_gossip() {
 			ExpectMessages(
-				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.InternalHttp), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(1)));
 		}
@@ -226,11 +223,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_send_the_gossip_over_http_and_schedule_the_next_gossip() {
 			ExpectMessages(
-				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.InternalHttp), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -280,11 +277,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_use_startup_gossip_interval() {
 			ExpectMessages(
-				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.InternalHttp), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -302,11 +299,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[Test]
 		public void should_use_provided_gossip_interval_for_next_gossip() {
 			ExpectMessages(
-				new GrpcMessage.SendOverGrpc(_nodeTwo.InternalHttp, new GossipMessage.SendGossip(new ClusterInfo(
+				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint, new GossipMessage.SendGossip(new ClusterInfo(
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.InternalHttp), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -322,7 +319,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timestamp),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -330,7 +327,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timestamp.AddMilliseconds(-1)),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow)),
-				_nodeTwo.InternalHttp);
+				_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_about_the_node_even_if_outdated() {
@@ -352,7 +349,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: _epochNumber),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -360,7 +357,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: _epochNumber - 1),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow)),
-				_nodeTwo.InternalHttp);
+				_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_about_the_node_even_if_outdated() {
@@ -382,7 +379,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, writerCheckpoint: _writerCheckpoint),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -390,7 +387,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, writerCheckpoint: _writerCheckpoint - 1),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow)),
-				_nodeTwo.InternalHttp);
+				_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_about_the_node_even_if_outdated() {
@@ -412,7 +409,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeThree, _timestamp)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -420,7 +417,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeThree, _timestamp.AddMilliseconds(1))),
-				_nodeThree.InternalHttp);
+				_nodeThree.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_if_its_more_recent() {
@@ -442,7 +439,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: _epochNumber)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -450,7 +447,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: _epochNumber + 1)),
-				_nodeTwo.InternalHttp);
+				_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_if_its_more_recent() {
@@ -472,7 +469,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, writerCheckpoint: _writerCheckpoint)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -480,7 +477,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, writerCheckpoint: _writerCheckpoint + 1)),
-				_nodeTwo.InternalHttp);
+				_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_if_its_more_recent() {
@@ -499,7 +496,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, nodeState: VNodeState.Initializing),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -521,7 +518,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, nodeState: VNodeState.Initializing),
 					InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
-					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.InternalHttp)
+					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -542,7 +539,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			GivenSystemInitializedWithKnownGossipSeedSources();
 
 		protected override Message When() =>
-			new GossipMessage.GossipSendFailed("failed", _nodeTwo.InternalHttp);
+			new GossipMessage.GossipSendFailed("failed", _nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_mark_the_node_as_dead() {
@@ -560,11 +557,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow, isAlive: false),
-					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.InternalHttp)
+					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() => new GossipMessage.GossipSendFailed("failed",
-			_nodeTwo.InternalHttp);
+			_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_ignore_message() {
@@ -579,12 +576,12 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, nodeState: VNodeState.Leader)),
-					_nodeTwo.InternalHttp),
+					_nodeTwo.HttpEndPoint),
 				new SystemMessage.BecomeFollower(Guid.NewGuid(), MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow))
 			);
 
 		protected override Message When() => new GossipMessage.GossipSendFailed("failed",
-			_nodeTwo.InternalHttp);
+			_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_ignore_message_and_wait_for_tcp_to_decide() {
@@ -598,16 +595,16 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
-					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.InternalHttp)
+					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
-			new SystemMessage.VNodeConnectionLost(_currentNode.InternalHttp, Guid.NewGuid());
+			new SystemMessage.VNodeConnectionLost(_currentNode.HttpEndPoint, Guid.NewGuid());
 
 		[Test]
 		public void should_issue_get_gossip() {
 			ExpectMessages(
-				new GrpcMessage.SendOverGrpc(_currentNode.InternalHttp, new GossipMessage.GetGossip(),
+				new GrpcMessage.SendOverGrpc(_currentNode.HttpEndPoint, new GossipMessage.GetGossip(),
 					_timeProvider.LocalTime.Add(_gossipTimeout)));
 		}
 	}
@@ -618,11 +615,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow, isAlive: false),
-					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.InternalHttp)
+					InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)), _nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
-			new SystemMessage.VNodeConnectionLost(_nodeTwo.InternalHttp, Guid.NewGuid());
+			new SystemMessage.VNodeConnectionLost(_nodeTwo.HttpEndPoint, Guid.NewGuid());
 
 		[Test]
 		public void should_ignore_message() {
@@ -640,7 +637,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeThree, _timestamp)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -648,7 +645,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeThree, _timestamp.AddMilliseconds(1))),
-				_nodeThree.InternalHttp);
+				_nodeThree.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_if_its_more_recent() {
@@ -670,7 +667,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: _epochNumber)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -678,7 +675,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: _epochNumber + 1)),
-				_nodeTwo.InternalHttp);
+				_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_if_its_more_recent() {
@@ -701,7 +698,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow,
 							writerCheckpoint: _writerCheckpoint)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -710,7 +707,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
 					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow,
 						writerCheckpoint: _writerCheckpoint + 1)),
-				_nodeTwo.InternalHttp);
+				_nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_accept_the_information_if_its_more_recent() {
@@ -728,7 +725,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		protected override Message[] Given() => Array.Empty<Message>();
 
 		protected override Message When() =>
-			new GossipMessage.GetGossipReceived(new ClusterInfo(), _nodeTwo.InternalHttp);
+			new GossipMessage.GetGossipReceived(new ClusterInfo(), _nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_ignore_message() {
@@ -741,7 +738,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		protected override Message[] Given() => Array.Empty<Message>();
 
 		protected override Message When() =>
-			new GossipMessage.GetGossipFailed("failed", _nodeTwo.InternalHttp);
+			new GossipMessage.GetGossipFailed("failed", _nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_ignore_message() {
@@ -756,11 +753,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow, isAlive: true),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.InternalHttp)
+					_currentNode.HttpEndPoint)
 			);
 
 		protected override Message When() =>
-			new GossipMessage.GetGossipFailed("failed", _nodeTwo.InternalHttp);
+			new GossipMessage.GetGossipFailed("failed", _nodeTwo.HttpEndPoint);
 
 		[Test]
 		public void should_mark_node_as_dead() {
@@ -779,11 +776,11 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow, isAlive: false),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.InternalHttp)
+					_currentNode.HttpEndPoint)
 			);
 
 		protected override Message When() =>
-			new SystemMessage.VNodeConnectionEstablished(_nodeTwo.InternalHttp, Guid.NewGuid());
+			new SystemMessage.VNodeConnectionEstablished(_nodeTwo.HttpEndPoint, Guid.NewGuid());
 
 		[Test]
 		public void should_mark_node_as_alive() {
@@ -805,7 +802,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, nodeState: VNodeState.Initializing),
 						MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow,
 							nodeState: VNodeState.Initializing)),
-					_nodeTwo.InternalHttp)
+					_nodeTwo.HttpEndPoint)
 			);
 
 		protected override Message When() =>
@@ -838,7 +835,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow));
 
 			SUT.Handle(new GossipMessage.GossipReceived(new NoopEnvelope(), clusterInfo,
-				_nodeTwo.InternalHttp));
+				_nodeTwo.HttpEndPoint));
 			var memberInfo = _bus.Messages.OfType<GossipMessage.GossipUpdated>().First().ClusterInfo.Members
 				.First(x => x.InstanceId == _currentNode.InstanceId);
 			Assert.AreEqual(memberInfo.NodePriority, _nodePriority);
@@ -849,7 +846,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp) {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
-				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
+				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
 				0, 0, 0, -1, -1, Guid.Empty, 0, false);
 		}
 
@@ -869,7 +866,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				timeProvider, deadMemberRemovalTimeout);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(2));
-			Assert.IsFalse(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.InternalHttpEndPoint)));
+			Assert.IsFalse(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.HttpEndPoint)));
 		}
 
 		[Test]
@@ -888,7 +885,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				timeProvider, deadMemberRemovalTimeout);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
-			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToNotBeRemoved.InternalHttpEndPoint)));
+			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToNotBeRemoved.HttpEndPoint)));
 		}
 	}
 
@@ -896,7 +893,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp) {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
-				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
+				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
 				0, 0, 0, -1, -1, Guid.Empty, 0, false);
 		}
 
@@ -914,12 +911,12 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var cluster = new ClusterInfo(me, nodeToBeRemoved, peer);
 
 			var updatedCluster = GossipServiceBase.MergeClusters(
-				cluster, cluster, me.InternalHttpEndPoint,
+				cluster, cluster, me.HttpEndPoint,
 				info => info, timeProvider.UtcNow, me, peer.InstanceId,
 				allowedTimeDifference, deadMemberRemovalTimeout);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(2));
-			Assert.IsFalse(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.InternalHttpEndPoint)));
+			Assert.IsFalse(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.HttpEndPoint)));
 		}
 
 		[Test]
@@ -935,12 +932,12 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var cluster = new ClusterInfo(me, nodeToBeRemoved, peer);
 
 			var updatedCluster = GossipServiceBase.MergeClusters(
-				cluster, cluster, me.InternalHttpEndPoint,
+				cluster, cluster, me.HttpEndPoint,
 				info => info, timeProvider.UtcNow, me, peer.InstanceId,
 				allowedTimeDifference, deadMemberRemovalTimeout);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
-			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.InternalHttpEndPoint)));
+			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.HttpEndPoint)));
 		}
 	}
 }

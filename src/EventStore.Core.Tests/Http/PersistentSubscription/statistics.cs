@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void detail_rel_href_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
+				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName, _groupName),
 				_json["links"][0]["href"].Value<string>());
 		}
 
@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void the_first_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
+				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName, _groupName),
 				_json[0]["links"][0]["href"].Value<string>());
 		}
 
@@ -256,7 +256,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void the_second_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName,
+				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName,
 					"secondgroup"),
 				_json[1]["links"][0]["href"].Value<string>());
 		}
@@ -276,14 +276,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void the_first_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint,
+				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
 					_streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
 		}
 
 		[Test]
 		public void the_second_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint,
+				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
 					_streamName, "secondgroup"), _json[1]["parkedMessageUri"].Value<string>());
 		}
 
@@ -376,14 +376,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void the_first_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName, _groupName),
+				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName, _groupName),
 				_json[0]["links"][0]["href"].Value<string>());
 		}
 
 		[Test]
 		public void the_second_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.ExtHttpEndPoint, _streamName,
+				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName,
 					"secondgroup"),
 				_json[1]["links"][0]["href"].Value<string>());
 		}
@@ -391,14 +391,14 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		[Test]
 		public void the_first_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint,
+				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
 					_streamName, _groupName), _json[0]["parkedMessageUri"].Value<string>());
 		}
 
 		[Test]
 		public void the_second_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
-				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.ExtHttpEndPoint,
+				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
 					_streamName, "secondgroup"), _json[1]["parkedMessageUri"].Value<string>());
 		}
 

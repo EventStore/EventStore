@@ -8,7 +8,7 @@ namespace EventStore.Core.Settings {
 	public class SingleVNodeSettings {
 		public readonly IPEndPoint ExternalTcpEndPoint;
 		public readonly IPEndPoint ExternalSecureTcpEndPoint;
-		public readonly IPEndPoint ExternalHttpEndPoint;
+		public readonly IPEndPoint HttpEndPoint;
 		public readonly string[] HttpPrefixes;
 		public readonly bool EnableTrustedAuth;
 		public readonly X509Certificate2 Certificate;
@@ -29,7 +29,7 @@ namespace EventStore.Core.Settings {
 
 		public SingleVNodeSettings(IPEndPoint externalTcpEndPoint,
 			IPEndPoint externalSecureTcpEndPoint,
-			IPEndPoint externalHttpEndPoint,
+			IPEndPoint httpEndPoint,
 			string[] httpPrefixes,
 			bool enableTrustedAuth,
 			X509Certificate2 certificate,
@@ -42,7 +42,7 @@ namespace EventStore.Core.Settings {
 			StatsStorage statsStorage = StatsStorage.StreamAndFile,
 			bool skipInitializeStandardUsersCheck = false,
 			bool disableScavengeMerging = false) {
-			Ensure.NotNull(externalHttpEndPoint, "externalHttpEndPoint");
+			Ensure.NotNull(httpEndPoint, nameof(httpEndPoint));
 			Ensure.NotNull(httpPrefixes, "httpPrefixes");
 			if (externalSecureTcpEndPoint != null)
 				Ensure.NotNull(certificate, "certificate");
@@ -50,7 +50,7 @@ namespace EventStore.Core.Settings {
 
 			ExternalTcpEndPoint = externalTcpEndPoint;
 			ExternalSecureTcpEndPoint = externalSecureTcpEndPoint;
-			ExternalHttpEndPoint = externalHttpEndPoint;
+			HttpEndPoint = httpEndPoint;
 			HttpPrefixes = httpPrefixes;
 			EnableTrustedAuth = enableTrustedAuth;
 			Certificate = certificate;
@@ -71,7 +71,7 @@ namespace EventStore.Core.Settings {
 		public override string ToString() {
 			return string.Format("ExternalTcpEndPoint: {0},\n"
 			                     + "ExternalSecureTcpEndPoint: {1},\n"
-			                     + "ExternalHttpEndPoint: {2},\n"
+			                     + "HttpEndPoint: {2},\n"
 			                     + "HttpPrefixes: {3},\n"
 			                     + "EnableTrustedAuth: {4},\n"
 			                     + "Certificate: {5},\n"
@@ -83,7 +83,7 @@ namespace EventStore.Core.Settings {
 			                     + "StatsStorage: {11}",
 				ExternalTcpEndPoint == null ? "n/a" : ExternalTcpEndPoint.ToString(),
 				ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString(),
-				ExternalHttpEndPoint,
+				HttpEndPoint,
 				string.Join(", ", HttpPrefixes),
 				EnableTrustedAuth,
 				Certificate == null ? "n/a" : Certificate.ToString(verbose: true),

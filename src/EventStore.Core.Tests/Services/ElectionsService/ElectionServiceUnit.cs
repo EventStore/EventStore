@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		public ClusterInfo ClusterInfo { get; private set; }
 
 		public EndPoint OwnEndPoint {
-			get { return InitialClusterSettings.Self.NodeInfo.InternalHttp; }
+			get { return InitialClusterSettings.Self.NodeInfo.HttpEndPoint; }
 		}
 
 		protected Core.Services.ElectionsService ElectionsService;
@@ -46,8 +46,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				clusterSettings.Self.NodeInfo.InternalSecureTcp,
 				clusterSettings.Self.NodeInfo.ExternalTcp,
 				clusterSettings.Self.NodeInfo.ExternalSecureTcp,
-				clusterSettings.Self.NodeInfo.InternalHttp,
-				clusterSettings.Self.NodeInfo.ExternalHttp,
+				clusterSettings.Self.NodeInfo.HttpEndPoint,
 				clusterSettings.Self.NodePriority,
 				clusterSettings.Self.ReadOnlyReplica);
 			ElectionsService = new Core.Services.ElectionsService(Publisher,
@@ -69,8 +68,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		private ClusterInfo BuildClusterInfo(ClusterSettings clusterSettings) {
 			var members =
 				(new[] {
-					MemberInfo.ForManager(Guid.Empty, InitialDate, true, clusterSettings.ClusterManager,
-						clusterSettings.ClusterManager)
+					MemberInfo.ForManager(Guid.Empty, InitialDate, true, clusterSettings.ClusterManager)
 				})
 				.Union(new[] {
 					MemberInfo.ForVNode(clusterSettings.Self.NodeInfo.InstanceId,
@@ -81,8 +79,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						clusterSettings.Self.NodeInfo.InternalSecureTcp,
 						clusterSettings.Self.NodeInfo.ExternalTcp,
 						clusterSettings.Self.NodeInfo.ExternalSecureTcp,
-						clusterSettings.Self.NodeInfo.InternalHttp,
-						clusterSettings.Self.NodeInfo.ExternalHttp,
+						clusterSettings.Self.NodeInfo.HttpEndPoint,
 						LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 						-1,
 						-1,
@@ -97,15 +94,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						x.NodeInfo.InternalSecureTcp,
 						x.NodeInfo.ExternalTcp,
 						x.NodeInfo.ExternalSecureTcp,
-						x.NodeInfo.InternalHttp,
-						x.NodeInfo.ExternalHttp,
+						x.NodeInfo.HttpEndPoint,
 						LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 						-1,
 						-1,
 						Guid.Empty, 0, false)));
 
 			var ordered = members.OrderBy(x =>
-				string.Format("{0}:{1}", x.InternalHttpEndPoint.ToString(), x.InternalHttpEndPoint.GetPort()));
+				string.Format("{0}:{1}", x.HttpEndPoint.ToString(), x.HttpEndPoint.GetPort()));
 
 			return new ClusterInfo(ordered.ToArray());
 		}
@@ -176,11 +172,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			return ClusterInfo.Members.Where(predicate).Select(x =>
 				x.State == VNodeState.Manager
 					? MemberInfo.ForManager(x.InstanceId, x.TimeStamp, x.IsAlive,
-						x.InternalHttpEndPoint, x.ExternalHttpEndPoint)
+						x.HttpEndPoint)
 					: MemberInfo.ForVNode(x.InstanceId, x.TimeStamp, x.State, x.IsAlive,
 						x.InternalTcpEndPoint, x.InternalSecureTcpEndPoint,
 						x.ExternalTcpEndPoint, x.ExternalSecureTcpEndPoint,
-						x.InternalHttpEndPoint, x.ExternalHttpEndPoint,
+						x.HttpEndPoint,
 						x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 						x.EpochPosition, x.EpochNumber, x.EpochId, x.NodePriority, x.IsReadOnlyReplica));
 		}
