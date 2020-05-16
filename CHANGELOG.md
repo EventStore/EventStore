@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
+### Changed
+- Update UI and submodule [EventStore#2493](https://github.com/EventStore/EventStore/pull/2493)
+
+### Removed
+- Internal http endpoint [EventStore#2479](https://github.com/EventStore/EventStore/pull/2479)
+
 ## [20.6.0 - Release Candidate] - 2020-05-15
 ### Changed
 - HTTP read requests to `/streams/$scavenges/` are done via AdminController. [#2310](https://github.com/EventStore/EventStore/pull/2310)
