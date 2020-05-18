@@ -200,7 +200,7 @@ namespace EventStore.ClientAPI.Internal {
 						e = ae.Flatten();
 					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
 					completed.Set();
-				}, endPoint.HostHeader);
+				}, endPoint.EndPoint.GetHost());
 
 			completed.Wait();
 			return result;

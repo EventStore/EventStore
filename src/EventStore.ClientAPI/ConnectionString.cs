@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI {
 								endPoint = new DnsEndPoint(host, port);
 							}
 
-							return new GossipSeed(endPoint, "", seedOverTls);
+							return new GossipSeed(endPoint, seedOverTls);
 						} catch (Exception ex) {
 							throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
 						}
