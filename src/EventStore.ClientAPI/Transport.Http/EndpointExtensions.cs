@@ -1,11 +1,12 @@
 ﻿using System.Net;
+using EventStore.ClientAPI.Internal;
 
 namespace EventStore.ClientAPI.Transport.Http {
 	internal static class EndpointExtensions {
 		public const string HTTP_SCHEMA = "http";
 		public const string HTTPS_SCHEMA = "https";
 
-		public static string ToHttpUrl(this EndPoint endPoint, string schema, string rawUrl = null) {
+		public static string ToHttpUrl(this EndPoint endPoint, string schema, string rawUrl = null, bool resolveDns = false) {
 			if (endPoint is IPEndPoint) {
 				var ipEndPoint = endPoint as IPEndPoint;
 				return CreateHttpUrl(schema, ipEndPoint.ToString(),
@@ -14,7 +15,13 @@ namespace EventStore.ClientAPI.Transport.Http {
 
 			if (endPoint is DnsEndPoint) {
 				var dnsEndpoint = endPoint as DnsEndPoint;
-				return CreateHttpUrl(schema, dnsEndpoint.Host, dnsEndpoint.Port,
+				string host;
+				if (!resolveDns) {
+					host = dnsEndpoint.Host;
+				} else {
+					host = endPoint.ResolveDnsToIPAddress().Address.ToString();
+				}
+				return CreateHttpUrl(schema, host, dnsEndpoint.Port,
 					rawUrl != null ? rawUrl.TrimStart('/') : string.Empty);
 			}
 
