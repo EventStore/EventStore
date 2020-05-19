@@ -254,12 +254,11 @@ namespace EventStore.Core {
 
 			// STORAGE SUBSYSTEM
 			db.Open(vNodeSettings.VerifyDbHash, threads: vNodeSettings.InitializationThreads);
-			var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, vNodeSettings.PTableMaxReaderCount,
 				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
-			var tableIndex = new TableIndex(indexPath,
+			var tableIndex = new TableIndex(vNodeSettings.Index,
 				new XXHashUnsafe(),
 				new Murmur3AUnsafe(),
 				() => new HashListMemTable(vNodeSettings.IndexBitnessVersion,

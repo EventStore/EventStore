@@ -13,6 +13,7 @@ namespace EventStore.Common.Utils {
 		public static readonly string DefaultContentDirectory;
 		public static readonly string DefaultConfigurationDirectory;
 		public static readonly string DefaultDataDirectory;
+		public static readonly string DefaultIndexDirectory;
 		public static readonly string DefaultLogDirectory;
 		public static readonly string DefaultTestClientLogDirectory;
 		public static readonly string FallbackDefaultDataDirectory;
@@ -30,6 +31,7 @@ namespace EventStore.Common.Utils {
 					DefaultContentDirectory = "/usr/share/eventstore";
 					DefaultConfigurationDirectory = "/etc/eventstore";
 					DefaultDataDirectory = "/var/lib/eventstore";
+					DefaultIndexDirectory = Path.Combine(DefaultDataDirectory, "index");
 					DefaultLogDirectory = "/var/log/eventstore";
 					DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 					if (!Directory.Exists(PluginsDirectory))
@@ -39,6 +41,7 @@ namespace EventStore.Common.Utils {
 					DefaultContentDirectory = "/usr/local/share/eventstore";
 					DefaultConfigurationDirectory = "/etc/eventstore";
 					DefaultDataDirectory = "/var/lib/eventstore";
+					DefaultIndexDirectory = Path.Combine(DefaultDataDirectory, "index");
 					DefaultLogDirectory = "/var/log/eventstore";
 					DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 					if (!Directory.Exists(PluginsDirectory))
@@ -48,6 +51,7 @@ namespace EventStore.Common.Utils {
 					DefaultContentDirectory = ApplicationDirectory;
 					DefaultConfigurationDirectory = ApplicationDirectory;
 					DefaultDataDirectory = Path.Combine(ApplicationDirectory, "data");
+					DefaultIndexDirectory = Path.Combine(DefaultDataDirectory, "index");
 					DefaultLogDirectory = Path.Combine(ApplicationDirectory, "logs");
 					DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 					break;
