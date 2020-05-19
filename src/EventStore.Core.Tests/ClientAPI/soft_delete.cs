@@ -33,7 +33,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return EventStoreConnection.Create(node.TcpEndPoint.ToESTcpUri());
+			return EventStoreConnection.Create(
+				ConnectionSettings.Create().DisableTls().Build(),
+				node.TcpEndPoint.ToESTcpUri());
 		}
 
 		[Test, Category("LongRunning"), Category("Network")]

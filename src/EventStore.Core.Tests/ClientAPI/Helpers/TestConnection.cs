@@ -37,8 +37,12 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 				.FailOnNoServerResponse()
 				//.SetOperationTimeoutTo(TimeSpan.FromDays(1))
 				;
-			if (tcpType == TcpType.Ssl)
-				settings.UseSslConnection(false);
+			if (tcpType == TcpType.Ssl) {
+				settings.DisableServerCertificateValidation();
+			} else {
+				settings.DisableTls();
+			}
+
 			return settings;
 		}
 	}
