@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Update UI and submodule [EventStore#2493](https://github.com/EventStore/EventStore/pull/2493)
+- gRPC Leader Not Found Exception will now return host/port in the trailers [EventStore#2491](https://github.com/EventStore/EventStore/pull/2491)
 
 ### Removed
 - Internal http endpoint [EventStore#2479](https://github.com/EventStore/EventStore/pull/2479)
