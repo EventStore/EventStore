@@ -27,8 +27,8 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _operationTimeoutCheckPeriod = Consts.DefaultOperationTimeoutCheckPeriod;
 
 		private UserCredentials _defaultUserCredentials;
-		private bool _useSslConnection;
-		private bool _validateServer;
+		private bool _useSslConnection = true;
+		private bool _validateServer = true;
 
 		private bool _failOnNoServerResponse;
 		private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
@@ -248,15 +248,22 @@ namespace EventStore.ClientAPI {
 			_defaultUserCredentials = userCredentials;
 			return this;
 		}
+		
+		/// <summary>
+		/// Disables TLS
+		/// </summary>
+		/// <returns></returns>
+		public ConnectionSettingsBuilder DisableTls() {
+			_useSslConnection = false;
+			return this;
+		}
 
 		/// <summary>
-		/// Uses a SSL connection over TCP. This should generally be used with authentication.
+		/// Disables Server Certificate Validation
 		/// </summary>
-		/// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
 		/// <returns></returns>
-		public ConnectionSettingsBuilder UseSslConnection(bool validateServer) {
-			_useSslConnection = true;
-			_validateServer = validateServer;
+		public ConnectionSettingsBuilder DisableServerCertificateValidation() {
+			_validateServer = false;
 			return this;
 		}
 

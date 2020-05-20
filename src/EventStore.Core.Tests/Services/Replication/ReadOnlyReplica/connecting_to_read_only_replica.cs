@@ -27,6 +27,7 @@ namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
 
 		protected override IEventStoreConnection CreateConnection() {
 			var settings = ConnectionSettings.Create()
+				.DisableTls()
 				.PerformOnAnyNode();
 			return EventStoreConnection.Create(settings, _nodes[2].ExternalTcpEndPoint);
 		}

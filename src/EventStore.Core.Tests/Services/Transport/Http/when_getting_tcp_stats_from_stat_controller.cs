@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		protected override async Task Given() {
 			_url = _node.HttpEndPoint.ToHttpUrl(EndpointExtensions.HTTP_SCHEMA, "/stats/tcp");
 
-			var settings = ConnectionSettings.Create();
+			var settings = ConnectionSettings.Create().DisableTls();
 			_connection = EventStoreConnection.Create(settings, _node.TcpEndPoint, _clientConnectionName);
 			await _connection.ConnectAsync();
 
