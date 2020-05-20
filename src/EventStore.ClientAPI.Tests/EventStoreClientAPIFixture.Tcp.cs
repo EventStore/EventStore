@@ -29,6 +29,7 @@ namespace EventStore.ClientAPI.Tests {
 			port ??= (useSsl ? ExternalSecurePort : ExternalPort);
 
 			if (useSsl) settings += $"UseSslConnection=true;ValidateServer=false;";
+			else settings += "UseSslConnection=false;";
 
 			var connectionString = $"ConnectTo=tcp://{host}:{port};{settings}";
 			return EventStoreConnection.Create(connectionString);
