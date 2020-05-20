@@ -23,5 +23,7 @@
 	<ItemGroup>
 		<Compile Include="..\EventStore.ClientAPIAcceptanceTests\**\*.cs" />
 		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\server.p12" />
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\cluster\server.pfx" />
+		<EmbeddedResource Include="..\EventStore.ClientAPIAcceptanceTests\cluster\ca.pem" />
 	</ItemGroup>
 </Project>

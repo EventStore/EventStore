@@ -172,7 +172,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			var url = endPoint.EndPoint.ToHttpUrl(
 				endPoint.SeedOverTls ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA,
-				"/gossip?format=json");
+				"/gossip?format=json", true);
 			_client.Get(
 				url,
 				null,
@@ -200,7 +200,7 @@ namespace EventStore.ClientAPI.Internal {
 						e = ae.Flatten();
 					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
 					completed.Set();
-				}, endPoint.HostHeader);
+				}, endPoint.EndPoint.GetHost());
 
 			completed.Wait();
 			return result;

@@ -376,7 +376,7 @@ namespace EventStore.ClientAPI {
 		/// 
 		/// This should be the HTTP port that the nodes are running on. If you cannot use a well-known
 		/// port for this across all nodes, you can instead use gossip seed discovery and set
-		/// the <see cref="IPEndPoint" /> of some seed nodes instead.
+		/// the <see cref="EndPoint" /> of some seed nodes instead.
 		/// </summary>
 		/// <param name="clusterGossipPort">The cluster gossip port.</param>
 		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>

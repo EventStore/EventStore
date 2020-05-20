@@ -113,7 +113,7 @@ namespace EventStore.ClientAPI {
 				}
 
 				if (scheme == "tcp") {
-					var tcpEndPoint = GetSingleNodeIPEndPointFrom(uri);
+					var tcpEndPoint = GetSingleNodeEndPointFrom(uri);
 					return new EventStoreNodeConnection(connectionSettings, null,
 						new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection), connectionName);
 				}
@@ -132,22 +132,12 @@ namespace EventStore.ClientAPI {
 			throw new Exception($"Must specify uri or gossip seeds");
 		}
 
-		private static IPEndPoint GetSingleNodeIPEndPointFrom(Uri uri) {
-			//TODO GFY move this all the way back into the connection so it can be done on connect not on create
-			var ipaddress = IPAddress.Any;
-			if (!IPAddress.TryParse(uri.Host, out ipaddress)) {
-				var entries = Dns.GetHostAddresses(uri.Host);
-				if (entries.Length == 0)
-					throw new Exception(string.Format("Unable to parse IP address or lookup DNS host for '{0}'",
-						uri.Host));
-				//pick an IPv4 address, if one exists
-				ipaddress = entries.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
-				if (ipaddress == null)
-					throw new Exception(string.Format("Could not get an IPv4 address for host '{0}'", uri.Host));
-			}
-
+		private static EndPoint GetSingleNodeEndPointFrom(Uri uri) {
+			var host = uri.Host;
 			var port = uri.IsDefaultPort ? 2113 : uri.Port;
-			return new IPEndPoint(ipaddress, port);
+			if (IPAddress.TryParse(host, out IPAddress ip))
+				return new IPEndPoint(ip, port);
+			return new DnsEndPoint(host, port);
 		}
 
 		private static UserCredentials GetCredentialFromUri(Uri uri) {

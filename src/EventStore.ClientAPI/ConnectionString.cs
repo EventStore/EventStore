@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using EventStore.ClientAPI.SystemData;
@@ -28,10 +29,33 @@ namespace EventStore.ClientAPI {
 				{typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x, CultureInfo.InvariantCulture))}, {
 					typeof(GossipSeed[]), x => x.Split(',').Select(q => {
 						try {
-							var pieces = q.Trim().Split(':');
-							if (pieces.Length != 2) throw new Exception("Could not split IP address from port.");
+							q = q.Trim();
+							bool seedOverTls;
+							var HTTP_SCHEMA = Uri.UriSchemeHttp + "://";
+							var HTTPS_SCHEMA = Uri.UriSchemeHttps + "://";
+							if (q.StartsWith(HTTP_SCHEMA)) {
+								seedOverTls = false;
+								q = q.Substring(HTTP_SCHEMA.Length);
+							} else if(q.StartsWith(HTTPS_SCHEMA)) {
+								seedOverTls = true;
+								q = q.Substring(HTTPS_SCHEMA.Length);
+							} else {
+								seedOverTls = true; //seed over TLS by default
+							}
 
-							return new GossipSeed(new IPEndPoint(IPAddress.Parse(pieces[0]), int.Parse(pieces[1])));
+							var pieces = q.Trim().Split(':');
+							if (pieces.Length != 2) throw new Exception("Could not split host from port.");
+
+							string host = pieces[0];
+							int port = int.Parse(pieces[1]);
+							EndPoint endPoint;
+							if(IPAddress.TryParse(host, out IPAddress ip)) {
+								endPoint = new IPEndPoint(ip, port);
+							} else {
+								endPoint = new DnsEndPoint(host, port);
+							}
+
+							return new GossipSeed(endPoint, seedOverTls);
 						} catch (Exception ex) {
 							throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
 						}
@@ -49,6 +73,20 @@ namespace EventStore.ClientAPI {
 									"User credentials {0} is not in correct format. Expected format is username:password.",
 									x), ex);
 						}
+					}
+				},
+				{
+					typeof(HttpMessageHandler), x => {
+						#if NET452
+							throw new Exception("Setting the Http Message Handler via connection string is not supported in .NET 4.5.2");
+						#else
+							if (x.Trim().Equals("SkipCertificateValidation")) {
+								return new HttpClientHandler {
+									ServerCertificateCustomValidationCallback = delegate { return true; }
+								};
+							}
+							throw new Exception("The only supported value for Http Message Handler is: SkipCertificateValidation");
+						#endif
 					}
 				}
 			};

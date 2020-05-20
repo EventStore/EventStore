@@ -4,8 +4,8 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
-	[Collection(nameof(EventStoreClientAPIClusterCollection))]
-	public abstract class EventStoreClientAPIClusterTest {
+	[Collection(nameof(EventStoreClientAPICollection))]
+	public abstract class EventStoreClientAPITest {
 		public string GetStreamName([CallerMemberName] string testMethod = default)
 			=> $"{GetType().Name}_{testMethod ?? "unknown"}";
 
