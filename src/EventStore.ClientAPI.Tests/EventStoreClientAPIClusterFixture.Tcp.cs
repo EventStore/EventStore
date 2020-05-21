@@ -30,7 +30,8 @@ namespace EventStore.ClientAPI.Tests {
 			var settings = configureSettings ?? DefaultConfigureSettingsForConnectionString;
 			var host = useDnsEndPoint ? "localhost" : IPAddress.Loopback.ToString();
 
-			if (useSsl) settings += "UseSslConnection=true;";
+			if (useSsl) settings += "UseSslConnection=true;ValidateServer=false;";
+			else settings += "UseSslConnection=false;";
 
 			var gossipSeeds = GetGossipSeedEndPointsExceptFor(-1, useDnsEndPoint);
 			var gossipSeedsString = "";
