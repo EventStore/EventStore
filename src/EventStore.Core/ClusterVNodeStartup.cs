@@ -120,16 +120,15 @@ namespace EventStore.Core {
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
 			.BuildServiceProvider();
 
-		public IServiceCollection ConfigureServices(IServiceCollection services) {
-			var bridge = new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort);
-			return _subsystems
+		public IServiceCollection ConfigureServices(IServiceCollection services) =>
+			_subsystems
 				.Aggregate(services
 						.AddRouting()
 						.AddSingleton(_httpAuthenticationProviders)
 						.AddSingleton(_authorizationProvider)
 						.AddSingleton<AuthenticationMiddleware>()
 						.AddSingleton<AuthorizationMiddleware>()
-						.AddSingleton<KestrelToInternalBridgeMiddleware>(bridge)
+						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
 						.AddSingleton(new Streams(_mainQueue, _readIndex, _maxAppendSize, _authorizationProvider))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
@@ -142,7 +141,6 @@ namespace EventStore.Core {
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
 						.Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
-		}
 
 		public void Handle(SystemMessage.SystemReady message) => _ready = true;
 
