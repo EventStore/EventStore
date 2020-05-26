@@ -1288,15 +1288,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					)));
 
 				_publisher.Messages.Clear();
-				_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.HttpEndPoint,
-					_nodeThree.InstanceId, _nodeThree.HttpEndPoint, 0));
 			}
 
 			[Test]
-			public void previous_leader_should_be_elected() {
-				//the TestElectedLeaderId property has been added for test visibility
-				//we cannot see the ElectionsDone message here since the leader of the elections thinks that the elected leader is dead
-				Assert.AreEqual(_nodeThree.InstanceId, _sut.TestElectedLeaderId);
+			public void previous_leader_should_be_proposed() {
+				Assert.AreEqual(_nodeThree.InstanceId, _sut.LeaderProposalId);
 			}
 		}
 
@@ -1312,15 +1308,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					)));
 
 				_publisher.Messages.Clear();
-				_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.HttpEndPoint,
-					_nodeThree.InstanceId, _nodeThree.HttpEndPoint, 0));
 			}
 
 			[Test]
-			public void previous_leader_should_be_elected() {
-				//the TestElectedLeaderId property has been added for test visibility
-				//we cannot see the ElectionsDone message here since the leader of the elections thinks that the elected leader is dead
-				Assert.AreEqual(_nodeThree.InstanceId, _sut.TestElectedLeaderId);
+			public void previous_leader_should_be_proposed() {
+				Assert.AreEqual(_nodeThree.InstanceId, _sut.LeaderProposalId);
 			}
 		}
 
@@ -1405,15 +1397,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					)));
 
 				_publisher.Messages.Clear();
-				_sut.Handle(new ElectionMessage.Accept(_nodeTwo.InstanceId, _nodeTwo.HttpEndPoint,
-					_nodeThree.InstanceId, _nodeThree.HttpEndPoint, 0));
 			}
 
 			[Test]
-			public void previous_leader_should_be_elected() {
-				//the TestElectedLeaderId property has been added for test visibility
-				//we cannot see the ElectionsDone message here since the leader of the elections thinks that the elected leader is dead
-				Assert.AreEqual(_nodeThree.InstanceId, _sut.TestElectedLeaderId);
+			public void previous_leader_should_be_proposed() {
+				Assert.AreEqual(_nodeThree.InstanceId, _sut.LeaderProposalId);
 			}
 		}
 

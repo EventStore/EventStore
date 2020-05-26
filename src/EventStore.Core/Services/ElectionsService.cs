@@ -69,9 +69,9 @@ namespace EventStore.Core.Services {
 		private readonly HashSet<Guid> _acceptsReceived = new HashSet<Guid>();
 
 		private LeaderCandidate _leaderProposal;
+		public Guid  LeaderProposalId => _leaderProposal?.InstanceId ?? Guid.Empty;
 		private Guid? _leader;
 		private Guid? _lastElectedLeader;
-		public Guid TestElectedLeaderId = Guid.Empty; //this property is used for test visibility purposes only
 
 		private MemberInfo[] _servers;
 		private Guid? _resigningLeaderInstanceId;
@@ -600,7 +600,6 @@ namespace EventStore.Core.Services {
 				message.ServerHttpEndPoint, message.ServerId, message.LeaderHttpEndPoint, message.LeaderId);
 
 			if (_acceptsReceived.Add(message.ServerId) && _acceptsReceived.Count == _clusterSize / 2 + 1) {
-				TestElectedLeaderId = _leaderProposal.InstanceId;
 				var leader = _servers.FirstOrDefault(x => x.InstanceId == _leaderProposal.InstanceId);
 				if (leader != null) {
 					_leader = _leaderProposal.InstanceId;
