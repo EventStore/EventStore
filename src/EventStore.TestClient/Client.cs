@@ -180,7 +180,7 @@ namespace EventStore.TestClient {
 					endpoint.GetHost(),
 					endpoint.ResolveDnsToIPAddress(),
 					TcpConnectionManager.ConnectionTimeout,
-					(cert,chain,err) => (err == SslPolicyErrors.None, err.ToString()),
+					(cert,chain,err) => (err == SslPolicyErrors.None || !ValidateServer, err.ToString()),
 					null,
 					onConnectionEstablished,
 					onConnectionFailed,
