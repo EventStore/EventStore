@@ -1,6 +1,8 @@
 ARG CONTAINER_RUNTIME=bionic
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic AS build
 ARG RUNTIME=linux-x64
+ARG VERSION="0.0.0"
+ARG VERSION_INFO=""
 
 WORKDIR /build/ci
 
@@ -16,7 +18,10 @@ RUN dotnet restore --runtime=${RUNTIME}
 
 COPY ./src .
 
-RUN dotnet build --configuration=Release --runtime=${RUNTIME} --no-restore --framework=netcoreapp3.1
+RUN \
+    chmod +x /build/ci/patch-version-info.sh \
+    && ../ci/patch-version-info.sh "${VERSION}" "${VERSION_INFO}" \
+    && dotnet build --configuration=Release --runtime=${RUNTIME} --no-restore --framework=netcoreapp3.1
 
 FROM build as test
 ARG RUNTIME=linux-x64
