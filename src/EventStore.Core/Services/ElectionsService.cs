@@ -492,8 +492,6 @@ namespace EventStore.Core.Services {
 					Log.Debug("ELECTIONS: (V={lastAttemptedView}) Previous Leader (L={previousLeaderId:B}) from last epoch record is dead, defaulting to the best candidate (B={bestCandidateId:B}).", lastAttemptedView, previousLeaderId, bestCandidate.InstanceId);
 				} else if (previousLeaderCandidate.InstanceId == resigningLeaderInstanceId) {
 					Log.Debug("ELECTIONS: (V={lastAttemptedView}) Previous Leader (L={previousLeaderId:B}) from last epoch record is alive but it is resigning, defaulting to the best candidate (B={bestCandidateId:B}).", lastAttemptedView, previousLeaderId, bestCandidate.InstanceId);
-				} else if (previousLeaderCandidate.NodePriority < best.NodePriority) {
-					Log.Debug("ELECTIONS: (V={lastAttemptedView}) Previous Leader (L={previousLeaderId:B}) from last epoch record is alive but has a lower priority than the best candidate, defaulting to the best candidate (B={bestCandidateId:B}).", lastAttemptedView, previousLeaderId, bestCandidate.InstanceId);
 				} else {
 					bestCandidate = previousLeaderCandidate;
 				}
