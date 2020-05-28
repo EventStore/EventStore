@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
@@ -11,9 +12,7 @@ namespace EventStore.Core {
 
 		public readonly string MutexName;
 
-		public bool IsAcquired {
-			get { return _acquired; }
-		}
+		public bool IsAcquired => _acquired;
 
 		private Mutex _dbMutex;
 		private bool _acquired;
@@ -28,6 +27,7 @@ namespace EventStore.Core {
 				throw new InvalidOperationException($"DB mutex '{MutexName}' is already acquired.");
 
 			try {
+				_dbMutex?.Dispose();
 				_dbMutex = new Mutex(initiallyOwned: true, name: MutexName, createdNew: out _acquired);
 				_dbMutex.WaitOne(TimeSpan.FromSeconds(5));
 			} catch (AbandonedMutexException exc) {
@@ -52,9 +52,16 @@ namespace EventStore.Core {
 				_dbMutex.ReleaseMutex();
 			} catch (ApplicationException ex) {
 				Log.Warning(ex, "Error occurred while releasing lock.");
+			} finally {
+				_acquired = false;
 			}
 		}
 
-		public void Dispose() => _dbMutex?.Dispose();
+		public void Dispose() {
+			if (_acquired) {
+				Release();
+			}
+			_dbMutex?.Dispose();
+		}
 	}
 }

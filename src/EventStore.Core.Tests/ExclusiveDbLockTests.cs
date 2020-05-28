@@ -7,12 +7,28 @@ namespace EventStore.Core.Tests {
 	public class ExclusiveDbLockTests {
 		[Test]
 		public async Task can_release_when_running_in_task_pool() {
-			var dbPath = $"/tmp/eventstore/{Guid.NewGuid()}";
-			using var sut = new ExclusiveDbLock(dbPath);
+			using var sut = new ExclusiveDbLock(GetDbPath());
 			Assert.True(sut.Acquire());
 			Assert.True(sut.IsAcquired);
 			await Task.Delay(1);
 			sut.Release();
 		}
+
+		[Test]
+		public void acquiring_twice_throws() {
+			using var sut = new ExclusiveDbLock(GetDbPath());
+			sut.Acquire();
+			Assert.Throws<InvalidOperationException>(() => sut.Acquire());
+		}
+
+		[Test]
+		public void releasing_before_acquiring_throws() {
+			using var sut = new ExclusiveDbLock(GetDbPath());
+			Assert.Throws<InvalidOperationException>(() => sut.Release());
+		}
+
+		private static string GetDbPath() => $"/tmp/eventstore/{Guid.NewGuid()}";
+
+
 	}
 }
