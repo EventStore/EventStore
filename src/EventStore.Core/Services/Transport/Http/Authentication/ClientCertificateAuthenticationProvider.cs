@@ -7,18 +7,27 @@ using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
+		private const string ReservedNodeSubject = "CN=eventstoredb-node";
+
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
 			request = null;
 			var clientCertificate = context.Connection.ClientCertificate;
 			if (clientCertificate is null) return false;
 
+			bool hasReservedNodeCN;
+			try {
+				hasReservedNodeCN = clientCertificate.Subject == ReservedNodeSubject;
+			} catch (CryptographicException) {
+				return false;
+			}
+
+			bool hasIpOrDnsSan = false;
 			X509ExtensionCollection extensions;
 			try {
 				extensions = clientCertificate.Extensions;
 			} catch (CryptographicException) {
 				return false;
 			}
-
 			foreach (var extension in extensions) {
 				AsnEncodedData asnData = new AsnEncodedData(extension.Oid, extension.RawData);
 				if (extension.Oid.Value == "2.5.29.17") { //Oid for Subject Alternative Names extension
@@ -28,12 +37,17 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 					for (int i = 0; i < parts.Length; i += 2) {
 						var header = parts[i].Trim();
 						if (acceptedHeaders.Any(x => x == header)) {
-							request = new HttpAuthenticationRequest(context, "system", "");
-							request.Authenticated(SystemAccounts.System);
-							return true;
+							hasIpOrDnsSan = true;
+							break;
 						}
 					}
 				}
+			}
+
+			if (hasReservedNodeCN && hasIpOrDnsSan) {
+				request = new HttpAuthenticationRequest(context, "system", "");
+				request.Authenticated(SystemAccounts.System);
+				return true;
 			}
 
 			return false;
