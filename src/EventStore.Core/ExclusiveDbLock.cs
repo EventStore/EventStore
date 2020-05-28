@@ -20,12 +20,12 @@ namespace EventStore.Core {
 
 		public ExclusiveDbLock(string dbPath) {
 			Ensure.NotNullOrEmpty(dbPath, "dbPath");
-			MutexName = "ESDB-HASHED:" + GetDbPathHash(dbPath);
+			MutexName = @"Global\ESDB-HASHED:" + GetDbPathHash(dbPath);
 		}
 
 		public bool Acquire() {
 			if (_acquired)
-				throw new InvalidOperationException(string.Format("DB mutex '{0}' is already acquired.", MutexName));
+				throw new InvalidOperationException($"DB mutex '{MutexName}' is already acquired.");
 
 			try {
 				_dbMutex = new Mutex(initiallyOwned: true, name: MutexName, createdNew: out _acquired);
@@ -39,15 +39,14 @@ namespace EventStore.Core {
 			return _acquired;
 		}
 
-		private string GetDbPathHash(string dbPath) {
-			using (var memStream = new MemoryStream(Helper.UTF8NoBom.GetBytes(dbPath))) {
-				return BitConverter.ToString(MD5Hash.GetHashFor(memStream)).Replace("-", "");
-			}
+		private static string GetDbPathHash(string dbPath) {
+			using var memStream = new MemoryStream(Helper.UTF8NoBom.GetBytes(dbPath));
+			return BitConverter.ToString(MD5Hash.GetHashFor(memStream)).Replace("-", "");
 		}
 
 		public void Release() {
 			if (!_acquired)
-				throw new InvalidOperationException(string.Format("DB mutex '{0}' was not acquired.", MutexName));
+				throw new InvalidOperationException($"DB mutex '{MutexName}' was not acquired.");
 			_dbMutex.ReleaseMutex();
 		}
 	}
