@@ -6,7 +6,7 @@ using EventStore.Core.Util;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
-	public class ExclusiveDbLock {
+	public class ExclusiveDbLock : IDisposable {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ExclusiveDbLock>();
 
 		public readonly string MutexName;
@@ -29,8 +29,9 @@ namespace EventStore.Core {
 
 			try {
 				_dbMutex = new Mutex(initiallyOwned: true, name: MutexName, createdNew: out _acquired);
+				_dbMutex.WaitOne(TimeSpan.FromSeconds(5));
 			} catch (AbandonedMutexException exc) {
-				Log.Information(exc,
+				Log.Warning(exc,
 					"DB mutex '{mutex}' is said to be abandoned. "
 					+ "Probably previous instance of server was terminated abruptly.",
 					MutexName);
@@ -49,5 +50,7 @@ namespace EventStore.Core {
 				throw new InvalidOperationException($"DB mutex '{MutexName}' was not acquired.");
 			_dbMutex.ReleaseMutex();
 		}
+
+		public void Dispose() => _dbMutex?.Dispose();
 	}
 }
