@@ -239,8 +239,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			for (int index = 0; index < 3; index++) {
 				members[index] = CreateMemberInfo(index, epochId, lastCommitPosition, writerCheckpoint,
 					chaserCheckpoint, nodePriority);
+			}
+
+			var clusterInfo = new ClusterInfo(members);
+			var previousLeaderId = tc.LastElectedLeader.HasValue ? IdForNode(tc.LastElectedLeader.Value) : Guid.Empty;
+
+			for (int index = 0; index < 3; index++) {
 				var prepareOk = CreatePrepareOk(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-					nodePriority);
+					nodePriority, previousLeaderId, clusterInfo);
 				prepareOks.Add(prepareOk.ServerId, prepareOk);
 			}
 
@@ -250,12 +256,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var resigningLeadership = tc.ResigningLeader.HasValue
 				? (Guid?)IdForNode(tc.ResigningLeader.Value)
 				: null;
-			var mc = SUT.GetBestLeaderCandidate(prepareOks, members, lastElectedLeader, resigningLeadership);
+			var mc = SUT.GetBestLeaderCandidate(prepareOks, members, resigningLeadership, 0);
 
 			Assert.AreEqual(IdForNode(tc.ExpectedLeaderCandidateNode), mc.InstanceId);
 
 			var ownInfo = CreateLeaderCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-				nodePriority);
+				nodePriority, previousLeaderId);
 
 			var isLegit = SUT.IsLegitimateLeader(1, EndpointForNode(tc.ProposingNode),
 				IdForNode(tc.ProposingNode), mc, members, null, members[0].InstanceId,
@@ -269,21 +275,24 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, long> lastCommitPosition,
 			Func<int, long> writerCheckpoint,
 			Func<int, long> chaserCheckpoint,
-			Func<int, int> nodePriority) {
+			Func<int, int> nodePriority,
+			Guid previousLeaderId,
+			ClusterInfo clusterInfo) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return new ElectionMessage.PrepareOk(1, id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i),
-				chaserCheckpoint(i), nodePriority(i));
+			return new ElectionMessage.PrepareOk(1, id, ep, 1, 1, epochId, previousLeaderId, lastCommitPosition(i), writerCheckpoint(i),
+				chaserCheckpoint(i), nodePriority(i), clusterInfo);
 		}
 
 		static SUT.LeaderCandidate CreateLeaderCandidate(int i, Guid epochId,
 			Func<int, long> lastCommitPosition,
 			Func<int, long> writerCheckpoint,
 			Func<int, long> chaserCheckpoint,
-			Func<int, int> nodePriority) {
+			Func<int, int> nodePriority,
+			Guid previousLeaderId) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
-			return new SUT.LeaderCandidate(id, ep, 1, 1, epochId, lastCommitPosition(i), writerCheckpoint(i),
+			return new SUT.LeaderCandidate(id, ep, 1, 1, epochId, previousLeaderId, lastCommitPosition(i), writerCheckpoint(i),
 				chaserCheckpoint(i), nodePriority(i));
 		}
 

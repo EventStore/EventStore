@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Cluster;
 
 namespace EventStore.Core.Messages {
 	public static class ElectionMessageDto {
@@ -70,11 +71,13 @@ namespace EventStore.Core.Messages {
 			public int EpochNumber { get; set; }
 			public long EpochPosition { get; set; }
 			public Guid EpochId { get; set; }
+			public Guid EpochLeaderInstanceId { get; set; }
 			public long LastCommitPosition { get; set; }
 			public long WriterCheckpoint { get; set; }
 			public long ChaserCheckpoint { get; set; }
 
 			public int NodePriority { get; set; }
+			public ClusterInfo ClusterInfo { get; set; }
 
 			public PrepareOkDto() {
 			}
@@ -89,11 +92,13 @@ namespace EventStore.Core.Messages {
 				EpochNumber = message.EpochNumber;
 				EpochPosition = message.EpochPosition;
 				EpochId = message.EpochId;
+				EpochLeaderInstanceId = message.EpochLeaderInstanceId;
 				LastCommitPosition = message.LastCommitPosition;
 				WriterCheckpoint = message.WriterCheckpoint;
 				ChaserCheckpoint = message.ChaserCheckpoint;
 
 				NodePriority = message.NodePriority;
+				ClusterInfo = message.ClusterInfo;
 			}
 		}
 
@@ -115,6 +120,7 @@ namespace EventStore.Core.Messages {
 			public int EpochNumber { get; set; }
 			public long EpochPosition { get; set; }
 			public Guid EpochId { get; set; }
+			public Guid EpochLeaderInstanceId { get; set; }
 			public int NodePriority { get; set; }
 
 			public ProposalDto() {
@@ -133,6 +139,7 @@ namespace EventStore.Core.Messages {
 				EpochNumber = message.EpochNumber;
 				EpochPosition = message.EpochPosition;
 				EpochId = message.EpochId;
+				EpochLeaderInstanceId = message.EpochLeaderInstanceId;
 				LastCommitPosition = message.LastCommitPosition;
 				WriterCheckpoint = message.WriterCheckpoint;
 				ChaserCheckpoint = message.ChaserCheckpoint;

@@ -50,10 +50,12 @@ message PrepareOkRequest {
 	int32 epoch_number = 4;
 	int64 epoch_position = 5;
 	event_store.client.shared.UUID epoch_id = 6;
-	int64 last_commit_position = 7;
-	int64 writer_checkpoint = 8;
-	int64 chaser_checkpoint = 9;
-	int32 node_priority = 10;
+	event_store.client.shared.UUID epoch_leader_instance_id = 7;
+	int64 last_commit_position = 8;
+	int64 writer_checkpoint = 9;
+	int64 chaser_checkpoint = 10;
+	int32 node_priority = 11;
+	ClusterInfo cluster_info = 12;
 }
 
 message ProposalRequest {
@@ -65,10 +67,11 @@ message ProposalRequest {
 	int32 epoch_number = 6;
 	int64 epoch_position = 7;
 	event_store.client.shared.UUID epoch_id = 8;
-	int64 last_commit_position = 9;
-	int64 writer_checkpoint = 10;
-	int64 chaser_checkpoint = 11;
-	int32 node_priority = 12;
+	event_store.client.shared.UUID epoch_leader_instance_id = 9;
+	int64 last_commit_position = 10;
+	int64 writer_checkpoint = 11;
+	int64 chaser_checkpoint = 12;
+	int32 node_priority = 13;
 }
 
 message AcceptRequest {

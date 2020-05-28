@@ -27,18 +27,20 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public readonly long PrevEpochPosition;
 		public readonly DateTime TimeStamp;
+		public readonly Guid LeaderInstanceId;
 
 		public EpochRecord(long epochPosition, int epochNumber, Guid epochId, long prevEpochPosition,
-			DateTime timeStamp) {
+			DateTime timeStamp, Guid leaderInstanceId) {
 			EpochPosition = epochPosition;
 			EpochNumber = epochNumber;
 			EpochId = epochId;
 			PrevEpochPosition = prevEpochPosition;
 			TimeStamp = timeStamp;
+			LeaderInstanceId = leaderInstanceId;
 		}
 
 		internal EpochRecord(EpochRecordDto dto)
-			: this(dto.EpochPosition, dto.EpochNumber, dto.EpochId, dto.PrevEpochPosition, dto.TimeStamp) {
+			: this(dto.EpochPosition, dto.EpochNumber, dto.EpochId, dto.PrevEpochPosition, dto.TimeStamp, dto.LeaderInstanceId) {
 		}
 
 		public byte[] AsSerialized() {
@@ -47,12 +49,13 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public override string ToString() {
 			return string.Format(
-				"EpochPosition: {0}, EpochNumber: {1}, EpochId: {2}, PrevEpochPosition: {3}, TimeStamp: {4}, ",
+				"EpochPosition: {0}, EpochNumber: {1}, EpochId: {2}, PrevEpochPosition: {3}, TimeStamp: {4}, LeaderInstanceId: {5}",
 				EpochPosition,
 				EpochNumber,
 				EpochId,
 				PrevEpochPosition,
-				TimeStamp);
+				TimeStamp,
+				LeaderInstanceId);
 		}
 
 		internal class EpochRecordDto {
@@ -62,6 +65,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 			public long PrevEpochPosition { get; set; }
 			public DateTime TimeStamp { get; set; }
+			public Guid LeaderInstanceId { get; set; }
 
 			public EpochRecordDto() {
 			}
@@ -73,6 +77,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 				PrevEpochPosition = rec.PrevEpochPosition;
 				TimeStamp = rec.TimeStamp;
+				LeaderInstanceId = rec.LeaderInstanceId;
 			}
 		}
 	}
