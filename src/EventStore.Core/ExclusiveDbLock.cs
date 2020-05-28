@@ -48,7 +48,11 @@ namespace EventStore.Core {
 		public void Release() {
 			if (!_acquired)
 				throw new InvalidOperationException($"DB mutex '{MutexName}' was not acquired.");
-			_dbMutex.ReleaseMutex();
+			try {
+				_dbMutex.ReleaseMutex();
+			} catch (ApplicationException ex) {
+				Log.Warning(ex, "Error occurred while releasing lock.");
+			}
 		}
 
 		public void Dispose() => _dbMutex?.Dispose();
