@@ -1,20 +1,33 @@
-﻿using System.Security.Claims;
+﻿using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Plugins.Authentication;
 using EventStore.Transport.Http;
 using Microsoft.AspNetCore.Http;
 
-namespace EventStore.Core.Services.Transport.Http.Authentication
-{
+namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class HttpAuthenticationRequest : AuthenticationRequest {
 		private readonly HttpContext _context;
 		private readonly TaskCompletionSource<bool> _tcs;
 		private readonly CancellationTokenRegistration _cancellationRegister;
 
-		public HttpAuthenticationRequest(HttpContext context, string name, string suppliedPassword) : base(context.TraceIdentifier, name, suppliedPassword) {
+		public HttpAuthenticationRequest(HttpContext context, string authToken) : this(context,
+			new Dictionary<string, string> {
+				["jwt"] = authToken
+			}) {
+		}
+
+		public HttpAuthenticationRequest(HttpContext context, string name, string suppliedPassword) :
+			this(context, new Dictionary<string, string> {
+				["uid"] = name,
+				["pwd"] = suppliedPassword
+			}) {
+		}
+
+		private HttpAuthenticationRequest(HttpContext context, IReadOnlyDictionary<string, string> tokens) : base(
+			context.TraceIdentifier, tokens) {
 			_context = context;
-			
 			_tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 			_cancellationRegister = _context.RequestAborted.Register(Cancel);
 		}

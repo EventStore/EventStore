@@ -7,7 +7,7 @@ root = true
 [*]
 insert_final_newline = true
 indent_style = tab
-tab_width = 4
+indent_size = 4
 
 # C# files
 [*.cs]
@@ -126,18 +126,21 @@ csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
 
 [*.{asm,inc}]
-tab_width = 8
+indent_size = 8
 
 # Xml project files
 [*.{csproj,vcxproj,vcxproj.filters,proj,nativeproj,locproj}]
-tab_width = 2
+indent_size = 2
 
 # Xml config files
 [*.{props,targets,config,nuspec}]
-tab_width = 2
+indent_size = 2
 
 [CMakeLists.txt]
-tab_width = 2
+indent_size = 2
 
 [*.{cmd,ps1}]
-tab_width = 8
+indent_size = 8
+
+[*.{yaml, yml}]
+indent_size = 2

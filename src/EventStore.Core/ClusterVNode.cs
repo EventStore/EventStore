@@ -453,6 +453,7 @@ namespace EventStore.Core {
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
 				new ClientCertificateAuthenticationProvider(),
 				new BasicHttpAuthenticationProvider(_authenticationProvider),
+				new BearerHttpAuthenticationProvider(_authenticationProvider)
 			};
 			if (vNodeSettings.EnableTrustedAuth)
 				httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
