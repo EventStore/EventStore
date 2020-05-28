@@ -529,8 +529,11 @@ namespace EventStore.ClusterNode {
 		protected override Task StartInternalAsync(CancellationToken cancellationToken) => Node.StartAsync(false);
 
 		protected override Task StopInternalAsync(CancellationToken cancellationToken) {
-			if (_dbLock != null && _dbLock.IsAcquired)
-				_dbLock.Release();
+			if (_dbLock != null && _dbLock.IsAcquired) {
+				using (_dbLock) {
+					_dbLock.Release();
+				}
+			}
 
 			return Node.StopAsync(cancellationToken: cancellationToken);
 		}
