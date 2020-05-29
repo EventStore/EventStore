@@ -1,4 +1,4 @@
-﻿namespace EventStore.Core.Services.Transport.Grpc {
+﻿namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 	public partial class Gossip : EventStore.Cluster.Gossip.GossipBase {
 	}
 	

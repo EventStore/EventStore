@@ -9,7 +9,7 @@ using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
-namespace EventStore.Core.Services.Transport.Grpc {
+namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 	partial class Gossip {
 		private readonly IPublisher _bus;
 		private readonly IAuthorizationProvider _authorizationProvider;

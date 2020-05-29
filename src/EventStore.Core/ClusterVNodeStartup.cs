@@ -7,6 +7,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Grpc;
+using EventStore.Core.Services.Transport.Grpc.Cluster;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.TransactionLog.Chunks;
@@ -22,7 +23,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
-using ElectionsService = EventStore.Core.Services.Transport.Grpc.Elections;
+using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Elections;
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 
 namespace EventStore.Core {
