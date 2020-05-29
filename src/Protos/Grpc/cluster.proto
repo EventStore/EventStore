@@ -106,20 +106,21 @@ message EndPoint {
 message MemberInfo {
 	enum VNodeState {
 		Initializing = 0;
-		Unknown = 1;
-		PreReplica = 2;
-		CatchingUp = 3;
-		Clone = 4;
-		Follower = 5;
-		PreLeader = 6;
-		Leader = 7;
-		Manager = 8;
-		ShuttingDown = 9;
-		Shutdown = 10;
-		ReadOnlyLeaderless = 11;
-		PreReadOnlyReplica = 12;
-		ReadOnlyReplica = 13;
-		ResigningLeader = 14;
+		DiscoverLeader = 1;
+		Unknown = 2;
+		PreReplica = 3;
+		CatchingUp = 4;
+		Clone = 5;
+		Follower = 6;
+		PreLeader = 7;
+		Leader = 8;
+		Manager = 9;
+		ShuttingDown = 10;
+		Shutdown = 11;
+		ReadOnlyLeaderless = 12;
+		PreReadOnlyReplica = 13;
+		ReadOnlyReplica = 14;
+		ResigningLeader = 15;
 	}
 	event_store.client.shared.UUID instance_id = 1;
 	int64 time_stamp = 2;
