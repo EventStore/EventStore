@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				? ssl_connections.GetServerCertificate()
 				: ssl_connections.GetUntrustedCertificate();
 			var clientCertificate = useValidClientCertificate
-				? ssl_connections.GetClientCertificate()
+				? ssl_connections.GetOtherServerCertificate()
 				: ssl_connections.GetUntrustedCertificate();
 			var rootCertificates = new X509Certificate2Collection(ssl_connections.GetRootCertificate());
 
