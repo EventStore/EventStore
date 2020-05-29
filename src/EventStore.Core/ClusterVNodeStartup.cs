@@ -25,6 +25,8 @@ using MidFunc = System.Func<
 >;
 using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Elections;
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
+using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
+using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -106,13 +108,14 @@ namespace EventStore.Core {
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
 						.UseMiddleware<AuthorizationMiddleware>()
 						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
-					)
+				)
 				.UseEndpoints(ep => ep.MapGrpcService<PersistentSubscriptions>())
 				.UseEndpoints(ep => ep.MapGrpcService<Users>())
 				.UseEndpoints(ep => ep.MapGrpcService<Streams>())
-				.UseEndpoints(ep => ep.MapGrpcService<Gossip>())
+				.UseEndpoints(ep => ep.MapGrpcService<ClusterGossip>())
 				.UseEndpoints(ep => ep.MapGrpcService<Elections>())
-				.UseEndpoints(ep => ep.MapGrpcService<Operations>());
+				.UseEndpoints(ep => ep.MapGrpcService<Operations>())
+				.UseEndpoints(ep => ep.MapGrpcService<ClientGossip>());
 
 			_subsystems
 				.Aggregate(app,(b, subsystem) => subsystem.Configure(b));
@@ -135,8 +138,9 @@ namespace EventStore.Core {
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
-						.AddSingleton(new Gossip(_mainQueue, _authorizationProvider))
+						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
+						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
 						.AddGrpc()
 						.AddServiceOptions<Streams>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
