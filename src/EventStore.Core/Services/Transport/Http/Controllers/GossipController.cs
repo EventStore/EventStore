@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var sendToHttpEnvelope = new SendToHttpEnvelope(
 				_networkSendQueue, entity, Format.SendGossip,
 				(e, m) => Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false));
-			Publish(new GossipMessage.GossipReceived(sendToHttpEnvelope, new ClusterInfo(new MemberInfo[0]), null));
+			Publish(new GossipMessage.ReadGossip(sendToHttpEnvelope));
 		}
 	}
 }

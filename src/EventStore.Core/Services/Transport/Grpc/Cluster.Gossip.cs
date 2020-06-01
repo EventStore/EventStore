@@ -38,8 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				throw AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
-			_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(msg => GossipResponse(msg, tcs)),
-				new EventStore.Core.Cluster.ClusterInfo(), null));
+			_bus.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs))));
 			return await tcs.Task.ConfigureAwait(false);
 		}
 

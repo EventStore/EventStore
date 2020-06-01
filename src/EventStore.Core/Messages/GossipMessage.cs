@@ -60,6 +60,20 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class ReadGossip : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly IEnvelope Envelope;
+
+			public ReadGossip(IEnvelope envelope) {
+				Envelope = envelope;
+			}
+		}
+
 		public class SendGossip : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

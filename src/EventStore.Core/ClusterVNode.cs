@@ -699,6 +699,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
 				_mainBus.Subscribe<GossipMessage.Gossip>(gossip);
 				_mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
+				_mainBus.Subscribe<GossipMessage.ReadGossip>(gossip);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
 				_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
 				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);

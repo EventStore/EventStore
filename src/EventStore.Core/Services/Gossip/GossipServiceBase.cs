@@ -17,6 +17,7 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<GossipMessage.GotGossipSeedSources>,
 		IHandle<GossipMessage.Gossip>,
 		IHandle<GossipMessage.GossipReceived>,
+		IHandle<GossipMessage.ReadGossip>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<GossipMessage.GossipSendFailed>,
 		IHandle<SystemMessage.VNodeConnectionLost>,
@@ -169,6 +170,12 @@ namespace EventStore.Core.Services.Gossip {
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, $"gossip received from [{message.Server}]");
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
+		}
+
+		public void Handle(GossipMessage.ReadGossip message) {
+			if (_cluster != null) {
+				message.Envelope.ReplyWith(new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint));
+			}
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
