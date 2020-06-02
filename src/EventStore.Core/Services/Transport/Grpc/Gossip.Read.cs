@@ -13,7 +13,7 @@ using MemberInfo = EventStore.Client.Gossip.MemberInfo;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Gossip {
-		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Node.Gossip.Read);
+		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Node.Gossip.ClientRead);
 		public override async Task<ClusterInfo> Read(Empty request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ReadOperation, context.CancellationToken).ConfigureAwait(false)) {

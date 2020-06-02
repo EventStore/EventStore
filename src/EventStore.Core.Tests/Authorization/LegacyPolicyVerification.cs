@@ -366,6 +366,7 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.Statistics.Custom);
 
 				yield return CreateOperation(Operations.Node.Gossip.Read);
+				yield return CreateOperation(Operations.Node.Gossip.ClientRead);
 
 				yield return (new Operation(Operations.Streams.Read).WithParameter(
 						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
