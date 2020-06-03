@@ -9,7 +9,7 @@ using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
-namespace EventStore.Core.Services.Transport.Grpc {
+namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 	partial class Gossip {
 		private readonly IPublisher _bus;
 		private readonly IAuthorizationProvider _authorizationProvider;
@@ -38,8 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
-			_bus.Publish(new GossipMessage.GossipReceived(new CallbackEnvelope(msg => GossipResponse(msg, tcs)),
-				new EventStore.Core.Cluster.ClusterInfo(), null));
+			_bus.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs))));
 			return await tcs.Task.ConfigureAwait(false);
 		}
 

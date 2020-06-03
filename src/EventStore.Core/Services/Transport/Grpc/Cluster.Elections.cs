@@ -9,7 +9,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 using ClusterInfo = EventStore.Core.Cluster.ClusterInfo;
 
-namespace EventStore.Core.Services.Transport.Grpc {
+namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 	partial class Elections {
 		private static readonly Empty EmptyResult = new Empty();
 		private readonly IPublisher _bus;

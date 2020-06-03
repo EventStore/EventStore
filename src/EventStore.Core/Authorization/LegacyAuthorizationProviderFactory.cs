@@ -53,6 +53,7 @@ namespace EventStore.Core.Authorization {
 			policy.Add(Operations.Node.Elections.LeaderIsResigningOk, isSystem);
 
 			policy.AllowAnonymous(Operations.Node.Gossip.Read);
+			policy.AllowAnonymous(Operations.Node.Gossip.ClientRead);
 			policy.Add(Operations.Node.Gossip.Update, isSystem);
 
 			policy.AddMatchAnyAssertion(Operations.Node.Shutdown, Grant.Allow, OperationsOrAdmins);

@@ -49,6 +49,13 @@ namespace EventStore.Client.Operations {
 	}
 }
 
+namespace EventStore.Client.Gossip {
+	partial class Gossip {
+		partial class GossipBase : ServiceBase {
+		}
+	}
+}
+
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {

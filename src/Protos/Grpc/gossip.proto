@@ -1,0 +1,44 @@
+syntax = "proto3";
+package event_store.client.gossip;
+option java_package = "com.eventstore.client.gossip";
+
+import "shared.proto";
+
+service Gossip {
+	rpc Read (event_store.client.shared.Empty) returns (ClusterInfo);
+}
+
+message ClusterInfo {
+	repeated MemberInfo members = 1;
+}
+
+message EndPoint {
+	string address = 1;
+	uint32 port = 2;
+}
+
+message MemberInfo {
+	enum VNodeState {
+		Initializing = 0;
+		DiscoverLeader = 1;
+		Unknown = 2;
+		PreReplica = 3;
+		CatchingUp = 4;
+		Clone = 5;
+		Follower = 6;
+		PreLeader = 7;
+		Leader = 8;
+		Manager = 9;
+		ShuttingDown = 10;
+		Shutdown = 11;
+		ReadOnlyLeaderless = 12;
+		PreReadOnlyReplica = 13;
+		ReadOnlyReplica = 14;
+		ResigningLeader = 15;
+	}
+	event_store.client.shared.UUID instance_id = 1;
+	int64 time_stamp = 2;
+	VNodeState state = 3;
+	bool is_alive = 4;
+	EndPoint http_end_point = 5;
+}
