@@ -113,7 +113,7 @@ namespace EventStore.Core.Authorization {
 			policy.RequireAuthenticated(Operations.Projections.State);
 			policy.RequireAuthenticated(Operations.Projections.Status);
 			policy.RequireAuthenticated(Operations.Projections.Statistics);
-			policy.AddMatchAnyAssertion(Operations.Projections.Restart, Grant.Allow, Admins);
+			policy.AddMatchAnyAssertion(Operations.Projections.Restart, Grant.Allow, OperationsOrAdmins);
 
 			return new PolicyAuthorizationProvider(new PolicyEvaluator(policy.AsReadOnly()),
 				Log.ForContext<PolicyEvaluator>(), true, false);
