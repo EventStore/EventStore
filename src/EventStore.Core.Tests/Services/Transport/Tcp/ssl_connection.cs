@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			return new X509Certificate2(mem.ToArray(), "password");
 		}
 
-		public static X509Certificate2 GetClientCertificate() {
+		public static X509Certificate2 GetOtherServerCertificate() {
 			using var stream = Assembly.GetExecutingAssembly()
 				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node2.node2.p12");
 			using var mem = new MemoryStream();

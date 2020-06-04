@@ -1,15 +1,12 @@
 #!/bin/bash
 
-if [ "$#" -ne 4 ]; then
-    echo "generate_cert.sh <certificate_name> <common_name> <ip_addresses> <dns_names>"
-    echo "generate_cert.sh node1 node1 IP:127.0.0.1 DNS:localhost"
+if [ "$#" -ne 1 ]; then
+    echo "generate_cert.sh <certificate_name>"
+    echo "generate_cert.sh node1"
     exit
 fi
 
 certificate_name=$1
-common_name=$2
-ip_addresses=$3
-dns_names=$4
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 pushd DIR &>/dev/null
@@ -22,7 +19,7 @@ echo "Generating key: $certificate_name.key"
 openssl genrsa -out "$certificate_name".key 2048 &>/dev/null
 
 echo "Generating CSR: $certificate_name.csr"
-openssl req -new -sha256 -key "$certificate_name".key -subj "/O=EventStore Ltd/CN=$common_name" -out "$certificate_name".csr  &>/dev/null
+openssl req -new -sha256 -key "$certificate_name".key -subj "/CN=eventstoredb-node" -out "$certificate_name".csr  &>/dev/null
 
 echo "Generating Certificate: $certificate_name.crt"
 openssl x509 \
@@ -38,7 +35,7 @@ openssl x509 \
         authorityKeyIdentifier=keyid,issuer
         basicConstraints=CA:FALSE
         keyUsage = digitalSignature, nonRepudiation, dataEncipherment
-        subjectAltName = $ip_addresses,$dns_names"
+        subjectAltName = IP:127.0.0.1,DNS:localhost"
     ) \
     -out "$certificate_name".crt &>/dev/null
 

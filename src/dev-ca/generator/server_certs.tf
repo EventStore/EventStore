@@ -16,7 +16,7 @@ resource "tls_cert_request" "server" {
   private_key_pem = tls_private_key.server.private_key_pem
 
   subject {
-    common_name = "Event Store Test Server Cert"
+    common_name = "eventstoredb-node"
   }
 
   dns_names = var.dns_names
