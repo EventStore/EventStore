@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Set UseSslConnection=false and ValidateServer=false in connection string tests where required [EventStore#2505](https://github.com/EventStore/EventStore/pull/2505)
 - Patch the version files when building the docker container so that the logs reflect that information. [EventStore#2512](https://github.com/EventStore/EventStore/pull/2512)
 - Write leader's instance ID in epoch record. Pass on the epoch record's leader's instance id and each node's gossip information during elections to the leader of elections to determine more accurately if the previous leader is still alive when choosing the best leader candidate. [EventStore#2454](https://github.com/EventStore/EventStore/pull/2454)
+- Updated the EventStore.Plugins version [EventStore#2521](https://github.com/EventStore/EventStore/pull/2521)
 
 ### Removed
 - Internal http endpoint [EventStore#2479](https://github.com/EventStore/EventStore/pull/2479)
@@ -25,6 +26,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - jwt token support [EventStore#2510](https://github.com/EventStore/EventStore/pull/2510)
+- An external gRPC endpoint for gossip [EventStore#2519](https://github.com/EventStore/EventStore/pull/2519)
 
 ## [20.6.0 - Release Candidate] - 2020-05-15
 ### Changed
