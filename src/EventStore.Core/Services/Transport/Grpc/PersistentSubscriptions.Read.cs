@@ -88,9 +88,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				return new ValueTask(Task.CompletedTask);
 			}
 
-			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition) {
+			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition,
+				long? preparePosition) {
 				if (e == null) return null;
-				var position = Position.FromInt64(commitPosition ?? e.LogPosition, e.TransactionPosition);
+				var position = Position.FromInt64(commitPosition ?? -1, preparePosition ?? -1);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
 					Id = uuidOptionsCase switch {
 						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new UUID {
@@ -117,8 +118,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			ReadResp.Types.ReadEvent ConvertToReadEvent((ResolvedEvent, int) _) {
 				var (e, retryCount) = _;
 				var readEvent = new ReadResp.Types.ReadEvent {
-					Link = ConvertToRecordedEvent(e.Link, e.OriginalPosition?.CommitPosition),
-					Event = ConvertToRecordedEvent(e.Event, e.OriginalPosition?.CommitPosition),
+					Link = ConvertToRecordedEvent(e.Link,
+						e.OriginalPosition?.CommitPosition,
+						e.OriginalPosition?.PreparePosition),
+					Event = ConvertToRecordedEvent(e.Event,
+						e.OriginalPosition?.CommitPosition,
+						e.OriginalPosition?.PreparePosition),
 					RetryCount = retryCount
 				};
 				if (e.OriginalPosition.HasValue) {
