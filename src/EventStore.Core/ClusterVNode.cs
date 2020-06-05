@@ -518,7 +518,6 @@ namespace EventStore.Core {
 
 			_mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
 
-			_mainBus.Subscribe<StorageMessage.CommitAck>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
 			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(requestManagement);
 			_mainBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(requestManagement);

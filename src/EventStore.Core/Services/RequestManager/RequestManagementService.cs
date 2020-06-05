@@ -21,7 +21,6 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.RequestCompleted>,
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.PrepareAck>,
-		IHandle<StorageMessage.CommitAck>,
 		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 		IHandle<ReplicationTrackingMessage.IndexedTo>,
 		IHandle<StorageMessage.CommitIndexed>,
@@ -172,7 +171,6 @@ namespace EventStore.Core.Services.RequestManager {
 
 		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.PrepareAck message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.CommitAck message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.CommitIndexed message) =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.WrongExpectedVersion message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.InvalidTransaction message)  =>	DispatchInternal(message.CorrelationId, message);

@@ -12,7 +12,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public abstract class RequestManagerBase :
 		IHandle<StorageMessage.PrepareAck>,
-		IHandle<StorageMessage.CommitAck>,
+		IHandle<StorageMessage.CommitIndexed>,
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
@@ -119,7 +119,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (_allEventsWritten) { AllEventsWritten(); }
 		}
-		public void Handle(StorageMessage.CommitAck message) {
+		public virtual void Handle(StorageMessage.CommitIndexed message) {
 			if (Interlocked.Read(ref _complete) == 1 || _commitReceived) { return; }
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
 			_commitReceived = true;

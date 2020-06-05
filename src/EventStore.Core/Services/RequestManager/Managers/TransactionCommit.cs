@@ -63,7 +63,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					TransactionId,
 					Result,
 					FailureMessage);
-		public void Handle(StorageMessage.CommitIndexed message) {
+
+		public override void Handle(StorageMessage.CommitIndexed message) {
+			base.Handle(message);
 			_transactionWritten = true;
 			Committed();
 		}
