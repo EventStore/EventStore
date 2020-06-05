@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 										PrepareFlags));
 				LogPosition += 100;
 			}
-			Dispatcher.Publish(new StorageMessage.CommitAck(
+			Dispatcher.Publish(new StorageMessage.CommitIndexed(
 									message.CorrelationId, 
 									LogPosition, 
 									transactionPosition,

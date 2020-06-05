@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new StorageMessage.PrepareAck(InternalCorrId, transactionId, PrepareFlags.TransactionEnd);
-			yield return new StorageMessage.CommitAck(Guid.NewGuid(), commitPosition, transactionId, 0, 10);
+			yield return new StorageMessage.CommitIndexed(Guid.NewGuid(), commitPosition, transactionId, 0, 10);
 			yield return new ReplicationTrackingMessage.ReplicatedTo(commitPosition);
 			yield return new StorageMessage.CommitIndexed(InternalCorrId,commitPosition, transactionId,0,0);
 		}

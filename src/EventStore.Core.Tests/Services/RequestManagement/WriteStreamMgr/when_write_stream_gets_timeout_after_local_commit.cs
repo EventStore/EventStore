@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {				
-			yield return new StorageMessage.CommitAck(InternalCorrId, 1, 1, 0, 0);
+			yield return new StorageMessage.CommitIndexed(InternalCorrId, 1, 1, 0, 0);
 		}
 
 		protected override Message When() {

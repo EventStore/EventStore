@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
-			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 500, 1, 1);			
+			yield return new StorageMessage.CommitIndexed(InternalCorrId, _commitPosition, 500, 1, 1);
 			yield return new ReplicationTrackingMessage.ReplicatedTo(_commitPosition);
 		}
 

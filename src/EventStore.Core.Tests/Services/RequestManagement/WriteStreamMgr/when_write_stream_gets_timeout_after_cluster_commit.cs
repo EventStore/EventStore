@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new StorageMessage.PrepareAck(InternalCorrId, _prepareLogPosition, PrepareFlags.SingleWrite|PrepareFlags.Data);
-			yield return new StorageMessage.CommitAck(InternalCorrId, _commitPosition, 1, 0, 0);
+			yield return new StorageMessage.CommitIndexed(InternalCorrId, _commitPosition, 1, 0, 0);
 			yield return new ReplicationTrackingMessage.ReplicatedTo(_commitPosition);
 		}
 
