@@ -19,7 +19,7 @@ message ReadReq {
 	}
 
 	message Options {
-		string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 		string group_name = 2;
 		int32 buffer_size = 3;
 		UUIDOption uuid_option = 4;
@@ -71,7 +71,7 @@ message ReadResp {
 		}
 		message RecordedEvent {
 			event_store.client.shared.UUID id = 1;
-			string stream_name = 2;
+			event_store.client.shared.StreamIdentifier stream_identifier = 2;
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
 			uint64 commit_position = 5;
@@ -89,7 +89,7 @@ message CreateReq {
 	Options options = 1;
 
 	message Options {
-		string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 		string group_name = 2;
 		Settings settings = 3;
 	}
@@ -124,7 +124,7 @@ message UpdateReq {
 	Options options = 1;
 
 	message Options {
-		string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 		string group_name = 2;
 		Settings settings = 3;
 	}
@@ -159,7 +159,7 @@ message DeleteReq {
 	Options options = 1;
 
 	message Options {
-		string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 		string group_name = 2;
 	}
 }

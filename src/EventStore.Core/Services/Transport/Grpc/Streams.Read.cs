@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var op = streamOptionsCase switch {
 				StreamOptionOneofCase.Stream => ReadOperation.WithParameter(
-					Plugins.Authorization.Operations.Streams.Parameters.StreamId(request.Options.Stream.StreamName)),
+					Plugins.Authorization.Operations.Streams.Parameters.StreamId(request.Options.Stream.StreamIdentifier)),
 				StreamOptionOneofCase.All => ReadOperation.WithParameter(
 					Plugins.Authorization.Operations.Streams.Parameters.StreamId(SystemStreams.AllStream)),
 				_ => throw new InvalidOperationException()
@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					FilterOptionOneofCase.NoFilter) => (IAsyncEnumerator<ResolvedEvent>)
 					new Enumerators.ReadStreamForwards(
 						_publisher,
-						request.Options.Stream.StreamName,
+						request.Options.Stream.StreamIdentifier,
 						request.Options.Stream.ToStreamRevision(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
@@ -67,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Backwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.ReadStreamBackwards(
 						_publisher,
-						request.Options.Stream.StreamName,
+						request.Options.Stream.StreamIdentifier,
 						request.Options.Stream.ToStreamRevision(),
 						request.Options.Count,
 						request.Options.ResolveLinks,
@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					ReadDirection.Forwards,
 					FilterOptionOneofCase.NoFilter) => new Enumerators.StreamSubscription(
 						_publisher,
-						request.Options.Stream.StreamName,
+						request.Options.Stream.StreamIdentifier,
 						request.Options.Stream.ToSubscriptionStreamRevision(),
 						request.Options.ResolveLinks,
 						user,
@@ -166,7 +166,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				exception.StatusCode switch {
 					StatusCode.NotFound => responseStream.WriteAsync(new ReadResp {
 						StreamNotFound = new ReadResp.Types.StreamNotFound {
-							StreamName = exception.Trailers.First(x => x.Key == Constants.Exceptions.StreamName).Value
+							StreamIdentifier = exception.Trailers.First(x => x.Key == Constants.Exceptions.StreamName).Value
 						}
 					}),
 					_ => throw new InvalidOperationException(
@@ -192,7 +192,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						},
 						_ => Uuid.FromGuid(e.EventId).ToDto()
 					},
-					StreamName = e.EventStreamId,
+					StreamIdentifier = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
 					CommitPosition = position.CommitPosition,
 					PreparePosition = position.PreparePosition,
@@ -231,10 +231,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						string.IsNullOrEmpty(filter.EventType.Regex)
 							? EventFilter.EventType.Prefixes(filter.EventType.Prefix.ToArray())
 							: EventFilter.EventType.Regex(filter.EventType.Regex)),
-					ReadReq.Types.Options.Types.FilterOptions.FilterOneofCase.StreamName => (
-						string.IsNullOrEmpty(filter.StreamName.Regex)
-							? EventFilter.StreamName.Prefixes(filter.StreamName.Prefix.ToArray())
-							: EventFilter.StreamName.Regex(filter.StreamName.Regex)),
+					ReadReq.Types.Options.Types.FilterOptions.FilterOneofCase.StreamIdentifier => (
+						string.IsNullOrEmpty(filter.StreamIdentifier.Regex)
+							? EventFilter.StreamName.Prefixes(filter.StreamIdentifier.Prefix.ToArray())
+							: EventFilter.StreamName.Regex(filter.StreamIdentifier.Regex)),
 					_ => throw new InvalidOperationException()
 				};
 		}

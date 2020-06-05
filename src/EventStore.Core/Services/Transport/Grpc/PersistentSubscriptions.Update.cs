@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				correlationId,
 				correlationId,
 				new CallbackEnvelope(HandleUpdatePersistentSubscriptionCompleted),
-				request.Options.StreamName,
+				request.Options.StreamIdentifier,
 				request.Options.GroupName,
 				settings.ResolveLinks,
 				new StreamRevision(settings.Revision).ToInt64(),
@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						updatePersistentSubscriptionSource.TrySetResult(new UpdateResp());
 						return;
 					case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult.Fail:
-						updatePersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionFailed(request.Options.StreamName, request.Options.GroupName, completed.Reason));
+						updatePersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionFailed(request.Options.StreamIdentifier, request.Options.GroupName, completed.Reason));
 						return;
 					case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult
 						.AccessDenied:

@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(options.StreamName)), context.CancellationToken).ConfigureAwait(false)) {
+				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(options.StreamIdentifier)), context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
 			var connectionName =
@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var uuidOptionsCase = options.UuidOption.ContentCase;
 
 			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
-				_publisher, options.StreamName, options.GroupName, options.BufferSize, user, context.CancellationToken);
+				_publisher, options.StreamIdentifier, options.GroupName, options.BufferSize, user, context.CancellationToken);
 
 			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
@@ -99,7 +99,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						},
 						_ => Uuid.FromGuid(e.EventId).ToDto()
 					},
-					StreamName = e.EventStreamId,
+					StreamIdentifier = e.EventStreamId,
 					StreamRevision = StreamRevision.FromInt64(e.EventNumber),
 					CommitPosition = position.CommitPosition,
 					PreparePosition = position.PreparePosition,
