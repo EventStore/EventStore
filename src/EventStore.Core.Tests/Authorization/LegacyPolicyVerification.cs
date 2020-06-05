@@ -294,13 +294,10 @@ namespace EventStore.Core.Tests.Authorization {
 			}
 
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AdminOperations() {
-				
-
 				yield return (new Operation(Operations.Streams.Read).WithParameter(
 						Operations.Streams.Parameters.StreamId("$$$scavenge")),
 					"$$$scavenge",
 					systemStreamPermission);
-				yield return CreateOperation(Operations.Projections.Restart);
 			}
 
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> OpsOperations() {
@@ -326,6 +323,7 @@ namespace EventStore.Core.Tests.Authorization {
 				
 				yield return CreateOperation(Operations.Projections.ReadConfiguration);
 				yield return CreateOperation(Operations.Projections.Delete);
+				yield return CreateOperation(Operations.Projections.Restart);
 			}
 
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> UserOperations() {
