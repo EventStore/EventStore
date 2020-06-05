@@ -47,7 +47,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 				TimeSpan.FromSeconds(2));
 			Dispatcher.Subscribe<ClientMessage.WriteEvents>(Service);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Service);
-			Dispatcher.Subscribe<StorageMessage.CommitAck>(Service);
 			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Service);
 			Dispatcher.Subscribe<StorageMessage.StreamDeleted>(Service);
 			Dispatcher.Subscribe<StorageMessage.WrongExpectedVersion>(Service);

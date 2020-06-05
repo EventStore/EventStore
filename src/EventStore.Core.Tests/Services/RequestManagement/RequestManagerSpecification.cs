@@ -46,7 +46,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 
 			Manager = OnManager(Publisher);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Manager);
-			Dispatcher.Subscribe<StorageMessage.CommitAck>(Manager);
 			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Manager);
 			Dispatcher.Subscribe<StorageMessage.StreamDeleted>(Manager);
 			Dispatcher.Subscribe<StorageMessage.WrongExpectedVersion>(Manager);
