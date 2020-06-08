@@ -1482,6 +1482,7 @@ namespace EventStore.Core {
 			var infoController = new InfoController(options, new Dictionary<string, bool> {
 				{"projections", _projectionType != ProjectionType.None},
 				{"userManagement", _authenticationProviderIsInternal},
+				{"atomPub", _enableAtomPubOverHTTP}
 			});
 
 			var writerCheckpoint = _db.Config.WriterCheckpoint.Read();
