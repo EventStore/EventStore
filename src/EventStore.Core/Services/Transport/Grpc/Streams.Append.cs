@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw new InvalidOperationException();
 
 			var options = requestStream.Current.Options;
-			var streamName = options.StreamName;
+			var streamName = options.StreamIdentifier;
 			
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(

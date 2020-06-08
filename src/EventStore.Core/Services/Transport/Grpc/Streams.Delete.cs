@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
 			var options = request.Options;
-			var streamName = options.StreamName;
+			var streamName = options.StreamIdentifier;
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				DeleteReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision =>
 				new StreamRevision(options.Revision).ToInt64(),
@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public override async Task<TombstoneResp> Tombstone(TombstoneReq request, ServerCallContext context) {
 			var options = request.Options;
-			var streamName = options.StreamName;
+			var streamName = options.StreamIdentifier;
 
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				TombstoneReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision =>

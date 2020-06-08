@@ -36,7 +36,7 @@ message ReadReq {
 			Backwards = 1;
 		}
 		message StreamOptions {
-			string stream_name = 1;
+			event_store.client.shared.StreamIdentifier stream_identifier = 1;
 			oneof revision_option {
 				uint64 revision = 2;
 				event_store.client.shared.Empty start = 3;
@@ -58,7 +58,7 @@ message ReadReq {
 		}
 		message FilterOptions {
 			oneof filter {
-				Expression stream_name = 1;
+				Expression stream_identifier = 1;
 				Expression event_type = 2;
 			}
 			oneof window {
@@ -99,7 +99,7 @@ message ReadResp {
 
 		message RecordedEvent {
 			event_store.client.shared.UUID id = 1;
-			string stream_name = 2;
+			event_store.client.shared.StreamIdentifier stream_identifier = 2;
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
 			uint64 commit_position = 5;
@@ -116,7 +116,7 @@ message ReadResp {
 		uint64 prepare_position = 2;
 	}
 	message StreamNotFound {
-	  	string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 	}
 }
 
@@ -127,7 +127,7 @@ message AppendReq {
 	}
 
 	message Options {
-		string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
 			event_store.client.shared.Empty no_stream = 3;
@@ -182,7 +182,7 @@ message DeleteReq {
 	Options options = 1;
 
 	message Options {
-		string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
 			event_store.client.shared.Empty no_stream = 3;
@@ -208,7 +208,7 @@ message TombstoneReq {
 	Options options = 1;
 
 	message Options {
-		string stream_name = 1;
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
 			event_store.client.shared.Empty no_stream = 3;

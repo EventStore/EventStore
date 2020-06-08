@@ -15,3 +15,8 @@ message UUID {
 }
 message Empty {
 }
+
+message StreamIdentifier {
+	reserved 1 to 2;
+	bytes streamName = 3;
+}

@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				correlationId,
 				correlationId,
 				new CallbackEnvelope(HandleCreatePersistentSubscriptionCompleted),
-				request.Options.StreamName,
+				request.Options.StreamIdentifier,
 				request.Options.GroupName,
 				settings.ResolveLinks,
 				new StreamRevision(settings.Revision).ToInt64(),
@@ -63,10 +63,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						createPersistentSubscriptionSource.TrySetResult(new CreateResp());
 						return;
 					case CreatePersistentSubscriptionResult.Fail:
-						createPersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionFailed(request.Options.StreamName, request.Options.GroupName, completed.Reason));
+						createPersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionFailed(request.Options.StreamIdentifier, request.Options.GroupName, completed.Reason));
 						return;
 					case CreatePersistentSubscriptionResult.AlreadyExists:
-						createPersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionExists(request.Options.StreamName, request.Options.GroupName));
+						createPersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionExists(request.Options.StreamIdentifier, request.Options.GroupName));
 						return;
 					case CreatePersistentSubscriptionResult.AccessDenied:
 						createPersistentSubscriptionSource.TrySetException(RpcExceptions.AccessDenied());
