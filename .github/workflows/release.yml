@@ -3,7 +3,7 @@ name: Initiate Release
 on:
   push:
     tags:
-      - "v*"
+      - "oss-v*"
  
 jobs:
   release:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Get the version
         id: get_version
-        run: echo ::set-output name=version::${GITHUB_REF:11}
+        run: echo ::set-output name=version::${GITHUB_REF:15}
       - name: Perform Release 
         run: |
           curl -X POST https://api.github.com/repos/EventStore/TrainStation/dispatches \
