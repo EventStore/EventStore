@@ -107,7 +107,8 @@ namespace EventStore.Core.Tests.Helpers {
 				.AdvertiseHttpPortAs(advertisedHttpPort)
 				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
 				.WithIndexBitnessVersion(indexBitnessVersion)
-				.EnableExternalTCP();
+				.EnableExternalTCP()
+				.WithEnableAtomPubOverHTTP(true);
 
 			if (enableTrustedAuth)
 				builder.EnableTrustedAuth();
