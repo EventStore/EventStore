@@ -139,7 +139,8 @@ namespace EventStore.Core.Tests.Helpers {
 				readOnlyReplica: readOnlyReplica,
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
 				enableExternalTCP: true,
-				gossipOverHttps: UseHttpsInternally());
+				gossipOverHttps: UseHttpsInternally(),
+				enableAtomPubOverHTTP: true);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(
