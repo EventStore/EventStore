@@ -66,6 +66,13 @@ namespace EventStore.ClusterNode {
 					x.Source = "Set by 'Development Mode' mode";
 				}
 
+				if (x.Name == nameof(ClusterNodeOptions.EnableAtomPubOverHTTP)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode) {
+					x.Value = true;
+					x.Source = "Set by 'Development Mode' mode";
+				}
+
 				return x;
 			});
 		}
