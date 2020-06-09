@@ -290,7 +290,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
 			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
 			$"WriteTimeout: {WriteTimeout}\n" +
-			$"DisableInternalTls: {DisableInternalTcpTls}\n" + $"DisableExternalTls: {DisableExternalTcpTls}\n" +
+			$"DisableInternalTcpTls: {DisableInternalTcpTls}\n" + $"DisableExternalTcpTls: {DisableExternalTcpTls}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
 			$"AuthorizationProviderFactory  Type: {AuthorizationProviderFactory.GetType()}\n" +
