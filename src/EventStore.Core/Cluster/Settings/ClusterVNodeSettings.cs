@@ -41,8 +41,8 @@ namespace EventStore.Core.Cluster.Settings {
 
 		public readonly int NodePriority;
 
-		public readonly bool DisableInternalTls;
-		public readonly bool DisableExternalTls;
+		public readonly bool DisableInternalTcpTls;
+		public readonly bool DisableExternalTcpTls;
 		public readonly bool EnableExternalTCP;
 
 		public readonly TimeSpan StatsPeriod;
@@ -114,8 +114,8 @@ namespace EventStore.Core.Cluster.Settings {
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
 			TimeSpan writeTimeout,
-			bool disableInternalTls,
-			bool disableExternalTls,
+			bool disableInternalTcpTls,
+			bool disableExternalTcpTls,
 			TimeSpan statsPeriod,
 			StatsStorage statsStorage,
 			int nodePriority,
@@ -221,8 +221,8 @@ namespace EventStore.Core.Cluster.Settings {
 			CommitTimeout = commitTimeout;
 			WriteTimeout = writeTimeout;
 
-			DisableInternalTls = disableInternalTls;
-			DisableExternalTls = disableExternalTls;
+			DisableInternalTcpTls = disableInternalTcpTls;
+			DisableExternalTcpTls = disableExternalTcpTls;
 			EnableExternalTCP = enableExternalTCP;
 
 			StatsPeriod = statsPeriod;
@@ -290,7 +290,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"PrepareAckCount: {PrepareAckCount}\n" + $"CommitAckCount: {CommitAckCount}\n" +
 			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
 			$"WriteTimeout: {WriteTimeout}\n" +
-			$"DisableInternalTls: {DisableInternalTls}\n" + $"DisableExternalTls: {DisableExternalTls}\n" +
+			$"DisableInternalTls: {DisableInternalTcpTls}\n" + $"DisableExternalTls: {DisableExternalTcpTls}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
 			$"AuthorizationProviderFactory  Type: {AuthorizationProviderFactory.GetType()}\n" +

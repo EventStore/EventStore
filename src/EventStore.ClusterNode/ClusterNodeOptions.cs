@@ -205,11 +205,11 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesFromStoreGroup)]
 		public string CertificateThumbprint { get; set; }
 
-		[ArgDescription(Opts.DisableInternalTlsDescr, Opts.InterfacesGroup)]
-		public bool DisableInternalTls { get; set; }
+		[ArgDescription(Opts.DisableInternalTcpTlsDescr, Opts.InterfacesGroup)]
+		public bool DisableInternalTcpTls { get; set; }
 
-		[ArgDescription(Opts.DisableExternalTlsDescr, Opts.InterfacesGroup)]
-		public bool DisableExternalTls { get; set; }
+		[ArgDescription(Opts.DisableExternalTcpTlsDescr, Opts.InterfacesGroup)]
+		public bool DisableExternalTcpTls { get; set; }
 		
 		[ArgDescription(Opts.AuthorizationTypeDescr, Opts.AuthGroup)]
 		public string AuthorizationType { get; set; }
@@ -378,8 +378,8 @@ namespace EventStore.ClusterNode {
 			CertificatePrivateKeyFile = Opts.CertificatePrivateKeyFileDefault;
 			CertificatePassword = Opts.CertificatePasswordDefault;
 
-			DisableInternalTls = Opts.DisableInternalTlsDefault;
-			DisableExternalTls = Opts.DisableExternalTlsDefault;
+			DisableInternalTcpTls = Opts.DisableInternalTcpTlsDefault;
+			DisableExternalTcpTls = Opts.DisableExternalTcpTlsDefault;
 
 			AuthorizationType = Opts.AuthorizationTypeDefault;
 			AuthorizationConfig = Opts.AuthorizationConfigFileDefault;

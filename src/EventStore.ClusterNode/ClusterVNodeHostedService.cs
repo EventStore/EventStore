@@ -193,21 +193,21 @@ namespace EventStore.ClusterNode {
 			var quorumSize = GetQuorumSize(options.ClusterSize);
 
 			var httpEndPoint = new IPEndPoint(options.ExtIp, options.HttpPort);
-			var intTcp = options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
-			var intSecTcp = !options.DisableInternalTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
-			var extTcp = options.EnableExternalTCP && options.DisableExternalTls
+			var intTcp = options.DisableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var intSecTcp = !options.DisableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var extTcp = options.EnableExternalTCP && options.DisableExternalTcpTls
 				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
 				: null;
-			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTls
+			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls
 				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
 				: null;
 
-			var intTcpPortAdvertiseAs = options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
-			var intSecTcpPortAdvertiseAs = !options.DisableInternalTls ? options.IntTcpPortAdvertiseAs : 0;
-			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTls
+			var intTcpPortAdvertiseAs = options.DisableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
+			var intSecTcpPortAdvertiseAs = !options.DisableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
+			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTcpTls
 				? options.ExtTcpPortAdvertiseAs
 				: 0;
-			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTls
+			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTcpTls
 				? options.ExtTcpPortAdvertiseAs
 				: 0;
 
@@ -322,10 +322,10 @@ namespace EventStore.ClusterNode {
 				builder.WithUnsafeIgnoreHardDelete();
 			if (options.UnsafeDisableFlushToDisk)
 				builder.WithUnsafeDisableFlushToDisk();
-			if (options.DisableInternalTls)
-				builder.DisableInternalTls();
-			if (options.DisableExternalTls)
-				builder.DisableExternalTls();
+			if (options.DisableInternalTcpTls)
+				builder.DisableInternalTcpTls();
+			if (options.DisableExternalTcpTls)
+				builder.DisableExternalTcpTls();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
 			if (options.DisableAdminUi)

@@ -306,11 +306,11 @@ namespace EventStore.Core.Util {
 		public const string PrepareCountDescr = "The number of nodes which must acknowledge prepares.";
 		public const int PrepareCountDefault = -1;
 
-		public const string DisableInternalTlsDescr = "Whether to disable secure internal communication.";
-		public const bool DisableInternalTlsDefault = false;
+		public const string DisableInternalTcpTlsDescr = "Whether to disable secure internal tcp communication.";
+		public const bool DisableInternalTcpTlsDefault = false;
 		
-		public const string DisableExternalTlsDescr = "Whether to disable secure external communication.";
-		public const bool DisableExternalTlsDefault = false;
+		public const string DisableExternalTcpTlsDescr = "Whether to disable secure external tcp communication.";
+		public const bool DisableExternalTcpTlsDefault = false;
 
 		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
 		public const bool EnableExternalTCPDefault = false;

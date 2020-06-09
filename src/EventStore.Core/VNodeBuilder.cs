@@ -71,8 +71,8 @@ namespace EventStore.Core {
 		protected int _nodePriority;
 
 		protected bool _enableExternalTCP;
-		protected bool _disableInternalTls;
-		protected bool _disableExternalTls;
+		protected bool _disableInternalTcpTls;
+		protected bool _disableExternalTcpTls;
 
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
@@ -187,8 +187,8 @@ namespace EventStore.Core {
 
 			_nodePriority = Opts.NodePriorityDefault;
 
-			_disableInternalTls = Opts.DisableInternalTlsDefault;
-			_disableExternalTls = Opts.DisableExternalTlsDefault;
+			_disableInternalTcpTls = Opts.DisableInternalTcpTlsDefault;
+			_disableExternalTcpTls = Opts.DisableExternalTcpTlsDefault;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
@@ -506,19 +506,20 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets that TLS should be disabled on internal connections
+		/// Sets that TLS should be disabled on internal tcp connections
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableInternalTls() {
-			_disableInternalTls = true;
+		public VNodeBuilder DisableInternalTcpTls() {
+			_disableInternalTcpTls = true;
 			return this;
 		}
 
-		/// Sets that TLS should be disabled on external connections
+		/// <summary>
+		/// Sets that TLS should be disabled on external tcp connections
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableExternalTls() {
-			_disableExternalTls = true;
+		public VNodeBuilder DisableExternalTcpTls() {
+			_disableExternalTcpTls = true;
 			return this;
 		}
 
@@ -1425,8 +1426,8 @@ namespace EventStore.Core {
 				_prepareTimeout,
 				_commitTimeout,
 				_writeTimeout,
-				_disableInternalTls,
-				_disableExternalTls,
+				_disableInternalTcpTls,
+				_disableExternalTcpTls,
 				_statsPeriod,
 				_statsStorage,
 				_nodePriority,

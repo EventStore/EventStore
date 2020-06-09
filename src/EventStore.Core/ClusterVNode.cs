@@ -665,7 +665,7 @@ namespace EventStore.Core {
 					_authenticationProvider, AuthorizationGateway,
 					_vNodeSettings.GossipAdvertiseInfo.InternalTcp ?? _vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
 					_vNodeSettings.ReadOnlyReplica,
-					!vNodeSettings.DisableInternalTls, _internalServerCertificateValidator,
+					!vNodeSettings.DisableInternalTcpTls, _internalServerCertificateValidator,
 					_certificate,
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval,
 					vNodeSettings.WriteTimeout);
