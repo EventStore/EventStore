@@ -396,7 +396,7 @@ namespace EventStore.Core.Services {
 
 			var leader = GetBestLeaderCandidate(_prepareOkReceived, _servers, _resigningLeaderInstanceId, _lastAttemptedView);
 			if (leader == null) {
-				Log.Verbose("ELECTIONS: (V={lastAttemptedView}) NO LEADER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
+				Log.Information("ELECTIONS: (V={lastAttemptedView}) NO LEADER CANDIDATE WHEN TRYING TO SEND PROPOSAL.",
 					_lastAttemptedView);
 				return;
 			}

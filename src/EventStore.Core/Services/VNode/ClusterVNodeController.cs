@@ -1085,7 +1085,7 @@ namespace EventStore.Core.Services.VNode {
 			if (message.SubscriptionId == Guid.Empty)
 				throw new Exception("IReplicationMessage with empty SubscriptionId provided.");
 			if (message.SubscriptionId != _subscriptionId) {
-				Log.Verbose(
+				Log.Debug(
 					"Ignoring {message} because SubscriptionId {receivedSubscriptionId:B} is wrong. Current SubscriptionId is {subscriptionId:B}.",
 					message.GetType().Name, message.SubscriptionId, _subscriptionId);
 				return false;

@@ -219,7 +219,7 @@ namespace EventStore.Core.Services.Monitoring {
 				case OperationResult.Success:
 				case OperationResult.WrongExpectedVersion: // already created
 				{
-					Log.Verbose("Created stats stream '{stream}', code = {result}", _nodeStatsStream, message.Result);
+					Log.Debug("Created stats stream '{stream}', code = {result}", _nodeStatsStream, message.Result);
 					_statsStreamCreated = true;
 					break;
 				}

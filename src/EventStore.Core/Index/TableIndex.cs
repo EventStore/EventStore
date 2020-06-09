@@ -242,7 +242,7 @@ namespace EventStore.Core.Index {
 				newTables.AddRange(_awaitingMemTables.Select(
 					(x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
 
-				Log.Verbose("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
+				Log.Debug("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
 
 				_awaitingMemTables = newTables;
 				if (_inMem) return;
@@ -287,7 +287,7 @@ namespace EventStore.Core.Index {
 					TableItem tableItem;
 					//ISearchTable table;
 					lock (_awaitingTablesLock) {
-						Log.Verbose("Awaiting tables queue size is: {awaitingMemTables}.", _awaitingMemTables.Count);
+						Log.Debug("Awaiting tables queue size is: {awaitingMemTables}.", _awaitingMemTables.Count);
 						if (_awaitingMemTables.Count == 1) {
 							return;
 						}
@@ -336,7 +336,7 @@ namespace EventStore.Core.Index {
 						if (!ReferenceEquals(corrTable.Table, ptable) && corrTable.Table is PTable)
 							((PTable)corrTable.Table).MarkForDestruction();
 
-						Log.Verbose("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
+						Log.Debug("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
 						_awaitingMemTables = memTables;
 					}
 
@@ -459,7 +459,7 @@ namespace EventStore.Core.Index {
 				if (memtable == null || !memtable.MarkForConversion())
 					continue;
 
-				Log.Verbose("Putting awaiting file as PTable instead of MemTable [{id}].", memtable.Id);
+				Log.Debug("Putting awaiting file as PTable instead of MemTable [{id}].", memtable.Id);
 
 				var ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(),
 					ESConsts.PTableInitialReaderCount,
@@ -494,7 +494,7 @@ namespace EventStore.Core.Index {
 				try {
 					return TryGetOneValueInternal(stream, version, out position);
 				} catch (FileBeingDeletedException) {
-					Log.Verbose("File being deleted.");
+					Log.Debug("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;
@@ -532,7 +532,7 @@ namespace EventStore.Core.Index {
 				try {
 					return TryGetLatestEntryInternal(stream, out entry);
 				} catch (FileBeingDeletedException) {
-					Log.Verbose("File being deleted.");
+					Log.Debug("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;
@@ -567,7 +567,7 @@ namespace EventStore.Core.Index {
 				try {
 					return TryGetOldestEntryInternal(stream, out entry);
 				} catch (FileBeingDeletedException) {
-					Log.Verbose("File being deleted.");
+					Log.Debug("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;
@@ -603,7 +603,7 @@ namespace EventStore.Core.Index {
 				try {
 					return GetRangeInternal(hash, startVersion, endVersion, limit);
 				} catch (FileBeingDeletedException) {
-					Log.Verbose("File being deleted.");
+					Log.Debug("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
 					ForceIndexVerifyOnNextStartup();
 					throw e;

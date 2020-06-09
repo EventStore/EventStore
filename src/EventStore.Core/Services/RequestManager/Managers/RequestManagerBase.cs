@@ -169,7 +169,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		}
 		public void Handle(StorageMessage.AlreadyCommitted message) {
 			if (Interlocked.Read(ref _complete) == 1 || _allEventsWritten) { return; }
-			Log.Verbose("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,
+			Log.Debug("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,
 				message);
 			ReturnCommitAt(message.LogPosition, message.FirstEventNumber, message.LastEventNumber);
 		}

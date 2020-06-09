@@ -120,7 +120,7 @@ namespace EventStore.Core.Bus {
 
 								var elapsed = DateTime.UtcNow - start;
 								if (elapsed > _slowMsgThreshold) {
-									Log.Verbose(
+									Log.Debug(
 										"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
 										_queueStats.Name, _queueStats.InProgressMessage.Name,
 										(int)elapsed.TotalMilliseconds, queueCnt, _queue.Count);

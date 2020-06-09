@@ -54,7 +54,7 @@ namespace EventStore.Core {
 			} catch (WaitHandleCannotBeOpenedException) {
 				return false;
 			} catch (Exception exc) {
-				Log.Verbose(exc, "Exception while trying to open Cluster Node mutex '{mutex}': {e}.", mutexName,
+				Log.Debug(exc, "Exception while trying to open Cluster Node mutex '{mutex}': {e}.", mutexName,
 					exc.Message);
 			}
 
