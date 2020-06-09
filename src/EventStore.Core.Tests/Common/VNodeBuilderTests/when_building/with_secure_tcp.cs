@@ -25,8 +25,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[Test]
 		public void should_set_tls_to_enabled() {
-			Assert.IsFalse(_settings.DisableInternalTls);
-			Assert.IsFalse(_settings.DisableExternalTls);
+			Assert.IsFalse(_settings.DisableInternalTcpTls);
+			Assert.IsFalse(_settings.DisableExternalTcpTls);
 		}
 
 		[Test]
@@ -74,8 +74,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[Test]
 		public void should_set_tls_to_enabled() {
-			Assert.IsFalse(_settings.DisableInternalTls);
-			Assert.IsFalse(_settings.DisableExternalTls);
+			Assert.IsFalse(_settings.DisableInternalTcpTls);
+			Assert.IsFalse(_settings.DisableExternalTcpTls);
 		}
 
 		[Test]
