@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [20.6.0] - 2020-06-09
 
 ### Changed
 - Update UI and submodule [EventStore#2493](https://github.com/EventStore/EventStore/pull/2493)
