@@ -375,7 +375,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		public void Stop(string reason = null) {
-			Log.Verbose(
+			Log.Debug(
 				"Closing connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, L{localEndPoint}, {connectionId:B}] cleanly.{reason}",
 				ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 				RemoteEndPoint, LocalEndPoint, ConnectionId,

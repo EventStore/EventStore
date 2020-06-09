@@ -98,7 +98,7 @@ namespace EventStore.Core.Bus {
 
 						var elapsed = DateTime.UtcNow - start;
 						if (elapsed > _slowMsgThreshold)
-							Log.Verbose("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.", Name,
+							Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.", Name,
 								message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
 					} else {
 						handler.TryHandle(message);
@@ -203,7 +203,7 @@ namespace EventStore.Core.Bus {
 
 					var elapsed = DateTime.UtcNow - start;
 					if (elapsed > _slowMsgThreshold) {
-						Log.Verbose("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
+						Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
 							Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
 					}
 				} else {
@@ -291,7 +291,7 @@ namespace EventStore.Core.Bus {
 
 					var elapsed = DateTime.UtcNow - start;
 					if (elapsed > _slowMsgThreshold) {
-						Log.Verbose("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
+						Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
 							Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
 						if (elapsed > QueuedHandler.VerySlowMsgThreshold && !(message is SystemMessage.SystemInit))
 							Log.Error("---!!! VERY SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",

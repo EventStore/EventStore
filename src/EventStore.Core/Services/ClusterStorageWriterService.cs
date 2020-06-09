@@ -201,7 +201,7 @@ namespace EventStore.Core.Services {
 			_subscriptionPos += message.RawBytes.Length;
 
 			if (message.CompleteChunk) {
-				Log.Verbose("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
+				Log.Debug("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 					message.ChunkEndNumber);
 				Writer.CompleteReplicatedRawChunk(_activeChunk);
 
@@ -246,7 +246,7 @@ namespace EventStore.Core.Services {
 				_subscriptionPos += message.DataBytes.Length;
 
 				if (message.CompleteChunk) {
-					Log.Verbose("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
+					Log.Debug("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 						message.ChunkEndNumber);
 					Writer.CompleteChunk();
 

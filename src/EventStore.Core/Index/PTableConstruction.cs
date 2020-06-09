@@ -85,7 +85,7 @@ namespace EventStore.Core.Index {
 				}
 			}
 
-			Log.Verbose("Dumped MemTable [{id}, {table} entries] in {elapsed}.", table.Id, table.Count, sw.Elapsed);
+			Log.Debug("Dumped MemTable [{id}, {table} entries] in {elapsed}.", table.Id, table.Count, sw.Elapsed);
 			return new PTable(filename, table.Id, initialReaders, maxReaders, cacheDepth, skipIndexVerify);
 		}
 
@@ -108,7 +108,7 @@ namespace EventStore.Core.Index {
 				return MergeTo2(tables, numIndexEntries, indexEntrySize, outputFile, upgradeHash, existsAt, readRecord,
 					version, initialReaders, maxReaders, cacheDepth, skipIndexVerify); // special case
 
-			Log.Verbose("PTables merge started.");
+			Log.Debug("PTables merge started.");
 			var watch = Stopwatch.StartNew();
 
 			var enumerators = tables
@@ -187,7 +187,7 @@ namespace EventStore.Core.Index {
 					}
 				}
 
-				Log.Verbose(
+				Log.Debug(
 					"PTables merge finished in {elapsed} ([{entryCount}] entries merged into {dumpedEntryCount}).",
 					watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
 				return new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify);
@@ -220,7 +220,7 @@ namespace EventStore.Core.Index {
 			Func<IndexEntry, Tuple<string, bool>> readRecord,
 			byte version, int initialReaders, int maxReaders,
 			int cacheDepth, bool skipIndexVerify) {
-			Log.Verbose("PTables merge started (specialized for <= 2 tables).");
+			Log.Debug("PTables merge started (specialized for <= 2 tables).");
 			var watch = Stopwatch.StartNew();
 
 			var fileSizeUpToIndexEntries = GetFileSizeUpToIndexEntries(numIndexEntries, version);
@@ -302,7 +302,7 @@ namespace EventStore.Core.Index {
 					}
 				}
 
-				Log.Verbose(
+				Log.Debug(
 					"PTables merge finished in {elapsed} ([{entryCount}] entries merged into {dumpedEntryCount}).",
 					watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
 				return new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify);
@@ -328,7 +328,7 @@ namespace EventStore.Core.Index {
 
 			var fileSizeUpToIndexEntries = GetFileSizeUpToIndexEntries(numIndexEntries, version);
 
-			Log.Verbose("PTables scavenge started with {numIndexEntries} entries.", numIndexEntries);
+			Log.Debug("PTables scavenge started with {numIndexEntries} entries.", numIndexEntries);
 			var watch = Stopwatch.StartNew();
 			long keptCount = 0L;
 			long droppedCount;
@@ -365,7 +365,7 @@ namespace EventStore.Core.Index {
 						var forceKeep = version > table.Version;
 
 						if (droppedCount == 0 && !forceKeep) {
-							Log.Verbose(
+							Log.Debug(
 								"PTable scavenge finished in {elapsed}. No entries removed so not keeping scavenged table.",
 								watch.Elapsed);
 
@@ -382,7 +382,7 @@ namespace EventStore.Core.Index {
 						}
 
 						if (droppedCount == 0 && forceKeep) {
-							Log.Verbose("Keeping scavenged index even though it isn't smaller; version upgraded.");
+							Log.Debug("Keeping scavenged index even though it isn't smaller; version upgraded.");
 						}
 
 						//CALCULATE AND WRITE MIDPOINTS
@@ -407,7 +407,7 @@ namespace EventStore.Core.Index {
 					}
 				}
 
-				Log.Verbose(
+				Log.Debug(
 					"PTable scavenge finished in {elapsed} ({droppedCount} entries removed, {keptCount} remaining).",
 					watch.Elapsed,
 					droppedCount, keptCount);

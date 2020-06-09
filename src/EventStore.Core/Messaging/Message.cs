@@ -119,7 +119,7 @@ namespace EventStore.Core.Messaging {
 				DescendantsByType.Add(typeIdMap.Key, DescendantsByTypeId[typeIdMap.Value]);
 			}
 
-			Log.Verbose("MessageHierarchy initialization took {elapsed}.", sw.Elapsed);
+			Log.Debug("MessageHierarchy initialization took {elapsed}.", sw.Elapsed);
 		}
 
 		static Type[] LoadAvailableTypes(Assembly assembly) {

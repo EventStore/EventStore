@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 					? new PerformanceCounter(category, counter)
 					: new PerformanceCounter(category, counter, instance);
 			} catch (Exception ex) {
-				_log.Verbose(
+				_log.Debug(
 					"Could not create performance counter: category='{category}', counter='{counter}', instance='{instance}'. Error: {e}",
 					category, counter, instance ?? string.Empty, ex.Message);
 				return null;

@@ -170,10 +170,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						try {
 							chunk.VerifyFileHash();
 						} catch (FileBeingDeletedException exc) {
-							_log.Verbose(
+							_log.Debug(
 								"{exceptionType} exception was thrown while doing background validation of chunk {chunk}.",
 								exc.GetType().Name, chunk);
-							_log.Verbose(
+							_log.Debug(
 								"That's probably OK, especially if truncation was request at the same time: {e}.",
 								exc.Message);
 						} catch (Exception exc) {
@@ -276,7 +276,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void RemoveFile(string reason, string file) {
-			_log.Verbose(reason, file);
+			_log.Debug(reason, file);
 			File.SetAttributes(file, FileAttributes.Normal);
 			File.Delete(file);
 		}
