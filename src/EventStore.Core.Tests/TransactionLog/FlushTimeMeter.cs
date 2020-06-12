@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.Native.FileAccess;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
@@ -12,7 +13,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var rnd = new Random();
 			var sw = Stopwatch.StartNew();
 			var gw = Stopwatch.StartNew();
-			using (var fs = new FileStream(Filename, FileMode.OpenOrCreate)) {
+			//using (var fs = new FileStream(Filename, FileMode.OpenOrCreate)) {
+			using (var fs = new NativeFileStream(Filename)) {
 				const int iter = 1000;
 				for (int bytes = 100; bytes < 1000000; bytes *= 2) {
 					var arr = new byte[bytes];
@@ -26,7 +28,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 						fs.Write(arr, 0, arr.Length);
 
 						sw.Restart();
-						fs.FlushToDisk();
+						fs.Flush();
 						var elapsed = sw.Elapsed;
 
 						min = elapsed < min ? elapsed : min;

@@ -39,8 +39,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Native", "EventS
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A19631BB-65CF-4726-8732-4EFD977E9B32}"
 	ProjectSection(SolutionItems) = preProject
-		..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
 		.editorconfig = .editorconfig
+		..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
 		default.runsettings = default.runsettings
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
@@ -55,7 +55,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.Embedd
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.v5.Tests", "EventStore.ClientAPI.v5.Tests\EventStore.ClientAPI.v5.Tests.csproj", "{8B3FDD14-C959-4859-80C4-B157D1D94969}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.NETCore.Compatibility", "EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj", "{066B6514-86A0-41D8-BB6A-D9B05141D026}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.NETCore.Compatibility", "EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj", "{066B6514-86A0-41D8-BB6A-D9B05141D026}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Native.Tests", "EventStore.Native.Tests\EventStore.Native.Tests.csproj", "{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -151,6 +153,10 @@ Global
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Debug|x64.Build.0 = Debug|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Release|x64.ActiveCfg = Release|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Release|x64.Build.0 = Release|Any CPU
+		{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}.Debug|x64.ActiveCfg = Debug|x64
+		{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}.Debug|x64.Build.0 = Debug|x64
+		{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}.Release|x64.ActiveCfg = Release|x64
+		{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

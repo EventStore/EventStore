@@ -74,29 +74,23 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							var footer = ReadChunkFooter(chunkInfo.ChunkFileName);
 							if (footer.IsCompleted)
 								chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
-									unbufferedRead: Config.Unbuffered,
 									initialReaderCount: Config.InitialReaderCount,
 									maxReaderCount: Config.MaxReaderCount,
-									optimizeReadSideCache: Config.OptimizeReadSideCache,
-									reduceFileCachePressure: Config.ReduceFileCachePressure);
+									optimizeReadSideCache: Config.OptimizeReadSideCache);
 							else {
 								chunk = TFChunk.TFChunk.FromOngoingFile(chunkInfo.ChunkFileName, Config.ChunkSize,
 									checkSize: false,
-									unbuffered: Config.Unbuffered,
-									writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
-									maxReaderCount: Config.MaxReaderCount,
-									reduceFileCachePressure: Config.ReduceFileCachePressure);
+									initialReaderCount: Config.InitialReaderCount,
+									maxReaderCount: Config.MaxReaderCount);
 								// chunk is full with data, we should complete it right here
 								if (!readOnly)
 									chunk.Complete();
 							}
 						} else {
 							chunk = TFChunk.TFChunk.FromCompletedFile(chunkInfo.ChunkFileName, verifyHash: false,
-								unbufferedRead: Config.Unbuffered,
 								initialReaderCount: Config.InitialReaderCount,
 								maxReaderCount: Config.MaxReaderCount,
-								optimizeReadSideCache: Config.OptimizeReadSideCache,
-								reduceFileCachePressure: Config.ReduceFileCachePressure);
+								optimizeReadSideCache: Config.OptimizeReadSideCache);
 						}
 
 						// This call is theadsafe.
@@ -120,11 +114,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				var chunkLocalPos = chunkHeader.GetLocalLogPosition(checkpoint);
 				if (chunkHeader.IsScavenged) {
 					var lastChunk = TFChunk.TFChunk.FromCompletedFile(chunkFileName, verifyHash: false,
-						unbufferedRead: Config.Unbuffered,
 						initialReaderCount: Config.InitialReaderCount,
 						maxReaderCount: Config.MaxReaderCount,
-						optimizeReadSideCache: Config.OptimizeReadSideCache,
-						reduceFileCachePressure: Config.ReduceFileCachePressure);
+						optimizeReadSideCache: Config.OptimizeReadSideCache);
 					if (lastChunk.ChunkFooter.LogicalDataSize != chunkLocalPos) {
 						lastChunk.Dispose();
 						throw new CorruptDatabaseException(new BadChunkInDatabaseException(
@@ -146,10 +138,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					}
 				} else {
 					var lastChunk = TFChunk.TFChunk.FromOngoingFile(chunkFileName, (int)chunkLocalPos, checkSize: false,
-						unbuffered: Config.Unbuffered,
-						writethrough: Config.WriteThrough, initialReaderCount: Config.InitialReaderCount,
-						maxReaderCount: Config.MaxReaderCount,
-						reduceFileCachePressure: Config.ReduceFileCachePressure);
+						initialReaderCount: Config.InitialReaderCount,
+						maxReaderCount: Config.MaxReaderCount);
 					Manager.AddChunk(lastChunk);
 				}
 			}

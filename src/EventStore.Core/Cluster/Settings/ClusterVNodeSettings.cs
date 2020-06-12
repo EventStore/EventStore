@@ -84,7 +84,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies;
 		public readonly bool AlwaysKeepScavenged;
 		public readonly bool SkipIndexScanOnReads;
-		public readonly bool ReduceFileCachePressure;
 		public readonly int InitializationThreads;
 		public readonly int MaxAutoMergeIndexLevel;
 		public readonly long MaxTruncation;
@@ -158,7 +157,6 @@ namespace EventStore.Core.Cluster.Settings {
 			bool alwaysKeepScavenged = false,
 			bool gossipOnSingleNode = false,
 			bool skipIndexScanOnReads = false,
-			bool reduceFileCachePressure = false,
 			int initializationThreads = 1,
 			bool faultOutOfOrderProjections = false,
 			int maxAutoMergeIndexLevel = 1000,
@@ -270,7 +268,6 @@ namespace EventStore.Core.Cluster.Settings {
 			ReaderThreadsCount = readerThreadsCount;
 			AlwaysKeepScavenged = alwaysKeepScavenged;
 			SkipIndexScanOnReads = skipIndexScanOnReads;
-			ReduceFileCachePressure = reduceFileCachePressure;
 			InitializationThreads = initializationThreads;
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
@@ -307,7 +304,6 @@ namespace EventStore.Core.Cluster.Settings {
 			$"HTTPCachingDisabled: {DisableHTTPCaching}\n" + $"IndexPath: {Index}\n" +
 			$"ScavengeHistoryMaxAge: {ScavengeHistoryMaxAge}\n" +
 			$"ConnectionPendingSendBytesThreshold: {ConnectionPendingSendBytesThreshold}\n" +
-			$"ReduceFileCachePressure: {ReduceFileCachePressure}\n" +
 			$"InitializationThreads: {InitializationThreads}\n" +
 			$"DisableFirstLevelHttpAuthorization: {DisableFirstLevelHttpAuthorization}\n" +
 			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +

@@ -94,11 +94,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				chunkHeader,
 				fileSize,
 				_config.InMemDb,
-				_config.Unbuffered,
-				_config.WriteThrough,
 				_config.InitialReaderCount,
-				_config.MaxReaderCount,
-				_config.ReduceFileCachePressure);
+				_config.MaxReaderCount);
 		}
 
 		public TFChunk.TFChunk AddNewChunk() {
@@ -111,11 +108,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					chunkNumber,
 					isScavenged: false,
 					inMem: _config.InMemDb,
-					unbuffered: _config.Unbuffered,
-					writethrough: _config.WriteThrough,
 					initialReaderCount: _config.InitialReaderCount,
-					maxReaderCount: _config.MaxReaderCount,
-					reduceFileCachePressure: _config.ReduceFileCachePressure);
+					maxReaderCount: _config.MaxReaderCount);
 				AddChunk(chunk);
 				return chunk;
 			}
@@ -136,11 +130,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					chunkHeader,
 					fileSize,
 					_config.InMemDb,
-					unbuffered: _config.Unbuffered,
-					writethrough: _config.WriteThrough,
 					initialReaderCount: _config.InitialReaderCount,
-					maxReaderCount: _config.MaxReaderCount,
-					reduceFileCachePressure: _config.ReduceFileCachePressure);
+					maxReaderCount: _config.MaxReaderCount);
 				AddChunk(chunk);
 				return chunk;
 			}
@@ -196,8 +187,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					throw;
 				}
 
-				newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash, _config.Unbuffered,
-					_config.InitialReaderCount, _config.MaxReaderCount, _config.OptimizeReadSideCache, _config.ReduceFileCachePressure);
+				newChunk = TFChunk.TFChunk.FromCompletedFile(newFileName, verifyHash,
+					_config.InitialReaderCount, _config.MaxReaderCount, _config.OptimizeReadSideCache);
 			}
 
 			lock (_chunksLocker) {
