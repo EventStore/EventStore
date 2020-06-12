@@ -1,18 +1,16 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using EventStore.Common.Utils;
+﻿using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Mono.Unix;
 
-namespace EventStore.Core.TransactionLog.Unbuffered {
-	internal static class MacCaching {
+namespace EventStore.Native.FileAccess {
+	internal static partial class NativeMethods {
 		// ReSharper disable once InconsistentNaming
 		private const uint MAC_F_NOCACHE = 48;
 
 		[DllImport("libc")]
 		static extern int fcntl(int fd, uint command, int arg);
 
-		public static void Disable(SafeFileHandle handle) {
+		public static void MacDisableCache(SafeFileHandle handle) {
 			if (!Runtime.IsMacOS) {
 				return;
 			}

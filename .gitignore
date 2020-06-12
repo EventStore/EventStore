@@ -108,7 +108,7 @@ test_results
 .DS_Store
 
 # Visual Studio Code
-src/.vscode/
+.vscode/
 
 #NCrunch
 _NCrunch_*/

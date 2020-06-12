@@ -110,8 +110,6 @@ namespace EventStore.Core {
 		protected List<ISubsystem> _subsystems;
 		protected int _clusterGossipPort;
 		protected int _readerThreadsCount;
-		protected bool _unbuffered;
-		protected bool _writethrough;
 		protected int _chunkInitialReaderCount;
 
 		protected string _index;
@@ -142,7 +140,6 @@ namespace EventStore.Core {
 		protected byte _indexBitnessVersion;
 		protected bool _alwaysKeepScavenged;
 		protected bool _skipIndexScanOnReads;
-		private bool _reduceFileCachePressure;
 		private int _initializationThreads;
 		private int _maxAutoMergeIndexLevel;
 		private int _maxAppendSize;
@@ -252,7 +249,6 @@ namespace EventStore.Core {
 			_chunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
 			_projectionsQueryExpiry = TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault);
 			_faultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
-			_reduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 			_initializationThreads = Opts.InitializationThreadsDefault;
 
 			_readOnlyReplica = Opts.ReadOnlyReplicaDefault;
@@ -1093,25 +1089,7 @@ namespace EventStore.Core {
 			_disableFirstLevelHttpAuthorization = true;
 			return this;
 		}
-
-		/// <summary>
-		/// Sets whether or not to use unbuffered/directio
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder EnableUnbuffered() {
-			_unbuffered = true;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets whether or not to set the write-through flag on writes to the filesystem
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder EnableWriteThrough() {
-			_writethrough = true;
-			return this;
-		}
-
+		
 		/// <summary>
 		/// Sets the initial number of readers to open per TFChunk
 		/// </summary>
@@ -1269,17 +1247,7 @@ namespace EventStore.Core {
 
 			return this;
 		}
-
-		/// <summary>
-		/// Reduce file cache pressure by opening the DB chunks without RandomAccess hint.
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder ReduceFileCachePressure() {
-			_reduceFileCachePressure = true;
-
-			return this;
-		}
-
+		
 		/// <summary>
 		/// Sets this node as a read only replica that is not allowed to participate in elections.
 		/// </summary>
@@ -1377,12 +1345,9 @@ namespace EventStore.Core {
 				_dbPath,
 				_chunksCacheSize,
 				_inMemoryDb,
-				_unbuffered,
-				_writethrough,
 				_chunkInitialReaderCount,
 				ComputeTFChunkMaxReaderCount(_chunkInitialReaderCount, _readerThreadsCount),
 				_optimizeIndexMerge,
-				_reduceFileCachePressure,
 				_maxTruncation,
 				_log);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
@@ -1454,7 +1419,6 @@ namespace EventStore.Core {
 				_alwaysKeepScavenged,
 				_gossipOnSingleNode,
 				_skipIndexScanOnReads,
-				_reduceFileCachePressure,
 				_initializationThreads,
 				_faultOutOfOrderProjections,
 				_maxAutoMergeIndexLevel,
@@ -1538,12 +1502,9 @@ namespace EventStore.Core {
 			string dbPath,
 			long chunksCacheSize,
 			bool inMemDb,
-			bool unbuffered,
-			bool writethrough,
 			int chunkInitialReaderCount,
 			int chunkMaxReaderCount,
 			bool optimizeReadSideCache,
-			bool reduceFileCachePressure,
 			long maxTruncation,
 			ILogger log) {
 			ICheckpoint writerChk;
@@ -1606,10 +1567,7 @@ namespace EventStore.Core {
 				chunkInitialReaderCount,
 				chunkMaxReaderCount,
 				inMemDb,
-				unbuffered,
-				writethrough,
 				optimizeReadSideCache,
-				reduceFileCachePressure,
 				maxTruncation);
 
 			return nodeConfig;

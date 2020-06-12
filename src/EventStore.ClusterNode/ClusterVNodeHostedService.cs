@@ -141,6 +141,21 @@ namespace EventStore.ClusterNode {
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
 				? new[] {NodeSubsystems.Projections}
 				: new NodeSubsystems[0];
+
+			if (opts.ReduceFileCachePressure) {
+				Log.Warning(
+					$"\n DEPRECATION WARNING: The {nameof(Options.ReduceFileCachePressure)} has been deprecated as of version 20.6.1. All nodes run as if this was enabled by default and there is no longer a way to disable it.  There is no longer a requirement to set this flag and future versions may not start if it is specified.");
+			}
+
+			if (opts.Unbuffered) {
+				Log.Warning(
+					$"\n DEPRECATION WARNING: The {nameof(Options.Unbuffered)} has been deprecated as of version 20.6.1. There is no longer a requirement to set this flag and future versions may not start if it is specified.");
+			}
+
+			if (opts.WriteThrough) {
+				Log.Warning(
+					$"\n DEPRECATION WARNING: The {nameof(Options.WriteThrough)} has been deprecated as of version 20.6.1. There is no longer a requirement to set this flag and future versions may not start if it is specified.");
+			}
 			Node = BuildNode(opts, LoadConfig);
 
 			RegisterWebControllers(enabledNodeSubsystems, opts);
@@ -322,14 +337,8 @@ namespace EventStore.ClusterNode {
 				builder.DoNotVerifyDbHashes();
 			if (options.AlwaysKeepScavenged)
 				builder.AlwaysKeepScavenged();
-			if (options.Unbuffered)
-				builder.EnableUnbuffered();
-			if (options.WriteThrough)
-				builder.EnableWriteThrough();
 			if (options.SkipIndexScanOnReads)
 				builder.SkipIndexScanOnReads();
-			if (options.ReduceFileCachePressure)
-				builder.ReduceFileCachePressure();
 			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
 			if (options.UnsafeAllowSurplusNodes)

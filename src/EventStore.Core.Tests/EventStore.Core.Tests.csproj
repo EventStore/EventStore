@@ -47,4 +47,10 @@
 			<None Remove="FakePlugin\**" />
 			<Compile Remove="FakePlugin\**" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Compile Remove="TransactionLog\Unbuffered\UnbufferedTests.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="TransactionLog\Unbuffered\" />
+	</ItemGroup>
 </Project>

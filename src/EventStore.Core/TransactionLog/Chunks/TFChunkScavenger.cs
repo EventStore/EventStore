@@ -209,11 +209,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					chunkEndNumber,
 					isScavenged: true,
 					inMem: _db.Config.InMemDb,
-					unbuffered: _db.Config.Unbuffered,
-					writethrough: _db.Config.WriteThrough,
 					initialReaderCount: _db.Config.InitialReaderCount,
-					maxReaderCount: _db.Config.MaxReaderCount,
-					reduceFileCachePressure: _db.Config.ReduceFileCachePressure);
+					maxReaderCount: _db.Config.MaxReaderCount);
 			} catch (IOException exc) {
 				Log.Error(exc,
 					"IOException during creating new chunk for scavenging purposes. Stopping scavenging process...");
@@ -376,11 +373,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					chunkEndNumber,
 					isScavenged: true,
 					inMem: _db.Config.InMemDb,
-					unbuffered: _db.Config.Unbuffered,
-					writethrough: _db.Config.WriteThrough,
 					initialReaderCount: _db.Config.InitialReaderCount,
-					maxReaderCount: _db.Config.MaxReaderCount,
-					reduceFileCachePressure: _db.Config.ReduceFileCachePressure);
+					maxReaderCount: _db.Config.MaxReaderCount);
 			} catch (IOException exc) {
 				Log.Error(exc,
 					"IOException during creating new chunk for scavenging merge purposes. Stopping scavenging merge process...");
