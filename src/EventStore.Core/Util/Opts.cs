@@ -118,22 +118,12 @@ namespace EventStore.Core.Util {
 			"Bypasses the checking of file hashes of database during startup (allows for faster startup).";
 
 		public const bool SkipDbVerifyDefault = false;
-
-		public const string WriteThroughDescr =
-			"Enables Write Through when writing to the file system, this bypasses filesystem caches.";
-
-		public const bool WriteThroughDefault = false;
-
+		
 		public const string ChunkInitialReaderCountDescr =
 			"The initial number of readers to start when opening a TFChunk";
 
 		public const int ChunkInitialReaderCountDefault = 5;
-
-		public const string UnbufferedDescr =
-			"Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem caches.";
-
-		public const bool UnbufferedDefault = false;
-
+		
 		public const string ReaderThreadsCountDescr = "The number of reader threads to use for processing reads.";
 		public const int ReaderThreadsCountDefault = 4;
 
@@ -184,12 +174,7 @@ namespace EventStore.Core.Util {
 			"Skip Index Scan on Reads. This skips the index scan which was used to stop reading duplicates.";
 
 		public static readonly bool SkipIndexScanOnReadsDefault = false;
-
-		public const string ReduceFileCachePressureDescr =
-			"Change the way the DB files are opened to reduce their stickiness in the system file cache.";
-
-		public static readonly bool ReduceFileCachePressureDefault = false;
-
+		
 		public const string InitializationThreadsDescr =
 			"Number of threads to be used to initialize the database. Will be capped at host processor count.";
 

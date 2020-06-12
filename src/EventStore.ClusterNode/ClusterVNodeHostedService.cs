@@ -338,14 +338,8 @@ namespace EventStore.ClusterNode {
 				builder.DoNotVerifyDbHashes();
 			if (options.AlwaysKeepScavenged)
 				builder.AlwaysKeepScavenged();
-			if (options.Unbuffered)
-				builder.EnableUnbuffered();
-			if (options.WriteThrough)
-				builder.EnableWriteThrough();
 			if (options.SkipIndexScanOnReads)
 				builder.SkipIndexScanOnReads();
-			if (options.ReduceFileCachePressure)
-				builder.ReduceFileCachePressure();
 			if (options.DisableFirstLevelHttpAuthorization)
 				builder.DisableFirstLevelHttpAuthorization();
 			if (options.UnsafeAllowSurplusNodes)

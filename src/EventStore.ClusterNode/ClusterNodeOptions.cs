@@ -152,13 +152,7 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.SkipDbVerifyDescr, Opts.DbGroup)]
 		public bool SkipDbVerify { get; set; }
-
-		[ArgDescription(Opts.WriteThroughDescr, Opts.DbGroup)]
-		public bool WriteThrough { get; set; }
-
-		[ArgDescription(Opts.UnbufferedDescr, Opts.DbGroup)]
-		public bool Unbuffered { get; set; }
-
+		
 		[ArgDescription(Opts.ChunkInitialReaderCountDescr, Opts.DbGroup)]
 		public int ChunkInitialReaderCount { get; set; }
 
@@ -279,10 +273,7 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.SkipIndexScanOnReadsDescr, Opts.AppGroup)]
 		public bool SkipIndexScanOnReads { get; set; }
-
-		[ArgDescription(Opts.ReduceFileCachePressureDescr, Opts.DbGroup)]
-		public bool ReduceFileCachePressure { get; set; }
-
+		
 		[ArgDescription(Opts.InitializationThreadsDescr, Opts.DbGroup)]
 		public int InitializationThreads { get; set; }
 
@@ -410,14 +401,10 @@ namespace EventStore.ClusterNode {
 			DisableHTTPCaching = Opts.DisableHttpCachingDefault;
 			LogHttpRequests = Opts.LogHttpRequestsDefault;
 			LogFailedAuthenticationAttempts = Opts.LogFailedAuthenticationAttemptsDefault;
-
-			Unbuffered = Opts.UnbufferedDefault;
-			WriteThrough = Opts.WriteThroughDefault;
-
+			
 			AlwaysKeepScavenged = Opts.AlwaysKeepScavengedDefault;
 
 			SkipIndexScanOnReads = Opts.SkipIndexScanOnReadsDefault;
-			ReduceFileCachePressure = Opts.ReduceFileCachePressureDefault;
 			InitializationThreads = Opts.InitializationThreadsDefault;
 
 			ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
