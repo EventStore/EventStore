@@ -15,8 +15,6 @@ namespace EventStore.ClientAPI.Tests {
 		 * and XUnit does not support parametrized test fixtures so that we can start up the server with only insecure TCP
 		 */
 
-		/*These tests do not work for v5 yet*/
-		#if !CLIENT_API_V5
 		[Fact]
 		public async Task can_connect_to_tls_ip_endpoint_gossip_seed() {
 			var streamName = $"{GetStreamName()}";
@@ -59,6 +57,5 @@ namespace EventStore.ClientAPI.Tests {
 				await connection.AppendToStreamAsync(streamName, ExpectedVersion.Any, _fixture.CreateTestEvents());
 			Assert.True(writeResult.LogPosition.PreparePosition > 0);
 		}
-		#endif
 	}
 }

@@ -31,14 +31,17 @@ namespace EventStore.ClientAPI.Tests {
 			var settings = configureSettings ?? DefaultConfigureSettingsForConnectionString;
 			var host = useDnsEndPoint ? "localhost" : IPAddress.Loopback.ToString();
 
-			if (useSsl) settings += "UseSslConnection=true;";
+			if (useSsl) settings += $"UseSslConnection=true;ValidateServer=false;TargetHost={host};";
+			else settings += "UseSslConnection=false;";
 
 			var gossipSeeds = GetGossipSeedEndPointsExceptFor(-1, false).Cast<IPEndPoint>().ToArray();
 			var gossipSeedsString = "";
 			for(var i=0;i<gossipSeeds.Length;i++) {
 				if (i > 0) gossipSeedsString += ",";
-				gossipSeedsString += host + ":" + gossipSeeds[i].Port;
+				gossipSeedsString += (useSsl?"https://":"") + host + ":" + gossipSeeds[i].Port;
 			}
+
+			settings += "CustomHttpClient=SkipCertificateValidation;";
 
 			var connectionString = $"GossipSeeds={gossipSeedsString};{settings}";
 			return EventStoreConnection.Create(connectionString);
