@@ -3,7 +3,7 @@ using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
 using Mono.Unix;
 
-namespace positional_writes {
+namespace EventStore.Native.FileAccess {
 	internal static partial class NativeMethods {
 		// ReSharper disable once InconsistentNaming
 		private const uint MAC_F_NOCACHE = 48;

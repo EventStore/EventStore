@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace positional_writes
+namespace EventStore.Native.FileAccess.Tests
 {
     public static unsafe class TestUtil
     {

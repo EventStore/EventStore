@@ -1,8 +1,8 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.IO;
+using NUnit.Framework;
 
-namespace positional_writes
+namespace EventStore.Native.FileAccess.Tests
 {
     [TestFixture]
     // ReSharper disable once InconsistentNaming

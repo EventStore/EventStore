@@ -1,14 +1,16 @@
 ﻿using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 // ReSharper disable IdentifierTypo
 // ReSharper disable UnusedMember.Local
 
-namespace positional_writes
+namespace EventStore.Native.FileAccess
 {
     /// <summary>
     /// Windows native methods
@@ -84,7 +86,11 @@ namespace positional_writes
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool GetFileSizeEx(SafeFileHandle hFile, out long lpFileSize);
 
-       
+        [DllImport("kernel32.dll", EntryPoint = "SetFilePointerEx", SetLastError = true)]
+        static extern bool WinSeek(SafeFileHandle hFile, long offset, out IntPtr newPosition, SeekOrigin origin);
+
+        [DllImport("kernel32.dll", SetLastError=true)]
+        static extern bool SetEndOfFile(SafeFileHandle hFile);
 
         [DllImport("kernel32.dll", SetLastError=true)]
         private static extern bool FlushFileBuffers(SafeFileHandle hFile);
@@ -200,7 +206,9 @@ namespace positional_writes
         private const int ERROR_PATH_NOT_FOUND = 0x3;
         private const int ERROR_INVALID_DRIVE = 0x15;
         
-        
+        private enum MyEnum {
+	        
+        }
         private const uint FILE_BEGIN = 0;
         private const uint FILE_CURRENT = 1;
         private const uint FILE_END = 2;

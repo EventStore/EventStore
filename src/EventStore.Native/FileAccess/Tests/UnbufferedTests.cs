@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using NUnit.Framework;
-
-namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
+﻿namespace EventStore.Native.FileAccess.Tests {
 	/*[TestFixture]
 	public class UnbufferedTests : SpecificationWithDirectory {
 		[Test]
