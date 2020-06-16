@@ -209,7 +209,8 @@ namespace EventStore.ClientAPI {
 				clusterSettings.ExternalGossipPort,
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
-				clusterSettings.NodePreference);
+				clusterSettings.NodePreference,
+				connectionSettings.CustomHttpClient);
 
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
 				connectionName);
