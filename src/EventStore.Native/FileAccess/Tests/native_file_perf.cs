@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Native.FileAccess.Tests
 {
-    [TestFixture]
+    //[TestFixture]
     // ReSharper disable once InconsistentNaming
     public class native_file_perf : IDisposable
     {
@@ -16,7 +16,7 @@ namespace EventStore.Native.FileAccess.Tests
         private FileStream _fileStream;
         private byte[] _arrayBuffer;
 
-        [OneTimeSetUp]
+        //[OneTimeSetUp]
         public void CreateTestFile() {
             _testFile = NativeFile.OpenNewFile(
                 Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()),
@@ -28,21 +28,21 @@ namespace EventStore.Native.FileAccess.Tests
             _blockBuffer.Buffer.CopyTo(_arrayBuffer,BufferSize);
         }
 
-        [Test]
+        //[Test]
         public void write_file_stream() {
             for (int i = 0; i < 10; i++) {
                _fileStream.Write(_arrayBuffer,0, BufferSize);
             }
         }
 
-        [Test]
+        //[Test]
         public void write_block_multiple_unbuffered() {
             for (int i = 0; i < 10; i++) {
                 _testFile.Write(0, _blockBuffer.Buffer, BufferSize);
             }
         }
       
-        [Test]
+        //[Test]
         public void virtual_alloc_is_page_aligned() {
             NativeMethods.PageAlignedBuffer buffer = new NativeMethods.PageAlignedBuffer();
             var pages = 1;

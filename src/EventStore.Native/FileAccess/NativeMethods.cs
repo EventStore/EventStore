@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -96,28 +97,33 @@ namespace EventStore.Native.FileAccess {
 		}
 		public static long Seek(SafeFileHandle file, long offset, SeekOrigin origin) {
 			if (Runtime.IsWindows) {
-				if(!WinSeek(file, offset, out var position,origin)) { throw new IOException($"{nameof(NativeMethods)}:WinSeek Stream seek failed");}
+				if (!WinSeek(file, offset, out var position, origin)) {
+					Win32Exception we = new Win32Exception();
+					throw new IOException($"{nameof(NativeMethods)}:WinSeek Stream seek failed - {we.NativeErrorCode}:{we.Message}");
+				}
 				return (long)position;
 			} else {
 				return UnixSeek(file, offset, origin);
 			}
 		}
-		internal static SafeFileHandle OpenNative(string path) {
+		internal static SafeFileHandle OpenNative(string path, FileMode mode, System.IO.FileAccess access) {
 			SafeFileHandle file;
 			if (Runtime.IsWindows) {
 				file = CreateFileW(
 					path,
-					(uint)System.IO.FileAccess.ReadWrite,
+					(uint)access,
 					(uint)FileShare.ReadWrite,
 					IntPtr.Zero,
-					(uint)FileMode.Open,
+					(uint)mode,
 					(uint)FileAttributes.Normal | FILE_FLAG_WRITE_THROUGH,
 					IntPtr.Zero);
 				if ((file?.IsInvalid ?? true) || file.IsClosed) {
-					throw new ApplicationException($"NativeMethods:OpenWriteThrough - Unable to open file {path}.");
+					Win32Exception we = new Win32Exception();
+					ApplicationException ae = new ApplicationException($"NativeMethods:OpenWriteThrough - Unable to open file {path}. - {we.Message}");
+					throw ae;
 				}
 			} else {
-				file = UnixCreateRW(path, System.IO.FileAccess.ReadWrite, FileShare.ReadWrite, FileMode.Open);
+				file = UnixCreateRW(path, access, FileShare.ReadWrite, mode);
 			}
 
 			return file;
@@ -189,22 +195,44 @@ namespace EventStore.Native.FileAccess {
 				UnixMemSet(buffer, fill, length);
 			}
 		}
+
+		private static int _physicalSectorSize;
 		internal static int GetPhysicalSectorSize(SafeFileHandle file) {
+			if (_physicalSectorSize != 0) { return _physicalSectorSize; }
+
 			if (Runtime.IsWindows) {
 				FILE_STORAGE_INFO diskInfo = GetStorageInfo(file);
-				return (int)diskInfo.PhysicalBytesPerSectorForAtomicity;
+				_physicalSectorSize = (int)diskInfo.PhysicalBytesPerSectorForAtomicity;
+				return _physicalSectorSize;
 			} else {
-				//todo: implement call
-				return 4096;
+				//todo: implement linux call
+				_physicalSectorSize = 4096;
+				return _physicalSectorSize;
 			}
 		}
 
 
 		public static long SetFileLength(SafeFileHandle file, long length) {
 			if (Runtime.IsWindows) {
-				WinSeek(file, length, out _, SeekOrigin.Begin);
-				SetEndOfFile(file);
-				return length;
+				if (!WinSeek(file, 0, out var oldPosition, SeekOrigin.Current)) {
+					Win32Exception we = new Win32Exception();
+					throw new ApplicationException($"{nameof(NativeMethods)}:SetFileLength - unable to get current position: {we.NativeErrorCode}:{we.Message}");
+				}
+				if (!WinSeek(file, length, out _, SeekOrigin.Begin)) {
+					Win32Exception we = new Win32Exception();
+					throw new ApplicationException($"{nameof(NativeMethods)}:SetFileLength - unable to get current position: {we.NativeErrorCode}:{we.Message}");
+				}
+				if (!SetEndOfFile(file)) {
+					var we = new Win32Exception();
+					throw new ApplicationException($"{nameof(NativeMethods)}:SetFileLength - unable to set file length. {we.NativeErrorCode}:{we.Message}");
+
+				}
+				oldPosition = (IntPtr)Math.Min(length, (long)oldPosition);
+				if (!WinSeek(file, (long)oldPosition, out _, SeekOrigin.Begin)) {
+					Win32Exception we = new Win32Exception();
+					throw new ApplicationException($"{nameof(NativeMethods)}:SetFileLength - unable to set current position: {we.NativeErrorCode}:{we.Message}");
+				}
+				return GetFileSize(file);
 			} else {
 				UnixSetFileSize(file, length);
 				return length;

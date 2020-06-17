@@ -1,12 +1,15 @@
-﻿namespace EventStore.Native.FileAccess.Tests {
-	/*[TestFixture]
-	public class UnbufferedTests : SpecificationWithDirectory {
+﻿using System;
+using System.IO;
+using NUnit.Framework;
+
+namespace EventStore.Native.FileAccess.Tests {
+	[TestFixture]
+	public class NativeFileStreamTests : SpecificationWithDirectory {
 		[Test]
 		public void when_resizing_a_file() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
+			using var stream = new NativeFileStream(filename, false);
 			stream.SetLength(4096 * 1024);
 			stream.Close();
 			Assert.AreEqual(4096 * 1024, new FileInfo(filename).Length);
@@ -16,9 +19,8 @@
 		public void when_expanding_an_aligned_file_by_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			var stream = new NativeFileStream(filename,false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -27,7 +29,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize + 4096); //expand file by 4KB
 			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize + 4096, new FileInfo(filename).Length); //file size should increase by 4KB
@@ -37,9 +39,8 @@
 		public void when_expanding_an_aligned_file_by_one_byte_less_than_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -48,7 +49,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize + 4095); //expand file by 4KB - 1
 			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize + 4096, new FileInfo(filename).Length); //file size should increase by 4KB
@@ -58,9 +59,8 @@
 		public void when_expanding_an_aligned_file_by_one_byte_more_than_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -69,7 +69,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize + 4097); //expand file by 4KB + 1
 			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize + 4096 * 2, new FileInfo(filename).Length); //file size should increase by 4KB x 2
@@ -79,9 +79,8 @@
 		public void when_expanding_an_aligned_file_by_one_byte() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -90,7 +89,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize + 1); //expand file by 1 byte
 			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize + 4096, new FileInfo(filename).Length); //file size should increase by 4KB
@@ -100,9 +99,8 @@
 		public void when_truncating_an_aligned_file_by_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -111,7 +109,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize - 4096); //truncate file by 4KB
 			Assert.AreEqual(initialFileSize - 4096, stream.Position); //position should decrease by 4KB
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize - 4096, new FileInfo(filename).Length); //file size should decrease by 4KB
@@ -121,9 +119,8 @@
 		public void when_truncating_an_aligned_file_by_one_page_and_position_one_page_from_eof() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -132,7 +129,7 @@
 			Assert.AreEqual(initialFileSize - 4096, stream.Position); //verify position
 			stream.SetLength(initialFileSize - 4096); //truncate file by 4KB
 			Assert.AreEqual(initialFileSize - 4096, stream.Position); //position should not change
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize - 4096, new FileInfo(filename).Length); //file size should decrease by 4KB
@@ -142,9 +139,8 @@
 		public void when_truncating_an_aligned_file_by_one_byte_less_than_a_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -153,7 +149,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize - 4095); //truncate file by 4KB - 1
 			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize, new FileInfo(filename).Length); //file size should not change
@@ -163,9 +159,8 @@
 		public void when_truncating_an_aligned_file_by_one_byte_more_than_a_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -174,7 +169,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize - 4097); //truncate file by 4KB + 1
 			Assert.AreEqual(initialFileSize - 4096, stream.Position); //position should decrease by 4KB 
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize - 4096, new FileInfo(filename).Length); //file size should decrease by 4KB
@@ -184,9 +179,8 @@
 		public void when_truncating_an_aligned_file_by_one_byte() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096);
-			
+			using var stream = new NativeFileStream(filename, false);
+
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
 
@@ -195,7 +189,7 @@
 			Assert.AreEqual(initialFileSize, stream.Position); //verify position
 			stream.SetLength(initialFileSize - 1); //truncate file by 1 byte
 			Assert.AreEqual(initialFileSize, stream.Position); //position should not change
-			
+
 			stream.Close();
 
 			Assert.AreEqual(initialFileSize, new FileInfo(filename).Length); //file size should not change
@@ -205,11 +199,10 @@
 		public void when_writing_less_than_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(255);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(bytes.Length, stream.Position);
-				Assert.AreEqual(0, new FileInfo(filename).Length);
+				Assert.AreEqual(4096, new FileInfo(filename).Length);
 			}
 		}
 
@@ -217,12 +210,11 @@
 		public void when_writing_more_than_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(9000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, bytes.Length);
-				Assert.AreEqual(4096 * 2, new FileInfo(filename).Length);
+				Assert.AreEqual(4096 * 3, new FileInfo(filename).Length);
 				var read = ReadAllBytesShared(filename);
-				for (var i = 0; i < 4096 * 2; i++) {
+				for (var i = 0; i < 9000; i++) {
 					Assert.AreEqual(i % 256, read[i]);
 				}
 			}
@@ -232,8 +224,7 @@
 		public void when_writing_less_than_buffer_and_closing() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(255);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, bytes.Length);
 			}
 
@@ -250,8 +241,7 @@
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var GIGABYTE = 1024L * 1024L * 1024L;
 			try {
-				using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-					FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+				using (var stream = new NativeFileStream(filename, false)) {
 					stream.SetLength(4L * GIGABYTE);
 					stream.Seek(3L * GIGABYTE, SeekOrigin.Begin);
 				}
@@ -264,8 +254,7 @@
 		public void when_writing_less_than_buffer_and_seeking() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(255);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, bytes.Length);
 				stream.Seek(0, SeekOrigin.Begin);
 				Assert.AreEqual(0, stream.Position);
@@ -282,8 +271,7 @@
 		public void when_writing_exact_to_alignment_and_writing_again() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(4096);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(4096, stream.Position);
 				bytes = GetBytes(15);
@@ -304,8 +292,7 @@
 		public void when_writing_then_seeking_exact_to_alignment_and_writing_again() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(8192);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, 5012);
 				Assert.AreEqual(5012, stream.Position);
 				stream.Seek(4096, SeekOrigin.Begin);
@@ -330,8 +317,7 @@
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 4096 * 64);
 			var bytes = GetBytes(512);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Seek(128, SeekOrigin.Begin);
 				stream.Write(bytes, 0, bytes.Length);
 				stream.Flush();
@@ -350,16 +336,19 @@
 		public void when_writing_multiple_times() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(256);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(256, stream.Position);
+
 				stream.Flush();
 				Assert.AreEqual(256, stream.Position);
+				
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(512, stream.Position);
+				
 				stream.Flush();
 				Assert.AreEqual(512, stream.Position);
+				
 				Assert.AreEqual(4096, new FileInfo(filename).Length);
 				var read = ReadAllBytesShared(filename);
 
@@ -374,8 +363,7 @@
 		public void when_reading_multiple_times() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 20000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Seek(4096 + 15, SeekOrigin.Begin);
 				var read = new byte[1000];
 				stream.Read(read, 0, 500);
@@ -392,8 +380,7 @@
 		public void when_reading_multiple_times_no_seek() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 20000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				var read = new byte[1000];
 				stream.Read(read, 0, 500);
 				Assert.AreEqual(500, stream.Position);
@@ -409,8 +396,7 @@
 		public void when_reading_multiple_times_over_page_size() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 20000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				var read = new byte[6000];
 				stream.Read(read, 0, 3000);
 				Assert.AreEqual(3000, stream.Position);
@@ -427,8 +413,7 @@
 		public void when_reading_multiple_times_on_page_size() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 20000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				var read = new byte[6000];
 				stream.Read(read, 0, 3000);
 				Assert.AreEqual(3000, stream.Position);
@@ -448,8 +433,7 @@
 		public void when_reading_multiple_times_exact_page_size() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 4096 * 100 + 50);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				var read = new byte[4096];
 				for (var i = 0; i < 100; i++) {
 					var total = stream.Read(read, 0, 4096);
@@ -473,12 +457,12 @@
 		public void when_reading_multiple_times_offset_page_size() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 4096 * 100 + 50);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Seek(50, SeekOrigin.Begin);
 				var read = new byte[4096];
 				for (var i = 0; i < 100; i++) {
-					if (i == 99) Console.Write("");
+					if (i == 99)
+						Console.Write("");
 					var total = stream.Read(read, 0, 4096);
 					Assert.AreEqual(4096 * (i + 1) + 50, stream.Position);
 					Assert.AreEqual(4096, total);
@@ -495,8 +479,7 @@
 		public void when_writing_more_than_buffer_and_closing() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(9000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				stream.Write(bytes, 0, bytes.Length);
 				stream.Close();
 				Assert.AreEqual(4096 * 3, new FileInfo(filename).Length);
@@ -511,8 +494,7 @@
 		public void when_reading_on_aligned_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 20000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				var read = new byte[4096];
 				stream.Read(read, 0, 4096);
 				for (var i = 0; i < 4096; i++) {
@@ -525,8 +507,7 @@
 		public void when_reading_on_unaligned_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 20000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Seek(15, SeekOrigin.Begin);
 				var read = new byte[999];
 				stream.Read(read, 0, read.Length);
@@ -540,8 +521,7 @@
 		public void seek_and_read_on_unaligned_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 20000);
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Seek(4096 + 15, SeekOrigin.Begin);
 				Assert.AreEqual(4096 + 15, stream.Position);
 				var read = new byte[999];
@@ -557,8 +537,7 @@
 		public void seek_end_of_file() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Seek(0, SeekOrigin.End);
 				Assert.AreEqual(stream.Length, stream.Position);
 			}
@@ -568,8 +547,8 @@
 		public void seek_origin_end_to_mid_of_file() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
+				stream.SetLength(60);
 				stream.Seek(-30, SeekOrigin.End);
 				Assert.AreEqual(stream.Length - 30, stream.Position);
 			}
@@ -580,8 +559,7 @@
 		public void seek_current_unimplemented() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename)) {
 				Assert.Throws<NotImplementedException>(() => stream.Seek(0, SeekOrigin.Current));
 			}
 		}
@@ -590,8 +568,7 @@
 		[Test]
 		public void seek_write_seek_read_in_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
-			using (var stream = UnbufferedFileStream.Create(filename, FileMode.CreateNew, FileAccess.ReadWrite,
-				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
+			using (var stream = new NativeFileStream(filename, false)) {
 				var buffer = GetBytes(255);
 				stream.Seek(4096 + 15, SeekOrigin.Begin);
 				stream.Write(buffer, 0, buffer.Length);
@@ -609,10 +586,8 @@
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = BuildBytes(4096 * 128);
 			File.WriteAllBytes(filename, bytes);
-			using (var f = new FileStream(filename, FileMode.Open, FileAccess.Read)) {
-				using (
-					var b = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.Read, FileShare.Read, false,
-						4096, 4096, false, 4096)) {
+			using (var f = File.OpenRead(filename)) {
+				using (var b = new NativeFileStream(filename)) {
 					var readf = new byte[4096];
 					var readb = new byte[4096];
 					for (var i = 0; i < 128; i++) {
@@ -633,10 +608,8 @@
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = BuildBytes(4096 * 128);
 			File.WriteAllBytes(filename, bytes);
-			using (var f = new FileStream(filename, FileMode.Open, FileAccess.Read)) {
-				using (
-					var b = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.Read, FileShare.Read, false,
-						4096, 4096 * 4, false, 4096)) {
+			using (var f = File.OpenRead(filename)) {
+				using (var b = new NativeFileStream(filename)) {
 					var readf = new byte[4096];
 					var readb = new byte[4096];
 					for (var i = 0; i < 128; i++) {
@@ -662,7 +635,7 @@
 
 
 		private byte[] ReadAllBytesShared(string filename) {
-			using (var fs = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+			using (var fs = File.Open(filename, FileMode.Open, System.IO.FileAccess.Read, FileShare.ReadWrite)) {
 				var ret = new byte[fs.Length];
 				fs.Read(ret, 0, (int)fs.Length);
 				return ret;
@@ -674,6 +647,18 @@
 			File.WriteAllBytes(filename, bytes);
 		}
 
+		private byte[] GetCharArray(int size) {
+			var ret = new byte[size];
+			var i = 0;
+			while (i < size) {
+				for (var c = 97; c < 123; c++) {
+					ret[i] = (byte)c;
+					i++;
+					if (i >= size) break;
+				}
+			}
+			return ret;
+		}
 		private byte[] GetBytes(int size) {
 			var ret = new byte[size];
 			for (var i = 0; i < size; i++) {
@@ -683,5 +668,5 @@
 			return ret;
 		}
 	}
-	*/
+
 }

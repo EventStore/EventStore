@@ -25,15 +25,15 @@ namespace EventStore.Native.FileAccess {
 				length += file.SectorSize - length % file.SectorSize;
 			}
 			CreateFile(path, length, replace);
-			file.Open(path);
+			file.Open(path,true);
 			return file;
 		}
-		internal static NativeFile OpenFile(string path) {
+		internal static NativeFile OpenFile(string path, bool readOnly = true) {
 			NativeFile file = new NativeFile();
-			file.Open(path);
+			file.Open(path, !readOnly);
 			return file;
 		}
-		private void Open(string path) {
+		private void Open(string path, bool forWrite = false) {
 			if (_file != null)
 				throw new InvalidOperationException($"{nameof(NativeFile)}:Open - File is already open!");
 			if (_disposed)
@@ -41,7 +41,8 @@ namespace EventStore.Native.FileAccess {
 			if (string.IsNullOrWhiteSpace(path))
 				throw new ArgumentOutOfRangeException($"{nameof(NativeFile)}:Open - Empty or Null Path");
 			Info = new FileInfo(path);
-			_file = NativeMethods.OpenNative(Info.FullName);
+			var access = forWrite ? System.IO.FileAccess.ReadWrite : System.IO.FileAccess.Read;
+			_file = NativeMethods.OpenNative(Info.FullName, FileMode.OpenOrCreate, access);
 			Length = NativeMethods.GetFileSize(_file);
 			SectorSize = NativeMethods.GetPhysicalSectorSize(_file);
 		}
@@ -103,6 +104,9 @@ namespace EventStore.Native.FileAccess {
 			} while (remainingBytes > 0);
 
 			NativeMethods.Flush(_file);
+			if (position + length > Length) {
+				Length = NativeMethods.GetFileSize(_file);
+			}
 
 			return bytesWritten;
 		}
@@ -127,13 +131,20 @@ namespace EventStore.Native.FileAccess {
 			NativeMethods.Flush(_file);
 		}
 
-		public long Seek(long position, SeekOrigin origin) {
-			return NativeMethods.Seek(_file, position, origin);
+		public long Seek(long offset, SeekOrigin origin) {
+			if (Length + offset < 0)
+				offset = Length;
+			return NativeMethods.Seek(_file, offset, origin);
 		}
 
+		public long AlignToSectorSize(long value, bool roundUp = true) {
+			var sectorSize = NativeMethods.GetPhysicalSectorSize(_file);
+			if (value % sectorSize == 0) { return value; }
+			return value + (sectorSize - (value % sectorSize));
+		}
 		public long SetLength(long length) {
-			length = NativeMethods.SetFileLength(_file, length);
-			return length;
+			Length = NativeMethods.SetFileLength(_file, AlignToSectorSize(length));
+			return Length;
 		}
 		private bool _disposed;
 		internal bool IsOpen() {
