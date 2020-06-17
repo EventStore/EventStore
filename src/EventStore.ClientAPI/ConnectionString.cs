@@ -87,12 +87,18 @@ namespace EventStore.ClientAPI {
 				},
 				{
 					typeof(IHttpClient), x => {
+#if NET452
+						throw new Exception("Setting the value of IHttpClient in the connection string is not supported in .NET 4.5.2");
+#elif NET46
+						throw new Exception("Setting the value of IHttpClient in the connection string is not supported in .NET 4.6");
+#else
 						if (x.Trim().Equals("SkipCertificateValidation")) {
 							return new HttpAsyncClient(TimeSpan.FromMilliseconds(1000), new HttpClientHandler {
 								ServerCertificateCustomValidationCallback = delegate { return true; }
 							});
 						}
 						throw new Exception("The only supported value for IHttpClient is: SkipCertificateValidation");
+#endif
 					}
 				}
 			};
