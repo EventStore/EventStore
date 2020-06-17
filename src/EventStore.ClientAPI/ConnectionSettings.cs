@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Allows overriding the HTTPClient <see cref="IHttpClient"/>
 		/// </summary>
-		public IHttpClient CustomHttpClient { get; set; }
+		public IHttpClient CustomHttpClient;
 
 		/// <summary>
 		/// Whether to use excessive logging of <see cref="EventStoreConnection"/> internal logic.

@@ -4,9 +4,12 @@ using System.Data.Common;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -28,10 +31,41 @@ namespace EventStore.ClientAPI {
 				{typeof(TimeSpan), x => TimeSpan.FromMilliseconds(int.Parse(x, CultureInfo.InvariantCulture))}, {
 					typeof(GossipSeed[]), x => x.Split(',').Select(q => {
 						try {
-							var pieces = q.Trim().Split(':');
-							if (pieces.Length != 2) throw new Exception("Could not split IP address from port.");
+							q = q.Trim();
+							bool seedOverTls;
+							var HTTP_SCHEMA = Uri.UriSchemeHttp + "://";
+							var HTTPS_SCHEMA = Uri.UriSchemeHttps + "://";
+							if (q.StartsWith(HTTP_SCHEMA)) {
+								seedOverTls = false;
+								q = q.Substring(HTTP_SCHEMA.Length);
+							} else if(q.StartsWith(HTTPS_SCHEMA)) {
+								seedOverTls = true;
+								q = q.Substring(HTTPS_SCHEMA.Length);
+							} else {
+								seedOverTls = false; //do not seed over TLS by default for v5 client
+							}
 
-							return new GossipSeed(new IPEndPoint(IPAddress.Parse(pieces[0]), int.Parse(pieces[1])));
+							var pieces = q.Trim().Split(':');
+							if (pieces.Length != 2) throw new Exception("Could not split host from port.");
+
+							string hostHeader;
+							IPEndPoint endPoint;
+
+							string host = pieces[0];
+							int port = int.Parse(pieces[1]);
+							if(IPAddress.TryParse(host, out IPAddress ip)) {
+								endPoint = new IPEndPoint(ip, port);
+								hostHeader = "";
+							} else {
+								var entries = Dns.GetHostAddresses(host);
+								if (entries.Length == 0)
+									throw new Exception(string.Format("Unable to resolve DNS to IP address for host: '{0}'", host));
+								var ipAddress = entries.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+								endPoint = new IPEndPoint(ipAddress, port);
+								hostHeader = host;
+							}
+
+							return new GossipSeed(endPoint, hostHeader, seedOverTls);
 						} catch (Exception ex) {
 							throw new Exception(string.Format("Gossip seed {0} is not in correct format", q), ex);
 						}
@@ -49,6 +83,22 @@ namespace EventStore.ClientAPI {
 									"User credentials {0} is not in correct format. Expected format is username:password.",
 									x), ex);
 						}
+					}
+				},
+				{
+					typeof(IHttpClient), x => {
+#if NET452
+						throw new Exception("Setting the value of IHttpClient in the connection string is not supported in .NET 4.5.2");
+#elif NET46
+						throw new Exception("Setting the value of IHttpClient in the connection string is not supported in .NET 4.6");
+#else
+						if (x.Trim().Equals("SkipCertificateValidation")) {
+							return new HttpAsyncClient(TimeSpan.FromMilliseconds(1000), new HttpClientHandler {
+								ServerCertificateCustomValidationCallback = delegate { return true; }
+							});
+						}
+						throw new Exception("The only supported value for IHttpClient is: SkipCertificateValidation");
+#endif
 					}
 				}
 			};
