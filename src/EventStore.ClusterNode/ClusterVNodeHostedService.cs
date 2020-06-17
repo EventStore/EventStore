@@ -36,7 +36,9 @@ namespace EventStore.ClusterNode {
 		protected override IEnumerable<OptionSource>
 			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
 			var developmentOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Dev));
+			var insecureOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Insecure));
 			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
+			bool.TryParse(insecureOption.Value.ToString(), out bool insecureMode);
 			return effectiveOptions.Select(x => {
 				if (x.Name == nameof(ClusterNodeOptions.MemDb)
 				    && x.Source == "<DEFAULT>"
@@ -50,6 +52,20 @@ namespace EventStore.ClusterNode {
 				    && developmentMode) {
 					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
 					x.Source = "Set by 'Development Mode' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
+				    && x.Source == "<DEFAULT>"
+				    && insecureMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Insecure Mode' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
+				    && x.Source == "<DEFAULT>"
+				    && insecureMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Insecure Mode' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.CertificatePrivateKeyFile)
