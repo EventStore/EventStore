@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
+using EventStore.Native.FileAccess;
 using ILogger = Serilog.ILogger;
 using Range = EventStore.Core.Data.Range;
 
@@ -226,15 +227,8 @@ namespace EventStore.Core.Index {
 				Log.Debug("Disabling Verification of PTable");
 			}
 			//todo-clc: use nativefile
-			Stream stream = null;
-			WorkItem workItem = null;
-			if (Runtime.IsUnixOrMac) {
-				workItem = GetWorkItem();
-				stream = workItem.Stream;
-			} else {
-				workItem = GetWorkItem();
-				stream = workItem.Stream;
-			}
+			WorkItem workItem = GetWorkItem();
+			Stream stream = workItem.Stream;
 
 			try {
 				int midpointsCount;
@@ -358,13 +352,7 @@ namespace EventStore.Core.Index {
 				Dispose();
 				throw;
 			} finally {
-				if (Runtime.IsUnixOrMac) {
-					if (workItem != null)
-						ReturnWorkItem(workItem);
-				} else {
-					if (stream != null)
-						stream.Dispose();
-				}
+				ReturnWorkItem(workItem);
 			}
 		}
 
