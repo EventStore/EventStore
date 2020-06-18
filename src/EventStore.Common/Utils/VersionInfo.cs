@@ -1,12 +1,12 @@
+using System.Reflection;
+
 namespace EventStore.Common.Utils {
-	/// <summary>
-	/// These are patched by the build process! Do not edit them
-	/// manually.
-	/// </summary>
 	public static class VersionInfo {
-		public static readonly string Version = "0.0.0.0";
-		public static readonly string Branch = "Unknown";
-		public static readonly string Hashtag = "Unknown";
+		public static string Version => typeof(VersionInfo).Assembly
+			.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "0.0.0.0";
+
+		public static string Branch => ThisAssembly.Git.Branch;
+		public static string Hashtag => ThisAssembly.Git.Commit;
 		public static readonly string Timestamp = "Unknown";
 	}
 }

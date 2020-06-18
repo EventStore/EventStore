@@ -1,6 +1,5 @@
 Dockerfile
 .dockerignore
-**/.git/
 testresults/
 **/bin/
 **/obj/
