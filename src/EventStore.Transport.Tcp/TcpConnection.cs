@@ -216,43 +216,57 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void StartReceive() {
-			var buffer = BufferManager.CheckOut();
-			if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
-				throw new Exception("Invalid buffer allocated");
-			// TODO AN: do we need to lock on _receiveSocketArgs?..
-			lock (_receiveSocketArgs) {
-				_receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-				if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was not set");
-			}
-
 			try {
-				NotifyReceiveStarting();
-				bool firedAsync;
-				lock (_receiveSocketArgs) {
-					if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was lost");
-					firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
-				}
+				bool continueReceiveSynchronously = true;
 
-				if (!firedAsync)
-					ProcessReceive(_receiveSocketArgs);
+				do {
+					var buffer = BufferManager.CheckOut();
+					if (buffer.Array == null || buffer.Count == 0 || buffer.Array.Length < buffer.Offset + buffer.Count)
+						throw new Exception("Invalid buffer allocated");
+					// TODO AN: do we need to lock on _receiveSocketArgs?..
+					lock (_receiveSocketArgs) {
+						_receiveSocketArgs.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
+						if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was not set");
+					}
+
+					NotifyReceiveStarting();
+					bool firedAsync;
+					lock (_receiveSocketArgs) {
+						if (_receiveSocketArgs.Buffer == null) throw new Exception("Buffer was lost");
+						firedAsync = _receiveSocketArgs.AcceptSocket.ReceiveAsync(_receiveSocketArgs);
+					}
+
+					if (firedAsync) {
+						continueReceiveSynchronously = false;
+					} else {
+						var processReceiveSuccess = ProcessReceive(_receiveSocketArgs);
+						if (processReceiveSuccess) {
+							TryDequeueReceivedData();
+						}
+
+						continueReceiveSynchronously = processReceiveSuccess;
+					}
+				} while (continueReceiveSynchronously);
 			} catch (ObjectDisposedException) {
 				ReturnReceivingSocketArgs();
 			}
 		}
 
 		private void OnReceiveAsyncCompleted(object sender, SocketAsyncEventArgs e) {
-			// No other code should go here.  All handling is the same on async and sync completion.
-			ProcessReceive(e);
+			if (ProcessReceive(e)) {
+				StartReceive();
+				TryDequeueReceivedData();
+			}
 		}
 
-		private void ProcessReceive(SocketAsyncEventArgs socketArgs) {
+		private bool ProcessReceive(SocketAsyncEventArgs socketArgs) {
 			// socket closed normally or some error occurred
 			if (socketArgs.BytesTransferred == 0 || socketArgs.SocketError != SocketError.Success) {
 				NotifyReceiveCompleted(0);
 				ReturnReceivingSocketArgs();
 				CloseInternal(socketArgs.SocketError,
 					socketArgs.SocketError != SocketError.Success ? "Socket receive error" : "Socket closed");
-				return;
+				return false;
 			}
 
 			NotifyReceiveCompleted(socketArgs.BytesTransferred);
@@ -268,8 +282,7 @@ namespace EventStore.Transport.Tcp {
 				socketArgs.SetBuffer(null, 0, 0);
 			}
 
-			StartReceive();
-			TryDequeueReceivedData();
+			return true;
 		}
 
 		private void TryDequeueReceivedData() {
