@@ -20,7 +20,7 @@ namespace EventStore.Core {
 		// ReSharper disable StaticFieldInGenericType
 		protected static readonly ILogger Log = Serilog.Log.ForContext<EventStoreHostedService<TOptions>>();
 		// ReSharper restore StaticFieldInGenericType
-
+		public bool SkipRun => _skipRun;
 		private readonly bool _skipRun;
 		public TOptions Options { get; }
 

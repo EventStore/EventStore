@@ -18,6 +18,8 @@ namespace EventStore.ClusterNode {
 				Serilog.Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 				var cts = new CancellationTokenSource();
 				var hostedService = new ClusterVNodeHostedService(args);
+				if (hostedService.SkipRun)
+					return 0;
 
 				var exitCodeSource = new TaskCompletionSource<int>();
 				Application.RegisterExitAction(code => {
