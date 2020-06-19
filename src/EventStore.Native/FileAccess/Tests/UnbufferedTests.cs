@@ -9,7 +9,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_resizing_a_file() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 			stream.SetLength(4096 * 1024);
 			stream.Close();
 			Assert.AreEqual(4096 * 1024, new FileInfo(filename).Length);
@@ -19,7 +19,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_expanding_an_aligned_file_by_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			var stream = new NativeFileStream(filename,false);
+			var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -39,7 +39,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_expanding_an_aligned_file_by_one_byte_less_than_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -59,7 +59,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_expanding_an_aligned_file_by_one_byte_more_than_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -79,7 +79,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_expanding_an_aligned_file_by_one_byte() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -99,7 +99,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_truncating_an_aligned_file_by_one_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -119,7 +119,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_truncating_an_aligned_file_by_one_page_and_position_one_page_from_eof() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -139,7 +139,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_truncating_an_aligned_file_by_one_byte_less_than_a_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -159,7 +159,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_truncating_an_aligned_file_by_one_byte_more_than_a_page() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -179,7 +179,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_truncating_an_aligned_file_by_one_byte() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using var stream = new NativeFileStream(filename, false);
+			using var stream = new NativeFileStream(filename);
 
 			var initialFileSize = 4096 * 1024;
 			stream.SetLength(initialFileSize); //initial size of 4MB
@@ -199,7 +199,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_less_than_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(255);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(bytes.Length, stream.Position);
 				Assert.AreEqual(4096, new FileInfo(filename).Length);
@@ -210,7 +210,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_more_than_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(9000);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(4096 * 3, new FileInfo(filename).Length);
 				var read = ReadAllBytesShared(filename);
@@ -224,7 +224,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_less_than_buffer_and_closing() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(255);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, bytes.Length);
 			}
 
@@ -241,7 +241,7 @@ namespace EventStore.Native.FileAccess.Tests {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var GIGABYTE = 1024L * 1024L * 1024L;
 			try {
-				using (var stream = new NativeFileStream(filename, false)) {
+				using (var stream = new NativeFileStream(filename)) {
 					stream.SetLength(4L * GIGABYTE);
 					stream.Seek(3L * GIGABYTE, SeekOrigin.Begin);
 				}
@@ -254,7 +254,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_less_than_buffer_and_seeking() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(255);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, bytes.Length);
 				stream.Seek(0, SeekOrigin.Begin);
 				Assert.AreEqual(0, stream.Position);
@@ -271,7 +271,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_exact_to_alignment_and_writing_again() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(4096);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(4096, stream.Position);
 				bytes = GetBytes(15);
@@ -292,7 +292,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_then_seeking_exact_to_alignment_and_writing_again() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(8192);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, 5012);
 				Assert.AreEqual(5012, stream.Position);
 				stream.Seek(4096, SeekOrigin.Begin);
@@ -317,7 +317,7 @@ namespace EventStore.Native.FileAccess.Tests {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 4096 * 64);
 			var bytes = GetBytes(512);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Seek(128, SeekOrigin.Begin);
 				stream.Write(bytes, 0, bytes.Length);
 				stream.Flush();
@@ -336,19 +336,19 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_multiple_times() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(256);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(256, stream.Position);
 
 				stream.Flush();
 				Assert.AreEqual(256, stream.Position);
-				
+
 				stream.Write(bytes, 0, bytes.Length);
 				Assert.AreEqual(512, stream.Position);
-				
+
 				stream.Flush();
 				Assert.AreEqual(512, stream.Position);
-				
+
 				Assert.AreEqual(4096, new FileInfo(filename).Length);
 				var read = ReadAllBytesShared(filename);
 
@@ -479,7 +479,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void when_writing_more_than_buffer_and_closing() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			var bytes = GetBytes(9000);
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.Write(bytes, 0, bytes.Length);
 				stream.Close();
 				Assert.AreEqual(4096 * 3, new FileInfo(filename).Length);
@@ -547,7 +547,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		public void seek_origin_end_to_mid_of_file() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				stream.SetLength(60);
 				stream.Seek(-30, SeekOrigin.End);
 				Assert.AreEqual(stream.Length - 30, stream.Position);
@@ -555,7 +555,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		}
 
 
-		[Test]
+		[Test, Ignore("Unbuffered implementation requirement only")]
 		public void seek_current_unimplemented() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
@@ -568,7 +568,7 @@ namespace EventStore.Native.FileAccess.Tests {
 		[Test]
 		public void seek_write_seek_read_in_buffer() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
-			using (var stream = new NativeFileStream(filename, false)) {
+			using (var stream = new NativeFileStream(filename)) {
 				var buffer = GetBytes(255);
 				stream.Seek(4096 + 15, SeekOrigin.Begin);
 				stream.Write(buffer, 0, buffer.Length);
@@ -587,7 +587,7 @@ namespace EventStore.Native.FileAccess.Tests {
 			var bytes = BuildBytes(4096 * 128);
 			File.WriteAllBytes(filename, bytes);
 			using (var f = File.OpenRead(filename)) {
-				using (var b = new NativeFileStream(filename)) {
+				using (var b = new NativeFileStream(filename, System.IO.FileAccess.Read)) {
 					var readf = new byte[4096];
 					var readb = new byte[4096];
 					for (var i = 0; i < 128; i++) {
@@ -609,7 +609,7 @@ namespace EventStore.Native.FileAccess.Tests {
 			var bytes = BuildBytes(4096 * 128);
 			File.WriteAllBytes(filename, bytes);
 			using (var f = File.OpenRead(filename)) {
-				using (var b = new NativeFileStream(filename)) {
+				using (var b = new NativeFileStream(filename, System.IO.FileAccess.Read)) {
 					var readf = new byte[4096];
 					var readb = new byte[4096];
 					for (var i = 0; i < 128; i++) {
@@ -654,7 +654,8 @@ namespace EventStore.Native.FileAccess.Tests {
 				for (var c = 97; c < 123; c++) {
 					ret[i] = (byte)c;
 					i++;
-					if (i >= size) break;
+					if (i >= size)
+						break;
 				}
 			}
 			return ret;

@@ -106,13 +106,17 @@ namespace EventStore.Native.FileAccess {
 				return UnixSeek(file, offset, origin);
 			}
 		}
-		internal static SafeFileHandle OpenNative(string path, FileMode mode, System.IO.FileAccess access) {
+		internal static SafeFileHandle OpenNative(
+							string path, 
+							FileMode mode, 
+							System.IO.FileAccess access,
+							FileShare share) {
 			SafeFileHandle file;
 			if (Runtime.IsWindows) {
 				file = CreateFileW(
 					path,
 					(uint)access,
-					(uint)FileShare.ReadWrite,
+					(uint)share,
 					IntPtr.Zero,
 					(uint)mode,
 					(uint)FileAttributes.Normal | FILE_FLAG_WRITE_THROUGH,

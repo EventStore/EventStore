@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var sw = Stopwatch.StartNew();
 			var gw = Stopwatch.StartNew();
 			//using (var fs = new FileStream(Filename, FileMode.OpenOrCreate)) {
-			using (var fs = new NativeFileStream(Filename, false)) {
+			using (var fs = new NativeFileStream(Filename)) {
 				const int iter = 1000;
 				for (int bytes = 100; bytes < 1000000; bytes *= 2) {
 					var arr = new byte[bytes];

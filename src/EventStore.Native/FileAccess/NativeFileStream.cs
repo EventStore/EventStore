@@ -1,28 +1,30 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 
 namespace EventStore.Native.FileAccess {
 	public unsafe class NativeFileStream : Stream {
 		private readonly NativeFile _nativeFile;
 
-		public NativeFileStream(string path, bool readOnly = true) {
-			_nativeFile = NativeFile.OpenFile(path, readOnly);
-			_canWrite = !readOnly;
-			var minLength = _nativeFile.AlignToSectorSize(1);
-			if (_canWrite && _nativeFile.Length < minLength) {
+		public NativeFileStream(string path) :
+			this(path, System.IO.FileAccess.ReadWrite) { }
 
+		public NativeFileStream(
+					string path,
+					System.IO.FileAccess access,
+					FileMode mode = FileMode.OpenOrCreate,
+					FileShare share = FileShare.ReadWrite) {
+			_nativeFile = NativeFile.OpenFile(path, access, mode, share);
+			_canWrite = access == System.IO.FileAccess.Write || access == System.IO.FileAccess.ReadWrite;
+			var minLength = _nativeFile.AlignToSectorSize(1);
+			if ((access == System.IO.FileAccess.ReadWrite ||
+				 access == System.IO.FileAccess.Write) &&
+				_nativeFile.Length < minLength) {
 				_nativeFile.SetLength(minLength);
 			}
 		}
 
 		public override long Seek(long offset, SeekOrigin origin) {
-			//todo-clc: why is this not implemented in Unbuffered file?
-			//throw to match current implementation
-			if (origin == SeekOrigin.Current) { throw new NotImplementedException(); }
-
 			CheckDisposed();
 			_position = _nativeFile.Seek(offset, origin);
 			return _position;
@@ -52,23 +54,26 @@ namespace EventStore.Native.FileAccess {
 				return read;
 			}
 		}
-
-		public override void Write(byte[] buffer, int offset, int count) {
+		public void Write(byte* buffer, int offset, int count) {
 			CheckDisposed();
 			if (!_canWrite) {
 				throw new UnauthorizedAccessException($"{nameof(NativeFileStream)}:Write Cannot write, file not opened for writing!");
 			}
 
+			buffer += offset;
+			if (Length < _position + count) {
+				SetLength(_position + count);
+			}
+
+			var written = _nativeFile.Write(_position, (IntPtr)buffer, count);
+			_position += written;
+		}
+
+		
+		public override void Write(byte[] buffer, int offset, int count) {
 			//todo-clc: fixed is slow as fuck!!!
 			fixed (byte* b = buffer) {
-				var p = b;
-				p += offset;
-				if (Length < _position + count) {
-					SetLength(_position + count);
-				}
-
-				var written = _nativeFile.Write(_position, (IntPtr)p, count);
-				_position += written;
+				Write(b,offset,count);
 			}
 		}
 		public override bool CanRead {
@@ -95,7 +100,7 @@ namespace EventStore.Native.FileAccess {
 			}
 		}
 
-		private long _position = 0;
+		private long _position;
 		public override long Position {
 			get {
 				CheckDisposed();

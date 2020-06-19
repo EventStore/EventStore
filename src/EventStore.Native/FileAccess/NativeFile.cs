@@ -25,15 +25,21 @@ namespace EventStore.Native.FileAccess {
 				length += file.SectorSize - length % file.SectorSize;
 			}
 			CreateFile(path, length, replace);
-			file.Open(path,true);
+			file.Open(path);
 			return file;
 		}
-		internal static NativeFile OpenFile(string path, bool readOnly = true) {
+		internal static NativeFile OpenFile(string path, System.IO.FileAccess access, FileMode mode, FileShare share) {
 			NativeFile file = new NativeFile();
-			file.Open(path, !readOnly);
+			file.Open(path, access, mode, share);
 			return file;
 		}
-		private void Open(string path, bool forWrite = false) {
+		internal static NativeFile OpenFile(string path) {
+			NativeFile file = new NativeFile();
+			
+			file.Open(path);
+			return file;
+		}
+		private void Open(string path, System.IO.FileAccess access = System.IO.FileAccess.ReadWrite, FileMode mode = FileMode.OpenOrCreate, FileShare share = FileShare.ReadWrite) {
 			if (_file != null)
 				throw new InvalidOperationException($"{nameof(NativeFile)}:Open - File is already open!");
 			if (_disposed)
@@ -41,8 +47,8 @@ namespace EventStore.Native.FileAccess {
 			if (string.IsNullOrWhiteSpace(path))
 				throw new ArgumentOutOfRangeException($"{nameof(NativeFile)}:Open - Empty or Null Path");
 			Info = new FileInfo(path);
-			var access = forWrite ? System.IO.FileAccess.ReadWrite : System.IO.FileAccess.Read;
-			_file = NativeMethods.OpenNative(Info.FullName, FileMode.OpenOrCreate, access);
+
+			_file = NativeMethods.OpenNative(Info.FullName, mode, access, share);
 			Length = NativeMethods.GetFileSize(_file);
 			SectorSize = NativeMethods.GetPhysicalSectorSize(_file);
 		}
