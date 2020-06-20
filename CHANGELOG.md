@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 - Log level from Verbose to Debug/Information for important messages [EventStore#2538](https://github.com/EventStore/EventStore/pull/2538)
 - Change options that refers to disabling tls to explicitly refer to disabling tcp tls. [EventStore#2537](https://github.com/EventStore/EventStore/pull/2537)
 
+### Fixed
+- Do not start other services if run is being skipped when --help or --version are specified [EventStore#2558](https://github.com/EventStore/EventStore/pull/2558)
+
 ## [20.6.0] - 2020-06-09
 
 ### Changed
