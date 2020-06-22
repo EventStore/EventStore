@@ -44,49 +44,49 @@ namespace EventStore.ClusterNode {
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
 				    && insecureMode) {
 					x.Value = true;
-					x.Source =  "Set by 'Insecure Mode' mode";
+					x.Source =  "Set by 'Insecure' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
 				    && x.Source == "<DEFAULT>"
 				    && insecureMode) {
 					x.Value = true;
-					x.Source =  "Set by 'Insecure Mode' mode";
+					x.Source =  "Set by 'Insecure' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.CertificatePrivateKeyFile)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.key");
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.TrustedRootCertificatesPath)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = Locations.DevCertificateDirectory;
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.EnableAtomPubOverHTTP)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				return x;
