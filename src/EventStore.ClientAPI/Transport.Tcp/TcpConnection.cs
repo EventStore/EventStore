@@ -134,53 +134,62 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void TrySend() {
-			lock (_sendLock) {
-				if (_isSending || _sendQueue.IsEmpty || _sendSocketArgs == null) return;
-				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
-				_isSending = true;
-			}
-
-			_memoryStream.SetLength(0);
-
-			ArraySegment<byte> sendPiece;
-			while (_sendQueue.TryDequeue(out sendPiece)) {
-				_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
-				if (_memoryStream.Length >= MaxSendPacketSize)
-					break;
-			}
-
-			_sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
-
+			bool continueSendSynchronously = true;
 			try {
-				NotifySendStarting(_sendSocketArgs.Count);
-				var firedAsync = _sendSocketArgs.AcceptSocket.SendAsync(_sendSocketArgs);
-				if (!firedAsync)
-					ProcessSend(_sendSocketArgs);
+				do {
+					lock (_sendLock) {
+						if (_isSending || _sendQueue.IsEmpty || _sendSocketArgs == null) return;
+						if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
+						_isSending = true;
+					}
+
+					_memoryStream.SetLength(0);
+
+					ArraySegment<byte> sendPiece;
+					while (_sendQueue.TryDequeue(out sendPiece)) {
+						_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
+						if (_memoryStream.Length >= MaxSendPacketSize)
+							break;
+					}
+
+					_sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
+
+					NotifySendStarting(_sendSocketArgs.Count);
+					var firedAsync = _sendSocketArgs.AcceptSocket.SendAsync(_sendSocketArgs);
+					if (firedAsync) {
+						continueSendSynchronously = false;
+					} else {
+						continueSendSynchronously = ProcessSend(_sendSocketArgs);
+					}
+				} while (continueSendSynchronously);
 			} catch (ObjectDisposedException) {
 				ReturnSendingSocketArgs();
 			}
 		}
 
 		private void OnSendAsyncCompleted(object sender, SocketAsyncEventArgs e) {
-			// No other code should go here. All handling is the same for sync/async completion.
-			ProcessSend(e);
+			if (ProcessSend(e)) {
+				TrySend();
+			}
 		}
 
-		private void ProcessSend(SocketAsyncEventArgs socketArgs) {
+		private bool ProcessSend(SocketAsyncEventArgs socketArgs) {
 			if (socketArgs.SocketError != SocketError.Success) {
 				NotifySendCompleted(0);
 				ReturnSendingSocketArgs();
 				CloseInternal(socketArgs.SocketError, "Socket send error.");
+				return false;
 			} else {
 				NotifySendCompleted(socketArgs.Count);
-				if (_isClosed)
+				if (_isClosed) {
 					ReturnSendingSocketArgs();
-				else {
+					return false;
+				} else {
 					lock (_sendLock) {
 						_isSending = false;
 					}
 
-					TrySend();
+					return true;
 				}
 			}
 		}
