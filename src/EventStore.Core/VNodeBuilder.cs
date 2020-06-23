@@ -75,6 +75,7 @@ namespace EventStore.Core {
 		protected bool _enableExternalTCP;
 		protected bool _disableInternalTcpTls;
 		protected bool _disableExternalTcpTls;
+		protected bool _disableHttps;
 
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
@@ -192,6 +193,7 @@ namespace EventStore.Core {
 
 			_disableInternalTcpTls = Opts.DisableInternalTcpTlsDefault;
 			_disableExternalTcpTls = Opts.DisableExternalTcpTlsDefault;
+			_disableHttps = Opts.DisableHttpsDefault;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
@@ -532,6 +534,15 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder EnableExternalTCP() {
 			_enableExternalTCP = true;
+			return this;
+		}
+
+		/// <summary>
+		/// Disable HTTPS Communication
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder DisableHttps() {
+			_disableHttps = true;
 			return this;
 		}
 
@@ -1492,7 +1503,8 @@ namespace EventStore.Core {
 				_maxAppendSize,
 				_unsafeAllowSurplusNodes,
 				_enableExternalTCP,
-				_enableAtomPubOverHTTP);
+				_enableAtomPubOverHTTP,
+				_disableHttps);
 
 			var infoController = new InfoController(options, new Dictionary<string, bool> {
 				{"projections", _projectionType != ProjectionType.None},

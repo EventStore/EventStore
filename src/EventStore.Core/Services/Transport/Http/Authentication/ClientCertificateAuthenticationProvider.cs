@@ -7,13 +7,21 @@ using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
+		private bool _bypassAuthentication;
 		private readonly string _certificateReservedNodeCommonName;
 
-		public ClientCertificateAuthenticationProvider(string certificateReservedNodeCommonName) {
+		public ClientCertificateAuthenticationProvider(bool bypassAuthentication, string certificateReservedNodeCommonName) {
+			_bypassAuthentication = bypassAuthentication;
 			_certificateReservedNodeCommonName = $"CN={certificateReservedNodeCommonName}";
 		}
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
+			if (_bypassAuthentication) {
+				request = new HttpAuthenticationRequest(context, "system", "");
+				request.Authenticated(SystemAccounts.System);
+				return true;
+			}
+
 			request = null;
 			var clientCertificate = context.Connection.ClientCertificate;
 			if (clientCertificate is null) return false;

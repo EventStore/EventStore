@@ -19,23 +19,32 @@ namespace EventStore.Core.Cluster {
 		internal bool Disposed { get; private set; }
 
 		public EventStoreClusterClient(Uri address, IPublisher bus, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, X509Certificate clientCertificate) {
-			var socketsHttpHandler = new SocketsHttpHandler {
-				SslOptions = {
-					RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
-						var (isValid, error) = serverCertValidator(certificate, chain, errors);
-						if (!isValid && error != null) {
-							Log.Error("Server certificate validation error: {e}", error);
-						}
-						return isValid;
-					},
-					ClientCertificates = new X509CertificateCollection()
-				}
-			};
-			if(clientCertificate != null)
-				socketsHttpHandler.SslOptions.ClientCertificates.Add(clientCertificate);
+			HttpMessageHandler httpMessageHandler = null;
+			if (address.Scheme == Uri.UriSchemeHttps){
+				var socketsHttpHandler = new SocketsHttpHandler {
+					SslOptions = {
+						RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
+							var (isValid, error) = serverCertValidator(certificate, chain, errors);
+							if (!isValid && error != null) {
+								Log.Error("Server certificate validation error: {e}", error);
+							}
+
+							return isValid;
+						},
+						ClientCertificates = new X509CertificateCollection()
+					}
+				};
+				if (clientCertificate != null)
+					socketsHttpHandler.SslOptions.ClientCertificates.Add(clientCertificate);
+
+				httpMessageHandler = socketsHttpHandler;
+			} else if (address.Scheme == Uri.UriSchemeHttp) {
+				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+				httpMessageHandler = new SocketsHttpHandler();
+			}
 
 			_channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions {
-				HttpClient = new HttpClient(socketsHttpHandler) {
+				HttpClient = new HttpClient(httpMessageHandler) {
 					Timeout = Timeout.InfiniteTimeSpan,
 					DefaultRequestVersion = new Version(2, 0),
 				},

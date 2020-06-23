@@ -29,7 +29,6 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool DiscoverViaDns;
 		public readonly string ClusterDns;
 		public readonly EndPoint[] GossipSeeds;
-		public readonly bool GossipOverHttps;
 		public readonly bool EnableHistograms;
 		public readonly TimeSpan MinFlushDelay;
 
@@ -44,6 +43,7 @@ namespace EventStore.Core.Cluster.Settings {
 
 		public readonly bool DisableInternalTcpTls;
 		public readonly bool DisableExternalTcpTls;
+		public readonly bool DisableHttps;
 		public readonly bool EnableExternalTCP;
 
 		public readonly TimeSpan StatsPeriod;
@@ -168,7 +168,7 @@ namespace EventStore.Core.Cluster.Settings {
 			bool unsafeAllowSurplusNodes = false,
 			bool enableExternalTCP = false,
 			bool enableAtomPubOverHTTP = true,
-			bool gossipOverHttps = true) {
+			bool disableHttps = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 
@@ -226,6 +226,7 @@ namespace EventStore.Core.Cluster.Settings {
 
 			DisableInternalTcpTls = disableInternalTcpTls;
 			DisableExternalTcpTls = disableExternalTcpTls;
+			DisableHttps = disableHttps;
 			EnableExternalTCP = enableExternalTCP;
 
 			StatsPeriod = statsPeriod;
@@ -244,7 +245,6 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipInterval = gossipInterval;
 			GossipAllowedTimeDifference = gossipAllowedTimeDifference;
 			GossipTimeout = gossipTimeout;
-			GossipOverHttps = gossipOverHttps;
 			IntTcpHeartbeatTimeout = intTcpHeartbeatTimeout;
 			IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
 			ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
@@ -294,6 +294,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"PrepareTimeout: {PrepareTimeout}\n" + $"CommitTimeout: {CommitTimeout}\n" +
 			$"WriteTimeout: {WriteTimeout}\n" +
 			$"DisableInternalTcpTls: {DisableInternalTcpTls}\n" + $"DisableExternalTcpTls: {DisableExternalTcpTls}\n" +
+			$"DisableHttps: {DisableHttps}\n" +
 			$"StatsPeriod: {StatsPeriod}\n" + $"StatsStorage: {StatsStorage}\n" +
 			$"AuthenticationProviderFactory Type: {AuthenticationProviderFactory.GetType()}\n" +
 			$"AuthorizationProviderFactory  Type: {AuthorizationProviderFactory.GetType()}\n" +

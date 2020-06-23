@@ -47,13 +47,6 @@ namespace EventStore.ClusterNode {
 					x.Source = "Set by 'Development' mode";
 				}
 
-				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
-					x.Source = "Set by 'Development' mode";
-				}
-
 				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
 				    && insecureMode) {
@@ -68,16 +61,30 @@ namespace EventStore.ClusterNode {
 					x.Source =  "Set by 'Insecure' mode";
 				}
 
+				if (x.Name == nameof(ClusterNodeOptions.DisableHttps)
+				    && x.Source == "<DEFAULT>"
+				    && insecureMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Insecure' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
+				    && x.Source == "<DEFAULT>"
+				    && developmentMode && !insecureMode) {
+					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
+					x.Source = "Set by 'Development' mode";
+				}
+
 				if (x.Name == nameof(ClusterNodeOptions.CertificatePrivateKeyFile)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
+				    && developmentMode && !insecureMode) {
 					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.key");
 					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.TrustedRootCertificatesPath)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
+				    && developmentMode && !insecureMode) {
 					x.Value = Locations.DevCertificateDirectory;
 					x.Source = "Set by 'Development' mode";
 				}
@@ -342,6 +349,8 @@ namespace EventStore.ClusterNode {
 				builder.DisableInternalTcpTls();
 			if (options.DisableExternalTcpTls)
 				builder.DisableExternalTcpTls();
+			if (options.DisableHttps)
+				builder.DisableHttps();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
 			if (options.DisableAdminUi)
@@ -369,33 +378,38 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
-				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
-				var name = GetCertificateStoreName(options.CertificateStoreName);
-				builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
-					options.CertificateThumbprint);
-			} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
-				var name = GetCertificateStoreName(options.CertificateStoreName);
-				builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
-					options.CertificateThumbprint);
-			} else if (options.CertificateFile.IsNotEmptyString()) {
-				builder.WithServerCertificateFromFile(
-					options.CertificateFile,
-					options.CertificatePrivateKeyFile,
-					options.CertificatePassword);
-			} else if (!options.Dev)
-				throw new InvalidConfigurationException("A TLS Certificate is required unless development mode (--dev) is set.");
+			bool insecureMode = options.DisableHttps && options.DisableInternalTcpTls && options.DisableExternalTcpTls;
+
+			if (!insecureMode) {
+				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
+					var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
+					var name = GetCertificateStoreName(options.CertificateStoreName);
+					builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
+						options.CertificateThumbprint);
+				} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
+					var name = GetCertificateStoreName(options.CertificateStoreName);
+					builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
+						options.CertificateThumbprint);
+				} else if (options.CertificateFile.IsNotEmptyString()) {
+					builder.WithServerCertificateFromFile(
+						options.CertificateFile,
+						options.CertificatePrivateKeyFile,
+						options.CertificatePassword);
+				} else if (!options.Dev)
+					throw new InvalidConfigurationException(
+						"A TLS Certificate is required unless development mode (--dev) or insecure mode (--insecure) is set.");
+
+				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
+					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
+				} else {
+					throw new InvalidConfigurationException(
+						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) or insecure mode (--insecure) is set.");
+				}
+			}
 
 			var authorizationConfig = String.IsNullOrEmpty(options.AuthorizationConfig)
 				? options.Config
 				: options.AuthorizationConfig;
-
-			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
-				builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
-			} else {
-				throw new InvalidConfigurationException(
-					$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set.");
-			}
 
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config
