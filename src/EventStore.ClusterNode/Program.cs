@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Transport.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -60,7 +61,7 @@ namespace EventStore.ClusterNode {
 							server.Listen(hostedService.Options.ExtIp, hostedService.Options.HttpPort,
 								listenOptions => {
 									if (hostedService.Node.DisableHttps) {
-										listenOptions.Protocols = HttpProtocols.Http2;
+										listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
 									} else {
 										listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
 											ServerCertificate = hostedService.Node.Certificate,
