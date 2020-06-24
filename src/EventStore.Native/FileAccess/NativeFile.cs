@@ -138,8 +138,13 @@ namespace EventStore.Native.FileAccess {
 		}
 
 		public long Seek(long offset, SeekOrigin origin) {
+			if(origin == SeekOrigin.End){
+					offset = Length + offset;
+					origin = SeekOrigin.Begin;
+				}
 			if (Length + offset < 0)
 				offset = Length;
+				
 			return NativeMethods.Seek(_file, offset, origin);
 		}
 

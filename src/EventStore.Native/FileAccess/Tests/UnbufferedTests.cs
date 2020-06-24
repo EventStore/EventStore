@@ -548,9 +548,12 @@ namespace EventStore.Native.FileAccess.Tests {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 
 			using (var stream = new NativeFileStream(filename)) {
-				stream.SetLength(60);
-				stream.Seek(-30, SeekOrigin.End);
-				Assert.AreEqual(stream.Length - 30, stream.Position);
+				stream.SetLength(4096);
+				var length = stream.Length;
+				var mid = 4096 / 2 * -1;
+				Assert.AreEqual(4096, length);
+				stream.Seek( mid, SeekOrigin.End);
+				Assert.AreEqual(stream.Length + mid, stream.Position);
 			}
 		}
 

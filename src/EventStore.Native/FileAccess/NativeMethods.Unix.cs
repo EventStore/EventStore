@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
 using Mono.Unix;
 using Mono.Unix.Native;
@@ -82,7 +81,7 @@ namespace EventStore.Native.FileAccess {
 
 			UnixMarshal.ThrowExceptionForLastErrorIf(r);
 			return s.st_size;
-		}
+		}		
 		public static SafeFileHandle UnixCreateRW(string path, System.IO.FileAccess acc, FileShare share, FileMode mode) {
 			var flags = UnixGetFlags(acc, mode);
 			var han = Syscall.open(path, flags, FilePermissions.S_IRWXU);
@@ -149,7 +148,7 @@ namespace EventStore.Native.FileAccess {
 		public static long UnixSeek(SafeFileHandle handle, long position, SeekOrigin origin) {
 			long r;
 			do {
-				r = Syscall.lseek(handle.DangerousGetHandle().ToInt32(), position, SeekFlags.SEEK_SET);
+				r = Syscall.lseek(handle.DangerousGetHandle().ToInt32(), position, (SeekFlags)origin);
 			} while (r == -1 && UnixMarshal.ShouldRetrySyscall((int)r));
 
 			if (r == -1) {

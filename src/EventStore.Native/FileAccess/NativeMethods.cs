@@ -1,8 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
-using EventStore.Common.Utils;
 using Microsoft.Win32.SafeHandles;
 using Mono.Unix.Native;
 
@@ -127,34 +127,36 @@ namespace EventStore.Native.FileAccess {
 					throw ae;
 				}
 			} else {
-				file = UnixCreateRW(path, access, FileShare.ReadWrite, mode);
+				var info = new FileInfo(path);
+				if (!info.Exists) {	using (var _ = info.Create()){}	}
+				file = UnixCreateRW(info.FullName, access, FileShare.ReadWrite, mode);
 			}
 
 			return file;
 		}
-		internal static SafeFileHandle OpenUnbuffered(string path) {
-			SafeFileHandle file;
-			if (Runtime.IsWindows) {
-				file = NativeMethods.CreateFileW(
-				path,
-				(uint)System.IO.FileAccess.ReadWrite,
-				(uint)FileShare.ReadWrite,
-				IntPtr.Zero,
-				(uint)FileMode.Open,
-				(uint)FileAttributes.Normal | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH,
-				IntPtr.Zero);
-				if ((file?.IsInvalid ?? true) || file.IsClosed) {
-					throw new ApplicationException($"NativeMethods:OpenUnbuffered - Unable to open file {path}.");
-				}
-			} else {
-				file = UnixCreateUnbufferedRW(path,
-					 System.IO.FileAccess.ReadWrite,
-					 FileShare.ReadWrite,
-					 FileMode.Open);
-			}
+		//internal static SafeFileHandle OpenUnbuffered(string path) {
+		//	SafeFileHandle file;
+		//	if (Runtime.IsWindows) {
+		//		file = NativeMethods.CreateFileW(
+		//		path,
+		//		(uint)System.IO.FileAccess.ReadWrite,
+		//		(uint)FileShare.ReadWrite,
+		//		IntPtr.Zero,
+		//		(uint)FileMode.Open,
+		//		(uint)FileAttributes.Normal | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH,
+		//		IntPtr.Zero);
+		//		if ((file?.IsInvalid ?? true) || file.IsClosed) {
+		//			throw new ApplicationException($"NativeMethods:OpenUnbuffered - Unable to open file {path}.");
+		//		}
+		//	} else {
+		//		file = UnixCreateUnbufferedRW(path,
+		//			 System.IO.FileAccess.ReadWrite,
+		//			 FileShare.ReadWrite,
+		//			 FileMode.Open);
+		//	}
 
-			return file;
-		}
+		//	return file;
+		//}
 
 
 		internal static long GetFileSize(SafeFileHandle file) {
@@ -241,6 +243,14 @@ namespace EventStore.Native.FileAccess {
 				UnixSetFileSize(file, length);
 				return length;
 			}
+		}
+		public static class Runtime {
+			public static readonly bool IsUnixOrMac = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) |
+			                                          RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+			public static readonly bool IsWindows = !IsUnixOrMac;
+
+			public static readonly bool IsMacOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 		}
 	}
 }
