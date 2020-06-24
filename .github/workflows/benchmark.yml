@@ -11,10 +11,8 @@ jobs:
     steps:
       - name: Request Benchmark
         if: contains( github.event.pull_request.labels.*.name, 'Benchmark')
-        env:
-          pr_no: ${{ github.event.number }}
         run: |
           curl -X POST "https://api.github.com/repos/EventStore/grpc-tcp-benchmark/dispatches" \
           -H 'Accept: application/vnd.github.everest-preview+json' \
           -u ${{ secrets.GH_PAT }} \
-          --data '{"event_type": "benchmark_deployment", "client_payload": {"pr_no": $pr_no }}'
+          --data '{"event_type": "benchmark_deployment", "client_payload": {"pr_no":  ${{ github.event.number }} }}'
