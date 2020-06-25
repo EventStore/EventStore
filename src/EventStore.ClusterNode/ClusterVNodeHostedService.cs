@@ -134,12 +134,12 @@ namespace EventStore.ClusterNode {
 
 			if (opts.EnableAtomPubOverHTTP) {
 				Log.Warning(
-					"\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.02. It is recommended to use gRPC instead.\n");
+					"\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.\n");
 			}
 
 			if (opts.EnableExternalTCP) {
 				Log.Warning(
-					"\n DEPRECATION WARNING: The Legacy TCP Client Interface has been deprecated as of version 20.02. "
+					"\n DEPRECATION WARNING: The Legacy TCP Client Interface has been deprecated as of version 20.6.0. "
 					+ $"The External TCP Interface can be re-enabled with the '{nameof(Options.EnableExternalTCP)}' option. "
 					+ "It is recommended to use gRPC instead.\n");
 			}
