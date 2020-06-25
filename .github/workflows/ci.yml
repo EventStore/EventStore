@@ -47,18 +47,16 @@ jobs:
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
         echo "::set-env name=VERSION::${version}"
-
-        version_info=$(dotnet tool run minver -- --tag-prefix=oss-v 2>&1)
-        echo "::set-env name=VERSION_INFO::${version_info}"
     - name: Build
       run: |
         docker build \
           --tag eventstore \
           --build-arg RUNTIME=${{ matrix.runtime }} \
           --build-arg CONTAINER_RUNTIME=${{ matrix.container-runtime }} \
-          --build-arg VERSION="${{ env.VERSION }}" \
-          --build-arg VERSION_INFO="${{ env.VERSION_INFO }}" \
           .
+    - name: Verify Build
+      run: |
+        docker run -e EVENTSTORE_DEV=true -e EVENTSTORE_WHAT_IF=true --rm eventstore
     - name: Run Tests
       run: |
         docker build \
@@ -121,16 +119,14 @@ jobs:
       uses: actions/setup-dotnet@v1.4.0
       with:
         dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
-    - name: Calculate Version
-      shell: bash
-      run: |
-        dotnet tool restore
-        version=$(dotnet tool run minver -- --tag-prefix=oss-v)
-        echo "::set-env name=VERSION::${version}"
     - name: Compile
       shell: bash
       run: |
         dotnet build --configuration ${{ matrix.configuration }} src/EventStore.sln
+    - name: Verify Build
+      shell: bash
+      run: |
+        dotnet run --project src/EventStore.ClusterNode --configuration ${{ matrix.configuration }} -- --dev --what-if
     - name: Run Tests
       shell: bash
       run: |
@@ -173,7 +169,6 @@ jobs:
       run: |
         dotnet tool restore
         dotnet pack --configuration=Release --output=./packages \
-          /p:Version=$(dotnet tool run minver -- --tag-prefix=oss-v) \
           /p:NoWarn=NU5105 \
           /p:RepositoryUrl=https://github.com/EventStore/EventStore \
           /p:RepositoryType=git \
