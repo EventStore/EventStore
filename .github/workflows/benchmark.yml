@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Request Benchmark
-        if: contains( github.event.pull_request.labels.*.name, 'Benchmark')
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'Benchmark') }}
         run: |
           curl -X POST "https://api.github.com/repos/EventStore/grpc-tcp-benchmark/dispatches" \
           -H 'Accept: application/vnd.github.everest-preview+json' \
