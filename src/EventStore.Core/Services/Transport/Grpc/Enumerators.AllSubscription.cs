@@ -468,7 +468,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return false;
 						}
 
-						await Task.Delay(Math.Max(delay *= 2, 50), _disposedTokenSource.Token)
+						await Task.Delay(Math.Min(delay *= 2, 50), _disposedTokenSource.Token)
 							.ConfigureAwait(false);
 					}
 
