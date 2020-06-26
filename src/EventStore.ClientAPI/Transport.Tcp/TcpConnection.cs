@@ -242,10 +242,9 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private void OnReceiveAsyncCompleted(object sender, SocketAsyncEventArgs e) {
-
 			if (ProcessReceive(e)) {
-				StartReceive();
 				TryDequeueReceivedData();
+				StartReceive();
 			}
 		}
 
