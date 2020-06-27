@@ -201,6 +201,8 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesFromStoreGroup)]
 		public string CertificateSubjectName { get; set; }
+		[ArgDescription(Opts.CertificateReservedNodeCommonNameDescr, Opts.CertificateGroup)]
+		public string CertificateReservedNodeCommonName { get; set; }
 
 		[ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesFromStoreGroup)]
 		public string CertificateThumbprint { get; set; }
@@ -371,6 +373,7 @@ namespace EventStore.ClusterNode {
 			CertificateStoreLocation = Opts.CertificateStoreLocationDefault;
 			CertificateStoreName = Opts.CertificateStoreNameDefault;
 			CertificateSubjectName = Opts.CertificateSubjectNameDefault;
+			CertificateReservedNodeCommonName = Opts.CertificateReservedNodeCommonNameDefault;
 			CertificateThumbprint = Opts.CertificateThumbprintDefault;
 
 			TrustedRootCertificatesPath = Opts.TrustedRootCertificatesPathDefault;

@@ -350,6 +350,8 @@ namespace EventStore.ClusterNode {
 				builder.DisableFirstLevelHttpAuthorization();
 			if (options.UnsafeAllowSurplusNodes)
 				builder.WithUnsafeAllowSurplusNodes();
+			
+			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
 				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
