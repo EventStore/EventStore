@@ -201,7 +201,7 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.CertificateSubjectNameDescr, Opts.CertificatesFromStoreGroup)]
 		public string CertificateSubjectName { get; set; }
-		[ArgDescription(Opts.CertificateReservedNodeCommonNameDescr, Opts.CertificatesFromStoreGroup)]
+		[ArgDescription(Opts.CertificateReservedNodeCommonNameDescr, Opts.CertificateGroup)]
 		public string CertificateReservedNodeCommonName { get; set; }
 
 		[ArgDescription(Opts.CertificateThumbprintDescr, Opts.CertificatesFromStoreGroup)]
