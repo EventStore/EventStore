@@ -351,7 +351,7 @@ namespace EventStore.ClusterNode {
 			if (options.UnsafeAllowSurplusNodes)
 				builder.WithUnsafeAllowSurplusNodes();
 			
-			builder.WithClientCertificateCommonName(options.ClientCertificateCommonName);
+			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
 				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);

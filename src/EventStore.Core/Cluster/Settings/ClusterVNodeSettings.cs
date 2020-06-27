@@ -17,7 +17,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool EnableTrustedAuth;
 		public X509Certificate2 Certificate;
 		public X509Certificate2Collection TrustedRootCerts;
-		public string ClientCertificateCommonName;
+		public readonly string CertificateReservedNodeCommonName;
 		public readonly int WorkerThreads;
 		public readonly bool StartStandardProjections;
 		public readonly bool EnableAtomPubOverHTTP;
@@ -104,7 +104,7 @@ namespace EventStore.Core.Cluster.Settings {
 			bool enableTrustedAuth,
 			X509Certificate2 certificate,
 			X509Certificate2Collection trustedRootCerts,
-			string clientCertificateCommonName,
+			string certificateReservedNodeCommonName,
 			int workerThreads,
 			bool discoverViaDns,
 			string clusterDns,
@@ -200,7 +200,7 @@ namespace EventStore.Core.Cluster.Settings {
 			EnableTrustedAuth = enableTrustedAuth;
 			Certificate = certificate;
 			TrustedRootCerts = trustedRootCerts;
-			ClientCertificateCommonName = clientCertificateCommonName;
+			CertificateReservedNodeCommonName = certificateReservedNodeCommonName;
 
 			WorkerThreads = workerThreads;
 			StartStandardProjections = startStandardProjections;

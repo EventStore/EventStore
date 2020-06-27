@@ -7,10 +7,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
-		private readonly string _clientCertificateCommonName;
+		private readonly string _certificateReservedNodeCommonName;
 
-		public ClientCertificateAuthenticationProvider(string clientCertificateCommonName) {
-			_clientCertificateCommonName = $"CN={clientCertificateCommonName}";
+		public ClientCertificateAuthenticationProvider(string certificateReservedNodeCommonName) {
+			_certificateReservedNodeCommonName = $"CN={certificateReservedNodeCommonName}";
 		}
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 
 			bool hasReservedNodeCN;
 			try {
-				hasReservedNodeCN = clientCertificate.Subject == _clientCertificateCommonName;
+				hasReservedNodeCN = clientCertificate.Subject == _certificateReservedNodeCommonName;
 			} catch (CryptographicException) {
 				return false;
 			}

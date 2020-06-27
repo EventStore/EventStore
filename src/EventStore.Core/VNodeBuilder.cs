@@ -53,7 +53,7 @@ namespace EventStore.Core {
 		protected bool _enableTrustedAuth;
 		protected X509Certificate2 _certificate;
 		protected X509Certificate2Collection _trustedRootCerts;
-		private string _clientCertificateCommonName;
+		private string _certificateReservedNodeCommonName;
 		
 		protected int _workerThreads;
 
@@ -170,7 +170,7 @@ namespace EventStore.Core {
 			_httpEndPoint = new IPEndPoint(Opts.ExternalIpDefault, Opts.HttpPortDefault);
 
 			_enableTrustedAuth = Opts.EnableTrustedAuthDefault;
-			_clientCertificateCommonName = Opts.ClientCertificateCommonNameDefault;
+			_certificateReservedNodeCommonName = Opts.CertificateReservedNodeCommonNameDefault;
 			_readerThreadsCount = Opts.ReaderThreadsCountDefault;
 			_certificate = null;
 			_workerThreads = Opts.WorkerThreadsDefault;
@@ -730,12 +730,12 @@ namespace EventStore.Core {
 		}
 		
 		/// <summary>
-		/// Specifies the client certificate common name
+		/// The reserved common name to authenticate EventStoreDB nodes/servers from certificates
 		/// </summary>
-		/// <param name="clientCertificateCommonName">The client certificate common name</param>
+		/// <param name="certificateReservedNodeCommonName">The reserved common name</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithClientCertificateCommonName(string clientCertificateCommonName) {
-			_clientCertificateCommonName = clientCertificateCommonName;
+		public VNodeBuilder WithCertificateReservedNodeCommonName(string certificateReservedNodeCommonName) {
+			_certificateReservedNodeCommonName = certificateReservedNodeCommonName;
 			return this;
 		}
 
@@ -1428,7 +1428,7 @@ namespace EventStore.Core {
 				_enableTrustedAuth,
 				_certificate,
 				_trustedRootCerts,
-				_clientCertificateCommonName,
+				_certificateReservedNodeCommonName,
 				_workerThreads,
 				_discoverViaDns,
 				_clusterDns,

@@ -36,7 +36,7 @@ namespace EventStore.ClientAPI.Tests {
 					.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecureTcpPort[i]))
 					.WithServerCertificate(serverCertificate)
 					.WithTrustedRootCertificates(rootCertificates)
-					.WithClientCertificateCommonName(Opts.ClientCertificateCommonNameDefault)
+					.WithCertificateReservedNodeCommonName(Opts.CertificateReservedNodeCommonNameDefault)
 					.RunInMemory()
 					.EnableExternalTCP();
 
