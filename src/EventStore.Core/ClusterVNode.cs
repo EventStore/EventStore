@@ -451,7 +451,7 @@ namespace EventStore.Core {
 			});
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-				new ClientCertificateAuthenticationProvider(),
+				new ClientCertificateAuthenticationProvider(_vNodeSettings.ClientCertificateCommonName),
 				new BasicHttpAuthenticationProvider(_authenticationProvider),
 				new BearerHttpAuthenticationProvider(_authenticationProvider)
 			};

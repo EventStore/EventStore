@@ -8,6 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
 using EventStore.Core;
+using EventStore.Core.Util;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -35,6 +36,7 @@ namespace EventStore.ClientAPI.Tests {
 					.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecureTcpPort[i]))
 					.WithServerCertificate(serverCertificate)
 					.WithTrustedRootCertificates(rootCertificates)
+					.WithClientCertificateCommonName(Opts.ClientCertificateCommonNameDefault)
 					.RunInMemory()
 					.EnableExternalTCP();
 

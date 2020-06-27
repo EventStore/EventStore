@@ -218,6 +218,9 @@ namespace EventStore.Core.Util {
 
 		public const string CertificateSubjectNameDescr = "The certificate subject name.";
 		public static readonly string CertificateSubjectNameDefault = string.Empty;
+		
+		public const string ClientCertificateCommonNameDescr = "The certificate subject name.";
+		public static readonly string ClientCertificateCommonNameDefault = "eventstoredb-node";
 
 		public const string MaxAppendSizeDecr = "The maximum size of appends, in bytes. May not exceed 16MB.";
 		public const int MaxAppendSizeDefault = 1024 * 1024; // ONE MB

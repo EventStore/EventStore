@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests.Helpers {
 					InternalTcpSecEndPoint.ToDnsEndPoint(),
 					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(), HttpEndPoint.ToDnsEndPoint(),
 					null, null, 0), enableTrustedAuth,
-				certificate, trustedRootCertificates, 1, false,
+				certificate, trustedRootCertificates, Opts.ClientCertificateCommonNameDefault, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new AuthenticationProviderFactory(components => 

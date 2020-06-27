@@ -7,7 +7,11 @@ using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
-		private const string ReservedNodeSubject = "CN=eventstoredb-node";
+		private readonly string _clientCertificateCommonName;
+
+		public ClientCertificateAuthenticationProvider(string clientCertificateCommonName) {
+			_clientCertificateCommonName = $"CN={clientCertificateCommonName}";
+		}
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
 			request = null;
@@ -16,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 
 			bool hasReservedNodeCN;
 			try {
-				hasReservedNodeCN = clientCertificate.Subject == ReservedNodeSubject;
+				hasReservedNodeCN = clientCertificate.Subject == _clientCertificateCommonName;
 			} catch (CryptographicException) {
 				return false;
 			}
