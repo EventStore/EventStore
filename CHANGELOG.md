@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Do not start other services if run is being skipped when --help or --version are specified [EventStore#2558](https://github.com/EventStore/EventStore/pull/2558)
 
+### Added
+- Option to set client certificate common name [EventStore#2572](https://github.com/EventStore/EventStore/pull/2572)
+
 ## [20.6.0] - 2020-06-09
 
 ### Changed
