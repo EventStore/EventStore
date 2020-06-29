@@ -64,11 +64,13 @@ RUN addgroup --gid ${GID} "eventstore" && \
 COPY --from=publish /publish ./
 
 RUN mkdir -p /var/lib/eventstore && \
-    chown -R eventstore:eventstore /opt/eventstore /var/lib/eventstore
+    mkdir -p /var/log/eventstore && \
+    chown -R eventstore:eventstore /opt/eventstore /var/lib/eventstore /var/log/eventstore
 
 USER eventstore
 
 VOLUME /var/lib/eventstore
+VOLUME /var/log/eventstore
 
 EXPOSE 1112/tcp
 EXPOSE 1113/tcp
