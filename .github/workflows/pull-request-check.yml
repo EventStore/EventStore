@@ -11,8 +11,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Check pull requests
         uses: EventStore/Automations/pr-check@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         with:
           include: 'src'
           exclude: 'src/EventStore.UI'
