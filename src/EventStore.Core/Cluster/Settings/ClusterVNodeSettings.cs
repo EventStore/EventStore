@@ -173,7 +173,7 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 
 			Ensure.NotNull(httpEndPoint, nameof(httpEndPoint));
-			if (internalSecureTcpEndPoint != null || externalSecureTcpEndPoint != null)
+			if ((clusterNodeCount>1 && internalSecureTcpEndPoint != null) || externalSecureTcpEndPoint != null || !disableHttps)
 				Ensure.NotNull(certificate, "certificate");
 			Ensure.Positive(workerThreads, "workerThreads");
 			Ensure.NotNull(clusterDns, "clusterDns");
