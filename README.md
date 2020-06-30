@@ -1,8 +1,8 @@
-# Event Store
+# EventStoreDB
 
 The open-source, functional database with Complex Event Processing in JavaScript.
 
-This is the repository for the open source version of Event Store, which includes the clustering implementation for high availability. 
+This is the repository for the open source version of EventStoreDB, which includes the clustering implementation for high availability. 
 
 ## Support
 
@@ -12,25 +12,25 @@ Information on support and commercial tools such as LDAP authentication can be f
 ![Build](https://github.com/EventStore/EventStore/workflows/Build/badge.svg)
 
 ## Documentation
-Documentation for Event Store can be found here: [Event Store Docs](https://eventstore.com/docs/)
+Documentation for EventStoreDB can be found here: [EventStoreDB Docs](https://eventstore.com/docs/)
 
 ## Community
-We have a fairly active [google groups list](https://groups.google.com/forum/#!forum/event-store). If you prefer slack, there is also an #eventstore channel in the [DDD-CQRS-ES](https://j.mp/ddd-es-cqrs) slack community.
+We have a community discussion space at [Event Store Discuss](https://discuss.eventstore.com/). If you prefer Slack, there is also an #eventstore channel in the [DDD-CQRS-ES](https://j.mp/ddd-es-cqrs) Slack community.
 
 ## Release Packages
 The latest release packages are hosted in the downloads section on the Event Store website: [Event Store Downloads](https://eventstore.com/downloads/)
 
 We also host native packages for Linux on [Package Cloud](https://packagecloud.io/EventStore/EventStore-OSS) and Windows packages can be installed via [Chocolatey](https://chocolatey.org/packages/eventstore-oss) (4.0.0 onwards only).
 
-## Building Event Store
+## Building EventStoreDB
 
-Event Store is written in a mixture of C#, C++ and JavaScript. It can run on Windows, Linux and macOS using the .NET Core runtime. However, the projections library (which uses the V8 javascript engine) contains platform specific code and it must be built for the platform on which you intend to run it.
+EventStoreDB is written in a mixture of C#, C++ and JavaScript. It can run on Windows, Linux and macOS using the .NET Core runtime. However, the projections library (which uses the V8 javascript engine) contains platform specific code and it must be built for the platform on which you intend to run it.
 
 ### Windows / Linux / macOS
 **Prerequisites**
 - [.NET Core SDK 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 
-### Build EventStore
+### Build EventStoreDB
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
 ```
 dotnet build -c Release src/EventStore.sln -f netcoreapp3.1 -r <runtime identifier>
@@ -54,7 +54,7 @@ You can launch the tests as follows:
 dotnet test src/EventStore.sln
 ```
 
-## Building the EventStore Client / Grpc Client / Embedded Client
+## Building the EventStoreDB Client / Grpc Client / Embedded Client
 You can build the different clients by following the steps below. This will generate a nuget package file (.nupkg) that you can include in your project.
 #### Client
 ```
@@ -72,7 +72,7 @@ dotnet pack -c Release src/EventStore.ClientAPI.Embedded/EventStore.ClientAPI.Em
 ```
 
 
-## Building the EventStore web UI
+## Building the EventStoreDB web UI
 The [web UI repository](https://github.com/EventStore/EventStore.UI) is a git submodule of the current repository located under `src/EventStore.UI`.
 
 The web UI is prebuilt and the files are located in [src/EventStore.ClusterNode.Web/clusternode-web](src/EventStore.ClusterNode.Web/clusternode-web). However, if you still want to build the latest web UI, there is a parameter in the `build.sh` (`[<build_ui=yes|no>]`) and `build.ps1` (`-BuildUI`) scripts to allow you to do so.
