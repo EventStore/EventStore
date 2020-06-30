@@ -378,9 +378,33 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			bool insecureMode = options.DisableHttps && options.DisableInternalTcpTls && options.DisableExternalTcpTls;
+			var requireCertHttp = !options.DisableHttps;
+			var requireCertIntTcp = options.ClusterSize > 1 && !options.DisableInternalTcpTls;
+			var requireCertExtTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls;
 
-			if (!insecureMode) {
+			var message = "\nSECURITY\n";
+			if (options.ClusterSize > 1) {
+				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n";
+			}
+
+			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n";
+
+			if (options.EnableExternalTCP) {
+				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n";
+			}
+
+			bool requireCertificates = requireCertHttp || requireCertIntTcp || requireCertExtTcp;
+
+			if (requireCertificates) {
+				message += "\nTLS is enabled on at least one TCP/HTTP interface - a certificate is required to run EventStoreDB.";
+			} else {
+				message += "\nTLS is disabled on all TCP/HTTP interfaces - no certificates are required to run EventStoreDB.";
+				message += "\nWe recommended to enable TLS in PRODUCTION to ensure data security.\n";
+			}
+
+			Log.Information(message);
+
+			if (requireCertificates) {
 				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
 					var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
 					var name = GetCertificateStoreName(options.CertificateStoreName);
@@ -397,13 +421,13 @@ namespace EventStore.ClusterNode {
 						options.CertificatePassword);
 				} else if (!options.Dev)
 					throw new InvalidConfigurationException(
-						"A TLS Certificate is required unless development mode (--dev) or insecure mode (--insecure) is set.");
+						"A certificate is required unless development mode (--dev) is set to use development certificates or insecure mode (--insecure) is set to disable TLS on all TCP/HTTP interfaces.");
 
 				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
 					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
 				} else {
 					throw new InvalidConfigurationException(
-						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) or insecure mode (--insecure) is set.");
+						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set to use development certificates or insecure mode (--insecure) is set to disable TLS on all TCP/HTTP interfaces.");
 				}
 			}
 
