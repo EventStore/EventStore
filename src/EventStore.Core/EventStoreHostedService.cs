@@ -30,13 +30,13 @@ namespace EventStore.Core {
 					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
 					MutateEffectiveOptions);
 				if (Options.Help) {
-					Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
+					Console.WriteLine("EventStoreDB version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
 					Console.WriteLine();
 					Console.WriteLine(EventStoreOptions.GetUsage<TOptions>());
 					_skipRun = true;
 				} else if (Options.Version) {
-					Console.WriteLine("EventStore version {0} ({1}/{2}, {3})",
+					Console.WriteLine("EventStoreDB version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
 					_skipRun = true;
 				} else {
