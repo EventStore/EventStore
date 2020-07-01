@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 		protected ClientCertificateAuthenticationProvider _provider;
 
 		protected void SetUpProvider() {
-			_provider = new ClientCertificateAuthenticationProvider(Opts.CertificateReservedNodeCommonNameDefault);
+			_provider = new ClientCertificateAuthenticationProvider(false, Opts.CertificateReservedNodeCommonNameDefault);
 		}
 	}
 

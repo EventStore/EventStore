@@ -3,7 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Transport.Http;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,18 +59,27 @@ namespace EventStore.ClusterNode {
 				.ConfigureWebHostDefaults(builder =>
 					builder.UseKestrel(server => {
 							server.Listen(hostedService.Options.ExtIp, hostedService.Options.HttpPort,
-								listenOptions => listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
-									ServerCertificate = hostedService.Node.Certificate,
-									ClientCertificateMode = ClientCertificateMode.AllowCertificate,
-									ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
-										var (isValid, error) = hostedService.Node.InternalClientCertificateValidator(certificate, chain,
-											sslPolicyErrors);
-										if (!isValid && error != null) {
-											Log.Error("Client certificate validation error: {e}", error);
-										}
-										return isValid;
+								listenOptions => {
+									if (hostedService.Node.DisableHttps) {
+										listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
+									} else {
+										listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
+											ServerCertificate = hostedService.Node.Certificate,
+											ClientCertificateMode = ClientCertificateMode.AllowCertificate,
+											ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+												var (isValid, error) =
+													hostedService.Node.InternalClientCertificateValidator(certificate,
+														chain,
+														sslPolicyErrors);
+												if (!isValid && error != null) {
+													Log.Error("Client certificate validation error: {e}", error);
+												}
+
+												return isValid;
+											}
+										});
 									}
-								}));
+								});
 						})
 						.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 						.Configure(hostedService.Node.Startup.Configure));

@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		private TestServer _kestrelTestServer;
 
-		public bool UseHttpsInternally() {
+		private static bool EnableHttps() {
 			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 		}
 
@@ -106,8 +106,10 @@ namespace EventStore.Core.Tests.Helpers {
 			ExternalTcpSecEndPoint = externalTcpSec;
 			HttpEndPoint = httpEndPoint;
 
-			var certificate = ssl_connections.GetServerCertificate();
-			var trustedRootCertificates = new X509Certificate2Collection(ssl_connections.GetRootCertificate());
+			var useHttps = EnableHttps();
+			var certificate = useHttps ? ssl_connections.GetServerCertificate() : null;
+			var trustedRootCertificates =
+				useHttps ? new X509Certificate2Collection(ssl_connections.GetRootCertificate()) : null;
 
 			var singleVNodeSettings = new ClusterVNodeSettings(
 				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
@@ -139,7 +141,7 @@ namespace EventStore.Core.Tests.Helpers {
 				readOnlyReplica: readOnlyReplica,
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
 				enableExternalTCP: true,
-				gossipOverHttps: UseHttpsInternally(),
+				disableHttps: !useHttps,
 				enableAtomPubOverHTTP: true);
 			_isReadOnlyReplica = readOnlyReplica;
 

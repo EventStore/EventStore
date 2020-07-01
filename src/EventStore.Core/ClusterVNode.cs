@@ -116,6 +116,7 @@ namespace EventStore.Core {
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly X509Certificate2 _certificate;
+		private readonly bool _disableHttps;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
@@ -132,6 +133,7 @@ namespace EventStore.Core {
 
 		public X509Certificate2 Certificate => _certificate;
 		public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
+		public bool DisableHttps => _disableHttps;
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
@@ -161,6 +163,7 @@ namespace EventStore.Core {
 			_vNodeSettings = vNodeSettings;
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_certificate = vNodeSettings.Certificate;
+			_disableHttps = vNodeSettings.DisableHttps;
 			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
 			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
@@ -200,7 +203,7 @@ namespace EventStore.Core {
 			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
-						new UriBuilder(_vNodeSettings.GossipOverHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
+						new UriBuilder(!_vNodeSettings.DisableHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
 							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificate));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
@@ -451,7 +454,7 @@ namespace EventStore.Core {
 			});
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-				new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName),
+				new ClientCertificateAuthenticationProvider(_disableHttps, _vNodeSettings.CertificateReservedNodeCommonName),
 				new BasicHttpAuthenticationProvider(_authenticationProvider),
 				new BearerHttpAuthenticationProvider(_authenticationProvider)
 			};

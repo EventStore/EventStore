@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -17,13 +18,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		private const int ManagerPort = 1001;
 		private const int StartingPort = 1002;
 
+		private static bool EnableHttps() {
+			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+		}
+
 		private static ClusterVNodeSettings CreateVNode(int nodeNumber, bool isReadOnlyReplica) {
 			int tcpIntPort = StartingPort + nodeNumber * 2,
 				tcpExtPort = tcpIntPort + 1,
 				httpPort = tcpIntPort + 11;
 
-			var certificate = ssl_connections.GetServerCertificate();
-			var trustedRootCertificate = ssl_connections.GetRootCertificate();
+			var useHttps = EnableHttps();
+			var certificate = useHttps ? ssl_connections.GetServerCertificate() : null;
+			var trustedRootCertificate = useHttps ? ssl_connections.GetRootCertificate() : null;
 
 			var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 0,
 				GetLoopbackForPort(tcpIntPort), null,
@@ -52,7 +58,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				false, false,
 				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault,
 				Constants.PTableMaxReaderCountDefault,
-				readOnlyReplica: isReadOnlyReplica);
+				readOnlyReplica: isReadOnlyReplica,
+				disableHttps: !useHttps);
 
 			return vnode;
 		}

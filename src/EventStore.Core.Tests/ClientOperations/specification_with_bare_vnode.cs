@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 
 namespace EventStore.Core.Tests.ClientOperations {
 	public abstract class specification_with_bare_vnode : IPublisher, ISubscriber, IDisposable {
@@ -11,6 +12,7 @@ namespace EventStore.Core.Tests.ClientOperations {
 		public void CreateTestNode() {
 			var builder = IntegrationVNodeBuilder
 			.AsSingleNode()
+			.WithServerCertificate(ssl_connections.GetServerCertificate())
 			.RunInMemory();
 
 			_node = builder.Build();

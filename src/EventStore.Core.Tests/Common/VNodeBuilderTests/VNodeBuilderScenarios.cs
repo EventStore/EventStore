@@ -3,6 +3,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	[TestFixture]
@@ -15,6 +16,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			_builder = TestVNodeBuilder.AsSingleNode()
+				.WithServerCertificate(ssl_connections.GetServerCertificate())
 				.RunInMemory();
 			Given();
 			_node = _builder.Build();
@@ -47,6 +49,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			_builder = TestVNodeBuilder.AsClusterMember(_clusterSize)
+				.WithServerCertificate(ssl_connections.GetServerCertificate())
 				.RunInMemory();
 			_quorumSize = _clusterSize / 2 + 1;
 			Given();

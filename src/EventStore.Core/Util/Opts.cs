@@ -309,14 +309,17 @@ namespace EventStore.Core.Util {
 		public const string PrepareCountDescr = "The number of nodes which must acknowledge prepares.";
 		public const int PrepareCountDefault = -1;
 
-		public const string DisableInternalTcpTlsDescr = "Whether to disable secure internal tcp communication.";
+		public const string DisableInternalTcpTlsDescr = "Whether to disable secure internal TCP communication.";
 		public const bool DisableInternalTcpTlsDefault = false;
 		
-		public const string DisableExternalTcpTlsDescr = "Whether to disable secure external tcp communication.";
+		public const string DisableExternalTcpTlsDescr = "Whether to disable secure external TCP communication.";
 		public const bool DisableExternalTcpTlsDefault = false;
 
 		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
 		public const bool EnableExternalTCPDefault = false;
+
+		public const string DisableHttpsDescr = "Whether to disable HTTPS on the HTTP interface.";
+		public const bool DisableHttpsDefault = false;
 
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
 		public const bool DiscoverViaDnsDefault = true;
@@ -399,5 +402,8 @@ namespace EventStore.Core.Util {
 		
 		public const string DevDescr = "Enable Development Mode for Event Store.";
 		public const bool DevDefault = false;
+
+		public const string InsecureDescr = "Disable TLS on all TCP/HTTP interfaces";
+		public const bool InsecureDefault = false;
 	}
 }

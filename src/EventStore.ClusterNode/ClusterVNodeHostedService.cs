@@ -36,41 +36,64 @@ namespace EventStore.ClusterNode {
 		protected override IEnumerable<OptionSource>
 			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
 			var developmentOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Dev));
+			var insecureOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Insecure));
 			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
+			bool.TryParse(insecureOption.Value.ToString(), out bool insecureMode);
 			return effectiveOptions.Select(x => {
 				if (x.Name == nameof(ClusterNodeOptions.MemDb)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
+				    && x.Source == "<DEFAULT>"
+				    && insecureMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Insecure' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
+				    && x.Source == "<DEFAULT>"
+				    && insecureMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Insecure' mode";
+				}
+
+				if (x.Name == nameof(ClusterNodeOptions.DisableHttps)
+				    && x.Source == "<DEFAULT>"
+				    && insecureMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Insecure' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
+				    && developmentMode && !insecureMode) {
 					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.CertificatePrivateKeyFile)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
+				    && developmentMode && !insecureMode) {
 					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.key");
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.TrustedRootCertificatesPath)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
+				    && developmentMode && !insecureMode) {
 					x.Value = Locations.DevCertificateDirectory;
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.EnableAtomPubOverHTTP)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
-					x.Source = "Set by 'Development Mode' mode";
+					x.Source = "Set by 'Development' mode";
 				}
 
 				return x;
@@ -326,6 +349,8 @@ namespace EventStore.ClusterNode {
 				builder.DisableInternalTcpTls();
 			if (options.DisableExternalTcpTls)
 				builder.DisableExternalTcpTls();
+			if (options.DisableHttps)
+				builder.DisableHttps();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
 			if (options.DisableAdminUi)
@@ -353,33 +378,62 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
-				var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
-				var name = GetCertificateStoreName(options.CertificateStoreName);
-				builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
-					options.CertificateThumbprint);
-			} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
-				var name = GetCertificateStoreName(options.CertificateStoreName);
-				builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
-					options.CertificateThumbprint);
-			} else if (options.CertificateFile.IsNotEmptyString()) {
-				builder.WithServerCertificateFromFile(
-					options.CertificateFile,
-					options.CertificatePrivateKeyFile,
-					options.CertificatePassword);
-			} else if (!options.Dev)
-				throw new InvalidConfigurationException("A TLS Certificate is required unless development mode (--dev) is set.");
+			var requireCertHttp = !options.DisableHttps;
+			var requireCertIntTcp = options.ClusterSize > 1 && !options.DisableInternalTcpTls;
+			var requireCertExtTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls;
+
+			var message = "\nSECURITY\n";
+			if (options.ClusterSize > 1) {
+				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n";
+			}
+
+			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n";
+
+			if (options.EnableExternalTCP) {
+				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n";
+			}
+
+			bool requireCertificates = requireCertHttp || requireCertIntTcp || requireCertExtTcp;
+
+			if (requireCertificates) {
+				message += "\nTLS is enabled on at least one TCP/HTTP interface - a certificate is required to run EventStoreDB.";
+			} else {
+				message += "\nTLS is disabled on all TCP/HTTP interfaces - no certificates are required to run EventStoreDB.";
+				message += "\nIt is recommended to run with TLS enabled in production.\n";
+			}
+
+			Log.Information(message);
+
+			if (requireCertificates) {
+				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
+					var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
+					var name = GetCertificateStoreName(options.CertificateStoreName);
+					builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
+						options.CertificateThumbprint);
+				} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
+					var name = GetCertificateStoreName(options.CertificateStoreName);
+					builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
+						options.CertificateThumbprint);
+				} else if (options.CertificateFile.IsNotEmptyString()) {
+					builder.WithServerCertificateFromFile(
+						options.CertificateFile,
+						options.CertificatePrivateKeyFile,
+						options.CertificatePassword);
+				} else if (!options.Dev)
+					throw new InvalidConfigurationException(
+						"A certificate is required unless development mode (--dev) is set to use development certificates or insecure mode (--insecure) is set to disable TLS on all TCP/HTTP interfaces.");
+
+				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
+					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
+				} else {
+					throw new InvalidConfigurationException(
+						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set to use development certificates or insecure mode (--insecure) is set to disable TLS on all TCP/HTTP interfaces.");
+				}
+			}
 
 			var authorizationConfig = String.IsNullOrEmpty(options.AuthorizationConfig)
 				? options.Config
 				: options.AuthorizationConfig;
-
-			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
-				builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
-			} else {
-				throw new InvalidConfigurationException(
-					$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set.");
-			}
 
 			var authenticationConfig = String.IsNullOrEmpty(options.AuthenticationConfig)
 				? options.Config

@@ -212,7 +212,10 @@ namespace EventStore.ClusterNode {
 
 		[ArgDescription(Opts.DisableExternalTcpTlsDescr, Opts.InterfacesGroup)]
 		public bool DisableExternalTcpTls { get; set; }
-		
+
+		[ArgDescription(Opts.DisableHttpsDescr, Opts.InterfacesGroup)]
+		public bool DisableHttps { get; set; }
+
 		[ArgDescription(Opts.AuthorizationTypeDescr, Opts.AuthGroup)]
 		public string AuthorizationType { get; set; }
 
@@ -302,6 +305,9 @@ namespace EventStore.ClusterNode {
 		
 		[ArgDescription(Opts.DevDescr, Opts.AppGroup)]
 		public bool Dev { get; set; }
+
+		[ArgDescription(Opts.InsecureDescr, Opts.AppGroup)]
+		public bool Insecure { get; set; }
 		
 		[ArgDescription(Opts.EnableAtomPubOverHTTPDescr, Opts.InterfacesGroup)]
 		public bool EnableAtomPubOverHTTP { get; set; }
@@ -383,6 +389,7 @@ namespace EventStore.ClusterNode {
 
 			DisableInternalTcpTls = Opts.DisableInternalTcpTlsDefault;
 			DisableExternalTcpTls = Opts.DisableExternalTcpTlsDefault;
+			DisableHttps = Opts.DisableHttpsDefault;
 
 			AuthorizationType = Opts.AuthorizationTypeDefault;
 			AuthorizationConfig = Opts.AuthorizationConfigFileDefault;
@@ -434,6 +441,7 @@ namespace EventStore.ClusterNode {
 			MaxAppendSize = Opts.MaxAppendSizeDefault;
 
 			Dev = Opts.DevDefault;
+			Insecure = Opts.InsecureDefault;
 		}
 	}
 }
