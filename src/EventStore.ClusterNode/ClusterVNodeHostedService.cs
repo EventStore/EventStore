@@ -399,7 +399,7 @@ namespace EventStore.ClusterNode {
 				message += "\nTLS is enabled on at least one TCP/HTTP interface - a certificate is required to run EventStoreDB.";
 			} else {
 				message += "\nTLS is disabled on all TCP/HTTP interfaces - no certificates are required to run EventStoreDB.";
-				message += "\nWe recommended to enable TLS in PRODUCTION to ensure data security.\n";
+				message += "\nIt is recommended to run with TLS enabled in production.\n";
 			}
 
 			Log.Information(message);
