@@ -43,12 +43,15 @@ namespace EventStore.Core {
 					Create(Options);
 				}
 			} catch (OptionException exc) {
-				Console.Error.WriteLine("Error while parsing options:");
-				Console.Error.WriteLine(FormatExceptionMessage(exc));
-				Console.Error.WriteLine();
-				Console.Error.WriteLine("Options:");
-				Console.Error.WriteLine(EventStoreOptions.GetUsage<TOptions>());
-				throw;
+				Log.Error("Error while parsing options:");
+				Log.Error(FormatExceptionMessage(exc));
+				Log.Information("Options:");
+				Log.Information(EventStoreOptions.GetUsage<TOptions>());
+				_skipRun = true;
+			} catch (InvalidConfigurationException exc) {
+				Log.Error("Invalid Configuration Encountered");
+				Log.Error(exc.Message);
+				_skipRun = true;
 			}
 		}
 

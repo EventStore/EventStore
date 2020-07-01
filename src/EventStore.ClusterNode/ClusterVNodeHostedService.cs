@@ -151,12 +151,12 @@ namespace EventStore.ClusterNode {
 
 				_dbLock = new ExclusiveDbLock(absolutePath);
 				if (!_dbLock.Acquire())
-					throw new Exception($"Couldn't acquire exclusive lock on DB at '{dbPath}'.");
+					throw new InvalidConfigurationException($"Couldn't acquire exclusive lock on DB at '{dbPath}'.");
 			}
 
 			_clusterNodeMutex = new ClusterNodeMutex();
 			if (!_clusterNodeMutex.Acquire())
-				throw new Exception($"Couldn't acquire exclusive Cluster Node mutex '{_clusterNodeMutex.MutexName}'.");
+				throw new InvalidConfigurationException($"Couldn't acquire exclusive Cluster Node mutex '{_clusterNodeMutex.MutexName}'.");
 
 			if (!opts.DiscoverViaDns && opts.GossipSeed.Length == 0) {
 				if (opts.ClusterSize == 1) {
@@ -216,7 +216,7 @@ namespace EventStore.ClusterNode {
 			Log.Information("Quorum size set to {quorum}", prepareCount);
 
 			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
-				throw new Exception(
+				throw new InvalidConfigurationException(
 					"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
 			}
 
@@ -368,7 +368,7 @@ namespace EventStore.ClusterNode {
 					options.CertificatePrivateKeyFile,
 					options.CertificatePassword);
 			} else if (!options.Dev)
-				throw new Exception("A TLS Certificate is required unless development mode (--dev) is set.");
+				throw new InvalidConfigurationException("A TLS Certificate is required unless development mode (--dev) is set.");
 
 			var authorizationConfig = String.IsNullOrEmpty(options.AuthorizationConfig)
 				? options.Config
@@ -377,7 +377,7 @@ namespace EventStore.ClusterNode {
 			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
 				builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
 			} else {
-				throw new Exception(
+				throw new InvalidConfigurationException(
 					$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set.");
 			}
 
