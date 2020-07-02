@@ -40,13 +40,6 @@ namespace EventStore.ClusterNode {
 			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
 			bool.TryParse(insecureOption.Value.ToString(), out bool insecureMode);
 			return effectiveOptions.Select(x => {
-				if (x.Name == nameof(ClusterNodeOptions.MemDb)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
-					x.Source = "Set by 'Development' mode";
-				}
-
 				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
 				    && insecureMode) {
