@@ -7,13 +7,17 @@ All notable changes to this project will be documented in this file.
 - Log level from Verbose to Debug/Information for important messages [EventStore#2538](https://github.com/EventStore/EventStore/pull/2538)
 - Change options that refers to disabling tls to explicitly refer to disabling tcp tls. [EventStore#2537](https://github.com/EventStore/EventStore/pull/2537)
 - Adjust deprecation warning from referring to 20.02 to 20.6.0 [EventStore#2567](https://github.com/EventStore/EventStore/pull/2567)
+- Do not print stack traces when an invalid configuration is encountered. [EventStore#2578](https://github.com/EventStore/EventStore/pull/2578)
 
 ### Fixed
 - Do not start other services if run is being skipped when --help or --version are specified [EventStore#2558](https://github.com/EventStore/EventStore/pull/2558)
 - Prevent Stackoverflow when accepting too much data over a TCP connection on dotnet core [EventStore#2560](https://github.com/EventStore/EventStore/pull/2560)
+- Improved output of CLI help [EventStore#2577](https://github.com/EventStore/EventStore/pull/2577)
 
 ### Added
 - Option to set client certificate common name [EventStore#2572](https://github.com/EventStore/EventStore/pull/2572)
+- --disable-https flag to disable only HTTPS [EventStore#2556](https://github.com/EventStore/EventStore/pull/2556)
+- --insecure flag to disable TLS on all interfaces (TCP & HTTP) to eliminate requirement for certificates to make it easier to run EventStoreDB [EventStore#2556](https://github.com/EventStore/EventStore/pull/2556)
 
 ## [20.6.0] - 2020-06-09
 
