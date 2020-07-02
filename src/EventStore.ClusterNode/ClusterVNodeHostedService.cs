@@ -439,9 +439,40 @@ namespace EventStore.ClusterNode {
 				? options.Config
 				: options.AuthenticationConfig;
 
+			Action<Policy> internalPolicyOverrides = (policy) => {
+				if (!options.DisableHttps) return;
+
+				policy.Clear(Operations.Node.Gossip.Update);
+				policy.AllowAnonymous(Operations.Node.Gossip.Update);
+
+				policy.Clear(Operations.Node.Elections.Prepare);
+				policy.AllowAnonymous(Operations.Node.Elections.Prepare);
+
+				policy.Clear(Operations.Node.Elections.PrepareOk);
+				policy.AllowAnonymous(Operations.Node.Elections.PrepareOk);
+
+				policy.Clear(Operations.Node.Elections.ViewChange);
+				policy.AllowAnonymous(Operations.Node.Elections.ViewChange);
+
+				policy.Clear(Operations.Node.Elections.ViewChangeProof);
+				policy.AllowAnonymous(Operations.Node.Elections.ViewChangeProof);
+
+				policy.Clear(Operations.Node.Elections.Proposal);
+				policy.AllowAnonymous(Operations.Node.Elections.Proposal);
+
+				policy.Clear(Operations.Node.Elections.Accept);
+				policy.AllowAnonymous(Operations.Node.Elections.Accept);
+
+				policy.Clear(Operations.Node.Elections.LeaderIsResigning);
+				policy.AllowAnonymous(Operations.Node.Elections.LeaderIsResigning);
+
+				policy.Clear(Operations.Node.Elections.LeaderIsResigningOk);
+				policy.AllowAnonymous(Operations.Node.Elections.LeaderIsResigningOk);
+			};
+
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 			var authorizationProviderFactory =
-				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader);
+				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader, internalPolicyOverrides);
 			var authenticationProviderFactory =
 				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginLoader);
 
@@ -482,11 +513,11 @@ namespace EventStore.ClusterNode {
 		}
 
 		private static AuthorizationProviderFactory GetAuthorizationProviderFactory(string authorizationType,
-			string authorizationConfigFile, PluginLoader pluginLoader) {
+			string authorizationConfigFile, PluginLoader pluginLoader, Action<Policy> internalPolicyOverrides) {
 			var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 				{
 					"internal", new AuthorizationProviderFactory(components =>
-						new LegacyAuthorizationProviderFactory(components.MainQueue))
+						new LegacyAuthorizationProviderFactory(components.MainQueue, internalPolicyOverrides))
 				}
 			};
 

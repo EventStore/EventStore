@@ -10,6 +10,7 @@ using Serilog;
 namespace EventStore.Core.Authorization {
 	public class LegacyAuthorizationProviderFactory : IAuthorizationProviderFactory {
 		private readonly IPublisher _mainQueue;
+		private readonly Action<Policy> _policyOverrides;
 
 		private static readonly Claim[] Admins =
 			{new Claim(ClaimTypes.Role, SystemRoles.Admins), new Claim(ClaimTypes.Name, SystemUsers.Admin)};
@@ -19,8 +20,9 @@ namespace EventStore.Core.Authorization {
 			new Claim(ClaimTypes.Role, SystemRoles.Operations), new Claim(ClaimTypes.Name, SystemUsers.Operations)
 		};
 
-		public LegacyAuthorizationProviderFactory(IPublisher mainQueue) {
+		public LegacyAuthorizationProviderFactory(IPublisher mainQueue, Action<Policy> policyOverrides = null) {
 			_mainQueue = mainQueue;
+			_policyOverrides = policyOverrides;
 		}
 
 		public IAuthorizationProvider Build() {
@@ -114,6 +116,8 @@ namespace EventStore.Core.Authorization {
 			policy.RequireAuthenticated(Operations.Projections.Status);
 			policy.RequireAuthenticated(Operations.Projections.Statistics);
 			policy.AddMatchAnyAssertion(Operations.Projections.Restart, Grant.Allow, OperationsOrAdmins);
+
+			_policyOverrides?.Invoke(policy);
 
 			return new PolicyAuthorizationProvider(new PolicyEvaluator(policy.AsReadOnly()),
 				Log.ForContext<PolicyEvaluator>(), true, false);

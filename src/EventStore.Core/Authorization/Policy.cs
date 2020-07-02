@@ -42,6 +42,14 @@ namespace EventStore.Core.Authorization {
 			assertions.Insert(~insertAt, assertion);
 		}
 
+		public void Clear(OperationDefinition operation) {
+			if (_sealed)
+				throw new InvalidOperationException("policy has been sealed and no further changes can be made");
+			if (!_assertions.TryGetValue(operation, out var assertions))
+				return;
+			assertions.Clear();
+		}
+
 		public ReadOnlyPolicy AsReadOnly() {
 			_sealed = true;
 			return new ReadOnlyPolicy(Name, _version, ValidFrom,
