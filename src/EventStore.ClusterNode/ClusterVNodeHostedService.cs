@@ -421,7 +421,7 @@ namespace EventStore.ClusterNode {
 					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
 				} else {
 					throw new InvalidConfigurationException(
-						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) or development mode (--dev) is set to disable TLS on all TCP/HTTP interfaces.");
+						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) or development mode (--dev) is set.");
 				}
 			}
 
