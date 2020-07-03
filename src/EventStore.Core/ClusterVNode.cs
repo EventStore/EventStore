@@ -208,7 +208,7 @@ namespace EventStore.Core {
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
 						new UriBuilder(!_vNodeSettings.DisableHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
-							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificate));
+							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificateSelector));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -482,7 +482,7 @@ namespace EventStore.Core {
 			var atomController = new AtomController(_mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching, vNodeSettings.WriteTimeout);
 			var gossipController = new GossipController(_mainQueue, _workersHandler,
-				_internalServerCertificateValidator, _certificate);
+				_internalServerCertificateValidator, _certificateSelector);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 

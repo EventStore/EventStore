@@ -18,7 +18,7 @@ namespace EventStore.Core.Cluster {
 		private readonly IPublisher _bus;
 		internal bool Disposed { get; private set; }
 
-		public EventStoreClusterClient(Uri address, IPublisher bus, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, X509Certificate clientCertificate) {
+		public EventStoreClusterClient(Uri address, IPublisher bus, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
 			HttpMessageHandler httpMessageHandler = null;
 			if (address.Scheme == Uri.UriSchemeHttps){
 				var socketsHttpHandler = new SocketsHttpHandler {
@@ -31,11 +31,11 @@ namespace EventStore.Core.Cluster {
 
 							return isValid;
 						},
-						ClientCertificates = new X509CertificateCollection()
+						LocalCertificateSelectionCallback = delegate {
+							return clientCertificateSelector();
+						}
 					}
 				};
-				if (clientCertificate != null)
-					socketsHttpHandler.SslOptions.ClientCertificates.Add(clientCertificate);
 
 				httpMessageHandler = socketsHttpHandler;
 			} else if (address.Scheme == Uri.UriSchemeHttp) {

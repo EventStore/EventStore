@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private readonly IPublisher _networkSendQueue;
 
-		public GossipController(IPublisher publisher, IPublisher networkSendQueue, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, X509Certificate clientCertificate)
+		public GossipController(IPublisher publisher, IPublisher networkSendQueue, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, Func<X509Certificate> clientCertificateSelector)
 			: base(publisher) {
 			_networkSendQueue = networkSendQueue;
 
@@ -38,11 +38,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						}
 						return isValid;
 					},
-					ClientCertificates = new X509CertificateCollection()
+					LocalCertificateSelectionCallback = delegate {
+						return clientCertificateSelector();
+					}
 				}
 			};
-			if(clientCertificate != null)
-				socketsHttpHandler.SslOptions.ClientCertificates.Add(clientCertificate);
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
