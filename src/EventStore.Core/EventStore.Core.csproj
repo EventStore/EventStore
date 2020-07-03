@@ -15,19 +15,19 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="EventStore.Plugins" Version="20.6.0" />
-		<PackageReference Include="Google.Protobuf" Version="3.11.3" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.27.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.27.0">
+		<PackageReference Include="Google.Protobuf" Version="3.12.3" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.29.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.30.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
 		<PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
-		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
+		<PackageReference Include="System.Linq.Async" Version="4.1.1" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
-		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.49" />
+		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.57" />
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
 		<PackageReference Include="HostStat.NET" Version="1.0.1" />
 	</ItemGroup>

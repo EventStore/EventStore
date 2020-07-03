@@ -33,9 +33,9 @@
 	<!-- Transitive dependencies to help in packaging -->
 	<ItemGroup>
 		<PackageReference Include="EventStore.Plugins" Version="20.6.0" />
-		<PackageReference Include="Google.Protobuf" Version="3.11.3" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.27.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.27.0">
+		<PackageReference Include="Google.Protobuf" Version="3.12.3" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.29.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.30.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
@@ -44,10 +44,10 @@
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
 		<PackageReference Include="newtonsoft.json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
-		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.49" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.3" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Composite" Version="3.1.3" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="3.1.3" />
+		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.57" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.5" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Composite" Version="3.1.5" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="3.1.5" />
 		<PackageReference Include="Microsoft.Net.Http.Headers" Version="2.2.8" />
 		<PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
 		<PackageReference Include="Serilog" Version="2.9.0" />
@@ -61,7 +61,7 @@
 		<PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
 		<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
-		<PackageReference Include="System.Linq.Async" Version="4.0.0" />
+		<PackageReference Include="System.Linq.Async" Version="4.1.1" />
 		<PackageReference Include="System.ServiceModel.Http" Version="4.7.0" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="YamlDotnet" Version="5.2.1" />
