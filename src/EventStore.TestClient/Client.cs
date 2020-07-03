@@ -181,7 +181,7 @@ namespace EventStore.TestClient {
 					endpoint.ResolveDnsToIPAddress(),
 					TcpConnectionManager.ConnectionTimeout,
 					(cert,chain,err) => (err == SslPolicyErrors.None || !ValidateServer, err.ToString()),
-					null,
+					() => null,
 					onConnectionEstablished,
 					onConnectionFailed,
 					verbose: !InteractiveMode);

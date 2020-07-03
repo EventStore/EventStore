@@ -49,13 +49,13 @@ namespace EventStore.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			TimeSpan connectionTimeout,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
-			X509CertificateCollection clientCertificates,
+			Func<X509CertificateCollection> clientCertificatesSelector,
 			Action<ITcpConnection> onConnectionEstablished = null,
 			Action<ITcpConnection, SocketError> onConnectionFailed = null,
 			bool verbose = true) {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			return TcpConnectionSsl.CreateConnectingConnection(connectionId, targetHost, remoteEndPoint, sslServerCertValidator,
-				clientCertificates, this, connectionTimeout, onConnectionEstablished, onConnectionFailed, verbose);
+				clientCertificatesSelector, this, connectionTimeout, onConnectionEstablished, onConnectionFailed, verbose);
 		}
 
 		internal void InitConnect(IPEndPoint serverEndPoint,

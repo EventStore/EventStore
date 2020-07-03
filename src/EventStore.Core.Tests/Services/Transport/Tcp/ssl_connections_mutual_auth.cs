@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				serverEndPoint.GetHost(),
 				serverEndPoint,
 				(cert, chain, err) => validateServerCertificate ? ClusterVNode.ValidateServerCertificateWithTrustedRootCerts(cert, chain, err, rootCertificates) : (true, null),
-				new X509CertificateCollection{clientCertificate},
+				() => new X509CertificateCollection{clientCertificate},
 				new TcpClientConnector(),
 				TcpConnectionManager.ConnectionTimeout,
 				conn => {

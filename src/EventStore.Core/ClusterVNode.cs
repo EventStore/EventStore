@@ -680,7 +680,7 @@ namespace EventStore.Core {
 					_vNodeSettings.GossipAdvertiseInfo.InternalTcp ?? _vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
 					_vNodeSettings.ReadOnlyReplica,
 					!vNodeSettings.DisableInternalTcpTls, _internalServerCertificateValidator,
-					_certificate,
+					_certificateSelector,
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval,
 					vNodeSettings.WriteTimeout);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
