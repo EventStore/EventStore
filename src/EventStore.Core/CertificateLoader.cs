@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Core.Exceptions;
 
 namespace EventStore.Core {
 	public static class CertificateLoader {
@@ -24,19 +26,11 @@ namespace EventStore.Core {
 			string password) {
 
 			if (string.IsNullOrEmpty(privateKeyPath)) {
-				X509Certificate2 certificate;
+				var certificate = new X509Certificate2(certificatePath, password);
 
-				try {
-					certificate = new X509Certificate2(certificatePath, password);
-				} catch (CryptographicException exc) {
-					throw new AggregateException("Error loading certificate file. Please verify that the correct password has been provided via the `CertificatePassword` option.", exc);
-				}
+				if (!certificate.HasPrivateKey)
+					throw new NoCertificatePrivateKeyException();
 
-				if (!certificate.HasPrivateKey) {
-					throw new Exception("Expect certificate to contain a private key. " +
-					                    "Please either provide a certificate that contains one or set the private key" +
-					                    " via the `CertificatePrivateKeyFile` option.");
-				}
 				return certificate;
 			}
 
@@ -96,28 +90,22 @@ namespace EventStore.Core {
 				"No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
 		}
 
-		public static X509Certificate2Collection LoadCertificateCollection(string path) {
-			var certCollection = new X509Certificate2Collection();
+		public static IEnumerable<(string fileName,X509Certificate2 certificate)> LoadAllCertificates(string path) {
 			var files = Directory.GetFiles(path);
 			var acceptedExtensions = new[] {".crt", ".cert", ".cer", ".pem", ".der"};
 			foreach (var file in files) {
 				var fileInfo = new FileInfo(file);
 				var extension = fileInfo.Extension;
 				if (acceptedExtensions.Contains(extension)) {
+					X509Certificate2 cert;
 					try {
-						var cert = new X509Certificate2(File.ReadAllBytes(file));
-						certCollection.Add(cert);
-						//_log.Information("Trusted root certificate file loaded: {file}", fileInfo.Name);
+						cert = new X509Certificate2(File.ReadAllBytes(file));
 					} catch (Exception exc) {
-						throw new AggregateException($"Error loading trusted root certificate file: {file}", exc);
+						throw new AggregateException($"Error loading certificate file: {file}", exc);
 					}
+					yield return (file, cert);
 				}
 			}
-
-			if (certCollection.Count == 0)
-				throw new Exception($"No trusted root certificates were loaded from: {path}");
-
-			return certCollection;
 		}
 	}
 }

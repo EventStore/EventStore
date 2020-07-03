@@ -20,6 +20,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
 using EventStore.Core.Settings;
@@ -666,7 +667,17 @@ namespace EventStore.Core {
 			string certificatePath,
 			string privateKeyPath,
 			string password) {
-			_certificate = CertificateLoader.FromFile(certificatePath, privateKeyPath, password);
+			try {
+				_certificate = CertificateLoader.FromFile(certificatePath, privateKeyPath, password);
+			} catch (CryptographicException exc) {
+				throw new AggregateException("Error loading certificate file. Please verify that the correct password has been provided via the `CertificatePassword` option.", exc);
+			}
+			catch (NoCertificatePrivateKeyException) {
+				throw new Exception("Expect certificate to contain a private key. " +
+				                    "Please either provide a certificate that contains one or set the private key" +
+				                    " via the `CertificatePrivateKeyFile` option.");
+			}
+
 			return this;
 		}
 
@@ -678,7 +689,15 @@ namespace EventStore.Core {
 		public VNodeBuilder WithTrustedRootCertificatesPath(
 			string trustedRootCertificatesPath) {
 			Ensure.NotNullOrEmpty(trustedRootCertificatesPath, "trustedRootCertificatesPath");
-			_trustedRootCerts = CertificateLoader.LoadCertificateCollection(trustedRootCertificatesPath);
+			var certCollection = new X509Certificate2Collection();
+			foreach (var (fileName, certificate) in CertificateLoader.LoadAllCertificates(trustedRootCertificatesPath)) {
+				certCollection.Add(certificate);
+				_log.Information("Trusted root certificate file loaded: {file}", fileName);
+			}
+			if (certCollection.Count == 0)
+				throw new Exception($"No trusted root certificates were loaded from: {trustedRootCertificatesPath}");
+
+			_trustedRootCerts = certCollection;
 			return this;
 		}
 
