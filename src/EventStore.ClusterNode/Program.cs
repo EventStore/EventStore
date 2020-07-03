@@ -64,7 +64,9 @@ namespace EventStore.ClusterNode {
 										listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
 									} else {
 										listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
-											ServerCertificate = hostedService.Node.Certificate,
+											ServerCertificateSelector = delegate {
+												return hostedService.Node.CertificateSelector();
+											},
 											ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 											ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 												var (isValid, error) =

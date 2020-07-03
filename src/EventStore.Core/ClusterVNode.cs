@@ -133,8 +133,8 @@ namespace EventStore.Core {
 			get { return _tasks; }
 		}
 
-		public X509Certificate2 Certificate => _certificate;
 		public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
+		public Func<X509Certificate2> CertificateSelector => _certificateSelector;
 		public bool DisableHttps => _disableHttps;
 
 #if DEBUG
