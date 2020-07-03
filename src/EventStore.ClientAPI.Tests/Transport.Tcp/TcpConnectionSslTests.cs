@@ -53,7 +53,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 
 				var serverSocket = listeningSocket.Accept();
 				var serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), delegate { return (true, null); }, false);
+					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate, delegate { return (true, null); }, false);
 
 				mre.Wait(TimeSpan.FromSeconds(3));
 				try {
@@ -115,7 +115,7 @@ namespace EventStore.ClientAPI.Tests.Services.Transport.Tcp {
 					serverSocket = listeningSocket.Accept();
 					clientTcpConnection.Close("Intentional close");
 					serverTcpConnection = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(),
-						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate(), delegate { return (true, null); }, false);
+						(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, GetCertificate, delegate { return (true, null); }, false);
 
 					mre.Wait(TimeSpan.FromSeconds(10));
 					SpinWait.SpinUntil(() => serverTcpConnection.IsClosed, TimeSpan.FromSeconds(10));

@@ -46,12 +46,11 @@ namespace EventStore.Transport.Tcp {
 		public static ITcpConnection CreateServerFromSocket(Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			Socket socket,
-			X509Certificate certificate,
+			Func<X509Certificate> serverCertificateSelector,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
 			bool verbose) {
-			Ensure.NotNull(certificate, "certificate");
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
-			connection.InitServerSocket(socket, certificate, clientCertValidator, verbose);
+			connection.InitServerSocket(socket, serverCertificateSelector, clientCertValidator, verbose);
 			return connection;
 		}
 
@@ -105,9 +104,7 @@ namespace EventStore.Transport.Tcp {
 			_verbose = verbose;
 		}
 
-		private void InitServerSocket(Socket socket, X509Certificate certificate, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator, bool verbose) {
-			Ensure.NotNull(certificate, "certificate");
-
+		private void InitServerSocket(Socket socket, Func<X509Certificate> serverCertificateSelector, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator, bool verbose) {
 			InitConnectionBase(socket);
 			if (verbose)
 				Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
@@ -135,6 +132,8 @@ namespace EventStore.Transport.Tcp {
 
 				try {
 					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+					var certificate = serverCertificateSelector?.Invoke();
+					Ensure.NotNull(certificate, "certificate");
 					_sslStream.BeginAuthenticateAsServer(certificate, true, enabledSslProtocols, false,
 						OnEndAuthenticateAsServer, _sslStream);
 				} catch (AuthenticationException exc) {

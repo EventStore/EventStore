@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var listener = new TcpServerListener(serverEndPoint);
 			listener.StartListening((endPoint, socket) => {
-				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, serverCertificate,
+				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, () => serverCertificate,
 					(cert, chain, err) => validateClientCertificate ? ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(cert, chain, err, rootCertificates) : (true, null),
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();

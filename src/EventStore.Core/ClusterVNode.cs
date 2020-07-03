@@ -117,10 +117,12 @@ namespace EventStore.Core {
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly X509Certificate2 _certificate;
 		private readonly bool _disableHttps;
+		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalServerCertificateValidator;
+
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
@@ -166,6 +168,8 @@ namespace EventStore.Core {
 			_disableHttps = vNodeSettings.DisableHttps;
 			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
+
+			_certificateSelector = () => _certificate;
 			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
 			_externalClientCertificateValidator = delegate { return (true, null); };
@@ -410,7 +414,7 @@ namespace EventStore.Core {
 						TcpServiceType.External, TcpSecurityType.Secure,
 						new ClientTcpDispatcher(vNodeSettings.WriteTimeout),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, _externalClientCertificateValidator,
+						_authenticationProvider, AuthorizationGateway, _certificateSelector, _externalClientCertificateValidator,
 						vNodeSettings.ConnectionPendingSendBytesThreshold, vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
@@ -436,7 +440,7 @@ namespace EventStore.Core {
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(vNodeSettings.WriteTimeout),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, _internalClientCertificateValidator,
+							_authenticationProvider, AuthorizationGateway, _certificateSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
