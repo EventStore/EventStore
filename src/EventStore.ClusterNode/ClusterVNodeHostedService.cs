@@ -414,7 +414,7 @@ namespace EventStore.ClusterNode {
 						options.CertificatePassword);
 				} else {
 					throw new InvalidConfigurationException(
-						"A certificate is required unless insecure mode (--insecure) or development mode (--dev) is set to disable TLS on all TCP/HTTP interfaces.");
+						"A certificate is required unless insecure mode (--insecure) or development mode (--dev) is set.");
 				}
 
 				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
