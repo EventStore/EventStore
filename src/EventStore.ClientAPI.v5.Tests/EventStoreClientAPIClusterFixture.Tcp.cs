@@ -41,7 +41,7 @@ namespace EventStore.ClientAPI.Tests {
 				gossipSeedsString += (useSsl?"https://":"") + host + ":" + gossipSeeds[i].Port;
 			}
 
-			settings += "CustomHttpClient=SkipCertificateValidation;";
+			settings += "SkipCertificateValidation=true;";
 
 			var connectionString = $"GossipSeeds={gossipSeedsString};{settings}";
 			return EventStoreConnection.Create(connectionString);
