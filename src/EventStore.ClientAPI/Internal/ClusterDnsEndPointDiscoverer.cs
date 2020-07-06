@@ -8,6 +8,7 @@ using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.Transport.Http;
 using System.Linq;
+using System.Net.Http;
 using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 
 namespace EventStore.ClientAPI.Internal {
@@ -31,7 +32,8 @@ namespace EventStore.ClientAPI.Internal {
 			GossipSeed[] gossipSeeds,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
-			IHttpClient client = null) {
+			IHttpClient client,
+			bool skipCertificateValidation) {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
@@ -40,7 +42,19 @@ namespace EventStore.ClientAPI.Internal {
 			_managerExternalHttpPort = managerExternalHttpPort;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
-			_client = client ?? new HttpAsyncClient(_gossipTimeout);
+			HttpClientHandler handler = null;
+			if (skipCertificateValidation) {
+#if NET452 || NET46
+				handler = new WebRequestHandler {
+					ServerCertificateValidationCallback = delegate { return true; }
+				};
+#else
+				handler = new HttpClientHandler {
+					ServerCertificateCustomValidationCallback = delegate { return true; }
+				};
+#endif
+			}
+			_client = client ?? new HttpAsyncClient(_gossipTimeout, handler);
 			_nodePreference = nodePreference;
 		}
 
