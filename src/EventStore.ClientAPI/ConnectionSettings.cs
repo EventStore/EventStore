@@ -37,7 +37,12 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// Allows overriding the HTTPClient <see cref="IHttpClient"/>
 		/// </summary>
-		public IHttpClient CustomHttpClient;
+		public IHttpClient CustomHttpClient { get; set; }
+
+		/// <summary>
+		/// Whether to skip the certificate verification for TLS connections
+		/// </summary>
+		public bool SkipCertificateValidation;
 
 		/// <summary>
 		/// Whether to use excessive logging of <see cref="EventStoreConnection"/> internal logic.

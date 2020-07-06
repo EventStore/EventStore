@@ -210,7 +210,8 @@ namespace EventStore.ClientAPI {
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
 				clusterSettings.NodePreference,
-				connectionSettings.CustomHttpClient);
+				connectionSettings.CustomHttpClient,
+				connectionSettings.SkipCertificateValidation);
 
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
 				connectionName);
