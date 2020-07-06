@@ -131,7 +131,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_readAs = readAs;
 			}
 
-			protected void DeliverEvent(float progress, ResolvedEvent resolvedEvent, TFPos position) {
+			protected void DeliverEvent(float progress, ResolvedEvent resolvedEvent, TFPos position,
+				EventStore.Core.Data.ResolvedEvent pair) {
 				if (resolvedEvent.EventOrLinkTargetPosition <= _reader._lastEventPosition)
 					return;
 				_reader._lastEventPosition = resolvedEvent.EventOrLinkTargetPosition;
@@ -144,7 +145,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					return;
 
 				bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEventOrLinkToStreamDeletedEvent(
-					resolvedEvent, out deletedPartitionStreamId);
+					resolvedEvent, pair.ResolveResult, out deletedPartitionStreamId);
 				if (isDeletedStreamEvent) {
 					var deletedPartition = deletedPartitionStreamId;
 
@@ -506,7 +507,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				TFPos position) {
 				//TODO: add event sequence validation for inside the index stream
 				var resolvedEvent = new ResolvedEvent(pair, null);
-				DeliverEvent(progress, resolvedEvent, position);
+				DeliverEvent(progress, resolvedEvent, position, pair);
 			}
 
 			public override bool AreEventsRequested() {
@@ -686,7 +687,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				TFPos position) {
 				var resolvedEvent = new ResolvedEvent(pair, null);
 
-				DeliverEvent(progress, resolvedEvent, position);
+				DeliverEvent(progress, resolvedEvent, position, pair);
 			}
 
 			private void SendIdle() {
