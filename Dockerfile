@@ -63,12 +63,19 @@ RUN addgroup --gid ${GID} "eventstore" && \
 
 COPY --from=publish /publish ./
 
+
 RUN mkdir -p /var/lib/eventstore && \
-    chown -R eventstore:eventstore /opt/eventstore /var/lib/eventstore
+    mkdir -p /var/log/eventstore && \
+    mkdir -p /etc/eventstore && \
+    chown -R eventstore:eventstore /opt/eventstore /var/lib/eventstore /var/log/eventstore /etc/eventstore
 
 USER eventstore
 
+RUN echo "ExtIp: 0.0.0.0\n\
+IntIp: 0.0.0.0" >> /etc/eventstore/eventstore.conf
+
 VOLUME /var/lib/eventstore
+VOLUME /var/log/eventstore
 
 EXPOSE 1112/tcp
 EXPOSE 1113/tcp
@@ -79,4 +86,3 @@ HEALTHCHECK --interval=5s --timeout=5s --retries=24 \
     CMD curl --fail --insecure https://localhost:2113/health/live || exit 1
 
 ENTRYPOINT ["/opt/eventstore/EventStore.ClusterNode"]
-CMD ["--ext-ip", "0.0.0.0", "--int-ip", "0.0.0.0"]
