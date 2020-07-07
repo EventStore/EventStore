@@ -118,6 +118,7 @@ namespace EventStore.Core {
 		private readonly X509Certificate2 _certificate;
 		private readonly bool _disableHttps;
 		private readonly Func<X509Certificate2> _certificateSelector;
+		private readonly Func<X509Certificate2Collection> _trustedRootCertsSelector;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
@@ -170,10 +171,12 @@ namespace EventStore.Core {
 			_queueStatsManager = new QueueStatsManager();
 
 			_certificateSelector = () => _certificate;
-			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
-			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
+			_trustedRootCertsSelector = () => vNodeSettings.TrustedRootCerts;
+
+			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 			_externalClientCertificateValidator = delegate { return (true, null); };
-			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
+			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -846,16 +849,16 @@ namespace EventStore.Core {
 		}
 
 		public static ValueTuple<bool, string> ValidateServerCertificateWithTrustedRootCerts(X509Certificate certificate,
-			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
-			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCerts,"server");
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector) {
+			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertsSelector, "server");
 		}
 
 		public static ValueTuple<bool, string> ValidateClientCertificateWithTrustedRootCerts(X509Certificate certificate,
-			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
-			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCerts,"client");
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector) {
+			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertsSelector, "client");
 		}
 
-		private static ValueTuple<bool, string> ValidateCertificateWithTrustedRootCerts(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts, string certificateOrigin) {
+		private static ValueTuple<bool, string> ValidateCertificateWithTrustedRootCerts(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector, string certificateOrigin) {
 			if (certificate == null)
 				return (false, $"No certificate was provided by the {certificateOrigin}");
 
@@ -865,6 +868,7 @@ namespace EventStore.Core {
 				}
 			};
 
+			var trustedRootCerts = trustedRootCertsSelector();
 			if (trustedRootCerts != null) {
 				foreach (var cert in trustedRootCerts)
 					newChain.ChainPolicy.ExtraStore.Add(cert);

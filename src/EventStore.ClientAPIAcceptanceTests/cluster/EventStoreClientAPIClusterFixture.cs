@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI.Tests {
 									ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 									ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 										var (isValid, error) =
-											ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, rootCertificates);
+											ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, () => rootCertificates);
 										if (!isValid && error != null) {
 											Log.Error("Client certificate validation error: {e}", error);
 										}
