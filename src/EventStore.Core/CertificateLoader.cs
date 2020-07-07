@@ -107,5 +107,17 @@ namespace EventStore.Core {
 				}
 			}
 		}
+
+		public static StoreLocation GetCertificateStoreLocation(string certificateStoreLocation) {
+			if (!Enum.TryParse(certificateStoreLocation, out StoreLocation location))
+				throw new Exception($"Could not find certificate store location '{certificateStoreLocation}'");
+			return location;
+		}
+
+		public static StoreName GetCertificateStoreName(string certificateStoreName) {
+			if (!Enum.TryParse(certificateStoreName, out StoreName name))
+				throw new Exception($"Could not find certificate store name '{certificateStoreName}'");
+			return name;
+		}
 	}
 }

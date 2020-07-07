@@ -399,12 +399,12 @@ namespace EventStore.ClusterNode {
 
 			if (requireCertificates) {
 				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
-					var location = GetCertificateStoreLocation(options.CertificateStoreLocation);
-					var name = GetCertificateStoreName(options.CertificateStoreName);
+					var location = CertificateLoader.GetCertificateStoreLocation(options.CertificateStoreLocation);
+					var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
 					builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
 						options.CertificateThumbprint);
 				} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
-					var name = GetCertificateStoreName(options.CertificateStoreName);
+					var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
 					builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
 						options.CertificateThumbprint);
 				} else if (options.CertificateFile.IsNotEmptyString()) {
