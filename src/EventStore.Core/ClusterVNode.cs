@@ -454,10 +454,17 @@ namespace EventStore.Core {
 			});
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-				new ClientCertificateAuthenticationProvider(_disableHttps, _vNodeSettings.CertificateReservedNodeCommonName),
 				new BasicHttpAuthenticationProvider(_authenticationProvider),
 				new BearerHttpAuthenticationProvider(_authenticationProvider)
 			};
+
+			if (!_disableHttps) {
+				httpAuthenticationProviders.Add(
+					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName));
+			} else {
+				httpAuthenticationProviders.Add(new GossipAndElectionsAuthenticationProvider());
+			}
+
 			if (vNodeSettings.EnableTrustedAuth)
 				httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
 			httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
