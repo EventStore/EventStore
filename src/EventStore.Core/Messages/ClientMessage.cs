@@ -43,6 +43,13 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class ReloadConfig : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
 		public abstract class WriteRequestMessage : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

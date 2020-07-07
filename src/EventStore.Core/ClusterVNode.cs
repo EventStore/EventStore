@@ -55,7 +55,8 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
-		IHandle<SystemMessage.SystemStart> {
+		IHandle<SystemMessage.SystemStart>,
+		IHandle<ClientMessage.ReloadConfig>{
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
 		public IQueuedHandler MainQueue {
@@ -221,6 +222,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(this);
+			_mainBus.Subscribe<ClientMessage.ReloadConfig>(this);
+
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -912,6 +915,10 @@ namespace EventStore.Core {
 			}
 
 			return (true, null);
+		}
+
+		public void Handle(ClientMessage.ReloadConfig message) {
+			var config = _vNodeSettings.LoadConfigFunc();
 		}
 
 		public override string ToString() {
