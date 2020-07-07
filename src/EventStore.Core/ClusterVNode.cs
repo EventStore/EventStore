@@ -38,6 +38,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
+using EventStore.Common.Exceptions;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
 using EventStore.Plugins.Authentication;
@@ -116,7 +117,8 @@ namespace EventStore.Core {
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
-		private readonly X509Certificate2 _certificate;
+		private X509Certificate2 _certificate;
+		private X509Certificate2Collection _trustedRootCerts;
 		private readonly bool _disableHttps;
 		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate2Collection> _trustedRootCertsSelector;
@@ -130,6 +132,7 @@ namespace EventStore.Core {
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
 		private int _stopCalled;
+		private int _reloadingConfig;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
@@ -167,12 +170,13 @@ namespace EventStore.Core {
 			_vNodeSettings = vNodeSettings;
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_certificate = vNodeSettings.Certificate;
+			_trustedRootCerts = vNodeSettings.TrustedRootCerts;
 			_disableHttps = vNodeSettings.DisableHttps;
 			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
 
 			_certificateSelector = () => _certificate;
-			_trustedRootCertsSelector = () => vNodeSettings.TrustedRootCerts;
+			_trustedRootCertsSelector = () => _trustedRootCerts;
 
 			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
@@ -918,7 +922,71 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(ClientMessage.ReloadConfig message) {
-			var config = _vNodeSettings.LoadConfigFunc();
+			if (Interlocked.CompareExchange(ref _reloadingConfig, 1, 0) != 0) {
+				Log.Information("The node's configuration reload is already in progress");
+				return;
+			}
+
+			Task.Run(() => {
+				try {
+					Log.Information("Reloading the node's configuration");
+					var options = _vNodeSettings.LoadConfigFunc();
+					ReloadCertificates(options);
+				} catch (Exception exc) {
+					Log.Error(exc, "An error has occurred while reloading the configuration");
+				} finally {
+					Interlocked.Exchange(ref _reloadingConfig, 0);
+				}
+			});
+		}
+
+		private void ReloadCertificates(ClusterNodeOptions options) {
+			var currentCertificate = _certificateSelector();
+			var currentTrustedRootCerts = _trustedRootCertsSelector();
+
+			if (currentCertificate == null || currentTrustedRootCerts == null) {
+				Log.Information("Skipping reload of certificates since TLS is disabled.");
+				return;
+			}
+
+			X509Certificate2 certificate;
+			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
+				var location = CertificateLoader.GetCertificateStoreLocation(options.CertificateStoreLocation);
+				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
+				certificate = CertificateLoader.FromStore(location, name, options.CertificateSubjectName,
+					options.CertificateThumbprint);
+			} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
+				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
+				certificate = CertificateLoader.FromStore(name, options.CertificateSubjectName,
+					options.CertificateThumbprint);
+			} else if (options.CertificateFile.IsNotEmptyString()) {
+				certificate = CertificateLoader.FromFile(
+					options.CertificateFile,
+					options.CertificatePrivateKeyFile,
+					options.CertificatePassword);
+			} else {
+				throw new InvalidConfigurationException(
+					"A certificate is required but none was provided in the configuration.");
+			}
+
+			var trustedRootCerts = new X509Certificate2Collection();
+			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
+				foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(options.TrustedRootCertificatesPath)) {
+					trustedRootCerts.Add(cert);
+					Log.Information("Trusted root certificate file loaded: {file}", fileName);
+				}
+				if(trustedRootCerts.Count == 0)
+					throw new InvalidConfigurationException($"No trusted root certificate files were loaded from the specified path: {options.TrustedRootCertificatesPath}");
+			} else {
+				throw new InvalidConfigurationException(
+					$"{nameof(options.TrustedRootCertificatesPath)} was not specified in the configuration.");
+			}
+
+			//no need for a lock here since reference assignment is atomic
+			_certificate = certificate;
+			_trustedRootCerts = trustedRootCerts;
+
+			Log.Information("Certificates have been successfully reloaded");
 		}
 
 		public override string ToString() {
