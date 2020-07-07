@@ -23,12 +23,12 @@ namespace EventStore.Core {
 		public bool SkipRun => _skipRun;
 		private readonly bool _skipRun;
 		public TOptions Options { get; }
+		private string[] _args;
 
 		protected EventStoreHostedService(string[] args) {
 			try {
-				Options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
-					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
-					MutateEffectiveOptions);
+				_args = args;
+				Options = LoadConfig();
 				if (Options.Help) {
 					Console.WriteLine("EventStoreDB version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
@@ -65,6 +65,10 @@ namespace EventStore.Core {
 		protected virtual IEnumerable<OptionSource>
 			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) =>
 			effectiveOptions;
+
+		public TOptions LoadConfig() => EventStoreOptions.Parse<TOptions>(_args, Opts.EnvPrefix,
+			Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
+			MutateEffectiveOptions);
 
 		protected abstract Task StartInternalAsync(CancellationToken cancellationToken);
 		protected abstract Task StopInternalAsync(CancellationToken cancellationToken);

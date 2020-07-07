@@ -4,7 +4,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Rags;
 
-namespace EventStore.ClusterNode {
+namespace EventStore.Core {
 	public class ClusterNodeOptions : IOptions {
 		[ArgDescription(Opts.ShowHelpDescr, Opts.AppGroup)]
 		public bool Help { get; set; }

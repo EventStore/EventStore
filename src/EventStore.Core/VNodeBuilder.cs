@@ -34,6 +34,7 @@ namespace EventStore.Core {
 	public abstract class VNodeBuilder {
 		// ReSharper disable FieldCanBeMadeReadOnly.Local - as more options are added
 		protected ILogger _log;
+		protected Func<ClusterNodeOptions> _loadConfigFunc;
 
 		protected int _chunkSize;
 		protected string _dbPath;
@@ -1356,6 +1357,7 @@ namespace EventStore.Core {
 
 			_vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
 				0,
+				_loadConfigFunc,
 				_internalTcp,
 				_internalSecureTcp,
 				_externalTcp,
@@ -1579,6 +1581,10 @@ namespace EventStore.Core {
 
 		public void WithUnsafeAllowSurplusNodes() {
 			_unsafeAllowSurplusNodes = true;
+		}
+
+		public void WithLoadConfigFunction(Func<ClusterNodeOptions> loadConfigFunc) {
+			_loadConfigFunc = loadConfigFunc;
 		}
 	}
 }

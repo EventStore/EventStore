@@ -12,6 +12,7 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Cluster.Settings {
 	public class ClusterVNodeSettings {
+		public readonly Func<ClusterNodeOptions> LoadConfigFunc;
 		public readonly VNodeInfo NodeInfo;
 		public readonly GossipAdvertiseInfo GossipAdvertiseInfo;
 		public readonly bool EnableTrustedAuth;
@@ -95,6 +96,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool UnsafeAllowSurplusNodes;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
+			Func<ClusterNodeOptions> loadConfigFunc,
 			IPEndPoint internalTcpEndPoint,
 			IPEndPoint internalSecureTcpEndPoint,
 			IPEndPoint externalTcpEndPoint,
@@ -191,6 +193,7 @@ namespace EventStore.Core.Cluster.Settings {
 				throw new ArgumentException(
 					"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
 
+			LoadConfigFunc = loadConfigFunc;
 			NodeInfo = new VNodeInfo(instanceId, debugIndex,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,

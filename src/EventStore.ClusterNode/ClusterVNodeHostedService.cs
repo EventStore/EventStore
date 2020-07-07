@@ -187,7 +187,7 @@ namespace EventStore.ClusterNode {
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
 				? new[] {NodeSubsystems.Projections}
 				: new NodeSubsystems[0];
-			Node = BuildNode(opts);
+			Node = BuildNode(opts, LoadConfig);
 
 			RegisterWebControllers(enabledNodeSubsystems, opts);
 		}
@@ -205,7 +205,7 @@ namespace EventStore.ClusterNode {
 			return clusterSize / 2 + 1;
 		}
 
-		private static ClusterVNode BuildNode(ClusterNodeOptions options) {
+		private static ClusterVNode BuildNode(ClusterNodeOptions options, Func<ClusterNodeOptions> loadConfigFunc) {
 			var quorumSize = GetQuorumSize(options.ClusterSize);
 
 			var httpEndPoint = new IPEndPoint(options.ExtIp, options.HttpPort);
@@ -244,6 +244,8 @@ namespace EventStore.ClusterNode {
 			} else {
 				builder = ClusterVNodeBuilder.AsSingleNode();
 			}
+
+			builder.WithLoadConfigFunction(loadConfigFunc);
 
 			if (options.MemDb) {
 				builder = builder.RunInMemory();
