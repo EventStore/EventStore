@@ -175,7 +175,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return;
 
 			bool isDeletedStreamEvent = StreamDeletedHelper.IsStreamDeletedEventOrLinkToStreamDeletedEvent(
-				resolvedEvent, out deletedPartitionStreamId);
+				resolvedEvent, @event.ResolveResult, out deletedPartitionStreamId);
 
 			_publisher.Publish(
 				new ReaderSubscriptionMessage.CommittedEventDistributed(

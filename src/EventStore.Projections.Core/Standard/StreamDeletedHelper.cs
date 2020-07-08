@@ -6,8 +6,14 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 namespace EventStore.Projections.Core.Standard {
 	public static class StreamDeletedHelper {
 		public static bool IsStreamDeletedEventOrLinkToStreamDeletedEvent(ResolvedEvent resolvedEvent,
-			out string deletedPartitionStreamId) {
+			ReadEventResult resolveResult, out string deletedPartitionStreamId) {
 			bool isDeletedStreamEvent;
+			// If the event didn't resolve, we can't rely on it as a deleted event
+			if (resolveResult != ReadEventResult.Success) {
+				deletedPartitionStreamId = null;
+				return false;
+			}
+			
 			if (resolvedEvent.IsLinkToDeletedStreamTombstone) {
 				isDeletedStreamEvent = true;
 				deletedPartitionStreamId = resolvedEvent.EventStreamId;
