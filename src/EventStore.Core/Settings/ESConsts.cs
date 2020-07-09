@@ -16,6 +16,7 @@ namespace EventStore.Core.Settings {
 		public const int CachedPrincipalCount = 1000;
 
 		public static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(10);
+		public static readonly TimeSpan HttpClientConnectionLifeTime = TimeSpan.FromMinutes(10);
 
 		public const int UnrestrictedPendingSendBytes = 0;
 		public const int MaxConnectionQueueSize = 50000;

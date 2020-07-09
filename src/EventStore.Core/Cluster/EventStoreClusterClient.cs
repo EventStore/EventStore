@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Settings;
 using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
 
@@ -34,7 +35,8 @@ namespace EventStore.Core.Cluster {
 						LocalCertificateSelectionCallback = delegate {
 							return clientCertificateSelector();
 						}
-					}
+					},
+					PooledConnectionLifetime = ESConsts.HttpClientConnectionLifeTime
 				};
 
 				httpMessageHandler = socketsHttpHandler;
