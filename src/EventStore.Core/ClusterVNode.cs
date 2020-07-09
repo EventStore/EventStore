@@ -493,8 +493,7 @@ namespace EventStore.Core {
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var atomController = new AtomController(_mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching, vNodeSettings.WriteTimeout);
-			var gossipController = new GossipController(_mainQueue, _workersHandler,
-				_internalServerCertificateValidator, _certificateSelector);
+			var gossipController = new GossipController(_mainQueue, _workersHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 
