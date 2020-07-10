@@ -10,6 +10,11 @@
 	  <Compile Remove="FileAccess\UnbufferedFileStream.cs" />
 	</ItemGroup>
 	<ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+    	<_Parameter1>EventStore.Native.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+	<ItemGroup>
 		<PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
 		<!--<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />-->
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using NUnit.Framework;
+using EventStore.Native;
 
 namespace EventStore.Native.FileAccess.Tests
 {
@@ -17,7 +18,8 @@ namespace EventStore.Native.FileAccess.Tests
         private NativeMethods.PageAlignedBuffer _twoBlockBuffer;
 
         [OneTimeSetUp]
-        public void CreateTestFile() {
+        public void CreateTestFile()
+        {
             _testFile = NativeFile.OpenNewFile(
                 Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()),
                 BlockSize * 4);
@@ -29,7 +31,8 @@ namespace EventStore.Native.FileAccess.Tests
         //todo:add tests to confirm various writes do not alter other parts of file
         //todo: add test to confirm various ways write will become unbuffered
         [Test]
-        public void write_page() {
+        public void write_page()
+        {
             var readBuffer = TestUtil.GetFilledBuffer(PageSize, 0);
             _testFile.Write(0, _singlePageBuffer.Buffer, PageSize);
             _testFile.Read(0, readBuffer.Buffer, PageSize);
@@ -38,7 +41,8 @@ namespace EventStore.Native.FileAccess.Tests
         }
 
         [Test]
-        public void write_page_multiple() {
+        public void write_page_multiple()
+        {
             var readBuffer = TestUtil.GetFilledBuffer(PageSize * 2, 0);
             _testFile.Write(0, _twoPageBuffer.Buffer, PageSize * 2);
             _testFile.Read(0, readBuffer.Buffer, PageSize * 2);
@@ -48,7 +52,8 @@ namespace EventStore.Native.FileAccess.Tests
         }
 
         [Test]
-        public void write_block() {
+        public void write_block()
+        {
             var readBuffer = TestUtil.GetFilledBuffer(BlockSize, 0);
             _testFile.Write(0, _singleBlockBuffer.Buffer, BlockSize);
             _testFile.Read(0, readBuffer.Buffer, BlockSize);
@@ -58,7 +63,8 @@ namespace EventStore.Native.FileAccess.Tests
         }
 
         [Test]
-        public void write_block_multiple() {
+        public void write_block_multiple()
+        {
             var readBuffer = TestUtil.GetFilledBuffer(BlockSize * 2, 0);
             _testFile.Write(0, _twoBlockBuffer.Buffer, BlockSize * 2);
             _testFile.Read(0, readBuffer.Buffer, BlockSize * 2);
@@ -67,7 +73,8 @@ namespace EventStore.Native.FileAccess.Tests
             _testFile.Write(0, readBuffer.Buffer, BlockSize * 2);
         }
         [Test]
-        public void write_block_plus() {
+        public void write_block_plus()
+        {
             var readBuffer = TestUtil.GetFilledBuffer(BlockSize * 2, 0);
             var length = BlockSize + PageSize;
             _testFile.Write(0, _twoBlockBuffer.Buffer, length);
@@ -76,9 +83,10 @@ namespace EventStore.Native.FileAccess.Tests
             readBuffer.Buffer.ClearBuffer(length);
             _testFile.Write(0, readBuffer.Buffer, length);
         }
-        
+
         [Test]
-        public void save_data() {
+        public void save_data()
+        {
             long position = 0;
             _testFile.Write(position, _singlePageBuffer.Buffer, PageSize);
 
@@ -88,7 +96,8 @@ namespace EventStore.Native.FileAccess.Tests
 
         }
         [Test]
-        public void save_data_at() {
+        public void save_data_at()
+        {
 
             var tens = TestUtil.GetFilledBuffer(12, 10);
             var twenties = TestUtil.GetFilledBuffer(12, 20);
@@ -112,20 +121,24 @@ namespace EventStore.Native.FileAccess.Tests
         }
 
         [Test]
-        public void virtual_alloc_is_page_aligned() {
-           NativeMethods.PageAlignedBuffer buffer = new NativeMethods.PageAlignedBuffer();
+        public void virtual_alloc_is_page_aligned()
+        {
+            NativeMethods.PageAlignedBuffer buffer = new NativeMethods.PageAlignedBuffer();
             var pages = 1;
-            try {
+            try
+            {
                 buffer = NativeMethods.GetPageBuffer(pages);
                 Assert.AreEqual(0, (long)buffer.Buffer % 4096);
             }
-            finally {
+            finally
+            {
                 NativeMethods.FreeBuffer(ref buffer);
             }
 
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             _testFile?.Dispose();
             File.Delete(_testFile?.Info.FullName);
         }
