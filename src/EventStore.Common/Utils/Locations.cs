@@ -16,7 +16,6 @@ namespace EventStore.Common.Utils {
 		public static readonly string DefaultLogDirectory;
 		public static readonly string DefaultTestClientLogDirectory;
 		public static readonly string FallbackDefaultDataDirectory;
-		public static readonly string DevCertificateDirectory;
 
 		static Locations() {
 			ApplicationDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
@@ -52,11 +51,6 @@ namespace EventStore.Common.Utils {
 					DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 					break;
 			}
-
-			DevCertificateDirectory = GetPrecededLocation(
-				Path.Combine(ApplicationDirectory, "dev-ca"),
-				Path.Combine(DefaultContentDirectory, "dev-ca")
-			);
 
 			WebContentDirectory = GetPrecededLocation(
 				Path.Combine(ApplicationDirectory, "clusternode-web"),

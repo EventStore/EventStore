@@ -40,13 +40,6 @@ namespace EventStore.ClusterNode {
 			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
 			bool.TryParse(insecureOption.Value.ToString(), out bool insecureMode);
 			return effectiveOptions.Select(x => {
-				if (x.Name == nameof(ClusterNodeOptions.MemDb)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
-					x.Source = "Set by 'Development' mode";
-				}
-
 				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
 				    && insecureMode) {
@@ -68,25 +61,25 @@ namespace EventStore.ClusterNode {
 					x.Source =  "Set by 'Insecure' mode";
 				}
 
-				if (x.Name == nameof(ClusterNodeOptions.CertificateFile)
+				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode && !insecureMode) {
-					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.pem");
-					x.Source = "Set by 'Development' mode";
+				    && developmentMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Development' mode";
 				}
 
-				if (x.Name == nameof(ClusterNodeOptions.CertificatePrivateKeyFile)
+				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode && !insecureMode) {
-					x.Value = Path.Combine(Locations.DevCertificateDirectory, "server1.key");
-					x.Source = "Set by 'Development' mode";
+				    && developmentMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Development' mode";
 				}
 
-				if (x.Name == nameof(ClusterNodeOptions.TrustedRootCertificatesPath)
+				if (x.Name == nameof(ClusterNodeOptions.DisableHttps)
 				    && x.Source == "<DEFAULT>"
-				    && developmentMode && !insecureMode) {
-					x.Value = Locations.DevCertificateDirectory;
-					x.Source = "Set by 'Development' mode";
+				    && developmentMode) {
+					x.Value = true;
+					x.Source =  "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.EnableAtomPubOverHTTP)
@@ -140,9 +133,9 @@ namespace EventStore.ClusterNode {
 				Log.Warning(
 					"\n========================================================================================================\n" +
 					"DEVELOPMENT MODE IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.\n" +
-					"WHEN IN DEVELOPMENT MODE EVENT STORE WILL\n" +
-					" - NOT WRITE ANY DATA TO DISK.\n" +
-					" - USE A SELF SIGNED CERTIFICATE.\n" +
+					"WHEN IN DEVELOPMENT MODE EVENTSTOREDB WILL\n" +
+					" - DISABLE TLS ON ALL TCP/HTTP INTERFACES.\n" +
+					" - ENABLE THE ATOMPUB PROTOCOL OVER HTTP.\n" +
 					"========================================================================================================\n");
 			}
 
@@ -419,15 +412,16 @@ namespace EventStore.ClusterNode {
 						options.CertificateFile,
 						options.CertificatePrivateKeyFile,
 						options.CertificatePassword);
-				} else if (!options.Dev)
+				} else {
 					throw new InvalidConfigurationException(
-						"A certificate is required unless development mode (--dev) is set to use development certificates or insecure mode (--insecure) is set to disable TLS on all TCP/HTTP interfaces.");
+						"A certificate is required unless insecure mode (--insecure) or development mode (--dev) is set.");
+				}
 
 				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
 					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
 				} else {
 					throw new InvalidConfigurationException(
-						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless development mode (--dev) is set to use development certificates or insecure mode (--insecure) is set to disable TLS on all TCP/HTTP interfaces.");
+						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) or development mode (--dev) is set.");
 				}
 			}
 
