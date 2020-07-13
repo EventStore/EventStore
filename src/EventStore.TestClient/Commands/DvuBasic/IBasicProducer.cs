@@ -1,4 +1,5 @@
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.TestClient.Commands.DvuBasic {
 	public interface IBasicProducer {

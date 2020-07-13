@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Bus;
-using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 	public class PersistentSubscriptionConsumerStrategyRegistry {

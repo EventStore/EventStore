@@ -1,6 +1,7 @@
 ﻿using System;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Services.AwakeReaderService {
 	public class AwakeServiceMessage {

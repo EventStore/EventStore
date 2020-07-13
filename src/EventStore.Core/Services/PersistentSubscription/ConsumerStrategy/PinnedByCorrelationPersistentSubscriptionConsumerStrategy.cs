@@ -1,9 +1,11 @@
-﻿namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
+﻿using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.Services;
+
+namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
 {
 	using System;
 	using System.IO;
 	using Data;
-	using Index.Hashes;
 	using Newtonsoft.Json;
 
 	class PinnedByCorrelationPersistentSubscriptionConsumerStrategy : PinnedPersistentSubscriptionConsumerStrategy {

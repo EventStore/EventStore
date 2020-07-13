@@ -8,6 +8,7 @@ using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using System.Linq;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {

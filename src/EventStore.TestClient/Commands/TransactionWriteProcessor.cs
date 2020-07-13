@@ -5,6 +5,7 @@ using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.TestClient.Commands {
 	internal class TransactionWriteProcessor : ICmdProcessor {

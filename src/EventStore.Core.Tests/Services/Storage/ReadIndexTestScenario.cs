@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
@@ -17,8 +16,12 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLog.TestHelpers;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	public abstract class ReadIndexTestScenario : SpecificationWithDirectoryPerTestFixture {

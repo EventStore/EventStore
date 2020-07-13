@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Idempotency {

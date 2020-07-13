@@ -18,6 +18,8 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using System.IO;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.TestHelpers;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public abstract class MiniNodeWithExistingRecords : SpecificationWithDirectoryPerTestFixture {

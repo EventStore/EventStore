@@ -1,6 +1,8 @@
 using System;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Projections.Core.Utils;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 

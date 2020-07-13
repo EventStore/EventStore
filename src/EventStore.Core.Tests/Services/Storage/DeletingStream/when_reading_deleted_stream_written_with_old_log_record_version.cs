@@ -2,7 +2,9 @@ using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {

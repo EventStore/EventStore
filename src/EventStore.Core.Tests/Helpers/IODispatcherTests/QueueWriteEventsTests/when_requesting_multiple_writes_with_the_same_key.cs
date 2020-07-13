@@ -4,6 +4,7 @@ using EventStore.Core.Services.UserManagement;
 using NUnit.Framework;
 using System;
 using System.Linq;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests {
 	[TestFixture]

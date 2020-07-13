@@ -14,6 +14,8 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Authorization;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {

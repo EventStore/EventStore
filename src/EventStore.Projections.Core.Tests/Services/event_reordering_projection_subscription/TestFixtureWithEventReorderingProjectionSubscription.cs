@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projection_subscription;
 using NUnit.Framework;

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Validation;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.TestHelpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {

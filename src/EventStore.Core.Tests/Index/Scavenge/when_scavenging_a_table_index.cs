@@ -3,10 +3,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Hashes;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.Scavenge {

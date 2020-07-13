@@ -12,10 +12,11 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
+using ExpectedVersion = EventStore.Core.TransactionLog.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
 	[TestFixture]

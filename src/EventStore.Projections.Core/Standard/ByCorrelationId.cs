@@ -7,6 +7,7 @@ using EventStore.Projections.Core.Services.Processing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Projections.Core.Standard {
 	public class ByCorrelationId : IProjectionStateHandler {

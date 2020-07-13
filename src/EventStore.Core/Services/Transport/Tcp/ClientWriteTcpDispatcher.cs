@@ -9,6 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Tcp {

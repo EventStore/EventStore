@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {

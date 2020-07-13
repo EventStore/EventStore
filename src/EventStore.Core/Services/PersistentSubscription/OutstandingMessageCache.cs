@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public enum StartMessageResult {

@@ -7,7 +7,9 @@ using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog.Services;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {

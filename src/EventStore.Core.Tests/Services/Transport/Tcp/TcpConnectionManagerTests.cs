@@ -17,6 +17,7 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Authorization;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {

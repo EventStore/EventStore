@@ -5,6 +5,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using System;
 using System.Linq;
+using EventStore.Core.TransactionLog.Data;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {

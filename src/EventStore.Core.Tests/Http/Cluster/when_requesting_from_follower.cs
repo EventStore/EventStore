@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.Integration;
+using EventStore.Core.TransactionLog.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Http.Cluster {

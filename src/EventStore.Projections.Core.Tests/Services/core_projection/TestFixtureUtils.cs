@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	public static class TestFixtureUtils {

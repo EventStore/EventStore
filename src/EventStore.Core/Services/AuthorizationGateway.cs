@@ -7,6 +7,8 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services {

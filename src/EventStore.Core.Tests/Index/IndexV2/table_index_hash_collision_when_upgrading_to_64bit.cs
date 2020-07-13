@@ -3,9 +3,9 @@ using System.Threading;
 using EventStore.Core.Index;
 using EventStore.Core.TransactionLog;
 using NUnit.Framework;
-using EventStore.Core.Index.Hashes;
 using System;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Hashes;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Index.IndexV2 {

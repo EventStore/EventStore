@@ -16,6 +16,8 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authorization;
 using Microsoft.Extensions.Primitives;

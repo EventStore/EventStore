@@ -4,6 +4,7 @@ using System.Security.Claims;
 using EventStore.Core.Bus;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Plugins.Authorization;
 using Serilog;
 

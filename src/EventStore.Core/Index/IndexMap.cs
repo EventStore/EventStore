@@ -8,6 +8,9 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.Util;
 using EventStore.Core.Util;
 using ILogger = Serilog.ILogger;
 

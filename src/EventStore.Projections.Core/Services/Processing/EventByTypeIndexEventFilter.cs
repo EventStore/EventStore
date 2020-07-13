@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EventByTypeIndexEventFilter : EventFilter {

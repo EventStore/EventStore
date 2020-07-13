@@ -9,6 +9,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class StreamEventReader : EventReader,

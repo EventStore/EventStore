@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Projections.Core.Standard;
 using Newtonsoft.Json.Linq;
 

@@ -7,6 +7,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Transport.Tcp {

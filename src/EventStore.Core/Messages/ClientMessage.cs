@@ -8,6 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.Util;
 using static EventStore.Core.Messages.TcpClientMessageDto.FilteredReadAllEventsCompleted;
 using FilteredReadAllResult = EventStore.Core.Data.FilteredReadAllResult;
@@ -175,8 +176,8 @@ namespace EventStore.Core.Messages {
 				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (expectedVersion < Data.ExpectedVersion.StreamExists ||
-				    expectedVersion == Data.ExpectedVersion.Invalid)
+				if (expectedVersion < TransactionLog.Data.ExpectedVersion.StreamExists ||
+				    expectedVersion == TransactionLog.Data.ExpectedVersion.Invalid)
 					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
 				Ensure.NotNull(events, "events");
 
@@ -287,7 +288,7 @@ namespace EventStore.Core.Messages {
 				IReadOnlyDictionary<string, string> tokens = null)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (expectedVersion < Data.ExpectedVersion.Any)
+				if (expectedVersion < TransactionLog.Data.ExpectedVersion.Any)
 					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
 
 				EventStreamId = eventStreamId;
@@ -464,7 +465,7 @@ namespace EventStore.Core.Messages {
 				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (expectedVersion < Data.ExpectedVersion.Any)
+				if (expectedVersion < TransactionLog.Data.ExpectedVersion.Any)
 					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
 
 				EventStreamId = eventStreamId;

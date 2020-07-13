@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 using ClientMessage = EventStore.ClientAPI.Messages.ClientMessage;
 
 namespace EventStore.ClientAPI.Embedded {

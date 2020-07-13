@@ -8,6 +8,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class MultiStreamMultiOutputCheckpointManager : DefaultCheckpointManager, IEmittedStreamContainer {

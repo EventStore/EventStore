@@ -14,6 +14,7 @@ using System.Linq;
 using System.Collections.Generic;
 using EventStore.Transport.Http.Codecs;
 using System.Xml.Serialization;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public static class Convert {

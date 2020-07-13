@@ -7,6 +7,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Standard;
 

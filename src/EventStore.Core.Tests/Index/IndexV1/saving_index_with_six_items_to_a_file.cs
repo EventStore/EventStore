@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
+using EventStore.Core.TransactionLog.Hashes;
 using EventStore.Core.Util;
 using NUnit.Framework;
 

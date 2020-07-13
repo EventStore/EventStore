@@ -8,6 +8,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
 	public static class ReplicationTestHelper {

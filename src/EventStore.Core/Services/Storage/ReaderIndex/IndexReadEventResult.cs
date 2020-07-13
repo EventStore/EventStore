@@ -1,5 +1,6 @@
 using System;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public struct IndexReadEventResult {

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public static class EventFilter {

@@ -1,8 +1,9 @@
-﻿namespace EventStore.Core.Tests.Services.PersistentSubscription
+﻿using EventStore.Core.TransactionLog.Hashes;
+
+namespace EventStore.Core.Tests.Services.PersistentSubscription
 {
 	using System;
 	using System.Text;
-	using Core.Index.Hashes;
 	using Core.Services;
 	using Core.Services.PersistentSubscription;
 	using Core.Services.PersistentSubscription.ConsumerStrategy;
