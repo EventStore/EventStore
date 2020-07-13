@@ -10,6 +10,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using EventStore.Core.Services.AwakeReaderService;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_file_reader {
 	[TestFixture]

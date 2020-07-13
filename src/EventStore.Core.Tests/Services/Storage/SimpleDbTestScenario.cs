@@ -1,8 +1,6 @@
 ﻿using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog;
@@ -10,7 +8,10 @@ using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.DataStructures;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.TestHelpers;
 using EventStore.Core.Util;
 using NUnit.Framework;
 

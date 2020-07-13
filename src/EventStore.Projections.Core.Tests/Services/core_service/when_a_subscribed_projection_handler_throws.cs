@@ -5,6 +5,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Projections.Core.Tests.Services.event_reader.heading_event_reader;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Tests.Services.core_service {
 	[TestFixture]

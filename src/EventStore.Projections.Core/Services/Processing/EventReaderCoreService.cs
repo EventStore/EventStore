@@ -7,6 +7,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Projections.Core.Messages;
 using ILogger = Serilog.ILogger;
 

@@ -2,6 +2,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
+using EventStore.Core.TransactionLog.Data;
 using NUnit.Framework;
 using WriteEventsMgr = EventStore.Core.Services.RequestManager.Managers.WriteEvents;
 

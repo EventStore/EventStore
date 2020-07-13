@@ -14,6 +14,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Data;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {

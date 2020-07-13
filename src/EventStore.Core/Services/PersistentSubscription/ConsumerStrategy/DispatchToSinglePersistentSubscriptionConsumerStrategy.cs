@@ -1,4 +1,5 @@
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 	class DispatchToSinglePersistentSubscriptionConsumerStrategy : RoundRobinPersistentSubscriptionConsumerStrategy {

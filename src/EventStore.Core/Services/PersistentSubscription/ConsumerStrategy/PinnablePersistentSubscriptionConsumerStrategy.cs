@@ -1,8 +1,10 @@
-﻿namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
+﻿using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.Services;
+
+namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy
 {
 	using Common.Utils;
 	using Data;
-	using Index.Hashes;
 	using PinnedState;
 
 	internal abstract class PinnablePersistentSubscriptionConsumerStrategy : IPersistentSubscriptionConsumerStrategy {

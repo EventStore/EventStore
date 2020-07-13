@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using Formatting = Newtonsoft.Json.Formatting;
 using System.Linq;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Data;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http {

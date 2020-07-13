@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Transport.Http.Codecs;
 using ILogger = Serilog.ILogger;
 

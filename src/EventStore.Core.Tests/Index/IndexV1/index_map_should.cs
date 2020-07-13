@@ -7,6 +7,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Util;
 using NUnit.Framework;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Hashes;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV1)]

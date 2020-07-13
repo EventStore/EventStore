@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 using NUnit.Framework;

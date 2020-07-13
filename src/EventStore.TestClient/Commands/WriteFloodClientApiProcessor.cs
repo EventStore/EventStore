@@ -7,7 +7,7 @@ using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.Common.Utils;
-using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
+using ExpectedVersion = EventStore.Core.TransactionLog.Data.ExpectedVersion;
 
 namespace EventStore.TestClient.Commands {
 	internal class WriteFloodClientApiProcessor : ICmdProcessor {

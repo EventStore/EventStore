@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.system_projections {

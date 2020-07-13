@@ -12,6 +12,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
+using EventStore.Core.TransactionLog.Data;
 using ILogger = Serilog.ILogger;
 
 

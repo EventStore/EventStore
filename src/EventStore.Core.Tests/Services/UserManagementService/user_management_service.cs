@@ -9,6 +9,7 @@ using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.Core.TransactionLog.Services;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Services.UserManagementService {

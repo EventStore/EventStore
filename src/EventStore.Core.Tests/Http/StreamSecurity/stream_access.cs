@@ -7,6 +7,7 @@ using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Http.Users;
+using EventStore.Core.TransactionLog.Services;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 

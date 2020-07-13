@@ -3,6 +3,7 @@ using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class QueuedEmittedStreamsWriter : IEmittedStreamsWriter {

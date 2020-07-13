@@ -15,6 +15,7 @@ using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 

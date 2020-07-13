@@ -6,6 +6,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authentication;
 

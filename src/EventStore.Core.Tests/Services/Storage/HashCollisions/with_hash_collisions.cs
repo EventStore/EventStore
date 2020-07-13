@@ -1,13 +1,15 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
 using EventStore.Core.Tests;
 using NUnit.Framework;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Hashes;
+using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
+using StreamMetadata = EventStore.Core.TransactionLog.Data.StreamMetadata;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	[TestFixture]
@@ -44,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				maxSizeForMemory: _maxMemTableSize,
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
-			_indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(),
+			_indexReader = new IndexReader(_indexBackend, _tableIndex, new StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 
 			when();
@@ -95,7 +97,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_invalid_event_number() {
-			Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
+			Assert.AreEqual(EventNumber.Invalid,
 				_indexReader.GetStreamLastEventNumber("account--696193173"));
 		}
 	}
@@ -140,7 +142,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void should_return_invalid_event_number() {
-			Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
+			Assert.AreEqual(EventNumber.Invalid,
 				_indexReader.GetStreamLastEventNumber("account--696193173"));
 		}
 	}
@@ -232,7 +234,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				maxSizeForMemory: _maxMemTableSize,
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
-			_indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(),
+			_indexReader = new IndexReader(_indexBackend, _tableIndex, new StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 			//memtable with 64bit indexes
 			_tableIndex.Add(1, streamId, 0, 8);
@@ -313,8 +315,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			return null;
 		}
 
-		public EventStore.Core.Data.StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId,
-			EventStore.Core.Data.StreamMetadata metadata) {
+		public StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId,
+			StreamMetadata metadata) {
 			return null;
 		}
 
@@ -322,8 +324,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			return null;
 		}
 
-		public EventStore.Core.Data.StreamMetadata SetStreamMetadata(string streamId,
-			EventStore.Core.Data.StreamMetadata metadata) {
+		public StreamMetadata SetStreamMetadata(string streamId,
+			StreamMetadata metadata) {
 			return null;
 		}
 

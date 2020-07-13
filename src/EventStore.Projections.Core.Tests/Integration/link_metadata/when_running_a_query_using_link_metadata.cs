@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;

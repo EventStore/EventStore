@@ -59,6 +59,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.NETCore.Compatib
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Native.Tests", "EventStore.Native.Tests\EventStore.Native.Tests.csproj", "{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.TransactionLog", "EventStore.TransactionLog\EventStore.TransactionLog.csproj", "{3477B635-A54C-4155-82F6-42B85A9950EA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.TransactionLog.Tests", "EventStore.TransactionLog.Tests\EventStore.TransactionLog.Tests.csproj", "{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -157,6 +161,14 @@ Global
 		{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}.Debug|x64.Build.0 = Debug|x64
 		{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}.Release|x64.ActiveCfg = Release|x64
 		{C6875105-3BEF-4A24-A8E2-BE1960BD1F04}.Release|x64.Build.0 = Release|x64
+		{3477B635-A54C-4155-82F6-42B85A9950EA}.Debug|x64.ActiveCfg = Debug|x64
+		{3477B635-A54C-4155-82F6-42B85A9950EA}.Debug|x64.Build.0 = Debug|x64
+		{3477B635-A54C-4155-82F6-42B85A9950EA}.Release|x64.ActiveCfg = Release|x64
+		{3477B635-A54C-4155-82F6-42B85A9950EA}.Release|x64.Build.0 = Release|x64
+		{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}.Debug|x64.ActiveCfg = Debug|x64
+		{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}.Debug|x64.Build.0 = Debug|x64
+		{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}.Release|x64.ActiveCfg = Release|x64
+		{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

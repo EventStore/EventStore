@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 

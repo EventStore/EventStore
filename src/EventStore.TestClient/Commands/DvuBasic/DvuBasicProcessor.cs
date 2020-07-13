@@ -8,6 +8,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands.DvuBasic {

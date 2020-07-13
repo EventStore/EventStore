@@ -1,7 +1,5 @@
 ﻿using EventStore.Common.Utils;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog;
@@ -14,6 +12,9 @@ using EventStore.Core.Util;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.TestHelpers;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]

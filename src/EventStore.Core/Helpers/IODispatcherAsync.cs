@@ -7,6 +7,8 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.TimerService;
 using System.Threading;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Helpers {
 	public static class IODispatcherAsync {

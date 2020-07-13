@@ -13,6 +13,7 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Services.AwakeReaderService;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {
 	[TestFixture]
