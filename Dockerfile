@@ -83,6 +83,6 @@ EXPOSE 2112/tcp
 EXPOSE 2113/tcp
 
 HEALTHCHECK --interval=5s --timeout=5s --retries=24 \
-    CMD curl --fail --insecure https://localhost:2113/health/live || exit 1
+    CMD curl --fail --insecure https://localhost:2113/health/live || curl --fail http://localhost:2113/health/live || exit 1
 
 ENTRYPOINT ["/opt/eventstore/EventStore.ClusterNode"]
