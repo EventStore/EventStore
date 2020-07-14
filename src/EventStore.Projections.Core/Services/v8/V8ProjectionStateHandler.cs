@@ -10,6 +10,7 @@ using EventStore.Projections.Core.v8;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using EventStore.Common.Log;
 
 namespace EventStore.Projections.Core.Services.v8 {
 	public class V8ProjectionStateHandler : IProjectionStateHandler {
@@ -18,6 +19,9 @@ namespace EventStore.Projections.Core.Services.v8 {
 		private List<EmittedEventEnvelope> _emittedEvents;
 		private CheckpointTag _eventPosition;
 		private bool _disposed;
+		private static readonly char[] LinkToSeparator = { '@' };
+		private static readonly string LinkType = "$>";
+		private ILogger _logger = LogManager.GetLoggerFor<V8ProjectionStateHandler>();
 
 		public V8ProjectionStateHandler(
 			string preludeName, string querySource, Func<string, Tuple<string, string>> getModuleSource,
@@ -66,6 +70,16 @@ namespace EventStore.Projections.Core.Services.v8 {
 				throw new ArgumentException("Failed to deserialize emitted event JSON", ex);
 			}
 
+			if (!IsValidEvent(emittedEvent)) {
+				_logger.Warn($"Invalid emitted event was ignored: streamId: [{emittedEvent.streamId}], eventType: [{emittedEvent.eventName}], payload: [{emittedEvent.body}]");
+				return;
+			}
+			
+			if (emittedEvent.eventName.Equals(LinkType) && !IsValidLinkEvent(emittedEvent)) {
+				_logger.Warn($"Invalid emitted link event was ignored: streamId: [{emittedEvent.streamId}], eventType: [{emittedEvent.eventName}], payload: [{emittedEvent.body}]");
+				return;
+			}
+			
 			if (_emittedEvents == null)
 				_emittedEvents = new List<EmittedEventEnvelope>();
 			_emittedEvents.Add(
@@ -232,6 +246,16 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 		public IQuerySources GetSourceDefinition() {
 			return GetQuerySourcesDefinition();
+		}
+		
+		private static bool IsValidEvent(EmittedEventJsonContract @event) {
+			return !(@event.eventName.IsEmptyString() || @event.streamId.IsEmptyString() || @event.isJson && @event.body.IsEmptyString());
+		}
+		
+		// This function assumes 'IsValidEvent' was called upfront.
+		private static bool IsValidLinkEvent(EmittedEventJsonContract @event) {
+			var parts = @event.body.Split(LinkToSeparator, 2);
+			return long.TryParse(parts[0], out long _);
 		}
 	}
 }

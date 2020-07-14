@@ -216,7 +216,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return;
 
 			bool isDeletedStreamEvent =
-				StreamDeletedHelper.IsStreamDeletedEventOrLinkToStreamDeletedEvent(resolvedEvent,
+				StreamDeletedHelper.IsStreamDeletedEventOrLinkToStreamDeletedEvent(resolvedEvent, pair.ResolveResult,
 					out deletedPartitionStreamId);
 
 			if (isDeletedStreamEvent) {
