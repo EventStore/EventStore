@@ -1,3 +1,4 @@
+using EventStore.Common.Settings;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;

@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Options;
+using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;

@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;

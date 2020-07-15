@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
