@@ -37,6 +37,7 @@
 		<ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />
 		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
 		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
+		<ProjectReference Include="..\EventStore.Index\EventStore.Index.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 		<ProjectReference Include="..\EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj" />
