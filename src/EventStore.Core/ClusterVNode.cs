@@ -943,6 +943,7 @@ namespace EventStore.Core {
 					Log.Information("Reloading the node's configuration");
 					var options = _vNodeSettings.LoadConfigFunc();
 					ReloadCertificates(options);
+					Log.Information("The node's configuration was successfully reloaded");
 				} catch (Exception exc) {
 					Log.Error(exc, "An error has occurred while reloading the configuration");
 				} finally {
@@ -982,6 +983,7 @@ namespace EventStore.Core {
 
 			var trustedRootCerts = new X509Certificate2Collection();
 			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
+				Log.Information("Loading trusted root certificates");
 				foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(options.TrustedRootCertificatesPath)) {
 					trustedRootCerts.Add(cert);
 					Log.Information("Trusted root certificate file loaded: {file}", fileName);
@@ -993,11 +995,14 @@ namespace EventStore.Core {
 					$"{nameof(options.TrustedRootCertificatesPath)} was not specified in the configuration.");
 			}
 
+			var previousThumbprint = _certificate.Thumbprint;
+			var newThumbprint = certificate.Thumbprint;
+
 			//no need for a lock here since reference assignment is atomic
 			_certificate = certificate;
 			_trustedRootCerts = trustedRootCerts;
 
-			Log.Information("Certificates have been successfully reloaded");
+			Log.Information("Certificate loaded. Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}", previousThumbprint, newThumbprint);
 		}
 
 		public override string ToString() {
