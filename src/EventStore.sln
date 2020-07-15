@@ -63,6 +63,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.TransactionLog",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.TransactionLog.Tests", "EventStore.TransactionLog.Tests\EventStore.TransactionLog.Tests.csproj", "{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Index", "EventStore.Index\EventStore.Index.csproj", "{7D640FE1-4AE9-4382-AF6C-B44BDE936968}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Index.Tests", "EventStore.Index.Tests\EventStore.Index.Tests.csproj", "{31D98056-8922-40C9-83F8-1605847161EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -169,6 +173,14 @@ Global
 		{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}.Debug|x64.Build.0 = Debug|x64
 		{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}.Release|x64.ActiveCfg = Release|x64
 		{439ACB70-5B8A-4028-8CFF-85290B3AEDBF}.Release|x64.Build.0 = Release|x64
+		{7D640FE1-4AE9-4382-AF6C-B44BDE936968}.Debug|x64.ActiveCfg = Debug|x64
+		{7D640FE1-4AE9-4382-AF6C-B44BDE936968}.Debug|x64.Build.0 = Debug|x64
+		{7D640FE1-4AE9-4382-AF6C-B44BDE936968}.Release|x64.ActiveCfg = Release|x64
+		{7D640FE1-4AE9-4382-AF6C-B44BDE936968}.Release|x64.Build.0 = Release|x64
+		{31D98056-8922-40C9-83F8-1605847161EA}.Debug|x64.ActiveCfg = Debug|x64
+		{31D98056-8922-40C9-83F8-1605847161EA}.Debug|x64.Build.0 = Debug|x64
+		{31D98056-8922-40C9-83F8-1605847161EA}.Release|x64.ActiveCfg = Release|x64
+		{31D98056-8922-40C9-83F8-1605847161EA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
