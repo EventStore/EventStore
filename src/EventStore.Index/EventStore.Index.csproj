@@ -14,8 +14,12 @@
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 			<_Parameter1>EventStore.Core</_Parameter1>
 		</AssemblyAttribute>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>EventStore.Core.Tests</_Parameter1>
+		</AssemblyAttribute>
   </ItemGroup>
 	<ItemGroup>
+		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
 	</ItemGroup>
