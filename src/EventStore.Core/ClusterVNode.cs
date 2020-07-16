@@ -39,6 +39,7 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
+using EventStore.Common.Log;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
 using EventStore.Native.UnixSignalManager;

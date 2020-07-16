@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;

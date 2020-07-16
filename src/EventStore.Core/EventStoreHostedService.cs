@@ -76,7 +76,7 @@ namespace EventStore.Core {
 		protected virtual void PreInit(TOptions options) {
 		}
 
-		private void Init(TOptions options) {
+		protected virtual void Init(TOptions options) {
 			var projName = Assembly.GetEntryAssembly().GetName().Name.Replace(".", " - ");
 			var componentName = GetComponentName(options);
 
