@@ -40,6 +40,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		protected override void SubscribeCore(IHttpService service) {
 			Register(service, "/subscriptions", HttpMethod.Get, GetAllSubscriptionInfo, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
+			Register(service, "/subscriptions/restart", HttpMethod.Post, RestartPersistentSubscriptions, Codec.NoCodecs, DefaultCodecs, new Operation(Operations.Subscriptions.Restart));
 			Register(service, "/subscriptions/{stream}", HttpMethod.Get, GetSubscriptionInfoForStream, Codec.NoCodecs,
 				DefaultCodecs, new Operation(Operations.Subscriptions.Statistics));
 			Register(service, "/subscriptions/{stream}/{subscription}", HttpMethod.Put, PutSubscription, DefaultCodecs,
@@ -676,6 +677,27 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var cmd = new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(), envelope, stream,
 				groupname, http.User);
 			Publish(cmd);
+		}
+		
+		private void RestartPersistentSubscriptions(HttpEntityManager http, UriTemplateMatch match) {
+			if (_httpForwarder.ForwardRequest(http))
+				return;
+
+			var envelope = new SendToHttpEnvelope(_networkSendQueue, http,
+				(e, message) => e.ResponseCodec.To("Restarting"),
+				(e, message) => {
+					switch (message) {
+						case SubscriptionMessage.PersistentSubscriptionsRestarting _:
+							return Configure.Ok(e.ResponseCodec.ContentType);
+						case SubscriptionMessage.InvalidPersistentSubscriptionsRestart fail:
+							return Configure.BadRequest
+								($"Persistent Subscriptions cannot be restarted as it is in the wrong state: {fail}");
+						default:
+							return Configure.InternalServerError();
+					}
+				}
+			);
+			Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(envelope));
 		}
 
 		private void GetAllSubscriptionInfo(HttpEntityManager http, UriTemplateMatch match) {

@@ -611,6 +611,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<MonitoringMessage.GetPersistentSubscriptionStats, Message>());
 			_mainBus.Subscribe(perSubscrQueue
 				.WidenFrom<SubscriptionMessage.PersistentSubscriptionTimerTick, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionsRestart, Message>());
 
 			//TODO CC can have multiple threads working on subscription if partition
 			var consumerStrategyRegistry =
@@ -637,6 +638,7 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
 			perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
+			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(persistentSubscription);
 
 			// STORAGE SCAVENGER
 			var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.HttpEndPoint.ToString(),

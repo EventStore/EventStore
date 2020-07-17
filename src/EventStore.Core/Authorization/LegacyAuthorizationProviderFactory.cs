@@ -74,6 +74,7 @@ namespace EventStore.Core.Authorization {
 			policy.AddMatchAnyAssertion(Operations.Subscriptions.Create, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Subscriptions.Update, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Subscriptions.Delete, Grant.Allow, OperationsOrAdmins);
+			policy.AddMatchAnyAssertion(Operations.Subscriptions.Restart, Grant.Allow, OperationsOrAdmins);
 			policy.Add(Operations.Subscriptions.ProcessMessages, subscriptionAccess);
 			policy.AddMatchAnyAssertion(Operations.Subscriptions.ReplayParked, Grant.Allow, OperationsOrAdmins);
 

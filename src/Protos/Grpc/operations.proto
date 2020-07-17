@@ -11,6 +11,7 @@ service Operations {
 	rpc MergeIndexes (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
 	rpc ResignNode (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
 	rpc SetNodePriority (SetNodePriorityReq) returns (event_store.client.shared.Empty);
+	rpc RestartPersistentSubscriptions (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
 }
 
 message StartScavengeReq {
