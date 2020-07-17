@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64</Platforms>
+		<RootNamespace>EventStore.Core.Services.Storage.Tests</RootNamespace>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
+		<PackageReference Include="NUnit" Version="3.12.0" />
+		<PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Storage\EventStore.Storage.csproj" />
+		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
+		<ProjectReference Include="..\EventStore.Index\EventStore.Index.csproj" />
+		<ProjectReference Include="..\EventStore.TransactionLog.Tests\EventStore.TransactionLog.Tests.csproj" />
+		<ProjectReference Include="..\EventStore.Index.Tests\EventStore.Index.Tests.csproj" />
+	</ItemGroup>
+</Project>

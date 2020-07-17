@@ -36,6 +36,7 @@
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />
 		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
+		<ProjectReference Include="..\EventStore.Storage\EventStore.Storage.csproj" />
 		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
 		<ProjectReference Include="..\EventStore.Index\EventStore.Index.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
@@ -44,6 +45,12 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/projections.proto;../Protos/Grpc/cluster.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Compile Remove="Services\Storage\EpochManager\**" />
+	  <EmbeddedResource Remove="Services\Storage\EpochManager\**" />
+	  <None Remove="Services\Storage\EpochManager\**" />
+	  <Protobuf Remove="Services\Storage\EpochManager\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />

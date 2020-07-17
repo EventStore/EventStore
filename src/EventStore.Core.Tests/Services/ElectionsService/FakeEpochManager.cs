@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			throw new NotImplementedException();
 		}
 
-		public void WriteNewEpoch() {
+		public void WriteNewEpoch(Action<EpochRecord> onEpochWritten) {
 			throw new NotImplementedException();
 		}
 

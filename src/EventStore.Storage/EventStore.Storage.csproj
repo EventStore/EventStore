@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64</Platforms>
+		<RootNamespace>EventStore.Core.Services.Storage</RootNamespace>
+	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="Storage\ReaderIndex\**" />
+	  <EmbeddedResource Remove="Storage\ReaderIndex\**" />
+	  <None Remove="Storage\ReaderIndex\**" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Compile Remove="Storage\IndexCommitterService.cs" />
+	  <Compile Remove="Storage\StorageChaser.cs" />
+	  <Compile Remove="Storage\StorageReaderService.cs" />
+	  <Compile Remove="Storage\StorageReaderWorker.cs" />
+	  <Compile Remove="Storage\StorageScavenger.cs" />
+	  <Compile Remove="Storage\StorageWriterService.cs" />
+	</ItemGroup>
+	<ItemGroup>    
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>EventStore.Core</_Parameter1>
+		</AssemblyAttribute>
+  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
+		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
+		<ProjectReference Include="..\EventStore.Index\EventStore.Index.csproj" />
+	</ItemGroup>
+</Project>
