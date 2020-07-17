@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.DataStructures;
@@ -12,7 +10,6 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.Services.Storage.EpochManager {
 	public class EpochManager : IEpochManager {
 		private static readonly ILogger Log = Serilog.Log.ForContext<EpochManager>();
-		private readonly IPublisher _bus;
 
 		public readonly int CachedEpochCount;
 
@@ -31,7 +28,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private long _lastEpochPosition = -1;
 		private int _minCachedEpochNumber = -1;
 
-		public EpochManager(IPublisher bus,
+		public EpochManager(
 			int cachedEpochCount,
 			ICheckpoint checkpoint,
 			ITransactionFileWriter writer,
@@ -39,7 +36,6 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			int maxReaderCount,
 			Func<ITransactionFileReader> readerFactory,
 			Guid instanceId) {
-			Ensure.NotNull(bus, "bus");
 			Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
 			Ensure.NotNull(checkpoint, "checkpoint");
 			Ensure.NotNull(writer, "chunkWriter");
@@ -49,8 +45,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				throw new ArgumentOutOfRangeException("initialReaderCount",
 					"initialReaderCount is greater than maxReaderCount.");
 			Ensure.NotNull(readerFactory, "readerFactory");
-
-			_bus = bus;
+			
 			CachedEpochCount = cachedEpochCount;
 			_checkpoint = checkpoint;
 			_readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount,
@@ -185,7 +180,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		}
 
 		// This method should be called from single thread.
-		public void WriteNewEpoch() {
+		public void WriteNewEpoch(Action<EpochRecord> onEpochWritten) {
 			// Set epoch checkpoint to -1, so if we crash after new epoch record was written, 
 			// but epoch checkpoint wasn't updated, on restart we don't miss the latest epoch.
 			// So on node start, if there is no epoch checkpoint or it contains negative position, 
@@ -205,6 +200,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			// If we are writing the very first epoch, last position will be -1.
 			var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition, _instanceId);
 			UpdateLastEpoch(epoch, flushWriter: true);
+			onEpochWritten(epoch);
 		}
 
 		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition, Guid instanceId) {
@@ -223,8 +219,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 			Log.Debug("=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
 				epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
-
-			_bus.Publish(new SystemMessage.EpochWritten(epoch));
+			//todo - publish this
+			//_bus.Publish(new SystemMessage.EpochWritten(epoch));
 			return epoch;
 		}
 
