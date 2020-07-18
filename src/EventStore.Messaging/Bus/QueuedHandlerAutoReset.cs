@@ -14,9 +14,9 @@ namespace EventStore.Core.Bus {
 	/// to the consumer. It also tracks statistics about the message processing to help
 	/// in identifying bottlenecks
 	/// </summary>
-	public class QueuedHandlerMRES : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
+	public class QueuedHandlerAutoReset : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
 		IThreadSafePublisher {
-		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerMRES>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerAutoReset>();
 
 		public int MessageCount {
 			get { return _queue.Count; }
@@ -32,7 +32,7 @@ namespace EventStore.Core.Bus {
 		private readonly TimeSpan _slowMsgThreshold;
 
 		private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
-		private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false, 1);
+		private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
 		private Thread _thread;
 		private volatile bool _stop;
@@ -40,12 +40,12 @@ namespace EventStore.Core.Bus {
 		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 		private readonly TimeSpan _threadStopWaitTimeout;
 
+		// monitoring
 		private readonly QueueMonitor _queueMonitor;
 		private readonly QueueStatsCollector _queueStats;
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
-
-		public QueuedHandlerMRES(IHandle<Message> consumer,
+		public QueuedHandlerAutoReset(IHandle<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
@@ -97,12 +97,10 @@ namespace EventStore.Core.Bus {
 					Message msg = null;
 					try {
 						if (!_queue.TryDequeue(out msg)) {
-							_starving = true;
-
 							_queueStats.EnterIdle();
-							_msgAddEvent.Wait(100);
-							_msgAddEvent.Reset();
 
+							_starving = true;
+							_msgAddEvent.WaitOne(100);
 							_starving = false;
 						} else {
 							_queueStats.EnterBusy();
@@ -125,7 +123,7 @@ namespace EventStore.Core.Bus {
 										Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt,
 										_queue.Count);
 									if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
-									    !(msg is SystemMessage.SystemInit))
+									    msg.GetType().Name != "SystemMessage.SystemInit")
 										Log.Error(
 											"---!!! VERY SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
 											Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds,

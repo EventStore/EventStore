@@ -14,9 +14,9 @@ namespace EventStore.Core.Bus {
 	/// to the consumer. It also tracks statistics about the message processing to help
 	/// in identifying bottlenecks
 	/// </summary>
-	public class QueuedHandlerAutoReset : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
+	public class QueuedHandlerSleep : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
 		IThreadSafePublisher {
-		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerAutoReset>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerSleep>();
 
 		public int MessageCount {
 			get { return _queue.Count; }
@@ -32,11 +32,9 @@ namespace EventStore.Core.Bus {
 		private readonly TimeSpan _slowMsgThreshold;
 
 		private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
-		private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
 
 		private Thread _thread;
 		private volatile bool _stop;
-		private volatile bool _starving;
 		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 		private readonly TimeSpan _threadStopWaitTimeout;
 
@@ -45,7 +43,7 @@ namespace EventStore.Core.Bus {
 		private readonly QueueStatsCollector _queueStats;
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
-		public QueuedHandlerAutoReset(IHandle<Message> consumer,
+		public QueuedHandlerSleep(IHandle<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
@@ -93,15 +91,20 @@ namespace EventStore.Core.Bus {
 				_queueStats.Start();
 				Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
 
+				const int spinmax = 5000;
+				var iterationsCount = 0;
 				while (!_stop) {
 					Message msg = null;
 					try {
 						if (!_queue.TryDequeue(out msg)) {
 							_queueStats.EnterIdle();
 
-							_starving = true;
-							_msgAddEvent.WaitOne(100);
-							_starving = false;
+							iterationsCount += 1;
+							if (iterationsCount < spinmax) {
+								//do nothing... spin
+							} else {
+								Thread.Sleep(1);
+							}
 						} else {
 							_queueStats.EnterBusy();
 #if DEBUG
@@ -123,7 +126,7 @@ namespace EventStore.Core.Bus {
 										Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt,
 										_queue.Count);
 									if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
-									    !(msg is SystemMessage.SystemInit))
+									    msg.GetType().Name != "SystemMessage.SystemInit")
 										Log.Error(
 											"---!!! VERY SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
 											Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds,
@@ -161,8 +164,6 @@ namespace EventStore.Core.Bus {
 			_queueStats.Enqueued();
 #endif
 			_queue.Enqueue(message);
-			if (_starving)
-				_msgAddEvent.Set();
 		}
 
 		public void Handle(Message message) {

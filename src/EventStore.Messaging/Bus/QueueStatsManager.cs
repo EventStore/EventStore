@@ -1,17 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Threading;
-using EventStore.Common.Utils;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.Monitoring.Stats;
-using EventStore.Core.TransactionLog.Checkpoint;
 
 namespace EventStore.Core.Bus {
 	public class QueueStatsManager {
 #if DEBUG
-		private ICheckpoint _writerCheckpoint;
-		private ICheckpoint _chaserCheckpoint;
+		private Func<long> _readWriterCheckpoint;
+		private Func<long> _readWriterNonFlushedCheckpoint;
+		private Func<long> _readChaserCheckpoint;
 		private ConcurrentDictionary<QueueStatsCollector, bool> _queueStatsCollectors = new ConcurrentDictionary<QueueStatsCollector, bool>();
 #endif
 		public QueueStatsManager() {
@@ -60,11 +56,12 @@ namespace EventStore.Core.Bus {
 					}
 				}
 			} while (!singlePass);
-
+			//todo: the logic here around the flushed and non-flushed read on the reader checkpoint seem suspect
+			//todo: this function hangs when running tests in debug
 			var successes = 0;
 			do {
 				if ((waitForCheckpoints && AreCheckpointsDifferent()) ||
-				    (waitForNonEmptyTf && _writerCheckpoint.Read() == 0)) {
+					(waitForNonEmptyTf && _readWriterCheckpoint() == 0)) {
 					Console.WriteLine("Waiting for IDLE state on checkpoints...");
 					counter++;
 					if (counter > 150 * multiplier)
@@ -77,13 +74,17 @@ namespace EventStore.Core.Bus {
 		}
 
 		private bool AreCheckpointsDifferent() {
-			return _writerCheckpoint!=null && _chaserCheckpoint!=null && _writerCheckpoint.ReadNonFlushed() != _chaserCheckpoint.Read();
+			//todo: the logic here around the flushed and non-flushed read on the reader checkpoint seem suspect
+			return _readWriterNonFlushedCheckpoint != null && _readChaserCheckpoint != null && _readWriterNonFlushedCheckpoint() != _readChaserCheckpoint();
 		}
 
-		public void InitializeCheckpoints(ICheckpoint writerCheckpoint,
-			ICheckpoint chaserCheckpoint) {
-			_chaserCheckpoint = chaserCheckpoint;
-			_writerCheckpoint = writerCheckpoint;
+		public void InitializeCheckpoints(
+			Func<long> readWriterCheckpoint,
+			Func<long> readWriterNonFlushedCheckpoint,
+			Func<long> readChaserCheckpoint) {
+			_readChaserCheckpoint = readChaserCheckpoint;
+			_readWriterNonFlushedCheckpoint = readWriterNonFlushedCheckpoint;
+			_readWriterCheckpoint = readWriterCheckpoint;
 		}
 #endif
 	}

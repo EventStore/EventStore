@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>    
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>EventStore.Core</_Parameter1>
+		</AssemblyAttribute>
+  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+	</ItemGroup>
+</Project>

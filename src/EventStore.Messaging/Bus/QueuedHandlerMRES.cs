@@ -1,10 +1,11 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Bus {
@@ -13,9 +14,13 @@ namespace EventStore.Core.Bus {
 	/// to the consumer. It also tracks statistics about the message processing to help
 	/// in identifying bottlenecks
 	/// </summary>
-	public class QueuedHandlerAutoResetWithMpsc : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
+	public class QueuedHandlerMRES : IQueuedHandler, IHandle<Message>, IPublisher, IMonitoredQueue,
 		IThreadSafePublisher {
-		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerAutoResetWithMpsc>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<QueuedHandlerMRES>();
+
+		public int MessageCount {
+			get { return _queue.Count; }
+		}
 
 		public string Name {
 			get { return _queueStats.Name; }
@@ -26,10 +31,8 @@ namespace EventStore.Core.Bus {
 		private readonly bool _watchSlowMsg;
 		private readonly TimeSpan _slowMsgThreshold;
 
-		// assuming 8bytes per object ref its ~1MB.
-		private readonly MPSCMessageQueue _queue = new MPSCMessageQueue(128 * 1024);
-
-		private readonly AutoResetEvent _msgAddEvent = new AutoResetEvent(false);
+		private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
+		private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false, 1);
 
 		private Thread _thread;
 		private volatile bool _stop;
@@ -37,12 +40,12 @@ namespace EventStore.Core.Bus {
 		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 		private readonly TimeSpan _threadStopWaitTimeout;
 
-		// monitoring
 		private readonly QueueMonitor _queueMonitor;
 		private readonly QueueStatsCollector _queueStats;
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
-		public QueuedHandlerAutoResetWithMpsc(IHandle<Message> consumer,
+
+		public QueuedHandlerMRES(IHandle<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
@@ -90,70 +93,49 @@ namespace EventStore.Core.Bus {
 				_queueStats.Start();
 				Thread.BeginThreadAffinity(); // ensure we are not switching between OS threads. Required at least for v8.
 
-				var batch = new Message[128];
 				while (!_stop) {
 					Message msg = null;
 					try {
-						QueueBatchDequeueResult dequeueResult;
-						if (_queue.TryDequeue(batch, out dequeueResult) == false) {
+						if (!_queue.TryDequeue(out msg)) {
 							_starving = true;
 
 							_queueStats.EnterIdle();
-							_msgAddEvent.WaitOne(100);
+							_msgAddEvent.Wait(100);
 							_msgAddEvent.Reset();
 
 							_starving = false;
 						} else {
-							var estimatedQueueCount = dequeueResult.EstimateCurrentQueueCount;
-
-							for (var i = 0; i < dequeueResult.DequeueCount; i++) {
-								try {
-									msg = batch[i];
-
-
-									_queueStats.EnterBusy();
+							_queueStats.EnterBusy();
 #if DEBUG
-									_queueStats.Dequeued(msg);
+							_queueStats.Dequeued(msg);
 #endif
 
-									_queueStats.ProcessingStarted(msg.GetType(), estimatedQueueCount);
+							var cnt = _queue.Count;
+							_queueStats.ProcessingStarted(msg.GetType(), cnt);
 
-									if (_watchSlowMsg) {
-										var start = DateTime.UtcNow;
+							if (_watchSlowMsg) {
+								var start = DateTime.UtcNow;
 
-										_consumer.Handle(msg);
+								_consumer.Handle(msg);
 
-										var elapsed = DateTime.UtcNow - start;
-										if (elapsed > _slowMsgThreshold) {
-											Log.Debug(
-												"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevEstimatedQueueCount}/{curEstimatedQueueCount}.",
-												Name, _queueStats.InProgressMessage.Name,
-												(int)elapsed.TotalMilliseconds,
-												estimatedQueueCount,
-												_queue.EstimageCurrentQueueCount());
-											if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
-											    !(msg is SystemMessage.SystemInit))
-												Log.Error(
-													"---!!! VERY SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevEstimatedQueueCount}/{curEstimatedQueueCount}.",
-													Name, _queueStats.InProgressMessage.Name,
-													(int)elapsed.TotalMilliseconds,
-													estimatedQueueCount, _queue.EstimageCurrentQueueCount());
-										}
-									} else {
-										_consumer.Handle(msg);
-									}
-								} catch (Exception ex) {
-									Log.Error(ex,
-										"Error while processing message {message} in queued handler '{queue}'.", msg,
-										Name);
-#if DEBUG
-									throw;
-#endif
+								var elapsed = DateTime.UtcNow - start;
+								if (elapsed > _slowMsgThreshold) {
+									Log.Debug(
+										"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
+										Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, cnt,
+										_queue.Count);
+									if (elapsed > QueuedHandler.VerySlowMsgThreshold &&
+									    msg.GetType().Name != "SystemMessage.SystemInit")
+										Log.Error(
+											"---!!! VERY SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
+											Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds,
+											cnt, _queue.Count);
 								}
-
-								estimatedQueueCount -= 1;
-								_queueStats.ProcessingEnded(1);
+							} else {
+								_consumer.Handle(msg);
 							}
+
+							_queueStats.ProcessingEnded(1);
 						}
 					} catch (Exception ex) {
 						Log.Error(ex, "Error while processing message {message} in queued handler '{queue}'.",
@@ -190,7 +172,7 @@ namespace EventStore.Core.Bus {
 		}
 
 		public QueueStats GetStatistics() {
-			return _queueStats.GetStatistics(_queue.EstimageCurrentQueueCount());
+			return _queueStats.GetStatistics(_queue.Count);
 		}
 	}
 }

@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using EventStore.Common.Utils;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using ILogger = Serilog.ILogger;
 
@@ -293,7 +291,7 @@ namespace EventStore.Core.Bus {
 					if (elapsed > _slowMsgThreshold) {
 						Log.Debug("SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
 							Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
-						if (elapsed > QueuedHandler.VerySlowMsgThreshold && !(message is SystemMessage.SystemInit))
+						if (elapsed > QueuedHandler.VerySlowMsgThreshold && message.GetType().Name != "SystemMessage.SystemInit")
 							Log.Error("---!!! VERY SLOW BUS MSG [{bus}]: {message} - {elapsed}ms. Handler: {handler}.",
 								Name, message.GetType().Name, (int)elapsed.TotalMilliseconds, handler.HandlerName);
 					}

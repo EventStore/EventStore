@@ -36,6 +36,7 @@
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />
 		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />
+		<ProjectReference Include="..\EventStore.Messaging\EventStore.Messaging.csproj" />
 		<ProjectReference Include="..\EventStore.Storage\EventStore.Storage.csproj" />
 		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
 		<ProjectReference Include="..\EventStore.Index\EventStore.Index.csproj" />
