@@ -21,6 +21,7 @@
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		<ProjectReference Include="..\EventStore.Index.Tests\EventStore.Index.Tests.csproj" />
+		<ProjectReference Include="..\EventStore.Messaging.Tests\EventStore.Messaging.Tests.csproj" />
 		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />

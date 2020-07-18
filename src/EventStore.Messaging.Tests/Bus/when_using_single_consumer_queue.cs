@@ -4,6 +4,7 @@ using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus {
@@ -28,10 +29,10 @@ namespace EventStore.Core.Tests.Bus {
 			var endEvent = new CountdownEvent(producers.Length);
 
 			var messages = new Message[] {
-				new SystemMessage.SystemInit(),
-				new SystemMessage.SystemInit(),
-				new SystemMessage.SystemInit(),
-				new SystemMessage.SystemInit(),
+				new TestMessage(), 
+				new TestMessage(), 
+				new TestMessage(), 
+				new TestMessage()
 			};
 
 			for (var i = 0; i < producers.Length; i++) {

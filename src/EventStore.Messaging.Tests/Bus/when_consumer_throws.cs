@@ -1,9 +1,9 @@
 ﻿using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Bus {
 	[TestFixture, Category("bus")]

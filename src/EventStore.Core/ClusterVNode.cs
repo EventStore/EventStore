@@ -362,7 +362,10 @@ namespace EventStore.Core {
 			AddTask(storageChaser.Task);
 
 #if DEBUG
-			_queueStatsManager.InitializeCheckpoints(db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
+			_queueStatsManager.InitializeCheckpoints(
+				()=>db.Config.WriterCheckpoint.Read(),
+				()=>db.Config.WriterCheckpoint.ReadNonFlushed(),
+				()=>db.Config.ChaserCheckpoint.Read());
 #endif
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);

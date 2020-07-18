@@ -148,7 +148,7 @@ namespace EventStore.Core.Tests.Bus {
 			int msgCnt = messageCnt;
 			var startEvent = new ManualResetEventSlim(false);
 			var endEvent = new CountdownEvent(producingThreads);
-			var msg = new SystemMessage.SystemStart();
+			var msg = new TestMessage();
 
 			const int batchSize = 100;
 
