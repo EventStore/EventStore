@@ -24,7 +24,8 @@ using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
-	public class StorageWriterService : IHandle<SystemMessage.SystemInit>,
+	public class StorageWriterService : StorageWriter,
+		IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.WriteEpoch>,
 		IHandle<SystemMessage.WaitForChaserToCatchUp>,
@@ -37,28 +38,25 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<MonitoringMessage.InternalStatsRequest> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
 
-		protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
-		private static readonly TimeSpan WaitForChaserSingleIterationTimeout = TimeSpan.FromMilliseconds(200);
 
-		protected readonly TFChunkDb Db;
-		protected readonly TFChunkWriter Writer;
+
+
 		private readonly IIndexWriter _indexWriter;
-		protected readonly IEpochManager EpochManager;
 
 		protected readonly IPublisher Bus;
 		private readonly ISubscriber _subscribeToBus;
 		protected readonly IQueuedHandler StorageWriterQueue;
 		private readonly InMemoryBus _writerBus;
 
+
+
+		private VNodeState _vnodeState = VNodeState.Initializing;
+
+
 		private readonly Stopwatch _watch = Stopwatch.StartNew();
 		private readonly double _minFlushDelay;
 		private long _lastFlushDelay;
 		private long _lastFlushTimestamp;
-
-		protected int FlushMessagesInQueue;
-		private VNodeState _vnodeState = VNodeState.Initializing;
-		protected bool BlockWriter = false;
-
 		private const int LastStatsCount = 1024;
 		private readonly long[] _lastFlushDelays = new long[LastStatsCount];
 		private readonly long[] _lastFlushSizes = new long[LastStatsCount];
@@ -70,11 +68,6 @@ namespace EventStore.Core.Services.Storage {
 		private long _maxFlushSize;
 		private long _maxFlushDelay;
 		private const string _writerFlushHistogram = "writer-flush";
-		private readonly List<Task> _tasks = new List<Task>();
-
-		public IEnumerable<Task> Tasks {
-			get { return _tasks; }
-		}
 
 		public StorageWriterService(IPublisher bus,
 			ISubscriber subscribeToBus,
@@ -83,26 +76,24 @@ namespace EventStore.Core.Services.Storage {
 			TFChunkWriter writer,
 			IIndexWriter indexWriter,
 			IEpochManager epochManager,
-			QueueStatsManager queueStatsManager) {
+			QueueStatsManager queueStatsManager) :
+			base(minFlushDelay,
+				 db,
+				 writer,
+				 epochManager,
+				 HistogramService.SetValue) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
-			Ensure.NotNull(db, "db");
-			Ensure.NotNull(writer, "writer");
 			Ensure.NotNull(indexWriter, "indexWriter");
-			Ensure.NotNull(epochManager, "epochManager");
 
 			Bus = bus;
 			_subscribeToBus = subscribeToBus;
-			Db = db;
 			_indexWriter = indexWriter;
-			EpochManager = epochManager;
 
 			_minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
 			_lastFlushDelay = 0;
 			_lastFlushTimestamp = _watch.ElapsedTicks;
 
-			Writer = writer;
-			Writer.Open();
 
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
 			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
@@ -550,63 +541,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private WriteResult WritePrepareWithRetry(PrepareLogRecord prepare) {
-			long writtenPos = prepare.LogPosition;
-			long newPos;
-			PrepareLogRecord record = prepare;
-			if (!Writer.Write(prepare, out newPos)) {
-				var transactionPos = prepare.TransactionPosition == prepare.LogPosition
-					? newPos
-					: prepare.TransactionPosition;
-				record = new PrepareLogRecord(newPos,
-					prepare.CorrelationId,
-					prepare.EventId,
-					transactionPos,
-					prepare.TransactionOffset,
-					prepare.EventStreamId,
-					prepare.ExpectedVersion,
-					prepare.TimeStamp,
-					prepare.Flags,
-					prepare.EventType,
-					prepare.Data,
-					prepare.Metadata);
-				writtenPos = newPos;
-				if (!Writer.Write(record, out newPos)) {
-					throw new Exception(
-						string.Format("Second write try failed when first writing prepare at {0}, then at {1}.",
-							prepare.LogPosition,
-							writtenPos));
-				}
-			}
-
-			return new WriteResult(writtenPos, newPos, record);
-		}
-
-		private CommitLogRecord WriteCommitWithRetry(CommitLogRecord commit) {
-			long newPos;
-			if (!Writer.Write(commit, out newPos)) {
-				var transactionPos = commit.TransactionPosition == commit.LogPosition
-					? newPos
-					: commit.TransactionPosition;
-				var record = new CommitLogRecord(newPos,
-					commit.CorrelationId,
-					transactionPos,
-					commit.TimeStamp,
-					commit.FirstEventNumber);
-				long writtenPos = newPos;
-				if (!Writer.Write(record, out newPos)) {
-					throw new Exception(
-						string.Format("Second write try failed when first writing commit at {0}, then at {1}.",
-							commit.LogPosition,
-							writtenPos));
-				}
-
-				return record;
-			}
-
-			return commit;
-		}
-
+		
 		protected bool Flush(bool force = false) {
 			var start = _watch.ElapsedTicks;
 			if (force || FlushMessagesInQueue == 0 || start - _lastFlushTimestamp >= _lastFlushDelay + _minFlushDelay) {
@@ -644,23 +579,11 @@ namespace EventStore.Core.Services.Storage {
 			return false;
 		}
 
-		private void PurgeNotProcessedInfo() {
+		protected override void PurgeNotProcessedInfo() {
 			_indexWriter.PurgeNotProcessedCommitsTill(Db.Config.ChaserCheckpoint.Read());
 			_indexWriter.PurgeNotProcessedTransactions(Db.Config.WriterCheckpoint.Read());
 		}
-
-		private struct WriteResult {
-			public readonly long WrittenPos;
-			public readonly long NewPos;
-			public readonly PrepareLogRecord Prepare;
-
-			public WriteResult(long writtenPos, long newPos, PrepareLogRecord prepare) {
-				WrittenPos = writtenPos;
-				NewPos = newPos;
-				Prepare = prepare;
-			}
-		}
-
+		
 		public void Handle(MonitoringMessage.InternalStatsRequest message) {
 			var lastFlushSize = Interlocked.Read(ref _lastFlushSize);
 			var lastFlushDelayMs = Interlocked.Read(ref _lastFlushDelay) / (double)TicksPerMs;

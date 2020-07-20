@@ -16,7 +16,6 @@
 	  <Compile Remove="Storage\IndexCommitterService.cs" />
 	  <Compile Remove="Storage\StorageChaser.cs" />
 	  <Compile Remove="Storage\StorageReaderService.cs" />
-	  <Compile Remove="Storage\StorageReaderWorker.cs" />
 	  <Compile Remove="Storage\StorageScavenger.cs" />
 	  <Compile Remove="Storage\StorageWriterService.cs" />
 	</ItemGroup>
