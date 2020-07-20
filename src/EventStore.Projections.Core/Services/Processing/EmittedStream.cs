@@ -50,6 +50,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private bool _awaitingReady;
 		private bool _awaitingListEventsCompleted;
 		private bool _started;
+		private bool _awaitingLinkToResolution;
 
 		private readonly int _maxWriteBatchLength;
 		private CheckpointTag _lastCommittedOrSubmittedEventPosition; // TODO: rename
@@ -670,6 +671,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private void SubmitWriteEventsInRecoveryLoop(bool anyFound) {
+			if (_awaitingLinkToResolution)
+				return;
+
 			while (_pendingWrites.Count > 0) {
 				var eventToWrite = _pendingWrites.Peek();
 				if (eventToWrite.CausedByTag > _lastCommittedOrSubmittedEventPosition ||
@@ -699,6 +703,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				}
 
 				if (report is EmittedEventResolutionNeeded resolution) {
+					_awaitingLinkToResolution = true;
 					_ioDispatcher.ReadEvent(resolution.StreamId, resolution.Revision, _writeAs, resp => {
 						OnEmittedLinkEventResolved(anyFound, eventToWrite, resolution.TopCommitted, resp);
 					});
@@ -748,11 +753,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (resp.Result == ReadEventResult.Success) {
 				anyFound = true;
 				NotifyEventCommitted(eventToWrite, topAlreadyCommitted.Item3);
-				_pendingWrites.Dequeue();
 			} else {
 				Log.Verbose($"Emitted event ignored after resolution because it links to an event that no longer exists: eventId: {eventToWrite.EventId}, eventType: {eventToWrite.EventId}, checkpoint: {eventToWrite.CorrelationId}, causedBy: {eventToWrite.CausedBy}");	
 			}
-
+			_pendingWrites.Dequeue();
+			_awaitingLinkToResolution = false;
 			SubmitWriteEventsInRecoveryLoop(anyFound);
 		}
 

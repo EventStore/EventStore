@@ -46,7 +46,6 @@ namespace EventStore.Projections.Core.Standard {
 		public void ConfigureSourceProcessingStrategy(SourceDefinitionBuilder builder) {
 			builder.FromAll();
 			builder.AllEvents();
-			builder.SetIncludeLinks();
 		}
 
 		public void Load(string state) {
