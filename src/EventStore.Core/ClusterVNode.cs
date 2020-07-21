@@ -742,6 +742,7 @@ namespace EventStore.Core {
 
 			if (Runtime.IsUnixOrMac) {
 				UnixSignalManager.GetInstance().Subscribe(Signum.SIGHUP, () => {
+					Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
 					_mainQueue.Publish(new ClientMessage.ReloadConfig());
 				});
 			}
@@ -940,7 +941,6 @@ namespace EventStore.Core {
 
 			Task.Run(() => {
 				try {
-					Log.Information("Reloading the node's configuration");
 					var options = _vNodeSettings.LoadConfigFunc();
 					ReloadCertificates(options);
 					Log.Information("The node's configuration was successfully reloaded");
