@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Replication {
 		private readonly bool _isReadOnlyReplica;
 		private readonly bool _useSsl;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslServerCertValidator;
-		private readonly X509Certificate _sslClientCertificate;
+		private readonly Func<X509Certificate> _sslClientCertificateSelector;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly TimeSpan _heartbeatInterval;
 
@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Replication {
 			bool isReadOnlyReplica,
 			bool useSsl,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
-			X509Certificate sslClientCertificate,
+			Func<X509Certificate> sslClientCertificateSelector,
 			TimeSpan heartbeatTimeout,
 			TimeSpan heartbeatInterval,
 			TimeSpan writeTimeout) {
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Replication {
 			_isReadOnlyReplica = isReadOnlyReplica;
 			_useSsl = useSsl;
 			_sslServerCertValidator = sslServerCertValidator;
-			_sslClientCertificate = sslClientCertificate;
+			_sslClientCertificateSelector = sslClientCertificateSelector;
 			_heartbeatTimeout = heartbeatTimeout;
 			_heartbeatInterval = heartbeatInterval;
 
@@ -170,7 +170,10 @@ namespace EventStore.Core.Services.Replication {
 				_connector,
 				_useSsl,
 				_sslServerCertValidator,
-				_sslClientCertificate == null ? null : new X509CertificateCollection {_sslClientCertificate},
+				() => {
+					var cert = _sslClientCertificateSelector();
+					return new X509CertificateCollection{cert};
+				},
 				_networkSendQueue,
 				_authProvider,
 				_authorizationGateway,

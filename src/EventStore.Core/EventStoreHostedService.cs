@@ -23,12 +23,12 @@ namespace EventStore.Core {
 		public bool SkipRun => _skipRun;
 		private readonly bool _skipRun;
 		public TOptions Options { get; }
+		private string[] _args;
 
 		protected EventStoreHostedService(string[] args) {
 			try {
-				Options = EventStoreOptions.Parse<TOptions>(args, Opts.EnvPrefix,
-					Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
-					MutateEffectiveOptions);
+				_args = args;
+				Options = LoadConfig();
 				if (Options.Help) {
 					Console.WriteLine("EventStoreDB version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
@@ -65,6 +65,10 @@ namespace EventStore.Core {
 		protected virtual IEnumerable<OptionSource>
 			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) =>
 			effectiveOptions;
+
+		public TOptions LoadConfig() => EventStoreOptions.Parse<TOptions>(_args, Opts.EnvPrefix,
+			Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
+			MutateEffectiveOptions);
 
 		protected abstract Task StartInternalAsync(CancellationToken cancellationToken);
 		protected abstract Task StopInternalAsync(CancellationToken cancellationToken);
@@ -108,18 +112,6 @@ namespace EventStore.Core {
 			}
 
 			return msg;
-		}
-
-		protected static StoreLocation GetCertificateStoreLocation(string certificateStoreLocation) {
-			if (!Enum.TryParse(certificateStoreLocation, out StoreLocation location))
-				throw new Exception($"Could not find certificate store location '{certificateStoreLocation}'");
-			return location;
-		}
-
-		protected static StoreName GetCertificateStoreName(string certificateStoreName) {
-			if (!Enum.TryParse(certificateStoreName, out StoreName name))
-				throw new Exception($"Could not find certificate store name '{certificateStoreName}'");
-			return name;
 		}
 
 		Task IHostedService.StartAsync(CancellationToken cancellationToken) =>

@@ -38,11 +38,14 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
+using EventStore.Common.Exceptions;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
+using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
@@ -55,7 +58,8 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
-		IHandle<SystemMessage.SystemStart> {
+		IHandle<SystemMessage.SystemStart>,
+		IHandle<ClientMessage.ReloadConfig>{
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
 		public IQueuedHandler MainQueue {
@@ -115,24 +119,29 @@ namespace EventStore.Core {
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
-		private readonly X509Certificate2 _certificate;
+		private X509Certificate2 _certificate;
+		private X509Certificate2Collection _trustedRootCerts;
 		private readonly bool _disableHttps;
+		private readonly Func<X509Certificate2> _certificateSelector;
+		private readonly Func<X509Certificate2Collection> _trustedRootCertsSelector;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalServerCertificateValidator;
+
 		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
 		private int _stopCalled;
+		private int _reloadingConfig;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
 		}
 
-		public X509Certificate2 Certificate => _certificate;
 		public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
+		public Func<X509Certificate2> CertificateSelector => _certificateSelector;
 		public bool DisableHttps => _disableHttps;
 
 #if DEBUG
@@ -163,13 +172,18 @@ namespace EventStore.Core {
 			_vNodeSettings = vNodeSettings;
 			_nodeInfo = vNodeSettings.NodeInfo;
 			_certificate = vNodeSettings.Certificate;
+			_trustedRootCerts = vNodeSettings.TrustedRootCerts;
 			_disableHttps = vNodeSettings.DisableHttps;
 			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
-			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
-			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
+
+			_certificateSelector = () => _certificate;
+			_trustedRootCertsSelector = () => _trustedRootCerts;
+
+			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 			_externalClientCertificateValidator = delegate { return (true, null); };
-			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _vNodeSettings.TrustedRootCerts);
+			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (vNodeSettings.EnableHistograms) {
@@ -204,7 +218,7 @@ namespace EventStore.Core {
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
 						new UriBuilder(!_vNodeSettings.DisableHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
-							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificate));
+							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificateSelector));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -214,6 +228,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(this);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(this);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(this);
+			_mainBus.Subscribe<ClientMessage.ReloadConfig>(this);
+
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
@@ -410,7 +426,7 @@ namespace EventStore.Core {
 						TcpServiceType.External, TcpSecurityType.Secure,
 						new ClientTcpDispatcher(vNodeSettings.WriteTimeout),
 						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
-						_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, _externalClientCertificateValidator,
+						_authenticationProvider, AuthorizationGateway, _certificateSelector, _externalClientCertificateValidator,
 						vNodeSettings.ConnectionPendingSendBytesThreshold, vNodeSettings.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
@@ -436,7 +452,7 @@ namespace EventStore.Core {
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(vNodeSettings.WriteTimeout),
 							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
-							_authenticationProvider, AuthorizationGateway, vNodeSettings.Certificate, _internalClientCertificateValidator,
+							_authenticationProvider, AuthorizationGateway, _certificateSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
@@ -477,8 +493,7 @@ namespace EventStore.Core {
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var atomController = new AtomController(_mainQueue, _workersHandler,
 				vNodeSettings.DisableHTTPCaching, vNodeSettings.WriteTimeout);
-			var gossipController = new GossipController(_mainQueue, _workersHandler,
-				_internalServerCertificateValidator, _certificate);
+			var gossipController = new GossipController(_mainQueue, _workersHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 
@@ -676,7 +691,7 @@ namespace EventStore.Core {
 					_vNodeSettings.GossipAdvertiseInfo.InternalTcp ?? _vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
 					_vNodeSettings.ReadOnlyReplica,
 					!vNodeSettings.DisableInternalTcpTls, _internalServerCertificateValidator,
-					_certificate,
+					_certificateSelector,
 					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval,
 					vNodeSettings.WriteTimeout);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
@@ -725,6 +740,13 @@ namespace EventStore.Core {
 			AddTask(subscrQueue.Start());
 			AddTask(perSubscrQueue.Start());
 
+			if (Runtime.IsUnixOrMac) {
+				UnixSignalManager.GetInstance().Subscribe(Signum.SIGHUP, () => {
+					Log.Information("Reloading the node's configuration since the SIGHUP signal has been received.");
+					_mainQueue.Publish(new ClientMessage.ReloadConfig());
+				});
+			}
+
 			if (subsystems != null) {
 				foreach (var subsystem in subsystems) {
 					var http = new[] { _httpService };
@@ -758,6 +780,8 @@ namespace EventStore.Core {
 			timeout ??= TimeSpan.FromSeconds(5);
 			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
 
+			UnixSignalManager.StopProcessing();
+
 			if (_subsystems != null) {
 				foreach (var subsystem in _subsystems) {
 					subsystem.Stop();
@@ -777,6 +801,8 @@ namespace EventStore.Core {
 		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
+			UnixSignalManager.StopProcessing();
+
 			if (_subsystems == null)
 				return;
 			foreach (var subsystem in _subsystems)
@@ -842,16 +868,16 @@ namespace EventStore.Core {
 		}
 
 		public static ValueTuple<bool, string> ValidateServerCertificateWithTrustedRootCerts(X509Certificate certificate,
-			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
-			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCerts,"server");
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector) {
+			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertsSelector, "server");
 		}
 
 		public static ValueTuple<bool, string> ValidateClientCertificateWithTrustedRootCerts(X509Certificate certificate,
-			X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts) {
-			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCerts,"client");
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector) {
+			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertsSelector, "client");
 		}
 
-		private static ValueTuple<bool, string> ValidateCertificateWithTrustedRootCerts(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, X509Certificate2Collection trustedRootCerts, string certificateOrigin) {
+		private static ValueTuple<bool, string> ValidateCertificateWithTrustedRootCerts(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector, string certificateOrigin) {
 			if (certificate == null)
 				return (false, $"No certificate was provided by the {certificateOrigin}");
 
@@ -861,6 +887,7 @@ namespace EventStore.Core {
 				}
 			};
 
+			var trustedRootCerts = trustedRootCertsSelector();
 			if (trustedRootCerts != null) {
 				foreach (var cert in trustedRootCerts)
 					newChain.ChainPolicy.ExtraStore.Add(cert);
@@ -904,6 +931,78 @@ namespace EventStore.Core {
 			}
 
 			return (true, null);
+		}
+
+		public void Handle(ClientMessage.ReloadConfig message) {
+			if (Interlocked.CompareExchange(ref _reloadingConfig, 1, 0) != 0) {
+				Log.Information("The node's configuration reload is already in progress");
+				return;
+			}
+
+			Task.Run(() => {
+				try {
+					var options = _vNodeSettings.LoadConfigFunc();
+					ReloadCertificates(options);
+					Log.Information("The node's configuration was successfully reloaded");
+				} catch (Exception exc) {
+					Log.Error(exc, "An error has occurred while reloading the configuration");
+				} finally {
+					Interlocked.Exchange(ref _reloadingConfig, 0);
+				}
+			});
+		}
+
+		private void ReloadCertificates(ClusterNodeOptions options) {
+			var currentCertificate = _certificateSelector();
+			var currentTrustedRootCerts = _trustedRootCertsSelector();
+
+			if (currentCertificate == null || currentTrustedRootCerts == null) {
+				Log.Information("Skipping reload of certificates since TLS is disabled.");
+				return;
+			}
+
+			X509Certificate2 certificate;
+			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
+				var location = CertificateLoader.GetCertificateStoreLocation(options.CertificateStoreLocation);
+				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
+				certificate = CertificateLoader.FromStore(location, name, options.CertificateSubjectName,
+					options.CertificateThumbprint);
+			} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
+				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
+				certificate = CertificateLoader.FromStore(name, options.CertificateSubjectName,
+					options.CertificateThumbprint);
+			} else if (options.CertificateFile.IsNotEmptyString()) {
+				certificate = CertificateLoader.FromFile(
+					options.CertificateFile,
+					options.CertificatePrivateKeyFile,
+					options.CertificatePassword);
+			} else {
+				throw new InvalidConfigurationException(
+					"A certificate is required but none was provided in the configuration.");
+			}
+
+			var trustedRootCerts = new X509Certificate2Collection();
+			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
+				Log.Information("Loading trusted root certificates");
+				foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(options.TrustedRootCertificatesPath)) {
+					trustedRootCerts.Add(cert);
+					Log.Information("Trusted root certificate file loaded: {file}", fileName);
+				}
+				if(trustedRootCerts.Count == 0)
+					throw new InvalidConfigurationException($"No trusted root certificate files were loaded from the specified path: {options.TrustedRootCertificatesPath}");
+			} else {
+				throw new InvalidConfigurationException(
+					$"{nameof(options.TrustedRootCertificatesPath)} was not specified in the configuration.");
+			}
+
+			var previousThumbprint = _certificate.Thumbprint;
+			var newThumbprint = certificate.Thumbprint;
+
+			//no need for a lock here since reference assignment is atomic
+			_certificate = certificate;
+			_trustedRootCerts = trustedRootCerts;
+
+			Log.Information("Certificate loaded. Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}", previousThumbprint, newThumbprint);
 		}
 
 		public override string ToString() {

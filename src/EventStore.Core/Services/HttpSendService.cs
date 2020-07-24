@@ -11,6 +11,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Settings;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.EntityManagement;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
@@ -43,7 +44,8 @@ namespace EventStore.Core.Services {
 						}
 						return isValid;
 					}
-				}
+				},
+				PooledConnectionLifetime = ESConsts.HttpClientConnectionLifeTime
 			};
 			_forwardClient = new HttpClient(socketsHttpHandler);
 		}

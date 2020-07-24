@@ -25,24 +25,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private readonly IPublisher _networkSendQueue;
 
-		public GossipController(IPublisher publisher, IPublisher networkSendQueue, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, X509Certificate clientCertificate)
+		public GossipController(IPublisher publisher, IPublisher networkSendQueue)
 			: base(publisher) {
 			_networkSendQueue = networkSendQueue;
-
-			var socketsHttpHandler = new SocketsHttpHandler {
-				SslOptions = {
-					RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
-						var (isValid, error) = serverCertValidator(certificate, chain, errors);
-						if (!isValid && error != null) {
-							Log.Error("Server certificate validation error: {e}", error);
-						}
-						return isValid;
-					},
-					ClientCertificates = new X509CertificateCollection()
-				}
-			};
-			if(clientCertificate != null)
-				socketsHttpHandler.SslOptions.ClientCertificates.Add(clientCertificate);
 		}
 
 		protected override void SubscribeCore(IHttpService service) {

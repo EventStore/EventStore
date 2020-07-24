@@ -112,7 +112,8 @@ namespace EventStore.Core.Tests.Helpers {
 				useHttps ? new X509Certificate2Collection(ssl_connections.GetRootCertificate()) : null;
 
 			var singleVNodeSettings = new ClusterVNodeSettings(
-				Guid.NewGuid(), debugIndex, InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
+				Guid.NewGuid(), debugIndex, () => new ClusterNodeOptions(),
+				InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
 				ExternalTcpSecEndPoint, HttpEndPoint,
 				new Data.GossipAdvertiseInfo(
 					InternalTcpEndPoint.ToDnsEndPoint(),
@@ -173,7 +174,7 @@ namespace EventStore.Core.Tests.Helpers {
 								ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 									var (isValid, error) =
-										ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertificates);
+										ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, () => trustedRootCertificates);
 									if (!isValid && error != null) {
 										Log.Error("Client certificate validation error: {e}", error);
 									}

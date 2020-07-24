@@ -57,6 +57,7 @@ namespace EventStore.Core.Authorization {
 			policy.Add(Operations.Node.Gossip.Update, isSystem);
 
 			policy.AddMatchAnyAssertion(Operations.Node.Shutdown, Grant.Allow, OperationsOrAdmins);
+			policy.AddMatchAnyAssertion(Operations.Node.ReloadConfiguration, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.MergeIndexes, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.SetPriority, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Resign, Grant.Allow, OperationsOrAdmins);

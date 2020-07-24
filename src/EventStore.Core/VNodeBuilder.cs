@@ -20,6 +20,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
 using EventStore.Core.Settings;
@@ -33,6 +34,7 @@ namespace EventStore.Core {
 	public abstract class VNodeBuilder {
 		// ReSharper disable FieldCanBeMadeReadOnly.Local - as more options are added
 		protected ILogger _log;
+		protected Func<ClusterNodeOptions> _loadConfigFunc;
 
 		protected int _chunkSize;
 		protected string _dbPath;
@@ -666,33 +668,17 @@ namespace EventStore.Core {
 			string certificatePath,
 			string privateKeyPath,
 			string password) {
-
-			if (string.IsNullOrEmpty(privateKeyPath)) {
-				try {
-					_certificate = new X509Certificate2(certificatePath, password);
-				} catch (CryptographicException exc) {
-					throw new AggregateException("Error loading certificate file. Please verify that the correct password has been provided via the `CertificatePassword` option.", exc);
-				}
-
-				if (!_certificate.HasPrivateKey) {
-					throw new Exception("Expect certificate to contain a private key. " +
-					                    "Please either provide a certificate that contains one or set the private key" +
-					                    " via the `CertificatePrivateKeyFile` option.");
-				}
-				return this;
+			try {
+				_certificate = CertificateLoader.FromFile(certificatePath, privateKeyPath, password);
+			} catch (CryptographicException exc) {
+				throw new AggregateException("Error loading certificate file. Please verify that the correct password has been provided via the `CertificatePassword` option.", exc);
 			}
-			
-			var privateKey = Convert.FromBase64String(string.Join(string.Empty, File.ReadAllLines(privateKeyPath)
-				.Skip(1)
-				.SkipLast(1)));
-			
-			using var rsa = RSA.Create();
-			rsa.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
-			
-			using var publicCertificate = new X509Certificate2(certificatePath, password);
-			using var publicWithPrivate = publicCertificate.CopyWithPrivateKey(rsa);
-			
-			_certificate = new X509Certificate2(publicWithPrivate.Export(X509ContentType.Pfx));
+			catch (NoCertificatePrivateKeyException) {
+				throw new Exception("Expect certificate to contain a private key. " +
+				                    "Please either provide a certificate that contains one or set the private key" +
+				                    " via the `CertificatePrivateKeyFile` option.");
+			}
+
 			return this;
 		}
 
@@ -704,25 +690,12 @@ namespace EventStore.Core {
 		public VNodeBuilder WithTrustedRootCertificatesPath(
 			string trustedRootCertificatesPath) {
 			Ensure.NotNullOrEmpty(trustedRootCertificatesPath, "trustedRootCertificatesPath");
-
 			var certCollection = new X509Certificate2Collection();
-			var files = Directory.GetFiles(trustedRootCertificatesPath);
-			var acceptedExtensions = new[] { ".crt", ".cert", ".cer", ".pem", ".der" };
-			foreach (var file in files) {
-				var fileInfo = new FileInfo(file);
-				var extension = fileInfo.Extension;
-				if (acceptedExtensions.Contains(extension)) {
-					try {
-						var cert = new X509Certificate2(File.ReadAllBytes(file));
-						certCollection.Add(cert);
-						_log.Information("Trusted root certificate file loaded: {file}", fileInfo.Name);
-					} catch (Exception exc) {
-						throw new AggregateException($"Error loading trusted root certificate file: {file}", exc);
-					}
-				}
+			foreach (var (fileName, certificate) in CertificateLoader.LoadAllCertificates(trustedRootCertificatesPath)) {
+				certCollection.Add(certificate);
+				_log.Information("Trusted root certificate file loaded: {file}", fileName);
 			}
-
-			if(certCollection.Count == 0)
+			if (certCollection.Count == 0)
 				throw new Exception($"No trusted root certificates were loaded from: {trustedRootCertificatesPath}");
 
 			_trustedRootCerts = certCollection;
@@ -1182,8 +1155,7 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName,
 			string certificateSubjectName, string certificateThumbprint) {
-			var store = new X509Store(storeName, storeLocation);
-			_certificate = GetCertificateFromStore(store, certificateSubjectName, certificateThumbprint);
+			_certificate = CertificateLoader.FromStore(storeLocation, storeName, certificateSubjectName, certificateThumbprint);
 			return this;
 		}
 
@@ -1196,54 +1168,9 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithServerCertificateFromStore(StoreName storeName, string certificateSubjectName,
 			string certificateThumbprint) {
-			var store = new X509Store(storeName);
-			_certificate = GetCertificateFromStore(store, certificateSubjectName, certificateThumbprint);
+			_certificate = CertificateLoader.FromStore(storeName, certificateSubjectName, certificateThumbprint);
 			return this;
 		}
-
-		private X509Certificate2 GetCertificateFromStore(X509Store store, string certificateSubjectName,
-			string certificateThumbprint) {
-			try {
-				store.Open(OpenFlags.OpenExistingOnly);
-			} catch (Exception exc) {
-				throw new Exception(
-					string.Format("Could not open certificate store '{0}' in location {1}'.", store.Name,
-						store.Location), exc);
-			}
-
-			if (!string.IsNullOrWhiteSpace(certificateThumbprint)) {
-				var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, certificateThumbprint, true);
-				if (certificates.Count == 0)
-					throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.",
-						certificateThumbprint));
-
-				//Can this even happen?
-				if (certificates.Count > 1)
-					throw new Exception(string.Format("Could not determine a unique certificate from thumbprint '{0}'.",
-						certificateThumbprint));
-
-				return certificates[0];
-			}
-
-			if (!string.IsNullOrWhiteSpace(certificateSubjectName)) {
-				var certificates =
-					store.Certificates.Find(X509FindType.FindBySubjectName, certificateSubjectName, true);
-				if (certificates.Count == 0)
-					throw new Exception(string.Format("Could not find valid certificate with subject name '{0}'.",
-						certificateSubjectName));
-
-				//Can this even happen?
-				if (certificates.Count > 1)
-					throw new Exception(string.Format(
-						"Could not determine a unique certificate from subject name '{0}'.", certificateSubjectName));
-
-				return certificates[0];
-			}
-
-			throw new ArgumentException(
-				"No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
-		}
-
 
 		/// <summary>
 		/// Sets the transaction file chunk size. Default is <see cref="TFConsts.ChunkSize"/>
@@ -1430,6 +1357,7 @@ namespace EventStore.Core {
 
 			_vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
 				0,
+				_loadConfigFunc,
 				_internalTcp,
 				_internalSecureTcp,
 				_externalTcp,
@@ -1653,6 +1581,10 @@ namespace EventStore.Core {
 
 		public void WithUnsafeAllowSurplusNodes() {
 			_unsafeAllowSurplusNodes = true;
+		}
+
+		public void WithLoadConfigFunction(Func<ClusterNodeOptions> loadConfigFunc) {
+			_loadConfigFunc = loadConfigFunc;
 		}
 	}
 }

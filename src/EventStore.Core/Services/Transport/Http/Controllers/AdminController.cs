@@ -35,6 +35,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				new ControllerAction("/admin/shutdown", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Shutdown)),
 				OnPostShutdown);
 			service.RegisterAction(
+				new ControllerAction("/admin/reloadconfig", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.ReloadConfiguration)),
+				OnPostReloadConfig);
+			service.RegisterAction(
 				new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}",
 					HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Start)), OnPostScavenge);
 			service.RegisterAction(
@@ -79,6 +82,17 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
 				Log.Information("Request shut down of node because shutdown command has been received.");
 				Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
+			} else {
+				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
+			}
+		}
+
+		private void OnPostReloadConfig(HttpEntityManager entity, UriTemplateMatch match) {
+			if (entity.User != null &&
+			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
+				Log.Information("Reloading the node's configuration since a request has been received on /admin/reloadconfig.");
+				Publish(new ClientMessage.ReloadConfig());
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);
