@@ -21,11 +21,13 @@ All notable changes to this project will be documented in this file.
 - Improved output of CLI help [EventStore#2577](https://github.com/EventStore/EventStore/pull/2577)
 - Log to default directory; args from CLI [EventStore#2574](https://github.com/EventStore/EventStore/pull/2574)
 - slow gRPC subscriptions [EventStore#2566](https://github.com/EventStore/EventStore/pull/2566)
+- Handle successful link event resolution when projections emit events. [EventStore#2465](https://github.com/EventStore/EventStore/pull/2465)
 
 ### Added
 - Option to set client certificate common name [EventStore#2572](https://github.com/EventStore/EventStore/pull/2572)
 - --disable-https flag to disable only HTTPS [EventStore#2556](https://github.com/EventStore/EventStore/pull/2556)
 - --insecure flag to disable TLS on all interfaces (TCP & HTTP) to eliminate requirement for certificates to make it easier to run EventStoreDB [EventStore#2556](https://github.com/EventStore/EventStore/pull/2556)
+- Ability to reload certificates by triggering the /admin/reloadconfig endpoint or by sending a SIGHUP signal (linux only) [EventStore#2590](https://github.com/EventStore/EventStore/pull/2590)
 
 ## [20.6.0] - 2020-06-09
 
