@@ -169,6 +169,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			RecordReadResult result = reader.TryReadAt(logPosition);
 			if (!result.Success)
 				return null;
+
 			if (result.LogRecord.RecordType != LogRecordType.Prepare)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
@@ -435,7 +436,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return ExpectedVersion.NoStream;
 
 			var rec = ReadPrepareInternal(reader, latestEntry.Position);
-			if (rec == null) throw new Exception("Could not read latest stream's prepare. That should never happen.");
+			if (rec == null)
+				throw new Exception(
+					$"Could not read latest stream's prepare for stream '{streamId}' at position {latestEntry.Position}");
 
 			int count = 0;
 			long startVersion = 0;
