@@ -138,6 +138,15 @@ namespace EventStore.ClusterNode {
 					" - ENABLE THE ATOMPUB PROTOCOL OVER HTTP.\n" +
 					"========================================================================================================\n");
 			}
+			else if (opts.Insecure) {
+				Log.Warning(
+					"\n========================================================================================================\n" +
+					"INSECURE MODE IS ON. THIS MODE IS *NOT* RECOMMENDED FOR PRODUCTION USE.\n" +
+					"WHEN IN INSECURE MODE EVENTSTOREDB WILL\n" +
+					" - DISABLE ALL AUTHENTICATION AND AUTHORIZATION.\n" +
+					" - DISABLE TLS ON ALL TCP AND HTTP INTERFACES.\n" +
+					"========================================================================================================\n");
+			}
 
 			Log.Information(
 				"\nINTERFACES\n" +

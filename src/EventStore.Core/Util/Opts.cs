@@ -403,7 +403,7 @@ namespace EventStore.Core.Util {
 		public const string DevDescr = "Enable Development Mode for Event Store.";
 		public const bool DevDefault = false;
 
-		public const string InsecureDescr = "Disable TLS on all TCP/HTTP interfaces";
+		public const string InsecureDescr = "Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces";
 		public const bool InsecureDefault = false;
 	}
 }
