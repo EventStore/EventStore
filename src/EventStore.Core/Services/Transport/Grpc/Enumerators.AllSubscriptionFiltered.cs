@@ -87,8 +87,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						_resolveLinks, _eventFilter, _user, _requiresLeader, _maxSearchWindow,
 						_checkpointIntervalMultiplier, checkpointReached, _cancellationToken)
 					: new CatchupAllSubscription(_subscriptionId, bus, startPosition ?? Position.Start, resolveLinks,
-						_eventFilter, user, _requiresLeader, readIndex, _maxSearchWindow, _checkpointIntervalMultiplier, checkpointReached,
-						cancellationToken);
+						_eventFilter, user, _requiresLeader, readIndex, _maxSearchWindow, _checkpointIntervalMultiplier,
+						checkpointReached, cancellationToken);
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
@@ -131,7 +131,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private readonly IEventFilter _eventFilter;
 				private readonly ClaimsPrincipal _user;
 				private readonly bool _requiresLeader;
-				private readonly uint _checkpointIntervalMultiplier;
+				private readonly uint _checkpointInterval;
 				private readonly Func<Position, Task> _checkpointReached;
 				private readonly uint _maxWindowSize;
 				private readonly CancellationTokenSource _disposedTokenSource;
@@ -142,7 +142,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private Position _nextPosition;
 				private ResolvedEvent _current;
 				private Position _currentPosition;
-				private uint _checkpointInterval;
+				private uint _checkpointIntervalCounter;
 
 				public ResolvedEvent Current => _current;
 				public Position CurrentPosition => _currentPosition;
@@ -189,14 +189,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_eventFilter = eventFilter;
 					_user = user;
 					_requiresLeader = requiresLeader;
-					_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
 					_checkpointReached = checkpointReached;
 					_maxWindowSize = maxWindowSize ?? ReadBatchSize;
+					_checkpointInterval = checkpointIntervalMultiplier;
 					_disposedTokenSource = new CancellationTokenSource();
 					_buffer = new ConcurrentQueueWrapper<(ResolvedEvent, Position?)>();
+
 					_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 					_currentPosition = _startPosition;
-					_checkpointInterval = 0;
+					_checkpointIntervalCounter = 0;
 					Log.Information("Catch-up subscription {subscriptionId} to $all:{eventFilter} running...",
 						_subscriptionId, _eventFilter);
 				}
@@ -303,10 +304,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									completed.NextPos.CommitPosition,
 									completed.NextPos.PreparePosition);
 
-								unchecked {
-									if (_checkpointInterval++ % _checkpointIntervalMultiplier == 0) {
+								if (completed.Events.Length == 0) {
+									if (++_checkpointIntervalCounter >= _checkpointInterval) {
+										Log.Verbose(
+											"Catch-up subscription {subscriptionId} to $all:{eventFilter} reached checkpoint at {position}.",
+											_subscriptionId, _eventFilter, _nextPosition);
+										_checkpointIntervalCounter = 0;
 										_buffer.Enqueue((default, _nextPosition));
 									}
+								} else {
+									_checkpointIntervalCounter = 0;
 								}
 
 								readNextSource.TrySetResult(completed.IsEndOfStream);
