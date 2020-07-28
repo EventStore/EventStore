@@ -445,10 +445,19 @@ namespace EventStore.ClusterNode {
 				: options.AuthenticationConfig;
 
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
-			var authorizationProviderFactory =
-				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader);
-			var authenticationProviderFactory =
-				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginLoader);
+
+			AuthenticationProviderFactory authenticationProviderFactory;
+			AuthorizationProviderFactory authorizationProviderFactory;
+
+			if (!options.Insecure) {
+				authorizationProviderFactory =
+					GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader);
+				authenticationProviderFactory =
+					GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginLoader);
+			} else {
+				authorizationProviderFactory = new AuthorizationProviderFactory(components => new PassthroughAuthorizationProviderFactory());
+				authenticationProviderFactory = new AuthenticationProviderFactory(components => new PassthroughAuthenticationProviderFactory());
+			}
 
 			var plugInContainer = FindPlugins();
 
