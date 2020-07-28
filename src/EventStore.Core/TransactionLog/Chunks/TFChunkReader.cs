@@ -3,6 +3,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Checkpoint;
+using Serilog;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkReader : ITransactionFileReader {
@@ -20,6 +21,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private long _curPos;
 		private bool _optimizeReadSideCache;
 		private readonly TFChunkReaderExistsAtOptimizer _existsAtOptimizer;
+		private readonly ILogger _log = Log.ForContext<TFChunkReader>();
 
 		public TFChunkReader(TFChunkDb db, ICheckpoint writerCheckpoint, long initialPosition = 0,
 			bool optimizeReadSideCache = false) {
@@ -141,8 +143,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private RecordReadResult TryReadAtInternal(long position, int retries) {
 			var writerChk = _writerCheckpoint.Read();
-			if (position >= writerChk)
+			if (position >= writerChk) {
+				_log.Warning(
+					"Attempted to read at position {position}, which is further than writer checkpoint {writerChk}",
+					position, writerChk);
 				return RecordReadResult.Failure;
+			}
 
 			var chunk = _db.Manager.GetChunkFor(position);
 			try {

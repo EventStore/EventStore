@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
+using Serilog;
 using Range = EventStore.Core.Data.Range;
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
@@ -42,8 +43,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			public RecordReadResult TryReadAt(long logicalPosition) {
 				var workItem = Chunk.GetReaderWorkItem();
 				try {
-					if (logicalPosition >= Chunk.LogicalDataSize)
+					if (logicalPosition >= Chunk.LogicalDataSize) {
+						_log.Warning(
+							"Tried to read logical position {logicalPosition} which is greater than the chunk's logical size of {chunkLogicalSize}",
+							logicalPosition, Chunk.LogicalDataSize);
 						return RecordReadResult.Failure;
+					}
 
 					LogRecord record;
 					int length;
@@ -262,8 +267,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				var workItem = Chunk.GetReaderWorkItem();
 				try {
 					var actualPosition = TranslateExactPosition(workItem, logicalPosition);
-					if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize)
+					if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize) {
+						_log.Warning(
+							"Tried to read actual position {actualPosition}, translated from logPosition {logicalPosition}, " +
+							"which is greater than the chunk's physical size of {chunkPhysicalSize}",
+							actualPosition, logicalPosition, Chunk.PhysicalDataSize);
 						return RecordReadResult.Failure;
+					}
 
 					LogRecord record;
 					int length;
@@ -449,6 +459,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private abstract class TFChunkReadSide {
 			protected readonly TFChunk Chunk;
+			protected readonly ILogger _log = Log.ForContext<TFChunkReader>();
 
 			protected TFChunkReadSide(TFChunk chunk) {
 				Ensure.NotNull(chunk, "chunk");
@@ -462,9 +473,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				workItem.Stream.Position = GetRawPosition(actualPosition);
 
-				if (actualPosition + 2 * sizeof(int) > Chunk.PhysicalDataSize
-				) // no space even for length prefix and suffix
+				// no space even for length prefix and suffix
+				if (actualPosition + 2 * sizeof(int) > Chunk.PhysicalDataSize) {
+					_log.Warning(
+						"Tried to read actual position {actualPosition}, but there isn't enough space for a record left in the chunk. Chunk's data size: {chunkPhysicalDataSize}",
+						actualPosition, Chunk.PhysicalDataSize);
 					return false;
+				}
 
 				length = workItem.Reader.ReadInt32();
 				if (length <= 0) {
@@ -506,8 +521,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				length = -1;
 				record = null;
 
-				if (actualPosition < 2 * sizeof(int)) // no space even for length prefix and suffix
+				// no space even for length prefix and suffix
+				if (actualPosition < 2 * sizeof(int)) {
+					_log.Warning(
+						"Tried to read actual position {actualPosition}, but the position isn't large enough to contain a record",
+						actualPosition);
 					return false;
+				}
 
 				var realPos = GetRawPosition(actualPosition);
 				workItem.Stream.Position = realPos - sizeof(int);
