@@ -469,21 +469,25 @@ namespace EventStore.Core {
 				// ReSharper restore RedundantTypeArgumentsOfMethod
 			});
 
-			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-				new BasicHttpAuthenticationProvider(_authenticationProvider),
-				new BearerHttpAuthenticationProvider(_authenticationProvider)
-			};
+
+			List<IHttpAuthenticationProvider> httpAuthenticationProviders;
 
 			if (!_disableHttps) {
-				httpAuthenticationProviders.Add(
-					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName));
-			} else {
-				httpAuthenticationProviders.Add(new GossipAndElectionsAuthenticationProvider());
-			}
+				httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
+					new BasicHttpAuthenticationProvider(_authenticationProvider),
+					new BearerHttpAuthenticationProvider(_authenticationProvider),
+					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName)
+				};
 
-			if (vNodeSettings.EnableTrustedAuth)
-				httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
-			httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
+				if (vNodeSettings.EnableTrustedAuth)
+					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
+
+				httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
+			} else {
+				httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
+					new PassthroughHttpAuthenticationProvider(_authenticationProvider)
+				};
+			}
 
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
