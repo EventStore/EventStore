@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
@@ -24,6 +25,8 @@ namespace EventStore.Common.Log {
 		private static readonly Func<LogEvent, bool> RegularStats = Matching.FromSource("REGULAR-STATS-LOGGER");
 
 		private static int Initialized;
+		private static LoggingLevelSwitch _defaultLogLevelSwitch;
+		private static object _defaultLogLevelSwitchLock = new object();
 
 		private readonly string _logsDirectory;
 		private readonly string _componentName;
@@ -75,6 +78,25 @@ namespace EventStore.Common.Log {
 			Serilog.Debugging.SelfLog.Disable();
 		}
 
+		public static bool AdjustMinimumLogLevel(LogLevel logLevel) {
+			lock (_defaultLogLevelSwitchLock) {
+				if (_defaultLogLevelSwitch == null) {
+					throw new InvalidOperationException($"The logger configuration has not yet been initialized.");
+				}
+
+				if (Enum.TryParse<LogEventLevel>(logLevel.ToString(), out var serilogLogLevel)) {
+					if (serilogLogLevel != _defaultLogLevelSwitch.MinimumLevel) {
+						_defaultLogLevelSwitch.MinimumLevel = serilogLogLevel;
+						return true;
+					}
+
+					return false;
+				} else {
+					throw new ArgumentException($"'{logLevel}' is not a valid log level.");
+				}
+			}
+		}
+
 		private static LoggerConfiguration FromConfiguration(IConfiguration configuration) =>
 			new LoggerConfiguration().ReadFrom.Configuration(configuration);
 
@@ -101,14 +123,15 @@ namespace EventStore.Common.Log {
 
 			var loglevelSection = logLevelConfigurationRoot.GetSection("Logging").GetSection("LogLevel");
 			var defaultLogLevelSection = loglevelSection.GetSection("Default");
-			var defaultLevelSwitch = new LoggingLevelSwitch {
-				MinimumLevel = LogEventLevel.Verbose
-			};
-
-			ApplyLogLevel(defaultLogLevelSection, defaultLevelSwitch);
+			lock (_defaultLogLevelSwitchLock) {
+				_defaultLogLevelSwitch = new LoggingLevelSwitch {
+					MinimumLevel = LogEventLevel.Verbose
+				};
+				ApplyLogLevel(defaultLogLevelSection, _defaultLogLevelSwitch);
+			}
 
 			var loggerConfiguration = StandardLoggerConfiguration
-				.MinimumLevel.ControlledBy(defaultLevelSwitch)
+				.MinimumLevel.ControlledBy(_defaultLogLevelSwitch)
 				.WriteTo.Async(AsyncSink);
 
 			foreach (var namedLogLevelSection in loglevelSection.GetChildren().Where(x => x.Key != "Default")) {

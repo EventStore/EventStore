@@ -39,6 +39,8 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
+using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
 using EventStore.Native.UnixSignalManager;
@@ -942,6 +944,7 @@ namespace EventStore.Core {
 			Task.Run(() => {
 				try {
 					var options = _vNodeSettings.LoadConfigFunc();
+					ReloadLogOptions(options);
 					ReloadCertificates(options);
 					Log.Information("The node's configuration was successfully reloaded");
 				} catch (Exception exc) {
@@ -950,6 +953,19 @@ namespace EventStore.Core {
 					Interlocked.Exchange(ref _reloadingConfig, 0);
 				}
 			});
+		}
+
+		private void ReloadLogOptions(ClusterNodeOptions options) {
+			if (options.LogLevel != LogLevel.Default) {
+				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.LogLevel);
+				if (changed) {
+					Log.Information($"The log level was adjusted to: {options.LogLevel}");
+
+					if (options.LogLevel > LogLevel.Information) {
+						Console.WriteLine($"The log level was adjusted to: {options.LogLevel}");
+					}
+				}
+			}
 		}
 
 		private void ReloadCertificates(ClusterNodeOptions options) {

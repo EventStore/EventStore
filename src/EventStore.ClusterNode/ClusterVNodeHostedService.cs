@@ -15,6 +15,7 @@ using EventStore.Core.PluginModel;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
@@ -97,6 +98,13 @@ namespace EventStore.ClusterNode {
 
 		protected override string GetComponentName(ClusterNodeOptions options) =>
 			$"{options.ExtIp}-{options.HttpPort}-cluster-node";
+
+		protected override void Init(ClusterNodeOptions options) {
+			base.Init(options);
+			if (options.LogLevel != LogLevel.Default) {
+				EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.LogLevel);
+			}
+		}
 
 		protected override void PreInit(ClusterNodeOptions options) {
 			base.PreInit(options);
