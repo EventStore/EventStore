@@ -36,24 +36,8 @@ namespace EventStore.ClusterNode {
 		protected override IEnumerable<OptionSource>
 			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
 			var developmentOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Dev));
-			var insecureOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Insecure));
 			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
-			bool.TryParse(insecureOption.Value.ToString(), out bool insecureMode);
 			return effectiveOptions.Select(x => {
-				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
-				    && x.Source == "<DEFAULT>"
-				    && insecureMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Insecure' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
-				    && x.Source == "<DEFAULT>"
-				    && insecureMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Insecure' mode";
-				}
-
 				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
@@ -203,22 +187,25 @@ namespace EventStore.ClusterNode {
 		private static ClusterVNode BuildNode(ClusterNodeOptions options, Func<ClusterNodeOptions> loadConfigFunc) {
 			var quorumSize = GetQuorumSize(options.ClusterSize);
 
+			var disableInternalTcpTls = options.Insecure || options.DisableInternalTcpTls;
+			var disableExternalTcpTls = options.Insecure || options.DisableExternalTcpTls;
+
 			var httpEndPoint = new IPEndPoint(options.ExtIp, options.HttpPort);
-			var intTcp = options.DisableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
-			var intSecTcp = !options.DisableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
-			var extTcp = options.EnableExternalTCP && options.DisableExternalTcpTls
+			var intTcp = disableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var intSecTcp = !disableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var extTcp = options.EnableExternalTCP && disableExternalTcpTls
 				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
 				: null;
-			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls
+			var extSecTcp = options.EnableExternalTCP && !disableExternalTcpTls
 				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
 				: null;
 
-			var intTcpPortAdvertiseAs = options.DisableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
-			var intSecTcpPortAdvertiseAs = !options.DisableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
-			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTcpTls
+			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
+			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
+			var extTcpPortAdvertiseAs = options.EnableExternalTCP && disableExternalTcpTls
 				? options.ExtTcpPortAdvertiseAs
 				: 0;
-			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTcpTls
+			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !disableExternalTcpTls
 				? options.ExtTcpPortAdvertiseAs
 				: 0;
 
@@ -335,6 +322,14 @@ namespace EventStore.ClusterNode {
 				builder.WithUnsafeIgnoreHardDelete();
 			if (options.UnsafeDisableFlushToDisk)
 				builder.WithUnsafeDisableFlushToDisk();
+			if (options.Insecure) {
+				if(options.DisableInternalTcpTls || options.DisableExternalTcpTls)
+					throw new InvalidConfigurationException($"The '{nameof(options.Insecure)}' option cannot be combined with the '{nameof(options.DisableInternalTcpTls)}' or the '{nameof(options.DisableExternalTcpTls)}' options.");
+
+				builder.DisableInternalTcpTls();
+				builder.DisableExternalTcpTls();
+				builder.DisableHttps();
+			}
 			if (options.DisableInternalTcpTls)
 				builder.DisableInternalTcpTls();
 			if (options.DisableExternalTcpTls)
@@ -366,19 +361,20 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			var requireCertHttp = true;
-			var requireCertIntTcp = options.ClusterSize > 1 && !options.DisableInternalTcpTls;
-			var requireCertExtTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls;
+			var requireCertHttp = !options.Insecure;
+			var requireCertIntTcp = options.ClusterSize > 1 && !options.Insecure && !options.DisableInternalTcpTls;
+			var requireCertExtTcp = options.EnableExternalTCP && !options.Insecure && !options.DisableExternalTcpTls;
+			var authEnabled = !options.Insecure;
 
 			var message = "\nSECURITY\n";
 			if (options.ClusterSize > 1) {
-				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n";
+				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
 			}
 
-			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n";
+			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
 
 			if (options.EnableExternalTCP) {
-				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n";
+				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
 			}
 
 			bool requireCertificates = requireCertHttp || requireCertIntTcp || requireCertExtTcp;
@@ -409,14 +405,14 @@ namespace EventStore.ClusterNode {
 						options.CertificatePassword);
 				} else {
 					throw new InvalidConfigurationException(
-						"A certificate is required unless insecure mode (--insecure) or development mode (--dev) is set.");
+						"A certificate is required unless insecure mode (--insecure) is set.");
 				}
 
 				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
 					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
 				} else {
 					throw new InvalidConfigurationException(
-						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) or development mode (--dev) is set.");
+						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) is set.");
 				}
 			}
 
