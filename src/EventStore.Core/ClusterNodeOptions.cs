@@ -213,9 +213,6 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.DisableExternalTcpTlsDescr, Opts.InterfacesGroup)]
 		public bool DisableExternalTcpTls { get; set; }
 
-		[ArgDescription(Opts.DisableHttpsDescr, Opts.InterfacesGroup)]
-		public bool DisableHttps { get; set; }
-
 		[ArgDescription(Opts.AuthorizationTypeDescr, Opts.AuthGroup)]
 		public string AuthorizationType { get; set; }
 
@@ -389,7 +386,6 @@ namespace EventStore.Core {
 
 			DisableInternalTcpTls = Opts.DisableInternalTcpTlsDefault;
 			DisableExternalTcpTls = Opts.DisableExternalTcpTlsDefault;
-			DisableHttps = Opts.DisableHttpsDefault;
 
 			AuthorizationType = Opts.AuthorizationTypeDefault;
 			AuthorizationConfig = Opts.AuthorizationConfigFileDefault;

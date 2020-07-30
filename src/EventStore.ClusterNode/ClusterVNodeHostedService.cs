@@ -54,13 +54,6 @@ namespace EventStore.ClusterNode {
 					x.Source =  "Set by 'Insecure' mode";
 				}
 
-				if (x.Name == nameof(ClusterNodeOptions.DisableHttps)
-				    && x.Source == "<DEFAULT>"
-				    && insecureMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Insecure' mode";
-				}
-
 				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
@@ -69,13 +62,6 @@ namespace EventStore.ClusterNode {
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Development' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableHttps)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
@@ -353,8 +339,6 @@ namespace EventStore.ClusterNode {
 				builder.DisableInternalTcpTls();
 			if (options.DisableExternalTcpTls)
 				builder.DisableExternalTcpTls();
-			if (options.DisableHttps)
-				builder.DisableHttps();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
 			if (options.DisableAdminUi)
@@ -382,7 +366,7 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			var requireCertHttp = !options.DisableHttps;
+			var requireCertHttp = true;
 			var requireCertIntTcp = options.ClusterSize > 1 && !options.DisableInternalTcpTls;
 			var requireCertExtTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls;
 

@@ -195,7 +195,7 @@ namespace EventStore.Core {
 
 			_disableInternalTcpTls = Opts.DisableInternalTcpTlsDefault;
 			_disableExternalTcpTls = Opts.DisableExternalTcpTlsDefault;
-			_disableHttps = Opts.DisableHttpsDefault;
+			_disableHttps = false;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
