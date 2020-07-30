@@ -329,7 +329,7 @@ namespace EventStore.Core.Util {
 		public const string ClusterDnsDescr = "DNS name from which other nodes can be discovered.";
 		public const string ClusterDnsDefault = "fake.dns";
 
-		public const int ClusterGossipPortDefault = 30777;
+		public const int ClusterGossipPortDefault = 2113;
 		public const string ClusterGossipPortDescr = "The port on which cluster nodes' managers are running.";
 
 		public const string GossipSeedDescr = "Endpoints for other cluster nodes from which to seed gossip";
