@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - --disable-https flag to disable only HTTPS [EventStore#2556](https://github.com/EventStore/EventStore/pull/2556)
 - --insecure flag to disable TLS on all interfaces (TCP & HTTP) to eliminate requirement for certificates to make it easier to run EventStoreDB [EventStore#2556](https://github.com/EventStore/EventStore/pull/2556)
 - Ability to reload certificates by triggering the /admin/reloadconfig endpoint or by sending a SIGHUP signal (linux only) [EventStore#2590](https://github.com/EventStore/EventStore/pull/2590)
+- Ability to load (or reload) default log level from EventStore config file [EventStore#2602](https://github.com/EventStore/EventStore/pull/2602)
 
 ## [20.6.0] - 2020-06-09
 
