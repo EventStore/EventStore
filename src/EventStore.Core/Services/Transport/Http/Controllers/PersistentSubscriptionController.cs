@@ -691,7 +691,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 							return Configure.Ok(e.ResponseCodec.ContentType);
 						case SubscriptionMessage.InvalidPersistentSubscriptionsRestart fail:
 							return Configure.BadRequest
-								($"Persistent Subscriptions cannot be restarted as it is in the wrong state: {fail}");
+								($"Persistent Subscriptions cannot be restarted as it is in the wrong state.");
 						default:
 							return Configure.InternalServerError();
 					}
