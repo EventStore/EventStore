@@ -104,7 +104,7 @@ namespace EventStore.ClusterNode {
 					"\n========================================================================================================\n" +
 					"DEVELOPMENT MODE IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.\n" +
 					"WHEN IN DEVELOPMENT MODE EVENTSTOREDB WILL\n" +
-					" - DISABLE TLS ON ALL TCP/HTTP INTERFACES.\n" +
+					" - DISABLE TLS ON ALL TCP INTERFACES.\n" +
 					" - ENABLE THE ATOMPUB PROTOCOL OVER HTTP.\n" +
 					"========================================================================================================\n");
 			}
