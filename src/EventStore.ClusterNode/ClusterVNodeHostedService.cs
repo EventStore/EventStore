@@ -132,12 +132,24 @@ namespace EventStore.ClusterNode {
 					"\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.\n");
 			}
 
+			if (opts.DisableInternalTcpTls) {
+				Log.Warning(
+					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableInternalTcpTls)}' option has been deprecated as of version 20.6.1. "
+					+ $"Please use the '{nameof(Options.Insecure)}' option instead.\n");
+			}
+
 			if (opts.EnableExternalTCP) {
 				Log.Warning(
 					"\n DEPRECATION WARNING: The Legacy TCP Client Interface has been deprecated as of version 20.6.0. "
 					+ $"The External TCP Interface can be re-enabled with the '{nameof(Options.EnableExternalTCP)}' option. "
 					+ "It is recommended to use gRPC instead.\n");
 			}
+
+			if (opts.DisableExternalTcpTls) {
+				Log.Warning(
+					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableExternalTcpTls)}' option has been deprecated as of version 20.6.1.\n");
+			}
+
 
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
