@@ -19,6 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<TcpMessage.ConnectionClosed>,
 		IHandle<SystemMessage.BecomeLeader>,
+		IHandle<SubscriptionMessage.PersistentSubscriptionsRestart>,
 		IHandle<SubscriptionMessage.PersistentSubscriptionTimerTick>,
 		IHandle<ClientMessage.ReplayParkedMessages>,
 		IHandle<ClientMessage.ReplayParkedMessage>,
@@ -50,7 +51,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private PersistentSubscriptionConfig _config = new PersistentSubscriptionConfig();
 		private bool _started = false;
 		private VNodeState _state;
-		private readonly TimerMessage.Schedule _tickRequestMessage;
+		private Guid _timerTickCorrelationId;
 		private bool _handleTick;
 
 		internal PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex,
@@ -67,10 +68,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_consumerStrategyRegistry = consumerStrategyRegistry;
 			_checkpointReader = new PersistentSubscriptionCheckpointReader(_ioDispatcher);
 			_streamReader = new PersistentSubscriptionStreamReader(_ioDispatcher, 100);
-			//TODO CC configurable
-			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
-				new PublishEnvelope(_bus),
-				new SubscriptionMessage.PersistentSubscriptionTimerTick());
+			_timerTickCorrelationId = Guid.NewGuid();
 		}
 
 		public void InitToEmpty() {
@@ -90,12 +88,32 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void Handle(SystemMessage.BecomeLeader message) {
 			Log.Debug("Persistent subscriptions Became Leader so now handling subscriptions");
-			InitToEmpty();
-			_handleTick = true;
-			_bus.Publish(_tickRequestMessage);
-			LoadConfiguration(Start);
+			StartSubscriptions();
+		}
+		
+		public void Handle(SubscriptionMessage.PersistentSubscriptionsRestart message) {
+			if (!_started) {
+				message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.InvalidPersistentSubscriptionsRestart());
+				return;
+			}
+			
+			Log.Debug("Persistent Subscriptions are being restarted");
+			message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.PersistentSubscriptionsRestarting());
+			
+			Stop();
+			ShutdownSubscriptions();
+			StartSubscriptions();
 		}
 
+		private void StartSubscriptions() {
+			InitToEmpty();
+			_handleTick = true;
+			_timerTickCorrelationId = Guid.NewGuid();
+			_bus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
+				new PublishEnvelope(_bus),
+				new SubscriptionMessage.PersistentSubscriptionTimerTick(_timerTickCorrelationId)));
+			LoadConfiguration(Start);
+		}
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) {
 			ShutdownSubscriptions();
@@ -112,10 +130,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private void Start() {
 			_started = true;
+			_bus.Publish(new SubscriptionMessage.PersistentSubscriptionsStarted());
 		}
 
 		private void Stop() {
 			_started = false;
+			_bus.Publish(new SubscriptionMessage.PersistentSubscriptionsStopped());
 		}
 
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
@@ -703,11 +723,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message) {
-			if (!_handleTick) return;
+			if (!_handleTick || _timerTickCorrelationId != message.CorrelationId) return;
 			try {
 				WakeSubscriptions();
 			} finally {
-				_bus.Publish(_tickRequestMessage);
+				_timerTickCorrelationId = Guid.NewGuid();
+				_bus.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
+					new PublishEnvelope(_bus),
+					new SubscriptionMessage.PersistentSubscriptionTimerTick(_timerTickCorrelationId)));
 			}
 		}
 

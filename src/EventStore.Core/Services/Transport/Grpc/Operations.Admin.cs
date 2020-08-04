@@ -9,7 +9,8 @@ using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Operations {
-		private static readonly Operation ShutdownOperation = new Operation(Plugins.Authorization.Operations.Node.Shutdown);
+		private static readonly Operation ShutdownOperation =
+			new Operation(Plugins.Authorization.Operations.Node.Shutdown);
 
 		private static readonly Operation MergeIndexesOperation =
 			new Operation(Plugins.Authorization.Operations.Node.MergeIndexes);
@@ -18,6 +19,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		private static readonly Operation SetNodePriorityOperation =
 			new Operation(Plugins.Authorization.Operations.Node.SetPriority);
+
+		private static readonly Operation RestartPersistentSubscriptionsOperation =
+			new Operation(Plugins.Authorization.Operations.Subscriptions.Restart);
 
 		private static readonly Empty EmptyResult = new Empty();
 
@@ -79,6 +83,39 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			_publisher.Publish(new ClientMessage.SetNodePriority(request.Priority));
 			return EmptyResult;
+		}
+
+		public override async Task<Empty> RestartPersistentSubscriptions(Empty request, ServerCallContext context) {
+			var restart = new TaskCompletionSource<bool>();
+			var envelope = new CallbackEnvelope(OnMessage);
+
+			var user = context.GetHttpContext().User;
+			if (!await _authorizationProvider.CheckAccessAsync(user, RestartPersistentSubscriptionsOperation,
+					context.CancellationToken)
+				.ConfigureAwait(false)) {
+				throw AccessDenied();
+			}
+
+			_publisher.Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(envelope));
+
+			await restart.Task.ConfigureAwait(false);
+			return new Empty();
+
+			void OnMessage(Message message) {
+				switch (message) {
+					case SubscriptionMessage.PersistentSubscriptionsRestarting _:
+						restart.TrySetResult(true);
+						break;
+					case SubscriptionMessage.InvalidPersistentSubscriptionsRestart _:
+						restart.TrySetResult(true);
+						break;
+					default:
+						restart.TrySetException(
+							RpcExceptions
+								.UnknownMessage<SubscriptionMessage.PersistentSubscriptionsRestarting>(message));
+						break;
+				}
+			}
 		}
 	}
 }

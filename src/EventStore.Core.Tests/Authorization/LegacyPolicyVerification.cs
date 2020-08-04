@@ -314,6 +314,7 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Subscriptions.Create);
 				yield return CreateOperation(Operations.Subscriptions.Update);
 				yield return CreateOperation(Operations.Subscriptions.Delete);
+				yield return CreateOperation(Operations.Subscriptions.Restart);
 
 				yield return CreateOperation(Operations.Node.Information.Histogram);
 				yield return CreateOperation(Operations.Node.Information.Options);
