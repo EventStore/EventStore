@@ -455,7 +455,7 @@ namespace EventStore.ClusterNode {
 
 			var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
 			builder.WithAuthenticationProviderFactory(authenticationProviderFactory,
-				options.AuthenticationType == Opts.AuthenticationTypeDefault);
+				options.AuthenticationType == Opts.AuthenticationTypeDefault && !options.Insecure);
 			builder.WithAuthorizationProvider(authorizationProviderFactory);
 			var subsystemFactories = GetPlugInSubsystemFactories(plugInContainer);
 
