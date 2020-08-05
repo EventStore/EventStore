@@ -134,7 +134,7 @@ namespace EventStore.ClusterNode {
 
 			if (opts.DisableInternalTcpTls) {
 				Log.Warning(
-					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableInternalTcpTls)}' option has been deprecated as of version 20.6.1. "
+					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableInternalTcpTls)}' option has been deprecated as of version 20.6.1 and currently has no effect. "
 					+ $"Please use the '{nameof(Options.Insecure)}' option instead.\n");
 			}
 
@@ -199,7 +199,7 @@ namespace EventStore.ClusterNode {
 		private static ClusterVNode BuildNode(ClusterNodeOptions options, Func<ClusterNodeOptions> loadConfigFunc) {
 			var quorumSize = GetQuorumSize(options.ClusterSize);
 
-			var disableInternalTcpTls = options.Insecure || options.DisableInternalTcpTls;
+			var disableInternalTcpTls = options.Insecure;
 			var disableExternalTcpTls = options.Insecure || options.DisableExternalTcpTls;
 
 			var httpEndPoint = new IPEndPoint(options.ExtIp, options.HttpPort);
@@ -342,8 +342,6 @@ namespace EventStore.ClusterNode {
 				builder.DisableExternalTcpTls();
 				builder.DisableHttps();
 			}
-			if (options.DisableInternalTcpTls)
-				builder.DisableInternalTcpTls();
 			if (options.DisableExternalTcpTls)
 				builder.DisableExternalTcpTls();
 			if (options.EnableExternalTCP)
