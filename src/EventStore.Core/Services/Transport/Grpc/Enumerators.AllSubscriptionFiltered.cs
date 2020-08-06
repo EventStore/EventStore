@@ -142,7 +142,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				private Position _nextPosition;
 				private ResolvedEvent _current;
 				private Position _currentPosition;
-				private uint _checkpointIntervalCounter;
+				private long _checkpointIntervalCounter;
 
 				public ResolvedEvent Current => _current;
 				public Position CurrentPosition => _currentPosition;
@@ -191,7 +191,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_requiresLeader = requiresLeader;
 					_checkpointReached = checkpointReached;
 					_maxWindowSize = maxWindowSize ?? ReadBatchSize;
-					_checkpointInterval = checkpointIntervalMultiplier;
+					_checkpointInterval = checkpointIntervalMultiplier * _maxWindowSize;
 					_disposedTokenSource = new CancellationTokenSource();
 					_buffer = new ConcurrentQueueWrapper<(ResolvedEvent, Position?)>();
 
@@ -282,8 +282,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 						switch (completed.Result) {
 							case FilteredReadAllResult.Success:
+								 var position = Position.FromInt64(completed.CurrentPos.CommitPosition,
+									completed.CurrentPos.PreparePosition);
 								foreach (var @event in completed.Events) {
-									var position = Position.FromInt64(
+									position = Position.FromInt64(
 										@event.OriginalPosition.Value.CommitPosition,
 										@event.OriginalPosition.Value.PreparePosition);
 									if (position <= _startPosition) {
@@ -300,20 +302,21 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									_buffer.Enqueue((@event, new Position?()));
 								}
 
-								_nextPosition = Position.FromInt64(
-									completed.NextPos.CommitPosition,
-									completed.NextPos.PreparePosition);
+								_checkpointIntervalCounter += completed.ConsideredEventsCount;
+								Log.Verbose(
+									"Catch-up subscription {subscriptionId} to $all:{eventFilter} considered {consideredEventsCount}, interval: {checkpointInterval}, counter: {checkpointIntervalCounter}.",
+									_subscriptionId, _eventFilter, completed.ConsideredEventsCount, _checkpointInterval,
+									_checkpointIntervalCounter);
 
-								if (completed.Events.Length == 0) {
-									if (++_checkpointIntervalCounter >= _checkpointInterval) {
-										Log.Verbose(
-											"Catch-up subscription {subscriptionId} to $all:{eventFilter} reached checkpoint at {position}.",
-											_subscriptionId, _eventFilter, _nextPosition);
-										_checkpointIntervalCounter = 0;
-										_buffer.Enqueue((default, _nextPosition));
-									}
-								} else {
-									_checkpointIntervalCounter = 0;
+								_nextPosition = Position.FromInt64(completed.NextPos.CommitPosition,
+									completed.NextPos.PreparePosition);
+								if (_checkpointIntervalCounter >= _checkpointInterval) {
+									_checkpointIntervalCounter %= _checkpointInterval;
+									Log.Verbose(
+										"Catch-up subscription {subscriptionId} to $all:{eventFilter} reached checkpoint at {position}, interval: {checkpointInterval}, counter: {checkpointIntervalCounter}.",
+										_subscriptionId, _eventFilter, _nextPosition, _checkpointInterval,
+										_checkpointIntervalCounter);
+									_buffer.Enqueue((default, _nextPosition));
 								}
 
 								readNextSource.TrySetResult(completed.IsEndOfStream);
@@ -479,8 +482,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 						switch (completed.Result) {
 							case FilteredReadAllResult.Success:
+								var position = Position.FromInt64(completed.CurrentPos.CommitPosition,
+									completed.CurrentPos.PreparePosition);
 								foreach (var @event in completed.Events) {
-									var position = Position.FromInt64(
+									position = Position.FromInt64(
 										@event.OriginalPosition.Value.CommitPosition,
 										@event.OriginalPosition.Value.PreparePosition);
 									if (currentPosition >= position) {
@@ -499,6 +504,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										Log.Verbose(
 											"Live subscription {subscriptionId} to $all:{eventFilter} caught up at {position}.",
 											_subscriptionId, eventFilter, position);
+										_liveEventBuffer.Enqueue((default, position, null));
+
 										_readHistoricalEventsCompleted.TrySetResult(true);
 										return;
 									}
@@ -509,17 +516,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									return;
 								}
 
-								var fromPosition = Position.FromInt64(
-									completed.NextPos.CommitPosition,
-									completed.NextPos.PreparePosition);
 								if (completed.IsEndOfStream) {
 									Log.Verbose(
-										"Live subscription {subscriptionId} to $all:{eventFilter} caught up at {position}.",
-										_subscriptionId, eventFilter, fromPosition);
+										"Live subscription {subscriptionId} to $all:{eventFilter} caught up at {position} because the end of stream was reached.",
+										_subscriptionId, eventFilter, position);
+									_liveEventBuffer.Enqueue((default, position, null));
 									_readHistoricalEventsCompleted.TrySetResult(true);
 									return;
 								}
 
+								var fromPosition = Position.FromInt64(
+									completed.NextPos.CommitPosition,
+									completed.NextPos.PreparePosition);
 								ReadHistoricalEvents(fromPosition);
 								return;
 							case FilteredReadAllResult.AccessDenied:

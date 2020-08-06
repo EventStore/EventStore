@@ -164,7 +164,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
-				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream);
+				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
 			}
 		}
 		
@@ -294,7 +294,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
-				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream);
+				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
 			}
 		}
 

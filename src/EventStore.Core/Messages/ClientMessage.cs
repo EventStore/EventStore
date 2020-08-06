@@ -957,12 +957,13 @@ namespace EventStore.Core.Messages {
 			public readonly TFPos PrevPos;
 			public readonly long TfLastCommitPosition;
 			public readonly bool IsEndOfStream;
+			public readonly long ConsideredEventsCount;
 
 			public FilteredReadAllEventsForwardCompleted(Guid correlationId, FilteredReadAllResult result, string error,
 				ResolvedEvent[] events,
 				StreamMetadata streamMetadata, bool isCachePublic, int maxCount,
 				TFPos currentPos, TFPos nextPos, TFPos prevPos, long tfLastCommitPosition,
-				bool isEndOfStream) {
+				bool isEndOfStream, long consideredEventsCount) {
 				Ensure.NotNull(events, "events");
 
 				CorrelationId = correlationId;
@@ -977,6 +978,7 @@ namespace EventStore.Core.Messages {
 				PrevPos = prevPos;
 				TfLastCommitPosition = tfLastCommitPosition;
 				IsEndOfStream = isEndOfStream;
+				ConsideredEventsCount = consideredEventsCount;
 			}
 		}
 
