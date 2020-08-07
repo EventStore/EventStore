@@ -32,7 +32,7 @@
 	</ItemGroup>
 	<!-- Transitive dependencies to help in packaging -->
 	<ItemGroup>
-		<PackageReference Include="EventStore.Plugins" Version="20.6.1-preview2" />
+		<PackageReference Include="EventStore.Plugins" Version="20.6.1-preview3" />
 		<PackageReference Include="Google.Protobuf" Version="3.12.3" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.29.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.30.0">
