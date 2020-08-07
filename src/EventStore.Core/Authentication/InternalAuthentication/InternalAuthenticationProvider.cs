@@ -56,6 +56,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 					m => ReadUserDataCompleted(m, authenticationRequest));
 			}
 		}
+		public string GetName() => "internal";
+		public IEnumerable<KeyValuePair<string, string>> GetPublicProperties() => null;
 
 		private void ReadUserDataCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed,
 			AuthenticationRequest authenticationRequest) {

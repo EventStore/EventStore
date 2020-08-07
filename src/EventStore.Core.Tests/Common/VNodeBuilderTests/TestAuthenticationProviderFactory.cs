@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Plugins.Authentication;
@@ -18,5 +19,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
 			authenticationRequest.Authenticated(new ClaimsPrincipal(new ClaimsIdentity(new []{new Claim(ClaimTypes.Name, authenticationRequest.Name), })));
 		}
+		public string GetName() => "test";
+		public IEnumerable<KeyValuePair<string, string>> GetPublicProperties() => null;
 	}
 }
