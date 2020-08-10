@@ -37,46 +37,16 @@ namespace EventStore.ClusterNode {
 		protected override IEnumerable<OptionSource>
 			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
 			var developmentOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Dev));
-			var insecureOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Insecure));
 			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
-			bool.TryParse(insecureOption.Value.ToString(), out bool insecureMode);
 			return effectiveOptions.Select(x => {
 				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
 				    && x.Source == "<DEFAULT>"
-				    && insecureMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Insecure' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
-				    && x.Source == "<DEFAULT>"
-				    && insecureMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Insecure' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableHttps)
-				    && x.Source == "<DEFAULT>"
-				    && insecureMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Insecure' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
-				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
 					x.Source =  "Set by 'Development' mode";
 				}
 
 				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Development' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableHttps)
 				    && x.Source == "<DEFAULT>"
 				    && developmentMode) {
 					x.Value = true;
@@ -142,8 +112,17 @@ namespace EventStore.ClusterNode {
 					"\n========================================================================================================\n" +
 					"DEVELOPMENT MODE IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.\n" +
 					"WHEN IN DEVELOPMENT MODE EVENTSTOREDB WILL\n" +
-					" - DISABLE TLS ON ALL TCP/HTTP INTERFACES.\n" +
+					" - DISABLE TLS ON ALL TCP INTERFACES.\n" +
 					" - ENABLE THE ATOMPUB PROTOCOL OVER HTTP.\n" +
+					"========================================================================================================\n");
+			}
+			else if (opts.Insecure) {
+				Log.Warning(
+					"\n========================================================================================================\n" +
+					"INSECURE MODE IS ON. THIS MODE IS *NOT* RECOMMENDED FOR PRODUCTION USE.\n" +
+					"WHEN IN INSECURE MODE EVENTSTOREDB WILL\n" +
+					" - DISABLE ALL AUTHENTICATION AND AUTHORIZATION.\n" +
+					" - DISABLE TLS ON ALL TCP AND HTTP INTERFACES.\n" +
 					"========================================================================================================\n");
 			}
 
@@ -161,12 +140,24 @@ namespace EventStore.ClusterNode {
 					"\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.\n");
 			}
 
+			if (opts.DisableInternalTcpTls) {
+				Log.Warning(
+					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableInternalTcpTls)}' option has been deprecated as of version 20.6.1. "
+					+ $"Please use the '{nameof(Options.Insecure)}' option instead.\n");
+			}
+
 			if (opts.EnableExternalTCP) {
 				Log.Warning(
 					"\n DEPRECATION WARNING: The Legacy TCP Client Interface has been deprecated as of version 20.6.0. "
 					+ $"The External TCP Interface can be re-enabled with the '{nameof(Options.EnableExternalTCP)}' option. "
 					+ "It is recommended to use gRPC instead.\n");
 			}
+
+			if (opts.DisableExternalTcpTls) {
+				Log.Warning(
+					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableExternalTcpTls)}' option has been deprecated as of version 20.6.1.\n");
+			}
+
 
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
@@ -216,22 +207,25 @@ namespace EventStore.ClusterNode {
 		private static ClusterVNode BuildNode(ClusterNodeOptions options, Func<ClusterNodeOptions> loadConfigFunc) {
 			var quorumSize = GetQuorumSize(options.ClusterSize);
 
+			var disableInternalTcpTls = options.Insecure || options.DisableInternalTcpTls;
+			var disableExternalTcpTls = options.Insecure || options.DisableExternalTcpTls;
+
 			var httpEndPoint = new IPEndPoint(options.ExtIp, options.HttpPort);
-			var intTcp = options.DisableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
-			var intSecTcp = !options.DisableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
-			var extTcp = options.EnableExternalTCP && options.DisableExternalTcpTls
+			var intTcp = disableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var intSecTcp = !disableInternalTcpTls ? new IPEndPoint(options.IntIp, options.IntTcpPort) : null;
+			var extTcp = options.EnableExternalTCP && disableExternalTcpTls
 				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
 				: null;
-			var extSecTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls
+			var extSecTcp = options.EnableExternalTCP && !disableExternalTcpTls
 				? new IPEndPoint(options.ExtIp, options.ExtTcpPort)
 				: null;
 
-			var intTcpPortAdvertiseAs = options.DisableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
-			var intSecTcpPortAdvertiseAs = !options.DisableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
-			var extTcpPortAdvertiseAs = options.EnableExternalTCP && options.DisableExternalTcpTls
+			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
+			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.IntTcpPortAdvertiseAs : 0;
+			var extTcpPortAdvertiseAs = options.EnableExternalTCP && disableExternalTcpTls
 				? options.ExtTcpPortAdvertiseAs
 				: 0;
-			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !options.DisableExternalTcpTls
+			var extSecTcpPortAdvertiseAs = options.EnableExternalTCP && !disableExternalTcpTls
 				? options.ExtTcpPortAdvertiseAs
 				: 0;
 
@@ -348,12 +342,18 @@ namespace EventStore.ClusterNode {
 				builder.WithUnsafeIgnoreHardDelete();
 			if (options.UnsafeDisableFlushToDisk)
 				builder.WithUnsafeDisableFlushToDisk();
+			if (options.Insecure) {
+				if(options.DisableInternalTcpTls || options.DisableExternalTcpTls)
+					throw new InvalidConfigurationException($"The '{nameof(options.Insecure)}' option cannot be combined with the '{nameof(options.DisableInternalTcpTls)}' or the '{nameof(options.DisableExternalTcpTls)}' options.");
+
+				builder.DisableInternalTcpTls();
+				builder.DisableExternalTcpTls();
+				builder.DisableHttps();
+			}
 			if (options.DisableInternalTcpTls)
 				builder.DisableInternalTcpTls();
 			if (options.DisableExternalTcpTls)
 				builder.DisableExternalTcpTls();
-			if (options.DisableHttps)
-				builder.DisableHttps();
 			if (options.EnableExternalTCP)
 				builder.EnableExternalTCP();
 			if (options.DisableAdminUi)
@@ -381,19 +381,20 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			var requireCertHttp = !options.DisableHttps;
-			var requireCertIntTcp = options.ClusterSize > 1 && !options.DisableInternalTcpTls;
-			var requireCertExtTcp = options.EnableExternalTCP && !options.DisableExternalTcpTls;
+			var requireCertHttp = !options.Insecure;
+			var requireCertIntTcp = options.ClusterSize > 1 && !options.Insecure && !options.DisableInternalTcpTls;
+			var requireCertExtTcp = options.EnableExternalTCP && !options.Insecure && !options.DisableExternalTcpTls;
+			var authEnabled = !options.Insecure;
 
 			var message = "\nSECURITY\n";
 			if (options.ClusterSize > 1) {
-				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n";
+				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
 			}
 
-			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n";
+			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
 
 			if (options.EnableExternalTCP) {
-				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n";
+				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
 			}
 
 			bool requireCertificates = requireCertHttp || requireCertIntTcp || requireCertExtTcp;
@@ -424,14 +425,14 @@ namespace EventStore.ClusterNode {
 						options.CertificatePassword);
 				} else {
 					throw new InvalidConfigurationException(
-						"A certificate is required unless insecure mode (--insecure) or development mode (--dev) is set.");
+						"A certificate is required unless insecure mode (--insecure) is set.");
 				}
 
 				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
 					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
 				} else {
 					throw new InvalidConfigurationException(
-						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) or development mode (--dev) is set.");
+						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) is set.");
 				}
 			}
 
@@ -444,16 +445,25 @@ namespace EventStore.ClusterNode {
 				: options.AuthenticationConfig;
 
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
-			var authorizationProviderFactory =
-				GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader);
-			var authenticationProviderFactory =
-				GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginLoader);
+
+			AuthenticationProviderFactory authenticationProviderFactory;
+			AuthorizationProviderFactory authorizationProviderFactory;
+
+			if (!options.Insecure) {
+				authorizationProviderFactory =
+					GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader);
+				authenticationProviderFactory =
+					GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginLoader);
+			} else {
+				authorizationProviderFactory = new AuthorizationProviderFactory(components => new PassthroughAuthorizationProviderFactory());
+				authenticationProviderFactory = new AuthenticationProviderFactory(components => new PassthroughAuthenticationProviderFactory());
+			}
 
 			var plugInContainer = FindPlugins();
 
 			var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
 			builder.WithAuthenticationProviderFactory(authenticationProviderFactory,
-				options.AuthenticationType == Opts.AuthenticationTypeDefault);
+				options.AuthenticationType == Opts.AuthenticationTypeDefault && !options.Insecure);
 			builder.WithAuthorizationProvider(authorizationProviderFactory);
 			var subsystemFactories = GetPlugInSubsystemFactories(plugInContainer);
 

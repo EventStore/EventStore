@@ -320,9 +320,6 @@ namespace EventStore.Core.Util {
 		public const string EnableExternalTCPDescr = "Whether to enable external TCP communication";
 		public const bool EnableExternalTCPDefault = false;
 
-		public const string DisableHttpsDescr = "Whether to disable HTTPS on the HTTP interface.";
-		public const bool DisableHttpsDefault = false;
-
 		public const string DiscoverViaDnsDescr = "Whether to use DNS lookup to discover other cluster nodes.";
 		public const bool DiscoverViaDnsDefault = true;
 
@@ -405,7 +402,7 @@ namespace EventStore.Core.Util {
 		public const string DevDescr = "Enable Development Mode for Event Store.";
 		public const bool DevDefault = false;
 
-		public const string InsecureDescr = "Disable TLS on all TCP/HTTP interfaces";
+		public const string InsecureDescr = "Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces";
 		public const bool InsecureDefault = false;
 	}
 }
