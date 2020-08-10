@@ -160,7 +160,7 @@ namespace EventStore.Core {
 		public ClusterVNode(TFChunkDb db,
 			ClusterVNodeSettings vNodeSettings,
 			IGossipSeedSource gossipSeedSource,
-			InfoController infoController,
+			InfoControllerBuilder infoControllerBuilder,
 			params ISubsystem[] subsystems) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(vNodeSettings, "vNodeSettings");
@@ -491,8 +491,6 @@ namespace EventStore.Core {
 				};
 			}
 
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
-
 			var adminController = new AdminController(_mainQueue, _workersHandler);
 			var pingController = new PingController();
 			var histogramController = new HistogramController();
@@ -502,6 +500,11 @@ namespace EventStore.Core {
 			var gossipController = new GossipController(_mainQueue, _workersHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
+			var infoController = infoControllerBuilder
+				.WithAuthenticationProvider(_authenticationProvider)
+				.Build();
+
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
 			if (vNodeSettings.AdminOnPublic)

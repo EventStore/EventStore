@@ -1434,11 +1434,13 @@ namespace EventStore.Core {
 				_enableAtomPubOverHTTP,
 				_disableHttps);
 
-			var infoController = new InfoController(options, new Dictionary<string, bool> {
-				{"projections", _projectionType != ProjectionType.None},
-				{"userManagement", _authenticationProviderIsInternal},
-				{"atomPub", _enableAtomPubOverHTTP}
-			});
+			var infoControllerBuilder = new InfoControllerBuilder()
+				.WithOptions(options)
+				.WithFeatures(new Dictionary<string, bool> {
+					{"projections", _projectionType != ProjectionType.None},
+					{"userManagement", _authenticationProviderIsInternal},
+					{"atomPub", _enableAtomPubOverHTTP}
+				});
 
 			var writerCheckpoint = _db.Config.WriterCheckpoint.Read();
 			var chaserCheckpoint = _db.Config.ChaserCheckpoint.Read();
@@ -1456,7 +1458,7 @@ namespace EventStore.Core {
 			_log.Information("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
 				truncateCheckpoint, truncateCheckpoint);
 
-			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoController, _subsystems.ToArray());
+			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoControllerBuilder, _subsystems.ToArray());
 		}
 
 		private int ComputePTableMaxReaderCount(int ptableInitialReaderCount, int readerThreadsCount) {
