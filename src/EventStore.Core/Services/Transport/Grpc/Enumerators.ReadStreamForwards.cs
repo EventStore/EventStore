@@ -72,6 +72,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
+				ReadLoop:
 				if (_readCount >= _maxCount || _disposedTokenSource.IsCancellationRequested) {
 					return false;
 				}
@@ -109,7 +110,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return true;
 				}
 
-				return false;
+				goto ReadLoop;
 
 				void OnMessage(Message message) {
 					if (message is ClientMessage.NotHandled notHandled &&
