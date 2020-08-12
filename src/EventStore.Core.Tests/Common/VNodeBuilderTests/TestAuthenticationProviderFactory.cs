@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using EventStore.Plugins.Authentication;
+using Microsoft.AspNetCore.Routing;
 using Serilog;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
@@ -21,5 +22,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		}
 		public string GetName() => "test";
 		public IEnumerable<KeyValuePair<string, string>> GetPublicProperties() => null;
+		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
+			//nothing to do
+		}
 	}
 }
