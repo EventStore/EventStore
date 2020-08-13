@@ -20,7 +20,7 @@ namespace EventStore.Common.Options {
 				.EnsureExistence<TOptions>()
 				.EnsureCorrectType<TOptions>()
 				.FixNames<TOptions>()
-				.ApplyMask<TOptions>()
+				.ApplyPrintAttributes<TOptions>()
 				.Mutate<TOptions>(mutateEffectiveOptions);
 			
 			return _effectiveOptions.ApplyTo<TOptions>();
@@ -73,12 +73,14 @@ namespace EventStore.Common.Options {
 				return "No options have been parsed";
 			}
 
+			var optionsToPrint = _effectiveOptions.Where(x => !x.Hidden).ToList();
+
 			var dumpOptionsBuilder = new StringBuilder();
 			var defaultOptionsHeading = "DEFAULT OPTIONS:";
 			var displayingModifiedOptions = true;
 			dumpOptionsBuilder.AppendLine("MODIFIED OPTIONS:");
 			dumpOptionsBuilder.AppendLine();
-			if (_effectiveOptions.Count(x => !x.Source.ToLower().Contains("default")) == 0) {
+			if (optionsToPrint.Count(x => !x.Source.ToLower().Contains("default")) == 0) {
 				dumpOptionsBuilder.AppendLine("NONE");
 				dumpOptionsBuilder.AppendLine();
 				dumpOptionsBuilder.AppendLine(defaultOptionsHeading);
@@ -86,7 +88,7 @@ namespace EventStore.Common.Options {
 				displayingModifiedOptions = false;
 			}
 
-			foreach (var option in _effectiveOptions.OrderBy(x => x.Source.ToLower().Contains("default") ? 1 : 0)) {
+			foreach (var option in optionsToPrint.OrderBy(x => x.Source.ToLower().Contains("default") ? 1 : 0)) {
 				if (option.Source.ToLower().Contains("default") && displayingModifiedOptions) {
 					dumpOptionsBuilder.AppendLine();
 					dumpOptionsBuilder.AppendLine(defaultOptionsHeading);
@@ -152,7 +154,7 @@ namespace EventStore.Common.Options {
 			return optionSources;
 		}
 		
-		public static IEnumerable<OptionSource> ApplyMask<TOptions>(this IEnumerable<OptionSource> optionSources)
+		public static IEnumerable<OptionSource> ApplyPrintAttributes<TOptions>(this IEnumerable<OptionSource> optionSources)
 			where TOptions : class {
 			var properties = typeof(TOptions).GetProperties();
 			var newOptionSources = new List<OptionSource>();
@@ -160,7 +162,7 @@ namespace EventStore.Common.Options {
 				var property =
 					properties.First(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
 				newOptionSources.Add(new OptionSource(optionSource.Source, property.Name, optionSource.IsTyped,
-					optionSource.Value, mask: property.HasAttr<ArgMask>()));
+					optionSource.Value, mask: property.HasAttr<ArgMask>(), hidden: property.HasAttr<ArgHidden>()));
 			}
 
 			return newOptionSources;

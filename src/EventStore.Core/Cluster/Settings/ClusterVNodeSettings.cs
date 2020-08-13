@@ -94,6 +94,8 @@ namespace EventStore.Core.Cluster.Settings {
 		public int PTableMaxReaderCount;
 		public readonly bool UnsafeAllowSurplusNodes;
 
+		public readonly bool UnsafeUseTransactionLogV3;
+
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			Func<ClusterNodeOptions> loadConfigFunc,
 			IPEndPoint internalTcpEndPoint,
@@ -168,7 +170,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool unsafeAllowSurplusNodes = false,
 			bool enableExternalTCP = false,
 			bool enableAtomPubOverHTTP = true,
-			bool disableHttps = false) {
+			bool disableHttps = false,
+			bool unsafeUseTransactionLogV3 = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 
@@ -276,6 +279,8 @@ namespace EventStore.Core.Cluster.Settings {
 			PTableMaxReaderCount = ptableMaxReaderCount;
 			UnsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
 			MaxTruncation = maxTruncation;
+
+			UnsafeUseTransactionLogV3 = unsafeUseTransactionLogV3;
 		}
 
 		public override string ToString() =>

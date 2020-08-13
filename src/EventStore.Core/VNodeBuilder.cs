@@ -149,6 +149,7 @@ namespace EventStore.Core {
 		private bool _unsafeAllowSurplusNodes;
 		private AuthorizationProviderFactory _authorizationProviderFactory;
 
+		protected bool _unsafeUseTransactionLogV3;
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
 		protected VNodeBuilder() {
@@ -251,6 +252,8 @@ namespace EventStore.Core {
 			_maxAppendSize = Opts.MaxAppendSizeDefault;
 			_deadMemberRemovalPeriod = TimeSpan.FromSeconds(Opts.DeadMemberRemovalPeriodDefault);
 			_maxTruncation = Opts.MaxTruncationDefault;
+
+			_unsafeUseTransactionLogV3 = Opts.UnsafeUseTransactionLogV3Default;
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -1226,6 +1229,15 @@ namespace EventStore.Core {
 			return this;
 		}
 
+		/// <summary>
+		/// Enable the v3 transaction log. This is unsafe and not supported.
+		/// </summary>
+		/// <returns></returns>
+		public VNodeBuilder UnsafeUseTransactionLogV3() {
+			_unsafeUseTransactionLogV3 = true;
+			return this;
+		}
+
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
 			if (_gossipAdvertiseInfo == null) {
 				Ensure.Equal(false, _internalTcp == null && _internalSecureTcp == null, "Both internal TCP endpoints are null");
@@ -1397,7 +1409,8 @@ namespace EventStore.Core {
 				_unsafeAllowSurplusNodes,
 				_enableExternalTCP,
 				_enableAtomPubOverHTTP,
-				_disableHttps);
+				_disableHttps,
+				_unsafeUseTransactionLogV3);
 
 			var infoController = new InfoController(options, new Dictionary<string, bool> {
 				{"projections", _projectionType != ProjectionType.None},
