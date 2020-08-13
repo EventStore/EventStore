@@ -76,11 +76,15 @@ namespace EventStore.Core.Tests.Helpers {
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, EndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false, bool unsafeUseTransactionLogV3 = false) {
 			
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
 					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
+			}
+
+			if (unsafeUseTransactionLogV3) {
+				Log.Warning("Transaction Log V3 is enabled for this test run.");
 			}
 			
 			RunningTime.Start();
@@ -143,7 +147,8 @@ namespace EventStore.Core.Tests.Helpers {
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
 				enableExternalTCP: true,
 				disableHttps: !useHttps,
-				enableAtomPubOverHTTP: true);
+				enableAtomPubOverHTTP: true,
+				unsafeUseTransactionLogV3: unsafeUseTransactionLogV3);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(

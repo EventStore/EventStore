@@ -285,6 +285,9 @@ namespace EventStore.ClusterNode {
 				.WithMaxAppendSize(options.MaxAppendSize)
 				.WithEnableAtomPubOverHTTP(options.EnableAtomPubOverHTTP);
 
+			if (options.UnsafeUseTransactionLogV3)
+				builder.UnsafeUseTransactionLogV3();
+
 			if (options.GossipSeed.Length > 0)
 				builder.WithGossipSeeds(options.GossipSeed);
 

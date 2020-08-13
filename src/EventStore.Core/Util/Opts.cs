@@ -19,16 +19,11 @@ namespace EventStore.Core.Util {
 		public const string CertificatesFromFileGroup = "Certificate Options (from file)";
 		public const string CertificatesFromStoreGroup = "Certificate Options (from store)";
 		public const string ClusterGroup = "Cluster Options";
-		public const string ManagerGroup = "Manager Options";
+		public const string InternalGroup = "Internal Options";
 
 		/*
 		 *  COMMON OPTIONS
 		 */
-
-		public const string ForceDescr =
-			"Force the Event Store to run in possibly harmful environments such as with Boehm GC.";
-
-		public const bool ForceDefault = false;
 
 		public const string WhatIfDescr = "Print effective configuration to console and then exit.";
 		public const bool WhatIfDefault = false;
@@ -410,5 +405,11 @@ namespace EventStore.Core.Util {
 		
 		public const string InsecureDescr = "Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces";
 		public const bool InsecureDefault = false;
+
+		/*
+		 * Internal options
+		 */
+		public const string UnsafeUseTransactionLogV3Descr = "Enable the v3 transaction log. This is unsafe and not supported.";
+		public const bool UnsafeUseTransactionLogV3Default = false;
 	}
 }

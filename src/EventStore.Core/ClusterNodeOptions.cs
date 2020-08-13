@@ -321,6 +321,9 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.DeadMemberRemovalPeriodDescr, Opts.ClusterGroup)]
 		public int DeadMemberRemovalPeriodSec { get; set; }
 		
+		[ArgHidden, ArgDescription(Opts.UnsafeUseTransactionLogV3Descr, Opts.InternalGroup)]
+		public bool UnsafeUseTransactionLogV3 { get; set; }
+
 		public ClusterNodeOptions() {
 			Config = "";
 			Help = Opts.ShowHelpDefault;
@@ -451,6 +454,8 @@ namespace EventStore.Core {
 			MaxAppendSize = Opts.MaxAppendSizeDefault;
 
 			Insecure = Opts.InsecureDefault;
+
+			UnsafeUseTransactionLogV3 = Opts.UnsafeUseTransactionLogV3Default;
 		}
 	}
 }

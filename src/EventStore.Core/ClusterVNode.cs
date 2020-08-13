@@ -274,6 +274,10 @@ namespace EventStore.Core {
 			}
 
 			// STORAGE SUBSYSTEM
+			if (vNodeSettings.UnsafeUseTransactionLogV3) {
+				Log.Warning("Transaction Log v3 is enabled. This is an unsafe and unsupported configuration.");
+			}
+
 			db.Open(vNodeSettings.VerifyDbHash, threads: vNodeSettings.InitializationThreads);
 			var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
