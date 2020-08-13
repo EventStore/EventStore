@@ -780,7 +780,7 @@ namespace EventStore.Core {
 				}
 			}
 
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, httpAuthenticationProviders, _authorizationProvider, _readIndex,
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				_vNodeSettings.MaxAppendSize, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);

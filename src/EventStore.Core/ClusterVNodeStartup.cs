@@ -11,6 +11,7 @@ using EventStore.Core.Services.Transport.Grpc.Cluster;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -35,6 +36,7 @@ namespace EventStore.Core {
 		private readonly ISubsystem[] _subsystems;
 		private readonly IPublisher _mainQueue;
 		private readonly ISubscriber _mainBus;
+		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex _readIndex;
 		private readonly int _maxAppendSize;
@@ -50,6 +52,7 @@ namespace EventStore.Core {
 			IPublisher mainQueue,
 			ISubscriber mainBus,
 			MultiQueuedHandler httpMessageHandler,
+			IAuthenticationProvider authenticationProvider,
 			IReadOnlyList<IHttpAuthenticationProvider> httpAuthenticationProviders,
 			IAuthorizationProvider authorizationProvider,
 			IReadIndex readIndex,
@@ -87,6 +90,7 @@ namespace EventStore.Core {
 			_mainQueue = mainQueue;
 			_mainBus = mainBus;
 			_httpMessageHandler = httpMessageHandler;
+			_authenticationProvider = authenticationProvider;
 			_httpAuthenticationProviders = httpAuthenticationProviders;
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
@@ -103,6 +107,7 @@ namespace EventStore.Core {
 			app.Map("/health", _statusCheck.Configure)
 				.UseMiddleware<AuthenticationMiddleware>()
 				.UseRouting()
+				.UseEndpoints(ep => _authenticationProvider.ConfigureEndpoints(ep))
 				.UseWhen(ctx => !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
 					b => b
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
