@@ -64,6 +64,12 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			//nothing to do
 		}
 
+		public IEnumerable<AuthenticationSchemes> GetSupportedAuthenticationSchemes() {
+			return new [] {
+				AuthenticationSchemes.Basic
+			};
+		}
+
 		private void ReadUserDataCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed,
 			AuthenticationRequest authenticationRequest) {
 			try {

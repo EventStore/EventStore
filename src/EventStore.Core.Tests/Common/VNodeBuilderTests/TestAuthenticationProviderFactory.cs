@@ -25,5 +25,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
 			//nothing to do
 		}
+		public IEnumerable<AuthenticationSchemes> GetSupportedAuthenticationSchemes() => null;
 	}
 }

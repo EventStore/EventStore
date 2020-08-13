@@ -13,6 +13,13 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
 			//nothing to do
 		}
+
+		public IEnumerable<AuthenticationSchemes> GetSupportedAuthenticationSchemes() {
+			return new [] {
+				AuthenticationSchemes.Insecure
+			};
+		}
+
 		public Task Initialize() => Task.CompletedTask;
 	}
 }

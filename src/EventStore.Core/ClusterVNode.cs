@@ -472,24 +472,38 @@ namespace EventStore.Core {
 			});
 
 
-			List<IHttpAuthenticationProvider> httpAuthenticationProviders;
+			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider>();
+
+			foreach (var authenticationScheme in _authenticationProvider.GetSupportedAuthenticationSchemes() ?? Enumerable.Empty<AuthenticationSchemes>()) {
+				switch (authenticationScheme)
+				{
+					case AuthenticationSchemes.Basic:
+						httpAuthenticationProviders.Add(new BasicHttpAuthenticationProvider(_authenticationProvider));
+						break;
+					case AuthenticationSchemes.Bearer:
+						httpAuthenticationProviders.Add(new BearerHttpAuthenticationProvider(_authenticationProvider));
+						break;
+					case AuthenticationSchemes.Insecure:
+						httpAuthenticationProviders.Add(new PassthroughHttpAuthenticationProvider(_authenticationProvider));
+						break;
+					default:
+						Log.Error($"Unsupported Authentication Scheme: {authenticationScheme}");
+						break;
+				}
+			}
 
 			if (!_disableHttps) {
-				httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-					new BasicHttpAuthenticationProvider(_authenticationProvider),
-					new BearerHttpAuthenticationProvider(_authenticationProvider),
-					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName)
-				};
+				//transport-level authentication providers
+				httpAuthenticationProviders.Add(
+					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName));
 
 				if (vNodeSettings.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
-
-				httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
-			} else {
-				httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-					new PassthroughHttpAuthenticationProvider(_authenticationProvider)
-				};
 			}
+
+			//default authentication provider
+			httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
+
 
 			var adminController = new AdminController(_mainQueue, _workersHandler);
 			var pingController = new PingController();
