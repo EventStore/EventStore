@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Changed the default cluster gossip port from 30777 to 2113 [EventStore#2618](https://github.com/EventStore/EventStore/pull/2618)
 - DisableInternalTcpTls has no effect, Insecure mode should be used to disable it [EventStore#2628](https://github.com/EventStore/EventStore/pull/2628)
 - Disable authentication & authorization when --insecure is specified [EventStore#2614](https://github.com/EventStore/EventStore/pull/2614)
+- gRPC reads will always try and read maxCount of events if it's not reached the end of the stream. [EventStore#2631](https://github.com/EventStore/EventStore/pull/2631)
 
 ### Fixed
 - Do not start other services if run is being skipped when --help or --version are specified [EventStore#2558](https://github.com/EventStore/EventStore/pull/2558)
@@ -25,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - Log to default directory; args from CLI [EventStore#2574](https://github.com/EventStore/EventStore/pull/2574)
 - slow gRPC subscriptions [EventStore#2566](https://github.com/EventStore/EventStore/pull/2566)
 - Handle successful link event resolution when projections emit events. [EventStore#2465](https://github.com/EventStore/EventStore/pull/2465)
+- gRPC unable to read events from a truncated stream [EventStore#2631](https://github.com/EventStore/EventStore/pull/2631)
 
 ### Added
 - Option to set client certificate common name [EventStore#2572](https://github.com/EventStore/EventStore/pull/2572)
