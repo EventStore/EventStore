@@ -134,6 +134,7 @@ namespace EventStore.Core {
 				.Aggregate(services
 						.AddRouting()
 						.AddSingleton(_httpAuthenticationProviders)
+						.AddSingleton(_authenticationProvider)
 						.AddSingleton(_authorizationProvider)
 						.AddSingleton<AuthenticationMiddleware>()
 						.AddSingleton<AuthorizationMiddleware>()
