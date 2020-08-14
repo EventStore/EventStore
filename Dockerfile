@@ -23,3 +23,4 @@ COPY ./scripts/docker/entrypoint.sh /
 HEALTHCHECK --timeout=2s CMD curl -sf http://localhost:2113/stats || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
+RUN ["chmod", "+x", "/entrypoint.sh"]
