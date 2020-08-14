@@ -82,5 +82,10 @@ namespace EventStore.Core.Tests.ClientOperations {
 			return (IntegrationVNodeBuilder)ret;
 		}
 		protected override void SetUpProjectionsIfNeeded() {}
+
+		public override VNodeBuilder UnsafeUseTransactionLogV3() {
+			_unsafeUseTransactionLogV3 = true;
+			return this;
+		}
 	}
 }
