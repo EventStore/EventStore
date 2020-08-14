@@ -311,10 +311,12 @@ namespace EventStore.Core.Services.Transport.Tcp {
 					} else if ((package.Flags & TcpFlags.Authenticated) != 0) {
 						_authProvider.Authenticate(new TcpAuthRequest(this, package));
 					} else if (defaultUser != null) {
-						if (defaultUser.User != null)
+						if (defaultUser.User != null) {
 							UnwrapAndPublishPackage(package, defaultUser.User, defaultUser.Tokens);
-						else
-							_authProvider.Authenticate(new TcpAuthRequest(this, package));
+						} else {
+							// The default credentials aren't authenticated
+							ReplyNotAuthenticated(package.CorrelationId, "Not Authenticated");
+						}
 					} else {
 						UnwrapAndPublishPackage(package, Anonymous, null);
 					}
@@ -512,7 +514,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 
 			public override void NotReady() {
-				_manager.ReplyNotAuthenticated(_correlationId, "Server not yet ready");
+				_manager.ReplyNotReady(_correlationId, "Server not yet ready");
 			}
 		}
 
