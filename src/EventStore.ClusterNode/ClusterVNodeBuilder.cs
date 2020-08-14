@@ -28,6 +28,15 @@ namespace EventStore.ClusterNode {
 			return (ClusterVNodeBuilder)ret;
 		}
 
+		/// <summary>
+		/// Enable the v3 transaction log. This is unsafe and not supported.
+		/// </summary>
+		/// <returns></returns>
+		public override VNodeBuilder UnsafeUseTransactionLogV3() {
+			_unsafeUseTransactionLogV3 = true;
+			return this;
+		}
+
 		protected override void SetUpProjectionsIfNeeded() {
 			_subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType,
 				_startStandardProjections, _projectionsQueryExpiry, _faultOutOfOrderProjections));

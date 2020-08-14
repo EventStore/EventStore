@@ -1,4 +1,5 @@
-﻿using EventStore.Core;
+﻿using System;
+using EventStore.Core;
 using EventStore.Projections.Core;
 
 namespace EventStore.ClientAPI.Embedded {
@@ -34,6 +35,14 @@ namespace EventStore.ClientAPI.Embedded {
 		protected override void SetUpProjectionsIfNeeded() {
 			_subsystems.Add(new ProjectionsSubsystem(_projectionsThreads, _projectionType,
 				_startStandardProjections, _projectionsQueryExpiry, _faultOutOfOrderProjections));
+		}
+
+		/// <summary>
+		/// Enable the v3 transaction log. This is unsafe and not supported.
+		/// </summary>
+		/// <returns></returns>
+		public override VNodeBuilder UnsafeUseTransactionLogV3() {
+			throw new NotSupportedException("V3 Transaction Log is unsafe and not supported for the embedded client.");
 		}
 	}
 }

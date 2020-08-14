@@ -1266,10 +1266,7 @@ namespace EventStore.Core {
 		/// Enable the v3 transaction log. This is unsafe and not supported.
 		/// </summary>
 		/// <returns></returns>
-		public VNodeBuilder UnsafeUseTransactionLogV3() {
-			_unsafeUseTransactionLogV3 = true;
-			return this;
-		}
+		public abstract VNodeBuilder UnsafeUseTransactionLogV3();
 
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
 			if (_gossipAdvertiseInfo == null) {
