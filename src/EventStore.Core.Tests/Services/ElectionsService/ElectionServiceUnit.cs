@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				clusterSettings.Self.NodeInfo.InternalSecureTcp,
 				clusterSettings.Self.NodeInfo.ExternalTcp,
 				clusterSettings.Self.NodeInfo.ExternalSecureTcp,
-				clusterSettings.Self.NodeInfo.HttpEndPoint,
+				clusterSettings.Self.NodeInfo.HttpEndPoint, null, 0, 0,
 				clusterSettings.Self.NodePriority,
 				clusterSettings.Self.ReadOnlyReplica);
 			ElectionsService = new Core.Services.ElectionsService(Publisher,
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						clusterSettings.Self.NodeInfo.InternalSecureTcp,
 						clusterSettings.Self.NodeInfo.ExternalTcp,
 						clusterSettings.Self.NodeInfo.ExternalSecureTcp,
-						clusterSettings.Self.NodeInfo.HttpEndPoint,
+						clusterSettings.Self.NodeInfo.HttpEndPoint, null, 0, 0,
 						LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 						-1,
 						-1,
@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						x.NodeInfo.InternalSecureTcp,
 						x.NodeInfo.ExternalTcp,
 						x.NodeInfo.ExternalSecureTcp,
-						x.NodeInfo.HttpEndPoint,
+						x.NodeInfo.HttpEndPoint, null, 0, 0,
 						LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
 						-1,
 						-1,
@@ -176,7 +176,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					: MemberInfo.ForVNode(x.InstanceId, x.TimeStamp, x.State, x.IsAlive,
 						x.InternalTcpEndPoint, x.InternalSecureTcpEndPoint,
 						x.ExternalTcpEndPoint, x.ExternalSecureTcpEndPoint,
-						x.HttpEndPoint,
+						x.HttpEndPoint, null, 0, 0,
 						x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 						x.EpochPosition, x.EpochNumber, x.EpochId, x.NodePriority, x.IsReadOnlyReplica));
 		}

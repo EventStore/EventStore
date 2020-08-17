@@ -16,7 +16,9 @@ namespace EventStore.Core.Tests.Cluster {
 				new DnsEndPoint(ipAddress, port),
 				new DnsEndPoint(ipAddress, port),
 				new DnsEndPoint(ipAddress, port),
-				new DnsEndPoint(ipAddress, port), 0, false);
+				new DnsEndPoint(ipAddress, port),
+				null, 0, 0,
+				0, false);
 
 			var ipEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
 			var dnsEndPoint = new DnsEndPoint(ipAddress, port);
@@ -35,7 +37,8 @@ namespace EventStore.Core.Tests.Cluster {
 				new IPEndPoint(IPAddress.Parse(ipAddress), port),
 				new IPEndPoint(IPAddress.Parse(ipAddress), port),
 				new IPEndPoint(IPAddress.Parse(ipAddress), port),
-				new IPEndPoint(IPAddress.Parse(ipAddress), port), 0, false);
+				new IPEndPoint(IPAddress.Parse(ipAddress), port),
+				null, 0, 0, 0, false);
 
 			var ipEndPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
 			var dnsEndPoint = new DnsEndPoint(ipAddress, port);

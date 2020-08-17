@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.Helpers {
 					InternalTcpEndPoint.ToDnsEndPoint(),
 					InternalTcpSecEndPoint.ToDnsEndPoint(),
 					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(), HttpEndPoint.ToDnsEndPoint(),
-					null, null, 0), enableTrustedAuth,
+					null, null, 0, null, 0, 0), enableTrustedAuth,
 				certificate, trustedRootCertificates, Opts.CertificateReservedNodeCommonNameDefault, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,

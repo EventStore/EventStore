@@ -37,9 +37,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnGetGossip(HttpEntityManager entity, UriTemplateMatch match) {
 			var sendToHttpEnvelope = new SendToHttpEnvelope(
-				_networkSendQueue, entity, Format.SendGossip,
+				_networkSendQueue, entity, Format.SendPublicGossip,
 				(e, m) => Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false));
-			Publish(new GossipMessage.ReadGossip(sendToHttpEnvelope));
+			Publish(new GossipMessage.ClientGossip(sendToHttpEnvelope));
 		}
 	}
 }

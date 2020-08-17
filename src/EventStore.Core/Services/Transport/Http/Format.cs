@@ -6,6 +6,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Transport.Http;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using EventStore.Common.Utils;
+using EventStore.Core.Cluster;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public static class Format {
@@ -118,15 +119,15 @@ namespace EventStore.Core.Services.Transport.Http {
 			return entity.ResponseCodec.To(completed.ConnectionStats);
 		}
 
-		public static string SendGossip(HttpResponseFormatterArgs entity, Message message) {
-			if (message.GetType() != typeof(GossipMessage.SendGossip))
+		public static string SendPublicGossip(HttpResponseFormatterArgs entity, Message message) {
+			if (message.GetType() != typeof(GossipMessage.SendClientGossip))
 				throw new Exception(string.Format("Unexpected type of response message: {0}, expected: {1}",
 					message.GetType().Name,
-					typeof(GossipMessage.SendGossip).Name));
+					typeof(GossipMessage.SendClientGossip).Name));
 
-			var sendGossip = message as GossipMessage.SendGossip;
-			return sendGossip != null
-				? entity.ResponseCodec.To(new ClusterInfoDto(sendGossip.ClusterInfo, sendGossip.ServerEndPoint))
+			var sendPublicGossip = message as GossipMessage.SendClientGossip;
+			return sendPublicGossip != null
+				? entity.ResponseCodec.To(sendPublicGossip.ClusterInfo)
 				: string.Empty;
 		}
 

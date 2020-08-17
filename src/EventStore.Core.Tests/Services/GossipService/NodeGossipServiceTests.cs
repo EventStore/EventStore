@@ -102,7 +102,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			VNodeState nodeState = VNodeState.Initializing) {
 			return MemberInfo.ForVNode(nodeInfo.InstanceId, utcNow, nodeState, true,
 				nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp, nodeInfo.ExternalTcp,
-				nodeInfo.ExternalSecureTcp, nodeInfo.HttpEndPoint,
+				nodeInfo.ExternalSecureTcp, nodeInfo.HttpEndPoint, null, 0, 0,
 				0, writerCheckpoint ?? 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0, false);
 		}
 
@@ -846,7 +846,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp) {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
-				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
+				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, null, 0, 0,
 				0, 0, 0, -1, -1, Guid.Empty, 0, false);
 		}
 
@@ -893,7 +893,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp) {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
-				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
+				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, null, 0, 0,
 				0, 0, 0, -1, -1, Guid.Empty, 0, false);
 		}
 
