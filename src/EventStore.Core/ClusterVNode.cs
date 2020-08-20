@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
+using EventStore.Common.Settings;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
 using EventStore.Native.UnixSignalManager;
