@@ -57,16 +57,16 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 					m => ReadUserDataCompleted(m, authenticationRequest));
 			}
 		}
-		public string GetName() => "internal";
+		public string Name => "internal";
 		public IEnumerable<KeyValuePair<string, string>> GetPublicProperties() => null;
 
 		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
 			//nothing to do
 		}
 
-		public IEnumerable<AuthenticationSchemes> GetSupportedAuthenticationSchemes() {
+		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() {
 			return new [] {
-				AuthenticationSchemes.Basic
+				"Basic"
 			};
 		}
 

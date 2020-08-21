@@ -8,15 +8,15 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 	public class PassthroughAuthenticationProvider : IAuthenticationProvider {
 		public void Authenticate(AuthenticationRequest authenticationRequest) =>
 			authenticationRequest.Authenticated(SystemAccounts.System);
-		public string GetName() => "insecure";
+		public string Name => "insecure";
 		public IEnumerable<KeyValuePair<string, string>> GetPublicProperties() => null;
 		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
 			//nothing to do
 		}
 
-		public IEnumerable<AuthenticationSchemes> GetSupportedAuthenticationSchemes() {
+		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() {
 			return new [] {
-				AuthenticationSchemes.Insecure
+				"Insecure"
 			};
 		}
 

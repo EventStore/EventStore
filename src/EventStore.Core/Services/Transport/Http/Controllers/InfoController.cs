@@ -63,7 +63,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return null;
 
 			return new Dictionary<string, object>(){
-				{ "type", _authenticationProvider.GetName() },
+				{ "type", _authenticationProvider.Name },
 				{ "properties", _authenticationProvider.GetPublicProperties() }
 			};
 		}

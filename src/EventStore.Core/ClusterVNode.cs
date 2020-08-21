@@ -474,20 +474,20 @@ namespace EventStore.Core {
 
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider>();
 
-			foreach (var authenticationScheme in _authenticationProvider.GetSupportedAuthenticationSchemes() ?? Enumerable.Empty<AuthenticationSchemes>()) {
+			foreach (var authenticationScheme in _authenticationProvider.GetSupportedAuthenticationSchemes() ?? Enumerable.Empty<string>()) {
 				switch (authenticationScheme)
 				{
-					case AuthenticationSchemes.Basic:
+					case "Basic":
 						httpAuthenticationProviders.Add(new BasicHttpAuthenticationProvider(_authenticationProvider));
 						break;
-					case AuthenticationSchemes.Bearer:
+					case "Bearer":
 						httpAuthenticationProviders.Add(new BearerHttpAuthenticationProvider(_authenticationProvider));
 						break;
-					case AuthenticationSchemes.Insecure:
+					case "Insecure":
 						httpAuthenticationProviders.Add(new PassthroughHttpAuthenticationProvider(_authenticationProvider));
 						break;
 					default:
-						Log.Error($"Unsupported Authentication Scheme: {authenticationScheme}");
+						Log.Warning($"Unsupported Authentication Scheme: {authenticationScheme}");
 						break;
 				}
 			}
