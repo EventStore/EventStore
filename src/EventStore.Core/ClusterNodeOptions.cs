@@ -51,6 +51,15 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.ExternalIpAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public string ExtHostAdvertiseAs { get; set; }
 
+		[ArgDescription(Opts.AdvertiseHostToClientAsDescr, Opts.InterfacesGroup)]
+		public string AdvertiseHostToClientAs{ get; set; }
+
+		[ArgDescription(Opts.AdvertiseHttpPortToClientAsDescr, Opts.InterfacesGroup)]
+		public int AdvertiseHttpPortToClientAs{ get; set; }
+
+		[ArgDescription(Opts.AdvertiseTcpPortToClientAsDescr, Opts.InterfacesGroup)]
+		public int AdvertiseTcpPortToClientAs{ get; set; }
+
 		[ArgDescription(Opts.ExternalTcpPortAdvertiseAsDescr, Opts.InterfacesGroup)]
 		public int ExtTcpPortAdvertiseAs { get; set; }
 
@@ -373,6 +382,10 @@ namespace EventStore.Core {
 			ExtHostAdvertiseAs = Opts.ExternalHostAdvertiseAsDefault;
 			ExtTcpPortAdvertiseAs = Opts.ExternalTcpPortAdvertiseAsDefault;
 			HttpPortAdvertiseAs = Opts.HttpPortAdvertiseAsDefault;
+
+			AdvertiseHostToClientAs = Opts.AdvertiseHostToClientAsDefault;
+			AdvertiseHttpPortToClientAs = Opts.AdvertiseHttpPortToClientAsDefault;
+			AdvertiseTcpPortToClientAs = Opts.AdvertiseTcpPortToClientAsDefault;
 
 			IntHostAdvertiseAs = Opts.InternalHostAdvertiseAsDefault;
 			IntTcpPortAdvertiseAs = Opts.InternalTcpPortAdvertiseAsDefault;

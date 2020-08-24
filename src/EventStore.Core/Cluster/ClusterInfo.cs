@@ -53,9 +53,14 @@ namespace EventStore.Core.Cluster {
 					x.IsAlive,
 					!x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
 					x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
-					!x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
-					x.ExternalTcpUsesTls && x.ExternalTcp != null ? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port) : null,
+					!x.ExternalTcpUsesTls && x.ExternalTcp != null
+						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port)
+						: null,
+					x.ExternalTcpUsesTls && x.ExternalTcp != null
+						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port)
+						: null,
 					new DnsEndPoint(x.HttpEndPoint.Address, (int)x.HttpEndPoint.Port),
+					x.AdvertiseHostToClientAs, (int)x.AdvertiseHttpPortToClientAs, (int)x.AdvertiseTcpPortToClientAs,
 					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 					x.EpochPosition, x.EpochNumber, Uuid.FromDto(x.EpochId).ToGuid(), x.NodePriority,
 					x.IsReadOnlyReplica
@@ -96,7 +101,10 @@ namespace EventStore.Core.Cluster {
 				EpochNumber = x.EpochNumber,
 				EpochId = Uuid.FromGuid(x.EpochId).ToDto(),
 				NodePriority = x.NodePriority,
-				IsReadOnlyReplica = x.IsReadOnlyReplica
+				IsReadOnlyReplica = x.IsReadOnlyReplica,
+				AdvertiseHostToClientAs = x.AdvertiseHostToClientAs ?? "",
+				AdvertiseHttpPortToClientAs = (uint)x.AdvertiseHttpPortToClientAs,
+				AdvertiseTcpPortToClientAs = (uint)x.AdvertiseTcpPortToClientAs
 			}).ToArray();
 			var info = new EventStore.Cluster.ClusterInfo();
 			info.Members.AddRange(members);

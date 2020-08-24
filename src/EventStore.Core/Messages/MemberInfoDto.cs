@@ -21,6 +21,9 @@ namespace EventStore.Core.Messages {
 
 		public string HttpEndPointIp { get; set; }
 		public int HttpEndPointPort { get; set; }
+		public string AdvertiseHostToClientAs { get; set; }
+		public int AdvertiseHttpPortToClientAs { get; set; }
+		public int AdvertiseTcpPortToClientAs { get; set; }
 
 		public long LastCommitPosition { get; set; }
 		public long WriterCheckpoint { get; set; }
@@ -55,6 +58,9 @@ namespace EventStore.Core.Messages {
 
 			HttpEndPointIp = member.HttpEndPoint.GetHost();
 			HttpEndPointPort = member.HttpEndPoint.GetPort();
+			AdvertiseHostToClientAs = member.AdvertiseHostToClientAs;
+			AdvertiseHttpPortToClientAs = member.AdvertiseHttpPortToClientAs;
+			AdvertiseTcpPortToClientAs = member.AdvertiseTcpPortToClientAs;
 
 			LastCommitPosition = member.LastCommitPosition;
 			WriterCheckpoint = member.WriterCheckpoint;
@@ -74,6 +80,8 @@ namespace EventStore.Core.Messages {
 				$"InternalTcpIp: {InternalTcpIp}, InternalTcpPort: {InternalTcpPort}, InternalSecureTcpPort: {InternalSecureTcpPort}, " +
 				$"ExternalTcpIp: {ExternalTcpIp}, ExternalTcpPort: {ExternalTcpPort}, ExternalSecureTcpPort: {ExternalSecureTcpPort}, " +
 				$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
+				$"{nameof(AdvertiseHostToClientAs)}: {AdvertiseHostToClientAs}, {nameof(AdvertiseHttpPortToClientAs)}: {AdvertiseHttpPortToClientAs}, " +
+				$"{nameof(AdvertiseTcpPortToClientAs)}: {AdvertiseTcpPortToClientAs}, " +
 				$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, " +
 				$"EpochPosition: {EpochPosition}, EpochNumber: {EpochNumber}, EpochId: {EpochId:B}, NodePriority: {NodePriority}, " +
 				$"IsReadOnlyReplica: {IsReadOnlyReplica}";

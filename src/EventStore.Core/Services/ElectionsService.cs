@@ -117,6 +117,7 @@ namespace EventStore.Core.Services {
 					memberInfo.InternalTcpEndPoint, memberInfo.InternalSecureTcpEndPoint,
 					memberInfo.ExternalTcpEndPoint, memberInfo.ExternalSecureTcpEndPoint,
 					memberInfo.HttpEndPoint,
+					memberInfo.AdvertiseHostToClientAs, memberInfo.AdvertiseHttpPortToClientAs, memberInfo.AdvertiseTcpPortToClientAs,
 					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
 					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority,
 					memberInfo.IsReadOnlyReplica)

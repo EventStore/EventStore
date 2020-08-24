@@ -535,7 +535,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			_advertiseInfo = new Data.GossipAdvertiseInfo(intTcpEndpoint.ToDnsEndPoint(),
 				intSecTcpEndpoint.ToDnsEndPoint(), extTcpEndpoint.ToDnsEndPoint(),
 				extSecTcpEndpoint.ToDnsEndPoint(), httpEndpoint.ToDnsEndPoint(),
-				internalHostAdvertiseAs, externalHostAdvertiseAs, httpEndpoint.Port);
+				internalHostAdvertiseAs, externalHostAdvertiseAs, httpEndpoint.Port, null, 0, 0);
 
 			_builder
 				.WithServerCertificate(ssl_connections.GetServerCertificate())

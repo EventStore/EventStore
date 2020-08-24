@@ -90,6 +90,34 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
+		public class ClientGossip : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly IEnvelope Envelope;
+
+			public ClientGossip(IEnvelope envelope) {
+				Envelope = envelope;
+			}
+		}
+
+		public class SendClientGossip : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly ClientClusterInfo ClusterInfo;
+
+			public SendClientGossip(ClientClusterInfo clusterInfo) {
+				ClusterInfo = clusterInfo;
+			}
+		}
+
 		public class GossipUpdated : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

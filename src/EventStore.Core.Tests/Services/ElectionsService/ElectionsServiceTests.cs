@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				nodeInfo.InstanceId, timestamp, state, isAlive,
 				nodeInfo.InternalTcp,
 				nodeInfo.InternalSecureTcp, nodeInfo.ExternalTcp, nodeInfo.ExternalSecureTcp,
-				nodeInfo.HttpEndPoint,
+				nodeInfo.HttpEndPoint, null, 0, 0,
 				0, 0, 0, 0, epochNumber, epochId, priority,
 				nodeInfo.IsReadOnlyReplica);
 
@@ -819,7 +819,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeThree.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeThree.InternalTcp,
 						_nodeThree.InternalSecureTcp, _nodeThree.ExternalTcp, _nodeThree.ExternalSecureTcp,
-						_nodeThree.HttpEndPoint, 0, 0, 0, 0, 0, _epochId, 0,
+						_nodeThree.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeThree.IsReadOnlyReplica)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.Accept(_node.InstanceId, _node.HttpEndPoint,
@@ -957,7 +957,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeTwo.InternalTcp,
 						_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
-						_nodeTwo.HttpEndPoint, 0, 0, 0, 0, 0, _epochId, 0,
+						_nodeTwo.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
@@ -1173,7 +1173,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeTwo.InternalTcp,
 						_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
-						_nodeTwo.HttpEndPoint, 0, 0, 0, 0, 0, _epochId, 0,
+						_nodeTwo.HttpEndPoint, null, 0, 0, 0, 0, 0, 0, 0, _epochId, 0,
 						_nodeTwo.IsReadOnlyReplica)),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
@@ -1213,7 +1213,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				endpoint,
 				endpoint,
 				endpoint,
-				endpoint,
+				endpoint, null, 0, 0,
 				0,
 				true);
 
@@ -1253,7 +1253,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						_nodeThree.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 						_nodeThree.InternalTcp,
 						_nodeThree.InternalSecureTcp, _nodeThree.ExternalTcp, _nodeThree.ExternalSecureTcp,
-						_nodeThree.HttpEndPoint,
+						_nodeThree.HttpEndPoint, null, 0, 0,
 						0, 0, 0, 0, 0, _epochId, 0,
 						_nodeThree.IsReadOnlyReplica)),
 			};
@@ -1342,7 +1342,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
 							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
-							_nodeTwo.HttpEndPoint,
+							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),
 				};
@@ -1375,7 +1375,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
 							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
-							_nodeTwo.HttpEndPoint,
+							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),
 				};
@@ -1426,7 +1426,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
 							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
-							_nodeTwo.HttpEndPoint,
+							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),
 				};
@@ -1459,7 +1459,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 							_nodeTwo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
 							_nodeTwo.InternalTcp,
 							_nodeTwo.InternalSecureTcp, _nodeTwo.ExternalTcp, _nodeTwo.ExternalSecureTcp,
-							_nodeTwo.HttpEndPoint,
+							_nodeTwo.HttpEndPoint, null, 0, 0,
 							0, 0, 0, 0, 0, _epochId, 0,
 							_nodeTwo.IsReadOnlyReplica)),
 				};

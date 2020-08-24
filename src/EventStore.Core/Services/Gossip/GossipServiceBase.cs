@@ -18,6 +18,7 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<GossipMessage.Gossip>,
 		IHandle<GossipMessage.GossipReceived>,
 		IHandle<GossipMessage.ReadGossip>,
+		IHandle<GossipMessage.ClientGossip>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<GossipMessage.GossipSendFailed>,
 		IHandle<SystemMessage.VNodeConnectionLost>,
@@ -175,6 +176,19 @@ namespace EventStore.Core.Services.Gossip {
 		public void Handle(GossipMessage.ReadGossip message) {
 			if (_cluster != null) {
 				message.Envelope.ReplyWith(new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint));
+			}
+		}
+
+		public void Handle(GossipMessage.ClientGossip message) {
+			if (_cluster != null) {
+				var advertisedAddress = string.IsNullOrEmpty(_memberInfo.AdvertiseHostToClientAs)
+					? _memberInfo.HttpEndPoint.GetHost()
+					: _memberInfo.AdvertiseHostToClientAs;
+				var advertisedPort = _memberInfo.AdvertiseHttpPortToClientAs == 0
+					? _memberInfo.HttpEndPoint.GetPort()
+					: _memberInfo.AdvertiseHttpPortToClientAs;
+				message.Envelope.ReplyWith(new GossipMessage.SendClientGossip(
+					new ClientClusterInfo(_cluster, advertisedAddress, advertisedPort)));
 			}
 		}
 

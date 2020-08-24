@@ -288,6 +288,15 @@ namespace EventStore.Core.Util {
 		public const string ExternalIpAdvertiseAsDescr = "Advertise External Tcp Address As.";
 		public static readonly string ExternalHostAdvertiseAsDefault = null;
 
+		public const string AdvertiseHostToClientAsDescr = "Advertise Host in Gossip to Client As.";
+		public static readonly string AdvertiseHostToClientAsDefault  = null;
+
+		public const string AdvertiseHttpPortToClientAsDescr = "Advertise HTTP Port in Gossip to Client As.";
+		public static readonly int AdvertiseHttpPortToClientAsDefault  = 0;
+
+		public const string AdvertiseTcpPortToClientAsDescr = "Advertise TCP Port in Gossip to Client As.";
+		public static readonly int AdvertiseTcpPortToClientAsDefault  = 0;
+
 		public const string ExternalTcpPortAdvertiseAsDescr = "Advertise External Tcp Port As.";
 		public static readonly int ExternalTcpPortAdvertiseAsDefault = 0;
 

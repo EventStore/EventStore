@@ -676,6 +676,9 @@ namespace EventStore.Core {
 				vNodeSettings.GossipAdvertiseInfo.ExternalTcp,
 				vNodeSettings.GossipAdvertiseInfo.ExternalSecureTcp,
 				vNodeSettings.GossipAdvertiseInfo.HttpEndPoint,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseHostToClientAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				vNodeSettings.NodePriority, vNodeSettings.ReadOnlyReplica);
 			
 			if (!isSingleNode) {
@@ -732,6 +735,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.Gossip>(gossip);
 				_mainBus.Subscribe<GossipMessage.GossipReceived>(gossip);
 				_mainBus.Subscribe<GossipMessage.ReadGossip>(gossip);
+				_mainBus.Subscribe<GossipMessage.ClientGossip>(gossip);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(gossip);
 				_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
 				_mainBus.Subscribe<GossipMessage.UpdateNodePriority>(gossip);

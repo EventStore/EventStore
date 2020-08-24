@@ -132,6 +132,9 @@ namespace EventStore.Core {
 		private string _advertiseInternalHostAs;
 		private string _advertiseExternalHostAs;
 		private int _advertiseHttpPortAs;
+		private string _advertiseHostToClientAs;
+		private int _advertiseHttpPortToClientAs;
+		private int _advertiseTcpPortToClientAs;
 		private int _advertiseInternalSecureTcpPortAs;
 		private int _advertiseExternalSecureTcpPortAs;
 		private int _advertiseInternalTcpPortAs;
@@ -171,6 +174,9 @@ namespace EventStore.Core {
 			_internalTcp = new IPEndPoint(Opts.InternalIpDefault, Opts.InternalTcpPortDefault);
 			_internalSecureTcp = null;
 			_httpEndPoint = new IPEndPoint(Opts.ExternalIpDefault, Opts.HttpPortDefault);
+			_advertiseHostToClientAs = null;
+			_advertiseHttpPortToClientAs = 0;
+			_advertiseTcpPortToClientAs = 0;
 
 			_enableTrustedAuth = Opts.EnableTrustedAuthDefault;
 			_certificateReservedNodeCommonName = Opts.CertificateReservedNodeCommonNameDefault;
@@ -383,6 +389,33 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder AdvertiseExternalHostAs(string extHostAdvertiseAs) {
 			_advertiseExternalHostAs = extHostAdvertiseAs;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets up the Host that would be advertised to the client in this node's gossip
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder AdvertiseHostToClientAs(string advertiseHostAs) {
+			_advertiseHostToClientAs = advertiseHostAs;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets up the HTTP Port that would be advertised to the client in this node's gossip
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder AdvertiseHttpPortToClientAs(int advertiseHttpPortAs) {
+			_advertiseHttpPortToClientAs = advertiseHttpPortAs;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets up the TCP Port that would be advertised to the client in this node's gossip
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder AdvertiseTcpPortToClientAs(int advertiseTcpPortAs) {
+			_advertiseTcpPortToClientAs = advertiseTcpPortAs;
 			return this;
 		}
 
@@ -1310,7 +1343,8 @@ namespace EventStore.Core {
 
 				_gossipAdvertiseInfo = new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint,
 					extTcpEndPoint, extSecureTcpEndPoint, httpEndPoint,
-					_advertiseInternalHostAs, _advertiseExternalHostAs, _advertiseHttpPortAs);
+					_advertiseInternalHostAs, _advertiseExternalHostAs, _advertiseHttpPortAs,
+					_advertiseHostToClientAs, _advertiseHttpPortToClientAs, _advertiseTcpPortToClientAs);
 			}
 
 			return _gossipAdvertiseInfo;
