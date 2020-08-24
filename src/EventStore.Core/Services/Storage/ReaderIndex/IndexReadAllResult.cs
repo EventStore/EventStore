@@ -10,8 +10,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public readonly TFPos NextPos;
 		public readonly TFPos PrevPos;
 		public readonly bool IsEndOfStream;
+		public readonly long ConsideredEventsCount;
 
-		public IndexReadAllResult(List<CommitEventRecord> records, TFPos currentPos, TFPos nextPos, TFPos prevPos, bool isEndOfStream) {
+		public IndexReadAllResult(List<CommitEventRecord> records, TFPos currentPos, TFPos nextPos, TFPos prevPos,
+			bool isEndOfStream, long consideredEventsCount) {
 			Ensure.NotNull(records, "records");
 
 			Records = records;
@@ -19,6 +21,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			NextPos = nextPos;
 			PrevPos = prevPos;
 			IsEndOfStream = isEndOfStream;
+			ConsideredEventsCount = consideredEventsCount;
 		}
 
 		public override string ToString() {

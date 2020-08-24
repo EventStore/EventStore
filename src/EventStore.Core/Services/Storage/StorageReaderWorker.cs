@@ -448,7 +448,8 @@ namespace EventStore.Core.Services.Storage {
 					return new ClientMessage.FilteredReadAllEventsForwardCompleted(
 						msg.CorrelationId, FilteredReadAllResult.Success, null, resolved, metadata, false,
 						msg.MaxCount,
-						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream);
+						res.CurrentPos, res.NextPos, res.PrevPos, lastIndexedPosition, res.IsEndOfStream,
+						res.ConsideredEventsCount);
 				} catch (Exception exc) {
 					Log.Error(exc, "Error during processing ReadAllEventsForwardFiltered request.");
 					return NoDataForFilteredCommand(msg, FilteredReadAllResult.Error, pos, lastIndexedPosition,
@@ -532,7 +533,7 @@ namespace EventStore.Core.Services.Storage {
 			long lastIndexedPosition, string error = null) {
 			return new ClientMessage.FilteredReadAllEventsForwardCompleted(
 				msg.CorrelationId, result, error, ResolvedEvent.EmptyArray, null, false,
-				msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastIndexedPosition, false);
+				msg.MaxCount, pos, TFPos.Invalid, TFPos.Invalid, lastIndexedPosition, false, 0L);
 		}
 
 		private ClientMessage.FilteredReadAllEventsBackwardCompleted NoDataForFilteredCommand(
