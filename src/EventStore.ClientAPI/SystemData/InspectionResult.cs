@@ -11,8 +11,11 @@ namespace EventStore.ClientAPI.SystemData {
 
 		public InspectionResult(InspectionDecision decision, string description, IPEndPoint tcpEndPoint = null,
 			IPEndPoint secureTcpEndPoint = null) {
-			if (decision == InspectionDecision.Reconnect)
-				Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
+			if (decision == InspectionDecision.Reconnect) {
+				if (tcpEndPoint == null && secureTcpEndPoint == null) {
+					throw new ArgumentException("tcpEndPoint and secureTcpEndPoint cannot both be null");
+				}
+			}
 			else {
 				if (tcpEndPoint != null)
 					throw new ArgumentException(string.Format("tcpEndPoint is not null for decision {0}.", decision));

@@ -8,7 +8,11 @@ namespace EventStore.ClientAPI.Messages {
 		public partial class NotHandled {
 			public partial class MasterInfo {
 				public IPEndPoint ExternalTcpEndPoint {
-					get { return new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort); }
+					get {
+						return ExternalTcpAddress == null
+							? null
+							: new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort);
+					}
 				}
 
 				public IPEndPoint ExternalSecureTcpEndPoint {
