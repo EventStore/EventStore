@@ -27,6 +27,8 @@ All notable changes to this project will be documented in this file.
 - slow gRPC subscriptions [EventStore#2566](https://github.com/EventStore/EventStore/pull/2566)
 - Handle successful link event resolution when projections emit events. [EventStore#2465](https://github.com/EventStore/EventStore/pull/2465)
 - gRPC unable to read events from a truncated stream [EventStore#2631](https://github.com/EventStore/EventStore/pull/2631)
+- Error on TCP operations after default user fails authentication [EventStore#2638](https://github.com/EventStore/EventStore/pull/2638)
+- wrong calculation of checkpoint interval for filtered subscriptions [EventStore#2608](https://github.com/EventStore/EventStore/pull/2608)
 
 ### Added
 - Option to set client certificate common name [EventStore#2572](https://github.com/EventStore/EventStore/pull/2572)
@@ -36,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - Ability to load (or reload) default log level from EventStore config file [EventStore#2602](https://github.com/EventStore/EventStore/pull/2602)
 - Logging around cases where the latest stream's prepare could not be read [EventStore#2613](https://github.com/EventStore/EventStore/pull/2613)
 - Introduced the ability to restart the persistent subscriptions service [EventStore#2605](https://github.com/EventStore/EventStore/pull/2605)
+- AdvertiseHostToClientAs, AdvertiseHttpPortToClientAs and AdvertiseTcpPortToClientAs to allow setting the gossip and TCP endpoints advertised to clients. [EventStore#2641](https://github.com/EventStore/EventStore/pull/2641)
 
 ## [20.6.0] - 2020-06-09
 
