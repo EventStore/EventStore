@@ -34,36 +34,6 @@ namespace EventStore.ClusterNode {
 		public ClusterVNodeHostedService(string[] args) : base(args) {
 		}
 
-		protected override IEnumerable<OptionSource>
-			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) {
-			var developmentOption = effectiveOptions.Single(x => x.Name == nameof(ClusterNodeOptions.Dev));
-			bool.TryParse(developmentOption.Value.ToString(), out bool developmentMode);
-			return effectiveOptions.Select(x => {
-				if (x.Name == nameof(ClusterNodeOptions.DisableInternalTcpTls)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Development' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.DisableExternalTcpTls)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
-					x.Source =  "Set by 'Development' mode";
-				}
-
-				if (x.Name == nameof(ClusterNodeOptions.EnableAtomPubOverHTTP)
-				    && x.Source == "<DEFAULT>"
-				    && developmentMode) {
-					x.Value = true;
-					x.Source = "Set by 'Development' mode";
-				}
-
-				return x;
-			});
-		}
-
 		protected override string GetLogsDirectory(ClusterNodeOptions options) => options.Log;
 
 		protected override string GetComponentName(ClusterNodeOptions options) =>
@@ -107,16 +77,7 @@ namespace EventStore.ClusterNode {
 		protected override void Create(ClusterNodeOptions opts) {
 			var dbPath = opts.Db;
 
-			if (opts.Dev) {
-				Log.Warning(
-					"\n========================================================================================================\n" +
-					"DEVELOPMENT MODE IS ON. THIS MODE IS *NOT* INTENDED FOR PRODUCTION USE.\n" +
-					"WHEN IN DEVELOPMENT MODE EVENTSTOREDB WILL\n" +
-					" - DISABLE TLS ON ALL TCP INTERFACES.\n" +
-					" - ENABLE THE ATOMPUB PROTOCOL OVER HTTP.\n" +
-					"========================================================================================================\n");
-			}
-			else if (opts.Insecure) {
+			if (opts.Insecure) {
 				Log.Warning(
 					"\n========================================================================================================\n" +
 					"INSECURE MODE IS ON. THIS MODE IS *NOT* RECOMMENDED FOR PRODUCTION USE.\n" +

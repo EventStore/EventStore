@@ -408,9 +408,6 @@ namespace EventStore.Core.Util {
 			"When truncate.chk is set, the database will be truncated on startup. This is a safety check to ensure large amounts of data truncation does not happen accidentally. This value should be set in the low 10,000s for allow for standard cluster recovery operations. -1 is no max.";
 		public static readonly long MaxTruncationDefault = 256 * 1024 * 1024;
 		
-		public const string DevDescr = "Enable Development Mode for Event Store.";
-		public const bool DevDefault = false;
-
 		public const string InsecureDescr = "Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces";
 		public const bool InsecureDefault = false;
 	}
