@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace EventStore.ClientAPI.Messages {
 	internal class ClusterMessages {
@@ -13,6 +14,7 @@ namespace EventStore.ClientAPI.Messages {
 			}
 		}
 
+		[JsonConverter(typeof(MemberInfoDtoConverter))]
 		public class MemberInfoDto {
 			public Guid InstanceId { get; set; }
 
@@ -27,6 +29,9 @@ namespace EventStore.ClientAPI.Messages {
 			public string ExternalTcpIp { get; set; }
 			public int ExternalTcpPort { get; set; }
 			public int ExternalSecureTcpPort { get; set; }
+
+			public string HttpEndPointIp { get; set; }
+			public int HttpEndPointPort { get; set; }
 
 			public string InternalHttpIp { get; set; }
 			public int InternalHttpPort { get; set; }
@@ -83,6 +88,29 @@ namespace EventStore.ClientAPI.Messages {
 			ReadOnlyLeaderless,
 			PreReadOnlyReplica,
 			ReadOnlyReplica
+		}
+
+		private class MemberInfoDtoConverter : JsonConverter<MemberInfoDto> {
+			public override void WriteJson(JsonWriter writer, MemberInfoDto value, JsonSerializer serializer) {
+				throw new NotImplementedException();
+			}
+
+			public override MemberInfoDto ReadJson(JsonReader reader, Type objectType,
+				MemberInfoDto existingValue, bool hasExistingValue, JsonSerializer serializer) {
+				var deserialized = new MemberInfoDto();
+				serializer.Populate(reader, deserialized);
+				if (deserialized.HttpEndPointPort != 0 && deserialized.HttpEndPointIp != null)
+				{
+					// We are talking to a 20.6 cluster
+					deserialized.ExternalHttpIp = deserialized.HttpEndPointIp;
+					deserialized.ExternalHttpPort = deserialized.HttpEndPointPort;
+					deserialized.InternalHttpIp = deserialized.HttpEndPointIp;
+					deserialized.InternalHttpPort = deserialized.HttpEndPointPort;
+				}
+				return deserialized;
+			}
+
+			public override bool CanWrite { get { return false; } }
 		}
 	}
 }
