@@ -98,9 +98,7 @@ message CreateReq {
 		bool resolve_links = 1;
 		uint64 revision = 2;
 		bool extra_statistics = 3;
-		int64 message_timeout = 4;
 		int32 max_retry_count = 5;
-		int64 checkpoint_after = 6;
 		int32 min_checkpoint_count = 7;
 		int32 max_checkpoint_count = 8;
 		int32 max_subscriber_count = 9;
@@ -108,6 +106,14 @@ message CreateReq {
 		int32 read_batch_size = 11;
 		int32 history_buffer_size = 12;
 		ConsumerStrategy named_consumer_strategy = 13;
+		oneof message_timeout {
+			int64 message_timeout_ticks = 4;
+			int32 message_timeout_ms = 14;
+		}
+		oneof checkpoint_after {
+			int64 checkpoint_after_ticks = 6;
+			int32 checkpoint_after_ms = 15;
+		}
 	}
 
 	enum ConsumerStrategy {
@@ -133,9 +139,7 @@ message UpdateReq {
 		bool resolve_links = 1;
 		uint64 revision = 2;
 		bool extra_statistics = 3;
-		int64 message_timeout = 4;
 		int32 max_retry_count = 5;
-		int64 checkpoint_after = 6;
 		int32 min_checkpoint_count = 7;
 		int32 max_checkpoint_count = 8;
 		int32 max_subscriber_count = 9;
@@ -143,6 +147,14 @@ message UpdateReq {
 		int32 read_batch_size = 11;
 		int32 history_buffer_size = 12;
 		ConsumerStrategy named_consumer_strategy = 13;
+		oneof message_timeout {
+			int64 message_timeout_ticks = 4;
+			int32 message_timeout_ms = 14;
+		}
+		oneof checkpoint_after {
+			int64 checkpoint_after_ticks = 6;
+			int32 checkpoint_after_ms = 15;
+		}
 	}
 
 	enum ConsumerStrategy {
