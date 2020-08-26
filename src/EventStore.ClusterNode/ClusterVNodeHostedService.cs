@@ -87,15 +87,6 @@ namespace EventStore.ClusterNode {
 					"========================================================================================================\n");
 			}
 
-			Log.Information(
-				"\nINTERFACES\n" +
-				"External TCP (Protobuf)\n" +
-				$"\tEnabled\t: {opts.EnableExternalTCP}\n" +
-				$"\tPort\t: {(opts.ExtTcpPort)}\n" +
-				"HTTP (AtomPub)\n" +
-				$"\tEnabled\t: {opts.EnableAtomPubOverHTTP}\n" +
-				$"\tPort\t: {opts.HttpPort}\n");
-
 			var deprecationMessages = string.Empty;
 			
 			if (opts.EnableAtomPubOverHTTP) {
@@ -348,32 +339,19 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			var requireCertHttp = !options.Insecure;
-			var requireCertIntTcp = options.ClusterSize > 1 && !options.Insecure && !options.DisableInternalTcpTls;
-			var requireCertExtTcp = options.EnableExternalTCP && !options.Insecure && !options.DisableExternalTcpTls;
-			var authEnabled = !options.Insecure;
+			bool requireCertificates = !options.Insecure;
 
-			var message = "\nSECURITY\n";
-			if (options.ClusterSize > 1) {
-				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
-			}
-
-			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
-
-			if (options.EnableExternalTCP) {
-				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
-			}
-
-			bool requireCertificates = requireCertHttp || requireCertIntTcp || requireCertExtTcp;
-
-			if (requireCertificates) {
-				message += "\nTLS is enabled on at least one TCP/HTTP interface - a certificate is required to run EventStoreDB.";
+			if (options.Insecure) {
+				Log.Warning(
+					"Authentication and Authorization is disabled on all TCP/HTTP interfaces. " +
+					"It is recommended to run with Authentication and Authorization enabled in production");
+				Log.Warning(
+					"TLS is disabled on all TCP/HTTP interfaces - no certificates are required to run EventStoreDB. " +
+					"It is recommended to run with TLS enabled in production.");
 			} else {
-				message += "\nTLS is disabled on all TCP/HTTP interfaces - no certificates are required to run EventStoreDB.";
-				message += "\nIt is recommended to run with TLS enabled in production.\n";
+				Log.Information(
+					"TLS is enabled on at least one TCP/HTTP interface - a certificate is required to run EventStoreDB.");
 			}
-
-			Log.Information(message);
 
 			if (requireCertificates) {
 				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
