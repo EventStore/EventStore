@@ -31,13 +31,23 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				request.Options.GroupName,
 				settings.ResolveLinks,
 				new StreamRevision(settings.Revision).ToInt64(),
-				(int)TimeSpan.FromTicks(settings.MessageTimeout).TotalMilliseconds,
+				settings.MessageTimeoutCase switch {
+					CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutMs => settings.MessageTimeoutMs,
+					CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutTicks => (int)TimeSpan
+						.FromTicks(settings.MessageTimeoutTicks).TotalMilliseconds,
+					_ => throw new InvalidOperationException()
+				},
 				settings.ExtraStatistics,
 				settings.MaxRetryCount,
 				settings.HistoryBufferSize,
 				settings.LiveBufferSize,
 				settings.ReadBatchSize,
-				(int)TimeSpan.FromTicks(settings.CheckpointAfter).TotalMilliseconds,
+				settings.CheckpointAfterCase switch {
+					CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterMs => settings.CheckpointAfterMs,
+					CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterTicks => (int)TimeSpan
+						.FromTicks(settings.CheckpointAfterTicks).TotalMilliseconds,
+					_ => throw new InvalidOperationException()
+				},
 				settings.MinCheckpointCount,
 				settings.MaxCheckpointCount,
 				settings.MaxSubscriberCount,
