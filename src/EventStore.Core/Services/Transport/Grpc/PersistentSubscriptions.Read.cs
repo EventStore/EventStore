@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -15,6 +16,7 @@ using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Grpc.Core;
+using Serilog;
 using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
 using UUID = EventStore.Client.Shared.UUID;
 
@@ -49,21 +51,26 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
-			var read = requestStream.ForEachAsync(HandleAckNack);
+			try {
+				var read = requestStream.ForEachAsync(HandleAckNack);
 
-			await responseStream.WriteAsync(new ReadResp {
-				SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
-					SubscriptionId = subscriptionId
-				}
-			}).ConfigureAwait(false);
-
-			while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
 				await responseStream.WriteAsync(new ReadResp {
-					Event = ConvertToReadEvent(enumerator.Current)
+					SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
+						SubscriptionId = subscriptionId
+					}
 				}).ConfigureAwait(false);
-			}
 
-			await read.ConfigureAwait(false);
+				while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
+					await responseStream.WriteAsync(new ReadResp {
+						Event = ConvertToReadEvent(enumerator.Current)
+					}).ConfigureAwait(false);
+				}
+
+				await read.ConfigureAwait(false);
+			} catch (IOException) {
+				Log.Information("Subscription {correlationId} to {subscriptionId} disposed. The request stream was closed.", correlationId, subscriptionId);
+				return;
+			}
 
 			ValueTask HandleAckNack(ReadReq request) {
 				_publisher.Publish(request.ContentCase switch {

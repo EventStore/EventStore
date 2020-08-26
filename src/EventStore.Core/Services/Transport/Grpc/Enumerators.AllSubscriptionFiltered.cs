@@ -434,6 +434,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									case SubscriptionDropReason.AccessDenied:
 										Fail(RpcExceptions.AccessDenied());
 										return;
+									case SubscriptionDropReason.Unsubscribed:
+										return;
 									default:
 										Fail(RpcExceptions.UnknownError(dropped.Reason));
 										return;
@@ -592,9 +594,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return false;
 						}
 
-						delay = Math.Min(delay * 2, 50);
-						await Task.Delay(delay, _disposedTokenSource.Token)
-							.ConfigureAwait(false);
+						try {
+							delay = Math.Min(delay * 2, 50);
+							await Task.Delay(delay, _disposedTokenSource.Token)
+								.ConfigureAwait(false);
+						} catch (ObjectDisposedException) {
+							return false;
+						}
 					}
 
 					var (resolvedEvent, checkpoint, exception) = __;
