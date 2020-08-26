@@ -312,9 +312,6 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.MaxAppendSizeDecr, Opts.AppGroup)]
 		public int MaxAppendSize { get; set; }
 		
-		[ArgDescription(Opts.DevDescr, Opts.AppGroup)]
-		public bool Dev { get; set; }
-
 		[ArgDescription(Opts.InsecureDescr, Opts.AppGroup)]
 		public bool Insecure { get; set; }
 		
@@ -453,7 +450,6 @@ namespace EventStore.Core {
 			MaxTruncation = Opts.MaxTruncationDefault;
 			MaxAppendSize = Opts.MaxAppendSizeDefault;
 
-			Dev = Opts.DevDefault;
 			Insecure = Opts.InsecureDefault;
 		}
 	}
