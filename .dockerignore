@@ -10,3 +10,4 @@ testresults/
 **/.idea/
 .vs/
 .vscode/
+certs/

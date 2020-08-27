@@ -24,6 +24,24 @@ jobs:
         cd src
         dotnet restore
         dotnet tool run dotnet-retire
+  docker-compose:
+    runs-on: ubuntu-latest
+    name: ci/github/docker-compose
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Github Registry Docker Login
+      uses: azure/docker-login@v1
+      with:
+        login-server: docker.pkg.github.com/eventstore
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Docker Compose Smoke Test
+      run: |
+        docker-compose up --detach
+        printf 'Waiting for cluster'
+        timeout 60 bash -c -- 'until $(curl --output /dev/null --silent --insecure --fail https://localhost:2113/); do printf '.'; sleep 2; done'
+        docker-compose down
   build-container:
     strategy:
       fail-fast: false
@@ -149,7 +167,7 @@ jobs:
         name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
         path: test-results
   package:
-    needs: [vulnerability-scan, build]
+    needs: [vulnerability-scan, build, docker-compose]
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
