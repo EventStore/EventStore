@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Core.TransactionLog.DataStructures;
 using EventStore.Plugins.Authentication;
 using ILogger = Serilog.ILogger;
 

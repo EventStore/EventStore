@@ -5,10 +5,12 @@ using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.DataStructures;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLog.Services;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {

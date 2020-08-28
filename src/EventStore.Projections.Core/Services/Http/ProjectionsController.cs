@@ -8,6 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Controllers;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Core.Util;
 using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;

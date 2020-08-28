@@ -8,6 +8,7 @@ using NUnit.Framework;
 using EventStore.Core.Tests.Integration;
 using EventStore.Core.Messages;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
 	[TestFixture, Category("LongRunning")]

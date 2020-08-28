@@ -10,6 +10,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageScavenger :

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

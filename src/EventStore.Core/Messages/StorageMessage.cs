@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages {

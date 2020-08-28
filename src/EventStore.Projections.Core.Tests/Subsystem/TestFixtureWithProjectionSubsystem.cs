@@ -9,6 +9,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.TestHelpers;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 

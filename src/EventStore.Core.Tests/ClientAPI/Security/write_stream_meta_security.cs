@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {

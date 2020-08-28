@@ -5,6 +5,7 @@ using NUnit.Framework;
 using EventStore.Core.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture]

@@ -6,6 +6,7 @@ using System.Text;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

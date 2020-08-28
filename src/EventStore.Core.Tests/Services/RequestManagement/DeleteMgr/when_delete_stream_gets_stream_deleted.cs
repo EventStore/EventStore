@@ -6,6 +6,7 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	[TestFixture]

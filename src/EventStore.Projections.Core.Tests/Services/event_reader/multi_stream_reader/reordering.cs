@@ -7,6 +7,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader {
 	namespace reordering {

@@ -7,6 +7,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Integration;
 using EventStore.Core.Tests.Replication.ReadStream;
+using EventStore.Core.TransactionLog.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {

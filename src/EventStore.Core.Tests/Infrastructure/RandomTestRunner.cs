@@ -2,8 +2,8 @@
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Messaging;
+using EventStore.Core.TransactionLog.DataStructures;
 
 namespace EventStore.Core.Tests.Infrastructure {
 	public class RandomTestRunner {

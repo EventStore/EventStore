@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Bus;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class HeadingEventReader {

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {

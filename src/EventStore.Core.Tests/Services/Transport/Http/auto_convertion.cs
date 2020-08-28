@@ -5,6 +5,7 @@ using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Http.Codecs;
 using NUnit.Framework;

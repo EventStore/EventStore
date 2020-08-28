@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public struct IndexReadAllResult {

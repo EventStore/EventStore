@@ -8,6 +8,7 @@ using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
+using EventStore.Core.TransactionLog.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RequestManagement {

@@ -5,19 +5,15 @@ using System.IO;
 using System.Threading;
 using System.Security.Cryptography;
 using EventStore.Common.Utils;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
-using EventStore.Core.Settings;
-using EventStore.Core.TransactionLog.Unbuffered;
+using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLog.Exceptions;
+using EventStore.Native.FileAccess;
 using ILogger = Serilog.ILogger;
-using Range = EventStore.Core.Data.Range;
+using Range = EventStore.Core.TransactionLog.Data.Range;
 
 namespace EventStore.Core.Index {
-	public enum FileType : byte {
-		PTableFile = 1,
-		ChunkFile = 2
-	}
-
+	
 	public class PTableVersions {
 		public const byte IndexV1 = 1;
 		public const byte IndexV2 = 2;
@@ -227,16 +223,9 @@ namespace EventStore.Core.Index {
 			if (skipIndexVerify) {
 				Log.Debug("Disabling Verification of PTable");
 			}
-
-			Stream stream = null;
-			WorkItem workItem = null;
-			if (Runtime.IsUnixOrMac) {
-				workItem = GetWorkItem();
-				stream = workItem.Stream;
-			} else {
-				stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false,
-					4096, 4096, false, 4096);
-			}
+			//todo-clc: use nativefile
+			WorkItem workItem = GetWorkItem();
+			Stream stream = workItem.Stream;
 
 			try {
 				int midpointsCount;
@@ -360,13 +349,7 @@ namespace EventStore.Core.Index {
 				Dispose();
 				throw;
 			} finally {
-				if (Runtime.IsUnixOrMac) {
-					if (workItem != null)
-						ReturnWorkItem(workItem);
-				} else {
-					if (stream != null)
-						stream.Dispose();
-				}
+				ReturnWorkItem(workItem);
 			}
 		}
 

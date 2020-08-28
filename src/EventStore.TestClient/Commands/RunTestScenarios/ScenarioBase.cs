@@ -15,6 +15,7 @@ using ILogger = Serilog.ILogger;
 using TcpCommand = EventStore.Core.Services.Transport.Tcp.TcpCommand;
 using TcpPackage = EventStore.Core.Services.Transport.Tcp.TcpPackage;
 using EventStore.ClientAPI.Projections;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.TestClient.Commands.RunTestScenarios {
 	internal abstract class ScenarioBase : IScenario {

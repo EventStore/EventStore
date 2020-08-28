@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture]

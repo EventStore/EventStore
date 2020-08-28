@@ -7,6 +7,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.TransactionLog.Data;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 	[TestFixture]

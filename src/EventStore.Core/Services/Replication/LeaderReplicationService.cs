@@ -18,6 +18,8 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;

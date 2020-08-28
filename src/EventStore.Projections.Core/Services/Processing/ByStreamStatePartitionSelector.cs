@@ -1,4 +1,5 @@
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
 

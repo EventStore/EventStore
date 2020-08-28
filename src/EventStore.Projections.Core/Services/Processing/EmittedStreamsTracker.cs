@@ -6,6 +6,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
 using System;
+using EventStore.Core.TransactionLog.Data;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {

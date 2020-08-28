@@ -1,3 +1,5 @@
+using EventStore.Core.TransactionLog.Data;
+
 namespace EventStore.Core.Data {
 	public struct ResolvedEvent {
 		public static readonly ResolvedEvent[] EmptyArray = new ResolvedEvent[0];

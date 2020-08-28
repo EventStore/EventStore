@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.TransactionLog.Services;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;

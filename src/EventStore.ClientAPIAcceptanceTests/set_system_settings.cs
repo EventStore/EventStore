@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Services;
+using EventStore.Core.TransactionLog.Services;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {

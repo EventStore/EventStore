@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.DataStructures;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

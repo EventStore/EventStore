@@ -1,5 +1,6 @@
 ﻿using EventStore.Core.Data;
-using EventStore.Core.Index.Hashes;
+using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 	class PinnedPersistentSubscriptionConsumerStrategy : PinnablePersistentSubscriptionConsumerStrategy {

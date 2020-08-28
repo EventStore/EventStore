@@ -5,6 +5,7 @@ using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Collections;
+using EventStore.Core.TransactionLog.Services;
 using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint {

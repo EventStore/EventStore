@@ -3,9 +3,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Hashes;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 

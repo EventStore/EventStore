@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Security.Claims;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Services.UserManagement {
 	public class SystemAccounts {

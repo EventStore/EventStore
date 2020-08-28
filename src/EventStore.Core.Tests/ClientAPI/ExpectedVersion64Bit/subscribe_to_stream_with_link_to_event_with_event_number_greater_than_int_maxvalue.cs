@@ -6,6 +6,7 @@ using System;
 using System.Threading;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture]

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Projections.Core.Services.Processing;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
+using EventStore.Core.TransactionLog.Hashes;
 using EventStore.Core.Util;
 using NUnit.Framework;
 

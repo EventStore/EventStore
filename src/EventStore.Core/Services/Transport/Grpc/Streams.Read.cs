@@ -10,6 +10,8 @@ using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLog.Services;
 using Google.Protobuf;
 using Grpc.Core;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;

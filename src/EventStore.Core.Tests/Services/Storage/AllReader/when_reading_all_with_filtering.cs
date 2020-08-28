@@ -3,6 +3,7 @@ using NUnit.Framework;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Data;
 using EventStore.Core.Util;
 using static EventStore.Core.Messages.TcpClientMessageDto.Filter;
 

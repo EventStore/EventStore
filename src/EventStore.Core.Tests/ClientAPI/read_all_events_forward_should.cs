@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.TransactionLog.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {

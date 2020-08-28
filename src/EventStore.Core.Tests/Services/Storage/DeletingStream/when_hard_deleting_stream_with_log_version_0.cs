@@ -5,6 +5,7 @@ using System;
 using EventStore.Core.TransactionLog;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 	[TestFixture]

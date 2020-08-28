@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Core.TransactionLog.Services;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionConfig {
