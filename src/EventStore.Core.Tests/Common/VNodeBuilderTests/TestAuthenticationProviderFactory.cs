@@ -25,6 +25,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
 			//nothing to do
 		}
-		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() => null;
+		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() => new []{
+			"Basic"
+		};
 	}
 }

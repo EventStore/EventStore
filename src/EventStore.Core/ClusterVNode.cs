@@ -492,6 +492,10 @@ namespace EventStore.Core {
 				}
 			}
 
+			if (!httpAuthenticationProviders.Any()) {
+				throw new InvalidConfigurationException($"The server does not support any authentication scheme supported by the '{_authenticationProvider.Name}' authentication provider.");
+			}
+
 			if (!_disableHttps) {
 				//transport-level authentication providers
 				httpAuthenticationProviders.Add(
