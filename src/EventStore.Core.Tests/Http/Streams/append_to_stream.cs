@@ -12,7 +12,7 @@ using NUnit.Framework;
 using EventStore.Core.Services;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Tests.Http.Users.users;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 using Microsoft.Extensions.Primitives;
 
 namespace EventStore.Core.Tests.Http.Streams {

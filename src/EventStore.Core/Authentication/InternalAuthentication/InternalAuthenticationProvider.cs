@@ -9,7 +9,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLogV2.DataStructures;
 using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Routing;
 using ILogger = Serilog.ILogger;

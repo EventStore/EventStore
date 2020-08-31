@@ -1,5 +1,5 @@
 using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 

@@ -16,9 +16,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Index\EventStore.Index.csproj" />
-		<ProjectReference Include="..\EventStore.TransactionLog.Tests\EventStore.TransactionLog.Tests.csproj" />
 		<ProjectReference Include="..\EventStore.TransactionLogV2.Tests\EventStore.TransactionLogV2.Tests.csproj" />
-		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
 		<ProjectReference Include="..\EventStore.TransactionLogV2\EventStore.TransactionLogV2.csproj" />
 	</ItemGroup>
 </Project>

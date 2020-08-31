@@ -8,7 +8,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;

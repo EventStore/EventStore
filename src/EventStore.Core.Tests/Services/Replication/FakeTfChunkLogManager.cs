@@ -1,6 +1,6 @@
 ﻿using System;
-using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.Tests.TransactionLogV2.Scavenging.Helpers;
+using EventStore.Core.TransactionLogV2.Chunks;
 
 namespace EventStore.Core.Tests.Services.Replication {
 	public class FakeTfChunkLogManager : ITFChunkScavengerLogManager {

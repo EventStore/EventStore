@@ -1,4 +1,4 @@
-﻿using EventStore.Core.TransactionLog.Hashes;
+﻿using EventStore.Core.TransactionLogV2.Hashes;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription
 {

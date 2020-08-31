@@ -1,5 +1,5 @@
 ﻿using System;
-using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLogV2;
 
 namespace EventStore.Core.Tests.Fakes {
 	public class FakeTfReader : ITransactionFileReader {

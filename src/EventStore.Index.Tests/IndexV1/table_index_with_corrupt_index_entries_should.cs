@@ -2,14 +2,14 @@ using System;
 using System.Linq;
 using EventStore.Core.Index;
 using NUnit.Framework;
-using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLogV2;
 using EventStore.Core.Tests.Fakes;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog.Hashes;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2.Hashes;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture]

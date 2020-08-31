@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;

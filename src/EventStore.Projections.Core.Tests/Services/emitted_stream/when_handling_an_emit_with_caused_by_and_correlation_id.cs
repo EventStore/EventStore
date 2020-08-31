@@ -4,7 +4,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using Newtonsoft.Json.Linq;

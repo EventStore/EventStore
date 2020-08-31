@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests {

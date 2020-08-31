@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.DataStructures;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexBackend {

@@ -10,8 +10,8 @@ using EventStore.Core.Services.TimerService;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Services;
 using EventStore.Core.Util;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 

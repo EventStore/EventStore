@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Services.Storage.EpochManager;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
 	internal class FakeEpochManager : IEpochManager {

@@ -3,8 +3,8 @@ using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Bus;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests {

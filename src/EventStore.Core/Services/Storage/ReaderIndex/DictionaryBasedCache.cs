@@ -1,4 +1,4 @@
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public class DictionaryBasedCache : BoundedCache<long, PrepareLogRecord> {

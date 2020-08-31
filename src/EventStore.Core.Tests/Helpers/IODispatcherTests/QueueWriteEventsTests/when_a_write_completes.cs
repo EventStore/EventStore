@@ -2,7 +2,7 @@
 using EventStore.Core.Services.UserManagement;
 using NUnit.Framework;
 using System;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests {
 	[TestFixture]

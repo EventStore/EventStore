@@ -5,7 +5,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Replication;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {

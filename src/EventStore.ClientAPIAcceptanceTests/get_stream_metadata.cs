@@ -1,9 +1,7 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.Core.Data;
-using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Services;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {

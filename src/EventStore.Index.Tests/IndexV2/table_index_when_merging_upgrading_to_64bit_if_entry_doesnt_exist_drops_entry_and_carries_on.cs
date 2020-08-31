@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Hashes;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Hashes;
+using EventStore.Core.TransactionLogV2.LogRecords;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV2 {

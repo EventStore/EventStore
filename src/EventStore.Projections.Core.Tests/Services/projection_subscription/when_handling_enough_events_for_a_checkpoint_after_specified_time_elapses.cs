@@ -3,7 +3,7 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using EventStore.Core.Tests.Services.TimeService;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 	[TestFixture]

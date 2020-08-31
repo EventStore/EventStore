@@ -10,9 +10,9 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Bus.Helpers;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.LogRecords;
+using EventStore.Core.TransactionLogV2.Services;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 

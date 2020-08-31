@@ -1,5 +1,5 @@
 using EventStore.Common.Settings;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests {

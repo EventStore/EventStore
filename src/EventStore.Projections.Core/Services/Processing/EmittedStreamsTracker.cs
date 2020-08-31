@@ -7,7 +7,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
 using System;
 using EventStore.Common.Settings;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {

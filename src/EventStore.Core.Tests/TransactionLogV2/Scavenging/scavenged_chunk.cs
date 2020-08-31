@@ -1,0 +1,40 @@
+﻿using System;
+using System.Collections.Generic;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks.TFChunk;
+using EventStore.Core.TransactionLogV2.LogRecords;
+using NUnit.Framework;
+
+namespace EventStore.Core.Tests.TransactionLogV2.Scavenging {
+	[TestFixture]
+	public class scavenged_chunk : SpecificationWithFile {
+		[Test]
+		public void is_fully_resident_in_memory_when_cached() {
+			var map = new List<PosMap>();
+			var chunk = TFChunk.CreateNew(Filename, 1024 * 1024, 0, 0, true, false,  
+				Constants.TFChunkInitialReaderCountDefault,
+				Constants.TFChunkMaxReaderCountDefault
+				);
+			long logPos = 0;
+			for (int i = 0, n = ChunkFooter.Size / PosMap.FullSize + 1; i < n; ++i) {
+				map.Add(new PosMap(logPos, (int)logPos));
+				var res = chunk.TryAppend(LogRecord.Commit(logPos, Guid.NewGuid(), logPos, 0));
+				Assert.IsTrue(res.Success);
+				logPos = res.NewPosition;
+			}
+
+			chunk.CompleteScavenge(map);
+
+			chunk.CacheInMemory();
+
+			Assert.IsTrue(chunk.IsCached);
+
+			var last = chunk.TryReadLast();
+			Assert.IsTrue(last.Success);
+			Assert.AreEqual(map[map.Count - 1].ActualPos, last.LogRecord.LogPosition);
+
+			chunk.MarkForDeletion();
+			chunk.WaitForDestroy(1000);
+		}
+	}
+}

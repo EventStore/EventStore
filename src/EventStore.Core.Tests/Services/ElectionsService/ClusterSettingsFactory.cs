@@ -10,7 +10,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Services.Transport.Tcp;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {

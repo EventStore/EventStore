@@ -4,7 +4,7 @@ using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Services.RequestManager.Managers;
 

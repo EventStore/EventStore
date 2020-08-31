@@ -1,5 +1,5 @@
 using EventStore.Core.Cluster.Settings;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;

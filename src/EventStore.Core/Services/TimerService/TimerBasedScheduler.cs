@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLogV2.DataStructures;
 
 namespace EventStore.Core.Services.TimerService {
 	public class TimerBasedScheduler : IDisposable, IScheduler {

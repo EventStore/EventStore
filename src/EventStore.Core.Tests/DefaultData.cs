@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 
 namespace EventStore.Core.Tests {
 	public class DefaultData {

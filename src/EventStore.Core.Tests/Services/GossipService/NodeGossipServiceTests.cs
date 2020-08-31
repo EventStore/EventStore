@@ -10,7 +10,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.Tests.Services.TimeService;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using NUnit.Framework;
 using MemberInfo = EventStore.Core.Cluster.MemberInfo;
 

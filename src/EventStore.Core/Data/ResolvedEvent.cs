@@ -1,4 +1,4 @@
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Core.Data {
 	public struct ResolvedEvent {

@@ -7,9 +7,9 @@ using System.Threading;
 using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Hashes;
-using EventStore.Core.TransactionLog.Util;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Hashes;
+using EventStore.Core.TransactionLogV2.Util;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Index {

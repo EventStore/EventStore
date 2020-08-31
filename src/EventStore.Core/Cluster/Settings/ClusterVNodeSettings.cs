@@ -8,7 +8,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 
 namespace EventStore.Core.Cluster.Settings {
 	public class ClusterVNodeSettings {

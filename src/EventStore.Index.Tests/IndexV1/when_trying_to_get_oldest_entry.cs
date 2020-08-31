@@ -1,5 +1,5 @@
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {

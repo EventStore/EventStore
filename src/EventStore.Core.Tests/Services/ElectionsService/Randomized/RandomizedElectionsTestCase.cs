@@ -8,7 +8,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Tests.Infrastructure;
 using EventStore.Core.Tests.Services.TimeService;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 
 namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 	internal class RandomizedElectionsTestCase {

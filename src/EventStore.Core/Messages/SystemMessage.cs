@@ -4,7 +4,7 @@ using EventStore.Core.Cluster;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EndPoint = System.Net.EndPoint;
 
 namespace EventStore.Core.Messages {

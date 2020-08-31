@@ -4,7 +4,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Integration.Idempotency {

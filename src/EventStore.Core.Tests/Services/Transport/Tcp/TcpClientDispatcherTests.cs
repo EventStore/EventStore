@@ -11,11 +11,11 @@ using EventStore.Core.Messages;
 using System.Text;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Authorization;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Services;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {

@@ -2,7 +2,7 @@
 using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public interface IEmittedStreamsWriter {

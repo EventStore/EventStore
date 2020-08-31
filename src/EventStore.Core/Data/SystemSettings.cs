@@ -2,8 +2,8 @@ using System;
 using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

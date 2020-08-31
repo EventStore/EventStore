@@ -1,15 +1,14 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.Core.Tests;
 using NUnit.Framework;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Hashes;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
-using StreamMetadata = EventStore.Core.TransactionLog.Data.StreamMetadata;
+using StreamMetadata = EventStore.Core.TransactionLogV2.Data.StreamMetadata;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	[TestFixture]

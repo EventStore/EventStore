@@ -6,7 +6,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {

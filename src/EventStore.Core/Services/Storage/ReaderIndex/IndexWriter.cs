@@ -7,11 +7,11 @@ using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Settings;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.DataStructures;
-using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.DataStructures;
+using EventStore.Core.TransactionLogV2.LogRecords;
+using EventStore.Core.TransactionLogV2.Services;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {

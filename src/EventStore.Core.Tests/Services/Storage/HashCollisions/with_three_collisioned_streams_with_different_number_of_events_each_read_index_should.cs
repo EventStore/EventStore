@@ -2,7 +2,7 @@
 using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 using System.Linq;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {

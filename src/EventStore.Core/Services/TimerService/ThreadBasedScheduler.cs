@@ -5,7 +5,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Monitoring.Stats;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLogV2.DataStructures;
 
 namespace EventStore.Core.Services.TimerService {
 	public class ThreadBasedScheduler : IMonitoredQueue, IScheduler, IDisposable {

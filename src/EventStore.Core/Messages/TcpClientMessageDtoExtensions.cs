@@ -5,7 +5,7 @@ using EventStore.Common.Utils;
 namespace EventStore.Core.Messages {
 	public partial class TcpClientMessageDto {
 		public partial class ResolvedIndexedEvent {
-			public ResolvedIndexedEvent(TransactionLog.Data.EventRecord eventRecord, TransactionLog.Data.EventRecord linkRecord)
+			public ResolvedIndexedEvent(TransactionLogV2.Data.EventRecord eventRecord, TransactionLogV2.Data.EventRecord linkRecord)
 				: this(eventRecord != null ? new EventRecord(eventRecord) : null,
 					linkRecord != null ? new EventRecord(linkRecord) : null) {
 			}
@@ -21,7 +21,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		public partial class EventRecord {
-			public EventRecord(TransactionLog.Data.EventRecord eventRecord) {
+			public EventRecord(TransactionLogV2.Data.EventRecord eventRecord) {
 				EventStreamId = eventRecord.EventStreamId;
 				EventNumber = eventRecord.EventNumber;
 				EventId = eventRecord.EventId.ToByteArray();
@@ -35,7 +35,7 @@ namespace EventStore.Core.Messages {
 				CreatedEpoch = (long)(eventRecord.TimeStamp - new DateTime(1970, 1, 1)).TotalMilliseconds;
 			}
 
-			public EventRecord(TransactionLog.Data.EventRecord eventRecord, long eventNumber) {
+			public EventRecord(TransactionLogV2.Data.EventRecord eventRecord, long eventNumber) {
 				EventStreamId = eventRecord.EventStreamId;
 				EventNumber = eventNumber;
 				EventId = eventRecord.EventId.ToByteArray();

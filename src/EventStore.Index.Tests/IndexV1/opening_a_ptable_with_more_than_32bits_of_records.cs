@@ -6,7 +6,7 @@ using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Common.Utils;
 using EventStore.Common.Options;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTable.IndexEntryV1Size), Explicit, Ignore("Long running, unsafe")]

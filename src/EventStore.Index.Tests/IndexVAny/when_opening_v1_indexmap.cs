@@ -6,8 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Hashes;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2.Hashes;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 using EventStore.Core.Util;
 using NUnit.Framework;
 

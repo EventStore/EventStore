@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLogV2.LogRecords;
 

@@ -4,8 +4,8 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 using System.IO;
 using System.Threading.Tasks;
-using EventStore.Core.TransactionLog.Hashes;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2.Hashes;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(false)]

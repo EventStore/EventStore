@@ -1,7 +1,7 @@
 using System.IO;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Exceptions;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Exceptions;
 
 namespace EventStore.Core.Index {
 	public class PTableHeader {

@@ -11,15 +11,15 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Checkpoint;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.FileNamingStrategy;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Util;
 using System.IO;
 using System.Threading.Tasks;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.TestHelpers;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.TestHelpers;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public abstract class MiniNodeWithExistingRecords : SpecificationWithDirectoryPerTestFixture {

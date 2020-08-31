@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Services.Storage;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	public class FakeIndexCommitterService : IIndexCommitterService {

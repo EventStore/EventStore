@@ -10,18 +10,18 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Checkpoint;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
-using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.DataStructures;
-using EventStore.Core.TransactionLog.Hashes;
-using EventStore.Core.TransactionLog.Services;
-using EventStore.Core.TransactionLog.TestHelpers;
+using EventStore.Core.Tests.TransactionLogV2.Scavenging.Helpers;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.DataStructures;
+using EventStore.Core.TransactionLogV2.Hashes;
+using EventStore.Core.TransactionLogV2.Services;
+using EventStore.Core.TransactionLogV2.TestHelpers;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	public abstract class ReadIndexTestScenario : SpecificationWithDirectoryPerTestFixture {

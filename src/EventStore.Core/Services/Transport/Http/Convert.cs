@@ -5,7 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Http.Controllers;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
 using Newtonsoft.Json;
@@ -14,7 +14,7 @@ using System.Linq;
 using System.Collections.Generic;
 using EventStore.Transport.Http.Codecs;
 using System.Xml.Serialization;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public static class Convert {

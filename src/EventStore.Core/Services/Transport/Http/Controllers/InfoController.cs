@@ -11,7 +11,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authentication;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 using EventStore.Plugins.Authorization;
 using ILogger = Serilog.ILogger;
 
