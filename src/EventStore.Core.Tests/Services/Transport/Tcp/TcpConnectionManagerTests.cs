@@ -13,6 +13,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Threading;
+using EventStore.Common.Settings;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services;
 using EventStore.Core.Settings;

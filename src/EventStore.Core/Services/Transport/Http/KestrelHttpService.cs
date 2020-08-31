@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;

@@ -39,6 +39,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
+using EventStore.Common.Settings;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
 using EventStore.Native.UnixSignalManager;
@@ -308,7 +309,7 @@ namespace EventStore.Core {
 				db.Config.IndexCheckpoint);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(db);
-			var epochManager = new EpochManager(_mainQueue,
+			var epochManager = new EpochManager(
 				ESConsts.CachedEpochCount,
 				db.Config.EpochCheckpoint,
 				writer,
@@ -362,7 +363,10 @@ namespace EventStore.Core {
 			AddTask(storageChaser.Task);
 
 #if DEBUG
-			_queueStatsManager.InitializeCheckpoints(db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
+			_queueStatsManager.InitializeCheckpoints(
+				()=>db.Config.WriterCheckpoint.Read(),
+				()=>db.Config.WriterCheckpoint.ReadNonFlushed(),
+				()=>db.Config.ChaserCheckpoint.Read());
 #endif
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);

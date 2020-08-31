@@ -13,6 +13,7 @@ using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using System.Linq;
 using System.Threading;
+using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
