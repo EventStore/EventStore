@@ -219,8 +219,6 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 			Log.Debug("=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
 				epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
-			//todo - publish this
-			//_bus.Publish(new SystemMessage.EpochWritten(epoch));
 			return epoch;
 		}
 
