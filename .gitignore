@@ -469,3 +469,6 @@ MigrationBackup/
 
 # Visual Studio Launch Settings
 **/launchSettings.json
+
+# es-gencert-cli
+certs/
