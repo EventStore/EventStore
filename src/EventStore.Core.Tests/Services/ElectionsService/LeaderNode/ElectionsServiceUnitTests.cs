@@ -11,7 +11,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests.Services.TimeService;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using NUnit.Framework;
 using SUT = EventStore.Core.Services.ElectionsService;
 

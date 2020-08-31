@@ -8,13 +8,13 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Checkpoint;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {

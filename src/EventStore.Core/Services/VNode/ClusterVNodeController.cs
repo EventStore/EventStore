@@ -11,7 +11,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.VNode {

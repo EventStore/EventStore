@@ -3,7 +3,7 @@ using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
-using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLogV2.DataStructures;
 
 namespace EventStore.Core.Tests.Infrastructure {
 	public class RandomTestRunner {

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Transport.Tcp.Framing;
 using ILogger = Serilog.ILogger;
 

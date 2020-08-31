@@ -11,6 +11,7 @@ using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Tests.Authorization;
 using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using EventStore.Core.Tests.TransactionLog;
+using EventStore.Core.Tests.TransactionLogV2;
 using EventStore.Transport.Http.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

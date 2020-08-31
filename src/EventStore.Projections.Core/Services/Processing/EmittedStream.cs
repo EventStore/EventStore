@@ -15,8 +15,8 @@ using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Settings;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Services;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {

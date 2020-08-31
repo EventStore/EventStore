@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Storage.EpochManager;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.LogRecords;
 
 using ILogger = Serilog.ILogger;
 

@@ -8,7 +8,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 
 namespace EventStore.Projections.Core.Messages {
 	public static class ProjectionManagementMessage {

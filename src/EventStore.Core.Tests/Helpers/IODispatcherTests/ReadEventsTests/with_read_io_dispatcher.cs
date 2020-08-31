@@ -7,7 +7,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Tests.Helpers.IODispatcherTests;
 using NUnit.Framework;
 

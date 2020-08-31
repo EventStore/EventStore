@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Tests.TransactionLogV2.Scavenging.Helpers;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 

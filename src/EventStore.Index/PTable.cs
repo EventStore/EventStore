@@ -6,11 +6,11 @@ using System.Threading;
 using System.Security.Cryptography;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog.DataStructures;
-using EventStore.Core.TransactionLog.Exceptions;
+using EventStore.Core.TransactionLogV2.DataStructures;
+using EventStore.Core.TransactionLogV2.Exceptions;
 using EventStore.Native.FileAccess;
 using ILogger = Serilog.ILogger;
-using Range = EventStore.Core.TransactionLog.Data.Range;
+using Range = EventStore.Core.TransactionLogV2.Data.Range;
 
 namespace EventStore.Core.Index {
 	

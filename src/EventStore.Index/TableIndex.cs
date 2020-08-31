@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 using EventStore.Common.Settings;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLogV2;
 using EventStore.Core.Util;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Exceptions;
-using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.Exceptions;
+using EventStore.Core.TransactionLogV2.Hashes;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Index {
@@ -445,10 +445,10 @@ namespace EventStore.Core.Index {
 			RecordReadResult result = reader.TryReadAt(position);
 			if (!result.Success)
 				return new Tuple<string, bool>(String.Empty, false);
-			if (result.LogRecord.RecordType != TransactionLog.LogRecords.LogRecordType.Prepare)
+			if (result.LogRecord.RecordType != TransactionLogV2.LogRecords.LogRecordType.Prepare)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
-			return new Tuple<string, bool>(((TransactionLog.LogRecords.PrepareLogRecord)result.LogRecord).EventStreamId,
+			return new Tuple<string, bool>(((TransactionLogV2.LogRecords.PrepareLogRecord)result.LogRecord).EventStreamId,
 				true);
 		}
 

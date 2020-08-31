@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using EventStore.Core.TransactionLog.DataStructures;
+using EventStore.Core.TransactionLogV2.DataStructures;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class StreamBuffer {

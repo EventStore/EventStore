@@ -4,11 +4,11 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.DataStructures;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Checkpoint;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.DataStructures;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage {

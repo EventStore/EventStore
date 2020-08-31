@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {

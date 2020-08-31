@@ -1,6 +1,6 @@
-﻿using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.LogRecords;
+﻿using EventStore.Core.Tests.TransactionLogV2.Scavenging.Helpers;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {

@@ -2,7 +2,7 @@ using System;
 using System.Xml.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using Newtonsoft.Json;
@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 using Formatting = Newtonsoft.Json.Formatting;
 using System.Linq;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http {

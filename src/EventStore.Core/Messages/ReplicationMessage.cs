@@ -5,9 +5,9 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EndPoint = System.Net.EndPoint;
 
 namespace EventStore.Core.Messages {

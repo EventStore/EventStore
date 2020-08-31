@@ -6,11 +6,11 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Util;
 
-namespace EventStore.Core.Tests.TransactionLog {
+namespace EventStore.Core.Tests.TransactionLogV2 {
 	internal class FakeReadIndex : IReadIndex {
 		public long LastIndexedPosition {
 			get { throw new NotImplementedException(); }

@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 
 namespace EventStore.Core.Authorization {
 	public static class WellKnownAssertions {

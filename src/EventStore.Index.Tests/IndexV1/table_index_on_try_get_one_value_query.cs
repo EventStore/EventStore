@@ -1,10 +1,10 @@
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Hashes;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Hashes;
+using EventStore.Core.TransactionLogV2.Tests.Fakes;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {

@@ -1,5 +1,5 @@
 ﻿using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {

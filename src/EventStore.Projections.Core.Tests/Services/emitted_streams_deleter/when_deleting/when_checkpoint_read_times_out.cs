@@ -8,7 +8,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;

@@ -5,7 +5,7 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.EpochManager;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.Gossip {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using EventStore.Common.Options;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 
 namespace EventStore.Core.Util {
 	public static class Opts {

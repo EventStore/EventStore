@@ -3,7 +3,7 @@ using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLogV2.Hashes;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {

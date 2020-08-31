@@ -1,5 +1,5 @@
 ﻿using System;
-using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLogV2.Hashes;
 
 namespace EventStore.Core.Tests.Index {
 	public class FakeIndexHasher : IHasher {

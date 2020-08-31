@@ -4,7 +4,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Messages.EventReaders.Feeds;
 using EventStore.Projections.Core.Services.Processing;

@@ -1,6 +1,6 @@
 ﻿using System;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.LogRecords;
 
 namespace EventStore.Core.Tests.Fakes {
 	public class FakeIndexReader : ITransactionFileReader {

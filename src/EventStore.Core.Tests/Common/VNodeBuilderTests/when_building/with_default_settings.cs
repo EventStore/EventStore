@@ -1,5 +1,5 @@
 using EventStore.Core.Services.Monitoring;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.Util;
 using NUnit.Framework;
 using System.Net;

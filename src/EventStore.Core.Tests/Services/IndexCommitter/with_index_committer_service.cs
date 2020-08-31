@@ -8,9 +8,9 @@ using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Checkpoint;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {

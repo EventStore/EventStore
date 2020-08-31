@@ -10,7 +10,7 @@ using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Services.Transport.Grpc.Cluster;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

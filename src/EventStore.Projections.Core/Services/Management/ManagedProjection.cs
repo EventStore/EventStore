@@ -15,7 +15,7 @@ using EventStore.Projections.Core.Utils;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using System.Threading;
 using EventStore.Core.Helpers;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using EventStore.Projections.Core.Common;
 using FastSerialization;
 using ILogger = Serilog.ILogger;

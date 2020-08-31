@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Core.TransactionLog.Tests.Helpers;
+using EventStore.Core.TransactionLogV2.Tests.Helpers;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV2, false)]

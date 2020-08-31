@@ -2,13 +2,13 @@ using System;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using System.Linq;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {

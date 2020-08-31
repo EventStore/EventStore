@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.DataStructures;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2;
+using EventStore.Core.TransactionLogV2.Checkpoint;
+using EventStore.Core.TransactionLogV2.DataStructures;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.EpochManager {

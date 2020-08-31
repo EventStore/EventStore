@@ -13,7 +13,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Grpc.Core;

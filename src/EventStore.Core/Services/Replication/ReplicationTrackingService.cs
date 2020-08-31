@@ -8,7 +8,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {

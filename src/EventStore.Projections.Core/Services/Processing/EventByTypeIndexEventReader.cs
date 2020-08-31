@@ -14,7 +14,7 @@ using EventStore.Projections.Core.Standard;
 using EventStore.Projections.Core.Utils;
 using Newtonsoft.Json.Linq;
 using EventStore.Core.Settings;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EventByTypeIndexEventReader : EventReader {

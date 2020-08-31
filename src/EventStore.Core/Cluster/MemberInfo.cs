@@ -3,7 +3,7 @@ using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 
 namespace EventStore.Core.Cluster {
 	public class MemberInfo : IEquatable<MemberInfo> {

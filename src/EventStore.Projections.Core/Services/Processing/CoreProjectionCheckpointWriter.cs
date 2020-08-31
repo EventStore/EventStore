@@ -6,8 +6,8 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Services;
 using EventStore.Projections.Core.Messages;
 using ILogger = Serilog.ILogger;
 

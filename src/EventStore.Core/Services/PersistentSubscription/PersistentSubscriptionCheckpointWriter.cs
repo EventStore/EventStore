@@ -4,8 +4,8 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.Data;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Data;
+using EventStore.Core.TransactionLogV2.Services;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.PersistentSubscription {

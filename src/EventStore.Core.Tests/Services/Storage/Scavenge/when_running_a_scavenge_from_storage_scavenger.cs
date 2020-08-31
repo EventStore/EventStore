@@ -12,7 +12,7 @@ using EventStore.ClientAPI;
 using NUnit.Framework;
 using ILogger = Serilog.ILogger;
 using System.Threading.Tasks;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture]

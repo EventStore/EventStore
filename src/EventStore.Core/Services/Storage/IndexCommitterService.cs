@@ -7,11 +7,11 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Checkpoint;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using ILogger = Serilog.ILogger;
 
 

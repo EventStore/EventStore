@@ -1,5 +1,5 @@
 using EventStore.Core.Cluster.Settings;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	public class TestVNodeBuilder : VNodeBuilder {

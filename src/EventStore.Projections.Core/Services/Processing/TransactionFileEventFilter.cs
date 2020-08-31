@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.Services;
+using EventStore.Core.TransactionLogV2.Services;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class TransactionFileEventFilter : EventFilter {

@@ -1,5 +1,5 @@
 ﻿using System;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 
 namespace EventStore.Core.Services.Storage.EpochManager {
 	public interface IEpochManager {

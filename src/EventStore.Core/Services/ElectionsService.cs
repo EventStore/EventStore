@@ -10,7 +10,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {

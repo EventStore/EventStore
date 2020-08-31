@@ -19,7 +19,6 @@
 		</AssemblyAttribute>
   </ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\EventStore.TransactionLog\EventStore.TransactionLog.csproj" />
 		<ProjectReference Include="..\EventStore.TransactionLogV2\EventStore.TransactionLogV2.csproj" />
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Rags\EventStore.Rags.csproj" />

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
-using EventStore.Core.TransactionLog.Hashes;
+using EventStore.Core.TransactionLogV2.Hashes;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.Scavenge {

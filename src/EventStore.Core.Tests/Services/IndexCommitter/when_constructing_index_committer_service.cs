@@ -3,7 +3,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLogV2.Checkpoint;
 using NUnit.Framework;
 // ReSharper disable ObjectCreationAsStatement
 

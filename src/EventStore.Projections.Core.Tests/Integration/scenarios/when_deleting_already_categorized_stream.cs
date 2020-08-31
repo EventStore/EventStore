@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.scenarios {

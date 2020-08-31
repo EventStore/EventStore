@@ -8,7 +8,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {

@@ -2,14 +2,14 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Common.Utils;
 using NUnit.Framework;
 using EventStore.Core.Messages;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_event_reader {

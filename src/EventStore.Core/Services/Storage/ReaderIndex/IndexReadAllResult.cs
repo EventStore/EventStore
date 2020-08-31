@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public struct IndexReadAllResult {
@@ -27,7 +26,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		public override string ToString() {
 			return string.Format("CurrentPos: {0}, NextPos: {1}, PrevPos: {2}, IsEndOfStream: {3}, Records: {4}",
-				CurrentPos, NextPos, PrevPos, string.Join("\n", IsEndOfStream, Records.Select(x => x.ToString())));
+				CurrentPos, NextPos, PrevPos, IsEndOfStream, string.Join("\n", Records.Select(x => x.ToString())));
 		}
 	}
 }

@@ -8,8 +8,8 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Tests.TransactionLog;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.TestHelpers;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.TestHelpers;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 

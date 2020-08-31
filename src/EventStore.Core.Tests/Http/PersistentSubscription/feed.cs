@@ -10,7 +10,7 @@ using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Transport.Http;
 using NUnit.Framework;
 using Newtonsoft.Json.Linq;

@@ -6,13 +6,12 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks.TFChunk;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {

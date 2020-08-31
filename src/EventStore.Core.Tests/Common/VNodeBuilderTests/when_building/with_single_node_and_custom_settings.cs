@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Net;
 using EventStore.Common.Utils;
-using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Authentication;
 using EventStore.Core.Tests.Helpers;

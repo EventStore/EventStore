@@ -6,7 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.TransactionLogV2.LogRecords;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.RequestManager.Managers {

@@ -6,8 +6,8 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.Data;
+using EventStore.Core.TransactionLogV2.Chunks;
+using EventStore.Core.TransactionLogV2.Data;
 
 namespace EventStore.Core.Services.Transport.Tcp {
 	public class InternalTcpDispatcher : ClientWriteTcpDispatcher {
