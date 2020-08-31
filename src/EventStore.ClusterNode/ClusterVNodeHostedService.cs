@@ -79,16 +79,14 @@ namespace EventStore.ClusterNode {
 
 			if (opts.Insecure) {
 				Log.Warning(
-					"\n========================================================================================================\n" +
+					"\n==============================================================================================================\n" +
 					"INSECURE MODE IS ON. THIS MODE IS *NOT* RECOMMENDED FOR PRODUCTION USE.\n" +
-					"WHEN IN INSECURE MODE EVENTSTOREDB WILL\n" +
-					" - DISABLE ALL AUTHENTICATION AND AUTHORIZATION.\n" +
-					" - DISABLE TLS ON ALL TCP AND HTTP INTERFACES.\n" +
-					"========================================================================================================\n");
+					"INSECURE MODE WILL DISABLE ALL AUTHENTICATION, AUTHORIZATION AND TRANSPORT SECURITY FOR ALL CLIENTS AND NODES.\n" +
+					"==============================================================================================================\n");
 			}
 
 			var deprecationMessages = string.Empty;
-			
+
 			if (opts.EnableAtomPubOverHTTP) {
 				deprecationMessages +=
 					"- AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.\n";
