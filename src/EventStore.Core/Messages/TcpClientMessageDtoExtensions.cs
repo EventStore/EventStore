@@ -52,15 +52,15 @@ namespace EventStore.Core.Messages {
 
 		public partial class NotHandled {
 			public partial class LeaderInfo {
-				public LeaderInfo(EndPoint externalTcpEndPoint, EndPoint externalSecureTcpEndPoint,
-					EndPoint httpEndPoint) {
-					ExternalTcpAddress = externalTcpEndPoint == null ? null : externalTcpEndPoint.GetHost();
-					ExternalTcpPort = externalTcpEndPoint == null ? (int?) null : externalTcpEndPoint.GetPort();
-					ExternalSecureTcpAddress = externalSecureTcpEndPoint == null
-						? null
-						: externalSecureTcpEndPoint.GetHost();
-					ExternalSecureTcpPort =
-						externalSecureTcpEndPoint == null ? (int?)null : externalSecureTcpEndPoint.GetPort();
+				public LeaderInfo(EndPoint tcpEndPoint, bool isTcpEndPointSecure, EndPoint httpEndPoint) {
+					if (isTcpEndPointSecure) {
+						ExternalSecureTcpAddress = tcpEndPoint?.GetHost();
+						ExternalSecureTcpPort = tcpEndPoint?.GetPort();
+					} else {
+						ExternalTcpAddress = tcpEndPoint?.GetHost();
+						ExternalTcpPort = tcpEndPoint?.GetPort();
+					}
+
 					HttpAddress = httpEndPoint.GetHost();
 					HttpPort = httpEndPoint.GetPort();
 				}
