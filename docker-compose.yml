@@ -9,7 +9,7 @@ services:
     - "./certs:/tmp/certs"
     network_mode: none
   cert-gen:
-    image: docker.pkg.github.com/eventstore/es-gencert-cli/es-gencert-cli:1.0.2
+    image: eventstore/es-gencert-cli:1.0.2
     entrypoint: bash
     command: >
       -c "es-gencert-cli create-ca -out /tmp/certs/ca &&
