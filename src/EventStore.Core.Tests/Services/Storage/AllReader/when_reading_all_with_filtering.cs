@@ -1,11 +1,7 @@
 ﻿using System;
 using NUnit.Framework;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLogV2.Data;
-using EventStore.Core.Util;
-using static EventStore.Core.Messages.TcpClientMessageDto.Filter;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
 	public class when_reading_all_with_filtering : ReadIndexTestScenario {
@@ -28,10 +24,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_forward_with_event_type_prefix() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.EventType,
-				FilterType.Prefix, new[] {"event-type"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.EventType.Prefixes("event-type");
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(2, result.Records.Count);
@@ -39,10 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_forward_with_event_type_regex() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.EventType,
-				FilterType.Regex, new[] {@"^.*other-event.*$"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.EventType.Regex(@"^.*other-event.*$");
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(2, result.Records.Count);
@@ -50,10 +40,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_forward_with_stream_id_prefix() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.StreamId,
-				FilterType.Prefix, new[] {"ES2"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.StreamName.Prefixes("ES2");
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(1, result.Records.Count);
@@ -61,10 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_forward_with_stream_id_regex() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.StreamId,
-				FilterType.Regex, new[] {@"^.*ES2.*$"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.StreamName.Regex(@"^.*ES2.*$");
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(1, result.Records.Count);
@@ -72,10 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_backward_with_event_type_prefix() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.EventType,
-				FilterType.Prefix, new[] {"event-type"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.EventType.Prefixes("event-type");
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(2, result.Records.Count);
@@ -83,10 +64,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_backward_with_event_type_regex() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.EventType,
-				FilterType.Regex, new[] {@"^.*other-event.*$"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.EventType.Regex(@"^.*other-event.*$");
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(2, result.Records.Count);
@@ -94,10 +72,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_backward_with_stream_id_prefix() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.StreamId,
-				FilterType.Prefix, new[] {"ES2"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.StreamName.Prefixes("ES2");
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(1, result.Records.Count);
@@ -105,10 +80,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_read_only_events_backward_with_stream_id_regex() {
-			var filter = new TcpClientMessageDto.Filter(
-				FilterContext.StreamId,
-				FilterType.Regex, new[] {@"^.*ES2.*$"});
-			var eventFilter = filter.ToEventFilter();
+			var eventFilter = EventFilter.StreamName.Regex(@"^.*ES2.*$");
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
 			Assert.AreEqual(1, result.Records.Count);
