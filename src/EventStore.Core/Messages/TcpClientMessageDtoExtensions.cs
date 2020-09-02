@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Messages {
 	public partial class TcpClientMessageDto {
@@ -65,6 +66,30 @@ namespace EventStore.Core.Messages {
 					HttpPort = httpEndPoint.GetPort();
 				}
 			}
+		}
+	}
+
+	public static class FilterExtensions {
+		public static IEventFilter ToEventFilter(this TcpClientMessageDto.Filter filter) {
+			if (filter == null || filter.Data.Length == 0) {
+				return new EventFilter.AlwaysAllowStrategy();
+			}
+
+			return filter.Context switch {
+				TcpClientMessageDto.Filter.FilterContext.EventType when filter.Type ==
+				                                                        TcpClientMessageDto.Filter.FilterType.Prefix =>
+				EventFilter.EventType.Prefixes(filter.Data),
+				TcpClientMessageDto.Filter.FilterContext.EventType when filter.Type ==
+				                                                        TcpClientMessageDto.Filter.FilterType.Regex =>
+				EventFilter.EventType.Regex(filter.Data[0]),
+				TcpClientMessageDto.Filter.FilterContext.StreamId when filter.Type ==
+				                                                       TcpClientMessageDto.Filter.FilterType.Prefix =>
+				EventFilter.StreamName.Prefixes(filter.Data),
+				TcpClientMessageDto.Filter.FilterContext.StreamId when filter.Type ==
+				                                                       TcpClientMessageDto.Filter.FilterType.Regex =>
+				EventFilter.StreamName.Regex(filter.Data[0]),
+				_ => throw new Exception() // Invalid filter
+			};
 		}
 	}
 }

@@ -412,7 +412,7 @@ namespace EventStore.ClientAPI.Embedded {
 					new ClientMessage.FilteredReadAllEventsForward(corrId, corrId, envelope,
 						position.CommitPosition,
 						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindow, null,
-						EventFilter.Get(serverFilter), user));
+						serverFilter.ToEventFilter(), user));
 			return await source.Task.ConfigureAwait(false);
 		}
 
@@ -462,7 +462,7 @@ namespace EventStore.ClientAPI.Embedded {
 					new ClientMessage.FilteredReadAllEventsBackward(corrId, corrId, envelope,
 						position.CommitPosition,
 						position.PreparePosition, maxCount, resolveLinkTos, false, maxSearchWindow, null,
-						EventFilter.Get(serverFilter), user));
+						serverFilter.ToEventFilter(), user));
 			return await source.Task.ConfigureAwait(false);
 		}
 

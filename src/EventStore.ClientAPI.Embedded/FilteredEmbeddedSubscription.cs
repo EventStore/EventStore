@@ -57,7 +57,7 @@ namespace EventStore.ClientAPI.Embedded {
 					StreamId,
 					_resolveLinkTos,
 					user,
-					EventFilter.Get(_filter),
+					_filter.ToEventFilter(),
 					_checkpointInterval));
 		}
 

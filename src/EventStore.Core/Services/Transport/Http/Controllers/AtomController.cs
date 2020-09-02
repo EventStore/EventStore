@@ -820,20 +820,64 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					return (false, "exclude-sytem-events should have a value of true.");
 				}
 
-				filter = EventFilter.Get(new TcpClientMessageDto.Filter(
+				filter = new TcpClientMessageDto.Filter(
 					TcpClientMessageDto.Filter.FilterContext.EventType,
 					TcpClientMessageDto.Filter.FilterType.Regex,
 					new[] { @"^[^\$].*" }
-				));
+				).ToEventFilter();
 
 				return (true, null);
 			}
 
-			var parsedFilterResult = EventFilter.TryParse(context, type, data, out filter);
+			var parsedFilterResult = TryParseEventFilter(context, type, data, out filter);
 			if (!parsedFilterResult.Success) {
 				return (false, parsedFilterResult.Reason);
 			}
 
+			return (true, null);
+		}
+
+		private (bool Success, string Reason) TryParseEventFilter(string context, string type, string data, out IEventFilter filter) {
+			TcpClientMessageDto.Filter.FilterContext parsedContext;
+			switch (context) {
+				case "eventtype":
+					parsedContext = TcpClientMessageDto.Filter.FilterContext.EventType;
+					break;
+				case "streamid":
+					parsedContext = TcpClientMessageDto.Filter.FilterContext.StreamId;
+					break;
+				default:
+					filter = null;
+					var names = string.Join(", ", Enum.GetNames(typeof(TcpClientMessageDto.Filter.FilterContext)));
+					return (false, $"Invalid context please provide one of the following: {names}.");
+			}
+
+			TcpClientMessageDto.Filter.FilterType parsedType;
+			switch (type) {
+				case "regex":
+					parsedType = TcpClientMessageDto.Filter.FilterType.Regex;
+					break;
+				case "prefix":
+					parsedType = TcpClientMessageDto.Filter.FilterType.Prefix;
+					break;
+				default:
+					filter = null;
+					var names = string.Join(", ", Enum.GetNames(typeof(TcpClientMessageDto.Filter.FilterType)));
+					return (false, $"Invalid type please provide one of the following: {names}.");
+			}
+
+			if (string.IsNullOrEmpty(data)) {
+				filter = null;
+				return (false, "Please provide a comma delimited list of data with at least one item.");
+			}
+
+			if (parsedType == TcpClientMessageDto.Filter.FilterType.Regex) {
+				filter = new TcpClientMessageDto.Filter(parsedContext, parsedType, new[] {data}).ToEventFilter();
+				return (true, null);
+			}
+
+			filter = new TcpClientMessageDto.Filter(parsedContext, parsedType,
+				data.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)).ToEventFilter();
 			return (true, null);
 		}
 
