@@ -79,46 +79,40 @@ namespace EventStore.ClusterNode {
 
 			if (opts.Insecure) {
 				Log.Warning(
-					"\n========================================================================================================\n" +
+					"\n==============================================================================================================\n" +
 					"INSECURE MODE IS ON. THIS MODE IS *NOT* RECOMMENDED FOR PRODUCTION USE.\n" +
-					"WHEN IN INSECURE MODE EVENTSTOREDB WILL\n" +
-					" - DISABLE ALL AUTHENTICATION AND AUTHORIZATION.\n" +
-					" - DISABLE TLS ON ALL TCP AND HTTP INTERFACES.\n" +
-					"========================================================================================================\n");
+					"INSECURE MODE WILL DISABLE ALL AUTHENTICATION, AUTHORIZATION AND TRANSPORT SECURITY FOR ALL CLIENTS AND NODES.\n" +
+					"==============================================================================================================\n");
 			}
 
-			Log.Information(
-				"\nINTERFACES\n" +
-				"External TCP (Protobuf)\n" +
-				$"\tEnabled\t: {opts.EnableExternalTCP}\n" +
-				$"\tPort\t: {(opts.ExtTcpPort)}\n" +
-				"HTTP (AtomPub)\n" +
-				$"\tEnabled\t: {opts.EnableAtomPubOverHTTP}\n" +
-				$"\tPort\t: {opts.HttpPort}\n");
+			var deprecationMessages = string.Empty;
 
 			if (opts.EnableAtomPubOverHTTP) {
-				Log.Warning(
-					"\n DEPRECATION WARNING: AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.\n");
+				deprecationMessages +=
+					"- AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.\n";
 			}
 
 			if (opts.DisableInternalTcpTls) {
-				Log.Warning(
-					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableInternalTcpTls)}' option has been deprecated as of version 20.6.1 and currently has no effect. "
-					+ $"Please use the '{nameof(Options.Insecure)}' option instead.\n");
+				deprecationMessages +=
+					$"- The '{nameof(Options.DisableInternalTcpTls)}' option has been deprecated as of version 20.6.1 and currently has no effect. "
+					+ $"Please use the '{nameof(Options.Insecure)}' option instead.\n";
 			}
 
 			if (opts.EnableExternalTCP) {
-				Log.Warning(
-					"\n DEPRECATION WARNING: The Legacy TCP Client Interface has been deprecated as of version 20.6.0. "
+				deprecationMessages +=
+					"- The Legacy TCP Client Interface has been deprecated as of version 20.6.0. "
 					+ $"The External TCP Interface can be re-enabled with the '{nameof(Options.EnableExternalTCP)}' option. "
-					+ "It is recommended to use gRPC instead.\n");
+					+ "It is recommended to use gRPC instead.\n";
 			}
 
 			if (opts.DisableExternalTcpTls) {
-				Log.Warning(
-					$"\n DEPRECATION WARNING: The '{nameof(Options.DisableExternalTcpTls)}' option has been deprecated as of version 20.6.1.\n");
+				deprecationMessages +=
+					$"- The '{nameof(Options.DisableExternalTcpTls)}' option has been deprecated as of version 20.6.1.\n";
 			}
 
+			if (deprecationMessages.Any()) {
+				Log.Warning($"DEPRECATED\n{deprecationMessages}");
+			}
 
 			if (!opts.MemDb) {
 				var absolutePath = Path.GetFullPath(dbPath);
@@ -343,32 +337,19 @@ namespace EventStore.ClusterNode {
 			
 			builder.WithCertificateReservedNodeCommonName(options.CertificateReservedNodeCommonName);
 
-			var requireCertHttp = !options.Insecure;
-			var requireCertIntTcp = options.ClusterSize > 1 && !options.Insecure && !options.DisableInternalTcpTls;
-			var requireCertExtTcp = options.EnableExternalTCP && !options.Insecure && !options.DisableExternalTcpTls;
-			var authEnabled = !options.Insecure;
+			bool requireCertificates = !options.Insecure;
 
-			var message = "\nSECURITY\n";
-			if (options.ClusterSize > 1) {
-				message += "Internal TCP (Replication)\n" +  $"\tTLS enabled\t: {requireCertIntTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
-			}
-
-			message += "HTTP (gRPC / Admin UI)\n" + $"\tTLS enabled\t: {requireCertHttp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
-
-			if (options.EnableExternalTCP) {
-				message += "External TCP (Protobuf)\n" + $"\tTLS enabled\t: {requireCertExtTcp}\n"+  $"\tAuthentication/Authorization enabled\t: {authEnabled}\n";
-			}
-
-			bool requireCertificates = requireCertHttp || requireCertIntTcp || requireCertExtTcp;
-
-			if (requireCertificates) {
-				message += "\nTLS is enabled on at least one TCP/HTTP interface - a certificate is required to run EventStoreDB.";
+			if (options.Insecure) {
+				Log.Warning(
+					"Authentication and Authorization is disabled on all TCP/HTTP interfaces. " +
+					"It is recommended to run with Authentication and Authorization enabled in production");
+				Log.Warning(
+					"TLS is disabled on all TCP/HTTP interfaces - no certificates are required to run EventStoreDB. " +
+					"It is recommended to run with TLS enabled in production.");
 			} else {
-				message += "\nTLS is disabled on all TCP/HTTP interfaces - no certificates are required to run EventStoreDB.";
-				message += "\nIt is recommended to run with TLS enabled in production.\n";
+				Log.Information(
+					"TLS is enabled on at least one TCP/HTTP interface - a certificate is required to run EventStoreDB.");
 			}
-
-			Log.Information(message);
 
 			if (requireCertificates) {
 				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
