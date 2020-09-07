@@ -77,7 +77,7 @@ namespace EventStore.Core {
 		protected bool _enableExternalTCP;
 		protected bool _disableInternalTcpTls;
 		protected bool _disableExternalTcpTls;
-		protected bool _disableHttps;
+		protected bool _insecure;
 
 		protected TimeSpan _statsPeriod;
 		protected StatsStorage _statsStorage;
@@ -201,7 +201,7 @@ namespace EventStore.Core {
 
 			_disableInternalTcpTls = Opts.DisableInternalTcpTlsDefault;
 			_disableExternalTcpTls = Opts.DisableExternalTcpTlsDefault;
-			_disableHttps = false;
+			_insecure = false;
 			_enableExternalTCP = Opts.EnableExternalTCPDefault;
 
 			_statsPeriod = TimeSpan.FromSeconds(Opts.StatsPeriodDefault);
@@ -546,15 +546,6 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets that TLS should be disabled on internal tcp connections
-		/// </summary>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableInternalTcpTls() {
-			_disableInternalTcpTls = true;
-			return this;
-		}
-
-		/// <summary>
 		/// Sets that TLS should be disabled on external tcp connections
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
@@ -573,11 +564,13 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Disable HTTPS Communication
+		/// Enables insecure mode. This will disable all authentication, authorization and transport security for all clients and the node.
+		/// This mode is not recommended for production use.
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder DisableHttps() {
-			_disableHttps = true;
+		public VNodeBuilder RunInsecure() {
+			_insecure = true;
+			
 			return this;
 		}
 
@@ -1389,6 +1382,13 @@ namespace EventStore.Core {
 
 			_db = new TFChunkDb(_dbConfig);
 
+			if (_insecure) {
+				_disableExternalTcpTls = true;
+				_disableInternalTcpTls = true;
+				_authorizationProviderFactory = new AuthorizationProviderFactory(components => new PassthroughAuthorizationProviderFactory());
+				_authenticationProviderFactory = new AuthenticationProviderFactory(components => new PassthroughAuthenticationProviderFactory());
+			}
+
 			_vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
 				0,
 				_loadConfigFunc,
@@ -1466,7 +1466,7 @@ namespace EventStore.Core {
 				_unsafeAllowSurplusNodes,
 				_enableExternalTCP,
 				_enableAtomPubOverHTTP,
-				_disableHttps);
+				_insecure);
 
 			var infoController = new InfoController(options, new Dictionary<string, bool> {
 				{"projections", _projectionType != ProjectionType.None},

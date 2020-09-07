@@ -304,9 +304,7 @@ namespace EventStore.ClusterNode {
 				if(options.DisableInternalTcpTls || options.DisableExternalTcpTls)
 					throw new InvalidConfigurationException($"The '{nameof(options.Insecure)}' option cannot be combined with the '{nameof(options.DisableInternalTcpTls)}' or the '{nameof(options.DisableExternalTcpTls)}' options.");
 
-				builder.DisableInternalTcpTls();
-				builder.DisableExternalTcpTls();
-				builder.DisableHttps();
+				builder.RunInsecure();
 			}
 			if (options.DisableExternalTcpTls)
 				builder.DisableExternalTcpTls();
@@ -389,25 +387,19 @@ namespace EventStore.ClusterNode {
 
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 
-			AuthenticationProviderFactory authenticationProviderFactory;
-			AuthorizationProviderFactory authorizationProviderFactory;
-
 			if (!options.Insecure) {
-				authorizationProviderFactory =
+				var authorizationProviderFactory =
 					GetAuthorizationProviderFactory(options.AuthorizationType, authorizationConfig, pluginLoader);
-				authenticationProviderFactory =
+				var authenticationProviderFactory =
 					GetAuthenticationProviderFactory(options.AuthenticationType, authenticationConfig, pluginLoader);
-			} else {
-				authorizationProviderFactory = new AuthorizationProviderFactory(components => new PassthroughAuthorizationProviderFactory());
-				authenticationProviderFactory = new AuthenticationProviderFactory(components => new PassthroughAuthenticationProviderFactory());
+
+				builder.WithAuthenticationProviderFactory(authenticationProviderFactory,
+					options.AuthenticationType == Opts.AuthenticationTypeDefault && !options.Insecure);
+				builder.WithAuthorizationProvider(authorizationProviderFactory);
 			}
 
 			var plugInContainer = FindPlugins();
-
 			var consumerStrategyFactories = GetPlugInConsumerStrategyFactories(plugInContainer);
-			builder.WithAuthenticationProviderFactory(authenticationProviderFactory,
-				options.AuthenticationType == Opts.AuthenticationTypeDefault && !options.Insecure);
-			builder.WithAuthorizationProvider(authorizationProviderFactory);
 			var subsystemFactories = GetPlugInSubsystemFactories(plugInContainer);
 
 			foreach (var subsystemFactory in subsystemFactories) {
