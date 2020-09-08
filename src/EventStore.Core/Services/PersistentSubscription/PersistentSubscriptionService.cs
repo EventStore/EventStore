@@ -742,9 +742,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		
+		 
 		private TimeSpan ToCheckPointAfterTimeout(int milliseconds) {
-			return milliseconds == 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
+
+			if (milliseconds < 0) return TimeSpan.MinValue; else 
+				return milliseconds == 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
+
 		}
 
 		private TimeSpan ToMessageTimeout(int milliseconds) {
