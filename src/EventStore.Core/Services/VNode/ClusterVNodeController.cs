@@ -10,9 +10,9 @@ using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.StorageChunk;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLogV2.Chunks;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.VNode {
@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.VNode {
 			MessageForwardingProxy forwardingProxy, ISubsystem[] subSystems) {
 			Ensure.NotNull(outputBus, "outputBus");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
-			Ensure.NotNull(db, "dbConfig");
+			Ensure.NotNull(db, nameof(db));
 			Ensure.NotNull(vnodeSettings, "vnodeSettings");
 			Ensure.NotNull(node, "node");
 			Ensure.NotNull(forwardingProxy, "forwardingProxy");

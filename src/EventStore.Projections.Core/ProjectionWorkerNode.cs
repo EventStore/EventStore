@@ -5,8 +5,8 @@ using EventStore.Common.Utils;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.StorageChunk;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core {
 			bool faultOutOfOrderProjections,
 			IPublisher leaderOutputBus) {
 			_runProjections = runProjections;
-			Ensure.NotNull(db, "db");
+			Ensure.NotNull(db, nameof(db));
 
 			_coreOutput = new InMemoryBus("Core Output");
 			_leaderOutputBus = leaderOutputBus;
@@ -48,6 +48,7 @@ namespace EventStore.Projections.Core {
 				publisher,
 				_ioDispatcher,
 				10,
+				// TODO: Only pass in the checkpoint that we need
 				db.Config.WriterCheckpoint,
 				runHeadingReader: runProjections >= ProjectionType.System,
 				faultOutOfOrderProjections: faultOutOfOrderProjections);

@@ -21,6 +21,7 @@ using EventStore.Core.TransactionLogV2.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
+using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
 
 namespace EventStore.Core.Services.Storage {
 	public class StorageWriterService : StorageWriter,

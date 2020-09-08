@@ -9,6 +9,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Replication;
+using EventStore.Core.Services.Storage.StorageChunk;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Authorization;
@@ -57,7 +58,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
 			
 			DbConfig = CreateDbConfig();
-			var db = new TFChunkDb(DbConfig);
+			var db = StorageTFChunkDb.Create(DbConfig);
 			db.Open();
 			Service = new LeaderReplicationService(
 				publisher: Publisher,

@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -13,8 +12,8 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.EpochManager;
+using EventStore.Core.Services.Storage.StorageChunk;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Plugins.Authentication;
 using EventStore.Transport.Tcp;

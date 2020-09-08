@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Options;
@@ -15,17 +13,17 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
-using EventStore.Core.TransactionLogV2.Checkpoint;
-using EventStore.Core.TransactionLogV2.Chunks;
-using EventStore.Core.TransactionLogV2.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
-using EventStore.Core.Settings;
+using EventStore.Core.Services.Storage.StorageChunk;
+using EventStore.Core.TransactionLogV2.Chunks;
 using ILogger = Serilog.ILogger;
+using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
+using TFConsts = EventStore.Core.Services.Storage.StorageChunk.TFConsts;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -127,7 +125,6 @@ namespace EventStore.Core {
 
 		protected TFChunkDb _db;
 		protected ClusterVNodeSettings _vNodeSettings;
-		protected TFChunkDbConfig _dbConfig;
 		private string _advertiseInternalHostAs;
 		private string _advertiseExternalHostAs;
 		private int _advertiseHttpPortAs;
@@ -1350,7 +1347,8 @@ namespace EventStore.Core {
 			SetUpProjectionsIfNeeded();
 			_gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
-			_dbConfig = CreateDbConfig(_chunkSize,
+			_db = StorageTFChunkDb.Create(
+				_chunkSize,
 				_cachedChunks,
 				_dbPath,
 				_chunksCacheSize,
@@ -1361,8 +1359,6 @@ namespace EventStore.Core {
 				_maxTruncation,
 				_log);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
-
-			_db = new TFChunkDb(_dbConfig);
 
 			_vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
 				0,
@@ -1506,82 +1502,6 @@ namespace EventStore.Core {
 			}
 
 			return gossipSeedSource;
-		}
-
-		private static TFChunkDbConfig CreateDbConfig(int chunkSize,
-			int cachedChunks,
-			string dbPath,
-			long chunksCacheSize,
-			bool inMemDb,
-			int chunkInitialReaderCount,
-			int chunkMaxReaderCount,
-			bool optimizeReadSideCache,
-			long maxTruncation,
-			ILogger log) {
-			ICheckpoint writerChk;
-			ICheckpoint chaserChk;
-			ICheckpoint epochChk;
-			ICheckpoint truncateChk;
-			//todo(clc) : promote these to file backed checkpoints re:project-io
-			ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
-			ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
-			if (inMemDb) {
-				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
-				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
-				epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
-				truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
-			} else {
-				try {
-					if (!Directory.Exists(dbPath)) // mono crashes without this check
-						Directory.CreateDirectory(dbPath);
-				} catch (UnauthorizedAccessException) {
-					if (dbPath == Locations.DefaultDataDirectory) {
-						log.Information(
-							"Access to path {dbPath} denied. The Event Store database will be created in {fallbackDefaultDataDirectory}",
-							dbPath, Locations.FallbackDefaultDataDirectory);
-						dbPath = Locations.FallbackDefaultDataDirectory;
-						log.Information("Defaulting DB Path to {dbPath}", dbPath);
-
-						if (!Directory.Exists(dbPath)) // mono crashes without this check
-							Directory.CreateDirectory(dbPath);
-					} else {
-						throw;
-					}
-				}
-
-				var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
-				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
-				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
-				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
-					initValue: -1);
-				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
-					cached: true, initValue: -1);
-			}
-
-			var cache = cachedChunks >= 0
-				? cachedChunks * (long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
-				: chunksCacheSize;
-
-			var nodeConfig = new TFChunkDbConfig(dbPath,
-				new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-				chunkSize,
-				cache,
-				writerChk,
-				chaserChk,
-				epochChk,
-				truncateChk,
-				replicationChk,
-				indexChk,
-				chunkInitialReaderCount,
-				chunkMaxReaderCount,
-				inMemDb,
-				optimizeReadSideCache,
-				maxTruncation);
-
-			return nodeConfig;
 		}
 
 		public void WithUnsafeAllowSurplusNodes() {

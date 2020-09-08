@@ -1,5 +1,6 @@
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.TransactionLogV2.Chunks;
+using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	public class TestVNodeBuilder : VNodeBuilder {
@@ -28,7 +29,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		}
 
 		public TFChunkDbConfig GetDbConfig() {
-			return _dbConfig;
+			return _db.Config;
 		}
 
 		public override VNodeBuilder UnsafeUseTransactionLogV3() {

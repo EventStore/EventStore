@@ -9,6 +9,7 @@ using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.TransactionLogV2.LogRecords;
 
 using ILogger = Serilog.ILogger;
+using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
 
 namespace EventStore.Core.Services.Storage {
 	public abstract class StorageWriter {

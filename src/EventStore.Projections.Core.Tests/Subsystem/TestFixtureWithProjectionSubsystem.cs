@@ -5,10 +5,9 @@ using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.StorageChunk;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.Tests.TransactionLog;
-using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.TransactionLogV2.TestHelpers;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
@@ -27,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		private ProjectionSubsystemMessage.StartComponents _lastStartMessage;
 	
 		private StandardComponents CreateStandardComponents() {
-			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0));
+			var db = StorageTFChunkDb.Create(TFChunkHelper.CreateDbConfig(Path.GetTempPath(), 0));
 			var mainQueue = QueuedHandler.CreateQueuedHandler
 			(new AdHocHandler<Message>(msg => {
 				/* Ignore messages */

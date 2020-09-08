@@ -21,16 +21,19 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLogV2.Checkpoint;
-using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.TransactionLogV2.FileNamingStrategy;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
+using EventStore.Core.Services.Storage.StorageChunk;
+using EventStore.Core.TransactionLogV2.Chunks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
+using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
+using TFConsts = EventStore.Core.Services.Storage.StorageChunk.TFConsts;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -40,7 +43,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public static readonly Stopwatch StoppingTime = new Stopwatch();
 
 		public const int ChunkSize = 1024 * 1024;
-		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
+		public const int CachedChunkSize = ChunkSize + TFConsts.ChunkHeaderSize + TFConsts.ChunkFooterSize;
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode>();
 
@@ -99,8 +102,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			Directory.CreateDirectory(_dbPath);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
-			Db =
-				new TFChunkDb(
+			Db = StorageTFChunkDb.Create(
 					CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize, inMemDb));
 
 			InternalTcpEndPoint = internalTcp;

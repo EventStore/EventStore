@@ -8,9 +8,9 @@ using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
-using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Storage.StorageChunk;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public static readonly Stopwatch StoppingTime = new Stopwatch();
 
 		public const int ChunkSize = 1024 * 1024;
-		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
+		public const int CachedChunkSize = ChunkSize + TFConsts.ChunkHeaderSize + TFConsts.ChunkFooterSize;
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<MiniNode>();
 

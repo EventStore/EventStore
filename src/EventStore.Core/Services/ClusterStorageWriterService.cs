@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.TransactionLogV2.Chunks.TFChunk;
 using EventStore.Core.TransactionLogV2.LogRecords;
 using ILogger = Serilog.ILogger;
+using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
 
 namespace EventStore.Core.Services {
 	public class ClusterStorageWriterService : StorageWriterService,
@@ -34,6 +35,7 @@ namespace EventStore.Core.Services {
 			ISubscriber subscribeToBus,
 			TimeSpan minFlushDelay,
 			TFChunkDb db,
+			// TODO: Find a way to extract the TFChunkWriter
 			TFChunkWriter writer,
 			IIndexWriter indexWriter,
 			IEpochManager epochManager,

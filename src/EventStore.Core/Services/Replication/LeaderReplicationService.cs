@@ -14,13 +14,13 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Transport.Tcp;
-using EventStore.Core.TransactionLogV2.Chunks;
-using EventStore.Core.TransactionLogV2.Chunks.TFChunk;
+using EventStore.Core.Services.Storage.StorageChunk;
 using EventStore.Core.TransactionLogV2.Data;
 using EventStore.Core.TransactionLogV2.Exceptions;
 using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
+using TFChunkBulkReader = EventStore.Core.TransactionLogV2.Chunks.TFChunkBulkReader;
 
 namespace EventStore.Core.Services.Replication {
 	public class LeaderReplicationService : IMonitoredQueue,
@@ -329,7 +329,7 @@ namespace EventStore.Core.Services.Replication {
 
 					sub.LogPosition = chunkStartPos;
 					sub.RawSend = true;
-					bulkReader.SetRawPosition(ChunkHeader.Size);
+					bulkReader.SetRawPosition(TFConsts.ChunkHeaderSize);
 					if (replicationStart)
 						sub.SendMessage(new ReplicationMessage.ReplicaSubscribed(_instanceId, sub.SubscriptionId,
 							sub.LogPosition));
@@ -477,7 +477,7 @@ namespace EventStore.Core.Services.Replication {
 			var bulkReader = subscription.BulkReader;
 			var chunkHeader = bulkReader.Chunk.ChunkHeader;
 
-			BulkReadResult bulkResult;
+			TransactionLogV2.Chunks.TFChunk.BulkReadResult bulkResult;
 			if (subscription.RawSend) {
 				bulkResult = bulkReader.ReadNextRawBytes(subscription.DataBuffer.Length, subscription.DataBuffer);
 			} else {

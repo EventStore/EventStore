@@ -54,6 +54,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
+using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
 
 namespace EventStore.Core {
 	public class ClusterVNode :
@@ -162,7 +163,7 @@ namespace EventStore.Core {
 			IGossipSeedSource gossipSeedSource,
 			InfoControllerBuilder infoControllerBuilder,
 			params ISubsystem[] subsystems) {
-			Ensure.NotNull(db, "db");
+			Ensure.NotNull(db, nameof(db));
 			Ensure.NotNull(vNodeSettings, "vNodeSettings");
 			Ensure.NotNull(gossipSeedSource, "gossipSeedSource");
 
@@ -269,7 +270,7 @@ namespace EventStore.Core {
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
-				var truncator = new TFChunkDbTruncator(db.Config);
+				var truncator = db.GetTruncator();
 				truncator.TruncateDb(truncPos);
 			}
 
@@ -282,8 +283,7 @@ namespace EventStore.Core {
 			var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, vNodeSettings.PTableMaxReaderCount,
-				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
-					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
+				db.GetReader);
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
 				new Murmur3AUnsafe(),
@@ -311,15 +311,14 @@ namespace EventStore.Core {
 				db.Config.ReplicationCheckpoint,
 				db.Config.IndexCheckpoint);
 			_readIndex = readIndex;
-			var writer = new TFChunkWriter(db);
+			var writer = db.GetWriter();
 			var epochManager = new EpochManager(
 				ESConsts.CachedEpochCount,
 				db.Config.EpochCheckpoint,
 				writer,
 				initialReaderCount: 1,
 				maxReaderCount: 5,
-				readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint,
-					optimizeReadSideCache: db.Config.OptimizeReadSideCache),
+				readerFactory: db.GetReader,
 				_nodeInfo.InstanceId);
 			epochManager.Init();
 
@@ -359,8 +358,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
 			_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
-			var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-				db.Config.OptimizeReadSideCache);
+			var chaser = db.GetChunkChaser();
 			var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, indexCommitterService,
 				epochManager, _queueStatsManager);
 			AddTask(storageChaser.Task);
@@ -673,9 +671,10 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(persistentSubscription);
 
 			// STORAGE SCAVENGER
+			// TODO: The Storage Scavenger needs to be properly moved to allow the extraction
 			var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.HttpEndPoint.ToString(),
 				TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
-			var storageScavenger = new StorageScavenger(db,
+			var storageScavenger = new StorageScavenger(db.Db,
 				tableIndex,
 				readIndex,
 				scavengerLogManager,
