@@ -10,6 +10,7 @@ using EventStore.Transport.Http.EntityManagement;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using ILogger = Serilog.ILogger;
 
@@ -21,11 +22,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private readonly IOptions _options;
 		private readonly IDictionary<string, bool> _features;
+		private readonly IAuthenticationProvider _authenticationProvider;
 		private VNodeState _currentState;
 
-		public InfoController(IOptions options, IDictionary<string, bool> features) {
+		public InfoController(IOptions options, IDictionary<string, bool> features, IAuthenticationProvider authenticationProvider) {
 			_options = options;
 			_features = features;
+			_authenticationProvider = authenticationProvider;
 		}
 
 		public void Subscribe(IHttpService service) {
@@ -46,12 +49,23 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					ESVersion = VersionInfo.Version,
 					State = _currentState.ToString().ToLower(),
 					Features = _features,
+					Authentication = GetAuthenticationInfo()
 				}),
 				HttpStatusCode.OK,
 				"OK",
 				entity.ResponseCodec.ContentType,
 				null,
 				e => Log.Error(e, "Error while writing HTTP response (info)"));
+		}
+
+		private Dictionary<string, object> GetAuthenticationInfo() {
+			if (_authenticationProvider == null)
+				return null;
+
+			return new Dictionary<string, object>(){
+				{ "type", _authenticationProvider.Name },
+				{ "properties", _authenticationProvider.GetPublicProperties() }
+			};
 		}
 
 		private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {

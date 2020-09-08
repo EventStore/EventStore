@@ -61,6 +61,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			_server = new TestServer(
 				new WebHostBuilder()
 					.UseStartup(new ClusterVNodeStartup(Array.Empty<ISubsystem>(), queue, _bus, _multiQueuedHandler,
+						new TestAuthenticationProvider(),
 						new IHttpAuthenticationProvider[] {
 							new BasicHttpAuthenticationProvider(new TestAuthenticationProvider()),
 							new AnonymousHttpAuthenticationProvider(),

@@ -11,6 +11,7 @@ using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authentication;
+using Microsoft.AspNetCore.Routing;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Authentication.InternalAuthentication {
@@ -55,6 +56,18 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				_ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccounts.System,
 					m => ReadUserDataCompleted(m, authenticationRequest));
 			}
+		}
+		public string Name => "internal";
+		public IEnumerable<KeyValuePair<string, string>> GetPublicProperties() => null;
+
+		public void ConfigureEndpoints(IEndpointRouteBuilder endpointRouteBuilder) {
+			//nothing to do
+		}
+
+		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() {
+			return new [] {
+				"Basic"
+			};
 		}
 
 		private void ReadUserDataCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed,

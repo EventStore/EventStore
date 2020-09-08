@@ -160,7 +160,7 @@ namespace EventStore.Core {
 		public ClusterVNode(TFChunkDb db,
 			ClusterVNodeSettings vNodeSettings,
 			IGossipSeedSource gossipSeedSource,
-			InfoController infoController,
+			InfoControllerBuilder infoControllerBuilder,
 			params ISubsystem[] subsystems) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(vNodeSettings, "vNodeSettings");
@@ -472,26 +472,42 @@ namespace EventStore.Core {
 			});
 
 
-			List<IHttpAuthenticationProvider> httpAuthenticationProviders;
+			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider>();
+
+			foreach (var authenticationScheme in _authenticationProvider.GetSupportedAuthenticationSchemes() ?? Enumerable.Empty<string>()) {
+				switch (authenticationScheme)
+				{
+					case "Basic":
+						httpAuthenticationProviders.Add(new BasicHttpAuthenticationProvider(_authenticationProvider));
+						break;
+					case "Bearer":
+						httpAuthenticationProviders.Add(new BearerHttpAuthenticationProvider(_authenticationProvider));
+						break;
+					case "Insecure":
+						httpAuthenticationProviders.Add(new PassthroughHttpAuthenticationProvider(_authenticationProvider));
+						break;
+					default:
+						Log.Warning($"Unsupported Authentication Scheme: {authenticationScheme}");
+						break;
+				}
+			}
+
+			if (!httpAuthenticationProviders.Any()) {
+				throw new InvalidConfigurationException($"The server does not support any authentication scheme supported by the '{_authenticationProvider.Name}' authentication provider.");
+			}
 
 			if (!_disableHttps) {
-				httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-					new BasicHttpAuthenticationProvider(_authenticationProvider),
-					new BearerHttpAuthenticationProvider(_authenticationProvider),
-					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName)
-				};
+				//transport-level authentication providers
+				httpAuthenticationProviders.Add(
+					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName));
 
 				if (vNodeSettings.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
-
-				httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
-			} else {
-				httpAuthenticationProviders = new List<IHttpAuthenticationProvider> {
-					new PassthroughHttpAuthenticationProvider(_authenticationProvider)
-				};
 			}
 
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
+			//default authentication provider
+			httpAuthenticationProviders.Add(new AnonymousHttpAuthenticationProvider());
+
 
 			var adminController = new AdminController(_mainQueue, _workersHandler);
 			var pingController = new PingController();
@@ -502,6 +518,11 @@ namespace EventStore.Core {
 			var gossipController = new GossipController(_mainQueue, _workersHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
+			var infoController = infoControllerBuilder
+				.WithAuthenticationProvider(_authenticationProvider)
+				.Build();
+
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
 			if (vNodeSettings.AdminOnPublic)
@@ -767,7 +788,7 @@ namespace EventStore.Core {
 				}
 			}
 
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, httpAuthenticationProviders, _authorizationProvider, _readIndex,
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				_vNodeSettings.MaxAppendSize, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
