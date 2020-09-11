@@ -118,6 +118,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							processed,
 							(result.RecordPostPosition - startPosition) * 100.0 / (buildToPosition - startPosition));
 						lastTime = DateTime.UtcNow;
+
+						while (TableIndex.AwaitingMemTablesCount > 1) {
+							Log.Debug("Waiting for MemTables = 1");
+							Thread.Sleep(500);
+						}
 					}
 				}
 

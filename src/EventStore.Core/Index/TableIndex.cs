@@ -49,6 +49,7 @@ namespace EventStore.Core.Index {
 
 		private IndexMap _indexMap;
 		private List<TableItem> _awaitingMemTables;
+		public static int AwaitingMemTablesCount = 0;
 		private long _commitCheckpoint = -1;
 		private long _prepareCheckpoint = -1;
 
@@ -104,6 +105,7 @@ namespace EventStore.Core.Index {
 			_initializationThreads = initializationThreads;
 			_ptableVersion = ptableVersion;
 			_awaitingMemTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+			AwaitingMemTablesCount = _awaitingMemTables.Count;
 
 			_lowHasher = lowHasher;
 			_highHasher = highHasher;
@@ -245,6 +247,7 @@ namespace EventStore.Core.Index {
 				Log.Debug("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
 
 				_awaitingMemTables = newTables;
+				AwaitingMemTablesCount = newTables.Count;
 				if (_inMem) return;
 				TryProcessAwaitingTables();
 
@@ -267,6 +270,7 @@ namespace EventStore.Core.Index {
 					new TableItem(highest, prepare, commit, maxLevel)
 				};
 				_awaitingMemTables = newTables;
+				AwaitingMemTablesCount = newTables.Count;
 				TryProcessAwaitingTables();
 			}
 		}
@@ -338,6 +342,7 @@ namespace EventStore.Core.Index {
 
 						Log.Debug("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
 						_awaitingMemTables = memTables;
+						AwaitingMemTablesCount = memTables.Count;
 					}
 
 					mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
