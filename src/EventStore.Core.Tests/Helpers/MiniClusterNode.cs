@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
@@ -26,14 +23,11 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.StorageChunk;
-using EventStore.Core.TransactionLogV2.Chunks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
-using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
-using TFConsts = EventStore.Core.Services.Storage.StorageChunk.TFConsts;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {

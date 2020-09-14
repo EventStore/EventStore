@@ -2,24 +2,23 @@ using System;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Core.Tests.TransactionLog;
 using NUnit.Framework;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLogV2.Checkpoint;
-using EventStore.Core.TransactionLogV2.Chunks;
-using EventStore.Core.TransactionLogV2.FileNamingStrategy;
 using EventStore.Core.TransactionLogV2.LogRecords;
 using EventStore.Core.Util;
 using System.IO;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Storage.StorageChunk;
+using EventStore.Core.Services.Storage.TestHelpers;
+using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.TransactionLogV2.Data;
-using EventStore.Core.TransactionLogV2.TestHelpers;
+using TFConsts = EventStore.Core.Services.Storage.StorageChunk.TFConsts;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public abstract class MiniNodeWithExistingRecords : SpecificationWithDirectoryPerTestFixture {
@@ -33,7 +32,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		protected TableIndex TableIndex;
 		protected IReadIndex ReadIndex;
 
-		protected TFChunkDb Db;
+		protected StorageTFChunkDb Db;
 		protected TFChunkWriter Writer;
 		protected ICheckpoint WriterCheckpoint;
 		protected ICheckpoint ChaserCheckpoint;
@@ -63,11 +62,11 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			WriterCheckpoint = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 			ChaserCheckpoint = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 
-			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize));
+			Db = StorageTFChunkDb.Create(TFChunkHelper.CreateDbConfig(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize));
 			Db.Open();
 
 			// create DB
-			Writer = new TFChunkWriter(Db);
+			Writer = Db.GetWriter();
 			Writer.Open();
 			WriteTestScenario();
 

@@ -6,9 +6,9 @@ using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.StorageChunk;
+using EventStore.Core.Services.Storage.TestHelpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
-using EventStore.Core.TransactionLogV2.TestHelpers;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 

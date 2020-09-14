@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		}
 
 		public TFChunkDbConfig GetDbConfig() {
-			return _db.Config;
+			return _db.Db.Config;
 		}
 
 		public override VNodeBuilder UnsafeUseTransactionLogV3() {

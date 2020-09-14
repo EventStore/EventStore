@@ -17,7 +17,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.ElectionsService;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLogV2.Checkpoint;
-using EventStore.Core.TransactionLogV2.Chunks;
+// using EventStore.Core.TransactionLogV2.Chunks;
 using EventStore.Core.TransactionLogV2.Data;
 using EventStore.Core.TransactionLogV2.FileNamingStrategy;
 using EventStore.Core.Util;
