@@ -12,6 +12,8 @@ namespace EventStore.Core.Services.Storage.StorageChunk {
 		public const int ChunkFooterSize = 128;
 		public const int ChunksCacheSize = 2 * (ChunkSize + ChunkHeaderSize + ChunkFooterSize);
 
+		internal const int ScavengerMaxThreadCount = 4;
+
 		public static TimeSpan MinFlushDelayMs = TimeSpan.FromMilliseconds(2);
 	}
 }

@@ -20,10 +20,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.StorageChunk;
-using EventStore.Core.TransactionLogV2.Chunks;
 using ILogger = Serilog.ILogger;
-using TFChunkDb = EventStore.Core.Services.Storage.StorageChunk.TFChunkDb;
-using TFConsts = EventStore.Core.Services.Storage.StorageChunk.TFConsts;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -1470,7 +1467,7 @@ namespace EventStore.Core {
 			var ptableMaxReaderCount = 1 /* StorageWriter */
 			                           + 1 /* StorageChaser */
 			                           + 1 /* Projections */
-			                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+			                           + TFConsts.ScavengerMaxThreadCount /* Scavenging (1 per thread) */
 			                           + 1 /* Subscription LinkTos resolving */
 			                           + readerThreadsCount
 			                           + 5 /* just in case reserve :) */;
