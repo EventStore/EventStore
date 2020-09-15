@@ -342,6 +342,34 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			//all 3 events should be received by the subscriber
 			Assert.AreEqual(3, envelope.Replies.Count);
 		}
+
+		[Test]
+		public void subsciption_checkpoints_on_each_event_recived_by_client_when_checkpointafter_is_negative() {
+			var reader = new FakeCheckpointReader();
+			var checkpoints_written = 0;
+
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionParamsBuilder.CreateFor("streamName", "groupName")
+					.WithEventLoader(new FakeStreamReader(x => { }))
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(x => { checkpoints_written++; }))
+					.WithMessageParker(new FakeMessageParker())
+					.CheckPointAfter(TimeSpan.MinValue)
+					.MaximumToCheckPoint(1)
+					.MinimumToCheckPoint(1)
+					.StartFromCurrent());
+
+			reader.Load(null);
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", new FakeEnvelope(), 10, "foo", "bar");
+			
+			for (int i = 0; i <100; i++) {
+				var id = Guid.NewGuid();
+				sub.NotifyLiveSubscriptionMessage(Helper.BuildFakeEvent(id, "type", "streamName", i));
+				sub.AcknowledgeMessagesProcessed(Guid.NewGuid(), new Guid[] { id });
+			}
+
+			Assert.AreEqual(100, checkpoints_written);
+		}
 	}
 
 	[TestFixture]
