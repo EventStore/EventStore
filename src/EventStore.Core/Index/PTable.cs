@@ -110,6 +110,7 @@ namespace EventStore.Core.Index {
 				pool => OnAllWorkItemsDisposed());
 
 			var readerWorkItem = GetWorkItem();
+			Console.WriteLine(_filename + " GetWorkItem PTable");
 			try {
 				readerWorkItem.Stream.Seek(0, SeekOrigin.Begin);
 				var header = PTableHeader.FromStream(readerWorkItem.Stream);
@@ -198,6 +199,7 @@ namespace EventStore.Core.Index {
 				Dispose();
 				throw;
 			} finally {
+				Console.WriteLine(_filename + " ReturnWorkItem PTable");
 				ReturnWorkItem(readerWorkItem);
 			}
 
@@ -232,6 +234,7 @@ namespace EventStore.Core.Index {
 			WorkItem workItem = null;
 			if (Runtime.IsUnixOrMac) {
 				workItem = GetWorkItem();
+				Console.WriteLine(_filename + " GetWorkItem CacheMidpointsAndVerifyHash");
 				stream = workItem.Stream;
 			} else {
 				stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false,
@@ -361,8 +364,10 @@ namespace EventStore.Core.Index {
 				throw;
 			} finally {
 				if (Runtime.IsUnixOrMac) {
-					if (workItem != null)
+					if (workItem != null) {
+						Console.WriteLine(_filename + " ReturnWorkItem CacheMidpointsAndVerifyHash");
 						ReturnWorkItem(workItem);
+					}
 				} else {
 					if (stream != null)
 						stream.Dispose();
@@ -414,12 +419,14 @@ namespace EventStore.Core.Index {
 
 		public IEnumerable<IndexEntry> IterateAllInOrder() {
 			var workItem = GetWorkItem();
+			Console.WriteLine(_filename + " GetWorkItem IterateAllInOrder");
 			try {
 				workItem.Stream.Position = PTableHeader.Size;
 				for (long i = 0, n = Count; i < n; i++) {
 					yield return ReadNextNoSeek(workItem, _version);
 				}
 			} finally {
+				Console.WriteLine(_filename + " ReturnWorkItem IterateAllInOrder");
 				ReturnWorkItem(workItem);
 			}
 		}
@@ -454,6 +461,7 @@ namespace EventStore.Core.Index {
 				return false;
 
 			var workItem = GetWorkItem();
+			Console.WriteLine(_filename + " GetWorkItem TryGetLargestEntry");
 			try {
 				IndexEntryKey lowBoundsCheck, highBoundsCheck;
 				var recordRange = LocateRecordRange(endKey, out lowBoundsCheck, out highBoundsCheck);
@@ -495,6 +503,7 @@ namespace EventStore.Core.Index {
 				entry = candEntry;
 				return true;
 			} finally {
+				Console.WriteLine(_filename + " ReturnWorkItem TryGetLargestEntry");
 				ReturnWorkItem(workItem);
 			}
 		}
@@ -517,6 +526,7 @@ namespace EventStore.Core.Index {
 				return false;
 
 			var workItem = GetWorkItem();
+			Console.WriteLine(_filename + " GetWorkItem TryGetSmallestEntry");
 			try {
 				IndexEntryKey lowBoundsCheck, highBoundsCheck;
 				var recordRange = LocateRecordRange(startKey, out lowBoundsCheck, out highBoundsCheck);
@@ -558,6 +568,7 @@ namespace EventStore.Core.Index {
 				entry = candEntry;
 				return true;
 			} finally {
+				Console.WriteLine(_filename + " ReturnWorkItem TryGetSmallestEntry");
 				ReturnWorkItem(workItem);
 			}
 		}
@@ -576,6 +587,7 @@ namespace EventStore.Core.Index {
 				return result;
 
 			var workItem = GetWorkItem();
+			Console.WriteLine(_filename + " GetWorkItem GetRange");
 			try {
 				IndexEntryKey lowBoundsCheck, highBoundsCheck;
 				var recordRange = LocateRecordRange(endKey, out lowBoundsCheck, out highBoundsCheck);
@@ -622,6 +634,7 @@ namespace EventStore.Core.Index {
 
 				return result;
 			} finally {
+				Console.WriteLine(_filename + " ReturnWorkItem GetRange");
 				ReturnWorkItem(workItem);
 			}
 		}
