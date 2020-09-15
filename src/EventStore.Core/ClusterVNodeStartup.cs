@@ -30,7 +30,9 @@ using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 
 namespace EventStore.Core {
-	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
+	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.BecomeLeader>,
+		IHandle<SystemMessage.BecomeFollower>,
+		IHandle<SystemMessage.BecomeReadOnlyReplica>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
 
 		private readonly ISubsystem[] _subsystems;
@@ -153,7 +155,11 @@ namespace EventStore.Core {
 						.Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
 
-		public void Handle(SystemMessage.SystemReady message) => _ready = true;
+		public void Handle(SystemMessage.BecomeLeader message) => _ready = true;
+
+		public void Handle(SystemMessage.BecomeFollower message) => _ready = true;
+
+		public void Handle(SystemMessage.BecomeReadOnlyReplica message) => _ready = true;
 
 		public void Handle(SystemMessage.BecomeShuttingDown message) => _ready = false;
 
