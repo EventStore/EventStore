@@ -133,13 +133,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					case OperationResult.WrongExpectedVersion:
 						response.WrongExpectedVersion = new AppendResp.Types.WrongExpectedVersion();
 
-						if (completed.CurrentVersion == -1) {
-							response.WrongExpectedVersion.NoStream = new Empty();
-						} else {
-							response.WrongExpectedVersion.CurrentRevision
-								= StreamRevision.FromInt64(completed.CurrentVersion);
-						}
-
 						switch (options.ExpectedStreamRevisionCase) {
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any:
 								response.WrongExpectedVersion.Any = new Empty();
@@ -147,11 +140,19 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists:
 								response.WrongExpectedVersion.StreamExists = new Empty();
 								break;
-							default:
-								response.WrongExpectedVersion.ExpectedRevision 
-									= StreamRevision.FromInt64(expectedVersion);
+							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision:
+								response.WrongExpectedVersion.ExpectedRevision =
+									StreamRevision.FromInt64(expectedVersion);
 								break;
 						}
+
+						if (completed.CurrentVersion == -1) {
+							response.WrongExpectedVersion.NoStream = new Empty();
+						} else {
+							response.WrongExpectedVersion.CurrentRevision =
+								StreamRevision.FromInt64(completed.CurrentVersion);
+						}
+
 						appendResponseSource.TrySetResult(response);
 						return;
 					case OperationResult.StreamDeleted:
