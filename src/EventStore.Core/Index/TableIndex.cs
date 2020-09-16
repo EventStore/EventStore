@@ -311,9 +311,8 @@ namespace EventStore.Core.Index {
 						ptable = (PTable)tableItem.Table;
 
 					var indexmapFile = Path.Combine(_directory, IndexMapFilename);
-					MergeResult mergeResult;
 					using (var reader = _tfReaderFactory()) {
-						mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint,
+						_indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint,
 							tableItem.CommitCheckpoint,
 							(streamId, currentHash) => UpgradeHash(streamId, currentHash),
 							entry => reader.ExistsAt(entry.Position),
@@ -321,12 +320,16 @@ namespace EventStore.Core.Index {
 							_fileNameProvider,
 							_ptableVersion,
 							tableItem.Level,
+							indexMap => {
+								_indexMap = indexMap;
+								_indexMap.SaveToFile(indexmapFile);
+							},
+							pTable => {
+								pTable.MarkForDestruction();
+							},
 							_indexCacheDepth,
 							_skipIndexVerify);
 					}
-
-					_indexMap = mergeResult.MergedMap;
-					_indexMap.SaveToFile(indexmapFile);
 
 					lock (_awaitingTablesLock) {
 						var memTables = _awaitingMemTables.ToList();
@@ -345,7 +348,6 @@ namespace EventStore.Core.Index {
 						AwaitingMemTablesCount = memTables.Count;
 					}
 
-					mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
 				}
 			} catch (FileBeingDeletedException exc) {
 				Log.Error(exc,
