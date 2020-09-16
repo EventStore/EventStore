@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 
 			bool hasReservedNodeCN;
 			try {
-				hasReservedNodeCN = clientCertificate.Subject == _certificateReservedNodeCommonName;
+				hasReservedNodeCN = clientCertificate.SubjectName.Name == _certificateReservedNodeCommonName;
 			} catch (CryptographicException) {
 				return false;
 			}
