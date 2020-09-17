@@ -41,6 +41,10 @@ namespace EventStore.Core.Index {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<PTable>();
 
+		~PTable() {
+			Console.WriteLine("Finalizing PTable: " + _filename);
+		}
+
 		public Guid Id {
 			get { return _id; }
 		}
@@ -738,8 +742,10 @@ namespace EventStore.Core.Index {
 
 		private void OnAllWorkItemsDisposed() {
 			File.SetAttributes(_filename, FileAttributes.Normal);
-			if (_deleteFile)
+			if (_deleteFile) {
+				Console.WriteLine("Deleting: " + _filename);
 				File.Delete(_filename);
+			}
 			_destroyEvent.Set();
 		}
 
