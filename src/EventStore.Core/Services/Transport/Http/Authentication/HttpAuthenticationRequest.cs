@@ -33,7 +33,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		}
 
 		private void Cancel() {
-			_tcs.TrySetCanceled(_context.RequestAborted);
+			_tcs.TrySetCanceled();
 			_cancellationRegister.Dispose();
 		}
 
