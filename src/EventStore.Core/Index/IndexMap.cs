@@ -372,30 +372,6 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		public Tuple<int, PTable> GetTableForManualMerge() {
-			//we have more than one entry at the max level
-			//or we have at least one entry at the max level and tables at a level above it
-			// or we have any tables > max level
-			var tablesExistAtMaxLevelOrAbove = _map.Count > _maxTableLevelsForAutomaticMerge
-			                                   && _map[_maxTableLevelsForAutomaticMerge] != null;
-			bool moreThanOneEntryAtMaxLevel = tablesExistAtMaxLevelOrAbove
-			                                  && _map[_maxTableLevelsForAutomaticMerge].Count > 1;
-			bool atLeastOneEntryAtMaxLevelAndOneAboveIt =
-				tablesExistAtMaxLevelOrAbove && _map[_maxTableLevelsForAutomaticMerge].Count == 1
-				                             && _map.Count > _maxTableLevelsForAutomaticMerge + 1
-				                             && _map.Skip(_maxTableLevelsForAutomaticMerge).Any(x => x.Count > 0);
-			bool moreThanOneEntryAboveMaxLevel = tablesExistAtMaxLevelOrAbove &&
-			                                     _map.Skip(_maxTableLevelsForAutomaticMerge).Any(x => x.Count > 1) ||
-			                                     _map.Skip(_maxTableLevelsForAutomaticMerge).Count(x => x.Count > 0) >
-			                                     1;
-			if (moreThanOneEntryAtMaxLevel || atLeastOneEntryAtMaxLevelAndOneAboveIt || moreThanOneEntryAboveMaxLevel) {
-				//we don't actually care which table we return here as manual merge will actually just iterate over anything above the max merge level
-				return Tuple.Create(_map.Count, _map[_map.Count - 1].FirstOrDefault());
-			}
-
-			return Tuple.Create(_map.Count - 1, default(PTable));
-		}
-
 		public AddResult AddPTable(PTable tableToAdd,
 			long prepareCheckpoint,
 			long commitCheckpoint) {

@@ -49,6 +49,8 @@ namespace EventStore.Core.Index {
 
 		private IndexMap _indexMap;
 		private List<TableItem> _awaitingMemTables;
+		private volatile bool _isManualMergePending;
+
 		private long _commitCheckpoint = -1;
 		private long _prepareCheckpoint = -1;
 
@@ -254,21 +256,8 @@ namespace EventStore.Core.Index {
 		}
 
 		public void TryManualMerge() {
-			lock (_awaitingTablesLock) {
-				var (maxLevel, highest) = _indexMap.GetTableForManualMerge();
-				if (highest == null) return; //no work to do
-
-				//These values are actually ignored later as manual merge will never change the checkpoint as no
-				//new entries are added, but they can be helpful to see when the manual merge was called
-				//because of the way the "queue" currently works (LIFO) it should always be the same
-				var prepare = _indexMap.PrepareCheckpoint;
-				var commit = _indexMap.CommitCheckpoint;
-				var newTables = new List<TableItem>(_awaitingMemTables) {
-					new TableItem(highest, prepare, commit, maxLevel)
-				};
-				_awaitingMemTables = newTables;
-				TryProcessAwaitingTables();
-			}
+			_isManualMergePending = true;
+			TryProcessAwaitingTables();
 		}
 
 		private void TryProcessAwaitingTables() {
@@ -284,6 +273,31 @@ namespace EventStore.Core.Index {
 		private void ReadOffQueue() {
 			try {
 				while (true) {
+					var indexmapFile = Path.Combine(_directory, IndexMapFilename);
+
+					if (_isManualMergePending) {
+						Log.Debug("Performing manual index merge.");
+
+						_isManualMergePending = false;
+						using (var reader = _tfReaderFactory()) {
+							var manualMergeResult = _indexMap.TryManualMerge(
+								(streamId, currentHash) => UpgradeHash(streamId, currentHash),
+								entry => reader.ExistsAt(entry.Position),
+								entry => ReadEntry(reader, entry.Position),
+								_fileNameProvider,
+								_ptableVersion,
+								_indexCacheDepth,
+								_skipIndexVerify);
+
+							if (manualMergeResult.HasMergedAny) {
+								_indexMap = manualMergeResult.MergedMap;
+								_indexMap.SaveToFile(indexmapFile);
+								manualMergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
+							}
+							Log.Debug("Manual index merge completed: {numMergedPTables} PTable(s) merged.", manualMergeResult.ToDelete.Count);
+						}
+					}
+
 					TableItem tableItem;
 					//ISearchTable table;
 					lock (_awaitingTablesLock) {
@@ -306,23 +320,31 @@ namespace EventStore.Core.Index {
 					} else
 						ptable = (PTable)tableItem.Table;
 
-					var indexmapFile = Path.Combine(_directory, IndexMapFilename);
-					MergeResult mergeResult;
-					using (var reader = _tfReaderFactory()) {
-						mergeResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint,
-							tableItem.CommitCheckpoint,
-							(streamId, currentHash) => UpgradeHash(streamId, currentHash),
-							entry => reader.ExistsAt(entry.Position),
-							entry => ReadEntry(reader, entry.Position),
-							_fileNameProvider,
-							_ptableVersion,
-							tableItem.Level,
-							_indexCacheDepth,
-							_skipIndexVerify);
-					}
-
-					_indexMap = mergeResult.MergedMap;
+					var addResult = _indexMap.AddPTable(ptable, tableItem.PrepareCheckpoint, tableItem.CommitCheckpoint);
+					_indexMap = addResult.NewMap;
 					_indexMap.SaveToFile(indexmapFile);
+
+					if (addResult.CanMergeAny) {
+						using (var reader = _tfReaderFactory()) {
+							MergeResult mergeResult;
+							do {
+								mergeResult = _indexMap.TryMergeOneLevel(
+									(streamId, currentHash) => UpgradeHash(streamId, currentHash),
+									entry => reader.ExistsAt(entry.Position),
+									entry => ReadEntry(reader, entry.Position),
+									_fileNameProvider,
+									_ptableVersion,
+									_indexCacheDepth,
+									_skipIndexVerify);
+
+								if (mergeResult.HasMergedAny) {
+									_indexMap = mergeResult.MergedMap;
+									_indexMap.SaveToFile(indexmapFile);
+									mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
+								}
+							} while (mergeResult.CanMergeAny);
+						}
+					}
 
 					lock (_awaitingTablesLock) {
 						var memTables = _awaitingMemTables.ToList();
@@ -339,8 +361,6 @@ namespace EventStore.Core.Index {
 						Log.Debug("There are now {awaitingMemTables} awaiting tables.", memTables.Count);
 						_awaitingMemTables = memTables;
 					}
-
-					mergeResult.ToDelete.ForEach(x => x.MarkForDestruction());
 				}
 			} catch (FileBeingDeletedException exc) {
 				Log.Error(exc,
