@@ -10,7 +10,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		private readonly string _certificateReservedNodeCommonName;
 
 		public ClientCertificateAuthenticationProvider(string certificateReservedNodeCommonName) {
-			_certificateReservedNodeCommonName = $"CN={certificateReservedNodeCommonName}";
+			_certificateReservedNodeCommonName = certificateReservedNodeCommonName;
 		}
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
@@ -20,8 +20,10 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 
 			bool hasReservedNodeCN;
 			try {
-				hasReservedNodeCN = clientCertificate.SubjectName.Name == _certificateReservedNodeCommonName;
+				hasReservedNodeCN = clientCertificate.GetNameInfo(X509NameType.SimpleName, false) == _certificateReservedNodeCommonName;
 			} catch (CryptographicException) {
+				return false;
+			} catch (NullReferenceException) {
 				return false;
 			}
 
