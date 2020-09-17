@@ -65,7 +65,7 @@ namespace EventStore.Core.Index {
 		private readonly string _filename;
 		private readonly long _count;
 		private readonly long _size;
-		private readonly Midpoint[] _midpoints;
+		private Midpoint[] _midpoints;
 		private readonly uint _midpointsCached = 0;
 		private readonly long _midpointsCacheSize = 0;
 
@@ -746,6 +746,8 @@ namespace EventStore.Core.Index {
 				Console.WriteLine("Deleting: " + _filename);
 				File.Delete(_filename);
 			}
+
+			_midpoints = null;
 			_destroyEvent.Set();
 		}
 
