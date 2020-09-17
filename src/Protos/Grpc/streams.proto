@@ -168,12 +168,13 @@ message AppendResp {
 	message WrongExpectedVersion {
 	  oneof current_revision_option {
 		  uint64 current_revision = 1;
-		  event_store.client.shared.Empty no_stream = 2;
+		  event_store.client.shared.Empty current_no_stream = 2;
 	  }
 	  oneof expected_revision_option {
 		  uint64 expected_revision = 3;
-		  event_store.client.shared.Empty any = 4;
-		  event_store.client.shared.Empty stream_exists = 5;
+		  event_store.client.shared.Empty expected_any = 4;
+		  event_store.client.shared.Empty expected_stream_exists = 5;
+		  event_store.client.shared.Empty expected_no_stream = 6;
 		}
 	}
 }

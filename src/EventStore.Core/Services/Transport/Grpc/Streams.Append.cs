@@ -135,10 +135,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 						switch (options.ExpectedStreamRevisionCase) {
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any:
-								response.WrongExpectedVersion.Any = new Empty();
+								response.WrongExpectedVersion.ExpectedAny = new Empty();
 								break;
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists:
-								response.WrongExpectedVersion.StreamExists = new Empty();
+								response.WrongExpectedVersion.ExpectedStreamExists = new Empty();
+								break;
+							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream:
+								response.WrongExpectedVersion.ExpectedNoStream = new Empty();
 								break;
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision:
 								response.WrongExpectedVersion.ExpectedRevision =
@@ -147,7 +150,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						}
 
 						if (completed.CurrentVersion == -1) {
-							response.WrongExpectedVersion.NoStream = new Empty();
+							response.WrongExpectedVersion.CurrentNoStream = new Empty();
 						} else {
 							response.WrongExpectedVersion.CurrentRevision =
 								StreamRevision.FromInt64(completed.CurrentVersion);
