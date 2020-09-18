@@ -1,7 +1,9 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Security.Cryptography;
 using EventStore.Common.Utils;
@@ -61,7 +63,8 @@ namespace EventStore.Core.Index {
 		private readonly string _filename;
 		private readonly long _count;
 		private readonly long _size;
-		private readonly Midpoint[] _midpoints;
+		private IntPtr _midpointsPtr = IntPtr.Zero;
+		private int _midpointsCount = 0;
 		private readonly uint _midpointsCached = 0;
 		private readonly long _midpointsCacheSize = 0;
 
@@ -73,9 +76,16 @@ namespace EventStore.Core.Index {
 
 		private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
 		private volatile bool _deleteFile;
+		private bool _disposed;
 
-		internal Midpoint[] GetMidPoints() {
-			return _midpoints;
+		internal ReadOnlySpan<Midpoint> GetMidPoints() {
+			if (_midpointsPtr != IntPtr.Zero) {
+				unsafe {
+					return new ReadOnlySpan<Midpoint>(_midpointsPtr.ToPointer(), _midpointsCount);
+				}
+			}
+
+			return ReadOnlySpan<Midpoint>.Empty;
 		}
 
 		private PTable(string filename,
@@ -204,7 +214,7 @@ namespace EventStore.Core.Index {
 			int calcdepth = 0;
 			try {
 				calcdepth = GetDepth(_count * _indexEntrySize, depth);
-				_midpoints = CacheMidpointsAndVerifyHash(calcdepth, skipIndexVerify);
+				(_midpointsPtr, _midpointsCount) = CacheMidpointsAndVerifyHash(calcdepth, skipIndexVerify);
 			} catch (PossibleToHandleOutOfMemoryException) {
 				Log.Error(
 					"Unable to create midpoints for PTable '{pTable}' ({count} entries, depth {depth} requested). "
@@ -216,13 +226,15 @@ namespace EventStore.Core.Index {
 				_version, Path.GetFileName(Filename), Count, calcdepth, sw.Elapsed);
 		}
 
-		internal Midpoint[] CacheMidpointsAndVerifyHash(int depth, bool skipIndexVerify) {
+		~PTable() => Dispose(false);
+
+		internal (IntPtr, int) CacheMidpointsAndVerifyHash(int depth, bool skipIndexVerify) {
 			var buffer = new byte[4096];
 			if (depth < 0 || depth > 30)
 				throw new ArgumentOutOfRangeException("depth");
 			var count = Count;
 			if (count == 0 || depth == 0)
-				return null;
+				return (IntPtr.Zero, 0);
 
 			if (skipIndexVerify) {
 				Log.Debug("Disabling Verification of PTable");
@@ -240,11 +252,17 @@ namespace EventStore.Core.Index {
 
 			try {
 				int midpointsCount;
-				Midpoint[] midpoints;
+				IntPtr midpointsPtr;
+				Span<Midpoint> midpoints;
+
 				using (MD5 md5 = MD5.Create()) {
 					try {
 						midpointsCount = (int)Math.Max(2L, Math.Min((long)1 << depth, count));
-						midpoints = new Midpoint[midpointsCount];
+						midpointsPtr = Marshal.AllocHGlobal(new IntPtr((long)midpointsCount * Marshal.SizeOf(typeof(Midpoint))));
+
+						unsafe {
+							midpoints = new Span<Midpoint>(midpointsPtr.ToPointer(), midpointsCount);
+						}
 					} catch (OutOfMemoryException exc) {
 						throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.",
 							exc);
@@ -258,7 +276,7 @@ namespace EventStore.Core.Index {
 							long startOffset = stream.Length - MD5Size - PTableFooter.GetSize(_version) -
 											   _midpointsCacheSize;
 							stream.Seek(startOffset, SeekOrigin.Begin);
-							for (uint k = 0; k < _midpointsCached; k++) {
+							for (int k = 0; k < (int)_midpointsCached; k++) {
 								stream.Read(buffer, 0, _indexEntrySize);
 								IndexEntryKey key;
 								long index;
@@ -285,7 +303,7 @@ namespace EventStore.Core.Index {
 								}
 							}
 
-							return midpoints;
+							return (midpointsPtr, midpointsCount);
 						} else
 							Log.Debug(
 								"Skipping loading of cached midpoints from PTable due to count mismatch, cached midpoints: {midpointsCached} / required midpoints: {midpointsCount}",
@@ -300,7 +318,7 @@ namespace EventStore.Core.Index {
 
 					long previousNextIndex = long.MinValue;
 					var previousKey = new IndexEntryKey(long.MaxValue, long.MaxValue);
-					for (long k = 0; k < midpointsCount; ++k) {
+					for (int k = 0; k < midpointsCount; ++k) {
 						long nextIndex = GetMidpointIndex(k, count, midpointsCount);
 						if (previousNextIndex != nextIndex) {
 							if (!skipIndexVerify) {
@@ -354,7 +372,7 @@ namespace EventStore.Core.Index {
 						ValidateHash(md5.Hash, fileHash);
 					}
 
-					return midpoints;
+					return (midpointsPtr, midpointsCount);
 				}
 			} catch {
 				Dispose();
@@ -638,24 +656,30 @@ namespace EventStore.Core.Index {
 			lowKey = new IndexEntryKey(ulong.MaxValue, long.MaxValue);
 			highKey = new IndexEntryKey(ulong.MinValue, long.MinValue);
 
-			var midpoints = _midpoints;
+			ReadOnlySpan<Midpoint> midpoints = null;
+			if (_midpointsPtr != IntPtr.Zero) {
+				unsafe {
+					midpoints = new ReadOnlySpan<Midpoint>(_midpointsPtr.ToPointer(), _midpointsCount);
+				}
+			}
+
 			if (midpoints == null)
 				return new Range(0, Count - 1);
 			long lowerMidpoint = LowerMidpointBound(midpoints, key);
 			long upperMidpoint = UpperMidpointBound(midpoints, key);
 
-			lowKey = midpoints[lowerMidpoint].Key;
-			highKey = midpoints[upperMidpoint].Key;
+			lowKey = midpoints[(int)lowerMidpoint].Key;
+			highKey = midpoints[(int)upperMidpoint].Key;
 
-			return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
+			return new Range(midpoints[(int)lowerMidpoint].ItemIndex, midpoints[(int)upperMidpoint].ItemIndex);
 		}
 
-		private long LowerMidpointBound(Midpoint[] midpoints, IndexEntryKey key) {
+		private long LowerMidpointBound(ReadOnlySpan<Midpoint> midpoints, IndexEntryKey key) {
 			long l = 0;
 			long r = midpoints.Length - 1;
 			while (l < r) {
 				long m = l + (r - l + 1) / 2;
-				if (midpoints[m].Key.GreaterThan(key))
+				if (midpoints[(int)m].Key.GreaterThan(key))
 					l = m;
 				else
 					r = m - 1;
@@ -664,12 +688,12 @@ namespace EventStore.Core.Index {
 			return l;
 		}
 
-		private long UpperMidpointBound(Midpoint[] midpoints, IndexEntryKey key) {
+		private long UpperMidpointBound(ReadOnlySpan<Midpoint> midpoints, IndexEntryKey key) {
 			long l = 0;
 			long r = midpoints.Length - 1;
 			while (l < r) {
 				long m = l + (r - l) / 2;
-				if (midpoints[m].Key.SmallerThan(key))
+				if (midpoints[(int)m].Key.SmallerThan(key))
 					r = m;
 				else
 					l = m + 1;
@@ -723,11 +747,28 @@ namespace EventStore.Core.Index {
 			_workItems.MarkForDisposal();
 		}
 
+		protected virtual void Dispose(bool disposing) {
+			if (_disposed) {
+				return;
+			}
+
+			if (disposing) {
+				//dispose any managed objects here
+			}
+
+			if (_midpointsPtr != IntPtr.Zero) {
+				Marshal.FreeHGlobal(_midpointsPtr);
+			}
+
+			_disposed = true;
+		}
+
 		private void OnAllWorkItemsDisposed() {
 			File.SetAttributes(_filename, FileAttributes.Normal);
 			if (_deleteFile)
 				File.Delete(_filename);
 			_destroyEvent.Set();
+			Dispose(true);
 		}
 
 		public void WaitForDisposal(int timeout) {
