@@ -33,6 +33,7 @@ All notable changes to this project will be documented in this file.
 - Error on TCP operations after default user fails authentication [EventStore#2638](https://github.com/EventStore/EventStore/pull/2638)
 - wrong calculation of checkpoint interval for filtered subscriptions [EventStore#2608](https://github.com/EventStore/EventStore/pull/2608)
 - Prevent gRPC errors when subscriptions are disposed [EventStore#2647](https://github.com/EventStore/EventStore/pull/2647)
+- Do not do an exact check on certificate subject to match the Common Name [EventStore#2681](https://github.com/EventStore/EventStore/pull/2681)
 
 ### Added
 - Option to set client certificate common name [EventStore#2572](https://github.com/EventStore/EventStore/pull/2572)
