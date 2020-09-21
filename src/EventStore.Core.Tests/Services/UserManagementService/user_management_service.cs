@@ -44,6 +44,8 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 				_bus.Subscribe<UserManagementMessage.ChangePassword>(_users);
 				_bus.Subscribe<UserManagementMessage.Delete>(_users);
 				_bus.Subscribe<SystemMessage.BecomeLeader>(_users);
+				_bus.Subscribe<SystemMessage.BecomeFollower>(_users);
+				_bus.Subscribe<SystemMessage.BecomeReadOnlyReplica>(_users);
 			}
 
 			protected override ManualQueue GiveInputQueue() {

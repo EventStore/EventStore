@@ -44,7 +44,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			subscriber.Subscribe<UserManagementMessage.GetAll>(userManagement);
 			subscriber.Subscribe<SystemMessage.BecomeLeader>(userManagement);
 			subscriber.Subscribe<SystemMessage.BecomeFollower>(userManagement);
-
+			subscriber.Subscribe<SystemMessage.BecomeReadOnlyReplica>(userManagement);
 		}
 
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
