@@ -205,7 +205,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
 				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(1)));
 		}
@@ -227,7 +227,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
 				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -281,7 +281,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
 				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -303,7 +303,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipInterval)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
 				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
