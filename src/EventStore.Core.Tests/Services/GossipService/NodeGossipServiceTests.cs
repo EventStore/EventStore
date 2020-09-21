@@ -205,7 +205,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout),
+					_timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(1)));
 		}
@@ -227,7 +228,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout),
+					_timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -281,7 +283,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout),
+					_timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(GossipServiceBase.GossipStartupInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -303,7 +306,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 						MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeTwo, _timeProvider.UtcNow),
 						InitialStateForVNode(_nodeThree, _timeProvider.UtcNow)),
-					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout)),
+					_currentNode.HttpEndPoint), _timeProvider.LocalTime.Add(_gossipTimeout),
+					_timeProvider.LocalTime.Add(_gossipInterval)),
 				TimerMessage.Schedule.Create(_gossipInterval, new PublishEnvelope(_bus),
 					new GossipMessage.Gossip(++_gossipRound)));
 		}
@@ -605,7 +609,8 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_issue_get_gossip() {
 			ExpectMessages(
 				new GrpcMessage.SendOverGrpc(_currentNode.HttpEndPoint, new GossipMessage.GetGossip(),
-					_timeProvider.LocalTime.Add(_gossipTimeout)));
+					_timeProvider.LocalTime.Add(_gossipTimeout),
+					_timeProvider.LocalTime.Add(_gossipInterval)));
 		}
 	}
 
