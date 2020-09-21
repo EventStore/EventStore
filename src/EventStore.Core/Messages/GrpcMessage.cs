@@ -13,12 +13,12 @@ namespace EventStore.Core.Messages {
 
 			public readonly EndPoint DestinationEndpoint;
 			public readonly Message Message;
-			public readonly DateTime LiveUntil;
+			public readonly DateTime Deadline;
 
-			public SendOverGrpc(EndPoint destinationEndpoint, Message message, DateTime liveUntil) {
+			public SendOverGrpc(EndPoint destinationEndpoint, Message message, DateTime deadline) {
 				DestinationEndpoint = destinationEndpoint;
 				Message = message;
-				LiveUntil = liveUntil;
+				Deadline = deadline;
 			}
 		}
 	}
