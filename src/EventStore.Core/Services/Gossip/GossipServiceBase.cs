@@ -133,7 +133,7 @@ namespace EventStore.Core.Services.Gossip {
 					_timeProvider, DeadMemberRemovalPeriod);
 				_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
 					new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint),
-					_timeProvider.LocalTime.Add(GossipInterval)));
+					_timeProvider.LocalTime.Add(GossipTimeout)));
 			}
 
 			var interval = message.GossipRound < GossipRoundStartupThreshold ? GossipStartupInterval : GossipInterval;
