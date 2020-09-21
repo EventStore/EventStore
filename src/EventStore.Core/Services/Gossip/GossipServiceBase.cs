@@ -133,7 +133,8 @@ namespace EventStore.Core.Services.Gossip {
 					_timeProvider, DeadMemberRemovalPeriod);
 				_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
 					new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint),
-					_timeProvider.LocalTime.Add(GossipTimeout)));
+					_timeProvider.LocalTime.Add(GossipTimeout),
+					_timeProvider.LocalTime.Add(GossipInterval)));
 			}
 
 			var interval = message.GossipRound < GossipRoundStartupThreshold ? GossipStartupInterval : GossipInterval;
@@ -234,7 +235,9 @@ namespace EventStore.Core.Services.Gossip {
 			Log.Information("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
 				message.VNodeEndPoint);
 			_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
-				new GossipMessage.GetGossip(), _timeProvider.LocalTime.Add(GossipTimeout)));
+				new GossipMessage.GetGossip(),
+				_timeProvider.LocalTime.Add(GossipTimeout),
+				_timeProvider.LocalTime.Add(GossipInterval)));
 		}
 
 		public void Handle(GossipMessage.GetGossipReceived message) {

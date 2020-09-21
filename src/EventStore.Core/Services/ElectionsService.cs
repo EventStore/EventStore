@@ -185,7 +185,8 @@ namespace EventStore.Core.Services {
 
 			_resigningLeaderInstanceId = message.LeaderId;
 			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.LeaderHttpEndPoint, leaderIsResigningMessageOk,
-				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout)));
+				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
+				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
 		public void Handle(ElectionMessage.LeaderIsResigningOk message) {
@@ -256,7 +257,8 @@ namespace EventStore.Core.Services {
 		private void SendToAllExceptMe(Message message) {
 			foreach (var server in _servers.Where(x => x.InstanceId != _memberInfo.InstanceId)) {
 				_publisher.Publish(new GrpcMessage.SendOverGrpc(server.HttpEndPoint, message,
-					_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout)));
+					_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 			}
 		}
 
@@ -349,7 +351,8 @@ namespace EventStore.Core.Services {
 
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.ServerHttpEndPoint, prepareOk,
-				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout)));
+				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
+				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {

@@ -2,12 +2,14 @@ using System;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
+using Serilog;
 
 namespace EventStore.Core.Services {
 	public class GrpcSendService :
 		IHandle<GrpcMessage.SendOverGrpc> {
 
 		private readonly EventStoreClusterClientCache _eventStoreClientCache;
+		private static readonly ILogger Log = Serilog.Log.ForContext<GrpcSendService>();
 
 		public GrpcSendService(EventStoreClusterClientCache eventStoreClientCache) {
 			_eventStoreClientCache =
@@ -15,6 +17,12 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(GrpcMessage.SendOverGrpc message) {
+			if (message.LiveUntil < DateTime.Now) {
+				Log.Verbose("Dropping gRPC send message due to TTL being over. {messageType} To : {endPoint}",
+					message.Message.GetType().Name, message.DestinationEndpoint);
+				return;
+			}
+
 			switch (message.Message) {
 				case GossipMessage.SendGossip sendGossip:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
