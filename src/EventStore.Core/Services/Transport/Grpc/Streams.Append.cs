@@ -6,6 +6,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
+using Google.Protobuf;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -136,23 +137,31 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						switch (options.ExpectedStreamRevisionCase) {
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any:
 								response.WrongExpectedVersion.ExpectedAny = new Empty();
+								response.WrongExpectedVersion.Any2060 = new Empty();
 								break;
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists:
 								response.WrongExpectedVersion.ExpectedStreamExists = new Empty();
+								response.WrongExpectedVersion.StreamExists2060 = new Empty();
 								break;
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream:
 								response.WrongExpectedVersion.ExpectedNoStream = new Empty();
+								response.WrongExpectedVersion.ExpectedRevision2060 = ulong.MaxValue;
 								break;
 							case AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision:
 								response.WrongExpectedVersion.ExpectedRevision =
+									StreamRevision.FromInt64(expectedVersion);
+								response.WrongExpectedVersion.ExpectedRevision2060 =
 									StreamRevision.FromInt64(expectedVersion);
 								break;
 						}
 
 						if (completed.CurrentVersion == -1) {
 							response.WrongExpectedVersion.CurrentNoStream = new Empty();
+							response.WrongExpectedVersion.NoStream2060 = new Empty();
 						} else {
 							response.WrongExpectedVersion.CurrentRevision =
+								StreamRevision.FromInt64(completed.CurrentVersion);
+							response.WrongExpectedVersion.CurrentRevision2060 =
 								StreamRevision.FromInt64(completed.CurrentVersion);
 						}
 
