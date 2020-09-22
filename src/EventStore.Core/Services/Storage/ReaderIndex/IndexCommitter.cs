@@ -119,6 +119,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							(result.RecordPostPosition - startPosition) * 100.0 / (buildToPosition - startPosition));
 						lastTime = DateTime.UtcNow;
 					}
+
+					if (processed % 1000000 == 0) {
+						if (_tableIndex.IsBackgroundTaskRunning) {
+							Log.Debug("Pausing ReadIndex Rebuild due to ongoing index merges.");
+							while (_tableIndex.IsBackgroundTaskRunning) {
+								Thread.Sleep(1000);
+							}
+							Log.Debug("Resuming ReadIndex Rebuild.");
+						}
+					}
 				}
 
 				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
