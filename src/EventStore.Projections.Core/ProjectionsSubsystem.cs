@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Options;
 using EventStore.Core;
@@ -47,6 +48,7 @@ namespace EventStore.Projections.Core {
 		private IDictionary<Guid, IQueuedHandler> _coreQueues;
 		private Dictionary<Guid, IPublisher> _queueMap;
 		private bool _subsystemStarted;
+		private int _subsystemInitialized;
 
 		private readonly bool _faultOutOfOrderProjections;
 		
@@ -87,6 +89,7 @@ namespace EventStore.Projections.Core {
 			_projectionsQueryExpiry = projectionQueryExpiry;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
 			_leaderMainBus = new InMemoryBus("manager input bus");
+			_subsystemInitialized = 0;
 		}
 
 		public void Register(StandardComponents standardComponents) {
@@ -130,8 +133,13 @@ namespace EventStore.Projections.Core {
 		public void Handle(SystemMessage.SystemCoreReady message) {
 			if (_subsystemState != SubsystemState.NotReady) return;
 			_subsystemState = SubsystemState.Ready;
-			if (_nodeState == VNodeState.Leader)
+			if (_nodeState == VNodeState.Leader) {
 				StartComponents();
+				return;
+			}
+			if (_nodeState == VNodeState.Follower || _nodeState == VNodeState.ReadOnlyReplica) {
+				PublishInitialized();
+			}
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -140,9 +148,13 @@ namespace EventStore.Projections.Core {
 			
 			if (_nodeState == VNodeState.Leader) {
 				StartComponents();
-			} else {
-				StopComponents();
+				return;
 			}
+
+			if (_nodeState == VNodeState.Follower || _nodeState == VNodeState.ReadOnlyReplica) {
+				PublishInitialized();
+			}
+			StopComponents();
 		}
 
 		private void StartComponents() {
@@ -236,7 +248,8 @@ namespace EventStore.Projections.Core {
 				_instanceCorrelationId);
 			_subsystemState = SubsystemState.Started;
 			_runningDispatchers = _dispatcherCount;
-			_leaderOutputBus.Publish(new SystemMessage.SubSystemInitialized("Projections"));
+
+			PublishInitialized();
 
 			if (_nodeState != VNodeState.Leader) {
 				_logger.Information("PROJECTIONS SUBSYSTEM: Node state is no longer Leader. Stopping projections. Current node state: {nodeState}",
@@ -285,6 +298,12 @@ namespace EventStore.Projections.Core {
 			if (_nodeState == VNodeState.Leader) {
 				_logger.Information("PROJECTIONS SUBSYSTEM: Node state has changed to Leader. Starting projections.");
 				StartComponents();
+			}
+		}
+
+		private void PublishInitialized() {
+			if (Interlocked.CompareExchange(ref _subsystemInitialized, 1, 0) == 0) {
+				_leaderOutputBus.Publish(new SystemMessage.SubSystemInitialized("Projections"));
 			}
 		}
 

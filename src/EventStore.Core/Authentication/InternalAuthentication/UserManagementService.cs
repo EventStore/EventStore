@@ -23,7 +23,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		IHandle<UserManagementMessage.ChangePassword>,
 		IHandle<UserManagementMessage.Delete>,
 		IHandle<SystemMessage.BecomeLeader>,
-		IHandle<SystemMessage.BecomeFollower> {
+		IHandle<SystemMessage.BecomeFollower>,
+		IHandle<SystemMessage.BecomeReadOnlyReplica> {
 		public const string UserUpdated = "$UserUpdated";
 		public const string PasswordChanged = "$PasswordChanged";
 		public const string UserPasswordNotificationsStreamId = "$users-password-notifications";
@@ -209,6 +210,10 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		public void Handle(SystemMessage.BecomeFollower message) {
+			_tcs.TrySetResult(true);
+		}
+
+		public void Handle(SystemMessage.BecomeReadOnlyReplica message) {
 			_tcs.TrySetResult(true);
 		}
 

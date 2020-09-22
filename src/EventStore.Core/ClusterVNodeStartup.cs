@@ -153,9 +153,9 @@ namespace EventStore.Core {
 						.Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
 
-		public void Handle(SystemMessage.SystemReady message) => _ready = true;
+		public void Handle(SystemMessage.SystemReady _) => _ready = true;
 
-		public void Handle(SystemMessage.BecomeShuttingDown message) => _ready = false;
+		public void Handle(SystemMessage.BecomeShuttingDown _) => _ready = false;
 
 		private class StatusCheck {
 			private readonly ClusterVNodeStartup _startup;
