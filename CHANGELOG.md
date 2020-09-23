@@ -52,6 +52,9 @@ All notable changes to this project will be documented in this file.
 - Terraform templates for generating a certificate authority and node certificates as we have an Event Store Certificate generation tool available. [EventStore#2653](https://github.com/EventStore/EventStore/pull/2653)
 - Development mode [EventStore#2648](https://github.com/EventStore/EventStore/pull/2648)
 
+### I encountered an issue where clients would connect to read only replicas which had not yet caught up. This PR will prevent the endpoint discovered from prioritizing such nodes, and [match behavior](https
+- //github.com/EventStore/EventStore-Client-Dotnet/blob/dc6d7dc3941a3c614a5b33aa619eb9306698dc48/src/EventStore.Client/GossipBasedEndpointDiscoverer.cs#L197) with the gRPC client [EventStore#2674](https://github.com/EventStore/EventStore/pull/2674)
+
 ## [20.6.0] - 2020-06-09
 
 ### Changed
