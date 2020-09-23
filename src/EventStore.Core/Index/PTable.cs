@@ -374,6 +374,8 @@ namespace EventStore.Core.Index {
 
 					return (midpointsPtr, midpointsCount);
 				}
+			} catch (PossibleToHandleOutOfMemoryException) {
+				throw;
 			} catch {
 				Dispose();
 				throw;
