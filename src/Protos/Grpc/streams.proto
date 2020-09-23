@@ -166,15 +166,26 @@ message AppendResp {
 	}
 
 	message WrongExpectedVersion {
-	  oneof current_revision_option {
-		  uint64 current_revision = 1;
-		  event_store.client.shared.Empty no_stream = 2;
-	  }
-	  oneof expected_revision_option {
-		  uint64 expected_revision = 3;
-		  event_store.client.shared.Empty any = 4;
-		  event_store.client.shared.Empty stream_exists = 5;
+		oneof current_revision_option_20_6_0 {
+			uint64 current_revision_20_6_0 = 1;
+			event_store.client.shared.Empty no_stream_20_6_0 = 2;
 		}
+		oneof expected_revision_option_20_6_0 {
+			uint64 expected_revision_20_6_0 = 3;
+			event_store.client.shared.Empty any_20_6_0 = 4;
+			event_store.client.shared.Empty stream_exists_20_6_0 = 5;
+		}
+		oneof current_revision_option {
+			uint64 current_revision = 6;
+			event_store.client.shared.Empty current_no_stream = 7;
+		}
+		oneof expected_revision_option {
+			uint64 expected_revision = 8;
+			event_store.client.shared.Empty expected_any = 9;
+			event_store.client.shared.Empty expected_stream_exists = 10;
+			event_store.client.shared.Empty expected_no_stream = 11;
+		}
+
 	}
 }
 
