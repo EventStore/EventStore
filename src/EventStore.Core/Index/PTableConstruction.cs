@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Index {
 	public unsafe partial class PTable {
@@ -15,6 +16,8 @@ namespace EventStore.Core.Index {
 			bool skipIndexVerify) {
 			return new PTable(filename, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify);
 		}
+
+		private const int MidpointsOverflowSafetyNet = 20;
 
 		public static PTable FromMemtable(IMemTable table, string filename, int initialReaders, int maxReaders,
 			int cacheDepth = 16,
@@ -43,8 +46,8 @@ namespace EventStore.Core.Index {
 					// WRITE INDEX ENTRIES
 					var buffer = new byte[indexEntrySize];
 					var records = table.IterateAllInOrder();
-					List<Midpoint> midpoints = new List<Midpoint>();
 					var requiredMidpointCount = GetRequiredMidpointCountCached(table.Count, table.Version, cacheDepth);
+					using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
 
 					long indexEntry = 0L;
 					foreach (var rec in records) {
@@ -66,7 +69,7 @@ namespace EventStore.Core.Index {
 							numIndexEntries = dumpedEntryCount;
 							requiredMidpointCount =
 								GetRequiredMidpointCount(numIndexEntries, table.Version, cacheDepth);
-							midpoints = ComputeMidpoints(bs, fs, table.Version, indexEntrySize, numIndexEntries,
+							ComputeMidpoints(bs, fs, table.Version, indexEntrySize, numIndexEntries,
 								requiredMidpointCount, midpoints);
 						}
 
@@ -137,9 +140,10 @@ namespace EventStore.Core.Index {
 
 						var buffer = new byte[indexEntrySize];
 						long indexEntry = 0L;
-						List<Midpoint> midpoints = new List<Midpoint>();
 						var requiredMidpointCount =
 							GetRequiredMidpointCountCached(numIndexEntries, version, cacheDepth);
+						using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
+
 						// WRITE INDEX ENTRIES
 						while (enumerators.Count > 0) {
 							var idx = GetMaxOf(enumerators);
@@ -166,7 +170,7 @@ namespace EventStore.Core.Index {
 								//if index entries have been removed, compute the midpoints again
 								numIndexEntries = dumpedEntryCount;
 								requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
-								midpoints = ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries,
+								ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries,
 									requiredMidpointCount, midpoints);
 							}
 
@@ -243,9 +247,10 @@ namespace EventStore.Core.Index {
 						// WRITE INDEX ENTRIES
 						var buffer = new byte[indexEntrySize];
 						long indexEntry = 0L;
-						List<Midpoint> midpoints = new List<Midpoint>();
 						var requiredMidpointCount =
 							GetRequiredMidpointCountCached(numIndexEntries, version, cacheDepth);
+						using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
+
 						var enum1 = enumerators[0];
 						var enum2 = enumerators[1];
 						bool available1 = enum1.MoveNext();
@@ -282,7 +287,7 @@ namespace EventStore.Core.Index {
 								//if index entries have been removed, compute the midpoints again
 								numIndexEntries = dumpedEntryCount;
 								requiredMidpointCount = GetRequiredMidpointCount(numIndexEntries, version, cacheDepth);
-								midpoints = ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries,
+								ComputeMidpoints(bs, f, version, indexEntrySize, numIndexEntries,
 									requiredMidpointCount, midpoints);
 							}
 
@@ -388,8 +393,11 @@ namespace EventStore.Core.Index {
 						//CALCULATE AND WRITE MIDPOINTS
 						if (version >= PTableVersions.IndexV4) {
 							var requiredMidpointCount = GetRequiredMidpointCount(keptCount, version, cacheDepth);
-							var midpoints = ComputeMidpoints(bs, f, version, indexEntrySize, keptCount,
-								requiredMidpointCount, new List<Midpoint>(), ct);
+							using var midpoints =
+								new UnmanagedMemoryAppendOnlyList<Midpoint>(
+									(int)requiredMidpointCount + MidpointsOverflowSafetyNet);
+							ComputeMidpoints(bs, f, version, indexEntrySize, keptCount,
+								requiredMidpointCount, midpoints, ct);
 							WriteMidpointsTo(bs, f, version, indexEntrySize, buffer, keptCount, keptCount,
 								requiredMidpointCount, midpoints);
 						}
@@ -454,8 +462,8 @@ namespace EventStore.Core.Index {
 			stream.Write(buffer, 0, indexEntrySize);
 		}
 
-		private static List<Midpoint> ComputeMidpoints(BufferedStream bs, FileStream fs, byte version,
-			int indexEntrySize, long numIndexEntries, long requiredMidpointCount, List<Midpoint> midpoints,
+		private static void ComputeMidpoints(BufferedStream bs, FileStream fs, byte version,
+			int indexEntrySize, long numIndexEntries, long requiredMidpointCount, UnmanagedMemoryAppendOnlyList<Midpoint> midpoints,
 			CancellationToken ct = default(CancellationToken)) {
 			int indexKeySize;
 			if (version == PTableVersions.IndexV4)
@@ -490,12 +498,11 @@ namespace EventStore.Core.Index {
 			}
 
 			fs.Seek(previousFileStreamPosition, SeekOrigin.Begin);
-			return midpoints;
 		}
 
 		private static void WriteMidpointsTo(BufferedStream bs, FileStream fs, byte version, int indexEntrySize,
 			byte[] buffer, long dumpedEntryCount, long numIndexEntries, long requiredMidpointCount,
-			List<Midpoint> midpoints) {
+			UnmanagedMemoryAppendOnlyList<Midpoint> midpoints) {
 			//WRITE MIDPOINT ENTRIES
 
 			//special case, when there is a single index entry, we need two midpoints
@@ -509,8 +516,8 @@ namespace EventStore.Core.Index {
 				bs.Flush();
 				long fileSizeUpToMidpointEntries = GetFileSizeUpToMidpointEntries(fs.Position, midpoints.Count, version);
 				fs.SetLength(fileSizeUpToMidpointEntries);
-				foreach (var pt in midpoints) {
-					AppendMidpointRecordTo(bs, buffer, version, pt, indexEntrySize);
+				for (var i = 0; i < midpoints.Count; i++) {
+					AppendMidpointRecordTo(bs, buffer, version, midpoints[i], indexEntrySize);
 				}
 
 				midpointsWritten = midpoints.Count;
