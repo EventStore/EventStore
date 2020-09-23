@@ -40,6 +40,7 @@ namespace EventStore.Core.Services {
 		IHandle<ElectionMessage.LeaderIsResigning>,
 		IHandle<ElectionMessage.LeaderIsResigningOk> {
 		public static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
+		public static readonly TimeSpan LeaderElectionGrpcRequestTimeout = TimeSpan.FromMilliseconds(2000);
 		public static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<ElectionsService>();
@@ -184,6 +185,7 @@ namespace EventStore.Core.Services {
 
 			_resigningLeaderInstanceId = message.LeaderId;
 			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.LeaderHttpEndPoint, leaderIsResigningMessageOk,
+				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
 				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
@@ -255,6 +257,7 @@ namespace EventStore.Core.Services {
 		private void SendToAllExceptMe(Message message) {
 			foreach (var server in _servers.Where(x => x.InstanceId != _memberInfo.InstanceId)) {
 				_publisher.Publish(new GrpcMessage.SendOverGrpc(server.HttpEndPoint, message,
+					_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
 					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 			}
 		}
@@ -348,6 +351,7 @@ namespace EventStore.Core.Services {
 
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.ServerHttpEndPoint, prepareOk,
+				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
 				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
 		}
 
