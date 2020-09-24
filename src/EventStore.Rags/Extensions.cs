@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,7 +10,8 @@ namespace EventStore.Rags {
 	/// Provides some reflection helpers in the form of extension methods for the MemberInfo type.
 	/// </summary>
 	public static class MemberInfoEx {
-		static readonly Dictionary<string, object> cachedAttributes = new Dictionary<string, object>();
+		private static readonly ConcurrentDictionary<string, object> cachedAttributes =
+			new ConcurrentDictionary<string, object>();
 
 		/// <summary>
 		/// Returns true if the given member has an attribute of the given type (including inherited types).
@@ -53,9 +55,8 @@ namespace EventStore.Rags {
 			string cacheKey = (info is Type ? ((Type)info).FullName : info.DeclaringType.FullName + "." + info.Name) +
 			                  "<" + typeof(T).FullName + ">";
 
-			if (cachedAttributes.ContainsKey(cacheKey)) {
-				var cachedValue = cachedAttributes[cacheKey] as List<T>;
-				if (cachedValue != null) return cachedValue;
+			if (cachedAttributes.TryGetValue(cacheKey, out var value) && value is List<T> cachedValue) {
+				return cachedValue;
 			}
 
 			var freshValue = (from attr in info.GetCustomAttributes(true)
@@ -64,11 +65,7 @@ namespace EventStore.Rags {
 				      attr.GetType().GetInterfaces().Contains(typeof(T))
 				select (T)attr).ToList();
 
-			if (cachedAttributes.ContainsKey(cacheKey)) {
-				cachedAttributes[cacheKey] = freshValue;
-			} else {
-				cachedAttributes.Add(cacheKey, freshValue);
-			}
+			cachedAttributes.AddOrUpdate(cacheKey, _ => freshValue, (_, __) => freshValue);
 
 			return freshValue;
 		}
