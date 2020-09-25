@@ -107,13 +107,13 @@ namespace EventStore.Core {
 			app.Map("/health", _statusCheck.Configure)
 				.UseMiddleware<AuthenticationMiddleware>()
 				.UseRouting()
+				.UseEndpoints(ep => _authenticationProvider.ConfigureEndpoints(ep))
 				.UseWhen(ctx => !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
 					b => b
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
 						.UseMiddleware<AuthorizationMiddleware>()
 						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
 				)
-				.UseEndpoints(ep => _authenticationProvider.ConfigureEndpoints(ep))
 				.UseEndpoints(ep => ep.MapGrpcService<PersistentSubscriptions>())
 				.UseEndpoints(ep => ep.MapGrpcService<Users>())
 				.UseEndpoints(ep => ep.MapGrpcService<Streams>())
