@@ -36,13 +36,12 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_tablename = GetTempFilePath();
 			_mergeFile = GetFilePathFor("mergefile");
 
-			_map = IndexMapTestFactory.FromFile(_filename);
+			_map = IndexMapTestFactory.FromFile(_filename, maxAutoMergeLevel: _maxAutoMergeIndexLevel);
 			var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memtable.Add(0, 1, 0);
 			var table = PTable.FromMemtable(memtable, _tablename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
-			_result = _map.AddPTable(table, 7, 11, (streamId, hash) => hash, _ => true,
-				_ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion,
-				_maxAutoMergeIndexLevel, 0, skipIndexVerify: _skipIndexVerify);
+			_result = _map.AddAndMergePTable(table, 7, 11, (streamId, hash) => hash, _ => true,
+				_ => new System.Tuple<string, bool>("", true), new FakeFilenameProvider(_mergeFile), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			table.MarkForDestruction();
 		}
 

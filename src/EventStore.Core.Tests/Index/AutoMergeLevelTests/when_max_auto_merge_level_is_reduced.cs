@@ -17,12 +17,9 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 			_result.MergedMap.Dispose(TimeSpan.FromMilliseconds(100));
 			_map.Dispose(TimeSpan.FromMilliseconds(100));
 			_map = IndexMapTestFactory.FromFile(filename, maxAutoMergeLevel: 3);
-			var (level, table) = _map.GetTableForManualMerge();
-			Assert.Greater(level, _maxAutoMergeLevel);
-			_result = _map.AddPTable(table, _result.MergedMap.PrepareCheckpoint, _result.MergedMap.CommitCheckpoint,
+			_result = _map.TryManualMerge(
 				UpgradeHash, ExistsAt,
 				RecordExistsAt, _fileNameProvider, _ptableVersion,
-				level: level,
 				skipIndexVerify: _skipIndexVerify);
 			Assert.AreEqual(2, _result.MergedMap.InOrder().Count());
 		}

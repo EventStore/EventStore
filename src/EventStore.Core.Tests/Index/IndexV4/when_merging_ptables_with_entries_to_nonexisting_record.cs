@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 
 		[Test]
 		public void the_correct_midpoints_are_cached() {
-			PTable.Midpoint[] midpoints = _newtable.GetMidPoints();
+			var midpoints = _newtable.GetMidPoints();
 			var requiredMidpoints = PTable.GetRequiredMidpointCountCached(_newtable.Count, _ptableVersion);
 
 			Assert.AreEqual(requiredMidpoints, midpoints.Length);

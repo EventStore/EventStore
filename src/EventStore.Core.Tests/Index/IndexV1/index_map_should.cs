@@ -19,7 +19,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		private IndexMap _emptyIndexMap;
 		private PTable _ptable;
 		protected byte _ptableVersion = PTableVersions.IndexV1;
-		private int _maxAutoMergeIndexLevel = 4;
 
 		public index_map_should(byte version) {
 			_ptableVersion = version;
@@ -47,16 +46,12 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 		[Test]
 		public void not_allow_negative_prepare_checkpoint_when_adding_ptable() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, -1, 0,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true),
-				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0));
+			Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, -1, 0));
 		}
 
 		[Test]
 		public void not_allow_negative_commit_checkpoint_when_adding_ptable() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, 0, -1,
-				(streamId, hash) => hash, _ => true, _ => new System.Tuple<string, bool>("", true),
-				new GuidFilenameProvider(PathName), _ptableVersion, _maxAutoMergeIndexLevel, 0));
+			Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, 0, -1));
 		}
 
 		[Test]
