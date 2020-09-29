@@ -26,20 +26,11 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			_indexDir = PathName;
 
 			var fakeReader = new TFReaderLease(new FakeIndexReader());
-			int readerCount = 0;
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
 			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
-				() => {
-					readerCount++;
-					if (readerCount < 4) // One for each table add.
-					{
-						return fakeReader;
-					}
-
-					throw new Exception("Expected exception");
-				},
+				() => throw new Exception("Expected exception") /* throw an exception when the first PTable scavenge starts and tries to acquire a reader */,
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
