@@ -447,7 +447,7 @@ namespace EventStore.Core.Index {
 
 			var tables = CopyFrom(_map);
 
-			if (tables.Count < _maxTableLevelsForAutomaticMerge) {
+			if (tables.Count <= _maxTableLevelsForAutomaticMerge) {
 				return new MergeResult(this, new List<PTable>(), false, false);
 			}
 
