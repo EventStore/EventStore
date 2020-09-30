@@ -17,7 +17,7 @@ Documentation for EventStoreDB can be found here: [EventStoreDB Docs](https://ev
 ## Community
 We have a community discussion space at [Event Store Discuss](https://discuss.eventstore.com/). If you prefer Slack, there is also an #eventstore channel in the [DDD-CQRS-ES](https://j.mp/ddd-es-cqrs) Slack community.
 
-## Release Packages
+## Released Packages
 The latest release packages are hosted in the downloads section on the Event Store website: [Event Store Downloads](https://eventstore.com/downloads/)
 
 We also host native packages for Linux on [Package Cloud](https://packagecloud.io/EventStore/EventStore-OSS) and Windows packages can be installed via [Chocolatey](https://chocolatey.org/packages/eventstore-oss) (4.0.0 onwards only).
@@ -83,7 +83,7 @@ The list of precompiled projections libraries can be found in `src/libs/x64`. If
 - [Linux](scripts/build-js1/build-js1-linux/README.md)
 - [macOS](scripts/build-js1/build-js1-mac/build-js1-mac.sh)
 
-## Contributing
+## Contributing...
 
 Development is done on the `master` branch.
 We attempt to do our best to ensure that the history remains clean and to do so, we generally ask contributors to squash their commits into a set or single logical commit.
