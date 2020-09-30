@@ -114,6 +114,24 @@ namespace EventStore.Core.Tests.DataStructures {
 				unused = _list[_maxCapacity + 1];
 			});
 		}
+
+		[Test]
+		public void be_passed_by_reference() {
+			Assert.AreEqual(0, _list.Count);
+			Add(_list, 5);
+			Assert.AreEqual(1, _list.Count);
+			Assert.AreEqual(5, _list[0]);
+			Clear(_list);
+			Assert.AreEqual(0, _list.Count);
+		}
+
+		private static void Add(IAppendOnlyList<int> list, int value) {
+			list.Add(value);
+		}
+
+		private static void Clear(IAppendOnlyList<int> list) {
+			list.Clear();
+		}
 	}
 
 	public class unmanaged_memory_append_only_list_with_non_positive_capacity_should {
