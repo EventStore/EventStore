@@ -1,6 +1,9 @@
 using System;
 
 namespace EventStore.Core.Services.Transport.Grpc {
+	/// <summary>
+	/// This reorders the bits in System.Guid to improve interop with other languages.
+	/// </summary>
 	public struct Uuid : IEquatable<Uuid> {
 		public static readonly Uuid Empty = new Uuid(Guid.Empty);
 
