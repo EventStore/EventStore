@@ -8,7 +8,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client;
 using Serilog;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
@@ -28,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly TaskCompletionSource<bool> _subscriptionStarted;
 			private readonly StreamRevision _startRevision;
 			private IStreamEnumerator _inner;
-			private StreamRevision _currentStreamRevision;
+			private StreamRevision? _currentStreamRevision;
 
 			public ResolvedEvent Current => _inner.Current;
 			public Task Started => _subscriptionStarted.Task;
@@ -68,7 +67,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_startRevision = startRevision == StreamRevision.End
 					? StreamRevision.FromInt64(readIndex.GetStreamLastEventNumber(_streamName) + 1)
 					: startRevision + 1 ?? StreamRevision.Start;
-				_currentStreamRevision = _startRevision;
+				_currentStreamRevision = null;
 
 				_inner = startRevision == StreamRevision.End
 					? (IStreamEnumerator)new LiveStreamSubscription(_subscriptionId, _bus, _streamName,
@@ -84,7 +83,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (await _inner.MoveNextAsync().ConfigureAwait(false)) {
 					if (_inner.CurrentStreamRevision >= _startRevision &&
 					    (_currentStreamRevision < _inner.CurrentStreamRevision ||
-					     _currentStreamRevision == StreamRevision.Start)) {
+					     !_currentStreamRevision.HasValue)) {
 						_currentStreamRevision = _inner.CurrentStreamRevision;
 						return true;
 					}
@@ -97,18 +96,23 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				await _inner.DisposeAsync().ConfigureAwait(false);
-				_currentStreamRevision = _inner.CurrentStreamRevision;
+
+				if (_currentStreamRevision.HasValue) {
+					_currentStreamRevision = _inner.CurrentStreamRevision;
+				}
+
 				Log.Verbose(
 					"Subscription {subscriptionId} to {streamName} reached the end at {streamRevision}, switching...",
 					_subscriptionId, _streamName, _currentStreamRevision);
 
 				if (_inner is LiveStreamSubscription)
 					_inner = new CatchupStreamSubscription(_subscriptionId, _bus, _streamName,
-						_currentStreamRevision, _resolveLinks, _user, _requiresLeader, _readIndex, _subscriptionStarted,
-						_cancellationToken);
+						_currentStreamRevision ?? _startRevision, _resolveLinks, _user, _requiresLeader, _readIndex,
+						_subscriptionStarted, _cancellationToken);
 				else
-					_inner = new LiveStreamSubscription(_subscriptionId, _bus, _streamName, _currentStreamRevision,
-						_resolveLinks, _user, _requiresLeader, _subscriptionStarted, _cancellationToken);
+					_inner = new LiveStreamSubscription(_subscriptionId, _bus, _streamName,
+						_currentStreamRevision ?? _startRevision, _resolveLinks, _user, _requiresLeader,
+						_subscriptionStarted, _cancellationToken);
 
 				goto ReadLoop;
 			}
