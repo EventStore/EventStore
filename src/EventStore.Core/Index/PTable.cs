@@ -771,6 +771,7 @@ namespace EventStore.Core.Index {
 				File.Delete(_filename);
 			_destroyEvent.Set();
 			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 
 		public void WaitForDisposal(int timeout) {
