@@ -55,6 +55,14 @@ namespace EventStore.Core.DataStructures {
 		}
 
 		public int Count => _count;
+		public ReadOnlySpan<T> AsSpan() {
+			if (_dataPtr == IntPtr.Zero)
+				return ReadOnlySpan<T>.Empty;
+
+			unsafe {
+				return new ReadOnlySpan<T>(_dataPtr.ToPointer(), _maxCapacity).Slice(0, _count);
+			}
+		}
 
 		public T this[int index] {
 			get {

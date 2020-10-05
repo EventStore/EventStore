@@ -63,8 +63,7 @@ namespace EventStore.Core.Index {
 		private readonly string _filename;
 		private readonly long _count;
 		private readonly long _size;
-		private IntPtr _midpointsPtr = IntPtr.Zero;
-		private int _midpointsCount = 0;
+		private UnmanagedMemoryAppendOnlyList<Midpoint> _midpoints = null;
 		private readonly uint _midpointsCached = 0;
 		private readonly long _midpointsCacheSize = 0;
 
@@ -79,13 +78,10 @@ namespace EventStore.Core.Index {
 		private bool _disposed;
 
 		internal ReadOnlySpan<Midpoint> GetMidPoints() {
-			if (_midpointsPtr != IntPtr.Zero) {
-				unsafe {
-					return new ReadOnlySpan<Midpoint>(_midpointsPtr.ToPointer(), _midpointsCount);
-				}
-			}
+			if(_midpoints == null)
+				return ReadOnlySpan<Midpoint>.Empty;
 
-			return ReadOnlySpan<Midpoint>.Empty;
+			return _midpoints.AsSpan();
 		}
 
 		private PTable(string filename,
@@ -214,7 +210,7 @@ namespace EventStore.Core.Index {
 			int calcdepth = 0;
 			try {
 				calcdepth = GetDepth(_count * _indexEntrySize, depth);
-				(_midpointsPtr, _midpointsCount) = CacheMidpointsAndVerifyHash(calcdepth, skipIndexVerify);
+				_midpoints = CacheMidpointsAndVerifyHash(calcdepth, skipIndexVerify);
 			} catch (PossibleToHandleOutOfMemoryException) {
 				Log.Error(
 					"Unable to create midpoints for PTable '{pTable}' ({count} entries, depth {depth} requested). "
@@ -228,13 +224,13 @@ namespace EventStore.Core.Index {
 
 		~PTable() => Dispose(false);
 
-		internal (IntPtr, int) CacheMidpointsAndVerifyHash(int depth, bool skipIndexVerify) {
+		internal UnmanagedMemoryAppendOnlyList<Midpoint> CacheMidpointsAndVerifyHash(int depth, bool skipIndexVerify) {
 			var buffer = new byte[4096];
 			if (depth < 0 || depth > 30)
 				throw new ArgumentOutOfRangeException("depth");
 			var count = Count;
 			if (count == 0 || depth == 0)
-				return (IntPtr.Zero, 0);
+				return null;
 
 			if (skipIndexVerify) {
 				Log.Debug("Disabling Verification of PTable");
@@ -250,19 +246,14 @@ namespace EventStore.Core.Index {
 					4096, 4096, false, 4096);
 			}
 
-			try {
-				int midpointsCount;
-				IntPtr midpointsPtr;
-				Span<Midpoint> midpoints;
+			UnmanagedMemoryAppendOnlyList<Midpoint> midpoints = null;
 
+			try {
 				using (MD5 md5 = MD5.Create()) {
+					int midpointsCount;
 					try {
 						midpointsCount = (int)Math.Max(2L, Math.Min((long)1 << depth, count));
-						midpointsPtr = Marshal.AllocHGlobal(new IntPtr((long)midpointsCount * Marshal.SizeOf(typeof(Midpoint))));
-
-						unsafe {
-							midpoints = new Span<Midpoint>(midpointsPtr.ToPointer(), midpointsCount);
-						}
+						midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>(midpointsCount);
 					} catch (OutOfMemoryException exc) {
 						throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.",
 							exc);
@@ -287,7 +278,7 @@ namespace EventStore.Core.Index {
 								} else
 									throw new InvalidOperationException("Unknown PTable version: " + _version);
 
-								midpoints[k] = new Midpoint(key, index);
+								midpoints.Add(new Midpoint(key, index));
 
 								if (k > 0) {
 									if (midpoints[k].Key.GreaterThan(midpoints[k - 1].Key)) {
@@ -303,7 +294,7 @@ namespace EventStore.Core.Index {
 								}
 							}
 
-							return (midpointsPtr, midpointsCount);
+							return midpoints;
 						} else
 							Log.Debug(
 								"Skipping loading of cached midpoints from PTable due to count mismatch, cached midpoints: {midpointsCached} / required midpoints: {midpointsCount}",
@@ -342,11 +333,11 @@ namespace EventStore.Core.Index {
 									BitConverter.ToInt64(buffer, 0));
 							}
 
-							midpoints[k] = new Midpoint(key, nextIndex);
+							midpoints.Add(new Midpoint(key, nextIndex));
 							previousNextIndex = nextIndex;
 							previousKey = key;
 						} else {
-							midpoints[k] = new Midpoint(previousKey, previousNextIndex);
+							midpoints.Add(new Midpoint(previousKey, previousNextIndex));
 						}
 
 						if (k > 0) {
@@ -372,11 +363,13 @@ namespace EventStore.Core.Index {
 						ValidateHash(md5.Hash, fileHash);
 					}
 
-					return (midpointsPtr, midpointsCount);
+					return midpoints;
 				}
 			} catch (PossibleToHandleOutOfMemoryException) {
+				midpoints?.Dispose();
 				throw;
 			} catch {
+				midpoints?.Dispose();
 				Dispose();
 				throw;
 			} finally {
@@ -659,10 +652,8 @@ namespace EventStore.Core.Index {
 			highKey = new IndexEntryKey(ulong.MinValue, long.MinValue);
 
 			ReadOnlySpan<Midpoint> midpoints = null;
-			if (_midpointsPtr != IntPtr.Zero) {
-				unsafe {
-					midpoints = new ReadOnlySpan<Midpoint>(_midpointsPtr.ToPointer(), _midpointsCount);
-				}
+			if (_midpoints != null) {
+				midpoints = _midpoints.AsSpan();
 			}
 
 			if (midpoints == null)
@@ -756,10 +747,7 @@ namespace EventStore.Core.Index {
 
 			if (disposing) {
 				//dispose any managed objects here
-			}
-
-			if (_midpointsPtr != IntPtr.Zero) {
-				Marshal.FreeHGlobal(_midpointsPtr);
+				_midpoints?.Dispose();
 			}
 
 			_disposed = true;
