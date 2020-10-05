@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace EventStore.Core.DataStructures {
 
@@ -11,7 +12,8 @@ namespace EventStore.Core.DataStructures {
 
 	public sealed class UnmanagedMemoryAppendOnlyList<T> : IAppendOnlyList<T>, IDisposable {
 		private readonly int _maxCapacity;
-		private readonly IntPtr _dataPtr;
+		private readonly IntPtr _dataPtr = IntPtr.Zero;
+		private readonly long _dataBytesAllocated;
 
 		private int _count;
 		private bool _disposed;
@@ -23,8 +25,14 @@ namespace EventStore.Core.DataStructures {
 
 			_maxCapacity = maxCapacity;
 			_count = 0;
-			_dataPtr = IntPtr.Zero;
-			_dataPtr = Marshal.AllocHGlobal(new IntPtr((long)_maxCapacity * Marshal.SizeOf(typeof(T))));
+			long bytesToAllocate = (long)_maxCapacity * Marshal.SizeOf(typeof(T));
+			_dataPtr = Marshal.AllocHGlobal(new IntPtr(bytesToAllocate));
+			Thread.MemoryBarrier();
+			_dataBytesAllocated = bytesToAllocate;
+
+			if (_dataBytesAllocated > 0) {
+				GC.AddMemoryPressure(_dataBytesAllocated);
+			}
 		}
 
 		~UnmanagedMemoryAppendOnlyList() => Dispose(false);
@@ -77,6 +85,10 @@ namespace EventStore.Core.DataStructures {
 
 			if (_dataPtr != IntPtr.Zero) {
 				Marshal.FreeHGlobal(_dataPtr);
+				Thread.MemoryBarrier();
+				if (_dataBytesAllocated > 0) {
+					GC.RemoveMemoryPressure(_dataBytesAllocated);
+				}
 			}
 
 			_disposed = true;
