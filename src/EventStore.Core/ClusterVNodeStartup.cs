@@ -107,6 +107,11 @@ namespace EventStore.Core {
 			app.Map("/health", _statusCheck.Configure)
 				.UseMiddleware<AuthenticationMiddleware>()
 				.UseRouting()
+				.UseWhen(ctx => ctx.Request.Method == HttpMethods.Options 
+				                && !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
+					b => b
+						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
+				)
 				.UseEndpoints(ep => _authenticationProvider.ConfigureEndpoints(ep))
 				.UseWhen(ctx => !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
 					b => b
