@@ -172,7 +172,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			var url = endPoint.EndPoint.ToHttpUrl(
 				endPoint.SeedOverTls ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA,
-				"/gossip?format=json", true);
+				"/gossip?format=json");
 			_client.Get(
 				url,
 				null,
