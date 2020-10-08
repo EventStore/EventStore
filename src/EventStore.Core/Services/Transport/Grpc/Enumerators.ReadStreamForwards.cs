@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -20,16 +20,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly DateTime _deadline;
-			private readonly CancellationTokenSource _disposedTokenSource;
-			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
-			private readonly CancellationTokenRegistration _tokenRegistration;
-			private readonly Func<RpcException, Task> _handleFailure;
+			private readonly Func<RpcException, Task> _onStreamNotFound;
+			private readonly CancellationToken _cancellationToken;
+			private readonly SemaphoreSlim _semaphore;
+			private readonly Channel<ResolvedEvent> _channel;
 
-			private StreamRevision _nextRevision;
-			private bool _isEnd;
 			private ResolvedEvent _current;
 			private ulong _readCount;
-			private RpcException _currentException;
 
 			public ResolvedEvent Current => _current;
 
@@ -41,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				DateTime deadline,
-				Func<RpcException, Task> handleFailure,
+				Func<RpcException, Task> onStreamNotFound,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -53,74 +50,59 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus = bus;
 				_streamName = streamName;
-				_nextRevision = startRevision;
 				_maxCount = maxCount;
 				_resolveLinks = resolveLinks;
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_deadline = deadline;
-				_disposedTokenSource = new CancellationTokenSource();
-				_buffer = new ConcurrentQueue<ResolvedEvent>();
-				_handleFailure = handleFailure;
-				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
+				_onStreamNotFound = onStreamNotFound;
+				_cancellationToken = cancellationToken;
+				_semaphore = new SemaphoreSlim(1, 1);
+				_channel = Channel.CreateBounded<ResolvedEvent>(BoundedChannelOptions);
+
+				ReadPage(startRevision);
 			}
 
 			public ValueTask DisposeAsync() {
-				_disposedTokenSource.Dispose();
-				_tokenRegistration.Dispose();
-				return default;
+				_channel.Writer.TryComplete();
+				return new ValueTask(Task.CompletedTask);
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				ReadLoop:
-				if (_readCount >= _maxCount || _disposedTokenSource.IsCancellationRequested) {
+				if (_readCount >= _maxCount) {
 					return false;
 				}
 
-				if (_buffer.TryDequeue(out var current)) {
-					_current = current;
+				try {
+					_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
 					_readCount++;
 					return true;
-				}
+				} catch (ChannelClosedException ex) {
+					if (ex.InnerException is RpcException) {
+						throw ex.InnerException;
+					}
 
-				if (_isEnd) {
 					return false;
 				}
+			}
 
-				var readNextSource = new TaskCompletionSource<bool>();
-
-				var correlationId = Guid.NewGuid();
+			private void ReadPage(StreamRevision startRevision) {
+				Guid correlationId = Guid.NewGuid();
 
 				_bus.Publish(new ClientMessage.ReadStreamEventsForward(
-					correlationId, correlationId, new CallbackEnvelope(OnMessage), _streamName, _nextRevision.ToInt64(),
-					(int)Math.Min(32, _maxCount), _resolveLinks, _requiresLeader, default, _user, expires: _deadline));
+					correlationId, correlationId, new ContinuationEnvelope(OnMessage, _semaphore, _cancellationToken),
+					_streamName, startRevision.ToInt64(), (int)Math.Min(ReadBatchSize, _maxCount), _resolveLinks,
+					_requiresLeader, default, _user, expires: _deadline));
 
-				if (!await readNextSource.Task.ConfigureAwait(false)) {
-					if (_currentException == null) return false;
-					
-					await _handleFailure(_currentException).ConfigureAwait(false);
-					_currentException = null;
-
-					return false;
-				}
-
-				if (_buffer.TryDequeue(out current)) {
-					_current = current;
-					_readCount++;
-					return true;
-				}
-
-				goto ReadLoop;
-
-				void OnMessage(Message message) {
+				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						readNextSource.TrySetException(ex);
+						_channel.Writer.TryComplete(ex);
 						return;
 					}
 
 					if (!(message is ClientMessage.ReadStreamEventsForwardCompleted completed)) {
-						readNextSource.TrySetException(
+						_channel.Writer.TryComplete(
 							RpcExceptions.UnknownMessage<ClientMessage.ReadStreamEventsForwardCompleted>(message));
 						return;
 					}
@@ -128,25 +110,28 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					switch (completed.Result) {
 						case ReadStreamResult.Success:
 							foreach (var @event in completed.Events) {
-								_buffer.Enqueue(@event);
+								await _channel.Writer.WriteAsync(@event, ct).ConfigureAwait(false);
 							}
 
-							_isEnd = completed.IsEndOfStream;
-							_nextRevision = StreamRevision.FromInt64(completed.NextEventNumber);
-							readNextSource.TrySetResult(true);
+							if (completed.IsEndOfStream) {
+								_channel.Writer.TryComplete();
+								return;
+							}
+
+							ReadPage(StreamRevision.FromInt64(completed.NextEventNumber));
 							return;
 						case ReadStreamResult.NoStream:
-							_currentException = RpcExceptions.StreamNotFound(_streamName);
-							readNextSource.TrySetResult(false);
+							await _onStreamNotFound(RpcExceptions.StreamNotFound(_streamName)).ConfigureAwait(false);
+							_channel.Writer.TryComplete();
 							return;
 						case ReadStreamResult.StreamDeleted:
-							readNextSource.TrySetException(RpcExceptions.StreamDeleted(_streamName));
+							_channel.Writer.TryComplete(RpcExceptions.StreamDeleted(_streamName));
 							return;
 						case ReadStreamResult.AccessDenied:
-							readNextSource.TrySetException(RpcExceptions.AccessDenied());
+							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 							return;
 						default:
-							readNextSource.TrySetException(RpcExceptions.UnknownError(completed.Result));
+							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
 							return;
 					}
 				}

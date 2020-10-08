@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						context.Deadline,
-						HandleFailure,
+						StreamNotFound,
 						context.CancellationToken),
 					(StreamOptionOneofCase.Stream,
 					CountOptionOneofCase.Count,
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						user,
 						requiresLeader,
 						context.Deadline,
-						HandleFailure,
+						StreamNotFound,
 						context.CancellationToken),
 					(StreamOptionOneofCase.All,
 					CountOptionOneofCase.Count,
@@ -162,7 +162,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 			}
 
-			Task HandleFailure(RpcException exception) =>
+			Task StreamNotFound(RpcException exception) =>
 				exception.StatusCode switch {
 					StatusCode.NotFound => responseStream.WriteAsync(new ReadResp {
 						StreamNotFound = new ReadResp.Types.StreamNotFound {

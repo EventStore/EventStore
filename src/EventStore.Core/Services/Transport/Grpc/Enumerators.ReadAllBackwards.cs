@@ -1,14 +1,15 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client;
+using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static partial class Enumerators {
@@ -19,12 +20,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly DateTime _deadline;
-			private readonly CancellationTokenSource _disposedTokenSource;
-			private readonly ConcurrentQueue<ResolvedEvent> _buffer;
-			private readonly CancellationTokenRegistration _tokenRegistration;
+			private readonly CancellationToken _cancellationToken;
+			private readonly SemaphoreSlim _semaphore;
+			private readonly Channel<ResolvedEvent> _channel;
 
-			private Position _nextPosition;
-			private bool _isEnd;
 			private ResolvedEvent _current;
 			private ulong _readCount;
 
@@ -43,75 +42,60 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				_bus = bus;
-				_nextPosition = position;
 				_maxCount = maxCount;
 				_resolveLinks = resolveLinks;
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_deadline = deadline;
-				_disposedTokenSource = new CancellationTokenSource();
-				_buffer = new ConcurrentQueue<ResolvedEvent>();
-				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
+				_cancellationToken = cancellationToken;
+				_semaphore = new SemaphoreSlim(1, 1);
+				_channel = Channel.CreateBounded<ResolvedEvent>(BoundedChannelOptions);
+
+				ReadPage(position);
 			}
 
-
 			public ValueTask DisposeAsync() {
-				_disposedTokenSource.Dispose();
-				_tokenRegistration.Dispose();
-				return default;
+				_channel.Writer.TryComplete();
+				return new ValueTask(Task.CompletedTask);
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (_readCount >= _maxCount || _disposedTokenSource.IsCancellationRequested) {
+				if (_readCount >= _maxCount) {
 					return false;
 				}
 
-				if (_buffer.TryDequeue(out var current)) {
-					_current = current;
+				try {
+					_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
 					_readCount++;
 					return true;
-				}
+				} catch (ChannelClosedException ex) {
+					if (ex.InnerException is RpcException) {
+						throw ex.InnerException;
+					}
 
-				if (_isEnd) {
 					return false;
 				}
+			}
 
-				var readNextSource = new TaskCompletionSource<bool>();
-
+			private void ReadPage(Position startPosition) {
 				var correlationId = Guid.NewGuid();
 
-				var (commitPosition, preparePosition) = _nextPosition.ToInt64();
+				var (commitPosition, preparePosition) = startPosition.ToInt64();
 
 				_bus.Publish(new ClientMessage.ReadAllEventsBackward(
-					correlationId, correlationId, new CallbackEnvelope(OnMessage),
-					commitPosition, preparePosition, (int)Math.Min(32, _maxCount),
-					_resolveLinks, _requiresLeader, default, _user, _deadline));
+					correlationId, correlationId, new ContinuationEnvelope(OnMessage, _semaphore, _cancellationToken),
+					commitPosition, preparePosition, (int)Math.Min(ReadBatchSize, _maxCount), _resolveLinks,
+					_requiresLeader, default, _user, _deadline));
 
-				if (!await readNextSource.Task.ConfigureAwait(false)) {
-					return false;
-				}
-
-				if (_disposedTokenSource.IsCancellationRequested) {
-					return false;
-				}
-
-				if (_buffer.TryDequeue(out current)) {
-					_current = current;
-					_readCount++;
-					return true;
-				}
-
-				return false;
-
-				void OnMessage(Message message) {
+				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						readNextSource.TrySetException(ex);
+						_channel.Writer.TryComplete(ex);
 						return;
 					}
 
 					if (!(message is ClientMessage.ReadAllEventsBackwardCompleted completed)) {
-						readNextSource.TrySetException(
+						_channel.Writer.TryComplete(
 							RpcExceptions.UnknownMessage<ClientMessage.ReadAllEventsBackwardCompleted>(message));
 						return;
 					}
@@ -119,20 +103,23 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					switch (completed.Result) {
 						case ReadAllResult.Success:
 							foreach (var @event in completed.Events) {
-								_buffer.Enqueue(@event);
+								await _channel.Writer.WriteAsync(@event, _cancellationToken).ConfigureAwait(false);
 							}
 
-							_isEnd = completed.IsEndOfStream;
-							_nextPosition = Position.FromInt64(
+							if (completed.IsEndOfStream) {
+								_channel.Writer.TryComplete();
+								return;
+							}
+
+							ReadPage(Position.FromInt64(
 								completed.NextPos.CommitPosition,
-								completed.NextPos.PreparePosition);
-							readNextSource.TrySetResult(true);
+								completed.NextPos.PreparePosition));
 							return;
 						case ReadAllResult.AccessDenied:
-							readNextSource.TrySetException(RpcExceptions.AccessDenied());
+							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
 							return;
 						default:
-							readNextSource.TrySetException(RpcExceptions.UnknownError(completed.Result));
+							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
 							return;
 					}
 				}
