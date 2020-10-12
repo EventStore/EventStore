@@ -106,11 +106,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_current = @event;
 					return true;
 				} catch (Exception ex) when (!ShouldIgnore(ex)) {
-					Log.Error(ex, "Subscription {subscriptionId} to {streamName} failed unexpectedly.",
-						_subscriptionId, _streamName);
 					if (ex.InnerException is RpcException) {
 						throw ex.InnerException;
 					}
+
+					Log.Error(ex, "Subscription {subscriptionId} to {streamName} failed unexpectedly.",
+						_subscriptionId, _streamName);
 
 					throw;
 				}
