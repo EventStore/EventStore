@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly Func<Position, Task> _checkpointReached;
 			private readonly TaskCompletionSource<bool> _subscriptionStarted;
 			private readonly CancellationToken _cancellationToken;
-			private readonly Channel<ResolvedEvent> _channel;
+			private readonly Channel<(ResolvedEvent?, Position?)> _channel;
 			private readonly uint _checkpointInterval;
 			private readonly SemaphoreSlim _semaphore;
 
@@ -83,7 +83,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_checkpointReached = checkpointReached;
 				_cancellationToken = cancellationToken;
 				_subscriptionStarted = new TaskCompletionSource<bool>();
-				_channel = Channel.CreateBounded<ResolvedEvent>(BoundedChannelOptions);
+				_channel = Channel.CreateBounded<(ResolvedEvent?, Position?)>(BoundedChannelOptions);
 				_checkpointInterval = checkpointIntervalMultiplier * _maxSearchWindow;
 				_semaphore = new SemaphoreSlim(1, 1);
 
@@ -118,22 +118,30 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
 				try {
-					var @event = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-					if (@event.OriginalPosition.Value <= _startPositionExclusive ||
-					    _current.HasValue &&
-					    @event.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
+					var (@event, position) = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+					if (@event.HasValue) {
+						if (@event.Value.OriginalPosition.Value <= _startPositionExclusive ||
+						    _current.HasValue &&
+						    @event.Value.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
+							Log.Verbose(
+								"Subscription {subscriptionId} to $all:{eventFilter} skipping event {position}.",
+								_subscriptionId, _eventFilter, @event.Value.OriginalPosition.Value);
+							goto ReadLoop;
+						}
+
 						Log.Verbose(
-							"Subscription {subscriptionId} to $all:{eventFilter} skipping event {position}.",
-							_subscriptionId, _eventFilter, @event.OriginalPosition.Value);
-						goto ReadLoop;
+							"Subscription {subscriptionId} to $all:{eventFilter} seen event {position}.",
+							_subscriptionId, _eventFilter, @event.Value.OriginalPosition.Value);
+
+						_current = @event.Value;
+						return true;
 					}
 
-					Log.Verbose(
-						"Subscription {subscriptionId} to $all:{eventFilter} seen event {position}.",
-						_subscriptionId, _eventFilter, @event.OriginalPosition.Value);
+					if (position.HasValue) {
+						await _checkpointReached(position.Value).ConfigureAwait(false);
+					}
 
-					_current = @event;
-					return true;
+					goto ReadLoop;
 				} catch (Exception ex) when (!ShouldIgnore(ex)) {
 					if (ex.InnerException is RpcException) {
 						throw ex.InnerException;
@@ -190,7 +198,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									"Catch-up subscription {subscriptionId} to $all:{eventFilter} received event {position}.",
 									_subscriptionId, _eventFilter, position);
 
-								await _channel.Writer.WriteAsync(@event, ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync((@event, new Position?()), ct).ConfigureAwait(false);
 							}
 
 							_checkpointIntervalCounter += completed.ConsideredEventsCount;
@@ -214,7 +222,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									_subscriptionId, _eventFilter, nextPosition, _checkpointInterval,
 									_checkpointIntervalCounter);
 
-								await _checkpointReached(nextPosition).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync((new ResolvedEvent?(), position), ct)
+									.ConfigureAwait(false);
 							}
 
 							ReadPage(nextPosition, OnMessage);
@@ -249,11 +258,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					await caughtUpSource.Task.ConfigureAwait(false);
 					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)
 						.ConfigureAwait(false)) {
-						await _channel.Writer.WriteAsync(@event, _cancellationToken).ConfigureAwait(false);
+						await _channel.Writer.WriteAsync((@event, new Position?()), _cancellationToken)
+							.ConfigureAwait(false);
 					}
 				}
 
-				async Task OnSubscriptionMessage(Message message, CancellationToken cancellationToken) {
+				async Task OnSubscriptionMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 						_channel.Writer.TryComplete(ex);
@@ -304,8 +314,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 											Log.Verbose(
 												"Live subscription {subscriptionId} to $all:{eventFilter} enqueuing historical message {position}.",
 												_subscriptionId, _eventFilter, position);
-											await _channel.Writer.WriteAsync(@event, _cancellationToken)
-												.ConfigureAwait(false);
+											await _channel.Writer.WriteAsync((@event, new Position?()),
+												_cancellationToken).ConfigureAwait(false);
 										}
 
 										ReadHistoricalEvents(Position.FromInt64(
@@ -317,8 +327,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 											Log.Verbose(
 												"Live subscription {subscriptionId} to $all:{eventFilter} caught up at {position} because the end of stream was reached.",
 												_subscriptionId, _eventFilter, position);
-											await _checkpointReached(Position.FromInt64(position.CommitPosition,
-												position.PreparePosition)).ConfigureAwait(false);
+											await _channel.Writer.WriteAsync(
+												(new ResolvedEvent?(),
+													Position.FromInt64(position.CommitPosition,
+														position.PreparePosition)
+												), ct).ConfigureAwait(false);
 											caughtUpSource.TrySetResult(caughtUp);
 										}
 									case FilteredReadAllResult.AccessDenied:
@@ -379,8 +392,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 								liveEvents.Writer.Complete();
 
-								var originalPosition =
-									_current.GetValueOrDefault().OriginalPosition.GetValueOrDefault();
+								var originalPosition = _current.GetValueOrDefault()
+									.OriginalPosition.GetValueOrDefault();
 								CatchUp(Position.FromInt64(
 									originalPosition.CommitPosition,
 									originalPosition.PreparePosition));
@@ -389,9 +402,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return;
 						}
 						case ClientMessage.CheckpointReached checkpointReached:
-							await _checkpointReached(Position.FromInt64(
+							await _channel.Writer.WriteAsync((new ResolvedEvent?(), Position.FromInt64(
 								checkpointReached.Position.Value.CommitPosition,
-								checkpointReached.Position.Value.PreparePosition)).ConfigureAwait(false);
+								checkpointReached.Position.Value.PreparePosition)), ct).ConfigureAwait(false);
 							return;
 						default:
 							_channel.Writer.TryComplete(
