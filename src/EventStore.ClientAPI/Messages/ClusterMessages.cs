@@ -28,8 +28,16 @@ namespace EventStore.ClientAPI.Messages {
 			public int ExternalTcpPort { get; set; }
 			public int ExternalSecureTcpPort { get; set; }
 
-			public string HttpAddress { get; set; }
-			public int HttpPort { get; set; }
+			public string HttpAddress => HttpEndPointIp ?? ExternalHttpIp;
+			public int HttpPort => HttpEndPointPort != default ? HttpEndPointPort : ExternalHttpPort;
+
+			// 20.x cluster info
+			public string HttpEndPointIp { get; set; }
+			public int HttpEndPointPort { get; set; }
+			
+			// 5.x cluster info
+			public string ExternalHttpIp { get; set; }
+			public int ExternalHttpPort { get; set; }
 
 			public long LastCommitPosition { get; set; }
 			public long WriterCheckpoint { get; set; }
