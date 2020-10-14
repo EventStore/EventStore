@@ -14,7 +14,6 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly List<UserManagementMessage.UserData> _results = new List<UserManagementMessage.UserData>();
 		private Action<UserManagementMessage.Error, UserManagementMessage.UserData[]> _onCompleted;
-		private int _activeRequests;
 		private bool _aborted;
 
 		public AllUsersReader(IODispatcher ioDispatcher) {
@@ -31,7 +30,6 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		private void BeginReadForward(long fromEventNumber) {
-			_activeRequests++;
 			_ioDispatcher.ReadForward(
 				"$users", fromEventNumber, 1, false, SystemAccounts.System, ReadUsersForwardCompleted);
 		}
@@ -41,15 +39,17 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				return;
 			switch (result.Result) {
 				case ReadStreamResult.Success:
-					if (!result.IsEndOfStream)
-						BeginReadForward(result.NextEventNumber);
-
 					foreach (var loginName in from eventData in result.Events
 						let @event = eventData.Event
 						where @event.EventType == UserEventType
 						let stringData = Helper.UTF8NoBom.GetString(@event.Data.Span)
 						select stringData)
-						BeginReadUserDetails(loginName);
+						BeginReadUserDetails(loginName, () => {
+							if (!result.IsEndOfStream)
+								BeginReadForward(result.NextEventNumber);
+							else
+								TryComplete();
+						});
 
 					break;
 				case ReadStreamResult.NoStream:
@@ -59,9 +59,6 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 					Abort(UserManagementMessage.Error.Error);
 					break;
 			}
-
-			_activeRequests--;
-			TryComplete();
 		}
 
 		private void Abort(UserManagementMessage.Error error) {
@@ -70,11 +67,13 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			_aborted = true;
 		}
 
-		private void BeginReadUserDetails(string loginName) {
-			_activeRequests++;
+		private void BeginReadUserDetails(string loginName, Action next) {
 			_ioDispatcher.ReadBackward(
 				UserStreamPrefix + loginName, -1, 1, false, SystemAccounts.System,
-				result => ReadUserDetailsBackwardCompleted(loginName, result));
+				result => {
+					ReadUserDetailsBackwardCompleted(loginName, result);
+					next();
+				});
 		}
 
 		private void ReadUserDetailsBackwardCompleted(
@@ -108,13 +107,10 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 					Abort(UserManagementMessage.Error.Error);
 					break;
 			}
-
-			_activeRequests--;
-			TryComplete();
 		}
 
 		private void TryComplete() {
-			if (!_aborted && _activeRequests == 0)
+			if (!_aborted)
 				_onCompleted(UserManagementMessage.Error.Success, _results.ToArray());
 		}
 
