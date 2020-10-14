@@ -20,7 +20,7 @@ namespace EventStore.Core.DataStructures {
 
 		public UnmanagedMemoryAppendOnlyList(int maxCapacity) {
 			if (maxCapacity <= 0) {
-				throw new ArgumentException("maxCapacity must be positive");
+				throw new ArgumentException($"{nameof(maxCapacity)} must be positive");
 			}
 
 			_maxCapacity = maxCapacity;
