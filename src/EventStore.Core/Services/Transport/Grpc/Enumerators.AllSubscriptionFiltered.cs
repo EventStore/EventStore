@@ -172,14 +172,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.TryComplete(ex);
+						Fail(ex);
 						return;
 					}
 
 					if (!(message is ClientMessage.FilteredReadAllEventsForwardCompleted completed)) {
-						_channel.Writer.TryComplete(
-							RpcExceptions.UnknownMessage<ClientMessage.FilteredReadAllEventsForwardCompleted>(
-								message));
+						Fail(RpcExceptions.UnknownMessage<ClientMessage.FilteredReadAllEventsForwardCompleted>(
+							message));
 						return;
 					}
 
@@ -230,10 +229,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							return;
 						case FilteredReadAllResult.AccessDenied:
-							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
+							Fail(RpcExceptions.AccessDenied());
 							return;
 						default:
-							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
+							Fail(RpcExceptions.UnknownError(completed.Result));
 							return;
 					}
 				}
@@ -266,7 +265,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnSubscriptionMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.TryComplete(ex);
+						Fail(ex);
 						return;
 					}
 
@@ -284,15 +283,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 								if (message is ClientMessage.NotHandled notHandled &&
 								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-									_channel.Writer.TryComplete(ex);
+									Fail(ex);
 									return;
 								}
 
 								if (!(message is ClientMessage.FilteredReadAllEventsForwardCompleted completed)) {
-									_channel.Writer.TryComplete(
-										RpcExceptions
-											.UnknownMessage<ClientMessage.FilteredReadAllEventsForwardCompleted>(
-												message));
+									Fail(RpcExceptions
+										.UnknownMessage<ClientMessage.FilteredReadAllEventsForwardCompleted>(
+											message));
 									return;
 								}
 
@@ -335,10 +333,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 											caughtUpSource.TrySetResult(caughtUp);
 										}
 									case FilteredReadAllResult.AccessDenied:
-										_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
+										Fail(RpcExceptions.AccessDenied());
 										return;
 									default:
-										_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
+										Fail(RpcExceptions.UnknownError(completed.Result));
 										return;
 								}
 							}
@@ -359,12 +357,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						case ClientMessage.SubscriptionDropped dropped:
 							switch (dropped.Reason) {
 								case SubscriptionDropReason.AccessDenied:
-									_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
+									Fail(RpcExceptions.AccessDenied());
 									return;
 								case SubscriptionDropReason.Unsubscribed:
 									return;
 								default:
-									_channel.Writer.TryComplete(RpcExceptions.UnknownError(dropped.Reason));
+									Fail(RpcExceptions.UnknownError(dropped.Reason));
 									return;
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
@@ -407,16 +405,25 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								checkpointReached.Position.Value.PreparePosition)), ct).ConfigureAwait(false);
 							return;
 						default:
-							_channel.Writer.TryComplete(
-								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
+							Fail(RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
 							return;
 					}
+				}
+
+				void Fail(Exception exception) {
+					this.Fail(exception);
+					caughtUpSource.TrySetException(exception);
 				}
 			}
 
 			private void ConfirmSubscription() {
 				if (_subscriptionStarted.Task.IsCompletedSuccessfully) return;
 				_subscriptionStarted.TrySetResult(true);
+			}
+
+			private void Fail(Exception exception) {
+				_channel.Writer.TryComplete(exception);
+				_subscriptionStarted.TrySetException(exception);
 			}
 
 			private void ReadPage(Position position, Func<Message, CancellationToken, Task> onMessage) {

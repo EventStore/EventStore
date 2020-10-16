@@ -135,12 +135,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.TryComplete(ex);
+						Fail(ex);
 						return;
 					}
 
 					if (!(message is ClientMessage.ReadStreamEventsForwardCompleted completed)) {
-						_channel.Writer.TryComplete(
+						Fail(
 							RpcExceptions.UnknownMessage<ClientMessage.ReadStreamEventsForwardCompleted>(message));
 						return;
 					}
@@ -171,13 +171,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							ReadPage(startRevision, OnMessage);
 							return;
 						case ReadStreamResult.StreamDeleted:
-							_channel.Writer.TryComplete(RpcExceptions.StreamDeleted(_streamName));
+							Fail(RpcExceptions.StreamDeleted(_streamName));
 							return;
 						case ReadStreamResult.AccessDenied:
-							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
+							Fail(RpcExceptions.AccessDenied());
 							return;
 						default:
-							_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
+							Fail(RpcExceptions.UnknownError(completed.Result));
 							return;
 					}
 				}
@@ -209,7 +209,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				async Task OnSubscriptionMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
 					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_channel.Writer.TryComplete(ex);
+						Fail(ex);
 						return;
 					}
 
@@ -225,12 +225,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 								if (message is ClientMessage.NotHandled notHandled &&
 								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-									_channel.Writer.TryComplete(ex);
+									Fail(ex);
 									return;
 								}
 
 								if (!(message is ClientMessage.ReadStreamEventsForwardCompleted completed)) {
-									_channel.Writer.TryComplete(
+									Fail(
 										RpcExceptions.UnknownMessage<ClientMessage.ReadStreamEventsForwardCompleted>(
 											message));
 									return;
@@ -274,13 +274,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										Log.Verbose(
 											"Live subscription {subscriptionId} to {streamName} stream deleted.",
 											_subscriptionId, _streamName);
-										_channel.Writer.TryComplete(RpcExceptions.StreamDeleted(_streamName));
+										Fail(RpcExceptions.StreamDeleted(_streamName));
 										return;
 									case ReadStreamResult.AccessDenied:
-										_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
+										Fail(RpcExceptions.AccessDenied());
 										return;
 									default:
-										_channel.Writer.TryComplete(RpcExceptions.UnknownError(completed.Result));
+										Fail(RpcExceptions.UnknownError(completed.Result));
 										return;
 								}
 							}
@@ -304,15 +304,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								_subscriptionId, _streamName, dropped.Reason);
 							switch (dropped.Reason) {
 								case SubscriptionDropReason.AccessDenied:
-									_channel.Writer.TryComplete(RpcExceptions.AccessDenied());
+									Fail(RpcExceptions.AccessDenied());
 									return;
 								case SubscriptionDropReason.NotFound:
-									_channel.Writer.TryComplete(RpcExceptions.StreamNotFound(_streamName));
+									Fail(RpcExceptions.StreamNotFound(_streamName));
 									return;
 								case SubscriptionDropReason.Unsubscribed:
 									return;
 								default:
-									_channel.Writer.TryComplete(RpcExceptions.UnknownError(dropped.Reason));
+									Fail(RpcExceptions.UnknownError(dropped.Reason));
 									return;
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
@@ -348,16 +348,25 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return;
 						}
 						default:
-							_channel.Writer.TryComplete(
+							Fail(
 								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
 							return;
 					}
+				}
+				void Fail(Exception exception) {
+					this.Fail(exception);
+					caughtUpSource.TrySetException(exception);
 				}
 			}
 
 			private void ConfirmSubscription() {
 				if (_subscriptionStarted.Task.IsCompletedSuccessfully) return;
 				_subscriptionStarted.TrySetResult(true);
+			}
+
+			private void Fail(Exception exception) {
+				_channel.Writer.TryComplete(exception);
+				_subscriptionStarted.TrySetException(exception);
 			}
 
 			private void ReadPage(StreamRevision startRevision, Func<Message, CancellationToken, Task> onMessage) {

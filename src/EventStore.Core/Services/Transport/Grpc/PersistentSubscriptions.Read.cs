@@ -70,7 +70,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				await read.ConfigureAwait(false);
 			} catch (IOException) {
 				Log.Information("Subscription {correlationId} to {subscriptionId} disposed. The request stream was closed.", correlationId, subscriptionId);
-				return;
 			}
 
 			ValueTask HandleAckNack(ReadReq request) {
@@ -262,8 +261,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					if (ex.InnerException is RpcException) {
 						throw ex.InnerException;
 					}
-
-					return false;
+					throw;
 				}
 			}
 		}
