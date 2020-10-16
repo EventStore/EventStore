@@ -268,6 +268,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										Log.Verbose(
 											"Live subscription {subscriptionId} to {streamName} stream not found.",
 											_subscriptionId, _streamName);
+										await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(false);
 										ReadHistoricalEvents(startRevision);
 										return;
 									case ReadStreamResult.StreamDeleted:
