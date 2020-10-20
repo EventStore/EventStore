@@ -88,33 +88,28 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
-				try {
-					var @event = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-					if (_current.HasValue &&
-					    @event.OriginalEvent.EventNumber <= _current.Value.OriginalEvent.EventNumber) {
-						Log.Verbose(
-							"Subscription {subscriptionId} to {streamName} skipping event {streamRevision}.",
-							_subscriptionId, _streamName, @event.OriginalEvent.EventNumber);
 
-						goto ReadLoop;
-					}
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+					return false;
+				}
 
+				var @event = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+
+				if (_current.HasValue && @event.OriginalEvent.EventNumber <= _current.Value.OriginalEvent.EventNumber) {
 					Log.Verbose(
-						"Subscription {subscriptionId} to {streamName} seen event {streamRevision}.",
+						"Subscription {subscriptionId} to {streamName} skipping event {streamRevision}.",
 						_subscriptionId, _streamName, @event.OriginalEvent.EventNumber);
 
-					_current = @event;
-					return true;
-				} catch (Exception ex) when (!ShouldIgnore(ex)) {
-					if (ex.InnerException is RpcException) {
-						throw ex.InnerException;
-					}
-
-					Log.Error(ex, "Subscription {subscriptionId} to {streamName} failed unexpectedly.",
-						_subscriptionId, _streamName);
-
-					throw;
+					goto ReadLoop;
 				}
+
+				Log.Verbose(
+					"Subscription {subscriptionId} to {streamName} seen event {streamRevision}.",
+					_subscriptionId, _streamName, @event.OriginalEvent.EventNumber);
+
+				_current = @event;
+
+				return true;
 			}
 
 			private void Subscribe(StreamRevision startRevision, bool catchUp) {

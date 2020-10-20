@@ -254,15 +254,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				try {
-					_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-					return true;
-				} catch (ChannelClosedException ex) {
-					if (ex.InnerException is RpcException) {
-						throw ex.InnerException;
-					}
-					throw;
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+					return false;
 				}
+
+				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				return true;
 			}
 		}
 	}

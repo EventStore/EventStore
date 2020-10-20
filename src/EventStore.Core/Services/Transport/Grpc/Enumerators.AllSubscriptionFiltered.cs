@@ -117,41 +117,33 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
-				try {
-					var (@event, position) = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-					if (@event.HasValue) {
-						if (@event.Value.OriginalPosition.Value <= _startPositionExclusive ||
-						    _current.HasValue &&
-						    @event.Value.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
-							Log.Verbose(
-								"Subscription {subscriptionId} to $all:{eventFilter} skipping event {position}.",
-								_subscriptionId, _eventFilter, @event.Value.OriginalPosition.Value);
-							goto ReadLoop;
-						}
-
-						Log.Verbose(
-							"Subscription {subscriptionId} to $all:{eventFilter} seen event {position}.",
-							_subscriptionId, _eventFilter, @event.Value.OriginalPosition.Value);
-
-						_current = @event.Value;
-						return true;
-					}
-
-					if (position.HasValue) {
-						await _checkpointReached(position.Value).ConfigureAwait(false);
-					}
-
-					goto ReadLoop;
-				} catch (Exception ex) when (!ShouldIgnore(ex)) {
-					if (ex.InnerException is RpcException) {
-						throw ex.InnerException;
-					}
-
-					Log.Error(ex, "Subscription {subscriptionId} to $all:{eventFilter} failed unexpectedly.",
-						_subscriptionId, _eventFilter);
-
-					throw;
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+					return false;
 				}
+
+				var (@event, position) = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				if (@event.HasValue) {
+					if (@event.Value.OriginalPosition.Value <= _startPositionExclusive || _current.HasValue &&
+					    @event.Value.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
+						Log.Verbose(
+							"Subscription {subscriptionId} to $all:{eventFilter} skipping event {position}.",
+							_subscriptionId, _eventFilter, @event.Value.OriginalPosition.Value);
+						goto ReadLoop;
+					}
+
+					Log.Verbose(
+						"Subscription {subscriptionId} to $all:{eventFilter} seen event {position}.",
+						_subscriptionId, _eventFilter, @event.Value.OriginalPosition.Value);
+
+					_current = @event.Value;
+					return true;
+				}
+
+				if (position.HasValue) {
+					await _checkpointReached(position.Value).ConfigureAwait(false);
+				}
+
+				goto ReadLoop;
 			}
 
 			private void Subscribe(Position startPosition, bool catchUp) {

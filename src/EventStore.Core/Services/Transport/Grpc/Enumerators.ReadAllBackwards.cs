@@ -64,17 +64,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return false;
 				}
 
-				try {
-					_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-					_readCount++;
-					return true;
-				} catch (ChannelClosedException ex) {
-					if (ex.InnerException is RpcException) {
-						throw ex.InnerException;
-					}
-
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
 					return false;
 				}
+
+				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				_readCount++;
+				return true;
 			}
 
 			private void ReadPage(Position startPosition) {

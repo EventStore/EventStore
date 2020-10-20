@@ -86,33 +86,27 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
-				try {
-					var @event = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-					if (@event.OriginalPosition.Value <= _startPositionExclusive ||
-					    _current.HasValue &&
-					    @event.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
-						Log.Verbose(
-							"Subscription {subscriptionId} to $all skipping event {position}.",
-							_subscriptionId, @event.OriginalPosition.Value);
-						goto ReadLoop;
-					}
-
-					Log.Verbose(
-						"Subscription {subscriptionId} to $all seen event {position}.",
-						_subscriptionId, @event.OriginalPosition.Value);
-
-					_current = @event;
-					return true;
-				} catch (Exception ex) when (!ShouldIgnore(ex)) {
-					if (ex.InnerException is RpcException) {
-						throw ex.InnerException;
-					}
-
-					Log.Error(ex, "Subscription {subscriptionId} to $all failed unexpectedly.",
-						_subscriptionId);
-
-					throw;
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+					return false;
 				}
+
+				var @event = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+
+				if (@event.OriginalPosition.Value <= _startPositionExclusive || _current.HasValue &&
+					@event.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
+					Log.Verbose(
+						"Subscription {subscriptionId} to $all skipping event {position}.",
+						_subscriptionId, @event.OriginalPosition.Value);
+					goto ReadLoop;
+				}
+
+				Log.Verbose(
+					"Subscription {subscriptionId} to $all seen event {position}.",
+					_subscriptionId, @event.OriginalPosition.Value);
+
+				_current = @event;
+
+				return true;
 			}
 
 			private void Subscribe(Position startPosition, bool catchUp) {
