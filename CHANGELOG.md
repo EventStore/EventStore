@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 ### Fixes
 - v20 clients can discover v20.x and v5.x servers [EventStore#2719](https://github.com/EventStore/EventStore/pull/2719)
 
+### Updated
+- Update the UI with replication stats fix [EventStore#2726](https://github.com/EventStore/EventStore/pull/2726)
+
 ## [20.6.1] - 2020-09-28
 
 ### Changed
