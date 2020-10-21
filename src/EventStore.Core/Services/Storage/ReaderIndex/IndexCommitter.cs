@@ -76,6 +76,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_indexRebuild = true;
 			using (var reader = _backend.BorrowReader()) {
 				var startPosition = Math.Max(0, _persistedCommitPos);
+				var fullRebuild = startPosition == 0;
 				reader.Reposition(startPosition);
 
 				var commitedPrepares = new List<PrepareLogRecord>();
@@ -118,6 +119,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							processed,
 							(result.RecordPostPosition - startPosition) * 100.0 / (buildToPosition - startPosition));
 						lastTime = DateTime.UtcNow;
+					}
+
+					if (fullRebuild && processed % 1000000 == 0) {
+						if (_tableIndex.IsBackgroundTaskRunning) {
+							Log.Debug("Pausing ReadIndex Rebuild due to ongoing index merges.");
+							while (_tableIndex.IsBackgroundTaskRunning) {
+								Thread.Sleep(1000);
+							}
+							Log.Debug("Resuming ReadIndex Rebuild.");
+						}
 					}
 				}
 

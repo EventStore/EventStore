@@ -14,9 +14,9 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 		[Test]
 		public void manual_merge_should_merge_all_tables() {
 			AddTables(11);
-			var (level, table) = _result.MergedMap.GetTableForManualMerge();
-			_result = _result.MergedMap.AddPTable(table, -1, -1, UpgradeHash, ExistsAt, RecordExistsAt,
-				_fileNameProvider, _ptableVersion, level);
+			_result = _result.MergedMap.TryManualMerge(
+				UpgradeHash, ExistsAt, RecordExistsAt,
+				_fileNameProvider, _ptableVersion);
 			Assert.AreEqual(1, _result.MergedMap.InOrder().Count());
 		}
 	}

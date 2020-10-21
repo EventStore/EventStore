@@ -1,7 +1,9 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Security.Cryptography;
 using EventStore.Common.Utils;
@@ -61,7 +63,7 @@ namespace EventStore.Core.Index {
 		private readonly string _filename;
 		private readonly long _count;
 		private readonly long _size;
-		private readonly Midpoint[] _midpoints;
+		private UnmanagedMemoryAppendOnlyList<Midpoint> _midpoints = null;
 		private readonly uint _midpointsCached = 0;
 		private readonly long _midpointsCacheSize = 0;
 
@@ -73,9 +75,13 @@ namespace EventStore.Core.Index {
 
 		private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
 		private volatile bool _deleteFile;
+		private bool _disposed;
 
-		internal Midpoint[] GetMidPoints() {
-			return _midpoints;
+		internal ReadOnlySpan<Midpoint> GetMidPoints() {
+			if(_midpoints == null)
+				return ReadOnlySpan<Midpoint>.Empty;
+
+			return _midpoints.AsSpan();
 		}
 
 		private PTable(string filename,
@@ -216,7 +222,9 @@ namespace EventStore.Core.Index {
 				_version, Path.GetFileName(Filename), Count, calcdepth, sw.Elapsed);
 		}
 
-		internal Midpoint[] CacheMidpointsAndVerifyHash(int depth, bool skipIndexVerify) {
+		~PTable() => Dispose(false);
+
+		internal UnmanagedMemoryAppendOnlyList<Midpoint> CacheMidpointsAndVerifyHash(int depth, bool skipIndexVerify) {
 			var buffer = new byte[4096];
 			if (depth < 0 || depth > 30)
 				throw new ArgumentOutOfRangeException("depth");
@@ -238,13 +246,14 @@ namespace EventStore.Core.Index {
 					4096, 4096, false, 4096);
 			}
 
+			UnmanagedMemoryAppendOnlyList<Midpoint> midpoints = null;
+
 			try {
-				int midpointsCount;
-				Midpoint[] midpoints;
 				using (MD5 md5 = MD5.Create()) {
+					int midpointsCount;
 					try {
 						midpointsCount = (int)Math.Max(2L, Math.Min((long)1 << depth, count));
-						midpoints = new Midpoint[midpointsCount];
+						midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>(midpointsCount);
 					} catch (OutOfMemoryException exc) {
 						throw new PossibleToHandleOutOfMemoryException("Failed to allocate memory for Midpoint cache.",
 							exc);
@@ -258,7 +267,7 @@ namespace EventStore.Core.Index {
 							long startOffset = stream.Length - MD5Size - PTableFooter.GetSize(_version) -
 											   _midpointsCacheSize;
 							stream.Seek(startOffset, SeekOrigin.Begin);
-							for (uint k = 0; k < _midpointsCached; k++) {
+							for (int k = 0; k < (int)_midpointsCached; k++) {
 								stream.Read(buffer, 0, _indexEntrySize);
 								IndexEntryKey key;
 								long index;
@@ -269,7 +278,7 @@ namespace EventStore.Core.Index {
 								} else
 									throw new InvalidOperationException("Unknown PTable version: " + _version);
 
-								midpoints[k] = new Midpoint(key, index);
+								midpoints.Add(new Midpoint(key, index));
 
 								if (k > 0) {
 									if (midpoints[k].Key.GreaterThan(midpoints[k - 1].Key)) {
@@ -300,7 +309,7 @@ namespace EventStore.Core.Index {
 
 					long previousNextIndex = long.MinValue;
 					var previousKey = new IndexEntryKey(long.MaxValue, long.MaxValue);
-					for (long k = 0; k < midpointsCount; ++k) {
+					for (int k = 0; k < midpointsCount; ++k) {
 						long nextIndex = GetMidpointIndex(k, count, midpointsCount);
 						if (previousNextIndex != nextIndex) {
 							if (!skipIndexVerify) {
@@ -324,11 +333,11 @@ namespace EventStore.Core.Index {
 									BitConverter.ToInt64(buffer, 0));
 							}
 
-							midpoints[k] = new Midpoint(key, nextIndex);
+							midpoints.Add(new Midpoint(key, nextIndex));
 							previousNextIndex = nextIndex;
 							previousKey = key;
 						} else {
-							midpoints[k] = new Midpoint(previousKey, previousNextIndex);
+							midpoints.Add(new Midpoint(previousKey, previousNextIndex));
 						}
 
 						if (k > 0) {
@@ -356,7 +365,11 @@ namespace EventStore.Core.Index {
 
 					return midpoints;
 				}
+			} catch (PossibleToHandleOutOfMemoryException) {
+				midpoints?.Dispose();
+				throw;
 			} catch {
+				midpoints?.Dispose();
 				Dispose();
 				throw;
 			} finally {
@@ -638,24 +651,28 @@ namespace EventStore.Core.Index {
 			lowKey = new IndexEntryKey(ulong.MaxValue, long.MaxValue);
 			highKey = new IndexEntryKey(ulong.MinValue, long.MinValue);
 
-			var midpoints = _midpoints;
+			ReadOnlySpan<Midpoint> midpoints = null;
+			if (_midpoints != null) {
+				midpoints = _midpoints.AsSpan();
+			}
+
 			if (midpoints == null)
 				return new Range(0, Count - 1);
 			long lowerMidpoint = LowerMidpointBound(midpoints, key);
 			long upperMidpoint = UpperMidpointBound(midpoints, key);
 
-			lowKey = midpoints[lowerMidpoint].Key;
-			highKey = midpoints[upperMidpoint].Key;
+			lowKey = midpoints[(int)lowerMidpoint].Key;
+			highKey = midpoints[(int)upperMidpoint].Key;
 
-			return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
+			return new Range(midpoints[(int)lowerMidpoint].ItemIndex, midpoints[(int)upperMidpoint].ItemIndex);
 		}
 
-		private long LowerMidpointBound(Midpoint[] midpoints, IndexEntryKey key) {
+		private long LowerMidpointBound(ReadOnlySpan<Midpoint> midpoints, IndexEntryKey key) {
 			long l = 0;
 			long r = midpoints.Length - 1;
 			while (l < r) {
 				long m = l + (r - l + 1) / 2;
-				if (midpoints[m].Key.GreaterThan(key))
+				if (midpoints[(int)m].Key.GreaterThan(key))
 					l = m;
 				else
 					r = m - 1;
@@ -664,12 +681,12 @@ namespace EventStore.Core.Index {
 			return l;
 		}
 
-		private long UpperMidpointBound(Midpoint[] midpoints, IndexEntryKey key) {
+		private long UpperMidpointBound(ReadOnlySpan<Midpoint> midpoints, IndexEntryKey key) {
 			long l = 0;
 			long r = midpoints.Length - 1;
 			while (l < r) {
 				long m = l + (r - l) / 2;
-				if (midpoints[m].Key.SmallerThan(key))
+				if (midpoints[(int)m].Key.SmallerThan(key))
 					r = m;
 				else
 					l = m + 1;
@@ -723,11 +740,26 @@ namespace EventStore.Core.Index {
 			_workItems.MarkForDisposal();
 		}
 
+		protected virtual void Dispose(bool disposing) {
+			if (_disposed) {
+				return;
+			}
+
+			if (disposing) {
+				//dispose any managed objects here
+				_midpoints?.Dispose();
+			}
+
+			_disposed = true;
+		}
+
 		private void OnAllWorkItemsDisposed() {
 			File.SetAttributes(_filename, FileAttributes.Normal);
 			if (_deleteFile)
 				File.Delete(_filename);
 			_destroyEvent.Set();
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 
 		public void WaitForDisposal(int timeout) {

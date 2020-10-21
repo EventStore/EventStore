@@ -35,15 +35,14 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_indexMapFileName = GetFilePathFor("index.map");
 			_ptableFileName = GetFilePathFor("ptable");
 
-			var indexMap = IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2);
+			var indexMap = IndexMapTestFactory.FromFile(_indexMapFileName, maxTablesPerLevel: 2, maxAutoMergeLevel: _maxAutoMergeIndexLevel);
 			var memtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			memtable.Add(0, 0, 0);
 			memtable.Add(1, 1, 100);
 			_ptable = PTable.FromMemtable(memtable, _ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 
-			indexMap = indexMap.AddPTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true,
-				_ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion,
-				_maxAutoMergeIndexLevel, 0, skipIndexVerify: _skipIndexVerify).MergedMap;
+			indexMap = indexMap.AddAndMergePTable(_ptable, 0, 0, (streamId, hash) => hash, _ => true,
+				_ => new Tuple<string, bool>("", true), new GuidFilenameProvider(PathName), _ptableVersion, 0, skipIndexVerify: _skipIndexVerify).MergedMap;
 			indexMap.SaveToFile(_indexMapFileName);
 		}
 

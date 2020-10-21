@@ -52,21 +52,21 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			return ptable;
 		}
 
-		private void ValidateCache(PTable.Midpoint[] cache, int count, int depth) {
+		private void ValidateCache(ReadOnlySpan<PTable.Midpoint> cache, int count, int depth) {
 			if (count == 0 || depth == 0) {
-				Assert.IsNull(cache);
+				Assert.True(cache.IsEmpty);
 				return;
 			}
 
 			if (count == 1) {
-				Assert.IsNotNull(cache);
+				Assert.False(cache.IsEmpty);
 				Assert.AreEqual(2, cache.Length);
 				Assert.AreEqual(0, cache[0].ItemIndex);
 				Assert.AreEqual(0, cache[1].ItemIndex);
 				return;
 			}
 
-			Assert.IsNotNull(cache);
+			Assert.False(cache.IsEmpty);
 			Assert.AreEqual(Math.Min(count, 1 << depth), cache.Length);
 
 			Assert.AreEqual(0, cache[0].ItemIndex);

@@ -19,9 +19,16 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 		}
 
 		[Test]
-		public void no_table_should_be_available_for_merge() {
-			var (_, table) = _map.GetTableForManualMerge();
-			Assert.Null(table);
+		public void no_table_should_manually_merged() {
+			var result = _map.TryMergeOneLevel(
+				UpgradeHash,
+				ExistsAt,
+				RecordExistsAt,
+				_fileNameProvider,
+				_ptableVersion,
+				skipIndexVerify: _skipIndexVerify
+				);
+			Assert.False(result.HasMergedAny);
 		}
 	}
 }
