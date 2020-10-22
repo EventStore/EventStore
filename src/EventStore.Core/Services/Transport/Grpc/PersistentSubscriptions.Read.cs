@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
@@ -69,7 +70,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				await read.ConfigureAwait(false);
 			} catch (IOException) {
 				Log.Information("Subscription {correlationId} to {subscriptionId} disposed. The request stream was closed.", correlationId, subscriptionId);
-				return;
 			}
 
 			ValueTask HandleAckNack(ReadReq request) {
@@ -148,19 +148,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		private class PersistentStreamSubscriptionEnumerator
 			: IAsyncEnumerator<(ResolvedEvent resolvedEvent, int retryCount)> {
-			private readonly CancellationTokenSource _disposedTokenSource;
-			private readonly ConcurrentQueue<(ResolvedEvent, int, Exception)> _sendQueue;
 			private readonly TaskCompletionSource<string> _subscriptionIdSource;
-			private readonly CancellationTokenRegistration _tokenRegistration;
-
-			public Task<string> Started => _subscriptionIdSource.Task;
-
-			private (ResolvedEvent, int) _current;
 			private readonly IPublisher _publisher;
 			private readonly Guid _correlationId;
 			private readonly ClaimsPrincipal _user;
+			private readonly CancellationToken _cancellationToken;
+			private readonly Channel<(ResolvedEvent, int)> _channel;
 
-			public (ResolvedEvent, int) Current => _current;
+			private (ResolvedEvent, int) _current;
+
+			public (ResolvedEvent resolvedEvent, int retryCount) Current => _current;
+			public Task<string> Started => _subscriptionIdSource.Task;
 
 			public PersistentStreamSubscriptionEnumerator(Guid correlationId,
 				string connectionName,
@@ -191,18 +189,22 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_correlationId = correlationId;
 				_publisher = publisher;
-				_disposedTokenSource = new CancellationTokenSource();
-				_sendQueue = new ConcurrentQueue<(ResolvedEvent, int, Exception)>();
 				_subscriptionIdSource = new TaskCompletionSource<string>();
-				_tokenRegistration = cancellationToken.Register(_disposedTokenSource.Dispose);
 				_user = user;
+				_cancellationToken = cancellationToken;
+				_channel = Channel.CreateBounded<(ResolvedEvent, int)>(new BoundedChannelOptions(bufferSize) {
+					SingleReader = true,
+					SingleWriter = false,
+					FullMode = BoundedChannelFullMode.Wait
+				});
+
+				var semaphore = new SemaphoreSlim(1, 1);
 
 				publisher.Publish(new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
-					new CallbackEnvelope(OnMessage), correlationId, connectionName, groupName, streamName,
-					bufferSize,
-					string.Empty, user));
+					new ContinuationEnvelope(OnMessage, semaphore, _cancellationToken), correlationId, connectionName,
+					groupName, streamName, bufferSize, string.Empty, user));
 
-				void OnMessage(Message message) {
+				async Task OnMessage(Message message, CancellationToken ct) {
 					switch (message) {
 						case ClientMessage.SubscriptionDropped dropped:
 							switch (dropped.Reason) {
@@ -228,7 +230,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_subscriptionIdSource.TrySetResult(confirmation.SubscriptionId);
 							return;
 						case ClientMessage.PersistentSubscriptionStreamEventAppeared appeared:
-							EnqueueEvent(appeared.Event, appeared.RetryCount);
+							await _channel.Writer.WriteAsync((appeared.Event, appeared.RetryCount), ct)
+								.ConfigureAwait(false);
 							return;
 						default:
 							Fail(RpcExceptions
@@ -238,40 +241,24 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				}
 
 				void Fail(Exception ex) {
-					_sendQueue.Enqueue((default, default, ex));
+					_channel.Writer.TryComplete(ex);
 					_subscriptionIdSource.TrySetException(ex);
 				}
-
-				void EnqueueEvent(ResolvedEvent resolvedEvent, int retryCount) =>
-					_sendQueue.Enqueue((resolvedEvent, retryCount, null));
 			}
 
 			public ValueTask DisposeAsync() {
 				_publisher.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), _correlationId,
 					new NoopEnvelope(), _user));
-				_disposedTokenSource.Dispose();
-				return _tokenRegistration.DisposeAsync();
+				_channel.Writer.TryComplete();
+				return new ValueTask(Task.CompletedTask);
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				(ResolvedEvent, int, Exception) _;
-
-				while (!_sendQueue.TryDequeue(out _)) {
-					try {
-						await Task.Delay(1, _disposedTokenSource.Token).ConfigureAwait(false);
-					} catch (ObjectDisposedException) {
-						return false;
-					}
+				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+					return false;
 				}
 
-				var (resolvedEvent, retryCount, exception) = _;
-
-				if (exception != null) {
-					throw exception;
-				}
-
-				_current = (resolvedEvent, retryCount);
-
+				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
 				return true;
 			}
 		}

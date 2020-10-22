@@ -35,35 +35,35 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public static Exception NoStream(string streamName) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' was not created."));
 
-		public static Exception UnknownMessage<T>(Message message) where T : Message =>
+		public static RpcException UnknownMessage<T>(Message message) where T : Message =>
 			new RpcException(
 				new Status(StatusCode.Unknown,
 					$"Envelope callback expected either {typeof(T).Name} or {nameof(ClientMessage.NotHandled)}, received {message.GetType().Name} instead"));
 
-		public static Exception UnknownError<T>(T result) where T : unmanaged =>
+		public static RpcException UnknownError<T>(T result) where T : unmanaged =>
 			new RpcException(new Status(StatusCode.Unknown, $"Unexpected {typeof(T).Name}: {result}"));
 
-		public static Exception UnknownError(string message) =>
+		public static RpcException UnknownError(string message) =>
 			new RpcException(new Status(StatusCode.Unknown, message));
 
-		public static Exception AccessDenied() =>
+		public static RpcException AccessDenied() =>
 			new RpcException(new Status(StatusCode.PermissionDenied, "Access Denied"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.AccessDenied}
 			});
 
-		public static Exception InvalidTransaction() =>
+		public static RpcException InvalidTransaction() =>
 			new RpcException(new Status(StatusCode.InvalidArgument, "Invalid Transaction"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.InvalidTransaction}
 			});
 
-		public static Exception StreamDeleted(string streamName) =>
+		public static RpcException StreamDeleted(string streamName) =>
 			new RpcException(new Status(StatusCode.FailedPrecondition, $"Event stream '{streamName}' is deleted."),
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.StreamDeleted},
 					{Constants.Exceptions.StreamName, streamName}
 				});
 
-		public static Exception ScavengeNotFound(string scavengeId) =>
+		public static RpcException ScavengeNotFound(string scavengeId) =>
 			new RpcException(new Status(StatusCode.NotFound, "Scavenge id was invalid."),
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.ScavengeNotFound},
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				});
 
 
-		public static Exception WrongExpectedVersion(
+		public static RpcException WrongExpectedVersion(
 			string streamName,
 			long expectedVersion,
 			long? actualVersion = default) =>
@@ -86,7 +86,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					{Constants.Exceptions.ActualVersion, actualVersion?.ToString() ?? string.Empty}
 				});
 
-		public static Exception MaxAppendSizeExceeded(int maxAppendSize) =>
+		public static RpcException MaxAppendSizeExceeded(int maxAppendSize) =>
 			new RpcException(
 				new Status(StatusCode.InvalidArgument, $"Maximum Append Size of {maxAppendSize} Exceeded."),
 				new Metadata {
@@ -94,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					{Constants.Exceptions.MaximumAppendSize, maxAppendSize.ToString()}
 				});
 
-		public static Exception RequiredMetadataPropertyMissing(string missingMetadataProperty) =>
+		public static RpcException RequiredMetadataPropertyMissing(string missingMetadataProperty) =>
 			new RpcException(
 				new Status(StatusCode.InvalidArgument, $"Required Metadata Property '{missingMetadataProperty}' is missing"),
 				new Metadata {
