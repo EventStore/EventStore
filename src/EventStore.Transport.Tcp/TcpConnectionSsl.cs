@@ -340,26 +340,33 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void TrySend() {
-			lock (_streamLock) {
-				if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated) return;
-				if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
-				_isSending = true;
-			}
-
-			_memoryStream.SetLength(0);
-
-			ArraySegment<byte> sendPiece;
-			while (_sendQueue.TryDequeue(out sendPiece)) {
-				_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
-				if (_memoryStream.Length >= TcpConnection.MaxSendPacketSize)
-					break;
-			}
-
-			_sendingBytes = (int)_memoryStream.Length;
-
+			bool continueSendSynchronously = true;
 			try {
-				NotifySendStarting(_sendingBytes);
-				_sslStream.BeginWrite(_memoryStream.GetBuffer(), 0, _sendingBytes, OnEndWrite, null);
+				do {
+					lock (_streamLock) {
+						if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated) return;
+						if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
+						_isSending = true;
+					}
+
+					_memoryStream.SetLength(0);
+
+					ArraySegment<byte> sendPiece;
+					while (_sendQueue.TryDequeue(out sendPiece)) {
+						_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
+						if (_memoryStream.Length >= TcpConnection.MaxSendPacketSize)
+							break;
+					}
+
+					_sendingBytes = (int)_memoryStream.Length;
+
+					NotifySendStarting(_sendingBytes);
+					var result = _sslStream.BeginWrite(_memoryStream.GetBuffer(), 0, _sendingBytes, OnEndWrite, null);
+					continueSendSynchronously = result.CompletedSynchronously;
+					if (continueSendSynchronously) {
+						EndWrite(result);
+					}
+				} while (continueSendSynchronously);
 			} catch (SocketException exc) {
 				Log.Debug(exc, "SocketException '{e}' during BeginWrite.", exc.SocketErrorCode);
 				CloseInternal(exc.SocketErrorCode, "SocketException during BeginWrite.");
@@ -372,6 +379,13 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void OnEndWrite(IAsyncResult ar) {
+			if (ar.CompletedSynchronously) return;
+
+			EndWrite(ar);
+			TrySend();
+		}
+
+		private void EndWrite(IAsyncResult ar) {
 			try {
 				_sslStream.EndWrite(ar);
 				NotifySendCompleted(_sendingBytes);
@@ -379,8 +393,6 @@ namespace EventStore.Transport.Tcp {
 				lock (_streamLock) {
 					_isSending = false;
 				}
-
-				TrySend();
 			} catch (SocketException exc) {
 				Log.Debug(exc, "SocketException '{e}' during EndWrite.", exc.SocketErrorCode);
 				NotifySendCompleted(0);
@@ -408,8 +420,16 @@ namespace EventStore.Transport.Tcp {
 
 		private void StartReceive() {
 			try {
-				NotifyReceiveStarting();
-				_sslStream.BeginRead(_receiveBuffer, 0, _receiveBuffer.Length, OnEndRead, null);
+				bool continueReceiveSynchronously = true;
+
+				do {
+					NotifyReceiveStarting();
+					var result = _sslStream.BeginRead(_receiveBuffer, 0, _receiveBuffer.Length, OnEndRead, null);
+					continueReceiveSynchronously = result.CompletedSynchronously;
+					if (continueReceiveSynchronously) {
+						EndRead(result);
+					}
+				} while (continueReceiveSynchronously);
 			} catch (SocketException exc) {
 				Log.Debug(exc, "SocketException '{e}' during BeginRead.", exc.SocketErrorCode);
 				CloseInternal(exc.SocketErrorCode, "SocketException during BeginRead.");
@@ -422,6 +442,13 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void OnEndRead(IAsyncResult ar) {
+			if (ar.CompletedSynchronously) return;
+
+			EndRead(ar);
+			StartReceive();
+		}
+
+		private void EndRead(IAsyncResult ar) {
 			int bytesRead;
 			try {
 				bytesRead = _sslStream.EndRead(ar);
@@ -457,7 +484,6 @@ namespace EventStore.Transport.Tcp {
 			var buf = new ArraySegment<byte>(buffer.Array, buffer.Offset, buffer.Count);
 			_receiveQueue.Enqueue(new ReceivedData(buf, bytesRead));
 
-			StartReceive();
 			TryDequeueReceivedData();
 		}
 
