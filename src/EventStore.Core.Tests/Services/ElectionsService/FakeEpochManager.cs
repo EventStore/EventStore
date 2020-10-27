@@ -58,7 +58,11 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			throw new NotImplementedException();
 		}
 
-		public void SetLastEpoch(EpochRecord epoch) {
+		public void WriteEpochRecordWithRetry(EpochRecord epochRecord) {
+			throw new NotImplementedException();
+		}
+
+		public void EpochRecordChased(EpochRecord epoch, long epochPostPosition) {
 			lock (_epochs) {
 				_epochs.Add(epoch);
 			}
