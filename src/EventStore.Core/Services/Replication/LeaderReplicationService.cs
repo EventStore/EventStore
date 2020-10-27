@@ -170,7 +170,7 @@ namespace EventStore.Core.Services.Replication {
 			var connections = TcpConnectionMonitor.Default.GetTcpConnectionStats();
 			var replicaStats = new List<ReplicationMessage.ReplicationStats>();
 			foreach (var conn in connections) {
-				var tcpConn = conn as TcpConnection;
+				var tcpConn = conn as ITcpConnection;
 				if (tcpConn != null) {
 					var subscription = _subscriptions.FirstOrDefault(x => x.Value.ConnectionId == tcpConn.ConnectionId);
 					if (subscription.Value != null) {
