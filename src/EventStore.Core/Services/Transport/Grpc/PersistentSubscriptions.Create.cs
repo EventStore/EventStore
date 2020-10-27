@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutMs => settings.MessageTimeoutMs,
 					CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutTicks => (int)TimeSpan
 						.FromTicks(settings.MessageTimeoutTicks).TotalMilliseconds,
-					_ => throw new InvalidOperationException()
+					_ => 0
 				},
 				settings.ExtraStatistics,
 				settings.MaxRetryCount,
@@ -46,7 +46,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterMs => settings.CheckpointAfterMs,
 					CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterTicks => (int)TimeSpan
 						.FromTicks(settings.CheckpointAfterTicks).TotalMilliseconds,
-					_ => throw new InvalidOperationException()
+					_ => 0
 				},
 				settings.MinCheckpointCount,
 				settings.MaxCheckpointCount,
