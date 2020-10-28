@@ -42,6 +42,7 @@ namespace EventStore.ClientAPI.Messages {
 			public long LastCommitPosition { get; set; }
 			public long WriterCheckpoint { get; set; }
 			public long ChaserCheckpoint { get; set; }
+			public long ReplicationCheckpoint { get; set; }
 
 			public long EpochPosition { get; set; }
 			public int EpochNumber { get; set; }
@@ -56,14 +57,14 @@ namespace EventStore.ClientAPI.Messages {
 						HttpAddress, HttpPort,
 						TimeStamp);
 				return string.Format(
-					"VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}] {11}/{12}/{13}/E{14}@{15}:{16:B} | {17:yyyy-MM-dd HH:mm:ss.fff}",
+					"VND {0:B} <{1}> [{2}, {3}:{4}, {5}, {6}:{7}, {8}, {9}:{10}] {11}/{12}/{13}/R{14}/E{15}@{16}:{17:B} | {18:yyyy-MM-dd HH:mm:ss.fff}",
 					InstanceId, IsAlive ? "LIVE" : "DEAD", State,
 					InternalTcpIp, InternalTcpPort,
 					InternalSecureTcpPort > 0 ? string.Format("{0}:{1}", InternalTcpIp, InternalSecureTcpPort) : "n/a",
 					ExternalTcpIp, ExternalTcpPort,
 					ExternalSecureTcpPort > 0 ? string.Format("{0}:{1}", ExternalTcpIp, ExternalSecureTcpPort) : "n/a",
 					HttpAddress, HttpPort,
-					LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
+					LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, ReplicationCheckpoint,
 					EpochNumber, EpochPosition, EpochId,
 					TimeStamp);
 			}

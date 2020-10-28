@@ -46,6 +46,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			DbRes.Db.Config.WriterCheckpoint.Flush();
 			DbRes.Db.Config.ChaserCheckpoint.Write(DbRes.Db.Config.WriterCheckpoint.Read());
 			DbRes.Db.Config.ChaserCheckpoint.Flush();
+			DbRes.Db.Config.ReplicationCheckpoint.Write(DbRes.Db.Config.WriterCheckpoint.Read());
+			DbRes.Db.Config.ReplicationCheckpoint.Flush();
 
 			var readers = new ObjectPool<ITransactionFileReader>(
 				"Readers", 2, 2, () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint));

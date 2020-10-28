@@ -33,6 +33,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected TFChunkWriter Writer;
 		protected ICheckpoint WriterCheckpoint;
 		protected ICheckpoint ChaserCheckpoint;
+		protected ICheckpoint ReplicationCheckpoint;
 
 		private TFChunkScavenger _scavenger;
 		private bool _scavenge;
@@ -53,9 +54,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			ChaserCheckpoint = new InMemoryCheckpoint(0);
+			ReplicationCheckpoint = new InMemoryCheckpoint(0);
 
-			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint,
-				replicationCheckpoint: new InMemoryCheckpoint(-1)));
+			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint, replicationCheckpoint: ReplicationCheckpoint));
 
 			Db.Open();
 			// create db
@@ -68,6 +69,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			WriterCheckpoint.Flush();
 			ChaserCheckpoint.Write(WriterCheckpoint.Read());
 			ChaserCheckpoint.Flush();
+			ReplicationCheckpoint.Write(WriterCheckpoint.Read());
+			ReplicationCheckpoint.Flush();
 
 			var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 				() => new TFChunkReader(Db, Db.Config.WriterCheckpoint));

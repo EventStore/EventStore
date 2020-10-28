@@ -382,7 +382,7 @@ namespace EventStore.Core.Services {
 
 			Log.Information("ELECTIONS: (V={view}) PREPARE_OK FROM {nodeInfo}.", msg.View,
 				FormatNodeInfo(msg.ServerHttpEndPoint, msg.ServerId,
-					msg.LastCommitPosition, msg.WriterCheckpoint, msg.ChaserCheckpoint,
+					msg.LastCommitPosition, msg.WriterCheckpoint, msg.ChaserCheckpoint,msg.ReplicationCheckpoint,
 					msg.EpochNumber, msg.EpochPosition, msg.EpochId, msg.EpochLeaderInstanceId, msg.NodePriority));
 
 			if (!_prepareOkReceived.ContainsKey(msg.ServerId)) {
@@ -544,6 +544,8 @@ namespace EventStore.Core.Services {
 		}
 
 		private static bool IsCandidateGoodEnough(LeaderCandidate candidate, LeaderCandidate ownInfo) {
+			if (candidate.ReplicationCheckpoint != ownInfo.ReplicationCheckpoint)
+				return candidate.ReplicationCheckpoint > ownInfo.ReplicationCheckpoint;
 			if (candidate.EpochNumber != ownInfo.EpochNumber)
 				return candidate.EpochNumber > ownInfo.EpochNumber;
 			if (candidate.LastCommitPosition != ownInfo.LastCommitPosition)
@@ -647,16 +649,16 @@ namespace EventStore.Core.Services {
 		
 		private static string FormatNodeInfo(LeaderCandidate candidate) {
 			return FormatNodeInfo(candidate.HttpEndPoint, candidate.InstanceId,
-				candidate.LastCommitPosition, candidate.WriterCheckpoint, candidate.ChaserCheckpoint,
+				candidate.LastCommitPosition, candidate.WriterCheckpoint, candidate.ChaserCheckpoint,candidate.ReplicationCheckpoint,
 				candidate.EpochNumber, candidate.EpochPosition, candidate.EpochId, candidate.EpochLeaderInstanceId, candidate.NodePriority);
 		}
 
 		private static string FormatNodeInfo(EndPoint serverEndPoint, Guid serverId,
-			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
+			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, long replicationCheckpoint,
 			int epochNumber, long epochPosition, Guid epochId, Guid epochLeaderInstanceId, int priority) {
-			return string.Format("[{0},{1:B}](L={2},W={3},C={4},E{5}@{6}:{7:B} (L={8:B}),Priority={9})",
+			return string.Format("[{0},{1:B}](L={2},W={3},C={4},R={5},E{6}@{7}:{8:B} (L={9:B}),Priority={10})",
 				serverEndPoint, serverId,
-				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+				lastCommitPosition, writerCheckpoint, chaserCheckpoint, replicationCheckpoint,
 				epochNumber, epochPosition, epochId, epochLeaderInstanceId, priority);
 		}
 

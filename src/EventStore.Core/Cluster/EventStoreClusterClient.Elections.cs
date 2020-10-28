@@ -41,7 +41,7 @@ namespace EventStore.Core.Cluster {
 			SendPrepareOkAsync(prepareOk.View, prepareOk.ServerId, prepareOk.ServerHttpEndPoint, prepareOk.EpochNumber,
 					prepareOk.EpochPosition, prepareOk.EpochId, prepareOk.EpochLeaderInstanceId, prepareOk.LastCommitPosition,
 					prepareOk.WriterCheckpoint,
-					prepareOk.ChaserCheckpoint, prepareOk.NodePriority, prepareOk.ClusterInfo, deadline)
+					prepareOk.ChaserCheckpoint, prepareOk.ReplicationCheckpoint,prepareOk.NodePriority, prepareOk.ClusterInfo, deadline)
 				.ContinueWith(r => {
 					if (r.Exception != null) {
 						Log.Information(r.Exception, "Prepare OK Send Failed to {Server}",
@@ -54,7 +54,7 @@ namespace EventStore.Core.Cluster {
 			SendProposalAsync(proposal.ServerId, proposal.ServerHttpEndPoint, proposal.LeaderId,
 					proposal.LeaderHttpEndPoint,
 					proposal.View, proposal.EpochNumber, proposal.EpochPosition, proposal.EpochId,proposal.EpochLeaderInstanceId,
-					proposal.LastCommitPosition, proposal.WriterCheckpoint, proposal.ChaserCheckpoint,
+					proposal.LastCommitPosition, proposal.WriterCheckpoint, proposal.ChaserCheckpoint,proposal.ReplicationCheckpoint,
 					proposal.NodePriority,
 					deadline)
 				.ContinueWith(r => {
@@ -124,7 +124,7 @@ namespace EventStore.Core.Cluster {
 		}
 
 		private async Task SendPrepareOkAsync(int view, Guid serverId, EndPoint serverHttpEndPoint, int epochNumber,
-			long epochPosition, Guid epochId, Guid epochLeaderInstanceId, long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
+			long epochPosition, Guid epochId, Guid epochLeaderInstanceId, long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,long replicationCheckpoint,
 			int nodePriority, ClusterInfo clusterInfo, DateTime deadline) {
 			var request = new PrepareOkRequest {
 				View = view,
@@ -137,6 +137,7 @@ namespace EventStore.Core.Cluster {
 				LastCommitPosition = lastCommitPosition,
 				WriterCheckpoint = writerCheckpoint,
 				ChaserCheckpoint = chaserCheckpoint,
+				ReplicationCheckpoint = replicationCheckpoint,
 				NodePriority = nodePriority,
 				ClusterInfo = ClusterInfo.ToGrpcClusterInfo(clusterInfo)
 			};
@@ -145,7 +146,7 @@ namespace EventStore.Core.Cluster {
 
 		private async Task SendProposalAsync(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId,
 			EndPoint leaderHttp, int view, int epochNumber, long epochPosition, Guid epochId, Guid epochLeaderInstanceId,
-			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, int nodePriority,
+			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, long replicationCheckpoint, int nodePriority,
 			DateTime deadline) {
 			var request = new ProposalRequest {
 				ServerId = Uuid.FromGuid(serverId).ToDto(),
@@ -160,6 +161,7 @@ namespace EventStore.Core.Cluster {
 				LastCommitPosition = lastCommitPosition,
 				WriterCheckpoint = writerCheckpoint,
 				ChaserCheckpoint = chaserCheckpoint,
+				ReplicationCheckpoint = replicationCheckpoint,
 				NodePriority = nodePriority
 			};
 			await _electionsClient.ProposalAsync(request, deadline: deadline.ToUniversalTime());

@@ -290,6 +290,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				Manager.Dispose();
 			Config.WriterCheckpoint.Close();
 			Config.ChaserCheckpoint.Close();
+			Config.ReplicationCheckpoint.Close();
+			Config.IndexCheckpoint.Close();
 			Config.EpochCheckpoint.Close();
 			Config.TruncateCheckpoint.Close();
 		}

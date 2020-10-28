@@ -1478,6 +1478,8 @@ namespace EventStore.Core {
 
 			var writerCheckpoint = _db.Config.WriterCheckpoint.Read();
 			var chaserCheckpoint = _db.Config.ChaserCheckpoint.Read();
+			var replicationCheckpoint = _db.Config.ReplicationCheckpoint.Read();
+			var indexCheckpoint = _db.Config.IndexCheckpoint.Read();
 			var epochCheckpoint = _db.Config.EpochCheckpoint.Read();
 			var truncateCheckpoint = _db.Config.TruncateCheckpoint.Read();
 
@@ -1487,6 +1489,10 @@ namespace EventStore.Core {
 				writerCheckpoint, writerCheckpoint);
 			_log.Information("{description,-25} {chaserCheckpoint} (0x{chaserCheckpoint:X})", "CHASER CHECKPOINT:",
 				chaserCheckpoint, chaserCheckpoint);
+			_log.Information($"{{description,-25}} {replicationCheckpoint} (0x{{replicationCheckpoint:X}})", "REPLICATION CHECKPOINT:",
+				replicationCheckpoint, replicationCheckpoint);
+			_log.Information($"{{description,-25}} {indexCheckpoint} (0x{{indexCheckpoint:X}})", "INDEX CHECKPOINT:",
+				indexCheckpoint, indexCheckpoint);
 			_log.Information("{description,-25} {epochCheckpoint} (0x{epochCheckpoint:X})", "EPOCH CHECKPOINT:",
 				epochCheckpoint, epochCheckpoint);
 			_log.Information("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",

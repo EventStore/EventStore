@@ -35,6 +35,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		protected TFChunkWriter Writer;
 		protected ICheckpoint WriterCheckpoint;
 		protected ICheckpoint ChaserCheckpoint;
+		protected ICheckpoint ReplicationCheckpoint;
 		protected IODispatcher IODispatcher;
 		protected InMemoryBus Bus;
 
@@ -57,11 +58,13 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 			var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
 			var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
+			var replicationCheckFilename = Path.Combine(dbPath, Checkpoint.Replication + ".chk");
 
 			WriterCheckpoint = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 			ChaserCheckpoint = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+			ReplicationCheckpoint = new MemoryMappedFileCheckpoint(replicationCheckFilename, Checkpoint.Replication, cached: true);
 
-			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize));
+			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(dbPath, WriterCheckpoint, ChaserCheckpoint, TFConsts.ChunkSize, ReplicationCheckpoint));
 			Db.Open();
 
 			// create DB
@@ -74,6 +77,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			WriterCheckpoint.Flush();
 			ChaserCheckpoint.Write(WriterCheckpoint.Read());
 			ChaserCheckpoint.Flush();
+			ReplicationCheckpoint.Write(WriterCheckpoint.Read());
+			ReplicationCheckpoint.Flush();
 			Db.Close();
 
 			// start node with our created DB

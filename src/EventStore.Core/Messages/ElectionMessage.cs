@@ -254,8 +254,8 @@ namespace EventStore.Core.Messages {
 				EpochLeaderInstanceId = epochLeaderInstanceId;
 				LastCommitPosition = lastCommitPosition;
 				WriterCheckpoint = writerCheckpoint;
-				ReplicationCheckpoint = replicationCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
+				ReplicationCheckpoint = replicationCheckpoint;
 				NodePriority = nodePriority;
 			}
 

@@ -263,11 +263,12 @@ namespace EventStore.Core {
 			var truncPos = db.Config.TruncateCheckpoint.Read();
 			var writerCheckpoint = db.Config.WriterCheckpoint.Read();
 			var chaserCheckpoint = db.Config.ChaserCheckpoint.Read();
+			var replicationCheckpoint = db.Config.ReplicationCheckpoint.Read();
 			var epochCheckpoint = db.Config.EpochCheckpoint.Read();
 			if (truncPos != -1) {
 				Log.Information(
-					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
-					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
+					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Replication: {replicationCheckpoint} (0x{replicationCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
+					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint, replicationCheckpoint, replicationCheckpoint,
 					epochCheckpoint, epochCheckpoint);
 				var truncator = new TFChunkDbTruncator(db.Config);
 				truncator.TruncateDb(truncPos);

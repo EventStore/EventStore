@@ -31,6 +31,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			_dbResult.Db.Config.WriterCheckpoint.Flush();
 			_dbResult.Db.Config.ChaserCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());
 			_dbResult.Db.Config.ChaserCheckpoint.Flush();
+			_dbResult.Db.Config.ReplicationCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());
+			_dbResult.Db.Config.ReplicationCheckpoint.Flush();
 
 			Log = new FakeTFScavengerLog();
 			FakeTableIndex = new FakeTableIndex();
