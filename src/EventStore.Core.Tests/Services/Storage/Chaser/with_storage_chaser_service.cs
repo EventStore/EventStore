@@ -16,6 +16,8 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		readonly ICheckpoint _writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 		readonly ICheckpoint _chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 		readonly ICheckpoint _epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+		readonly ICheckpoint _epochStageChk = new InMemoryCheckpoint(Checkpoint.EpochStage, initValue: -1);
+		readonly ICheckpoint _epochCommitChk = new InMemoryCheckpoint(Checkpoint.EpochCommit, initValue: -1);
 		readonly ICheckpoint _truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 		readonly ICheckpoint _replicationCheckpoint = new InMemoryCheckpoint(-1);
 		readonly ICheckpoint _indexCheckpoint = new InMemoryCheckpoint(-1);
@@ -74,7 +76,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 			var nodeConfig = new TFChunkDbConfig(
 				PathName, new VersionedPatternFileNamingStrategy(PathName, "chunk-"), 1000, 10000, _writerChk,
-				_chaserChk, _epochChk, _truncateChk, _replicationCheckpoint, _indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
+				_chaserChk, _epochChk, _epochStageChk, _epochCommitChk, _truncateChk, _replicationCheckpoint, _indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
 			return nodeConfig;
 		}
 	}

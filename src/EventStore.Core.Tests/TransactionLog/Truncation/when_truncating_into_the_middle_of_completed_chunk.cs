@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			_config = TFChunkHelper.CreateDbConfig(PathName, 1711, 5500, 5500, 1111, 1000);
+			_config = TFChunkHelper.CreateDbConfig(PathName, 1711, chaserCheckpointPosition: 5500, epochCheckpointPosition: 5500, truncateCheckpoint: 1111, chunkSize: 1000);
 
 			var rnd = new Random();
 			_file1Contents = new byte[_config.ChunkSize];

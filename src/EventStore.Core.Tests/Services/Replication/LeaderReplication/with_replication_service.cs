@@ -126,12 +126,14 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			ICheckpoint writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 			ICheckpoint chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 			ICheckpoint epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+			ICheckpoint epochStageChk = new InMemoryCheckpoint(Checkpoint.EpochStage, initValue: -1);
+			ICheckpoint epochCommitChk = new InMemoryCheckpoint(Checkpoint.EpochCommit, initValue: -1);
 			ICheckpoint truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
 			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
 			var nodeConfig = new TFChunkDbConfig(
 				PathName, new VersionedPatternFileNamingStrategy(PathName, "chunk-"), 1000, 10000, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
+				chaserChk, epochChk, epochStageChk, epochCommitChk, truncateChk, replicationCheckpoint, indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
 			return nodeConfig;
 		}
 	}
