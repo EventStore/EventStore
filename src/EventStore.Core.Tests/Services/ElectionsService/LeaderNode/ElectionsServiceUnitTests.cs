@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				seeds.Add(endPoint);
 				var instanceId = Guid.Parse($"101EFD13-F9CD-49BE-9C6D-E6AF9AF5540{i}");
 				var memberInfo = MemberInfo.ForVNode(instanceId, DateTime.UtcNow, VNodeState.Unknown, true,
-					endPoint, null, endPoint, null, endPoint, null, 0, 0, -1, 0, 0, -1, -1, Guid.Empty, 0, false);
+					endPoint, null, endPoint, null, endPoint, null, 0, 0, -1, 0, 0, 0, -1, -1, Guid.Empty, 0, false);
 				members.Add(memberInfo);
 				_fakeTimeProvider = new FakeTimeProvider();
 				_scheduler = new FakeScheduler(new FakeTimer(), _fakeTimeProvider);
@@ -44,6 +44,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 				var writerCheckpoint = new InMemoryCheckpoint();
 				var readerCheckpoint = new InMemoryCheckpoint();
+				var replicationCheckpoint = new InMemoryCheckpoint();
 				var epochManager = new FakeEpochManager();
 				Func<long> lastCommitPosition = () => -1;
 				var electionsService = new Core.Services.ElectionsService(outputBus,
@@ -51,6 +52,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					3,
 					writerCheckpoint,
 					readerCheckpoint,
+					replicationCheckpoint,
 					epochManager,
 					() => -1, 0, new FakeTimeProvider());
 				electionsService.SubscribeMessages(inputBus);
@@ -73,7 +75,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				));
 				_nodes.Add(endPoint, inputBus);
 
-				var gossip = new NodeGossipService(outputBus, seedSource, memberInfo, writerCheckpoint, readerCheckpoint,
+				var gossip = new NodeGossipService(outputBus, seedSource, memberInfo, writerCheckpoint, readerCheckpoint, replicationCheckpoint,
 					epochManager, lastCommitPosition, 0, TimeSpan.FromMilliseconds(500), TimeSpan.FromDays(1),
 					TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1800), _fakeTimeProvider);
 				inputBus.Subscribe<SystemMessage.SystemInit>(gossip);
@@ -234,18 +236,19 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, long> lastCommitPosition = i => tc.CommitPositions[i];
 			Func<int, long> writerCheckpoint = i => tc.WriterCheckpoints[i];
 			Func<int, long> chaserCheckpoint = i => tc.ChaserCheckpoints[i];
+			Func<int, long> replicationCheckpoint = i => tc.ReplicationCheckpoints[i];
 			Func<int, int> nodePriority = i => tc.NodePriorities[i];
 
 			for (int index = 0; index < 3; index++) {
 				members[index] = CreateMemberInfo(index, epochId, lastCommitPosition, writerCheckpoint,
-					chaserCheckpoint, nodePriority);
+					chaserCheckpoint, replicationCheckpoint, nodePriority);
 			}
 
 			var clusterInfo = new ClusterInfo(members);
 			var previousLeaderId = tc.LastElectedLeader.HasValue ? IdForNode(tc.LastElectedLeader.Value) : Guid.Empty;
 
 			for (int index = 0; index < 3; index++) {
-				var prepareOk = CreatePrepareOk(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+				var prepareOk = CreatePrepareOk(index, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint, replicationCheckpoint,
 					nodePriority, previousLeaderId, clusterInfo);
 				prepareOks.Add(prepareOk.ServerId, prepareOk);
 			}
@@ -260,7 +263,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			Assert.AreEqual(IdForNode(tc.ExpectedLeaderCandidateNode), mc.InstanceId);
 
-			var ownInfo = CreateLeaderCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+			var ownInfo = CreateLeaderCandidate(1, epochId, lastCommitPosition, writerCheckpoint, chaserCheckpoint, replicationCheckpoint,
 				nodePriority, previousLeaderId);
 
 			var isLegit = SUT.IsLegitimateLeader(1, EndpointForNode(tc.ProposingNode),
@@ -275,35 +278,38 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			Func<int, long> lastCommitPosition,
 			Func<int, long> writerCheckpoint,
 			Func<int, long> chaserCheckpoint,
+			Func<int, long> replicationCheckpoint,
 			Func<int, int> nodePriority,
 			Guid previousLeaderId,
 			ClusterInfo clusterInfo) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
 			return new ElectionMessage.PrepareOk(1, id, ep, 1, 1, epochId, previousLeaderId, lastCommitPosition(i), writerCheckpoint(i),
-				chaserCheckpoint(i), nodePriority(i), clusterInfo);
+				chaserCheckpoint(i),replicationCheckpoint(i), nodePriority(i), clusterInfo);
 		}
 
 		static SUT.LeaderCandidate CreateLeaderCandidate(int i, Guid epochId,
 			Func<int, long> lastCommitPosition,
 			Func<int, long> writerCheckpoint,
 			Func<int, long> chaserCheckpoint,
+			Func<int, long> replicationCheckpoint,
 			Func<int, int> nodePriority,
 			Guid previousLeaderId) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
 			return new SUT.LeaderCandidate(id, ep, 1, 1, epochId, previousLeaderId, lastCommitPosition(i), writerCheckpoint(i),
-				chaserCheckpoint(i), nodePriority(i));
+				chaserCheckpoint(i),replicationCheckpoint(i), nodePriority(i));
 		}
 
 		static MemberInfo CreateMemberInfo(int i, Guid epochId, Func<int, long> lastCommitPosition,
 			Func<int, long> writerCheckpoint,
 			Func<int, long> chaserCheckpoint,
+			Func<int, long> replicationCheckpoint,
 			Func<int, int> nodePriority) {
 			var id = IdForNode(i);
 			var ep = EndpointForNode(i);
 			return MemberInfo.ForVNode(id, DateTime.Now, VNodeState.Follower, true, ep, ep, ep, ep, ep, null, 0, 0,
-				lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i), 1, 1, epochId, nodePriority(i), false);
+				lastCommitPosition(i), writerCheckpoint(i), chaserCheckpoint(i),replicationCheckpoint(i), 1, 1, epochId, nodePriority(i), false);
 		}
 
 		private static IPEndPoint EndpointForNode(int i) {
@@ -326,6 +332,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			public long[] CommitPositions { get; set; } = {1L, 1, 1};
 			public long[] WriterCheckpoints { get; set; } = {1L, 1, 1};
 			public long[] ChaserCheckpoints { get; set; } = {1L, 1, 1};
+			public long[] ReplicationCheckpoints { get; set; } = {1L, 1, 1};
 			public int[] NodePriorities { get; set; } = {1, 1, 1};
 
 			private static string GenerateName(int expectedLeaderCandidateNode, long[] commitPositions,

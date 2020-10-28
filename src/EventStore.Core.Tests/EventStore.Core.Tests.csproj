@@ -47,4 +47,35 @@
 			<None Remove="FakePlugin\**" />
 			<Compile Remove="FakePlugin\**" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Compile Remove="Services\ElectionsService\ElectionServiceUnit.cs" />
+	  <Compile Remove="Services\ElectionsService\ElectionsServiceTests.cs" />
+	  <Compile Remove="Services\ElectionsService\no_quorum_cases.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\ElectionParams.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\ElectionsInstance.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\ElectionsLogger.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\ElectionsProgressCondition.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\ElectionsSafetyCondition.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_3_nodes_full_gossip_no_http_loss_no_dup.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_3_nodes_full_gossip_some_http_loss_some_dup.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_4_nodes_full_gossip_no_http_loss_no_dup.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_4_nodes_full_gossip_some_http_loss_some_dup.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_4_nodes_full_gossip_some_http_loss_some_dup_rndseed_20676840.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_5_nodes_full_gossip_no_http_loss_no_dup.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_5_nodes_full_gossip_some_http_loss_some_dup.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_5_nodes_with_1_known_when_started_and_set_full_imediately.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\elections_service_5_nodes_with_1_known_when_started_and_set_to_full_later.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\GossipUpdateParams.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\InnerBusMessagesProcessor.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\RandomizedElectionsAndGossipTestCase.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\RandomizedElectionsTestCase.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\SendOverGrpcBlockingProcessor.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\SendOverGrpcProcessor.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\SeqHelpers.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\TimerMessageProcessor.cs" />
+	  <Compile Remove="Services\ElectionsService\Randomized\UpdateGossipProcessor.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Services\ElectionsService\Randomized\" />
+	</ItemGroup>
 </Project>

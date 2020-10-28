@@ -45,6 +45,7 @@ namespace EventStore.Core.Cluster {
 			public long LastCommitPosition { get; set; }
 			public long WriterCheckpoint { get; set; }
 			public long ChaserCheckpoint { get; set; }
+			public long ReplicationCheckpoint { get; set; }
 
 			public long EpochPosition { get; set; }
 			public int EpochNumber { get; set; }
@@ -91,6 +92,7 @@ namespace EventStore.Core.Cluster {
 				LastCommitPosition = member.LastCommitPosition;
 				WriterCheckpoint = member.WriterCheckpoint;
 				ChaserCheckpoint = member.ChaserCheckpoint;
+				ReplicationCheckpoint = member.ReplicationCheckpoint;
 
 				EpochPosition = member.EpochPosition;
 				EpochNumber = member.EpochNumber;
@@ -106,7 +108,7 @@ namespace EventStore.Core.Cluster {
 					$"InternalTcpIp: {InternalTcpIp}, InternalTcpPort: {InternalTcpPort}, InternalSecureTcpPort: {InternalSecureTcpPort}, " +
 					$"ExternalTcpIp: {ExternalTcpIp}, ExternalTcpPort: {ExternalTcpPort}, ExternalSecureTcpPort: {ExternalSecureTcpPort}, " +
 					$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
-					$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, " +
+					$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, ReplicationCheckpoint: {ReplicationCheckpoint}, " +
 					$"EpochPosition: {EpochPosition}, EpochNumber: {EpochNumber}, EpochId: {EpochId:B}, NodePriority: {NodePriority}, " +
 					$"IsReadOnlyReplica: {IsReadOnlyReplica}";
 			}

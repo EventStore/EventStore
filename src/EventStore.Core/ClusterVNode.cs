@@ -736,7 +736,7 @@ namespace EventStore.Core {
 			// ELECTIONS
 			if (!vNodeSettings.NodeInfo.IsReadOnlyReplica) {
 				var electionsService = new ElectionsService(_mainQueue, memberInfo, vNodeSettings.ClusterNodeCount,
-					db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
+					db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint, db.Config.ReplicationCheckpoint,
 					epochManager, () => readIndex.LastIndexedPosition, vNodeSettings.NodePriority, _timeProvider);
 				electionsService.SubscribeMessages(_mainBus);
 			}
@@ -745,7 +745,7 @@ namespace EventStore.Core {
 				// GOSSIP
 
 				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, memberInfo, db.Config.WriterCheckpoint,
-					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
+					db.Config.ChaserCheckpoint,db.Config.ReplicationCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference,
 					vNodeSettings.GossipTimeout,
 					vNodeSettings.DeadMemberRemovalPeriod,

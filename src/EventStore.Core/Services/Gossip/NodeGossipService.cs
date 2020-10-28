@@ -12,6 +12,7 @@ namespace EventStore.Core.Services.Gossip {
 	public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.UpdateNodePriority> {
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly ICheckpoint _chaserCheckpoint;
+		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
@@ -22,6 +23,7 @@ namespace EventStore.Core.Services.Gossip {
 			MemberInfo memberInfo,
 			ICheckpoint writerCheckpoint,
 			ICheckpoint chaserCheckpoint,
+			ICheckpoint replicationCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority,
@@ -39,6 +41,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			_writerCheckpoint = writerCheckpoint;
 			_chaserCheckpoint = chaserCheckpoint;
+			_replicationCheckpoint = replicationCheckpoint;
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
@@ -63,6 +66,7 @@ namespace EventStore.Core.Services.Gossip {
 				_getLastCommitPosition(),
 				_writerCheckpoint.Read(),
 				_chaserCheckpoint.Read(),
+				_replicationCheckpoint.Read(),
 				lastEpoch == null ? -1 : lastEpoch.EpochPosition,
 				lastEpoch == null ? -1 : lastEpoch.EpochNumber,
 				lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,

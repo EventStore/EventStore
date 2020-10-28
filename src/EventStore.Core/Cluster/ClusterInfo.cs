@@ -61,7 +61,7 @@ namespace EventStore.Core.Cluster {
 						: null,
 					new DnsEndPoint(x.HttpEndPoint.Address, (int)x.HttpEndPoint.Port),
 					x.AdvertiseHostToClientAs, (int)x.AdvertiseHttpPortToClientAs, (int)x.AdvertiseTcpPortToClientAs,
-					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
+					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint, x.ReplicationCheckpoint,
 					x.EpochPosition, x.EpochNumber, Uuid.FromDto(x.EpochId).ToGuid(), x.NodePriority,
 					x.IsReadOnlyReplica
 				)).ToArray();
@@ -97,6 +97,7 @@ namespace EventStore.Core.Cluster {
 				LastCommitPosition = x.LastCommitPosition,
 				WriterCheckpoint = x.WriterCheckpoint,
 				ChaserCheckpoint = x.ChaserCheckpoint,
+				ReplicationCheckpoint = x.ReplicationCheckpoint,
 				EpochPosition = x.EpochPosition,
 				EpochNumber = x.EpochNumber,
 				EpochId = Uuid.FromGuid(x.EpochId).ToDto(),

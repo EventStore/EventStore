@@ -52,6 +52,7 @@ namespace EventStore.Core.Services {
 		private readonly int _clusterSize;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly ICheckpoint _chaserCheckpoint;
+		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
@@ -82,6 +83,7 @@ namespace EventStore.Core.Services {
 			int clusterSize,
 			ICheckpoint writerCheckpoint,
 			ICheckpoint chaserCheckpoint,
+			ICheckpoint replicationCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority,
@@ -104,6 +106,7 @@ namespace EventStore.Core.Services {
 			_clusterSize = clusterSize;
 			_writerCheckpoint = writerCheckpoint;
 			_chaserCheckpoint = chaserCheckpoint;
+			_replicationCheckpoint = replicationCheckpoint;
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
@@ -119,7 +122,7 @@ namespace EventStore.Core.Services {
 					memberInfo.ExternalTcpEndPoint, memberInfo.ExternalSecureTcpEndPoint,
 					memberInfo.HttpEndPoint,
 					memberInfo.AdvertiseHostToClientAs, memberInfo.AdvertiseHttpPortToClientAs, memberInfo.AdvertiseTcpPortToClientAs,
-					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
+					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint, ownInfo.ReplicationCheckpoint,
 					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority,
 					memberInfo.IsReadOnlyReplica)
 			};
@@ -361,6 +364,7 @@ namespace EventStore.Core.Services {
 			return new ElectionMessage.PrepareOk(view, ownInfo.InstanceId, ownInfo.HttpEndPoint,
 				ownInfo.EpochNumber, ownInfo.EpochPosition, ownInfo.EpochId, ownInfo.EpochLeaderInstanceId,
 				ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
+				ownInfo.ReplicationCheckpoint,
 				ownInfo.NodePriority, clusterInfo);
 		}
 
@@ -415,7 +419,7 @@ namespace EventStore.Core.Services {
 				leader.InstanceId, leader.HttpEndPoint,
 				_lastInstalledView,
 				leader.EpochNumber, leader.EpochPosition, leader.EpochId, leader.EpochLeaderInstanceId,
-				leader.LastCommitPosition, leader.WriterCheckpoint, leader.ChaserCheckpoint, leader.NodePriority);
+				leader.LastCommitPosition, leader.WriterCheckpoint, leader.ChaserCheckpoint, leader.ReplicationCheckpoint, leader.NodePriority);
 			Handle(new ElectionMessage.Accept(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
 				leader.InstanceId, leader.HttpEndPoint, _lastInstalledView));
 			SendToAllExceptMe(proposal);
@@ -424,10 +428,8 @@ namespace EventStore.Core.Services {
 		public static LeaderCandidate GetBestLeaderCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received,
 			MemberInfo[] servers, Guid? resigningLeaderInstanceId, int lastAttemptedView) {
 			var best = received.Values
-				.OrderByDescending(x => x.EpochNumber)
-				.ThenByDescending(x => x.LastCommitPosition)
-				.ThenByDescending(x => x.WriterCheckpoint)
-				.ThenByDescending(x => x.ChaserCheckpoint)
+				.OrderByDescending(x => x.ReplicationCheckpoint)
+				.ThenByDescending(x => x.EpochNumber)
 				.ThenByDescending(x => x.NodePriority)
 				.ThenByDescending(x => x.ServerId)
 				.FirstOrDefault();
@@ -436,7 +438,7 @@ namespace EventStore.Core.Services {
 
 			var bestCandidate = new LeaderCandidate(best.ServerId, best.ServerHttpEndPoint,
 				best.EpochNumber, best.EpochPosition, best.EpochId, best.EpochLeaderInstanceId,
-				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
+				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint,best.ReplicationCheckpoint, best.NodePriority);
 
 			if (best.EpochLeaderInstanceId != Guid.Empty) {
 				//best.EpochLeaderInstanceId = id of the last leader/master which has been able to write an epoch record to the transaction log and get it replicated
@@ -458,7 +460,7 @@ namespace EventStore.Core.Services {
 					Log.Debug("ELECTIONS: (V={lastAttemptedView}) Previous Leader (L={previousLeaderId:B}) from last epoch record is still alive.", lastAttemptedView, previousLeaderId);
 					previousLeaderCandidate = new LeaderCandidate(leaderMsg.ServerId, leaderMsg.ServerHttpEndPoint,
 						leaderMsg.EpochNumber, leaderMsg.EpochPosition, leaderMsg.EpochId, leaderMsg.EpochLeaderInstanceId,
-						leaderMsg.LastCommitPosition, leaderMsg.WriterCheckpoint, leaderMsg.ChaserCheckpoint,
+						leaderMsg.LastCommitPosition, leaderMsg.WriterCheckpoint, leaderMsg.ChaserCheckpoint,leaderMsg.ReplicationCheckpoint,
 						leaderMsg.NodePriority);
 				}
 
@@ -486,7 +488,7 @@ namespace EventStore.Core.Services {
 							previousLeaderCandidate = new LeaderCandidate(member.InstanceId,
 								member.HttpEndPoint,
 								member.EpochNumber, member.EpochPosition, member.EpochId, best.EpochLeaderInstanceId,
-								member.LastCommitPosition, member.WriterCheckpoint, member.ChaserCheckpoint,
+								member.LastCommitPosition, member.WriterCheckpoint, member.ChaserCheckpoint, member.ReplicationCheckpoint,
 								member.NodePriority);
 							break;
 						}
@@ -563,7 +565,7 @@ namespace EventStore.Core.Services {
 
 			var candidate = new LeaderCandidate(message.LeaderId, message.LeaderHttpEndPoint,
 				message.EpochNumber, message.EpochPosition, message.EpochId, message.EpochLeaderInstanceId,
-				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.NodePriority);
+				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.ReplicationCheckpoint, message.NodePriority);
 
 			var ownInfo = GetOwnInfo();
 			if (!IsLegitimateLeader(message.View, message.ServerHttpEndPoint, message.ServerId,
@@ -633,13 +635,14 @@ namespace EventStore.Core.Services {
 			var lastEpoch = _epochManager.GetLastEpoch();
 			var writerCheckpoint = _writerCheckpoint.Read();
 			var chaserCheckpoint = _chaserCheckpoint.Read();
+			var replicationCheckpoint = _replicationCheckpoint.Read();
 			var lastCommitPosition = _getLastCommitPosition();
 			return new LeaderCandidate(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
 				lastEpoch == null ? -1 : lastEpoch.EpochNumber,
 				lastEpoch == null ? -1 : lastEpoch.EpochPosition,
 				lastEpoch == null ? Guid.Empty : lastEpoch.EpochId,
 				lastEpoch == null ? Guid.Empty : lastEpoch.LeaderInstanceId,
-				lastCommitPosition, writerCheckpoint, chaserCheckpoint, _nodePriority);
+				lastCommitPosition, writerCheckpoint, chaserCheckpoint,replicationCheckpoint, _nodePriority);
 		}
 		
 		private static string FormatNodeInfo(LeaderCandidate candidate) {
@@ -669,12 +672,22 @@ namespace EventStore.Core.Services {
 			public readonly long LastCommitPosition;
 			public readonly long WriterCheckpoint;
 			public readonly long ChaserCheckpoint;
+			public readonly long ReplicationCheckpoint;
+
 
 			public readonly int NodePriority;
 
-			public LeaderCandidate(Guid instanceId, EndPoint httpEndPoint,
-				int epochNumber, long epochPosition, Guid epochId, Guid epochLeaderInstanceId,
-				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
+			public LeaderCandidate(
+				Guid instanceId, 
+				EndPoint httpEndPoint,
+				int epochNumber, 
+				long epochPosition, 
+				Guid epochId, 
+				Guid epochLeaderInstanceId,
+				long lastCommitPosition, 
+				long writerCheckpoint, 
+				long chaserCheckpoint,
+				long replicationCheckpoint,
 				int nodePriority) {
 				InstanceId = instanceId;
 				HttpEndPoint = httpEndPoint;
@@ -685,8 +698,11 @@ namespace EventStore.Core.Services {
 				LastCommitPosition = lastCommitPosition;
 				WriterCheckpoint = writerCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
+				ReplicationCheckpoint = replicationCheckpoint;
 				NodePriority = nodePriority;
 			}
+
+			
 		}
 	}
 }

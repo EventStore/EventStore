@@ -1550,14 +1550,16 @@ namespace EventStore.Core {
 			ICheckpoint chaserChk;
 			ICheckpoint epochChk;
 			ICheckpoint truncateChk;
-			//todo(clc) : promote these to file backed checkpoints re:project-io
-			ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
-			ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+			ICheckpoint replicationChk;
+			ICheckpoint indexChk;
 			if (inMemDb) {
 				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 				epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
 				truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
+				replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+				indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+
 			} else {
 				try {
 					if (!Directory.Exists(dbPath)) // mono crashes without this check
@@ -1581,12 +1583,14 @@ namespace EventStore.Core {
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
+				var replicationCheckFilename = Path.Combine(dbPath, Checkpoint.Replication + ".chk");
+				var indexCheckFilename = Path.Combine(dbPath, Checkpoint.Index + ".chk");
 				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
-					initValue: -1);
-				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
-					cached: true, initValue: -1);
+				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
+				replicationChk = new MemoryMappedFileCheckpoint(replicationCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
+				indexChk = new MemoryMappedFileCheckpoint(indexCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
 			}
 
 			var cache = cachedChunks >= 0

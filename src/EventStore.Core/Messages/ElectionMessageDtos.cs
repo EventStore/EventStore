@@ -75,6 +75,7 @@ namespace EventStore.Core.Messages {
 			public long LastCommitPosition { get; set; }
 			public long WriterCheckpoint { get; set; }
 			public long ChaserCheckpoint { get; set; }
+			public long ReplicationCheckpoint { get; set; }
 
 			public int NodePriority { get; set; }
 			public ClusterInfo ClusterInfo { get; set; }
@@ -96,6 +97,7 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = message.LastCommitPosition;
 				WriterCheckpoint = message.WriterCheckpoint;
 				ChaserCheckpoint = message.ChaserCheckpoint;
+				ReplicationCheckpoint = message.ReplicationCheckpoint;
 
 				NodePriority = message.NodePriority;
 				ClusterInfo = message.ClusterInfo;
@@ -117,6 +119,7 @@ namespace EventStore.Core.Messages {
 			public long LastCommitPosition { get; set; }
 			public long WriterCheckpoint { get; set; }
 			public long ChaserCheckpoint { get; set; }
+			public long ReplicationCheckpoint { get; set; }
 			public int EpochNumber { get; set; }
 			public long EpochPosition { get; set; }
 			public Guid EpochId { get; set; }
@@ -143,6 +146,7 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = message.LastCommitPosition;
 				WriterCheckpoint = message.WriterCheckpoint;
 				ChaserCheckpoint = message.ChaserCheckpoint;
+				ReplicationCheckpoint = message.ReplicationCheckpoint;
 				NodePriority = message.NodePriority;
 			}
 		}

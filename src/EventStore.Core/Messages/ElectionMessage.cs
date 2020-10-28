@@ -159,6 +159,7 @@ namespace EventStore.Core.Messages {
 			public readonly long LastCommitPosition;
 			public readonly long WriterCheckpoint;
 			public readonly long ChaserCheckpoint;
+			public readonly long ReplicationCheckpoint;
 			public readonly int NodePriority;
 			public readonly ClusterInfo ClusterInfo;
 
@@ -172,6 +173,7 @@ namespace EventStore.Core.Messages {
 				long lastCommitPosition,
 				long writerCheckpoint,
 				long chaserCheckpoint,
+				long replicationCheckpoint,
 				int nodePriority,
 				ClusterInfo clusterInfo) {
 				View = view;
@@ -184,6 +186,7 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = lastCommitPosition;
 				WriterCheckpoint = writerCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
+				ReplicationCheckpoint = replicationCheckpoint;
 				NodePriority = nodePriority;
 				ClusterInfo = clusterInfo;
 			}
@@ -200,6 +203,7 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = dto.LastCommitPosition;
 				WriterCheckpoint = dto.WriterCheckpoint;
 				ChaserCheckpoint = dto.ChaserCheckpoint;
+				ReplicationCheckpoint = dto.ReplicationCheckpoint;
 				NodePriority = dto.NodePriority;
 				ClusterInfo = dto.ClusterInfo;
 			}
@@ -207,9 +211,9 @@ namespace EventStore.Core.Messages {
 			public override string ToString() {
 				return string.Format(
 					"---- PrepareOk: view {0}, serverId {1}, serverHttp {2}, epochNumber {3}, " +
-					"epochPosition {4}, epochId {5}, epochLeaderInstanceId {6:B}, lastCommitPosition {7}, writerCheckpoint {8}, chaserCheckpoint {9}, nodePriority: {10}, clusterInfo: {11}",
+					"epochPosition {4}, epochId {5}, epochLeaderInstanceId {6:B}, lastCommitPosition {7}, writerCheckpoint {8}, chaserCheckpoint {9}, replicationCheckpoint {10}, nodePriority: {11}, clusterInfo: {12}",
 					View, ServerId, ServerHttpEndPoint, EpochNumber,
-					EpochPosition, EpochId, EpochLeaderInstanceId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, NodePriority, ClusterInfo);
+					EpochPosition, EpochId, EpochLeaderInstanceId, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, ReplicationCheckpoint, NodePriority, ClusterInfo);
 			}
 		}
 
@@ -233,11 +237,12 @@ namespace EventStore.Core.Messages {
 			public readonly long LastCommitPosition;
 			public readonly long WriterCheckpoint;
 			public readonly long ChaserCheckpoint;
+			public readonly long ReplicationCheckpoint;
 			public readonly int NodePriority;
 
 			public Proposal(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId, EndPoint leaderHttpEndPoint,
 				int view, int epochNumber, long epochPosition, Guid epochId, Guid epochLeaderInstanceId,
-				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, int nodePriority) {
+				long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, long replicationCheckpoint, int nodePriority) {
 				ServerId = serverId;
 				ServerHttpEndPoint = serverHttpEndPoint;
 				LeaderId = leaderId;
@@ -249,6 +254,7 @@ namespace EventStore.Core.Messages {
 				EpochLeaderInstanceId = epochLeaderInstanceId;
 				LastCommitPosition = lastCommitPosition;
 				WriterCheckpoint = writerCheckpoint;
+				ReplicationCheckpoint = replicationCheckpoint;
 				ChaserCheckpoint = chaserCheckpoint;
 				NodePriority = nodePriority;
 			}
@@ -268,15 +274,16 @@ namespace EventStore.Core.Messages {
 				LastCommitPosition = dto.LastCommitPosition;
 				WriterCheckpoint = dto.WriterCheckpoint;
 				ChaserCheckpoint = dto.ChaserCheckpoint;
+				ReplicationCheckpoint = dto.ReplicationCheckpoint;
 				NodePriority = dto.NodePriority;
 			}
 
 			public override string ToString() {
 				return string.Format(
 					"---- Proposal: serverId {0}, serverHttp {1}, leaderId {2}, leaderHttp {3}, "
-					+ "view {4}, lastCommitCheckpoint {5}, writerCheckpoint {6}, chaserCheckpoint {7}, epoch {8}@{9}:{10:B} (L={11:B}), NodePriority {12}",
+					+ "view {4}, lastCommitCheckpoint {5}, writerCheckpoint {6}, chaserCheckpoint {7}, replicationCheckpoint {8}, epoch {9}@{10}:{11:B} (L={12:B}), NodePriority {13}",
 					ServerId, ServerHttpEndPoint, LeaderId, LeaderHttpEndPoint,
-					View, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint,
+					View, LastCommitPosition, WriterCheckpoint, ChaserCheckpoint, ReplicationCheckpoint,
 					EpochNumber, EpochPosition, EpochId, EpochLeaderInstanceId, NodePriority);
 			}
 		}

@@ -25,6 +25,7 @@ namespace EventStore.Core.Cluster {
 		public readonly long LastCommitPosition;
 		public readonly long WriterCheckpoint;
 		public readonly long ChaserCheckpoint;
+		public readonly long ReplicationCheckpoint;
 		public readonly long EpochPosition;
 		public readonly int EpochNumber;
 		public readonly Guid EpochId;
@@ -37,7 +38,7 @@ namespace EventStore.Core.Cluster {
 			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, isAlive,
 				httpEndPoint, null, httpEndPoint, null,
 				httpEndPoint, null, 0, 0,
-				-1, -1, -1, -1, -1, Guid.Empty, 0, false);
+				-1, -1, -1, -1, -1, -1, Guid.Empty, 0, false);
 		}
 
 		public static MemberInfo ForVNode(Guid instanceId,
@@ -55,6 +56,7 @@ namespace EventStore.Core.Cluster {
 			long lastCommitPosition,
 			long writerCheckpoint,
 			long chaserCheckpoint,
+			long replicationCheckpoint,
 			long epochPosition,
 			int epochNumber,
 			Guid epochId,
@@ -66,7 +68,7 @@ namespace EventStore.Core.Cluster {
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
 				httpEndPoint, advertiseHostToClientAs, advertiseHttpPortToClientAs, advertiseTcpPortToClientAs,
-				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
+				lastCommitPosition, writerCheckpoint, chaserCheckpoint, replicationCheckpoint,
 				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica);
 		}
 		
@@ -90,14 +92,14 @@ namespace EventStore.Core.Cluster {
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
 				httpEndPoint, advertiseHostToClientAs, advertiseHttpPortToClientAs, advertiseTcpPortToClientAs,
-				-1, -1, -1, -1, -1, Guid.Empty, nodePriority, isReadOnlyReplica);
+				-1, -1, -1, -1, -1, -1, Guid.Empty, nodePriority, isReadOnlyReplica);
 		}
 
 		internal MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
 			EndPoint internalTcpEndPoint, EndPoint internalSecureTcpEndPoint,
 			EndPoint externalTcpEndPoint, EndPoint externalSecureTcpEndPoint,
 			EndPoint httpEndPoint, string advertiseHostToClientAs, int advertiseHttpPortToClientAs, int advertiseTcpPortToClientAs,
-			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
+			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint, long replicationCheckpoint,
 			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 			Ensure.NotNull(httpEndPoint, nameof(httpEndPoint));
@@ -120,6 +122,7 @@ namespace EventStore.Core.Cluster {
 			LastCommitPosition = lastCommitPosition;
 			WriterCheckpoint = writerCheckpoint;
 			ChaserCheckpoint = chaserCheckpoint;
+			ReplicationCheckpoint = replicationCheckpoint;
 
 			EpochPosition = epochPosition;
 			EpochNumber = epochNumber;
@@ -149,6 +152,7 @@ namespace EventStore.Core.Cluster {
 			LastCommitPosition = dto.LastCommitPosition;
 			WriterCheckpoint = dto.WriterCheckpoint;
 			ChaserCheckpoint = dto.ChaserCheckpoint;
+			ReplicationCheckpoint = dto.ReplicationCheckpoint;
 			EpochPosition = dto.EpochPosition;
 			EpochNumber = dto.EpochNumber;
 			EpochId = dto.EpochId;
@@ -171,6 +175,7 @@ namespace EventStore.Core.Cluster {
 			long? lastCommitPosition = null,
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
+			long? replicationCheckpoint = null,
 			EpochRecord epoch = null,
 			int? nodePriority = null) {
 			return new MemberInfo(InstanceId,
@@ -188,6 +193,7 @@ namespace EventStore.Core.Cluster {
 				lastCommitPosition ?? LastCommitPosition,
 				writerCheckpoint ?? WriterCheckpoint,
 				chaserCheckpoint ?? ChaserCheckpoint,
+				replicationCheckpoint ?? ReplicationCheckpoint,
 				epoch != null ? epoch.EpochPosition : EpochPosition,
 				epoch != null ? epoch.EpochNumber : EpochNumber,
 				epoch != null ? epoch.EpochId : EpochId,
@@ -206,7 +212,7 @@ namespace EventStore.Core.Cluster {
 				$"{(ExternalTcpEndPoint == null ? "n/a" : ExternalTcpEndPoint.ToString())}, " +
 				$"{(ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString())}, " +
 				$"{HttpEndPoint}, (ADVERTISED: HTTP:{AdvertiseHostToClientAs}:{AdvertiseHttpPortToClientAs}, TCP:{AdvertiseHostToClientAs}:{AdvertiseTcpPortToClientAs})] " +
-				$"{LastCommitPosition}/{WriterCheckpoint}/{ChaserCheckpoint}/E{EpochNumber}@{EpochPosition}:{EpochId:B} | {TimeStamp:yyyy-MM-dd HH:mm:ss.fff}";
+				$"{LastCommitPosition}/{WriterCheckpoint}/{ChaserCheckpoint}/{ReplicationCheckpoint}/E{EpochNumber}@{EpochPosition}:{EpochId:B} | {TimeStamp:yyyy-MM-dd HH:mm:ss.fff}";
 		}
 
 		public bool Equals(MemberInfo other) {

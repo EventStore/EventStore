@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		[SetUp]
 		public void Setup() {
 			SUT = new NodeGossipService(_bus, _gossipSeedSource, MemberInfoForVNode(_currentNode, DateTime.UtcNow),
-				new InMemoryCheckpoint(0), new InMemoryCheckpoint(0), new FakeEpochManager(), () => 0L, 0,
+				new InMemoryCheckpoint(0), new InMemoryCheckpoint(0),new InMemoryCheckpoint(0), new FakeEpochManager(), () => 0L, 0,
 				_gossipInterval, _allowedTimeDifference, _gossipTimeout, _deadMemberRemovalPeriod, _timeProvider, _getNodeToGossipTo);
 
 			foreach (var message in Given()) {
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			return MemberInfo.ForVNode(nodeInfo.InstanceId, utcNow, nodeState, true,
 				nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp, nodeInfo.ExternalTcp,
 				nodeInfo.ExternalSecureTcp, nodeInfo.HttpEndPoint, null, 0, 0,
-				0, writerCheckpoint ?? 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0, false);
+				0, writerCheckpoint ?? 0, 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0, false);
 		}
 
 		/// <summary>
@@ -852,7 +852,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
 				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, null, 0, 0,
-				0, 0, 0, -1, -1, Guid.Empty, 0, false);
+				0, 0, 0, 0,-1, -1, Guid.Empty, 0, false);
 		}
 
 		[Test]
@@ -899,7 +899,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
 				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, null, 0, 0,
-				0, 0, 0, -1, -1, Guid.Empty, 0, false);
+				0, 0, 0,0, -1, -1, Guid.Empty, 0, false);
 		}
 
 		[Test]

@@ -81,6 +81,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				request.LastCommitPosition,
 				request.WriterCheckpoint,
 				request.ChaserCheckpoint,
+				request.ReplicationCheckpoint,
 				request.NodePriority,
 				ClusterInfo.FromGrpcClusterInfo(request.ClusterInfo)));
 			return EmptyResult;
@@ -104,6 +105,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				request.LastCommitPosition,
 				request.WriterCheckpoint,
 				request.ChaserCheckpoint,
+				request.ReplicationCheckpoint,
 				request.NodePriority));
 			return EmptyResult;
 		}
