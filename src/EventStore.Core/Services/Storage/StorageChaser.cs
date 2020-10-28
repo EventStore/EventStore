@@ -188,7 +188,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 				case LogRecordType.System: {
 					var record = (SystemLogRecord)result.LogRecord;
-					ProcessSystemRecord(record);
+					ProcessSystemRecord(record, result.RecordPostPosition);
 					break;
 				}
 				default:
@@ -246,7 +246,7 @@ namespace EventStore.Core.Services.Storage {
 				record.TransactionPosition, firstEventNumber, lastEventNumber));
 		}
 
-		private void ProcessSystemRecord(SystemLogRecord record) {
+		private void ProcessSystemRecord(SystemLogRecord record, long postPosition) {
 			CommitPendingTransaction(_transaction, record.LogPosition);
 
 			if (record.SystemRecordType == SystemRecordType.Epoch) {
@@ -255,7 +255,7 @@ namespace EventStore.Core.Services.Storage {
 				// every time we encounter EpochRecord while chasing. SetLastEpoch call is idempotent,
 				// but does integrity checks.
 				var epoch = record.GetEpochRecord();
-				_epochManager.SetLastEpoch(epoch);
+				_epochManager.EpochRecordChased(epoch, postPosition);
 			}
 		}
 

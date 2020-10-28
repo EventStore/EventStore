@@ -1,16 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Services.Replication;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.EpochManager {
-	public class EpochManager : IEpochManager {
+	public class EpochManager : IEpochManager,
+		IHandle<ReplicationTrackingMessage.ReplicatedTo>{
 		private static readonly ILogger Log = Serilog.Log.ForContext<EpochManager>();
 		private readonly IPublisher _bus;
 
@@ -20,7 +23,10 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			get { return _lastEpochNumber; }
 		}
 
-		private readonly ICheckpoint _checkpoint;
+		private readonly ICheckpoint _epochCheckpoint;
+		private readonly ICheckpoint _epochStageCheckpoint;
+		private readonly ICheckpoint _epochCommitCheckpoint;
+		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ITransactionFileWriter _writer;
 		private readonly Guid _instanceId;
@@ -30,10 +36,15 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private volatile int _lastEpochNumber = -1;
 		private long _lastEpochPosition = -1;
 		private int _minCachedEpochNumber = -1;
+		private Queue<(EpochRecord epoch, long epochRecordPostPosition)> _nonReplicatedEpochs = new Queue<(EpochRecord epoch, long epochRecordPostPosition)>();
+		private object _nonReplicatedEpochsLock = new object();
 
 		public EpochManager(IPublisher bus,
 			int cachedEpochCount,
-			ICheckpoint checkpoint,
+			ICheckpoint epochCheckpoint,
+			ICheckpoint epochStageCheckpoint,
+			ICheckpoint epochCommitCheckpoint,
+			ICheckpoint replicationCheckpoint,
 			ITransactionFileWriter writer,
 			int initialReaderCount,
 			int maxReaderCount,
@@ -41,7 +52,10 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			Guid instanceId) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
-			Ensure.NotNull(checkpoint, "checkpoint");
+			Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
+			Ensure.NotNull(epochStageCheckpoint, "epochStageCheckpoint");
+			Ensure.NotNull(epochCommitCheckpoint, "epochCommitCheckpoint");
+			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 			Ensure.NotNull(writer, "chunkWriter");
 			Ensure.Nonnegative(initialReaderCount, "initialReaderCount");
 			Ensure.Positive(maxReaderCount, "maxReaderCount");
@@ -52,7 +66,10 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 			_bus = bus;
 			CachedEpochCount = cachedEpochCount;
-			_checkpoint = checkpoint;
+			_epochCheckpoint = epochCheckpoint;
+			_epochStageCheckpoint = epochStageCheckpoint;
+			_epochCommitCheckpoint = epochCommitCheckpoint;
+			_replicationCheckpoint = replicationCheckpoint;
 			_readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount,
 				maxReaderCount, readerFactory);
 			_writer = writer;
@@ -60,7 +77,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		}
 
 		public void Init() {
-			ReadEpochs(CachedEpochCount);
+			ReadReplicatedEpochs(CachedEpochCount);
+			ReadNonReplicatedEpochs();
 		}
 
 		public EpochRecord GetLastEpoch() {
@@ -69,26 +87,23 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 		}
 
-		private void ReadEpochs(int maxEpochCount) {
+		private EpochRecord GetLastNonReplicatedEpoch() {
+			lock (_nonReplicatedEpochsLock) {
+				var lastEpoch = _nonReplicatedEpochs.LastOrDefault();
+				if (!lastEpoch.Equals(default)) {
+					return lastEpoch.epoch;
+				}
+			}
+
+			return GetLastEpoch();
+		}
+
+
+		private void ReadReplicatedEpochs(int maxEpochCount) {
 			lock (_locker) {
 				var reader = _readers.Get();
 				try {
-					long epochPos = _checkpoint.Read();
-					if (epochPos < 0) // we probably have lost/uninitialized epoch checkpoint
-					{
-						reader.Reposition(_writer.Checkpoint.Read());
-
-						SeqReadResult result;
-						while ((result = reader.TryReadPrev()).Success) {
-							var rec = result.LogRecord;
-							if (rec.RecordType != LogRecordType.System ||
-							    ((SystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
-								continue;
-							epochPos = rec.LogPosition;
-							break;
-						}
-					}
-
+					long epochPos = _epochCheckpoint.Read();
 					int cnt = 0;
 					while (epochPos >= 0 && cnt < maxEpochCount) {
 						var result = reader.TryReadAt(epochPos);
@@ -117,6 +132,81 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					_readers.Return(reader);
 				}
 			}
+		}
+
+		private void ReadNonReplicatedEpochs() {
+			var reader = _readers.Get();
+
+			try {
+				var epochStageChk = _epochStageCheckpoint.Read();
+				var epochCommitChk = _epochCommitCheckpoint.Read();
+				EpochRecord lastNonReplicatedEpoch = null;
+
+				if (epochStageChk != -1) {
+					try {
+						lastNonReplicatedEpoch = ReadEpochRecordAtPosition(reader, epochStageChk).Epoch;
+						Log.Verbose("Successfully read epoch record at epoch stage checkpoint ({epochStageCheckpoint}). Epoch record: {epoch}.", epochStageChk, lastNonReplicatedEpoch);
+						if (epochCommitChk != epochStageChk) {
+							Log.Verbose(
+								"Setting the epoch commit checkpoint ({epochCommitCheckpoint}) to the value of the epoch stage checkpoint ({epochStageCheckpoint}).", epochCommitChk, epochStageChk);
+							_epochCommitCheckpoint.Write(epochStageChk);
+							_epochCommitCheckpoint.Flush();
+						}
+					} catch (Exception) {
+						//it is possible that the epoch record was not yet written at this point
+						//so we revert the stage checkpoint to the value of the commit checkpoint
+						Log.Verbose("Failed to read epoch record at epoch stage checkpoint ({epochStageCheckpoint}). Reverting epoch stage checkpoint to the value of the epoch commit checkpoint ({epochCommitCheckpoint})",
+							epochStageChk, epochCommitChk);
+						_epochStageCheckpoint.Write(epochCommitChk);
+						_epochStageCheckpoint.Flush();
+					}
+				}
+
+				if (lastNonReplicatedEpoch == null && epochCommitChk != -1) {
+					lastNonReplicatedEpoch = ReadEpochRecordAtPosition(reader, epochCommitChk).Epoch;
+				}
+
+				if (lastNonReplicatedEpoch == null) {
+					return;
+				}
+
+				var nonReplicatedEpochs = new Stack<(EpochRecord epoch, long postPosition)>();
+				var curEpochPos = lastNonReplicatedEpoch.EpochPosition;
+
+				while(curEpochPos >=0 && curEpochPos > _lastEpochPosition) {
+					var (epoch, postPosition) = ReadEpochRecordAtPosition(reader, curEpochPos);
+					Log.Verbose("Successfully read non-replicated epoch record at {position}. Epoch record: {epoch}", curEpochPos, epoch);
+					nonReplicatedEpochs.Push((epoch, postPosition));
+					curEpochPos = epoch.PrevEpochPosition;
+				}
+
+				Log.Verbose("Loaded {count} non-replicated epoch records.", nonReplicatedEpochs.Count);
+				while(nonReplicatedEpochs.TryPop(out var x)){
+					EpochRecordChased(x.epoch, x.postPosition);
+				}
+			}
+			finally {
+				_readers.Return(reader);
+			}
+		}
+
+		private (EpochRecord Epoch, long PostPosition) ReadEpochRecordAtPosition(ITransactionFileReader reader, long epochPos) {
+			RecordReadResult result;
+			if (!(result = reader.TryReadAt(epochPos)).Success)
+				throw new Exception($"Unable to read epoch record at position: {epochPos}");
+
+			var rec = result.LogRecord;
+			if (rec.RecordType != LogRecordType.System)
+				throw new Exception(string.Format("LogRecord is not SystemLogRecord: {0}.",
+					result.LogRecord));
+
+			var sysRec = (SystemLogRecord)rec;
+			if (sysRec.SystemRecordType != SystemRecordType.Epoch)
+				throw new Exception(string.Format("SystemLogRecord is not of Epoch sub-type: {0}.",
+					result.LogRecord));
+
+			var epoch = sysRec.GetEpochRecord();
+			return (epoch, result.NextPosition);
 		}
 
 		public EpochRecord[] GetLastEpochs(int maxCount) {
@@ -186,70 +276,60 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 		// This method should be called from single thread.
 		public void WriteNewEpoch() {
-			// Set epoch checkpoint to -1, so if we crash after new epoch record was written, 
-			// but epoch checkpoint wasn't updated, on restart we don't miss the latest epoch.
-			// So on node start, if there is no epoch checkpoint or it contains negative position, 
-			// we do sequential scan from the end of TF to find the latest epoch record.
-			//NOTE AN: It seems we don't need to pessimistically set epoch checkpoint to -1, because
-			//NOTE AN: if crash occurs in the middle of writing epoch or updating epoch checkpoint,
-			//NOTE AN: then on restart we'll start from chaser checkpoint (which is not updated yet)
-			//NOTE AN: and process all records till the writer checkpoint, so all epochs will be processed 
-			//NOTE AN: and epoch checkpoint will ultimately contain correct last epoch position. This process
-			//NOTE AN: is similar to index rebuild process.
-			//_checkpoint.Write(-1);
-			//_checkpoint.Flush();
-
 			// Now we write epoch record (with possible retry, if we are at the end of chunk) 
-			// and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
-			// excessive record, if present.
 			// If we are writing the very first epoch, last position will be -1.
-			var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition, _instanceId);
-			UpdateLastEpoch(epoch, flushWriter: true);
+			// We will later update the last epoch after the epoch record is chased from the transaction log AND has been replicated to a quorum number of nodes
+			var lastEpoch = GetLastNonReplicatedEpoch();
+			var lastEpochNumber = lastEpoch?.EpochNumber ?? -1;
+			var lastEpochPosition = lastEpoch?.EpochPosition ?? -1;
+
+			long pos = _writer.Checkpoint.ReadNonFlushed();
+			var epoch = new EpochRecord(pos, lastEpochNumber + 1, Guid.NewGuid(), lastEpochPosition, DateTime.UtcNow, _instanceId);
+			WriteEpochRecordWithRetry(epoch);
 		}
 
-		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition, Guid instanceId) {
-			long pos = _writer.Checkpoint.ReadNonFlushed();
-			var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
+		public void WriteEpochRecordWithRetry(EpochRecord epoch) {
 			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 				SystemRecordSerialization.Json, epoch.AsSerialized());
+			var pos = epoch.EpochPosition;
 
-			if (!_writer.Write(rec, out pos)) {
-				epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
+			if (!_writer.Write(rec, out _)) { //write will fail if the chunk is full
+				pos = _writer.Checkpoint.ReadNonFlushed();
+				epoch = new EpochRecord(pos, epoch.EpochNumber, epoch.EpochId, epoch.PrevEpochPosition, DateTime.UtcNow, epoch.LeaderInstanceId);
 				rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 					SystemRecordSerialization.Json, epoch.AsSerialized());
-				if (!_writer.Write(rec, out pos))
+				if (!_writer.Write(rec, out _))
 					throw new Exception(string.Format("Second write try failed at {0}.", epoch.EpochPosition));
 			}
 
+			_epochStageCheckpoint.Write(pos);
+			_epochStageCheckpoint.Flush();
+
+			//flush the writer to trigger the storage chaser and chase the epoch record
+			_writer.Flush();
+
+			_epochCommitCheckpoint.Write(pos);
+			_epochCommitCheckpoint.Flush();
+
 			Log.Debug("=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
-				epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
+				epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition, epoch.LeaderInstanceId);
 
 			_bus.Publish(new SystemMessage.EpochWritten(epoch));
-			return epoch;
 		}
 
-		public void SetLastEpoch(EpochRecord epoch) {
+		public void EpochRecordChased(EpochRecord epoch, long epochRecordPostPosition) {
 			Ensure.NotNull(epoch, "epoch");
+			lock (_nonReplicatedEpochsLock) {
+				Log.Verbose(
+					"Enqueueing epoch record chased from transaction log: {epoch}. Epoch record post position: {epochRecordPostPosition}",
+					epoch, epochRecordPostPosition);
 
-			lock (_locker) {
-				if (epoch.EpochPosition > _lastEpochPosition) {
-					UpdateLastEpoch(epoch, flushWriter: false);
-					return;
-				}
+				_nonReplicatedEpochs.Enqueue((epoch, epochRecordPostPosition));
 			}
-
-			// Epoch record must have been already written, so we need to make sure it is where we expect it to be.
-			// If this check fails, then there is something very wrong with epochs, data corruption is possible.
-			if (!IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId)) {
-				throw new Exception(string.Format("Not found epoch at {0} with epoch number: {1} and epoch ID: {2}. "
-				                                  + "SetLastEpoch FAILED! Data corruption risk!",
-					epoch.EpochPosition,
-					epoch.EpochNumber,
-					epoch.EpochId));
-			}
+			ProcessNonReplicatedEpochRecords();
 		}
 
-		private void UpdateLastEpoch(EpochRecord epoch, bool flushWriter) {
+		private void UpdateLastEpoch(EpochRecord epoch) {
 			lock (_locker) {
 				_epochs[epoch.EpochNumber] = epoch;
 				_lastEpochNumber = epoch.EpochNumber;
@@ -257,11 +337,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				_minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epoch.EpochNumber - CachedEpochCount + 1);
 				_epochs.Remove(_minCachedEpochNumber - 1);
 
-				if (flushWriter)
-					_writer.Flush();
-				// Now update epoch checkpoint, so on restart we don't scan sequentially TF.
-				_checkpoint.Write(epoch.EpochPosition);
-				_checkpoint.Flush();
+				_epochCheckpoint.Write(epoch.EpochPosition);
+				_epochCheckpoint.Flush();
 
 				Log.Debug(
 					"=== Update Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
@@ -270,8 +347,42 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		}
 
 		public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound) {
-			ReadEpochs(int.MaxValue);
+			ReadReplicatedEpochs(int.MaxValue);
 			return GetEpoch(epochNumber, throwIfNotFound);
+		}
+
+		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
+			ProcessNonReplicatedEpochRecords();
+		}
+
+		private void ProcessNonReplicatedEpochRecords() {
+			var replicationCheckpoint = _replicationCheckpoint.Read();
+			lock (_nonReplicatedEpochsLock) {
+				if (_nonReplicatedEpochs.Count > 0) {
+					Log.Verbose(
+						"Processing {count} non-replicated epoch record(s). Replication checkpoint: {replicationCheckpoint}",
+						_nonReplicatedEpochs.Count, replicationCheckpoint);
+				}
+
+				while (_nonReplicatedEpochs.Count > 0) {
+					var head = _nonReplicatedEpochs.Peek();
+					if (head.epochRecordPostPosition > replicationCheckpoint) {
+						Log.Verbose("Epoch record: {epoch} has not yet been replicated to a quorum number of nodes. Epoch record post position: {epochRecordPostPosition} / Replication checkpoint: {replicationCheckpoint}", head.epoch, head.epochRecordPostPosition, replicationCheckpoint);
+						break;
+					}
+
+					Log.Verbose("Epoch record: {epoch} has been replicated to a quorum number of nodes. Epoch record post position: {epochRecordPostPosition} / Replication checkpoint: {replicationCheckpoint}", head.epoch, head.epochRecordPostPosition, replicationCheckpoint);
+
+					lock (_locker) {
+						if (head.epoch.EpochPosition > _lastEpochPosition) {
+							Log.Verbose("Updating last epoch to: {epoch}. Last Epoch number: {lastEpochNumber} / Last epoch position: {lastEpochPosition}", head.epoch, _lastEpochNumber, _lastEpochPosition);
+
+							UpdateLastEpoch(head.epoch);
+						}
+					}
+					_nonReplicatedEpochs.Dequeue();
+				}
+			}
 		}
 	}
 }

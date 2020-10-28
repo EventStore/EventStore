@@ -10,6 +10,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly ICheckpoint WriterCheckpoint;
 		public readonly ICheckpoint ChaserCheckpoint;
 		public readonly ICheckpoint EpochCheckpoint;
+		public readonly ICheckpoint EpochStageCheckpoint;
+		public readonly ICheckpoint EpochCommitCheckpoint;
 		public readonly ICheckpoint TruncateCheckpoint;
 		public readonly ICheckpoint ReplicationCheckpoint;
 		public readonly ICheckpoint IndexCheckpoint;
@@ -30,6 +32,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			ICheckpoint writerCheckpoint,
 			ICheckpoint chaserCheckpoint,
 			ICheckpoint epochCheckpoint,
+			ICheckpoint epochStageCheckpoint,
+			ICheckpoint epochCommitCheckpoint,
 			ICheckpoint truncateCheckpoint,
 			ICheckpoint replicationCheckpoint,
 			ICheckpoint indexCheckpoint,
@@ -60,6 +64,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			WriterCheckpoint = writerCheckpoint;
 			ChaserCheckpoint = chaserCheckpoint;
 			EpochCheckpoint = epochCheckpoint;
+			EpochStageCheckpoint = epochStageCheckpoint;
+			EpochCommitCheckpoint = epochCommitCheckpoint;
 			TruncateCheckpoint = truncateCheckpoint;
 			ReplicationCheckpoint = replicationCheckpoint;
 			IndexCheckpoint = indexCheckpoint;

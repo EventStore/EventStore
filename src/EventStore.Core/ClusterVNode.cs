@@ -311,12 +311,16 @@ namespace EventStore.Core {
 			var epochManager = new EpochManager(_mainQueue,
 				ESConsts.CachedEpochCount,
 				db.Config.EpochCheckpoint,
+				db.Config.EpochStageCheckpoint,
+				db.Config.EpochCommitCheckpoint,
+				db.Config.ReplicationCheckpoint,
 				writer,
 				initialReaderCount: 1,
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint,
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache),
 				_nodeInfo.InstanceId);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(epochManager);
 			epochManager.Init();
 
 			var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus, vNodeSettings.MinFlushDelay,

@@ -274,6 +274,13 @@ namespace EventStore.Core.Services {
 		private void OnLogRecordUnframed(BinaryReader reader) {
 			var record = LogRecord.ReadFrom(reader);
 			long newPos;
+
+			if (record is SystemLogRecord sysRec
+			    && sysRec.SystemRecordType == SystemRecordType.Epoch) {
+				EpochManager.WriteEpochRecordWithRetry(sysRec.GetEpochRecord());
+				return;
+			}
+
 			if (!Writer.Write(record, out newPos))
 				ReplicationFail(
 					"First write failed when writing replicated record: {0}.",

@@ -1549,6 +1549,8 @@ namespace EventStore.Core {
 			ICheckpoint writerChk;
 			ICheckpoint chaserChk;
 			ICheckpoint epochChk;
+			ICheckpoint epochStageChk;
+			ICheckpoint epochCommitChk;
 			ICheckpoint truncateChk;
 			//todo(clc) : promote these to file backed checkpoints re:project-io
 			ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
@@ -1557,6 +1559,8 @@ namespace EventStore.Core {
 				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 				epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+				epochStageChk = new InMemoryCheckpoint(Checkpoint.EpochStage, initValue: -1);
+				epochCommitChk = new InMemoryCheckpoint(Checkpoint.EpochCommit, initValue: -1);
 				truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 			} else {
 				try {
@@ -1580,10 +1584,16 @@ namespace EventStore.Core {
 				var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
+				var epochStageCheckFilename = Path.Combine(dbPath, Checkpoint.EpochStage + ".chk");
+				var epochCommitCheckFilename = Path.Combine(dbPath, Checkpoint.EpochCommit + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
 				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+					initValue: -1);
+				epochStageChk = new MemoryMappedFileCheckpoint(epochStageCheckFilename, Checkpoint.EpochStage, cached: true,
+					initValue: -1);
+				epochCommitChk = new MemoryMappedFileCheckpoint(epochCommitCheckFilename, Checkpoint.EpochCommit, cached: true,
 					initValue: -1);
 				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
 					cached: true, initValue: -1);
@@ -1600,6 +1610,8 @@ namespace EventStore.Core {
 				writerChk,
 				chaserChk,
 				epochChk,
+				epochStageChk,
+				epochCommitChk,
 				truncateChk,
 				replicationChk,
 				indexChk,

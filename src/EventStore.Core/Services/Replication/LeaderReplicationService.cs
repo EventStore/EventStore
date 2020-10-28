@@ -212,24 +212,6 @@ namespace EventStore.Core.Services.Replication {
 
 		private long GetValidLogPosition(long logPosition, Epoch[] epochs, EndPoint replicaEndPoint,
 			Guid subscriptionId) {
-			if (epochs.Length == 0) {
-				if (logPosition > 0) {
-					// follower has some data, but doesn't have any epoch
-					// for now we'll just report error and close connection
-					var msg = string.Format(
-						"Replica [{0},S:{1},{2}] has positive LogPosition {3} (0x{3:X}), but does not have epochs.",
-						replicaEndPoint, subscriptionId,
-						string.Join(", ", epochs.Select(x => x.AsString())), logPosition);
-					Log.Information(
-						"Replica [{replicaEndPoint},S:{subscriptionId},{epochs}] has positive LogPosition {logPosition} (0x{logPosition:X}), but does not have epochs.",
-						replicaEndPoint, subscriptionId,
-						string.Join(", ", epochs.Select(x => x.AsString())), logPosition, logPosition);
-					throw new Exception(msg);
-				}
-
-				return 0;
-			}
-
 			var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
 			Epoch afterCommonEpoch = null;
 			Epoch commonEpoch = null;
