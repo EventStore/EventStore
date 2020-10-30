@@ -63,21 +63,24 @@ namespace EventStore.ClusterNode {
 									if (hostedService.Node.DisableHttps) {
 										listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
 									} else {
-										listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
-											ServerCertificateSelector = delegate {
+										listenOptions.UseHttps(options => {
+											options.ServerCertificateSelector = delegate {
 												return hostedService.Node.CertificateSelector();
-											},
-											ClientCertificateMode = ClientCertificateMode.AllowCertificate,
-											ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
-												var (isValid, error) =
-													hostedService.Node.InternalClientCertificateValidator(certificate,
-														chain,
-														sslPolicyErrors);
-												if (!isValid && error != null) {
-													Log.Error("Client certificate validation error: {e}", error);
-												}
+											};
 
-												return isValid;
+											if (!hostedService.Options.DisableClientCertificate) {
+												options.ClientCertificateMode = ClientCertificateMode.AllowCertificate;
+												options.ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+													var (isValid, error) =
+														hostedService.Node.InternalClientCertificateValidator(certificate,
+															chain,
+															sslPolicyErrors);
+													if (!isValid && error != null) {
+														Log.Error("Client certificate validation error: {e}", error);
+													}
+												
+													return isValid;
+												};
 											}
 										});
 									}
