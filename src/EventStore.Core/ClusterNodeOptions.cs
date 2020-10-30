@@ -196,6 +196,9 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.TrustedRootCertificatesPathDescr, Opts.CertificateGroup)]
 		public string TrustedRootCertificatesPath { get; set; }
 
+		[ArgMask, ArgDescription(Opts.DisableClientCertificateDescr, Opts.CertificateGroup)]
+		public bool DisableClientCertificate { get; set; }
+
 		[ArgDescription(Opts.CertificateFileDescr, Opts.CertificatesFromFileGroup)]
 		public string CertificateFile { get; set; }
 
@@ -394,6 +397,7 @@ namespace EventStore.Core {
 			CertificateThumbprint = Opts.CertificateThumbprintDefault;
 
 			TrustedRootCertificatesPath = Opts.TrustedRootCertificatesPathDefault;
+			DisableClientCertificate = Opts.DisableClientCertificateDefault;
 			CertificateFile = Opts.CertificateFileDefault;
 			CertificatePrivateKeyFile = Opts.CertificatePrivateKeyFileDefault;
 			CertificatePassword = Opts.CertificatePasswordDefault;

@@ -201,6 +201,9 @@ namespace EventStore.Core.Util {
 		public const string TrustedRootCertificatesPathDescr = "The path to a directory which contains trusted X.509 (.pem, .crt, .cer, .der) root certificate files.";
 		public static readonly string TrustedRootCertificatesPathDefault = string.Empty;
 
+		public const string DisableClientCertificateDescr = "Disables HTTPS client certificate authentication.";
+		public static readonly bool DisableClientCertificateDefault = false;
+
 		//Loading certificates from files
 		public const string CertificateFileDescr = "The path to a PKCS #12 (.p12/.pfx) or an X.509 (.pem, .crt, .cer, .der) certificate file.";
 		public static readonly string CertificateFileDefault = string.Empty;
