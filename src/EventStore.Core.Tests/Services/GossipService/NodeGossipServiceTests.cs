@@ -504,7 +504,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			);
 
 		protected override Message When() =>
-			new SystemMessage.BecomeLeader(Guid.NewGuid());
+			new SystemMessage.BecomeLeader(Guid.NewGuid(), 0);
 
 		[Test]
 		public void should_update_gossip() {

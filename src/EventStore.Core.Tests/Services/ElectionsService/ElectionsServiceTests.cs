@@ -53,6 +53,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				MemberInfoFromVNode(_node, _timeProvider.UtcNow, VNodeState.Unknown, true, 0, _epochId, 0), 3,
 				new InMemoryCheckpoint(0),
 				new InMemoryCheckpoint(0),
+				new InMemoryCheckpoint(-1),
 				new FakeEpochManager(), () => 0L, 0, _timeProvider);
 			_sut.SubscribeMessages(_bus);
 		}
@@ -1239,6 +1240,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				new Core.Services.ElectionsService(new FakePublisher(), nodeInfo, 3,
 					new InMemoryCheckpoint(0),
 					new InMemoryCheckpoint(0),
+					new InMemoryCheckpoint(-1),
 					new FakeEpochManager(), () => 0L, 0, new FakeTimeProvider());
 			});
 		}

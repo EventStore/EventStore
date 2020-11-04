@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public static TFChunkDbConfig CreateDbConfig(string pathName, long writerCheckpointPosition,
 			long chaserCheckpointPosition = 0,
 			long epochCheckpointPosition = -1, long truncateCheckpoint = -1, int chunkSize = 10000,
-			long maxTruncation = -1) {
+			long maxTruncation = -1, long termCheckpoint = -1) {
 			return new TFChunkDbConfig(pathName,
 				new VersionedPatternFileNamingStrategy(pathName, "chunk-"),
 				chunkSize,
@@ -21,6 +21,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(truncateCheckpoint),
 				new InMemoryCheckpoint(-1), 
 				new InMemoryCheckpoint(-1),
+				new InMemoryCheckpoint(termCheckpoint),
 				Constants.TFChunkInitialReaderCountDefault, 
 				Constants.TFChunkMaxReaderCountDefault,
 				maxTruncation: maxTruncation);
@@ -38,6 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				replicationCheckpoint, 
+				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				Constants.TFChunkInitialReaderCountDefault, 
 				Constants.TFChunkMaxReaderCountDefault);
