@@ -423,9 +423,10 @@ namespace EventStore.Core.Services {
 
 		public static LeaderCandidate GetBestLeaderCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received,
 			MemberInfo[] servers, Guid? resigningLeaderInstanceId, int lastAttemptedView) {
+			
 			var best = received.Values
-				.OrderByDescending(x => x.EpochNumber)
-				.ThenByDescending(x => x.LastCommitPosition)
+				.OrderByDescending(x => x.LastCommitPosition)
+				.ThenByDescending(x => x.EpochNumber)
 				.ThenByDescending(x => x.WriterCheckpoint)
 				.ThenByDescending(x => x.ChaserCheckpoint)
 				.ThenByDescending(x => x.NodePriority)
