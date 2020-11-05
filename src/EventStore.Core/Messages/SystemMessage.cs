@@ -77,6 +77,11 @@ namespace EventStore.Core.Messages {
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
+
+			public readonly int EpochNumber;
+			public WriteEpoch(int epochNumber) {
+				EpochNumber = epochNumber;
+			}
 		}
 		
 		public class InitiateLeaderResignation : Message {
@@ -130,7 +135,10 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeLeader(Guid correlationId) : base(correlationId, VNodeState.Leader) {
+			public readonly int Term;
+
+			public BecomeLeader(Guid correlationId, int term) : base(correlationId, VNodeState.Leader) {
+				Term = term;
 			}
 		}
 

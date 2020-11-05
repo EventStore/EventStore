@@ -1550,6 +1550,7 @@ namespace EventStore.Core {
 			ICheckpoint chaserChk;
 			ICheckpoint epochChk;
 			ICheckpoint truncateChk;
+			ICheckpoint termChk;
 			//todo(clc) : promote these to file backed checkpoints re:project-io
 			ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
 			ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
@@ -1558,6 +1559,7 @@ namespace EventStore.Core {
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 				epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
 				truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
+				termChk = new InMemoryCheckpoint(Checkpoint.Term, initValue: -1);
 			} else {
 				try {
 					if (!Directory.Exists(dbPath)) // mono crashes without this check
@@ -1581,12 +1583,14 @@ namespace EventStore.Core {
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
+				var termCheckFilename = Path.Combine(dbPath, Checkpoint.Term + ".chk");
 				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
 					initValue: -1);
 				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
 					cached: true, initValue: -1);
+				termChk = new MemoryMappedFileCheckpoint(termCheckFilename, Checkpoint.Term, cached: true, initValue: -1);
 			}
 
 			var cache = cachedChunks >= 0
@@ -1603,6 +1607,7 @@ namespace EventStore.Core {
 				truncateChk,
 				replicationChk,
 				indexChk,
+				termChk,
 				chunkInitialReaderCount,
 				chunkMaxReaderCount,
 				inMemDb,

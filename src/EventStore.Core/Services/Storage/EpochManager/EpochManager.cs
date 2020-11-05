@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -20,20 +21,22 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			get { return _lastEpochNumber; }
 		}
 
-		private readonly ICheckpoint _checkpoint;
+		private readonly ICheckpoint _epochCheckpoint;
+		private readonly ICheckpoint _termCheckpoint;
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ITransactionFileWriter _writer;
 		private readonly Guid _instanceId;
 
 		private readonly object _locker = new object();
-		private readonly Dictionary<int, EpochRecord> _epochs = new Dictionary<int, EpochRecord>();
+		private readonly SortedDictionary<int, EpochRecord> _epochs = new SortedDictionary<int, EpochRecord>();
 		private volatile int _lastEpochNumber = -1;
 		private long _lastEpochPosition = -1;
 		private int _minCachedEpochNumber = -1;
 
 		public EpochManager(IPublisher bus,
 			int cachedEpochCount,
-			ICheckpoint checkpoint,
+			ICheckpoint epochCheckpoint,
+			ICheckpoint termCheckpoint,
 			ITransactionFileWriter writer,
 			int initialReaderCount,
 			int maxReaderCount,
@@ -41,7 +44,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			Guid instanceId) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
-			Ensure.NotNull(checkpoint, "checkpoint");
+			Ensure.NotNull(epochCheckpoint, "epochCheckpoint");
+			Ensure.NotNull(termCheckpoint, "termCheckpoint");
 			Ensure.NotNull(writer, "chunkWriter");
 			Ensure.Nonnegative(initialReaderCount, "initialReaderCount");
 			Ensure.Positive(maxReaderCount, "maxReaderCount");
@@ -52,7 +56,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 			_bus = bus;
 			CachedEpochCount = cachedEpochCount;
-			_checkpoint = checkpoint;
+			_epochCheckpoint = epochCheckpoint;
+			_termCheckpoint = termCheckpoint;
 			_readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount,
 				maxReaderCount, readerFactory);
 			_writer = writer;
@@ -61,6 +66,16 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 		public void Init() {
 			ReadEpochs(CachedEpochCount);
+			InitializeTermCheckpoint();
+		}
+
+		private void InitializeTermCheckpoint() {
+			if (_termCheckpoint.ReadNonFlushed() != -1)
+				return;
+
+			Log.Verbose("Initializing the term checkpoint to the value of the last epoch number: {lastEpochNumber}", _lastEpochNumber);
+			_termCheckpoint.Write(_lastEpochNumber);
+			_termCheckpoint.Flush();
 		}
 
 		public EpochRecord GetLastEpoch() {
@@ -73,7 +88,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			lock (_locker) {
 				var reader = _readers.Get();
 				try {
-					long epochPos = _checkpoint.Read();
+					long epochPos = _epochCheckpoint.Read();
 					if (epochPos < 0) // we probably have lost/uninitialized epoch checkpoint
 					{
 						reader.Reposition(_writer.Checkpoint.Read());
@@ -132,7 +147,6 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				return res.ToArray();
 			}
 		}
-
 		public EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound) {
 			lock (_locker) {
 				if (epochNumber < _minCachedEpochNumber) {
@@ -150,6 +164,40 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					throw new Exception(string.Format("Concurrency failure, epoch #{0} should not be null.",
 						epochNumber));
 				return epoch;
+			}
+		}
+
+		public EpochRecord GetNextEpoch(int epochNumber, bool throwIfNotFound) {
+			lock (_locker) {
+				if (epochNumber < _minCachedEpochNumber) {
+					if (!throwIfNotFound)
+						return null;
+					throw new ArgumentOutOfRangeException(
+						"epochNumber",
+						string.Format("EpochNumber requested is not cached. Requested: {0}, min cached: {1}.",
+							epochNumber,
+							_minCachedEpochNumber));
+				}
+
+				var keys = _epochs.Keys.ToArray();
+				var epochIndex = Array.BinarySearch(keys, epochNumber);
+
+				EpochRecord nextEpoch = null;
+
+				if (epochIndex < 0 && throwIfNotFound) {
+					throw new Exception($"Epoch record not found for epoch number: {epochNumber}");
+				}
+
+				if (0 <= epochIndex && epochIndex < keys.Length-1) {
+					var nextEpochNumber = keys[epochIndex + 1];
+					_epochs.TryGetValue(nextEpochNumber, out nextEpoch);
+				}
+
+				if (nextEpoch == null && throwIfNotFound) {
+					throw new Exception($"Next Epoch record not found after epoch number: {epochNumber}");
+				}
+
+				return nextEpoch;
 			}
 		}
 
@@ -185,25 +233,13 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		}
 
 		// This method should be called from single thread.
-		public void WriteNewEpoch() {
-			// Set epoch checkpoint to -1, so if we crash after new epoch record was written, 
-			// but epoch checkpoint wasn't updated, on restart we don't miss the latest epoch.
-			// So on node start, if there is no epoch checkpoint or it contains negative position, 
-			// we do sequential scan from the end of TF to find the latest epoch record.
-			//NOTE AN: It seems we don't need to pessimistically set epoch checkpoint to -1, because
-			//NOTE AN: if crash occurs in the middle of writing epoch or updating epoch checkpoint,
-			//NOTE AN: then on restart we'll start from chaser checkpoint (which is not updated yet)
-			//NOTE AN: and process all records till the writer checkpoint, so all epochs will be processed 
-			//NOTE AN: and epoch checkpoint will ultimately contain correct last epoch position. This process
-			//NOTE AN: is similar to index rebuild process.
-			//_checkpoint.Write(-1);
-			//_checkpoint.Flush();
-
+		public void WriteNewEpoch(int epochNumber) {
 			// Now we write epoch record (with possible retry, if we are at the end of chunk) 
 			// and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
 			// excessive record, if present.
 			// If we are writing the very first epoch, last position will be -1.
-			var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition, _instanceId);
+			if(epochNumber <= _lastEpochNumber) throw new ArgumentException("epochNumber <= _lastEpochNumber");
+			var epoch = WriteEpochRecordWithRetry(epochNumber, Guid.NewGuid(), _lastEpochPosition, _instanceId);
 			UpdateLastEpoch(epoch, flushWriter: true);
 		}
 
@@ -254,14 +290,18 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				_epochs[epoch.EpochNumber] = epoch;
 				_lastEpochNumber = epoch.EpochNumber;
 				_lastEpochPosition = epoch.EpochPosition;
-				_minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epoch.EpochNumber - CachedEpochCount + 1);
-				_epochs.Remove(_minCachedEpochNumber - 1);
+
+				var keys = _epochs.Keys.ToArray();
+				for (var i = 0; i + CachedEpochCount < keys.Length && i + 1 < keys.Length ; i++) {
+					_epochs.Remove(keys[i]);
+					_minCachedEpochNumber = keys[i+1];
+				}
 
 				if (flushWriter)
 					_writer.Flush();
 				// Now update epoch checkpoint, so on restart we don't scan sequentially TF.
-				_checkpoint.Write(epoch.EpochPosition);
-				_checkpoint.Flush();
+				_epochCheckpoint.Write(epoch.EpochPosition);
+				_epochCheckpoint.Flush();
 
 				Log.Debug(
 					"=== Update Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
@@ -269,9 +309,9 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 		}
 
-		public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound) {
+		public EpochRecord GetNextEpochWithAllEpochs(int epochNumber, bool throwIfNotFound) {
 			ReadEpochs(int.MaxValue);
-			return GetEpoch(epochNumber, throwIfNotFound);
+			return GetNextEpoch(epochNumber, throwIfNotFound);
 		}
 	}
 }

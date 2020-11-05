@@ -32,8 +32,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 			var msg = item.Message as ElectionMessage.ElectionsDone;
 			if (msg != null) {
 				var leader = msg.Leader.HttpEndPoint;
-				ElectionsResults[item.EndPoint] = Tuple.Create(msg.InstalledView, leader);
-				Done = ElectionsResults.Values.Count(x => x.Item1 == msg.InstalledView) >= _majorityCount;
+				ElectionsResults[item.EndPoint] = Tuple.Create(msg.Term, leader);
+				Done = ElectionsResults.Values.Count(x => x.Item1 == msg.Term) >= _majorityCount;
 			}
 		}
 

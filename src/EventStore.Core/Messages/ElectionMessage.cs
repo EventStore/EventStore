@@ -387,18 +387,18 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly int InstalledView;
+			public readonly int Term;
 			public readonly MemberInfo Leader;
 
-			public ElectionsDone(int installedView, MemberInfo leader) {
-				Ensure.Nonnegative(installedView, "installedView");
+			public ElectionsDone(int term, MemberInfo leader) {
+				Ensure.Nonnegative(term, "term");
 				Ensure.NotNull(leader, "leader");
-				InstalledView = installedView;
+				Term = term;
 				Leader = leader;
 			}
 
 			public override string ToString() {
-				return string.Format("---- ElectionsDone: installedView {0}, leader {1}", InstalledView, Leader);
+				return string.Format("---- ElectionsDone: term {0}, leader {1}", Term, Leader);
 			}
 		}
 	}

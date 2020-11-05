@@ -260,9 +260,9 @@ namespace EventStore.Core.Services.Replication {
 			if (commonEpoch.EpochNumber == _epochManager.LastEpochNumber)
 				return Math.Min(replicaPosition, leaderCheckpoint);
 
-			var nextEpoch = _epochManager.GetEpoch(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
+			var nextEpoch = _epochManager.GetNextEpoch(commonEpoch.EpochNumber, throwIfNotFound: false);
 			if (nextEpoch == null) {
-				nextEpoch = _epochManager.GetEpochWithAllEpochs(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
+				nextEpoch = _epochManager.GetNextEpochWithAllEpochs(commonEpoch.EpochNumber, throwIfNotFound: false);
 			}
 
 			if (nextEpoch == null) {

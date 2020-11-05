@@ -178,7 +178,8 @@ namespace EventStore.Core.Services.Storage {
 			switch (message.State) {
 				case VNodeState.Leader: {
 						_indexWriter.Reset();
-						EpochManager.WriteNewEpoch(); // forces flush
+						var becomeLeaderMessage = (SystemMessage.BecomeLeader)message;
+						EpochManager.WriteNewEpoch(becomeLeaderMessage.Term); // forces flush
 						break;
 					}
 				case VNodeState.ShuttingDown: {
@@ -193,7 +194,7 @@ namespace EventStore.Core.Services.Storage {
 				return;
 			if (_vnodeState != VNodeState.Leader)
 				throw new Exception(string.Format("New Epoch request not in leader state. State: {0}.", _vnodeState));
-			EpochManager.WriteNewEpoch();
+			EpochManager.WriteNewEpoch(message.EpochNumber);
 			PurgeNotProcessedInfo();
 		}
 

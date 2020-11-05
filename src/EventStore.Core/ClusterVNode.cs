@@ -311,6 +311,7 @@ namespace EventStore.Core {
 			var epochManager = new EpochManager(_mainQueue,
 				ESConsts.CachedEpochCount,
 				db.Config.EpochCheckpoint,
+				db.Config.TermCheckpoint,
 				writer,
 				initialReaderCount: 1,
 				maxReaderCount: 5,
@@ -736,7 +737,7 @@ namespace EventStore.Core {
 			// ELECTIONS
 			if (!vNodeSettings.NodeInfo.IsReadOnlyReplica) {
 				var electionsService = new ElectionsService(_mainQueue, memberInfo, vNodeSettings.ClusterNodeCount,
-					db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
+					db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint, db.Config.TermCheckpoint,
 					epochManager, () => readIndex.LastIndexedPosition, vNodeSettings.NodePriority, _timeProvider);
 				electionsService.SubscribeMessages(_mainBus);
 			}

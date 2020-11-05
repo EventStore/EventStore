@@ -52,12 +52,25 @@ namespace EventStore.Core.Services {
 		private readonly int _clusterSize;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly ICheckpoint _chaserCheckpoint;
+		private readonly ICheckpoint _termCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
 		private readonly ITimeProvider _timeProvider;
 
-		private int _lastAttemptedView = -1;
+		private int _lastAttemptedView {
+			get {
+				return (int)_termCheckpoint.ReadNonFlushed();
+			}
+			set {
+				if (value < _termCheckpoint.ReadNonFlushed()) {
+					throw new Exception("value < _termCheckpoint.ReadNonFlushed()");
+				}
+				_termCheckpoint.Write(value);
+				_termCheckpoint.Flush();
+			}
+		}
+
 		private int _lastInstalledView = -1;
 		private ElectionsState _state = ElectionsState.Idle;
 
@@ -82,6 +95,7 @@ namespace EventStore.Core.Services {
 			int clusterSize,
 			ICheckpoint writerCheckpoint,
 			ICheckpoint chaserCheckpoint,
+			ICheckpoint termCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority,
@@ -91,6 +105,7 @@ namespace EventStore.Core.Services {
 			Ensure.Positive(clusterSize, nameof(clusterSize));
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
+			Ensure.NotNull(termCheckpoint, nameof(termCheckpoint));
 			Ensure.NotNull(epochManager, nameof(epochManager));
 			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
 			Ensure.NotNull(timeProvider, nameof(timeProvider));
@@ -104,6 +119,7 @@ namespace EventStore.Core.Services {
 			_clusterSize = clusterSize;
 			_writerCheckpoint = writerCheckpoint;
 			_chaserCheckpoint = chaserCheckpoint;
+			_termCheckpoint = termCheckpoint;
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
@@ -298,7 +314,9 @@ namespace EventStore.Core.Services {
 			if (_state == ElectionsState.Idle) return;
 			if (message.InstalledView <= _lastInstalledView) return;
 
-			_lastAttemptedView = message.InstalledView;
+			if (message.InstalledView > _lastAttemptedView) {
+				_lastAttemptedView = message.InstalledView;
+			}
 
 			_publisher.Publish(TimerMessage.Schedule.Create(LeaderElectionProgressTimeout,
 				_publisherEnvelope,
@@ -425,7 +443,6 @@ namespace EventStore.Core.Services {
 			MemberInfo[] servers, Guid? resigningLeaderInstanceId, int lastAttemptedView) {
 			var best = received.Values
 				.OrderByDescending(x => x.EpochNumber)
-				.ThenByDescending(x => x.LastCommitPosition)
 				.ThenByDescending(x => x.WriterCheckpoint)
 				.ThenByDescending(x => x.ChaserCheckpoint)
 				.ThenByDescending(x => x.NodePriority)
@@ -624,8 +641,14 @@ namespace EventStore.Core.Services {
 			Log.Information("ELECTIONS: Existing LEADER was discovered, updating information. M=[{leaderHttpEndPoint},{leaderId:B}])", message.Leader.HttpEndPoint, message.Leader.InstanceId);
 			_leader = message.Leader.InstanceId;
 			_lastElectedLeader = message.Leader.InstanceId;
-			_lastAttemptedView = 0;
-			_lastInstalledView = 0;
+			if (_lastAttemptedView < 0) {
+				_lastAttemptedView = 0;
+			}
+
+			if (_lastInstalledView < 0) {
+				_lastInstalledView = 0;
+			}
+
 			_state = ElectionsState.Acceptor;
 		}
 

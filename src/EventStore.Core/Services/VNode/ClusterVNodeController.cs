@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.VNode {
 		private readonly ClusterVNode _node;
 
 		private VNodeState _state = VNodeState.Initializing;
-		private MemberInfo _leader;
+		private LeaderInfo _leader;
 		private Guid _stateCorrelationId = Guid.NewGuid();
 		private Guid _subscriptionId = Guid.Empty;
 		private readonly int _clusterSize;
@@ -519,13 +519,13 @@ namespace EventStore.Core.Services.VNode {
 				//if the leader hasn't changed, we skip state changes through PreLeader or PreReplica
 				if (_leader.InstanceId == _nodeInfo.InstanceId && _state == VNodeState.Leader) {
 					//transitioning from leader to leader, we just write a new epoch
-					_fsm.Handle(new SystemMessage.WriteEpoch());
+					_fsm.Handle(new SystemMessage.WriteEpoch(message.Term));
 				}
 
 				return;
 			}
 
-			_leader = message.Leader;
+			_leader = new LeaderInfo(message.Leader, message.Term);
 			_subscriptionId = Guid.NewGuid();
 			_stateCorrelationId = Guid.NewGuid();
 			_outputBus.Publish(message);
@@ -935,7 +935,7 @@ namespace EventStore.Core.Services.VNode {
 			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
 			var leaderCount = aliveLeaders.Count();
 			if (leaderCount == 1) {
-				_leader = aliveLeaders.First();
+				_leader = new LeaderInfo(aliveLeaders.First(), null);
 				Log.Information("LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to READ ONLY PRE-REPLICA state.", _leader);
 				_stateCorrelationId = Guid.NewGuid();
 				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leader));
@@ -972,7 +972,7 @@ namespace EventStore.Core.Services.VNode {
 			var aliveLeaders = message.ClusterInfo.Members.Where(x => x.IsAlive && x.State == VNodeState.Leader);
 			var leaderCount = aliveLeaders.Count();
 			if (leaderCount == 1) {
-				_leader = aliveLeaders.First();
+				_leader = new LeaderInfo(aliveLeaders.First(), null);
 				Log.Information("Existing LEADER found during LEADER DISCOVERY stage. LEADER: [{leader}]. Proceeding to PRE-REPLICA state.", _leader);
 				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
 				_stateCorrelationId = Guid.NewGuid();
@@ -1006,11 +1006,12 @@ namespace EventStore.Core.Services.VNode {
 
 		private void HandleAsPreLeader(SystemMessage.ChaserCaughtUp message) {
 			if (_leader == null) throw new Exception("_leader == null");
+			if (!_leader.Term.HasValue) throw new Exception("_leader.Term == null");
+
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
-
 			_outputBus.Publish(message);
-			_fsm.Handle(new SystemMessage.BecomeLeader(_stateCorrelationId));
+			_fsm.Handle(new SystemMessage.BecomeLeader(_stateCorrelationId, _leader.Term.Value));
 		}
 
 		private void HandleAsPreReplica(SystemMessage.ChaserCaughtUp message) {
