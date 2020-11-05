@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 0,
-				CommitPositions = new long[] {1, 0, 1},
+				WriterCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {0, 0, int.MinValue},
 				LastElectedLeader = 2,
 				ResigningLeader = 2
@@ -163,7 +163,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 0,
-				CommitPositions = new long[] {1, 0, 0},
+				WriterCheckpoints = new long[] {1, 0, 0},
 				NodePriorities = new[] {int.MinValue, 0, 0},
 				LastElectedLeader = 0
 			};
@@ -205,7 +205,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 			yield return new TestCase {
 				ExpectedLeaderCandidateNode = 2,
-				CommitPositions = new long[] {1, 0, 1},
+				WriterCheckpoints = new long[] {1, 0, 1},
 				NodePriorities = new[] {int.MinValue, 0, int.MinValue},
 				LastElectedLeader = 0,
 				ResigningLeader = 0
