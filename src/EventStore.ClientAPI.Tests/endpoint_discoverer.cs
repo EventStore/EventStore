@@ -36,7 +36,7 @@ namespace EventStore.ClientAPI.Tests {
 
 			var sut = new ClusterDnsEndPointDiscoverer(new ConsoleLogger(), "dns", 1, 1111,
 				new[] {new GossipSeed(new IPEndPoint(IPAddress.Any, 2113))}, TimeSpan.FromSeconds(1),
-				nodePreference,
+				nodePreference, false,
 				new TestMessageHandler(response.ToJson()));
 
 			var result = await sut.DiscoverAsync(new IPEndPoint(IPAddress.Any, 1113));

@@ -21,6 +21,7 @@ namespace EventStore.ClientAPI {
 			get { return DefaultSettings.Value; }
 		}
 
+
 		/// <summary>
 		/// Creates a new set of <see cref="ConnectionSettings"/>.
 		/// </summary>
@@ -130,6 +131,12 @@ namespace EventStore.ClientAPI {
 		public readonly int MaxDiscoverAttempts;
 
 		/// <summary>
+		/// If true, use non-TLS for discover:// URIs
+		/// Useful for backwards compatibility with v5 clusters
+		/// </summary>
+		public bool InsecureDiscoverGossip;
+
+		/// <summary>
 		/// The well-known endpoint on which cluster nodes are running.
 		/// </summary>
 		public readonly int GossipPort;
@@ -175,6 +182,7 @@ namespace EventStore.ClientAPI {
 			string clusterDns,
 			GossipSeed[] gossipSeeds,
 			int maxDiscoverAttempts,
+			bool insecureDiscoverGossip,
 			int gossipPort,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
@@ -219,6 +227,7 @@ namespace EventStore.ClientAPI {
 			ClusterDns = clusterDns;
 			GossipSeeds = gossipSeeds;
 			MaxDiscoverAttempts = maxDiscoverAttempts;
+			InsecureDiscoverGossip = insecureDiscoverGossip;
 			GossipPort = gossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;

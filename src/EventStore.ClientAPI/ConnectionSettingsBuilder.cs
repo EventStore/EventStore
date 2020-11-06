@@ -36,12 +36,12 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
+		private bool _insecureDiscoverGossip;
 		private int _httpPort = Consts.DefaultHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Leader;
 		private HttpMessageHandler _customHttpMessageHandler;
-
 
 		internal ConnectionSettingsBuilder() {
 		}
@@ -334,6 +334,16 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
+		/// Sets whether the discover:// protocol will use non-TLS (http) instead of TLS (https).
+		/// </summary>
+		/// <param name="insecureDiscoverGossip">Whether we should use http not https for discover gossip.</param>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		public ConnectionSettingsBuilder SetInsecureDiscoverGossip(bool insecureDiscoverGossip) {
+			_insecureDiscoverGossip = insecureDiscoverGossip;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the period after which gossip times out if none is received.
 		/// </summary>
 		/// <param name="timeout">The period after which gossip times out if none is received.</param>
@@ -478,6 +488,7 @@ namespace EventStore.ClientAPI {
 				_clusterDns,
 				_gossipSeeds,
 				_maxDiscoverAttempts,
+				_insecureDiscoverGossip,
 				_httpPort,
 				_gossipTimeout,
 				_nodePreference,
