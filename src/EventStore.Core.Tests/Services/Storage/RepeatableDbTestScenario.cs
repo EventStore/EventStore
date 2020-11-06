@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				DbRes.Db.Close();
 			}
 
-			var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
+			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
 			var dbHelper = new TFChunkDbCreationHelper(dbConfig);
 
 			DbRes = dbHelper.Chunk(records).CreateDb();

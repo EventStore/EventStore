@@ -35,30 +35,34 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			}
 		}
 
-		public EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound) {
+		public EpochRecord GetEpochAfter(int epochNumber, bool throwIfNotFound) {
 			lock (_epochs) {
 				var epoch = _epochs.FirstOrDefault(e => e.EpochNumber == epochNumber);
+				if (epoch != null) {
+					var index = _epochs.IndexOf(epoch);
+					epoch = null;
+					if (index + 1 < _epochs.Count) {
+						epoch = _epochs[index + 1];
+					}
+				}
+
 				if (throwIfNotFound && epoch == null)
 					throw new ArgumentOutOfRangeException(nameof(epochNumber), "Epoch not Found");
 				return epoch;
 			}
 		}
 
-		public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound) {
-			lock (_epochs) {
-				return GetEpoch(epochNumber, throwIfNotFound);
-			}
-		}
+		
 
 		public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId) {
 			throw new NotImplementedException();
 		}
-
-		public void WriteNewEpoch() {
+		
+		public void WriteNewEpoch(int epochNumber) {
 			throw new NotImplementedException();
 		}
 
-		public void SetLastEpoch(EpochRecord epoch) {
+		public void CacheEpoch(EpochRecord epoch) {
 			lock (_epochs) {
 				_epochs.Add(epoch);
 			}

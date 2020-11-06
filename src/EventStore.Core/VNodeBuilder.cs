@@ -1549,6 +1549,7 @@ namespace EventStore.Core {
 			ICheckpoint writerChk;
 			ICheckpoint chaserChk;
 			ICheckpoint epochChk;
+			ICheckpoint proposalChk;
 			ICheckpoint truncateChk;
 			//todo(clc) : promote these to file backed checkpoints re:project-io
 			ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
@@ -1557,6 +1558,7 @@ namespace EventStore.Core {
 				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 				epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+				proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
 				truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 			} else {
 				try {
@@ -1580,10 +1582,13 @@ namespace EventStore.Core {
 				var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
 				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
+				var proposalCheckFilename = Path.Combine(dbPath, Checkpoint.Proposal + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
 				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+					initValue: -1);
+				proposalChk = new MemoryMappedFileCheckpoint(proposalCheckFilename, Checkpoint.Proposal, cached: true,
 					initValue: -1);
 				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
 					cached: true, initValue: -1);
@@ -1600,6 +1605,7 @@ namespace EventStore.Core {
 				writerChk,
 				chaserChk,
 				epochChk,
+				proposalChk,
 				truncateChk,
 				replicationChk,
 				indexChk,

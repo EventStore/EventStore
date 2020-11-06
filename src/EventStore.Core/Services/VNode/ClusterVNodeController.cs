@@ -32,6 +32,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private VNodeState _state = VNodeState.Initializing;
 		private MemberInfo _leader;
+		private int _currentEpoch;
 		private Guid _stateCorrelationId = Guid.NewGuid();
 		private Guid _subscriptionId = Guid.Empty;
 		private readonly int _clusterSize;
@@ -90,6 +91,7 @@ namespace EventStore.Core.Services.VNode {
 			                     TimeSpan.FromMilliseconds(300);
 
 			_fsm = CreateFSM();
+			_currentEpoch = -1;
 		}
 
 		public void SetMainQueue(IQueuedHandler mainQueue) {
@@ -515,11 +517,12 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(ElectionMessage.ElectionsDone message) {
+			_currentEpoch = message.ProposalNumber;
 			if (_leader != null && _leader.InstanceId == message.Leader.InstanceId) {
 				//if the leader hasn't changed, we skip state changes through PreLeader or PreReplica
 				if (_leader.InstanceId == _nodeInfo.InstanceId && _state == VNodeState.Leader) {
 					//transitioning from leader to leader, we just write a new epoch
-					_fsm.Handle(new SystemMessage.WriteEpoch());
+					_fsm.Handle(new SystemMessage.WriteEpoch(message.ProposalNumber));
 				}
 
 				return;
@@ -1010,7 +1013,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 
 			_outputBus.Publish(message);
-			_fsm.Handle(new SystemMessage.BecomeLeader(_stateCorrelationId));
+			_fsm.Handle(new SystemMessage.BecomeLeader(_stateCorrelationId, _currentEpoch));
 		}
 
 		private void HandleAsPreReplica(SystemMessage.ChaserCaughtUp message) {

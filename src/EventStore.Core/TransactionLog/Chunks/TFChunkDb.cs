@@ -286,12 +286,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public void Close() {
-			if (Manager != null)
-				Manager.Dispose();
+			Manager?.Dispose();
 			Config.WriterCheckpoint.Close();
 			Config.ChaserCheckpoint.Close();
 			Config.EpochCheckpoint.Close();
 			Config.TruncateCheckpoint.Close();
+			Config.ProposalCheckpoint.Close();
 		}
 	}
 }

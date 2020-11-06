@@ -320,7 +320,7 @@ namespace EventStore.Core.Messages {
 					ServerId, ServerHttpEndPoint, LeaderId, LeaderHttpEndPoint, View);
 			}
 		}
-		
+
 		public class LeaderIsResigning : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -346,7 +346,7 @@ namespace EventStore.Core.Messages {
 				return $"---- LeaderIsResigning: serverId {LeaderId}";
 			}
 		}
-		
+
 		public class LeaderIsResigningOk : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -358,7 +358,7 @@ namespace EventStore.Core.Messages {
 			public readonly EndPoint LeaderHttpEndPoint;
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
-			
+
 			public LeaderIsResigningOk(ElectionMessageDto.LeaderIsResigningOkDto dto) {
 				LeaderId = dto.LeaderId;
 				LeaderHttpEndPoint = new IPEndPoint(IPAddress.Parse(dto.LeaderHttpAddress),
@@ -388,17 +388,19 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly int InstalledView;
+			public readonly int ProposalNumber;
 			public readonly MemberInfo Leader;
 
-			public ElectionsDone(int installedView, MemberInfo leader) {
+			public ElectionsDone(int installedView, int proposalNumber, MemberInfo leader) {
 				Ensure.Nonnegative(installedView, "installedView");
 				Ensure.NotNull(leader, "leader");
 				InstalledView = installedView;
 				Leader = leader;
+				ProposalNumber = proposalNumber;
 			}
 
 			public override string ToString() {
-				return string.Format("---- ElectionsDone: installedView {0}, leader {1}", InstalledView, Leader);
+				return $"---- ElectionsDone: installedView {InstalledView}, proposal number {ProposalNumber}, leader {Leader}";
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -14,22 +15,20 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private static readonly ILogger Log = Serilog.Log.ForContext<EpochManager>();
 		private readonly IPublisher _bus;
 
-		public readonly int CachedEpochCount;
-
-		public int LastEpochNumber {
-			get { return _lastEpochNumber; }
-		}
-
 		private readonly ICheckpoint _checkpoint;
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ITransactionFileWriter _writer;
 		private readonly Guid _instanceId;
 
 		private readonly object _locker = new object();
-		private readonly Dictionary<int, EpochRecord> _epochs = new Dictionary<int, EpochRecord>();
-		private volatile int _lastEpochNumber = -1;
-		private long _lastEpochPosition = -1;
-		private int _minCachedEpochNumber = -1;
+		private readonly int _cacheSize;
+		private readonly LinkedList<EpochRecord> _epochs = new LinkedList<EpochRecord>();
+
+		private LinkedListNode<EpochRecord> _firstCachedEpoch;
+		private LinkedListNode<EpochRecord> _lastCachedEpoch;
+		public EpochRecord GetLastEpoch() => _lastCachedEpoch?.Value;
+		public int LastEpochNumber => _lastCachedEpoch?.Value.EpochNumber ?? -1;
+
 
 		public EpochManager(IPublisher bus,
 			int cachedEpochCount,
@@ -46,12 +45,12 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			Ensure.Nonnegative(initialReaderCount, "initialReaderCount");
 			Ensure.Positive(maxReaderCount, "maxReaderCount");
 			if (initialReaderCount > maxReaderCount)
-				throw new ArgumentOutOfRangeException("initialReaderCount",
+				throw new ArgumentOutOfRangeException(nameof(initialReaderCount),
 					"initialReaderCount is greater than maxReaderCount.");
 			Ensure.NotNull(readerFactory, "readerFactory");
 
 			_bus = bus;
-			CachedEpochCount = cachedEpochCount;
+			_cacheSize = cachedEpochCount;
 			_checkpoint = checkpoint;
 			_readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount,
 				maxReaderCount, readerFactory);
@@ -60,21 +59,17 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		}
 
 		public void Init() {
-			ReadEpochs(CachedEpochCount);
-		}
-
-		public EpochRecord GetLastEpoch() {
-			lock (_locker) {
-				return _lastEpochNumber < 0 ? null : GetEpoch(_lastEpochNumber, throwIfNotFound: true);
-			}
+			ReadEpochs(_cacheSize);
 		}
 
 		private void ReadEpochs(int maxEpochCount) {
 			lock (_locker) {
 				var reader = _readers.Get();
 				try {
+
 					long epochPos = _checkpoint.Read();
-					if (epochPos < 0) // we probably have lost/uninitialized epoch checkpoint
+					if (epochPos < 0
+					) // we probably have lost/uninitialized epoch checkpoint scan back to find the most recent epoch in the log
 					{
 						reader.Reposition(_writer.Checkpoint.Read());
 
@@ -82,75 +77,114 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 						while ((result = reader.TryReadPrev()).Success) {
 							var rec = result.LogRecord;
 							if (rec.RecordType != LogRecordType.System ||
-							    ((SystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
+								((SystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
 								continue;
 							epochPos = rec.LogPosition;
 							break;
 						}
 					}
 
+					//read back down the chain of epochs in the log until the cache is full
 					int cnt = 0;
 					while (epochPos >= 0 && cnt < maxEpochCount) {
-						var result = reader.TryReadAt(epochPos);
-						if (!result.Success)
-							throw new Exception(string.Format("Could not find Epoch record at LogPosition {0}.",
-								epochPos));
-						if (result.LogRecord.RecordType != LogRecordType.System)
-							throw new Exception(string.Format("LogRecord is not SystemLogRecord: {0}.",
-								result.LogRecord));
-
-						var sysRec = (SystemLogRecord)result.LogRecord;
-						if (sysRec.SystemRecordType != SystemRecordType.Epoch)
-							throw new Exception(string.Format("SystemLogRecord is not of Epoch sub-type: {0}.",
-								result.LogRecord));
-
-						var epoch = sysRec.GetEpochRecord();
-						_epochs[epoch.EpochNumber] = epoch;
-						_lastEpochNumber = Math.Max(_lastEpochNumber, epoch.EpochNumber);
-						_lastEpochPosition = Math.Max(_lastEpochPosition, epoch.EpochPosition);
-						_minCachedEpochNumber = epoch.EpochNumber;
-
+						var epoch = ReadEpochAt(reader, epochPos);
+						_epochs.AddFirst(epoch);
+						if(epoch.EpochPosition == 0){ break;}
 						epochPos = epoch.PrevEpochPosition;
 						cnt += 1;
 					}
+
+					_lastCachedEpoch = _epochs.Last;
+					_firstCachedEpoch = _epochs.First;
 				} finally {
 					_readers.Return(reader);
 				}
 			}
 		}
+		private EpochRecord ReadEpochAt(ITransactionFileReader reader, long epochPos) {
+			var result = reader.TryReadAt(epochPos);
+			if (!result.Success)
+				throw new Exception($"Could not find Epoch record at LogPosition {epochPos}.");
+			if (result.LogRecord.RecordType != LogRecordType.System)
+				throw new Exception($"LogRecord is not SystemLogRecord: {result.LogRecord}.");
 
+			var sysRec = (SystemLogRecord)result.LogRecord;
+			if (sysRec.SystemRecordType != SystemRecordType.Epoch)
+				throw new Exception($"SystemLogRecord is not of Epoch sub-type: {result.LogRecord}.");
+
+			return sysRec.GetEpochRecord();
+		}
 		public EpochRecord[] GetLastEpochs(int maxCount) {
 			lock (_locker) {
 				var res = new List<EpochRecord>();
-				for (int epochNum = _lastEpochNumber, n = maxCount; epochNum >= 0 && n > 0; --epochNum, --n) {
-					EpochRecord epoch;
-					if (!_epochs.TryGetValue(epochNum, out epoch))
-						break;
-					res.Add(epoch);
+				var node = _epochs.Last;
+				while (node != null && res.Count < maxCount) {
+					res.Add(node.Value);
+					node = node.Previous;
 				}
 
 				return res.ToArray();
 			}
 		}
 
-		public EpochRecord GetEpoch(int epochNumber, bool throwIfNotFound) {
+		public EpochRecord GetEpochAfter(int epochNumber, bool throwIfNotFound) {
+			if (epochNumber >= LastEpochNumber) {
+				if (!throwIfNotFound)
+					return null;
+				throw new ArgumentOutOfRangeException(
+					nameof(epochNumber),
+					$"EpochNumber no epochs exist after Last Epoch {epochNumber}.");
+			}
+
+			EpochRecord epoch;
 			lock (_locker) {
-				if (epochNumber < _minCachedEpochNumber) {
-					if (!throwIfNotFound)
-						return null;
-					throw new ArgumentOutOfRangeException(
-						"epochNumber",
-						string.Format("EpochNumber requested should not be cached. Requested: {0}, min cached: {1}.",
-							epochNumber,
-							_minCachedEpochNumber));
+				var epochNode = _epochs.Last;
+				while (epochNode != null && epochNode.Value.EpochNumber != epochNumber) {
+					epochNode = epochNode.Previous;
 				}
 
-				EpochRecord epoch;
-				if (!_epochs.TryGetValue(epochNumber, out epoch) && throwIfNotFound)
-					throw new Exception(string.Format("Concurrency failure, epoch #{0} should not be null.",
-						epochNumber));
-				return epoch;
+				epoch = epochNode?.Next?.Value;
 			}
+
+			if (epoch != null) {
+				return epoch; //got it
+			}
+
+			var firstEpoch = _firstCachedEpoch?.Value;
+			if (firstEpoch != null && firstEpoch.PrevEpochPosition != -1) {
+				var reader = _readers.Get();
+				try {
+					epoch = firstEpoch;
+					do {
+						var result = reader.TryReadAt(epoch.PrevEpochPosition);
+						if (!result.Success)
+							throw new Exception(
+								$"Could not find Epoch record at LogPosition {epoch.PrevEpochPosition}.");
+						if (result.LogRecord.RecordType != LogRecordType.System)
+							throw new Exception($"LogRecord is not SystemLogRecord: {result.LogRecord}.");
+
+						var sysRec = (SystemLogRecord)result.LogRecord;
+						if (sysRec.SystemRecordType != SystemRecordType.Epoch)
+							throw new Exception($"SystemLogRecord is not of Epoch sub-type: {result.LogRecord}.");
+
+						var nextEpoch = sysRec.GetEpochRecord();
+						if (nextEpoch.EpochNumber == epochNumber) {
+							return epoch; //got it
+						}
+
+						epoch = nextEpoch;
+					} while (epoch.PrevEpochPosition != -1 && epoch.EpochNumber > epochNumber);
+
+				} finally {
+					_readers.Return(reader);
+				}
+			}
+			
+			if (epoch == null && throwIfNotFound) {
+				throw new Exception($"Concurrency failure, epoch #{epochNumber} should not be null.");
+			}
+
+			return epoch;
 		}
 
 		public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId) {
@@ -158,11 +192,14 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			Ensure.Nonnegative(epochNumber, "epochNumber");
 			Ensure.NotEmptyGuid(epochId, "epochId");
 
+
+			if (epochNumber > LastEpochNumber)
+				return false;
+
+			EpochRecord epoch;
 			lock (_locker) {
-				if (epochNumber > _lastEpochNumber)
-					return false;
-				if (epochNumber >= _minCachedEpochNumber) {
-					var epoch = _epochs[epochNumber];
+				epoch = _epochs.FirstOrDefault(e => e.EpochNumber == epochNumber);
+				if (epoch != null) {
 					return epoch.EpochId == epochId && epoch.EpochPosition == epochPosition;
 				}
 			}
@@ -177,7 +214,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				if (sysRec.SystemRecordType != SystemRecordType.Epoch)
 					return false;
 
-				var epoch = sysRec.GetEpochRecord();
+				epoch = sysRec.GetEpochRecord();
 				return epoch.EpochNumber == epochNumber && epoch.EpochId == epochId;
 			} finally {
 				_readers.Return(reader);
@@ -185,93 +222,132 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		}
 
 		// This method should be called from single thread.
-		public void WriteNewEpoch() {
-			// Set epoch checkpoint to -1, so if we crash after new epoch record was written, 
-			// but epoch checkpoint wasn't updated, on restart we don't miss the latest epoch.
-			// So on node start, if there is no epoch checkpoint or it contains negative position, 
-			// we do sequential scan from the end of TF to find the latest epoch record.
-			//NOTE AN: It seems we don't need to pessimistically set epoch checkpoint to -1, because
-			//NOTE AN: if crash occurs in the middle of writing epoch or updating epoch checkpoint,
-			//NOTE AN: then on restart we'll start from chaser checkpoint (which is not updated yet)
-			//NOTE AN: and process all records till the writer checkpoint, so all epochs will be processed 
-			//NOTE AN: and epoch checkpoint will ultimately contain correct last epoch position. This process
-			//NOTE AN: is similar to index rebuild process.
-			//_checkpoint.Write(-1);
-			//_checkpoint.Flush();
-
+		public void WriteNewEpoch(int epochNumber) {
 			// Now we write epoch record (with possible retry, if we are at the end of chunk) 
 			// and update EpochManager's state, by adjusting cache of records, epoch count and un-caching 
 			// excessive record, if present.
 			// If we are writing the very first epoch, last position will be -1.
-			var epoch = WriteEpochRecordWithRetry(_lastEpochNumber + 1, Guid.NewGuid(), _lastEpochPosition, _instanceId);
-			UpdateLastEpoch(epoch, flushWriter: true);
+			if (epochNumber < 0) {
+				throw new ArgumentException($"Cannot write an Epoch with a negative Epoch Number {epochNumber}.",
+					nameof(epochNumber));
+			}
+
+			if (epochNumber <= LastEpochNumber) {
+				throw new ArgumentException(
+					$"Cannot add Epoch {epochNumber}, new Epoch numbers must be greater than the Last Epoch  {LastEpochNumber}.",
+					nameof(epochNumber));
+			}
+
+			var epoch = WriteEpochRecordWithRetry(epochNumber, Guid.NewGuid(),
+				_lastCachedEpoch?.Value.EpochPosition ?? -1, _instanceId);
+			AddEpochToCache(epoch);
 		}
 
-		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition, Guid instanceId) {
+		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition,
+			Guid instanceId) {
 			long pos = _writer.Checkpoint.ReadNonFlushed();
 			var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
 			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 				SystemRecordSerialization.Json, epoch.AsSerialized());
-
+			Log.Debug(
+							"=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
+							epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
 			if (!_writer.Write(rec, out pos)) {
 				epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
 				rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 					SystemRecordSerialization.Json, epoch.AsSerialized());
 				if (!_writer.Write(rec, out pos))
-					throw new Exception(string.Format("Second write try failed at {0}.", epoch.EpochPosition));
+					throw new Exception($"Second write try failed at {epoch.EpochPosition}.");
 			}
-
-			Log.Debug("=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
-				epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
-
+			_writer.Flush();
 			_bus.Publish(new SystemMessage.EpochWritten(epoch));
 			return epoch;
 		}
 
-		public void SetLastEpoch(EpochRecord epoch) {
+		public void CacheEpoch(EpochRecord epoch) {
+			var added = AddEpochToCache(epoch);
+			// Check each epoch as it is added to the cache for the first time from the chaser.
+			// n.b.: added will be false for idempotent CacheRequests
+			// If this check fails, then there is something very wrong with epochs, data corruption is possible.
+			if (added && !IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId)) {
+				throw new Exception(
+					$"Not found epoch at {epoch.EpochPosition} with epoch number: {epoch.EpochNumber} and epoch ID: {epoch.EpochId}. " +
+					"SetLastEpoch FAILED! Data corruption risk!");
+			}
+		}
+		/// <summary>
+		/// Idempotently adds epochs to the cache
+		/// </summary>
+		/// <param name="epoch">the epoch to add</param>
+		/// <returns>if the submitted epoch was added to the cache, false if already present</returns>
+		public bool AddEpochToCache(EpochRecord epoch) {
 			Ensure.NotNull(epoch, "epoch");
 
 			lock (_locker) {
-				if (epoch.EpochPosition > _lastEpochPosition) {
-					UpdateLastEpoch(epoch, flushWriter: false);
-					return;
-				}
-			}
 
-			// Epoch record must have been already written, so we need to make sure it is where we expect it to be.
-			// If this check fails, then there is something very wrong with epochs, data corruption is possible.
-			if (!IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId)) {
-				throw new Exception(string.Format("Not found epoch at {0} with epoch number: {1} and epoch ID: {2}. "
-				                                  + "SetLastEpoch FAILED! Data corruption risk!",
-					epoch.EpochPosition,
-					epoch.EpochNumber,
-					epoch.EpochId));
-			}
-		}
+				// if it's already cached, just return false to indicate idempotent add 
+				if (_epochs.Contains(ep => ep.EpochNumber == epoch.EpochNumber)) { return false; }
 
-		private void UpdateLastEpoch(EpochRecord epoch, bool flushWriter) {
-			lock (_locker) {
-				_epochs[epoch.EpochNumber] = epoch;
-				_lastEpochNumber = epoch.EpochNumber;
-				_lastEpochPosition = epoch.EpochPosition;
-				_minCachedEpochNumber = Math.Max(_minCachedEpochNumber, epoch.EpochNumber - CachedEpochCount + 1);
-				_epochs.Remove(_minCachedEpochNumber - 1);
-
-				if (flushWriter)
-					_writer.Flush();
-				// Now update epoch checkpoint, so on restart we don't scan sequentially TF.
-				_checkpoint.Write(epoch.EpochPosition);
-				_checkpoint.Flush();
-
-				Log.Debug(
-					"=== Update Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
+				//new last epoch written or received, this is the normal case
+				//if the list is empty Last will be null
+				if (_epochs.Last == null || _epochs.Last.Value.EpochNumber < epoch.EpochNumber) {
+					_epochs.AddLast(epoch);
+					_lastCachedEpoch = _epochs.Last;
+					// in some race conditions we might have a gap in the epoch list
+					//read the epochs from the TFLog to fill in the gaps
+					if (epoch.EpochPosition > 0 &&
+						epoch.PrevEpochPosition >= 0 && 						
+						epoch.PrevEpochPosition > (_epochs.Last?.Previous?.Value?.EpochPosition ?? -1)) {
+						var reader = _readers.Get();
+						var previous = _epochs.Last;
+						var count = 1; //include last
+						try {
+							do {
+								epoch = ReadEpochAt(reader, epoch.PrevEpochPosition);
+								previous = _epochs.AddBefore(previous, epoch);
+								count++;
+							} while (
+								epoch.EpochPosition > 0 &&
+								epoch.PrevEpochPosition >= 0 &&
+								count <= _cacheSize &&
+								epoch.PrevEpochPosition > (previous?.Previous?.Value?.EpochPosition ?? -1));
+						} finally {
+							_readers.Return(reader);
+						}
+					}
+					while (_epochs.Count > _cacheSize) { _epochs.RemoveFirst(); }
+					_firstCachedEpoch = _epochs.First;
+					// Now update epoch checkpoint, so on restart we don't scan sequentially TF.
+					_checkpoint.Write(_epochs.Last.Value.EpochPosition);
+					_checkpoint.Flush();
+					Log.Debug(
+						"=== Cached new Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
+						epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition, epoch.LeaderInstanceId);
+					return true;
+				}				
+				if (epoch.EpochNumber < _epochs.First.Value.EpochNumber) {					
+					return false;
+				}				
+				//this should never happen
+				Log.Error("=== Unable to cache Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
 					epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition, epoch.LeaderInstanceId);
+				foreach (var epochRecord in _epochs) {
+					Log.Error(
+						"====== Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
+						epochRecord.EpochNumber, epochRecord.EpochPosition, epochRecord.EpochId, epochRecord.PrevEpochPosition, epochRecord.LeaderInstanceId);
+				}
+
+				Log.Error(
+					"====== Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
+					_lastCachedEpoch.Value.EpochNumber, _lastCachedEpoch.Value.EpochPosition, _lastCachedEpoch.Value.EpochId, _lastCachedEpoch.Value.PrevEpochPosition, _lastCachedEpoch.Value.LeaderInstanceId);
+				Log.Error(
+					"====== First Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
+					_firstCachedEpoch.Value.EpochNumber, _firstCachedEpoch.Value.EpochPosition, _firstCachedEpoch.Value.EpochId, _firstCachedEpoch.Value.PrevEpochPosition, _firstCachedEpoch.Value.LeaderInstanceId);
+
+				throw new Exception($"This should never happen: Unable to find correct position to cache Epoch E{epoch.EpochNumber}@{epoch.EpochPosition}:{epoch.EpochId:B} (previous epoch at {epoch.PrevEpochPosition}) L={epoch.LeaderInstanceId:B}");
 			}
 		}
 
-		public EpochRecord GetEpochWithAllEpochs(int epochNumber, bool throwIfNotFound) {
-			ReadEpochs(int.MaxValue);
-			return GetEpoch(epochNumber, throwIfNotFound);
-		}
+
 	}
 }

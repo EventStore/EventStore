@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 16 * 1024));
+			_db = new TFChunkDb(TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 16 * 1024));
 			_db.Open();
 
 			var chunk = _db.Manager.GetChunkFor(0);

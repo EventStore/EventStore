@@ -52,6 +52,7 @@ namespace EventStore.Core.Services {
 		private readonly int _clusterSize;
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly ICheckpoint _chaserCheckpoint;
+		private readonly ICheckpoint _proposalCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
@@ -70,7 +71,7 @@ namespace EventStore.Core.Services {
 		private readonly HashSet<Guid> _acceptsReceived = new HashSet<Guid>();
 
 		private LeaderCandidate _leaderProposal;
-		public Guid  LeaderProposalId => _leaderProposal?.InstanceId ?? Guid.Empty;
+		public Guid LeaderProposalId => _leaderProposal?.InstanceId ?? Guid.Empty;
 		private Guid? _leader;
 		private Guid? _lastElectedLeader;
 
@@ -82,6 +83,7 @@ namespace EventStore.Core.Services {
 			int clusterSize,
 			ICheckpoint writerCheckpoint,
 			ICheckpoint chaserCheckpoint,
+			ICheckpoint proposalCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority,
@@ -91,6 +93,7 @@ namespace EventStore.Core.Services {
 			Ensure.Positive(clusterSize, nameof(clusterSize));
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(chaserCheckpoint, nameof(chaserCheckpoint));
+			Ensure.NotNull(proposalCheckpoint, nameof(proposalCheckpoint));
 			Ensure.NotNull(epochManager, nameof(epochManager));
 			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
 			Ensure.NotNull(timeProvider, nameof(timeProvider));
@@ -104,10 +107,17 @@ namespace EventStore.Core.Services {
 			_clusterSize = clusterSize;
 			_writerCheckpoint = writerCheckpoint;
 			_chaserCheckpoint = chaserCheckpoint;
+			_proposalCheckpoint = proposalCheckpoint;
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
 			_timeProvider = timeProvider;
+
+			var lastEpoch = _epochManager.LastEpochNumber;
+			if (_proposalCheckpoint.Read() < lastEpoch) {
+				_proposalCheckpoint.Write(lastEpoch);
+				_proposalCheckpoint.Flush();
+			}
 
 			var ownInfo = GetOwnInfo();
 			_servers = new[] {
@@ -144,7 +154,7 @@ namespace EventStore.Core.Services {
 			subscriber.Subscribe<ClientMessage.SetNodePriority>(this);
 			subscriber.Subscribe<ClientMessage.ResignNode>(this);
 		}
-		
+
 		public void Handle(SystemMessage.SystemInit _) {
 			_publisher.Publish(TimerMessage.Schedule.Create(SendViewChangeProofInterval,
 				_publisherEnvelope,
@@ -217,18 +227,23 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.StartElections message) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (_state == ElectionsState.ElectingLeader) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (_state == ElectionsState.ElectingLeader)
+				return;
 
 			Log.Information("ELECTIONS: STARTING ELECTIONS.");
 			ShiftToLeaderElection(_lastAttemptedView + 1);
 		}
 
 		public void Handle(ElectionMessage.ElectionsTimedOut message) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (message.View != _lastAttemptedView) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (message.View != _lastAttemptedView)
+				return;
 			// we are still on the same view, but we selected leader
-			if (_state != ElectionsState.ElectingLeader && _leader != null) return;
+			if (_state != ElectionsState.ElectingLeader && _leader != null)
+				return;
 
 			Log.Information("ELECTIONS: (V={view}) TIMED OUT! (S={state}, M={leader}).", message.View, _state, _leader);
 			ShiftToLeaderElection(_lastAttemptedView + 1);
@@ -263,10 +278,13 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.ViewChange message) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (_state == ElectionsState.Idle) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (_state == ElectionsState.Idle)
+				return;
 
-			if (message.AttemptedView <= _lastInstalledView) return;
+			if (message.AttemptedView <= _lastInstalledView)
+				return;
 
 			Log.Information("ELECTIONS: (V={view}) VIEWCHANGE FROM [{serverHttpEndPoint}, {serverId:B}].",
 				message.AttemptedView, message.ServerHttpEndPoint, message.ServerId);
@@ -282,7 +300,8 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.SendViewChangeProof message) {
-			if (_state == ElectionsState.Shutdown) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
 
 			if (_lastInstalledView >= 0)
 				SendToAllExceptMe(new ElectionMessage.ViewChangeProof(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
@@ -294,9 +313,12 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.ViewChangeProof message) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (_state == ElectionsState.Idle) return;
-			if (message.InstalledView <= _lastInstalledView) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (_state == ElectionsState.Idle)
+				return;
+			if (message.InstalledView <= _lastInstalledView)
+				return;
 
 			_lastAttemptedView = message.InstalledView;
 
@@ -338,10 +360,14 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.Prepare message) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (message.ServerId == _memberInfo.InstanceId) return;
-			if (message.View != _lastAttemptedView) return;
-			if (_servers.All(x => x.InstanceId != message.ServerId)) return; // unknown instance
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (message.ServerId == _memberInfo.InstanceId)
+				return;
+			if (message.View != _lastAttemptedView)
+				return;
+			if (_servers.All(x => x.InstanceId != message.ServerId))
+				return; // unknown instance
 
 			Log.Information("ELECTIONS: (V={lastAttemptedView}) PREPARE FROM [{serverHttpEndPoint}, {serverId:B}].",
 				_lastAttemptedView, message.ServerHttpEndPoint, message.ServerId);
@@ -372,9 +398,12 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.PrepareOk msg) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (_state != ElectionsState.ElectingLeader) return;
-			if (msg.View != _lastAttemptedView) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (_state != ElectionsState.ElectingLeader)
+				return;
+			if (msg.View != _lastAttemptedView)
+				return;
 
 			Log.Information("ELECTIONS: (V={view}) PREPARE_OK FROM {nodeInfo}.", msg.View,
 				FormatNodeInfo(msg.ServerHttpEndPoint, msg.ServerId,
@@ -406,15 +435,19 @@ namespace EventStore.Core.Services {
 				return;
 			}
 
+			var proposalNumber = Math.Max(_epochManager.LastEpochNumber, _proposalCheckpoint.Read()) + 1;
+			_proposalCheckpoint.Write(proposalNumber);
+			_proposalCheckpoint.Flush();
+			leader.ProposalNumber = (int)proposalNumber;
 			_leaderProposal = leader;
 
-			Log.Information("ELECTIONS: (V={lastAttemptedView}) SENDING PROPOSAL CANDIDATE: {formatNodeInfo}, ME: {ownInfo}.",
-				_lastAttemptedView, FormatNodeInfo(leader), FormatNodeInfo(GetOwnInfo()));
+			Log.Information("ELECTIONS: (V={lastAttemptedView}) SENDING PROPOSAL CANDIDATE: {formatNodeInfo}, PROPOSAL NUMBER {proposal}, ME: {ownInfo}.",
+				_lastAttemptedView, FormatNodeInfo(leader), proposalNumber, FormatNodeInfo(GetOwnInfo()));
 
 			var proposal = new ElectionMessage.Proposal(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
 				leader.InstanceId, leader.HttpEndPoint,
 				_lastInstalledView,
-				leader.EpochNumber, leader.EpochPosition, leader.EpochId, leader.EpochLeaderInstanceId,
+				(int)proposalNumber, leader.EpochPosition, leader.EpochId, leader.EpochLeaderInstanceId,
 				leader.LastCommitPosition, leader.WriterCheckpoint, leader.ChaserCheckpoint, leader.NodePriority);
 			Handle(new ElectionMessage.Accept(_memberInfo.InstanceId, _memberInfo.HttpEndPoint,
 				leader.InstanceId, leader.HttpEndPoint, _lastInstalledView));
@@ -423,14 +456,15 @@ namespace EventStore.Core.Services {
 
 		public static LeaderCandidate GetBestLeaderCandidate(Dictionary<Guid, ElectionMessage.PrepareOk> received,
 			MemberInfo[] servers, Guid? resigningLeaderInstanceId, int lastAttemptedView) {
+			
 			var best = received.Values
-				.OrderByDescending(x => x.EpochNumber)
-				.ThenByDescending(x => x.LastCommitPosition)
-				.ThenByDescending(x => x.WriterCheckpoint)
-				.ThenByDescending(x => x.ChaserCheckpoint)
-				.ThenByDescending(x => x.NodePriority)
-				.ThenByDescending(x => x.ServerId)
+				.OrderByDescending(x => x.EpochNumber) // latest election
+				.ThenByDescending(x => x.WriterCheckpoint) // log length (if not re-electing leader pick the most complete replica)
+				.ThenByDescending(x => x.ChaserCheckpoint) // in memory index position
+				.ThenByDescending(x => x.NodePriority) // indicated node priority from settings
+				.ThenByDescending(x => x.ServerId) // tie breaker
 				.FirstOrDefault();
+
 			if (best == null)
 				return null;
 
@@ -515,8 +549,8 @@ namespace EventStore.Core.Services {
 
 			if (leader != null && leader.InstanceId != resigningLeader) {
 				if (candidate.InstanceId == leader.InstanceId
-				    || candidate.EpochNumber > leader.EpochNumber
-				    || (candidate.EpochNumber == leader.EpochNumber && candidate.EpochId != leader.EpochId))
+					|| candidate.EpochNumber > leader.EpochNumber
+					|| (candidate.EpochNumber == leader.EpochNumber && candidate.EpochId != leader.EpochId))
 					return true;
 
 				Log.Information(
@@ -554,16 +588,36 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.Proposal message) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (message.ServerId == _memberInfo.InstanceId) return;
-			if (_state != ElectionsState.Acceptor) return;
-			if (message.View != _lastInstalledView) return;
-			if (_servers.All(x => x.InstanceId != message.ServerId)) return;
-			if (_servers.All(x => x.InstanceId != message.LeaderId)) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (message.ServerId == _memberInfo.InstanceId)
+				return;
+			if (_state != ElectionsState.Acceptor)
+				return;
+			if (message.View != _lastInstalledView)
+				return;
+			if (_servers.All(x => x.InstanceId != message.ServerId))
+				return;
+			if (_servers.All(x => x.InstanceId != message.LeaderId))
+				return;
 
 			var candidate = new LeaderCandidate(message.LeaderId, message.LeaderHttpEndPoint,
 				message.EpochNumber, message.EpochPosition, message.EpochId, message.EpochLeaderInstanceId,
 				message.LastCommitPosition, message.WriterCheckpoint, message.ChaserCheckpoint, message.NodePriority);
+
+			if (message.EpochNumber > _proposalCheckpoint.Read()) {
+				_proposalCheckpoint.Write(message.EpochNumber);
+				_proposalCheckpoint.Flush();
+			} else {
+				Log.Information(
+					"ELECTIONS: (V={lastAttemptedView}, P={lastKnownProposal}) OUTDATED PROPOSAL P={proposedEpoch} FROM [{serverHttpEndPoint},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
+					_lastAttemptedView,
+					_proposalCheckpoint.Read(),
+					message.EpochNumber,
+					message.ServerHttpEndPoint, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()),
+					message.NodePriority);
+				return;
+			}
 
 			var ownInfo = GetOwnInfo();
 			if (!IsLegitimateLeader(message.View, message.ServerHttpEndPoint, message.ServerId,
@@ -572,13 +626,16 @@ namespace EventStore.Core.Services {
 				return;
 
 			Log.Information(
-				"ELECTIONS: (V={lastAttemptedView}) PROPOSAL FROM [{serverHttpEndPoint},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
+				"ELECTIONS: (V={lastAttemptedView}, P={lastKnownProposal}) PROPOSAL P={proposedEpoch} FROM [{serverHttpEndPoint},{serverId:B}] M={candidateInfo}. ME={ownInfo}, NodePriority={priority}",
 				_lastAttemptedView,
+				_proposalCheckpoint.Read(),
+				message.EpochNumber,
 				message.ServerHttpEndPoint, message.ServerId, FormatNodeInfo(candidate), FormatNodeInfo(GetOwnInfo()),
 				message.NodePriority);
 
 			if (_leaderProposal == null) {
 				_leaderProposal = candidate;
+				_leaderProposal.ProposalNumber = message.EpochNumber;
 				_acceptsReceived.Clear();
 			}
 
@@ -594,10 +651,14 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ElectionMessage.Accept message) {
-			if (_state == ElectionsState.Shutdown) return;
-			if (message.View != _lastInstalledView) return;
-			if (_leaderProposal == null) return;
-			if (_leaderProposal.InstanceId != message.LeaderId) return;
+			if (_state == ElectionsState.Shutdown)
+				return;
+			if (message.View != _lastInstalledView)
+				return;
+			if (_leaderProposal == null)
+				return;
+			if (_leaderProposal.InstanceId != message.LeaderId)
+				return;
 
 			Log.Information(
 				"ELECTIONS: (V={view}) ACCEPT FROM [{serverHttpEndPoint},{serverId:B}] M=[{leaderHttpEndPoint},{leaderId:B}]).",
@@ -612,7 +673,7 @@ namespace EventStore.Core.Services {
 						FormatNodeInfo(_leaderProposal), FormatNodeInfo(GetOwnInfo()));
 					_lastElectedLeader = _leader;
 					_resigningLeaderInstanceId = null;
-					_publisher.Publish(new ElectionMessage.ElectionsDone(message.View, leader));
+					_publisher.Publish(new ElectionMessage.ElectionsDone(message.View, _leaderProposal.ProposalNumber, leader));
 				}
 			}
 		}
@@ -641,7 +702,7 @@ namespace EventStore.Core.Services {
 				lastEpoch == null ? Guid.Empty : lastEpoch.LeaderInstanceId,
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint, _nodePriority);
 		}
-		
+
 		private static string FormatNodeInfo(LeaderCandidate candidate) {
 			return FormatNodeInfo(candidate.HttpEndPoint, candidate.InstanceId,
 				candidate.LastCommitPosition, candidate.WriterCheckpoint, candidate.ChaserCheckpoint,
@@ -661,6 +722,7 @@ namespace EventStore.Core.Services {
 			public readonly Guid InstanceId;
 			public readonly EndPoint HttpEndPoint;
 
+			public int ProposalNumber;
 			public readonly int EpochNumber;
 			public readonly long EpochPosition;
 			public readonly Guid EpochId;
