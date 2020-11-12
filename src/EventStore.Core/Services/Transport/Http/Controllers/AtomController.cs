@@ -217,8 +217,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private static Func<UriTemplateMatch, Operation> ForStream(OperationDefinition definition) {
-			var operation = new Operation(definition);
 			return match => {
+				var operation = new Operation(definition);
 				var stream = match.BoundVariables["stream"];
 				if (!string.IsNullOrEmpty(stream)) {
 					return operation.WithParameter(Operations.Streams.Parameters.StreamId(stream));
