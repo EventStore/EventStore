@@ -62,8 +62,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 	
 		private static Func<UriTemplateMatch, Operation> ForScavengeStream(OperationDefinition definition) {
-			var operation = new Operation(definition);
 			return match => {
+				var operation = new Operation(definition);
 				var stream = "$scavenges";
 				var scavengeId = match.BoundVariables["scavengeId"];
 				if (scavengeId != null) 

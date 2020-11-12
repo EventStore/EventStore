@@ -239,8 +239,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		static Func<UriTemplateMatch, Operation> WithParameters(OperationDefinition definition) {
-			var operation = new Operation(definition);
 			return match => {
+				var operation = new Operation(definition);
 				var stream = match.BoundVariables["stream"];
 				if(!string.IsNullOrEmpty(stream))
 					operation = operation.WithParameter(Operations.Subscriptions.Parameters.StreamId(stream));

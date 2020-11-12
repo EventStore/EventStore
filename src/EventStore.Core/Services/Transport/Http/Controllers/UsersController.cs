@@ -38,8 +38,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private static Func<UriTemplateMatch, Operation> ForUser(OperationDefinition definition) {
-			var operation = new Operation(definition);
-			return match => operation.WithParameter(Operations.Users.Parameters.User(match.BoundVariables["login"]));
+			return match => new Operation(definition).WithParameter(Operations.Users.Parameters.User(match.BoundVariables["login"]));
 		}
 
 		private void GetUsers(HttpEntityManager http, UriTemplateMatch match) {
