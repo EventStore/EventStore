@@ -940,7 +940,7 @@ namespace EventStore.Core {
 				sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors; //set the RemoteCertificateChainErrors flag
 
 			if (sslPolicyErrors != SslPolicyErrors.None) {
-				return (false, $"The certificate provided by the {certificateOrigin} failed validation with the following error(s): {sslPolicyErrors.ToString()} ({chainStatus})");
+				return (false, $"The certificate ({certificate.Subject}) provided by the {certificateOrigin} failed validation with the following error(s): {sslPolicyErrors.ToString()} ({chainStatus})");
 			}
 
 			//client certificates need to be strictly validated against the set of trusted root certificates
