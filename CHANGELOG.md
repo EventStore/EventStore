@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - read operations are now backed by System.Threading.Channels [EventStore#2712](https://github.com/EventStore/EventStore/pull/2712)
+- Add the certificate subject to the log message printed when there is a certificate validation error [EventStore#2746](https://github.com/EventStore/EventStore/pull/2746)
 
 ## [20.6.1] - 2020-09-28
 
