@@ -58,14 +58,14 @@ jobs:
       run: |
         git fetch --prune --unshallow
     - name: Install Dotnet
-      uses: actions/setup-dotnet@v1.4.0
+      uses: actions/setup-dotnet@v1
       with:
         dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     - name: Calculate Version
       run: |
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
-        echo "::set-env name=VERSION::${version}"
+        echo "VERSION=${version}" >> $GITHUB_ENV
     - name: Build
       run: |
         docker build \
@@ -135,7 +135,7 @@ jobs:
       run: |
         git fetch --prune --unshallow
     - name: Install Dotnet
-      uses: actions/setup-dotnet@v1.4.0
+      uses: actions/setup-dotnet@v1
       with:
         dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     - name: Compile
@@ -180,7 +180,7 @@ jobs:
       run: |
         git fetch --prune --unshallow
     - name: Install Dotnet
-      uses: actions/setup-dotnet@v1.4.0
+      uses: actions/setup-dotnet@v1
       with:
         dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     - name: Pack
