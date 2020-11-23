@@ -7,10 +7,27 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	public static class TFChunkHelper {
-		public static TFChunkDbConfig CreateDbConfig(string pathName, long writerCheckpointPosition,
-			long chaserCheckpointPosition = 0,
-			long epochCheckpointPosition = -1, long truncateCheckpoint = -1, int chunkSize = 10000,
-			long maxTruncation = -1) {
+		public static TFChunkDbConfig CreateDbConfig(
+			string pathName,
+			long writerCheckpointPosition) {
+			return CreateDbConfigEx(pathName, writerCheckpointPosition,0,-1,-1,-1,10000,-1);
+		}
+		public static TFChunkDbConfig CreateSizedDbConfig(
+			string pathName,
+			long writerCheckpointPosition,
+			int chunkSize) {
+			return CreateDbConfigEx(pathName, writerCheckpointPosition,0,-1,-1,-1,chunkSize,-1);
+		}
+		public static TFChunkDbConfig CreateDbConfigEx(
+			string pathName, 
+			long writerCheckpointPosition,
+			long chaserCheckpointPosition,// Default 0
+			long epochCheckpointPosition ,// Default -1
+			long proposalCheckpointPosition ,// Default -1
+			long truncateCheckpoint ,// Default -1
+			int chunkSize ,// Default 10000
+			long maxTruncation // Default -1
+			) {
 			return new TFChunkDbConfig(pathName,
 				new VersionedPatternFileNamingStrategy(pathName, "chunk-"),
 				chunkSize,
@@ -18,6 +35,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(writerCheckpointPosition),
 				new InMemoryCheckpoint(chaserCheckpointPosition),
 				new InMemoryCheckpoint(epochCheckpointPosition),
+				new InMemoryCheckpoint(proposalCheckpointPosition),
 				new InMemoryCheckpoint(truncateCheckpoint),
 				new InMemoryCheckpoint(-1), 
 				new InMemoryCheckpoint(-1),
@@ -26,15 +44,21 @@ namespace EventStore.Core.Tests.TransactionLog {
 				maxTruncation: maxTruncation);
 		}
 
-		public static TFChunkDbConfig CreateDbConfig(string pathName, ICheckpoint writerCheckpoint,
-			ICheckpoint chaserCheckpoint, int chunkSize = 10000, ICheckpoint replicationCheckpoint = null) {
+		public static TFChunkDbConfig CreateDbConfig(
+			string pathName, 
+			ICheckpoint writerCheckpoint,
+			ICheckpoint chaserCheckpoint, 
+			int chunkSize = 10000, 
+			ICheckpoint replicationCheckpoint = null) {
 			if (replicationCheckpoint == null) replicationCheckpoint = new InMemoryCheckpoint(-1);
-			return new TFChunkDbConfig(pathName,
+			return new TFChunkDbConfig(
+				pathName,
 				new VersionedPatternFileNamingStrategy(pathName, "chunk-"),
 				chunkSize,
 				0,
 				writerCheckpoint,
 				chaserCheckpoint,
+				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				replicationCheckpoint, 

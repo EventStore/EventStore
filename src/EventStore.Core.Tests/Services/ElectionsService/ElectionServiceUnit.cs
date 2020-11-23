@@ -18,6 +18,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		private const int LastCommitPosition = -1;
 		private const int WriterCheckpoint = 0;
 		private const int ChaserCheckpoint = 0;
+		private const int ProposalCheckpoint = -1;
 		private static readonly DateTime InitialDate = new DateTime(2012, 6, 1);
 
 		public ClusterInfo ClusterInfo { get; private set; }
@@ -54,6 +55,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				clusterSettings.ClusterNodesCount,
 				new InMemoryCheckpoint(WriterCheckpoint),
 				new InMemoryCheckpoint(ChaserCheckpoint),
+				new InMemoryCheckpoint(ProposalCheckpoint),
 				new FakeEpochManager(),
 				() => -1, 0, new FakeTimeProvider());
 			ElectionsService.SubscribeMessages(_bus);

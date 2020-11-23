@@ -79,6 +79,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService.Randomized {
 					InstancesCnt,
 					new InMemoryCheckpoint(),
 					new InMemoryCheckpoint(),
+					new InMemoryCheckpoint(-1),
 					new FakeEpochManager(),
 					() => -1, 0, new FakeTimeProvider());
 				electionsService.SubscribeMessages(inputBus);

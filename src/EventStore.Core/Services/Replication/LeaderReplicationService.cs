@@ -255,15 +255,13 @@ namespace EventStore.Core.Services.Replication {
 
 			// if afterCommonEpoch is present, logPosition > afterCommonEpoch.EpochPosition,
 			// so safe position is definitely the start of afterCommonEpoch
-			var replicaPosition = afterCommonEpoch == null ? logPosition : afterCommonEpoch.EpochPosition;
+			var replicaPosition = afterCommonEpoch?.EpochPosition ?? logPosition;
 
 			if (commonEpoch.EpochNumber == _epochManager.LastEpochNumber)
 				return Math.Min(replicaPosition, leaderCheckpoint);
 
-			var nextEpoch = _epochManager.GetEpoch(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
-			if (nextEpoch == null) {
-				nextEpoch = _epochManager.GetEpochWithAllEpochs(commonEpoch.EpochNumber + 1, throwIfNotFound: false);
-			}
+			// common epoch number is older than the last epoch
+			var nextEpoch = _epochManager.GetEpochAfter(commonEpoch.EpochNumber , false);
 
 			if (nextEpoch == null) {
 				var msg = string.Format(

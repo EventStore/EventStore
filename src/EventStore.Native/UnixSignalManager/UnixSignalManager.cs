@@ -14,7 +14,7 @@ namespace EventStore.Native.UnixSignalManager {
 		private static readonly List<UnixSignal> _handledSignals = new List<UnixSignal>();
 		private static readonly object _handledSignalsLock = new object();
 
-		private readonly Dictionary<Signum, List<Action>> _actions = new Dictionary<Signum, List<Action>>();
+		private readonly ConcurrentDictionary<Signum, List<Action>> _actions = new ConcurrentDictionary<Signum, List<Action>>();
 		private volatile bool _stop;
 
 		public static UnixSignalManager GetInstance() => _instance ??= new UnixSignalManager();
@@ -35,7 +35,6 @@ namespace EventStore.Native.UnixSignalManager {
 					_handledSignals.Add(new UnixSignal(signum));
 				}
 			}
-
 			if (_actions.TryGetValue(signum, out List<Action> actions)) {
 				actions.Add(action);
 			} else {
@@ -61,12 +60,15 @@ namespace EventStore.Native.UnixSignalManager {
 				}
 
 				var index = UnixSignal.WaitAny(handledSignals, TimeSpan.FromMilliseconds(timeoutMs));
-				if (index == timeoutMs) continue;
+				if (index == timeoutMs)
+					continue;
+
 				if (_actions.TryGetValue(handledSignals[index].Signum, out List<Action> actions)) {
 					foreach (var action in actions) {
 						action.Invoke();
 					}
 				}
+
 				handledSignals[index].Reset();
 			}
 		}

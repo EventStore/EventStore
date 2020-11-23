@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Net;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Bus;
@@ -69,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				queueStatsManager: new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
 
 			ReplicaSubscriptionId = AddSubscription(ReplicaId, true, out ReplicaManager1);
 			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, true, out ReplicaManager2);
@@ -115,7 +114,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public abstract void When();
 		protected void BecomeLeader() {
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
 		}
 
 		protected void BecomeUnknown() {
@@ -126,12 +125,25 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			ICheckpoint writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 			ICheckpoint chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 			ICheckpoint epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+			ICheckpoint proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
 			ICheckpoint truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
 			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
 			var nodeConfig = new TFChunkDbConfig(
-				PathName, new VersionedPatternFileNamingStrategy(PathName, "chunk-"), 1000, 10000, writerChk,
-				chaserChk, epochChk, truncateChk, replicationCheckpoint, indexCheckpoint, Constants.TFChunkInitialReaderCountDefault, Constants.TFChunkMaxReaderCountDefault, true);
+				PathName, 
+				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+				1000,
+				10000,
+				writerChk,
+				chaserChk,
+				epochChk,
+				proposalChk,
+				truncateChk,
+				replicationCheckpoint,
+				indexCheckpoint,
+				Constants.TFChunkInitialReaderCountDefault,
+				Constants.TFChunkMaxReaderCountDefault,
+				true);
 			return nodeConfig;
 		}
 	}

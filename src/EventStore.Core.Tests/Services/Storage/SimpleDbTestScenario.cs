@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			var dbConfig = TFChunkHelper.CreateDbConfig(PathName, 0, chunkSize: 1024 * 1024);
+			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
 			var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
 
 			DbRes = CreateDb(dbCreationHelper);

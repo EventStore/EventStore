@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void does_not_allow_not_completed_not_last_chunks() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 4000, chunkSize: 1000);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 4000, chunkSize: 1000);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
@@ -157,7 +157,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void when_a_chaser_checksum_is_ahead_of_writer_checksum_throws_corrupt_database_exception() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 0, 11);
+			var config = TFChunkHelper.CreateDbConfigEx(PathName, 0, 11,-1,-1,-1,1000,-1);
 			using (var db = new TFChunkDb(config)) {
 				Assert.That(() => db.Open(verifyHash: false),
 					Throws.Exception.InstanceOf<CorruptDatabaseException>()
@@ -167,7 +167,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void when_an_epoch_checksum_is_ahead_of_writer_checksum_throws_corrupt_database_exception() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 0, 0, 11);
+			var config = TFChunkHelper.CreateDbConfigEx(PathName, 0, 0, 11,-1,-1,1000,-1);
 			using (var db = new TFChunkDb(config)) {
 				Assert.That(() => db.Open(verifyHash: false),
 					Throws.Exception.InstanceOf<CorruptDatabaseException>()
@@ -206,7 +206,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void allows_checkpoint_to_point_into_the_middle_of_completed_chunk_when_enough_actual_data_in_chunk() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 1500, chunkSize: 1000);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 1500, chunkSize: 1000);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"), actualDataSize: 500);
@@ -235,7 +235,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void does_not_allow_checkpoint_to_point_into_the_middle_of_scavenged_chunk() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 1500, chunkSize: 1000);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 1500, chunkSize: 1000);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"), isScavenged: true,
@@ -252,7 +252,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 			File.Create(GetFilePathFor("foo")).Close();
 			File.Create(GetFilePathFor("bla")).Close();
 
-			var config = TFChunkHelper.CreateDbConfig(PathName, 350, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 350, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000002"));
@@ -277,7 +277,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void when_checkpoint_is_on_boundary_of_chunk_last_chunk_is_preserved() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 200, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 200, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
@@ -295,7 +295,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		[Test]
 		public void
 			when_checkpoint_is_on_boundary_of_new_chunk_last_chunk_is_preserved_and_excessive_versions_are_removed_if_present() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 200, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 200, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
@@ -314,7 +314,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		[Test]
 		public void
 			when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_not_present_but_should_be_created() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 200, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 200, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
@@ -331,7 +331,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_present() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 200, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 200, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
@@ -349,7 +349,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_no_exception_is_thrown() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 200, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 200, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"),
@@ -368,7 +368,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		[Test, Ignore("Not valid test now after disabling size validation on ongoing TFChunk ")]
 		public void
 			when_checkpoint_is_on_boundary_of_new_chunk_and_last_chunk_is_truncated_but_not_completed_exception_is_thrown() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 200, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 200, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000001"),
@@ -382,7 +382,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 
 		[Test]
 		public void temporary_files_are_removed() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 150, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 150, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000001"));

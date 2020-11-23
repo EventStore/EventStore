@@ -735,9 +735,17 @@ namespace EventStore.Core {
 
 			// ELECTIONS
 			if (!vNodeSettings.NodeInfo.IsReadOnlyReplica) {
-				var electionsService = new ElectionsService(_mainQueue, memberInfo, vNodeSettings.ClusterNodeCount,
-					db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
-					epochManager, () => readIndex.LastIndexedPosition, vNodeSettings.NodePriority, _timeProvider);
+				var electionsService = new ElectionsService(
+					_mainQueue, 
+					memberInfo, 
+					vNodeSettings.ClusterNodeCount,
+					db.Config.WriterCheckpoint, 
+					db.Config.ChaserCheckpoint,
+					db.Config.ProposalCheckpoint,
+					epochManager,
+					() => readIndex.LastIndexedPosition, 
+					vNodeSettings.NodePriority,
+					_timeProvider);
 				electionsService.SubscribeMessages(_mainBus);
 			}
 
