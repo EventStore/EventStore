@@ -109,7 +109,7 @@ namespace EventStore.ClientAPI {
 					throw new StreamDeletedException(StreamId);
 				default:
 					throw new ArgumentOutOfRangeException(string.Format(
-						"Subscription {0} unexpected StreamEventsSlice.Status: {0}.",
+						"Subscription {0} unexpected StreamEventsSlice.Status: {1}.",
 						SubscriptionName, slice.Status));
 			}
 
