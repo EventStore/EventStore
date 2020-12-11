@@ -14,9 +14,8 @@ using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 namespace EventStore.ClientAPI.Internal {
 	internal class ClusterDnsEndPointDiscoverer : IEndPointDiscoverer {
 		private readonly ILogger _log;
-		private readonly (string host, int port) _clusterDns;
+		private readonly DnsEndPoint _clusterDns;
 		private readonly int _maxDiscoverAttempts;
-		private readonly int _httpGossipPort;
 		private readonly GossipSeed[] _gossipSeeds;
 
 		private readonly IHttpClient _client;
@@ -36,10 +35,10 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
-			var parts = clusterDns.Split(':');
-			_clusterDns = (parts[0], parts.Length > 1 && int.TryParse(parts[1], out var port) ? port : 0);
+			_clusterDns = (gossipSeeds?.Length ?? 0) == 0
+				? new DnsEndPoint(clusterDns, httpGossipPort)
+				: null;
 			_maxDiscoverAttempts = maxDiscoverAttempts;
-			_httpGossipPort = httpGossipPort;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
 			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
@@ -100,7 +99,7 @@ namespace EventStore.ClientAPI.Internal {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
 			var endpoints = _gossipSeeds != null && _gossipSeeds.Length > 0
 				? _gossipSeeds
-				: new[] {new GossipSeed(new DnsEndPoint(_clusterDns.host, _clusterDns.port))};
+				: new[] {new GossipSeed(_clusterDns)};
 
 			RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			return endpoints;
