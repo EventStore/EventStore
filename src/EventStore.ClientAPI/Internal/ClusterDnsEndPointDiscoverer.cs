@@ -14,14 +14,14 @@ using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 namespace EventStore.ClientAPI.Internal {
 	internal class ClusterDnsEndPointDiscoverer : IEndPointDiscoverer {
 		private readonly ILogger _log;
-		private readonly string _clusterDns;
+		private readonly (string host, int port) _clusterDns;
 		private readonly int _maxDiscoverAttempts;
 		private readonly int _httpGossipPort;
 		private readonly GossipSeed[] _gossipSeeds;
 
 		private readonly IHttpClient _client;
 		private ClusterMessages.MemberInfoDto[] _oldGossip;
-		private TimeSpan _gossipTimeout;
+		private readonly TimeSpan _gossipTimeout;
 
 		private readonly NodePreference _nodePreference;
 
@@ -36,7 +36,8 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
-			_clusterDns = clusterDns;
+			var parts = clusterDns.Split(':');
+			_clusterDns = (parts[0], parts.Length > 1 && int.TryParse(parts[1], out var port) ? port : 0);
 			_maxDiscoverAttempts = maxDiscoverAttempts;
 			_httpGossipPort = httpGossipPort;
 			_gossipSeeds = gossipSeeds;
@@ -71,8 +72,7 @@ namespace EventStore.ClientAPI.Internal {
 					Thread.Sleep(500);
 				}
 
-				throw new ClusterException(string.Format("Failed to discover candidate in {0} attempts.",
-					_maxDiscoverAttempts));
+				throw new ClusterException($"Failed to discover candidate in {_maxDiscoverAttempts} attempts.");
 			});
 		}
 
@@ -100,7 +100,7 @@ namespace EventStore.ClientAPI.Internal {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
 			var endpoints = _gossipSeeds != null && _gossipSeeds.Length > 0
 				? _gossipSeeds
-				: new[] {new GossipSeed(new DnsEndPoint(_clusterDns, 0))};
+				: new[] {new GossipSeed(new DnsEndPoint(_clusterDns.host, _clusterDns.port))};
 
 			RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			return endpoints;
