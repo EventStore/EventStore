@@ -98,29 +98,12 @@ namespace EventStore.ClientAPI.Internal {
 
 		private GossipSeed[] GetGossipCandidatesFromDns() {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
-			GossipSeed[] endpoints;
-			if (_gossipSeeds != null && _gossipSeeds.Length > 0) {
-				endpoints = _gossipSeeds;
-			} else {
-				endpoints = ResolveDns(_clusterDns)
-					.Select(x => new GossipSeed(new IPEndPoint(x, _httpGossipPort))).ToArray();
-			}
+			var endpoints = _gossipSeeds != null && _gossipSeeds.Length > 0
+				? _gossipSeeds
+				: new[] {new GossipSeed(new DnsEndPoint(_clusterDns, 0))};
 
 			RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			return endpoints;
-		}
-
-		private IPAddress[] ResolveDns(string dns) {
-			IPAddress[] addresses;
-			try {
-				addresses = Dns.GetHostAddresses(dns);
-			} catch (Exception exc) {
-				throw new ClusterException(string.Format("Error while resolving DNS entry '{0}'.", _clusterDns), exc);
-			}
-
-			if (addresses == null || addresses.Length == 0)
-				throw new ClusterException(string.Format("DNS entry '{0}' resolved into empty list.", _clusterDns));
-			return addresses;
 		}
 
 		private GossipSeed[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip,
