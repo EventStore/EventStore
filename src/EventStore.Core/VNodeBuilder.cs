@@ -93,6 +93,7 @@ namespace EventStore.Core {
 		protected TimeSpan _extTcpHeartbeatInterval;
 		protected int _connectionPendingSendBytesThreshold;
 		protected int _connectionQueueSizeThreshold;
+		protected int _streamInfoCacheCapacity;
 
 		protected bool _skipVerifyDbHashes;
 		protected int _maxMemtableSize;
@@ -205,6 +206,7 @@ namespace EventStore.Core {
 			_extTcpHeartbeatTimeout = TimeSpan.FromMilliseconds(Opts.ExtTcpHeartbeatTimeoutDefault);
 			_connectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
 			_connectionQueueSizeThreshold = Opts.ConnectionQueueSizeThresholdDefault;
+			_streamInfoCacheCapacity = Opts.StreamInfoCacheCapacityDefault;
 
 			_skipVerifyDbHashes = Opts.SkipDbVerifyDefault;
 			_maxMemtableSize = Opts.MaxMemtableSizeDefault;
@@ -755,6 +757,16 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
 		public VNodeBuilder WithConnectionQueueSizeThreshold(int connectionQueueSizeThreshold) {
 			_connectionQueueSizeThreshold = connectionQueueSizeThreshold;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the maximum number of entries to keep in the stream info cache.
+		/// </summary>
+		/// <param name="streamInfoCacheCapacity"></param>
+		/// <returns></returns>
+		public VNodeBuilder WithStreamInfoCacheCapacity(int streamInfoCacheCapacity) {
+			_streamInfoCacheCapacity = streamInfoCacheCapacity;
 			return this;
 		}
 
@@ -1399,6 +1411,7 @@ namespace EventStore.Core {
 				_connectionPendingSendBytesThreshold,
 				_connectionQueueSizeThreshold,
 				_chunkInitialReaderCount,
+				_streamInfoCacheCapacity,
 				_index,
 				_enableHistograms,
 				_skipIndexVerify,

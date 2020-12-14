@@ -69,9 +69,14 @@ namespace EventStore.Core.Util {
 		public const int IntTcpHeartbeatIntervalDefault = 700;
 
 		public const string ConnectionPendingSendBytesThresholdDescr =
-			"The maximum number of pending send bytes allowed before a connection is closed.";
-
+    			"The maximum number of pending send bytes allowed before a connection is closed.";
+    
 		public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
+            
+		public const string StreamInfoCacheCapacityDescr =
+			"The maximum number of entries to keep in the stream info cache.";
+
+		public const int StreamInfoCacheCapacityDefault = 100000;
 		
 		public const string ConnectionQueueSizeThresholdDescr =
 			"The maximum number of pending connection operations allowed before a connection is closed.";

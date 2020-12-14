@@ -224,7 +224,7 @@ namespace EventStore.Core {
 			var readIndex = new ReadIndex(_mainQueue,
 				readerPool,
 				tableIndex,
-				ESConsts.StreamInfoCacheCapacity,
+				vNodeSettings.StreamInfoCacheCapacity,
 				Application.IsDefined(Application.AdditionalCommitChecks),
 				Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1,
 				vNodeSettings.HashCollisionReadLimit,

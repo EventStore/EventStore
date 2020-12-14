@@ -105,7 +105,8 @@ namespace EventStore.Core.Tests.Helpers {
 				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault);
+				chunkInitialReaderCount: Opts.ChunkInitialReaderCountDefault,
+				streamInfoCacheCapacity: Opts.StreamInfoCacheCapacityDefault);
 
 			Log.Info(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
