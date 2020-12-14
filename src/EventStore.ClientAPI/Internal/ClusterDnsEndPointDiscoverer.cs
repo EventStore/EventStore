@@ -14,14 +14,13 @@ using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 namespace EventStore.ClientAPI.Internal {
 	internal class ClusterDnsEndPointDiscoverer : IEndPointDiscoverer {
 		private readonly ILogger _log;
-		private readonly string _clusterDns;
+		private readonly DnsEndPoint _clusterDns;
 		private readonly int _maxDiscoverAttempts;
-		private readonly int _httpGossipPort;
 		private readonly GossipSeed[] _gossipSeeds;
 
 		private readonly IHttpClient _client;
 		private ClusterMessages.MemberInfoDto[] _oldGossip;
-		private TimeSpan _gossipTimeout;
+		private readonly TimeSpan _gossipTimeout;
 
 		private readonly NodePreference _nodePreference;
 
@@ -36,9 +35,10 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
-			_clusterDns = clusterDns;
+			_clusterDns = (gossipSeeds?.Length ?? 0) == 0
+				? new DnsEndPoint(clusterDns, httpGossipPort)
+				: null;
 			_maxDiscoverAttempts = maxDiscoverAttempts;
-			_httpGossipPort = httpGossipPort;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
 			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
@@ -71,8 +71,7 @@ namespace EventStore.ClientAPI.Internal {
 					Thread.Sleep(500);
 				}
 
-				throw new ClusterException(string.Format("Failed to discover candidate in {0} attempts.",
-					_maxDiscoverAttempts));
+				throw new ClusterException($"Failed to discover candidate in {_maxDiscoverAttempts} attempts.");
 			});
 		}
 
@@ -98,29 +97,12 @@ namespace EventStore.ClientAPI.Internal {
 
 		private GossipSeed[] GetGossipCandidatesFromDns() {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
-			GossipSeed[] endpoints;
-			if (_gossipSeeds != null && _gossipSeeds.Length > 0) {
-				endpoints = _gossipSeeds;
-			} else {
-				endpoints = ResolveDns(_clusterDns)
-					.Select(x => new GossipSeed(new IPEndPoint(x, _httpGossipPort))).ToArray();
-			}
+			var endpoints = _gossipSeeds != null && _gossipSeeds.Length > 0
+				? _gossipSeeds
+				: new[] {new GossipSeed(_clusterDns)};
 
 			RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			return endpoints;
-		}
-
-		private IPAddress[] ResolveDns(string dns) {
-			IPAddress[] addresses;
-			try {
-				addresses = Dns.GetHostAddresses(dns);
-			} catch (Exception exc) {
-				throw new ClusterException(string.Format("Error while resolving DNS entry '{0}'.", _clusterDns), exc);
-			}
-
-			if (addresses == null || addresses.Length == 0)
-				throw new ClusterException(string.Format("DNS entry '{0}' resolved into empty list.", _clusterDns));
-			return addresses;
 		}
 
 		private GossipSeed[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip,
