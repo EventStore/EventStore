@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Internal;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -17,7 +18,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// The DNS name to use for discovering endpoints.
 		/// </summary>
-		public readonly string ClusterDns;
+		public readonly ClusterDnsSeed ClusterDns;
 
 		/// <summary>
 		/// The maximum number of attempts for discovering endpoints.
@@ -53,7 +54,7 @@ namespace EventStore.ClientAPI {
 		/// <param name="nodePreference">Whether to prefer slave, random, or master node selection</param>.
 		internal ClusterSettings(GossipSeed[] gossipSeeds, int maxDiscoverAttempts, TimeSpan gossipTimeout,
 			NodePreference nodePreference) {
-			ClusterDns = "";
+			ClusterDns = null;
 			MaxDiscoverAttempts = maxDiscoverAttempts;
 			ExternalGossipPort = 0;
 			GossipTimeout = gossipTimeout;
@@ -69,9 +70,9 @@ namespace EventStore.ClientAPI {
 		/// <param name="externalGossipPort">The well-known endpoint on which cluster managers are running</param>.
 		/// <param name="gossipTimeout">Timeout for cluster gossip</param>.
 		/// <param name="nodePreference">Whether to prefer slave, random, or master node selection</param>.
-		internal ClusterSettings(string clusterDns, int maxDiscoverAttempts, int externalGossipPort,
+		internal ClusterSettings(ClusterDnsSeed clusterDns, int maxDiscoverAttempts, int externalGossipPort,
 			TimeSpan gossipTimeout, NodePreference nodePreference) {
-			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+			Ensure.NotNull(clusterDns, "clusterDns");
 			if (maxDiscoverAttempts < -1)
 				throw new ArgumentOutOfRangeException("maxDiscoverAttempts",
 					string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [-1, infinity].",

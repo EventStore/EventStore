@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using EventStore.ClientAPI.Common.Utils;
+using EventStore.ClientAPI.Internal;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -8,7 +9,7 @@ namespace EventStore.ClientAPI {
 	/// using DNS discovery.
 	/// </summary>
 	public class DnsClusterSettingsBuilder {
-		private string _clusterDns;
+		private ClusterDnsSeed _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
 		private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
@@ -20,9 +21,9 @@ namespace EventStore.ClientAPI {
 		/// <param name="clusterDns">The DNS name under which cluster nodes are listed.</param>
 		/// <returns>A <see cref="DnsClusterSettingsBuilder"/> for further configuration.</returns>
 		/// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
-		public DnsClusterSettingsBuilder SetClusterDns(string clusterDns) {
+		public DnsClusterSettingsBuilder SetClusterDns(string clusterDns, bool seedOverTls = false) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-			_clusterDns = clusterDns;
+			_clusterDns = new ClusterDnsSeed(clusterDns, seedOverTls);
 			return this;
 		}
 

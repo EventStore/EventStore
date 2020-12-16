@@ -69,8 +69,8 @@ namespace EventStore.ClientAPI {
 		/// <returns>a new <see cref="IEventStoreConnection"/></returns>
 		public static IEventStoreConnection
 			Create(ConnectionSettings connectionSettings, string connectionName = null) {
-			if (connectionSettings.GossipSeeds == null || connectionSettings.GossipSeeds.Length == 0)
-				throw new ArgumentException("No gossip seeds specified", nameof(connectionSettings));
+			if (connectionSettings.ClusterDns == null && (connectionSettings.GossipSeeds == null || connectionSettings.GossipSeeds.Length == 0))
+				throw new ArgumentException("No gossip seeds or cluster dns specified", nameof(connectionSettings));
 			return Create(connectionSettings, (Uri)null, connectionName);
 		}
 
@@ -107,7 +107,8 @@ namespace EventStore.ClientAPI {
 				}
 
 				if (scheme == "discover") {
-					var clusterSettings = new ClusterSettings(uri.Host, connectionSettings.MaxDiscoverAttempts,
+					var clusterDnsSeed = new ClusterDnsSeed(string.Format("{0}:{1}", uri.Host, uri.Port), connectionSettings.UseSslConnection);
+					var clusterSettings = new ClusterSettings(clusterDnsSeed, connectionSettings.MaxDiscoverAttempts,
 						uri.Port,
 						connectionSettings.GossipTimeout, connectionSettings.NodePreference);
 					return Create(connectionSettings, clusterSettings, connectionName);
@@ -120,6 +121,15 @@ namespace EventStore.ClientAPI {
 				}
 
 				throw new Exception(string.Format("Unknown scheme for connection '{0}'", scheme));
+			}
+
+			if (connectionSettings.ClusterDns != null) {
+				var clusterDnsSeed =
+					new ClusterDnsSeed(connectionSettings.ClusterDns, connectionSettings.UseSslConnection);
+				var clusterSettings = new ClusterSettings(clusterDnsSeed, connectionSettings.MaxDiscoverAttempts, connectionSettings.ExternalGossipPort,
+					connectionSettings.GossipTimeout, connectionSettings.NodePreference);
+
+				return Create(connectionSettings, clusterSettings, connectionName);
 			}
 
 			if (connectionSettings.GossipSeeds != null && connectionSettings.GossipSeeds.Length > 0) {

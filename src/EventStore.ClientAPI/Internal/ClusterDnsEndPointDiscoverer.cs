@@ -14,7 +14,7 @@ using HttpStatusCode = EventStore.ClientAPI.Transport.Http.HttpStatusCode;
 namespace EventStore.ClientAPI.Internal {
 	internal class ClusterDnsEndPointDiscoverer : IEndPointDiscoverer {
 		private readonly ILogger _log;
-		private readonly string _clusterDns;
+		private readonly ClusterDnsSeed _clusterDns;
 		private readonly int _maxDiscoverAttempts;
 		private readonly int _managerExternalHttpPort;
 		private readonly GossipSeed[] _gossipSeeds;
@@ -26,7 +26,7 @@ namespace EventStore.ClientAPI.Internal {
 		private readonly NodePreference _nodePreference;
 
 		public ClusterDnsEndPointDiscoverer(ILogger log,
-			string clusterDns,
+			ClusterDnsSeed clusterDns,
 			int maxDiscoverAttempts,
 			int managerExternalHttpPort,
 			GossipSeed[] gossipSeeds,
@@ -109,14 +109,14 @@ namespace EventStore.ClientAPI.Internal {
 			return null;
 		}
 
-		private GossipSeed[] GetGossipCandidatesFromDns() {
+		private IGossipSeed[] GetGossipCandidatesFromDns() {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
-			GossipSeed[] endpoints;
+			IGossipSeed[] endpoints;
 			if (_gossipSeeds != null && _gossipSeeds.Length > 0) {
+				// Safe in this case.
 				endpoints = _gossipSeeds;
 			} else {
-				endpoints = ResolveDns(_clusterDns)
-					.Select(x => new GossipSeed(new IPEndPoint(x, _managerExternalHttpPort))).ToArray();
+				endpoints = new IGossipSeed[] { _clusterDns };
 			}
 
 			RandomShuffle(endpoints, 0, endpoints.Length - 1);
@@ -178,13 +178,13 @@ namespace EventStore.ClientAPI.Internal {
 			}
 		}
 
-		private ClusterMessages.ClusterInfoDto TryGetGossipFrom(GossipSeed endPoint) {
+		private ClusterMessages.ClusterInfoDto TryGetGossipFrom(IGossipSeed endPoint) {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: Trying to get gossip from [{0}].", endPoint);
 
 			ClusterMessages.ClusterInfoDto result = null;
 			var completed = new ManualResetEventSlim(false);
 
-			var url = endPoint.EndPoint.ToHttpUrl(endPoint.SeedOverTls ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA, "/gossip?format=json");
+			var url = endPoint.ToHttpUrl();
 			_client.Get(
 				url,
 				null,
@@ -211,7 +211,7 @@ namespace EventStore.ClientAPI.Internal {
 						e = ae.Flatten();
 					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
 					completed.Set();
-				}, endPoint.HostHeader);
+				}, endPoint.GetHostHeader());
 
 			completed.Wait();
 			return result;
@@ -258,9 +258,19 @@ namespace EventStore.ClientAPI.Internal {
 				return null;
 			}
 
-			var normTcp = new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
+			IPAddress nodeAddress;
+			if (!IPAddress.TryParse(node.ExternalTcpIp, out nodeAddress)) {
+				var dnsEntry = Dns.GetHostEntry(node.ExternalTcpIp);
+
+				if (dnsEntry.AddressList == null || dnsEntry.AddressList.Length == 0)
+					throw new Exception(string.Format("Can't resolve external Tcp host '{0}'", node.ExternalTcpIp));
+
+				nodeAddress = dnsEntry.AddressList[0];
+			}
+
+			var normTcp = new IPEndPoint(nodeAddress, node.ExternalTcpPort);
 			var secTcp = node.ExternalSecureTcpPort > 0
-				? new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalSecureTcpPort)
+				? new IPEndPoint(nodeAddress, node.ExternalSecureTcpPort)
 				: null;
 			_log.Info("Discovering: found best choice [{0},{1}] ({2}).", normTcp,
 				secTcp == null ? "n/a" : secTcp.ToString(), node.State);
