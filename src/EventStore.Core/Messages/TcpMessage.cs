@@ -32,9 +32,9 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly int MessageNumber;
+			public readonly long MessageNumber;
 
-			public Heartbeat(int messageNumber) {
+			public Heartbeat(long messageNumber) {
 				MessageNumber = messageNumber;
 			}
 		}
@@ -46,9 +46,9 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly int MessageNumber;
+			public readonly long MessageNumber;
 
-			public HeartbeatTimeout(int messageNumber) {
+			public HeartbeatTimeout(long messageNumber) {
 				MessageNumber = messageNumber;
 			}
 		}

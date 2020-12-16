@@ -52,7 +52,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly IPublisher _publisher;
 		private readonly ITcpDispatcher _dispatcher;
 		private readonly IMessageFramer _framer;
-		private int _messageNumber;
 		private int _isClosed;
 		private string _clientConnectionName;
 
@@ -214,8 +213,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private void OnRawDataReceived(ITcpConnection connection, IEnumerable<ArraySegment<byte>> data) {
-			Interlocked.Increment(ref _messageNumber);
-
 			try {
 				_framer.UnFrameData(data);
 			} catch (PackageFramingException exc) {
@@ -259,6 +256,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				case TcpCommand.HeartbeatResponseCommand:
 					break;
 				case TcpCommand.HeartbeatRequestCommand:
+					//responding to heartbeats is no longer a requirement for node-to-node communication
+					//but this message is left here for backward compatibility with previous versions (e.g during rolling upgrades)
+					//and for clients using the TCP API
 					SendPackage(new TcpPackage(TcpCommand.HeartbeatResponseCommand, package.CorrelationId, null));
 					break;
 				case TcpCommand.IdentifyClient: {
@@ -420,7 +420,20 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		public void Handle(TcpMessage.Heartbeat message) {
 			if (IsClosed) return;
 
-			var msgNum = _messageNumber;
+			var msgNum = _connection.TotalAcknowledgedBytes;
+
+			//TotalAcknowledgedBytes = TotalBytesSent + TotalBytesReceived
+
+			//if we have successfully sent any data (possibly the heartbeat request) to the other side of the connection
+			//it implies that we must have received a TCP ACK from the other side
+			//which implies that the other side of the connection is alive
+			//Note: We no longer need to wait for the remote party to dequeue/unframe/process the heartbeat request and send a heartbeat response
+			//before knowing that the node is alive. Just acknowledging the heartbeat request (if the connection is idle, or otherwise any other data) with a TCP ACK is enough.
+
+			//if we have successfully received any data from the other side of the connection
+			//between the time that the heartbeat interval was scheduled and the end of the heartbeat interval
+			//it implies that the other side of the connection is alive and we don't need to send a heartbeat request.
+
 			if (message.MessageNumber != msgNum)
 				ScheduleHeartbeat(msgNum);
 			else {
@@ -434,14 +447,14 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		public void Handle(TcpMessage.HeartbeatTimeout message) {
 			if (IsClosed) return;
 
-			var msgNum = _messageNumber;
+			var msgNum = _connection.TotalAcknowledgedBytes;
 			if (message.MessageNumber != msgNum)
 				ScheduleHeartbeat(msgNum);
 			else
-				Stop(string.Format("HEARTBEAT TIMEOUT at msgNum {0}", msgNum));
+				Stop(string.Format("HEARTBEAT TIMEOUT at msgNum {0} (total acknowledged bytes)", msgNum));
 		}
 
-		private void ScheduleHeartbeat(int msgNum) {
+		private void ScheduleHeartbeat(long msgNum) {
 			_publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval, _weakThisEnvelope,
 				new TcpMessage.Heartbeat(msgNum)));
 		}

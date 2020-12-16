@@ -66,6 +66,8 @@ namespace EventStore.Transport.Tcp {
 			get { return _sendQueue.Count; }
 		}
 
+		public long TotalAcknowledgedBytes => TotalBytesSent + TotalBytesReceived;
+
 		public string ClientConnectionName {
 			get { return _clientConnectionName; }
 		}

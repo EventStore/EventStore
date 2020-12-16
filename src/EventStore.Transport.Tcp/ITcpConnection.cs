@@ -13,6 +13,7 @@ namespace EventStore.Transport.Tcp {
 		IPEndPoint LocalEndPoint { get; }
 		int SendQueueSize { get; }
 		int PendingSendBytes { get; }
+		long TotalAcknowledgedBytes { get; }
 		bool IsClosed { get; }
 
 		void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);

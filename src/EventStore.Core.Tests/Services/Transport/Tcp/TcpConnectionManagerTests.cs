@@ -265,6 +265,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			get { return _clientConnectionName; }
 		}
 
+		public long TotalAcknowledgedBytes { get; }
+
 		public bool IsClosed {
 			get { return false; }
 		}
