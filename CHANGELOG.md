@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - ci.yml following set-env deprecation [EventStore#2749](https://github.com/EventStore/EventStore/pull/2749)
 - EventStore/home#263 [EventStore#2745](https://github.com/EventStore/EventStore/pull/2745)
 - incorrect error message in catchup subscription [EventStore#2751](https://github.com/EventStore/EventStore/pull/2751)
+- Corrected `AssemblyVersion` [EventStore#2756](https://github.com/EventStore/EventStore/pull/2756)
 
 ### Fixes
 - v20 clients can discover v20.x and v5.x servers [EventStore#2719](https://github.com/EventStore/EventStore/pull/2719)
