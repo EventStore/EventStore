@@ -107,10 +107,16 @@ namespace EventStore.ClientAPI {
 				}
 
 				if (scheme == "discover") {
-					var clusterDnsSeed = new ClusterDnsSeed(string.Format("{0}:{1}", uri.Host, uri.Port), connectionSettings.UseSslConnection);
+					var port = uri.Port == -1 ? 2113 : uri.Port;
+					var clusterDnsSeed = new ClusterDnsSeed(string.Format("{0}:{1}", uri.Host, port), connectionSettings.UseSslConnection);
 					var clusterSettings = new ClusterSettings(clusterDnsSeed, connectionSettings.MaxDiscoverAttempts,
-						uri.Port,
+						port,
 						connectionSettings.GossipTimeout, connectionSettings.NodePreference);
+
+					if (connectionSettings.UseSslConnection && string.IsNullOrEmpty(connectionSettings.TargetHost)) {
+						connectionSettings.UpdateTargetHost(uri.Host);
+					}
+
 					return Create(connectionSettings, clusterSettings, connectionName);
 				}
 
