@@ -69,11 +69,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					Log.Debug("Setting $ops read permission for the {stream} stream", SystemStreams.ScavengesStream);
 
 					var acl = new StreamAcl(
-						new string[]{"$ops"},
-						new string[]{},
-						new string[]{},
-						new string[]{},
-						new string[]{}
+						new string[] { "$ops" },
+						new string[] { },
+						new string[] { },
+						new string[] { },
+						new string[] { }
 					);
 
 					var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge, acl: acl);
@@ -96,7 +96,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_ioDispatcher.ReadBackward(SystemStreams.ScavengesStream, from, 20, true, SystemAccounts.System,
 				readResult => {
 					if (readResult.Result != ReadStreamResult.Success &&
-					    readResult.Result != ReadStreamResult.NoStream) {
+						readResult.Result != ReadStreamResult.NoStream) {
 						Log.Debug("Unable to read {stream} for scavenge log clean up. Result: {result}",
 							SystemStreams.ScavengesStream, readResult.Result);
 						return;
@@ -108,7 +108,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 							object entryNode;
 							if (!dictionary.TryGetValue("nodeEndpoint", out entryNode) ||
-							    entryNode.ToString() != _nodeEndpoint) {
+								entryNode.ToString() != _nodeEndpoint) {
 								continue;
 							}
 
@@ -119,7 +119,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							}
 
 							var scavengeId = scavengeIdEntry.ToString();
-							if(recentScavenges.Count <= 1000) //bound size
+							if (recentScavenges.Count <= 1000) //bound size
 								recentScavenges.Add(scavengeId);
 
 							if (ev.Event.EventType == SystemEventTypes.ScavengeCompleted) {
@@ -141,28 +141,27 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				});
 		}
 
-        private void SetOpsPermissions(IList<string> recentScavengeIds)
-        {
+		private void SetOpsPermissions(IList<string> recentScavengeIds) {
 			//sets $ops permissions on last 30 $scavenges-<scavenge id> stream
 			//added for backward compatibility to make UI scavenge history work properly with $ops users
 
 			var last30ScavengeIds = new HashSet<string>();
-			foreach(var scavengeId in recentScavengeIds){
-				if(last30ScavengeIds.Count >= 30)
+			foreach (var scavengeId in recentScavengeIds) {
+				if (last30ScavengeIds.Count >= 30)
 					break;
 				last30ScavengeIds.Add(scavengeId);
 			}
 
-			if(last30ScavengeIds.Count > 0)
+			if (last30ScavengeIds.Count > 0)
 				Log.Debug("Setting $ops read permission on last {count} $scavenges-<scavenge id> streams.", last30ScavengeIds.Count);
 
-			foreach(var scavengeId in last30ScavengeIds){
+			foreach (var scavengeId in last30ScavengeIds) {
 				var acl = new StreamAcl(
-					new string[]{"$ops"},
-					new string[]{},
-					new string[]{},
-					new string[]{},
-					new string[]{}
+					new string[] { "$ops" },
+					new string[] { },
+					new string[] { },
+					new string[] { },
+					new string[] { }
 				);
 
 				var scavengeIdStream = SystemStreams.ScavengesStream + "-" + scavengeId;
@@ -179,9 +178,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						}
 					});
 			}
-        }
+		}
 
-        private void CompleteInterruptedScavenges(IList<string> incompletedScavenges) {
+		private void CompleteInterruptedScavenges(IList<string> incompletedScavenges) {
 			if (incompletedScavenges.Count == 0) {
 				Log.Debug("No incomplete scavenges found on node {nodeEndPoint}.", _nodeEndpoint);
 			} else {
@@ -192,10 +191,75 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			foreach (var incompletedScavenge in incompletedScavenges) {
-				var log = CreateLogInternal(incompletedScavenge);
-
-				log.ScavengeCompleted(ScavengeResult.Failed, "The node was restarted.", TimeSpan.Zero);
+				GatherIncompleteScavengeStats(-1, new IncompleteScavengeStats(incompletedScavenge));
 			}
+		}
+
+		private void GatherIncompleteScavengeStats(long from, IncompleteScavengeStats incompleteScavengeStats) {
+			_ioDispatcher.ReadBackward(incompleteScavengeStats.ScavengeStream, from, 50, true, SystemAccounts.System,
+				readResult => {
+					if (readResult.Result != ReadStreamResult.Success &&
+						readResult.Result != ReadStreamResult.NoStream) {
+						Log.Debug("Unable to read {stream} for scavenge log clean up. Result: {result}",
+							incompleteScavengeStats.ScavengeStream, readResult.Result);
+						return;
+					}
+
+					foreach (var ev in readResult.Events) {
+						if (ev.ResolveResult == ReadEventResult.Success) {
+							var dictionary = ev.Event.Data.ParseJson<Dictionary<string, object>>();
+
+							if (ev.Event.EventType == SystemEventTypes.ScavengeChunksCompleted
+							 || ev.Event.EventType == SystemEventTypes.ScavengeMergeCompleted
+							 || ev.Event.EventType == SystemEventTypes.ScavengeIndexCompleted) {
+								if (dictionary.TryGetValue("spaceSaved", out var spaceSavedEntry)) {
+									incompleteScavengeStats.SpaceSaved += (int)spaceSavedEntry;
+								}
+								if (dictionary.TryGetValue("timeTaken", out var timeTakenEntry)) {
+									incompleteScavengeStats.TimeTaken += TimeSpan.Parse(timeTakenEntry.ToString());
+								}
+
+								if (ev.Event.EventType == SystemEventTypes.ScavengeChunksCompleted) {
+									if (dictionary.TryGetValue("chunkEndNumber", out var chunkEndNumberEntry)) {
+										incompleteScavengeStats.MaxChunkScavenged = Math.Max(incompleteScavengeStats.MaxChunkScavenged, (int)chunkEndNumberEntry);
+									}
+								}
+							}
+						}
+					}
+
+					if (readResult.IsEndOfStream || readResult.Events.Length == 0) {
+						CompleteScavengeWithStats(incompleteScavengeStats);
+					} else {
+						GatherIncompleteScavengeStats(readResult.NextEventNumber, incompleteScavengeStats);
+					}
+				});
+		}
+
+		private void CompleteScavengeWithStats(IncompleteScavengeStats incompleteScavengeStats) {
+
+			var log = CreateLogInternal(incompleteScavengeStats.ScavengeId);
+
+			log.ScavengeCompleted(ScavengeResult.Failed,
+				"The node was restarted.",
+				incompleteScavengeStats.TimeTaken,
+				incompleteScavengeStats.SpaceSaved,
+				incompleteScavengeStats.MaxChunkScavenged);
+		}
+
+		class IncompleteScavengeStats {
+			public string ScavengeId { get; private set; }
+			public string ScavengeStream => string.Format("{0}-{1}", SystemStreams.ScavengesStream, ScavengeId);
+
+			public IncompleteScavengeStats(string scavengeId) {
+				ScavengeId = scavengeId;
+			}
+
+
+			public int SpaceSaved { get; set; }
+			public int MaxChunkScavenged { get; set; }
+			public TimeSpan TimeTaken { get; set; } = TimeSpan.Zero;
+
 		}
 	}
 }
