@@ -141,6 +141,7 @@ namespace EventStore.Core.Tests.Helpers {
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
 				readOnlyReplica: readOnlyReplica,
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
+				streamInfoCacheCapacity: Opts.StreamInfoCacheCapacityDefault,
 				enableExternalTCP: true,
 				disableHttps: !useHttps,
 				enableAtomPubOverHTTP: true);
