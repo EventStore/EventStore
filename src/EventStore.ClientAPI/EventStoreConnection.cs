@@ -101,7 +101,7 @@ namespace EventStore.ClientAPI {
 						connectionSettings.HeartbeatInterval, connectionSettings.HeartbeatTimeout,
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
 						connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
-						connectionSettings.InsecureDiscoverGossip,
+						connectionSettings.LegacyGossipDiscovery,
 						connectionSettings.GossipPort, connectionSettings.GossipTimeout,
 						connectionSettings.NodePreference, connectionSettings.CustomHttpMessageHandler);
 				}
@@ -200,7 +200,7 @@ namespace EventStore.ClientAPI {
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
 				clusterSettings.NodePreference,
-				connectionSettings.InsecureDiscoverGossip,
+				connectionSettings.LegacyGossipDiscovery,
 				connectionSettings.CustomHttpMessageHandler);
 
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,

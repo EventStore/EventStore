@@ -134,7 +134,7 @@ namespace EventStore.ClientAPI {
 		/// If true, use non-TLS for discover:// URIs
 		/// Useful for backwards compatibility with v5 clusters
 		/// </summary>
-		public bool InsecureDiscoverGossip;
+		public bool LegacyGossipDiscovery;
 
 		/// <summary>
 		/// The well-known endpoint on which cluster nodes are running.
@@ -182,7 +182,7 @@ namespace EventStore.ClientAPI {
 			string clusterDns,
 			GossipSeed[] gossipSeeds,
 			int maxDiscoverAttempts,
-			bool insecureDiscoverGossip,
+			bool legacyGossipDiscovery,
 			int gossipPort,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
@@ -227,7 +227,7 @@ namespace EventStore.ClientAPI {
 			ClusterDns = clusterDns;
 			GossipSeeds = gossipSeeds;
 			MaxDiscoverAttempts = maxDiscoverAttempts;
-			InsecureDiscoverGossip = insecureDiscoverGossip;
+			LegacyGossipDiscovery = legacyGossipDiscovery;
 			GossipPort = gossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
