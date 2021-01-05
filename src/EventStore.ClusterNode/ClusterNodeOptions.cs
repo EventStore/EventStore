@@ -101,6 +101,9 @@ namespace EventStore.ClusterNode {
 		
 		[ArgDescription(Opts.ConnectionQueueSizeThresholdDescr, Opts.InterfacesGroup)]
 		public int ConnectionQueueSizeThreshold { get; set; }
+		
+		[ArgDescription(Opts.StreamInfoCacheCapacityDescr, Opts.AppGroup)]
+		public int StreamInfoCacheCapacity { get; set; }
 
 		[ArgDescription(Opts.ForceDescr, Opts.AppGroup)]
 		public bool Force { get; set; }
@@ -439,6 +442,7 @@ namespace EventStore.ClusterNode {
 			ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
 			ConnectionQueueSizeThreshold = Opts.ConnectionQueueSizeThresholdDefault;
 			ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
+			StreamInfoCacheCapacity = Opts.StreamInfoCacheCapacityDefault;
 
 			MaxAutoMergeIndexLevel = Opts.MaxAutoMergeIndexLevelDefault;
 

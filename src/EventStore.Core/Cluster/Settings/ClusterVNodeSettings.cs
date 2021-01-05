@@ -62,6 +62,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly TimeSpan ExtTcpHeartbeatInterval;
 		public readonly int ConnectionPendingSendBytesThreshold;
 		public readonly int ConnectionQueueSizeThreshold;
+		public readonly int StreamInfoCacheCapacity;
 		public readonly bool UnsafeIgnoreHardDeletes;
 		public readonly bool VerifyDbHash;
 		public readonly int MaxMemtableEntryCount;
@@ -137,6 +138,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold,
 			int chunkInitialReaderCount,
+			int streamInfoCacheCapacity,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -258,6 +260,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxAutoMergeIndexLevel = maxAutoMergeIndexLevel;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
 			StructuredLog = structuredLog;
+			StreamInfoCacheCapacity = streamInfoCacheCapacity;
 		}
 
 		public override string ToString() {
@@ -302,7 +305,8 @@ namespace EventStore.Core.Cluster.Settings {
 			                     + "ReduceFileCachePressure: {38}\n"
 			                     + "InitializationThreads: {39}\n"
 			                     + "StructuredLog: {40}\n"
-								 + "DisableFirstLevelHttpAuthorization: {41}\n",
+								 + "DisableFirstLevelHttpAuthorization: {41}\n"
+								 + "StreamInfoCacheCapacity: {42}\n",
 				NodeInfo.InstanceId,
 				NodeInfo.InternalTcp, NodeInfo.InternalSecureTcp,
 				NodeInfo.ExternalTcp, NodeInfo.ExternalSecureTcp,
@@ -322,7 +326,7 @@ namespace EventStore.Core.Cluster.Settings {
 				EnableHistograms, DisableHTTPCaching, Index, ScavengeHistoryMaxAge,
 				ConnectionPendingSendBytesThreshold, ChunkInitialReaderCount,
 				ReduceFileCachePressure, InitializationThreads, StructuredLog,
-				DisableFirstLevelHttpAuthorization);
+				DisableFirstLevelHttpAuthorization, StreamInfoCacheCapacity);
 		}
 	}
 }
