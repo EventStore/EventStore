@@ -32,10 +32,12 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly int MessageNumber;
+			public readonly long ReceiveProgressIndicator;
+			public readonly long SendProgressIndicator;
 
-			public Heartbeat(int messageNumber) {
-				MessageNumber = messageNumber;
+			public Heartbeat(long receiveProgressIndicator, long sendProgressIndicator) {
+				ReceiveProgressIndicator = receiveProgressIndicator;
+				SendProgressIndicator = sendProgressIndicator;
 			}
 		}
 
@@ -46,10 +48,10 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly int MessageNumber;
+			public readonly long ReceiveProgressIndicator;
 
-			public HeartbeatTimeout(int messageNumber) {
-				MessageNumber = messageNumber;
+			public HeartbeatTimeout(long receiveProgressIndicator) {
+				ReceiveProgressIndicator = receiveProgressIndicator;
 			}
 		}
 
