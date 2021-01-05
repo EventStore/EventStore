@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly IPublisher _publisher;
 		private readonly ITcpDispatcher _dispatcher;
 		private readonly IMessageFramer _framer;
-		private long _receiveProgressIndicator;
+		private long _receiveProgressIndicator => _connection?.TotalBytesReceived ?? 0L;
 		private long _sendProgressIndicator => _connection?.TotalBytesSent ?? 0L;
 		private int _isClosed;
 		private string _clientConnectionName;
@@ -208,8 +208,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private void OnRawDataReceived(ITcpConnection connection, IEnumerable<ArraySegment<byte>> data) {
-			Interlocked.Increment(ref _receiveProgressIndicator);
-
 			try {
 				_framer.UnFrameData(data);
 			} catch (PackageFramingException exc) {

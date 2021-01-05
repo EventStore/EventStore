@@ -14,6 +14,7 @@ namespace EventStore.Transport.Tcp {
 		int SendQueueSize { get; }
 		int PendingSendBytes { get; }
 		long TotalBytesSent { get; }
+		long TotalBytesReceived { get; }
 		bool IsClosed { get; }
 
 		void ReceiveAsync(Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> callback);

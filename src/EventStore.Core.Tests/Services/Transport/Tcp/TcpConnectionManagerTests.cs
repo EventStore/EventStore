@@ -254,6 +254,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		}
 
 		public long TotalBytesSent { get; }
+		public long TotalBytesReceived { get; }
 
 		public bool IsClosed {
 			get { return false; }
