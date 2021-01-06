@@ -300,7 +300,7 @@ namespace EventStore.Core {
 			var readIndex = new ReadIndex(_mainQueue,
 				readerPool,
 				tableIndex,
-				ESConsts.StreamInfoCacheCapacity,
+				vNodeSettings.StreamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
 				vNodeSettings.HashCollisionReadLimit,
