@@ -1,5 +1,5 @@
-ARG CONTAINER_RUNTIME=bionic
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic AS build
+ARG CONTAINER_RUNTIME=focal
+FROM mcr.microsoft.com/dotnet/sdk:5.0-focal AS build
 ARG RUNTIME=linux-x64
 
 WORKDIR /build/ci
@@ -22,7 +22,7 @@ COPY ./.git .
 
 WORKDIR /build/src
 
-RUN dotnet build --configuration=Release --runtime=${RUNTIME} --no-restore --framework=netcoreapp3.1
+RUN dotnet build --configuration=Release --no-restore --framework=net5.0
 
 FROM build as test
 ARG RUNTIME=linux-x64
@@ -39,9 +39,9 @@ FROM build as publish
 ARG RUNTIME=linux-x64
 
 RUN dotnet publish --configuration=Release --runtime=${RUNTIME} --self-contained \
-     --framework=netcoreapp3.1 --output /publish EventStore.ClusterNode
+     --framework=net5.0 --output /publish EventStore.ClusterNode
 
-FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.1-${CONTAINER_RUNTIME} AS runtime
+FROM mcr.microsoft.com/dotnet/runtime-deps:5.0-${CONTAINER_RUNTIME} AS runtime
 ARG UID=1000
 ARG GID=1000
 
