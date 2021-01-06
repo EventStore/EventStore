@@ -515,9 +515,9 @@ namespace EventStore.Core.Index {
 					return TryGetOneValueInternal(stream, version, out position);
 				} catch (FileBeingDeletedException) {
 					Log.Debug("File being deleted.");
-				} catch (MaybeCorruptIndexException e) {
+				} catch (MaybeCorruptIndexException) {
 					ForceIndexVerifyOnNextStartup();
-					throw e;
+					throw;
 				}
 			}
 
@@ -553,9 +553,9 @@ namespace EventStore.Core.Index {
 					return TryGetLatestEntryInternal(stream, out entry);
 				} catch (FileBeingDeletedException) {
 					Log.Debug("File being deleted.");
-				} catch (MaybeCorruptIndexException e) {
+				} catch (MaybeCorruptIndexException) {
 					ForceIndexVerifyOnNextStartup();
-					throw e;
+					throw;
 				}
 			}
 
@@ -588,9 +588,9 @@ namespace EventStore.Core.Index {
 					return TryGetOldestEntryInternal(stream, out entry);
 				} catch (FileBeingDeletedException) {
 					Log.Debug("File being deleted.");
-				} catch (MaybeCorruptIndexException e) {
+				} catch (MaybeCorruptIndexException) {
 					ForceIndexVerifyOnNextStartup();
-					throw e;
+					throw;
 				}
 			}
 
@@ -624,9 +624,9 @@ namespace EventStore.Core.Index {
 					return GetRangeInternal(hash, startVersion, endVersion, limit);
 				} catch (FileBeingDeletedException) {
 					Log.Debug("File being deleted.");
-				} catch (MaybeCorruptIndexException e) {
+				} catch (MaybeCorruptIndexException) {
 					ForceIndexVerifyOnNextStartup();
-					throw e;
+					throw;
 				}
 			}
 

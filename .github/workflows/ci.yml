@@ -9,7 +9,7 @@ on:
     - oss-v*
 
 env:
-  DOTNET_SDK_VERSION: 3.1.301
+  DOTNET_SDK_VERSION: 5.0.x
 jobs:
   vulnerability-scan:
     runs-on: ubuntu-latest
@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container-runtime: [bionic, buster-slim]
+        container-runtime: [focal, buster-slim]
         runtime: [linux-x64]
     runs-on: ubuntu-latest
     name: ci/github/build-${{ matrix.container-runtime }}
