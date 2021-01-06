@@ -78,6 +78,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int IndexCacheDepth;
 		public readonly byte IndexBitnessVersion;
 		public readonly bool OptimizeIndexMerge;
+		public readonly int StreamInfoCacheCapacity;
 
 		public readonly string Index;
 		public readonly int ReaderThreadsCount;
@@ -147,6 +148,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold,
 			int ptableMaxReaderCount,
+			int streamInfoCacheCapacity,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -279,6 +281,7 @@ namespace EventStore.Core.Cluster.Settings {
 			PTableMaxReaderCount = ptableMaxReaderCount;
 			UnsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
 			MaxTruncation = maxTruncation;
+			StreamInfoCacheCapacity = streamInfoCacheCapacity;
 		}
 
 		public override string ToString() =>
@@ -313,6 +316,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +
 			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n" +
 			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n" +
-			$"MaxTruncation: {MaxTruncation}\n";
+			$"MaxTruncation: {MaxTruncation}\n" +
+			$"StreamInfoCacheCapacity: {StreamInfoCacheCapacity}\n";
 	}
 }
