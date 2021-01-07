@@ -17,13 +17,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private readonly TFChunkDb _db;
-		private readonly ICheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private long _curPos;
 		private bool _optimizeReadSideCache;
 		private readonly TFChunkReaderExistsAtOptimizer _existsAtOptimizer;
 		private readonly ILogger _log = Log.ForContext<TFChunkReader>();
 
-		public TFChunkReader(TFChunkDb db, ICheckpoint writerCheckpoint, long initialPosition = 0,
+		public TFChunkReader(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, long initialPosition = 0,
 			bool optimizeReadSideCache = false) {
 			Ensure.NotNull(db, "dbConfig");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");

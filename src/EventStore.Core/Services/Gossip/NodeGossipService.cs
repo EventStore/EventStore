@@ -10,8 +10,8 @@ using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.Gossip {
 	public class NodeGossipService : GossipServiceBase, IHandle<GossipMessage.UpdateNodePriority> {
-		private readonly ICheckpoint _writerCheckpoint;
-		private readonly ICheckpoint _chaserCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private int _nodePriority;
@@ -20,8 +20,8 @@ namespace EventStore.Core.Services.Gossip {
 		public NodeGossipService(IPublisher bus,
 			IGossipSeedSource gossipSeedSource,
 			MemberInfo memberInfo,
-			ICheckpoint writerCheckpoint,
-			ICheckpoint chaserCheckpoint,
+			IReadOnlyCheckpoint writerCheckpoint,
+			IReadOnlyCheckpoint chaserCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority,

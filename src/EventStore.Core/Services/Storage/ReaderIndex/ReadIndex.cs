@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			long metastreamMaxCount,
 			int hashCollisionReadLimit,
 			bool skipIndexScanOnReads,
-			ICheckpoint replicationCheckpoint,
+			IReadOnlyCheckpoint replicationCheckpoint,
 			ICheckpoint indexCheckpoint) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(readerPool, "readerPool");
