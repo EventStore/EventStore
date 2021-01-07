@@ -11,7 +11,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly ICheckpoint _chaserCheckpoint;
 		private readonly TFChunkReader _reader;
 
-		public TFChunkChaser(TFChunkDb db, ICheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint,
+		public TFChunkChaser(TFChunkDb db, IReadOnlyCheckpoint writerCheckpoint, ICheckpoint chaserCheckpoint,
 			bool optimizeReadSideCache) {
 			Ensure.NotNull(db, "dbConfig");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
