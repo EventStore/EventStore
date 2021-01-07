@@ -81,6 +81,7 @@ namespace EventStore.Transport.Tcp {
 			_receiveQueue = new ConcurrentQueueWrapper<ReceivedData>();
 
 		private readonly MemoryStream _memoryStream = new MemoryStream();
+		private long _memoryStreamOffset = 0L;
 
 		private readonly object _streamLock = new object();
 		private readonly object _closeLock = new object();
@@ -349,19 +350,23 @@ namespace EventStore.Transport.Tcp {
 						_isSending = true;
 					}
 
-					_memoryStream.SetLength(0);
+					if (_memoryStreamOffset >= _memoryStream.Length) {
+						_memoryStream.SetLength(0);
+						_memoryStreamOffset = 0L;
 
-					ArraySegment<byte> sendPiece;
-					while (_sendQueue.TryDequeue(out sendPiece)) {
-						_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
-						if (_memoryStream.Length >= TcpConnection.MaxSendPacketSize)
-							break;
+						ArraySegment<byte> sendPiece;
+						while (_sendQueue.TryDequeue(out sendPiece)) {
+							_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
+							if (_memoryStream.Length >= TcpConnection.MaxSendPacketSize)
+								break;
+						}
 					}
 
-					_sendingBytes = (int)_memoryStream.Length;
+					_sendingBytes = Math.Min((int)_memoryStream.Length - (int) _memoryStreamOffset, TcpConnection.MaxSendPacketSize);
 
 					NotifySendStarting(_sendingBytes);
-					var result = _sslStream.BeginWrite(_memoryStream.GetBuffer(), 0, _sendingBytes, OnEndWrite, null);
+					var result = _sslStream.BeginWrite(_memoryStream.GetBuffer(), (int)_memoryStreamOffset, _sendingBytes, OnEndWrite, null);
+					_memoryStreamOffset += _sendingBytes;
 					continueSendSynchronously = result.CompletedSynchronously;
 					if (continueSendSynchronously) {
 						EndWrite(result);
