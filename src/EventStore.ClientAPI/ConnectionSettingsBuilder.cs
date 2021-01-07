@@ -306,7 +306,25 @@ namespace EventStore.ClientAPI {
 		/// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
 		public ConnectionSettingsBuilder SetClusterDns(string clusterDns) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-			_clusterDns = clusterDns;
+
+			var splits = clusterDns.Split(':');
+
+			switch (splits.Length) {
+				case 1:
+					_clusterDns = string.Format("{0}:2113", clusterDns);
+					break;
+				case 2:
+					if (int.TryParse(splits[1], out var _)) {
+						_clusterDns = clusterDns;
+						break;
+					} else
+						throw new ArgumentException(string.Format("Specified DNS port is not a number: {0}, DNS definition: {1}",
+							splits[1], clusterDns));
+
+				default:
+					throw new ArgumentException(string.Format("Invalid cluster definition: [{0}]", clusterDns));
+			}
+			
 			return this;
 		}
 
