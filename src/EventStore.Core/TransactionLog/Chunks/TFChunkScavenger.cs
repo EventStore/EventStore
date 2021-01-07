@@ -85,7 +85,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				ScavengeResult result = ScavengeResult.Success;
 				string error = null;
 				try {
-					_scavengerLog.ScavengeStarted();
+					_scavengerLog.ScavengeStarted(alwaysKeepScavenged, mergeChunks, startFromChunk, _threads);
 
 					ScavengeInternal(alwaysKeepScavenged, mergeChunks, startFromChunk, ct);
 

@@ -12,6 +12,8 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	class TFChunkScavengerLog : ITFChunkScavengerLog {
+		private readonly object _updateLock = new object();
+
 		private readonly string _streamName;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly string _scavengeId;
@@ -20,6 +22,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly TimeSpan _scavengeHistoryMaxAge;
 		private static readonly ILogger Log = Serilog.Log.ForContext<StorageScavenger>();
 		private long _spaceSaved;
+
+		/// <summary>
+		/// When we're scavenging, we want to keep track of the chunk high watermark (this won't be perfect in multi-threaded scavenges)
+		/// as it will give us a good approximate place to resume the scavenge if it gets interrupted.
+		/// </summary>
+		private int _maxChunkScavenged;
 
 		public TFChunkScavengerLog(IODispatcher ioDispatcher, string scavengeId, string nodeId, int retryAttempts,
 			TimeSpan scavengeHistoryMaxAge) {
@@ -36,15 +44,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public long SpaceSaved => Interlocked.Read(ref _spaceSaved);
 
-		public void ScavengeStarted() {
+		public void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads) {
 			var metadataEventId = Guid.NewGuid();
 			var metaStreamId = SystemStreams.MetastreamOf(_streamName);
 			var acl = new StreamAcl(
-				new string[]{"$ops"},
-				new string[]{},
-				new string[]{},
-				new string[]{},
-				new string[]{}
+				new string[] { "$ops" },
+				new string[] { },
+				new string[] { },
+				new string[] { },
+				new string[] { }
 			);
 			var metadata = new StreamMetadata(maxAge: _scavengeHistoryMaxAge, acl: acl);
 			var metaStreamEvent = new Event(metadataEventId, SystemEventTypes.StreamMetadata, isJson: true,
@@ -61,11 +69,18 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				new Dictionary<string, object> {
 					{"scavengeId", _scavengeId},
 					{"nodeEndpoint", _nodeId},
+					{"alwaysKeepScavenged", alwaysKeepScavenged},
+					{"mergeChunks", mergeChunks},
+					{"startFromChunk", startFromChunk},
+					{"threads", threads},
 				}.ToJsonBytes(), null);
 			WriteScavengeDetailEvent(_streamName, scavengeStartedEvent, _retryAttempts);
 		}
 
-		public void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed) {
+		public void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed)
+			=> ScavengeCompleted(result, error, elapsed, _spaceSaved, _maxChunkScavenged);
+
+		internal void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed, long spaceSaved, int maxChunkScavenged) {
 			var scavengeCompletedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeCompleted, true,
 				new Dictionary<string, object> {
 					{"scavengeId", _scavengeId},
@@ -73,13 +88,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					{"result", result},
 					{"error", error},
 					{"timeTaken", elapsed},
-					{"spaceSaved", _spaceSaved}
+					{"spaceSaved", spaceSaved},
+					{"maxChunkScavenged", maxChunkScavenged}
 				}.ToJsonBytes(), null);
 			WriteScavengeDetailEvent(_streamName, scavengeCompletedEvent, _retryAttempts);
 		}
 
 		public void ChunksScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved) {
 			Interlocked.Add(ref _spaceSaved, spaceSaved);
+			lock (_updateLock)
+				_maxChunkScavenged = Math.Max(_maxChunkScavenged, chunkEndNumber);
 			var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeChunksCompleted, true,
 				new Dictionary<string, object> {
 					{"scavengeId", _scavengeId},
@@ -97,6 +115,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public void ChunksNotScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed,
 			string errorMessage) {
+			// We still update the _maxChunkScavenged as we've processed it during our scavenge stage.
+			lock (_updateLock)
+				_maxChunkScavenged = Math.Max(_maxChunkScavenged, chunkEndNumber);
 			var evnt = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeChunksCompleted, true,
 				new Dictionary<string, object> {
 					{"scavengeId", _scavengeId},

@@ -7,7 +7,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		long SpaceSaved { get; }
 
-		void ScavengeStarted();
+		void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads);
 
 		void ChunksScavenged(int chunkStartNumber, int chunkEndNumber, TimeSpan elapsed, long spaceSaved);
 

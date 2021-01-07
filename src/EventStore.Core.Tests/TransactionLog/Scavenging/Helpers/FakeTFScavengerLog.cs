@@ -8,6 +8,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 		public long SpaceSaved { get; } = 0;
 
+		public bool AlwaysKeepScavenged { get; private set; }
+		public bool MergeChunks { get; private set; }
+		public int StartFromChunk { get; private set; }
+		public int Threads { get; private set; }
 		public bool Started { get; private set; }
 
 		public bool Completed { get; private set; }
@@ -23,7 +27,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public IList<ScavengedLog> Merged { get; } = new List<ScavengedLog>();
 		public IList<IndexScavengedLog> ScavengedIndices { get; } = new List<IndexScavengedLog>();
 
-		public void ScavengeStarted() {
+		public void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads) {
+			AlwaysKeepScavenged = alwaysKeepScavenged;
+			MergeChunks = mergeChunks;
+			StartFromChunk = startFromChunk;
+			Threads = threads;
 			Started = true;
 			StartedCallback?.Invoke(this, EventArgs.Empty);
 		}
