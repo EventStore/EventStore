@@ -52,7 +52,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly IPublisher _publisher;
 		private readonly ITcpDispatcher _dispatcher;
 		private readonly IMessageFramer _framer;
-		private int _messageNumber;
+		private long _receiveProgressIndicator => _connection?.TotalBytesReceived ?? 0L;
+		private long _sendProgressIndicator => _connection?.TotalBytesSent ?? 0L;
 		private int _isClosed;
 		private string _clientConnectionName;
 
@@ -64,6 +65,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly SendToWeakThisEnvelope _weakThisEnvelope;
 		private readonly TimeSpan _heartbeatInterval;
 		private readonly TimeSpan _heartbeatTimeout;
+		private bool _awaitingHeartbeatTimeoutCheck;
 		private readonly int _connectionPendingSendBytesThreshold;
 		private readonly int _connectionQueueSizeThreshold;
 
@@ -120,7 +122,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				return;
 			}
 
-			ScheduleHeartbeat(0);
+			ScheduleHeartbeat(0L, 0L);
 		}
 
 		public TcpConnectionManager(string connectionName,
@@ -184,7 +186,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			Log.Information("Connection '{connectionName}' ({connectionId:B}) to [{remoteEndPoint}] established.",
 				ConnectionName, ConnectionId, connection.RemoteEndPoint);
 
-			ScheduleHeartbeat(0);
+			ScheduleHeartbeat(0L, 0L);
 
 			var handler = _connectionEstablished;
 			if (handler != null)
@@ -214,8 +216,6 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		}
 
 		private void OnRawDataReceived(ITcpConnection connection, IEnumerable<ArraySegment<byte>> data) {
-			Interlocked.Increment(ref _messageNumber);
-
 			try {
 				_framer.UnFrameData(data);
 			} catch (PackageFramingException exc) {
@@ -420,30 +420,48 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		public void Handle(TcpMessage.Heartbeat message) {
 			if (IsClosed) return;
 
-			var msgNum = _messageNumber;
-			if (message.MessageNumber != msgNum)
-				ScheduleHeartbeat(msgNum);
-			else {
-				SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
+			var receiveProgressIndicator = _receiveProgressIndicator;
+			var sendProgressIndicator = _sendProgressIndicator;
 
+			/*
+			 * If we have not received any data within the heartbeat interval and we are not waiting for a heartbeat timeout check, then we send a heartbeat request.
+			 */
+			if (message.ReceiveProgressIndicator == receiveProgressIndicator && !_awaitingHeartbeatTimeoutCheck) {
+				SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
+				_awaitingHeartbeatTimeoutCheck = true;
 				_publisher.Publish(TimerMessage.Schedule.Create(_heartbeatTimeout, _weakThisEnvelope,
-					new TcpMessage.HeartbeatTimeout(msgNum)));
+					new TcpMessage.HeartbeatTimeout(receiveProgressIndicator)));
 			}
+			/*
+			 * As a proactive measure, if we have not sent any data to the remote party within the heartbeat interval,
+			 * we also send a heartbeat request just to generate some data for the remote party so that it can clear its heartbeat timeouts.
+			 * This is particularly useful when the remote party's heartbeat request is stuck behind a large (multi-megabyte) TCP message.
+			 */
+			else if (message.SendProgressIndicator == sendProgressIndicator) {
+				SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
+				Log.Verbose(
+					"Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] Proactive heartbeat request sent to the remote party since no data was sent during the last heartbeat interval.",
+					ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
+					_connection.RemoteEndPoint, ConnectionId);
+			}
+
+			//schedule the next heartbeat regardless of whether or not there's an active heartbeat request
+			ScheduleHeartbeat(receiveProgressIndicator, sendProgressIndicator);
 		}
 
 		public void Handle(TcpMessage.HeartbeatTimeout message) {
+			_awaitingHeartbeatTimeoutCheck = false;
 			if (IsClosed) return;
 
-			var msgNum = _messageNumber;
-			if (message.MessageNumber != msgNum)
-				ScheduleHeartbeat(msgNum);
-			else
-				Stop(string.Format("HEARTBEAT TIMEOUT at msgNum {0}", msgNum));
+			var receiveProgressIndicator = _receiveProgressIndicator;
+			var sendProgressIndicator = _sendProgressIndicator;
+			if (message.ReceiveProgressIndicator == receiveProgressIndicator)
+				Stop(string.Format($"HEARTBEAT TIMEOUT at receiveProgressIndicator={receiveProgressIndicator}, sendProgressIndicator={sendProgressIndicator}"));
 		}
 
-		private void ScheduleHeartbeat(int msgNum) {
+		private void ScheduleHeartbeat(long receiveProgressIndicator, long sendProgressIndicator) {
 			_publisher.Publish(TimerMessage.Schedule.Create(_heartbeatInterval, _weakThisEnvelope,
-				new TcpMessage.Heartbeat(msgNum)));
+				new TcpMessage.Heartbeat(receiveProgressIndicator, sendProgressIndicator)));
 		}
 
 		private class SendToWeakThisEnvelope : IEnvelope {
