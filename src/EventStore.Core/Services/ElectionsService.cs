@@ -50,8 +50,8 @@ namespace EventStore.Core.Services {
 		private readonly IEnvelope _publisherEnvelope;
 		private readonly MemberInfo _memberInfo;
 		private readonly int _clusterSize;
-		private readonly ICheckpoint _writerCheckpoint;
-		private readonly ICheckpoint _chaserCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
 		private readonly ICheckpoint _proposalCheckpoint;
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
@@ -81,8 +81,8 @@ namespace EventStore.Core.Services {
 		public ElectionsService(IPublisher publisher,
 			MemberInfo memberInfo,
 			int clusterSize,
-			ICheckpoint writerCheckpoint,
-			ICheckpoint chaserCheckpoint,
+			IReadOnlyCheckpoint writerCheckpoint,
+			IReadOnlyCheckpoint chaserCheckpoint,
 			ICheckpoint proposalCheckpoint,
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,

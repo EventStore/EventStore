@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private readonly IQueuedHandler _monitoringQueue;
 		private readonly IPublisher _statsCollectionBus;
 		private readonly IPublisher _mainBus;
-		private readonly ICheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
 		private readonly StatsStorage _statsStorage;
 		private readonly long _statsCollectionPeriodMs;
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Monitoring {
 		public MonitoringService(IQueuedHandler monitoringQueue,
 			IPublisher statsCollectionBus,
 			IPublisher mainBus,
-			ICheckpoint writerCheckpoint,
+			IReadOnlyCheckpoint writerCheckpoint,
 			string dbPath,
 			TimeSpan statsCollectionPeriod,
 			EndPoint nodeEndpoint,

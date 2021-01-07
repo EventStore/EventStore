@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Storage {
 			ISubscriber subscriber, 
 			IReadIndex readIndex, 
 			int threadCount,
-			ICheckpoint writerCheckpoint, 
+			IReadOnlyCheckpoint writerCheckpoint, 
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");
