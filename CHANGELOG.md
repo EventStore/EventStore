@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Updated internal dependencies and added client builds for .NET 5.0 [EventStore#2764](https://github.com/EventStore/EventStore/pull/2764)
 
+### Fixed
+- Proactively send heartbeat requests to the remote party if no data was sent within the last heartbeat interval [EventStore#2772](https://github.com/EventStore/EventStore/pull/2772)
+
 ## [20.10.0] - 2020-12-16
 
 ### Fixed
