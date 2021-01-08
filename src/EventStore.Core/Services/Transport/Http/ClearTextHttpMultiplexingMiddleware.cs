@@ -45,8 +45,8 @@ namespace EventStore.Core.Services.Transport.Http
 	    }
 
 	    private static void SetProtocols(object target, HttpProtocols protocols) {
-	        var field = target.GetType().GetField("_protocols", BindingFlags.Instance | BindingFlags.NonPublic);
-	        if (field == null) throw new RuntimeBinderException("Couldn't bind to Kestrel's _protocols field");
+	        var field = target.GetType().GetField("_endpointDefaultProtocols", BindingFlags.Instance | BindingFlags.NonPublic);
+	        if (field == null) throw new RuntimeBinderException("Couldn't bind to Kestrel's _endpointDefaultProtocols field");
 	        field.SetValue(target, protocols);
         }
 
