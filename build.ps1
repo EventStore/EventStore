@@ -5,8 +5,6 @@ Param(
     [Parameter(HelpMessage="Configuration (Debug, Release)")]
     [ValidateSet("Debug","Release")]
     [string]$Configuration = "Release",
-    [Parameter(HelpMessage="The runtime identifier")]
-    [string]$Runtime = "win10-x64",
     [Parameter(HelpMessage="Build UI (yes,no)")]
     [ValidateSet("yes","no")]
     [string]$BuildUI = "no",
@@ -14,8 +12,6 @@ Param(
     [ValidateSet("yes","no")]
     [string]$RunTests = "no"
 )
-
-$NetFramework = "netcoreapp3.1"
 
 Function Write-Info {
     Param([string]$message)
@@ -123,8 +119,7 @@ Function Start-Build{
 
     Write-Info "Version: $Version"
     Write-Info "Platform: $platform"
-    Write-Info "Configuration: $Configuration"    
-    Write-Info "Runtime: $Runtime"    
+    Write-Info "Configuration: $Configuration"
     Write-Info "Build UI: $BuildUI"
     Write-Info "Run Tests: $RunTests"
 
@@ -156,7 +151,7 @@ Function Start-Build{
     
     $versionInfoFile = Resolve-Path (Join-Path $srcDirectory (Join-Path "EventStore.Common" (Join-Path "Utils" "VersionInfo.cs"))) -Relative
     try {
-        Exec { dotnet build -c $configuration --runtime=$Runtime --framework=$NetFramework /p:Version=$Version /p:Platform=x64 $eventStoreSolution }
+        Exec { dotnet build -c $configuration /p:Version=$Version /p:Platform=x64 $eventStoreSolution }
     } finally {
         Write-Info "Reverting $versionInfoFile to original state."
         & { git checkout --quiet $versionInfoFile }
