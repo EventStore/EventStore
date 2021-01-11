@@ -41,6 +41,7 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Leader;
+		private bool _enableVersion5Compability;
 		private HttpMessageHandler _customHttpMessageHandler;
 
 		internal ConnectionSettingsBuilder() {
@@ -248,7 +249,7 @@ namespace EventStore.ClientAPI {
 			_defaultUserCredentials = userCredentials;
 			return this;
 		}
-		
+
 		/// <summary>
 		/// Disables TLS
 		/// </summary>
@@ -451,6 +452,14 @@ namespace EventStore.ClientAPI {
 			return this;
 		}
 
+		/// <summary>
+		/// Specifies if the client should run in Version 5 compability mode.
+		/// </summary>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		public ConnectionSettingsBuilder SetVersion5Compability(bool value) {
+			_enableVersion5Compability = value;
+			return this;
+		}
 
 		/// <summary>
 		/// Convert the mutable <see cref="ConnectionSettingsBuilder"/> object to an immutable
@@ -492,6 +501,7 @@ namespace EventStore.ClientAPI {
 				_httpPort,
 				_gossipTimeout,
 				_nodePreference,
+				_enableVersion5Compability,
 				_customHttpMessageHandler);
 		}
 	}

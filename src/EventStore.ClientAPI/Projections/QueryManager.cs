@@ -26,9 +26,9 @@ namespace EventStore.ClientAPI.Projections {
 		/// <param name="queryTimeout">Timeout of query execution</param>
 		/// <param name="httpMessageHandler">An <see cref="HttpMessageHandler"/> to use in the <see cref="HttpClient"/>.</param>
 		public QueryManager(ILogger log, EndPoint httpEndPoint, TimeSpan projectionOperationTimeout,
-			TimeSpan queryTimeout, HttpMessageHandler httpMessageHandler = null) {
+			TimeSpan queryTimeout,  bool enableVersion5Compability = false, HttpMessageHandler httpMessageHandler = null) {
 			_queryTimeout = queryTimeout;
-			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout, httpMessageHandler);
+			_projectionsManager = new ProjectionsManager(log, httpEndPoint, projectionOperationTimeout, enableVersion5Compability, httpMessageHandler);
 		}
 
 		/// <summary>

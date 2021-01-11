@@ -54,6 +54,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				new ConsoleLogger(),
 				_node.HttpEndPoint,
 				TimeSpan.FromMilliseconds(20000),
+				false,
 				_node.HttpMessageHandler);
 
 			_queryManager = new QueryManager(
@@ -61,6 +62,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				_node.HttpEndPoint,
 				TimeSpan.FromMilliseconds(20000),
 				TimeSpan.FromMilliseconds(20000),
+				false,
 				_node.HttpMessageHandler);
 
 			WaitIdle();

@@ -161,6 +161,8 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		public readonly TimeSpan ClientConnectionTimeout;
 
+		public readonly bool EnableVersion5Compability;
+
 		internal ConnectionSettings(ILogger log,
 			bool verboseLogging,
 			int maxQueueSize,
@@ -186,6 +188,7 @@ namespace EventStore.ClientAPI {
 			int gossipPort,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
+			bool enableVersion5Compability,
 			HttpMessageHandler customHttpMessageHandler) {
 
 			Ensure.NotNull(log, "log");
@@ -231,6 +234,7 @@ namespace EventStore.ClientAPI {
 			GossipPort = gossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
+			EnableVersion5Compability = enableVersion5Compability;
 			CustomHttpMessageHandler = customHttpMessageHandler;
 		}
 	}
