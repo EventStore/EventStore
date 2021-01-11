@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Monitoring.Utils {
@@ -19,6 +20,10 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		}
 
 		private PerformanceCounter CreatePerfCounter(string category, string counter, string instance = null) {
+			if(!Runtime.IsWindows){
+				return null;
+			}
+
 			try {
 				return string.IsNullOrEmpty(instance)
 					? new PerformanceCounter(category, counter)
