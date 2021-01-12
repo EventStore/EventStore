@@ -39,7 +39,7 @@ FROM build as publish
 ARG RUNTIME=linux-x64
 
 RUN dotnet publish --configuration=Release --runtime=${RUNTIME} --self-contained \
-     --framework=net5.0 --output /publish EventStore.ClusterNode
+     --output /publish EventStore.ClusterNode
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:5.0-${CONTAINER_RUNTIME} AS runtime
 ARG UID=1000
