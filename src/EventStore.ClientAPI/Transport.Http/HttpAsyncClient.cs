@@ -86,8 +86,11 @@ namespace EventStore.ClientAPI.Transport.Http {
 
 			if (userCredentials != null)
 				AddAuthenticationHeader(request, userCredentials);
+			
+			if (_enableVersion5Compability)
+				hostHeader = "";
 
-			if (!_enableVersion5Compability && !string.IsNullOrWhiteSpace(hostHeader))
+			if (!string.IsNullOrWhiteSpace(hostHeader))
 				request.Headers.Host = hostHeader;
 
 			var state = new ClientOperationState(request, onSuccess, onException);
