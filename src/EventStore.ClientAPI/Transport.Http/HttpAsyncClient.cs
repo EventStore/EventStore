@@ -27,7 +27,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 		/// </summary>
 		/// <param name="timeout"></param>
 		/// <param name="clientHandler"></param>
-		public HttpAsyncClient(TimeSpan timeout, bool enableVersion5Compability, HttpMessageHandler clientHandler = null) {
+		public HttpAsyncClient(TimeSpan timeout, HttpMessageHandler clientHandler = null, bool enableVersion5Compability = false) {
 			_client = clientHandler == null ? new HttpClient() : new HttpClient(clientHandler);
 			_client.Timeout = timeout;
 			_enableVersion5Compability = enableVersion5Compability;

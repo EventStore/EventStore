@@ -25,12 +25,12 @@ namespace EventStore.ClientAPI.Projections {
 		/// <param name="httpMessageHandler"></param>
 		/// <param name="httpSchema">HTTP endpoint schema http|https.</param>
 		/// <param name="operationTimeout"></param>
-		public ProjectionsManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout,  bool enableVersion5Compability = false,
+		public ProjectionsManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout,
 			HttpMessageHandler httpMessageHandler = null, string httpSchema = EndpointExtensions.HTTPS_SCHEMA) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
-			_client = new ProjectionsClient(log, operationTimeout, enableVersion5Compability, httpMessageHandler);
+			_client = new ProjectionsClient(log, operationTimeout, httpMessageHandler);
 			_httpEndPoint = httpEndPoint;
 			_httpSchema = httpSchema;
 		}

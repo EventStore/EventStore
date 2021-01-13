@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 			_connection = TestConnection.Create(_node.TcpEndPoint);
 			await _connection.ConnectAsync();
 
-			_projManager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, _timeout, false, _node.HttpMessageHandler);
+			_projManager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, _timeout, _node.HttpMessageHandler);
 			try {
 				await Given().WithTimeout(_timeout);
 			} catch (Exception ex) {

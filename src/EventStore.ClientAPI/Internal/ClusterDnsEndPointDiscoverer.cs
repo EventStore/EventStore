@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI.Internal {
 			_maxDiscoverAttempts = maxDiscoverAttempts;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
-			_client = new HttpAsyncClient(_gossipTimeout, enableVersion5Compability, httpMessageHandler);
+			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler, enableVersion5Compability);
 			_nodePreference = nodePreference;
 			_legacyGossipDiscovery = legacyGossipDiscovery;
 		}

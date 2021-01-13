@@ -15,9 +15,9 @@ namespace EventStore.ClientAPI.Projections {
 		private readonly IHttpClient _client;
 		private readonly TimeSpan _operationTimeout;
 
-		public ProjectionsClient(ILogger log, TimeSpan operationTimeout,  bool enableVersion5Compability = false, HttpMessageHandler httpMessageHandler = null) {
+		public ProjectionsClient(ILogger log, TimeSpan operationTimeout, HttpMessageHandler httpMessageHandler = null) {
 			_operationTimeout = operationTimeout;
-			_client = new HttpAsyncClient(_operationTimeout, enableVersion5Compability, httpMessageHandler);
+			_client = new HttpAsyncClient(_operationTimeout, httpMessageHandler);
 		}
 
 		public Task Enable(EndPoint endPoint, string name, UserCredentials userCredentials = null,

@@ -26,12 +26,12 @@ namespace EventStore.ClientAPI.UserManagement {
 		/// <param name="operationTimeout"></param>
 		/// <param name="tlsTerminatedEndpoint"></param>
 		/// <param name="httpMessageHandler"></param>
-		public UsersManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout,  bool enableVersion5Compability = false,
+		public UsersManager(ILogger log, EndPoint httpEndPoint, TimeSpan operationTimeout,
 			bool tlsTerminatedEndpoint = true, HttpMessageHandler httpMessageHandler = null) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(httpEndPoint, "httpEndPoint");
 
-			_client = new UsersClient(log, operationTimeout, enableVersion5Compability, httpMessageHandler);
+			_client = new UsersClient(log, operationTimeout, httpMessageHandler);
 			_httpEndPoint = httpEndPoint;
 			_httpSchema = tlsTerminatedEndpoint ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA;
 		}

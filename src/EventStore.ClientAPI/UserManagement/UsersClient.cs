@@ -17,9 +17,9 @@ namespace EventStore.ClientAPI.UserManagement {
 
 		private readonly TimeSpan _operationTimeout;
 
-		public UsersClient(ILogger log, TimeSpan operationTimeout, bool enableVersion5Compability = false, HttpMessageHandler httpClientHandler = null) {
+		public UsersClient(ILogger log, TimeSpan operationTimeout, HttpMessageHandler httpClientHandler = null) {
 			_operationTimeout = operationTimeout;
-			_client = new HttpAsyncClient(_operationTimeout, enableVersion5Compability, httpClientHandler);
+			_client = new HttpAsyncClient(_operationTimeout, httpClientHandler);
 		}
 
 		public Task Enable(EndPoint endPoint, string login, UserCredentials userCredentials = null, string httpSchema = EndpointExtensions.HTTP_SCHEMA) {

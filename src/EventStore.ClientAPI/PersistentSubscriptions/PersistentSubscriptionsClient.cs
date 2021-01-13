@@ -16,9 +16,9 @@ namespace EventStore.ClientAPI.PersistentSubscriptions {
 		private readonly HttpAsyncClient _client;
 		private readonly TimeSpan _operationTimeout;
 
-		public PersistentSubscriptionsClient(ILogger log, TimeSpan operationTimeout,  bool enableVersion5Compability = false, HttpMessageHandler httpMessageHandler = null) {
+		public PersistentSubscriptionsClient(ILogger log, TimeSpan operationTimeout, HttpMessageHandler httpMessageHandler = null) {
 			_operationTimeout = operationTimeout;
-			_client = new HttpAsyncClient(_operationTimeout, enableVersion5Compability, httpMessageHandler);
+			_client = new HttpAsyncClient(_operationTimeout, httpMessageHandler);
 		}
 
 		public Task<PersistentSubscriptionDetails> Describe(EndPoint endPoint, string stream, string subscriptionName,
