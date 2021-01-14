@@ -33,9 +33,9 @@
 	<!-- Transitive dependencies to help in packaging -->
 	<ItemGroup>
 		<PackageReference Include="EventStore.Plugins" Version="20.6.1" />
-		<PackageReference Include="Google.Protobuf" Version="3.12.3" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.29.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.30.0">
+		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.34.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.34.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>

@@ -41,7 +41,6 @@ namespace EventStore.Core.Cluster {
 
 				httpMessageHandler = socketsHttpHandler;
 			} else if (address.Scheme == Uri.UriSchemeHttp) {
-				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 				httpMessageHandler = new SocketsHttpHandler();
 			}
 
