@@ -22,7 +22,7 @@ COPY ./.git .
 
 WORKDIR /build/src
 
-RUN dotnet build --configuration=Release --no-restore --framework=net5.0
+RUN dotnet build --configuration=Release --no-restore
 
 FROM build as test
 ARG RUNTIME=linux-x64
