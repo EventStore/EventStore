@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests {
 			using var process = new Process {
 				StartInfo = new ProcessStartInfo {
 					FileName = "dotnet",
-					Arguments = $"publish --configuration {BuildConfiguration} --framework=netcoreapp3.1 --output {outputFolder.FullName}",
+					Arguments = $"publish --configuration {BuildConfiguration} --framework=net5.0 --output {outputFolder.FullName}",
 					WorkingDirectory = PluginSourceDirectory,
 					UseShellExecute = false,
 					RedirectStandardError = true,
@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests {
 			}
 		}
 		private static string SourceDirectory =>
-			Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "../../../../src"));
+			Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "../../../../.."));
 
 		private static string PluginSourceDirectory => Path.Combine(SourceDirectory, "EventStore.Core.Tests", "FakePlugin");
 
