@@ -14,7 +14,7 @@
 		<IsPackable>true</IsPackable>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-		<DocumentationFile>$(OutputPath)\EventStore.ClientAPI.xml</DocumentationFile>
+		<DocumentationFile>EventStore.ClientAPI.xml</DocumentationFile>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">

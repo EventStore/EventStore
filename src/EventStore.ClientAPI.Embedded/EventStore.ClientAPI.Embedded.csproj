@@ -13,7 +13,7 @@
 		<IsPackable>true</IsPackable>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-		<DocumentationFile>$(OutputPath)\EventStore.ClientAPI.Embedded.xml</DocumentationFile>
+		<DocumentationFile>EventStore.ClientAPI.Embedded.xml</DocumentationFile>
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" PrivateAssets="All" />
