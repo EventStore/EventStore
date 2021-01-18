@@ -71,6 +71,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				});
 			}
 
+			long parkedMessageCount = _settings.MessageParker.ParkedMessageCount;
+
 			return new MonitoringMessage.SubscriptionInfo() {
 				EventStreamId = _parent.EventStreamId,
 				GroupName = _parent.GroupName,
@@ -98,7 +100,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				TotalInFlightMessages = totalInflight,
 				OutstandingMessagesCount = _parent.OutstandingMessageCount,
 				NamedConsumerStrategy = _settings.ConsumerStrategy.Name,
-				MaxSubscriberCount = _settings.MaxSubscriberCount
+				MaxSubscriberCount = _settings.MaxSubscriberCount,
+				ParkedMessageCount = parkedMessageCount
 			};
 		}
 	}

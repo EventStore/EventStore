@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using EventStore.ClientAPI;
@@ -8,6 +9,8 @@ using NUnit.Framework;
 using HttpStatusCode = System.Net.HttpStatusCode;
 using System.Xml.Linq;
 using System.Threading.Tasks;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
@@ -31,6 +34,68 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			Assert.AreEqual(Events.Count, knownNumberOfEvents,
 				"Expected the subscription statistics to know about {0} events but seeing {1}", Events.Count,
 				knownNumberOfEvents);
+		}
+	}
+	
+	[TestFixture, Category("LongRunning")]
+	class when_getting_statistics_for_subscription_with_parked_events : with_subscription_having_events {
+		private string _nackLink;
+		private JObject _json;
+		private string _streamName;
+
+		private string _subscriptionParkedStream;
+		private Guid _writeCorrelationId;
+		private TaskCompletionSource<bool> _eventParked = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+		protected override async Task Given() {
+			_connection.Close();
+			_connection.Dispose();
+			NumberOfEventsToCreate = 1;
+			await base.Given();
+
+			_streamName = TestStream.Substring(9);
+			_subscriptionParkedStream =
+				"$persistentsubscription-" + _streamName + "::" + GroupName + "-parked";
+
+			// Subscribe to the writes to ensure the parked message has been written
+			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.WritePrepares>(Handle));
+			_node.Node.MainBus.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(Handle));
+
+			var json = await GetJson2<JObject>(
+				SubscriptionPath + "/1", "embed=rich",
+				ContentType.CompetingJson,
+				_admin);
+
+			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
+
+			var _entries = json != null ? json["entries"].ToList() : new List<JToken>();
+			_nackLink = _entries[0]["links"][3]["uri"] + "?action=park";
+
+			//Park the message
+			var response = await MakePost(_nackLink, _admin);
+			Assert.AreEqual(HttpStatusCode.Accepted, response.StatusCode);
+		}
+
+		private void Handle(StorageMessage.WritePrepares msg) {
+			if (msg.EventStreamId == _subscriptionParkedStream) {
+				_writeCorrelationId = msg.CorrelationId;
+			}
+		}
+
+		private void Handle(StorageMessage.CommitIndexed msg) {
+			if (msg.CorrelationId == _writeCorrelationId) {
+				_eventParked.TrySetResult(true);
+			}
+		}
+
+		protected override async Task When() {
+			await _eventParked.Task.WithTimeout();
+			_json = await GetJson<JObject>("/subscriptions/" + _streamName + "/" + GroupName + "/info", ContentType.Json);
+		}
+
+		[Test]
+		public void should_show_one_parked_message() {
+			Assert.AreEqual(1, _json["parkedMessageCount"].Value<int>());
 		}
 	}
 

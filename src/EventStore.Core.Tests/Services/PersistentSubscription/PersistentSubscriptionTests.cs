@@ -1770,6 +1770,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		public List<ResolvedEvent> ParkedEvents = new List<ResolvedEvent>();
 		private readonly Action _deleteAction;
 		private long _lastParkedEventNumber = -1;
+		private long _lastTruncateBefore = -1;
 		public int BeginReadEndSequenceCount { get; private set; } = 0;
 
 		public FakeMessageParker() {
@@ -1806,6 +1807,18 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		public void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed) {
 			_deleteAction?.Invoke();
+		}
+
+		public long ParkedMessageCount {
+			get {
+				return _lastParkedEventNumber == -1 ? 0 :
+					_lastTruncateBefore == -1 ? _lastParkedEventNumber + 1 :
+					_lastParkedEventNumber - _lastTruncateBefore + 1;
+			}
+		}
+
+		public void BeginLoadStats(Action completed) {
+			completed();
 		}
 	}
 

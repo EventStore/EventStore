@@ -893,9 +893,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						ResolveLinktos = stat.ResolveLinktos,
 						StartFrom = stat.StartFrom,
 						ExtraStatistics = stat.ExtraStatistics,
-						MaxSubscriberCount = stat.MaxSubscriberCount
+						MaxSubscriberCount = stat.MaxSubscriberCount,
 					},
-					Connections = new List<ConnectionInfo>()
+					Connections = new List<ConnectionInfo>(),
+					ParkedMessageCount = stat.ParkedMessageCount
 				};
 				if (stat.Connections != null) {
 					foreach (var connection in stat.Connections) {
@@ -1020,6 +1021,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public int TotalInFlightMessages { get; set; }
 			public int OutstandingMessagesCount { get; set; }
 			public List<ConnectionInfo> Connections { get; set; }
+			public long ParkedMessageCount { get; set; }
 		}
 
 		public class ConnectionInfo {
