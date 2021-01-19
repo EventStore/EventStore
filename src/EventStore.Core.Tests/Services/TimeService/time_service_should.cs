@@ -17,18 +17,24 @@ namespace EventStore.Core.Tests.Services.TimeService {
 	}
 
 	public class FakeTimeProvider : ITimeProvider {
-		public DateTime Now { get; private set; }
+		public DateTime UtcNow { get; private set; }
+		public DateTime LocalTime { get; private set; }
 
 		public FakeTimeProvider() {
-			Now = DateTime.UtcNow;
+			UtcNow = DateTime.UtcNow;
+			LocalTime = DateTime.Now;
 		}
 
-		public void SetNewTime(DateTime newTime) {
-			Now = newTime;
+		public void SetNewUtcTime(DateTime newTime) {
+			UtcNow = newTime;
 		}
 
-		public void AddTime(TimeSpan timeSpan) {
-			Now = Now.Add(timeSpan);
+		public void AddToUtcTime(TimeSpan timeSpan) {
+			UtcNow = UtcNow.Add(timeSpan);
+		}
+		
+		public void AddToLocalTime(TimeSpan timeSpan) {
+			UtcNow = LocalTime.Add(timeSpan);
 		}
 	}
 
@@ -108,7 +114,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 		public void not_respond_until_time_elapses() {
 			_startTimeout(5, 100);
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(4));
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(4));
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsNo<TestResponseMessage>());
@@ -118,7 +124,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 		public void respond_in_correct_time() {
 			_startTimeout(5, 100);
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(5));
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(5));
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>());
@@ -132,31 +138,31 @@ namespace EventStore.Core.Tests.Services.TimeService {
 			_startTimeout(35, 103);
 			_startTimeout(15, 101);
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(10)); // 10
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(10)); // 10
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>(msg => msg.Id == 100) &&
 			            _timerMessages.ContainsNo<TestResponseMessage>(msg => msg.Id.IsBetween(101, 104)));
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(10)); // 20
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(10)); // 20
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>(msg => msg.Id == 101) &&
 			            _timerMessages.ContainsNo<TestResponseMessage>(msg => msg.Id.IsBetween(102, 104)));
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(10)); //30
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(10)); //30
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>(msg => msg.Id == 102) &&
 			            _timerMessages.ContainsNo<TestResponseMessage>(msg => msg.Id.IsBetween(103, 104)));
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(10)); //40
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(10)); //40
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>(msg => msg.Id == 103) &&
 			            _timerMessages.ContainsNo<TestResponseMessage>(msg => msg.Id == 104));
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(10)); //50
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(10)); //50
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>(msg => msg.Id == 104));
@@ -168,7 +174,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 			_startTimeout(5, 101);
 			_startTimeout(5, 102);
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(5));
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(5));
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsN<TestResponseMessage>(3, msg => msg.Id.IsBetween(100, 102)));
@@ -181,7 +187,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 
 			Assert.That(_timerMessages.ContainsNo<TestResponseMessage>());
 
-			_timeProvider.AddTime(TimeSpan.FromMilliseconds(1000));
+			_timeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(1000));
 			_scheduler.TriggerProcessing();
 
 			Assert.That(_timerMessages.ContainsN<TestResponseMessage>(20, msg => msg.Id.IsBetween(100, 119)));

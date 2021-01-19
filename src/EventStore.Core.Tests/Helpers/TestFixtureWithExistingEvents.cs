@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.Helpers {
 				list.Count,
 				new PrepareLogRecord(
 					_fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
-					_timeProvider.Now,
+					_timeProvider.UtcNow,
 					PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
 					eventType, Helper.UTF8NoBom.GetBytes(eventData),
 					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)));
@@ -422,7 +422,7 @@ namespace EventStore.Core.Tests.Helpers {
 						record =
 							new EventRecord(
 								eventNumber, tfPosition, correlationId, e.EventId, tfPosition, 0, streamId,
-								ExpectedVersion.Any, _timeProvider.Now,
+								ExpectedVersion.Any, _timeProvider.UtcNow,
 								PrepareFlags.SingleWrite | (e.IsJson ? PrepareFlags.IsJson : PrepareFlags.None),
 								e.EventType, e.Data, e.Metadata)
 					}); //NOTE: DO NOT MAKE ARRAY 
