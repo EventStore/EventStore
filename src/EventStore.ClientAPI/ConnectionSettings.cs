@@ -161,6 +161,9 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		public readonly TimeSpan ClientConnectionTimeout;
 
+		/// <summary>
+		/// If true, switch the client into EventStoreDB Version 5 compatibility mode.
+		/// </summary>
 		public readonly bool EnableVersion5Compability;
 
 		internal ConnectionSettings(ILogger log,
