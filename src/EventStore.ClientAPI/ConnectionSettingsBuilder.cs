@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
-		private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
+		private int _gossipExternalHttpPort = Consts.DefaultGossipPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Master;
@@ -306,25 +306,8 @@ namespace EventStore.ClientAPI {
 		/// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
 		public ConnectionSettingsBuilder SetClusterDns(string clusterDns) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
+			_clusterDns = clusterDns;
 
-			var splits = clusterDns.Split(':');
-
-			switch (splits.Length) {
-				case 1:
-					_clusterDns = string.Format("{0}:2113", clusterDns);
-					break;
-				case 2:
-					if (int.TryParse(splits[1], out var _)) {
-						_clusterDns = clusterDns;
-						break;
-					} else
-						throw new ArgumentException(string.Format("Specified DNS port is not a number: {0}, DNS definition: {1}",
-							splits[1], clusterDns));
-
-				default:
-					throw new ArgumentException(string.Format("Invalid cluster definition: [{0}]", clusterDns));
-			}
-			
 			return this;
 		}
 
@@ -490,7 +473,7 @@ namespace EventStore.ClientAPI {
 				_heartbeatInterval,
 				_heartbeatTimeout,
 				_clientConnectionTimeout,
-				_clusterDns,
+				string.Format("{0}:{1}", _clusterDns, _gossipExternalHttpPort),
 				_gossipSeeds,
 				_maxDiscoverAttempts,
 				_gossipExternalHttpPort,
