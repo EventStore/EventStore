@@ -339,7 +339,7 @@ namespace EventStore.Core.Services {
 			SendToAllExceptMe(proposal);
 		}
 
-		private MasterCandidate GetBestMasterCandidate() {
+		public MasterCandidate GetBestMasterCandidate() {
 			if (_lastElectedMaster.HasValue) {
 				ElectionMessage.PrepareOk masterMsg;
 				if (_prepareOkReceived.TryGetValue(_lastElectedMaster.Value, out masterMsg)) {
@@ -374,7 +374,7 @@ namespace EventStore.Core.Services {
 				best.LastCommitPosition, best.WriterCheckpoint, best.ChaserCheckpoint, best.NodePriority);
 		}
 
-		private bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
+		public bool IsLegitimateMaster(int view, IPEndPoint proposingServerEndPoint, Guid proposingServerId,
 			MasterCandidate candidate) {
 			var master = _servers.FirstOrDefault(x =>
 				x.IsAlive && x.InstanceId == _lastElectedMaster && x.State == VNodeState.Master);
@@ -504,7 +504,7 @@ namespace EventStore.Core.Services {
 				epochNumber, epochPosition, epochId);
 		}
 
-		private class MasterCandidate {
+		public class MasterCandidate {
 			public readonly Guid InstanceId;
 			public readonly IPEndPoint InternalHttp;
 

@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new IPEndPoint(IPAddress.Loopback, 1111),
 				new IPEndPoint(IPAddress.Loopback, 1111),
 				new IPEndPoint(IPAddress.Loopback, 1111),
-				new IPEndPoint(IPAddress.Loopback, 1111), false);
+				new IPEndPoint(IPAddress.Loopback, 1111));
 			_nodeTwo = new VNodeInfo(
 				Guid.Parse("00000000-0000-0000-0000-000000000002"), 2,
 				new IPEndPoint(IPAddress.Loopback, 2222),
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new IPEndPoint(IPAddress.Loopback, 2222),
 				new IPEndPoint(IPAddress.Loopback, 2222),
 				new IPEndPoint(IPAddress.Loopback, 2222),
-				new IPEndPoint(IPAddress.Loopback, 2222), false);
+				new IPEndPoint(IPAddress.Loopback, 2222));
 			_nodeThree = new VNodeInfo(
 				Guid.Parse("00000000-0000-0000-0000-000000000003"), 3,
 				new IPEndPoint(IPAddress.Loopback, 3333),
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				new IPEndPoint(IPAddress.Loopback, 3333),
 				new IPEndPoint(IPAddress.Loopback, 3333),
 				new IPEndPoint(IPAddress.Loopback, 3333),
-				new IPEndPoint(IPAddress.Loopback, 3333), false);
+				new IPEndPoint(IPAddress.Loopback, 3333));
 
 			_getNodeToGossipTo = infos => infos.First(x => Equals(x.InternalHttpEndPoint, _nodeTwo.InternalHttp));
 			_gossipSeedSource = new KnownEndpointGossipSeedSource(new[]
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			return MemberInfo.ForVNode(nodeInfo.InstanceId, utcNow, nodeState, true,
 				nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp, nodeInfo.ExternalTcp,
 				nodeInfo.ExternalSecureTcp, nodeInfo.InternalHttp, nodeInfo.ExternalHttp,
-				0, writerCheckpoint ?? 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0, false);
+				0, writerCheckpoint ?? 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0);
 		}
 
 		/// <summary>
@@ -820,35 +820,12 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		}
 	}
 
-	public class when_updating_node_priority : NodeGossipServiceTestFixture {
-		private readonly int _nodePriority = new Random().Next();
-		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
-
-		protected override Message When() {
-			return new GossipMessage.UpdateNodePriority(_nodePriority);
-		}
-
-		[Test]
-		public void should_set_node_priority() {
-			var clusterInfo = new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow));
-
-			SUT.Handle(new GossipMessage.GossipReceived(new NoopEnvelope(), clusterInfo,
-				_nodeTwo.InternalHttp));
-			var memberInfo = _bus.Messages.OfType<GossipMessage.GossipUpdated>().First().ClusterInfo.Members
-				.First(x => x.InstanceId == _currentNode.InstanceId);
-			Assert.AreEqual(memberInfo.NodePriority, _nodePriority);
-		}
-	}
-
 	public class when_updating_cluster {
 		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp) {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
 				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
-				0, 0, 0, -1, -1, Guid.Empty, 0, false);
+				0, 0, 0, -1, -1, Guid.Empty, 0);
 		}
 
 		[Test]
@@ -895,14 +872,13 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
 			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
 				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint,
-				0, 0, 0, -1, -1, Guid.Empty, 0, false);
+				0, 0, 0, -1, -1, Guid.Empty, 0);
 		}
 
 		private static VNodeInfo NodeInfoFromMemberInfo(MemberInfo memberInfo) {
 			return new VNodeInfo(memberInfo.InstanceId, 0, memberInfo.InternalTcpEndPoint,
 				memberInfo.InternalSecureTcpEndPoint, memberInfo.ExternalTcpEndPoint,
-				memberInfo.ExternalSecureTcpEndPoint, memberInfo.InternalHttpEndPoint, memberInfo.ExternalHttpEndPoint,
-				memberInfo.IsReadOnlyReplica);
+				memberInfo.ExternalSecureTcpEndPoint, memberInfo.InternalHttpEndPoint, memberInfo.ExternalHttpEndPoint);
 		}
 
 		[Test]

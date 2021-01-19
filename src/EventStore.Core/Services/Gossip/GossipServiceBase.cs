@@ -25,9 +25,9 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<GossipMessage.GetGossipFailed>,
 		IHandle<ElectionMessage.ElectionsDone> {
 		public const int GossipRoundStartupThreshold = 20;
-		private static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
+		public static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan GossipTimeout = TimeSpan.FromMilliseconds(1000);
-		private static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
+		public static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
 		private static readonly TimeSpan DeadMemberRemovalTimeout = TimeSpan.FromMinutes(30);
 
 		private static readonly ILogger Log = LogManager.GetLoggerFor<GossipServiceBase>();

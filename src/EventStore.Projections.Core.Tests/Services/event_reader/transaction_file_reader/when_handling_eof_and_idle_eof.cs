@@ -44,13 +44,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
 						EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
 							new EventRecord(
 								1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any,
-								_faketimeProvider.UtcNow,
+								_fakeTimeProvider.UtcNow,
 								PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 								"event_type1", new byte[] {1}, new byte[] {2}), 100),
 						EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(
 							new EventRecord(
 								2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "b", ExpectedVersion.Any,
-								_faketimeProvider.UtcNow,
+								_fakeTimeProvider.UtcNow,
 								PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 								"event_type1", new byte[] {1}, new byte[] {2}), 200),
 					}, null, false, 100,
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
 					correlationId, ReadAllResult.Success, null,
 					new EventStore.Core.Data.ResolvedEvent[0], null, false, 100, new TFPos(), new TFPos(), new TFPos(),
 					500));
-			_fakeTimeProvider.AddTime(TimeSpan.FromMilliseconds(500));
+			_fakeTimeProvider.AddToUtcTime(TimeSpan.FromMilliseconds(500));
 			correlationId = ((ClientMessage.ReadAllEventsForward)(_consumer.HandledMessages
 				.OfType<AwakeServiceMessage.SubscribeAwake>().Last().ReplyWithMessage)).CorrelationId;
 			_edp.Handle(
