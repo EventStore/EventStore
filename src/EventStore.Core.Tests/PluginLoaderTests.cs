@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
-using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests {
@@ -138,10 +137,7 @@ namespace EventStore.Core.Tests {
 				throw new Exception(stdout.Result);
 			}
 		}
-		private static string SourceDirectory =>
-			Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "../../../../.."));
-
-		private static string PluginSourceDirectory => Path.Combine(SourceDirectory, "EventStore.Core.Tests", "FakePlugin");
+		private static string PluginSourceDirectory => Path.Combine(Environment.CurrentDirectory, "FakePlugin");
 
 		private const string BuildConfiguration =
 #if DEBUG

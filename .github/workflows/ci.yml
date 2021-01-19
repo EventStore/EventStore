@@ -140,6 +140,11 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
+    - name: Clear Nuget Cache
+      shell: bash
+      if: matrix.os == 'windows-2019'
+      run: |
+        dotnet nuget locals all --clear
     - name: Compile
       shell: bash
       run: |
