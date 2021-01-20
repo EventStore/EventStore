@@ -19,7 +19,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public readonly string From;
 		private long _totalItems;
 		private readonly RequestStatistics _extraStatistics;
-		private readonly Dictionary<Guid, ResolvedEvent> _unconfirmedEvents = new Dictionary<Guid, ResolvedEvent>();
+		private readonly Dictionary<Guid, OutstandingMessage> _unconfirmedEvents = new Dictionary<Guid, OutstandingMessage>();
 
 		public PersistentSubscriptionClient(Guid correlationId,
 			Guid connectionId,
@@ -79,7 +79,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			foreach (var processedEventId in processedEventIds) {
 				if (_extraStatistics != null)
 					_extraStatistics.EndOperation(processedEventId);
-				ResolvedEvent ev;
+				OutstandingMessage ev;
 				if (!_unconfirmedEvents.TryGetValue(processedEventId, out ev)) continue;
 				_unconfirmedEvents.Remove(processedEventId);
 				removedAny = true;
@@ -103,13 +103,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_envelope.ReplyWith(
 				new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt, retryCount));
 			if (!_unconfirmedEvents.ContainsKey(evnt.OriginalEvent.EventId)) {
-				_unconfirmedEvents.Add(evnt.OriginalEvent.EventId, evnt);
+				_unconfirmedEvents.Add(evnt.OriginalEvent.EventId, new OutstandingMessage(evnt.OriginalEvent.EventId, this, evnt, retryCount));
 			}
 
 			return true;
 		}
 
-		public IEnumerable<ResolvedEvent> GetUnconfirmedEvents() {
+		public IEnumerable<OutstandingMessage> GetUnconfirmedEvents() {
 			return _unconfirmedEvents.Values;
 		}
 
@@ -126,9 +126,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return AvailableSlots > 0;
 		}
 
-		private void OnEventConfirmed(ResolvedEvent ev) {
+		private void OnEventConfirmed(OutstandingMessage ev) {
 			var handler = EventConfirmed;
-			if (handler != null) handler(this, ev);
+			if (handler != null) handler(this, ev.ResolvedEvent);
 		}
 	}
 }

@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return _consumerStrategy.PushMessageToClient(ev, retryCount);
 		}
 
-		public IEnumerable<ResolvedEvent> RemoveClientByConnectionId(Guid connectionId) {
+		public IEnumerable<OutstandingMessage> RemoveClientByConnectionId(Guid connectionId) {
 			var clients = _hash.Values.Where(x => x.ConnectionId == connectionId).ToList();
 			return clients.SelectMany(client => RemoveClientByCorrelationId(client.CorrelationId, false));
 		}
@@ -39,9 +39,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		public IEnumerable<ResolvedEvent> RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification) {
+		public IEnumerable<OutstandingMessage> RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification) {
 			PersistentSubscriptionClient client;
-			if (!_hash.TryGetValue(correlationId, out client)) return new ResolvedEvent[0];
+			if (!_hash.TryGetValue(correlationId, out client)) return new OutstandingMessage[0];
 			_hash.Remove(client.CorrelationId);
 			_consumerStrategy.ClientRemoved(client);
 			if (sendDropNotification) {
