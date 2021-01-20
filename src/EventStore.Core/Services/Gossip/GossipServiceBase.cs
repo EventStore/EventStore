@@ -188,7 +188,7 @@ namespace EventStore.Core.Services.Gossip {
 				return;
 			}
 
-			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (Gossip send failed).", message.Recipient);
+			Log.Info("Looks like node [{nodeEndPoint}] is DEAD (Gossip send failed).", message.Recipient);
 
 			var oldCluster = _cluster;
 			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient)
@@ -205,7 +205,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (node == null || !node.IsAlive)
 				return;
 
-			Log.Trace("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
+			Log.Info("Looks like node [{nodeEndPoint}] is DEAD (TCP connection lost). Issuing a gossip to confirm.",
 				message.VNodeEndPoint);
 			_bus.Publish(new HttpMessage.SendOverHttp(node.InternalHttpEndPoint,
 				new GossipMessage.GetGossip(), _timeProvider.LocalTime.Add(GossipTimeout)));
@@ -215,7 +215,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			Log.Trace("Gossip Received, The node [{nodeEndpoint}] is not DEAD.", message.Server);
+			Log.Info("Gossip Received, The node [{nodeEndpoint}] is not DEAD.", message.Server);
 
 			var oldCluster = _cluster;
 			_cluster = MergeClusters(_cluster,
@@ -233,7 +233,7 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			Log.Trace("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
+			Log.Info("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
 				message.Recipient);
 
 			var oldCluster = _cluster;
