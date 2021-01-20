@@ -37,7 +37,7 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
-		private int _gossipExternalHttpPort = Consts.DefaultGossipPort;
+		private int _gossipExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Master;
