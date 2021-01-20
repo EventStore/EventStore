@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Storage {
 
 		private readonly IPublisher _publisher;
 		private readonly IReadIndex _readIndex;
-		private readonly ICheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly int _queueId;
 		private static readonly char[] LinkToSeparator = { '@' };
 		private const int MaxPageSize = 4096;
@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Storage {
 		private long _expiredBatchCount;
 		private bool _batchLoggingEnabled;
 
-		public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, ICheckpoint writerCheckpoint,
+		public StorageReaderWorker(IPublisher publisher, IReadIndex readIndex, IReadOnlyCheckpoint writerCheckpoint,
 			int queueId) {
 			Ensure.NotNull(publisher, "publisher");
 			Ensure.NotNull(readIndex, "readIndex");

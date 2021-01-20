@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.Storage {
 		public string Name => _queueStats.Name;
 
 		private readonly IPublisher _leaderBus;
-		private readonly ICheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly ITransactionFileChaser _chaser;
 		private readonly IIndexCommitterService _indexCommitterService;
 		private readonly IEpochManager _epochManager;
@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public StorageChaser(IPublisher leaderBus,
-			ICheckpoint writerCheckpoint,
+			IReadOnlyCheckpoint writerCheckpoint,
 			ITransactionFileChaser chaser,
 			IIndexCommitterService indexCommitterService,
 			IEpochManager epochManager,

@@ -21,9 +21,10 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<ReplicationTrackingMessage.WriterCheckpointFlushed>,
 		IHandle<ReplicationTrackingMessage.LeaderReplicatedTo>,
 		IHandle<SystemMessage.VNodeConnectionLost> {
-		private readonly ILogger _log = Serilog.Log.ForContext<ReplicationTrackingService>();		private readonly IPublisher _publisher;
+		private readonly ILogger _log = Serilog.Log.ForContext<ReplicationTrackingService>();
+		private readonly IPublisher _publisher;
 		private readonly ICheckpoint _replicationCheckpoint;
-		private readonly ICheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly int _quorumSize;
 		private Thread _thread;
 		private bool _stop;
@@ -42,7 +43,7 @@ namespace EventStore.Core.Services.Replication {
 			IPublisher publisher,
 			int clusterNodeCount,
 			ICheckpoint replicationCheckpoint,
-			ICheckpoint writerCheckpoint) {
+			IReadOnlyCheckpoint writerCheckpoint) {
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));

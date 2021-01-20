@@ -16,14 +16,14 @@ namespace EventStore.Core.Services.Monitoring {
 		internal static readonly Regex SpacesRegex = new Regex(@"[\s\t]+", RegexOptions.Compiled);
 
 		private readonly Serilog.ILogger _log;
-		private readonly ICheckpoint _writerCheckpoint;
+		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly string _dbPath;
 		private PerfCounterHelper _perfCounter;
 		private readonly EventCountersHelper _eventCountersHelper;
 		private readonly HostStat.HostStat _hostStat;
 		private bool _giveup;
 
-		public SystemStatsHelper(ILogger log, ICheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
+		public SystemStatsHelper(ILogger log, IReadOnlyCheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
 			Ensure.NotNull(log, "log");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 

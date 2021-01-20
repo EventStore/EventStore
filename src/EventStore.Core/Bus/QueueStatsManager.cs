@@ -10,8 +10,8 @@ using EventStore.Core.TransactionLog.Checkpoint;
 namespace EventStore.Core.Bus {
 	public class QueueStatsManager {
 #if DEBUG
-		private ICheckpoint _writerCheckpoint;
-		private ICheckpoint _chaserCheckpoint;
+		private IReadOnlyCheckpoint _writerCheckpoint;
+		private IReadOnlyCheckpoint _chaserCheckpoint;
 		private ConcurrentDictionary<QueueStatsCollector, bool> _queueStatsCollectors = new ConcurrentDictionary<QueueStatsCollector, bool>();
 #endif
 		public QueueStatsManager() {
@@ -80,10 +80,11 @@ namespace EventStore.Core.Bus {
 			return _writerCheckpoint!=null && _chaserCheckpoint!=null && _writerCheckpoint.ReadNonFlushed() != _chaserCheckpoint.Read();
 		}
 
-		public void InitializeCheckpoints(ICheckpoint writerCheckpoint,
-			ICheckpoint chaserCheckpoint) {
-			_chaserCheckpoint = chaserCheckpoint;
+		public void InitializeCheckpoints(
+			IReadOnlyCheckpoint writerCheckpoint,
+			IReadOnlyCheckpoint chaserCheckpoint) {
 			_writerCheckpoint = writerCheckpoint;
+			_chaserCheckpoint = chaserCheckpoint;
 		}
 #endif
 	}

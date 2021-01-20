@@ -240,7 +240,7 @@ namespace EventStore.Core {
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
-				db.Config.WriterCheckpoint,
+				db.Config.WriterCheckpoint.AsReadOnly(),
 				db.Config.Path,
 				vNodeSettings.StatsPeriod,
 				_nodeInfo.HttpEndPoint,
@@ -260,6 +260,7 @@ namespace EventStore.Core {
 			monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshStats>(monitoring);
 			monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshTcpConnectionStats>(monitoring);
 
+			// TRUNCATE IF NECESSARY
 			var truncPos = db.Config.TruncateCheckpoint.Read();
 			var writerCheckpoint = db.Config.WriterCheckpoint.Read();
 			var chaserCheckpoint = db.Config.ChaserCheckpoint.Read();
@@ -276,10 +277,16 @@ namespace EventStore.Core {
 			// STORAGE SUBSYSTEM
 			db.Open(vNodeSettings.VerifyDbHash, threads: vNodeSettings.InitializationThreads);
 			var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
+
 			var readerPool = new ObjectPool<ITransactionFileReader>(
-				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, vNodeSettings.PTableMaxReaderCount,
-				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
+				"ReadIndex readers pool",
+				ESConsts.PTableInitialReaderCount,
+				vNodeSettings.PTableMaxReaderCount,
+				() => new TFChunkReader(
+					db,
+					db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
+
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
 				new Murmur3AUnsafe(),
@@ -304,7 +311,7 @@ namespace EventStore.Core {
 				ESConsts.MetaStreamMaxCount,
 				vNodeSettings.HashCollisionReadLimit,
 				vNodeSettings.SkipIndexScanOnReads,
-				db.Config.ReplicationCheckpoint,
+				db.Config.ReplicationCheckpoint.AsReadOnly(),
 				db.Config.IndexCheckpoint);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(db);
@@ -314,7 +321,9 @@ namespace EventStore.Core {
 				writer,
 				initialReaderCount: 1,
 				maxReaderCount: 5,
-				readerFactory: () => new TFChunkReader(db, db.Config.WriterCheckpoint,
+				readerFactory: () => new TFChunkReader(
+					db,
+					db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache),
 				_nodeInfo.InstanceId);
 			epochManager.Init();
@@ -327,16 +336,20 @@ namespace EventStore.Core {
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
 			var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex,
-				vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint, _queueStatsManager);
+				vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
+
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
 
-			//REPLICATION TRACKING
-			var replicationTracker =
-				new ReplicationTrackingService(_mainQueue, vNodeSettings.ClusterNodeCount, db.Config.ReplicationCheckpoint, db.Config.WriterCheckpoint);
+			// REPLICATION TRACKING
+			var replicationTracker = new ReplicationTrackingService(
+				_mainQueue,
+				vNodeSettings.ClusterNodeCount,
+				db.Config.ReplicationCheckpoint,
+				db.Config.WriterCheckpoint.AsReadOnly());
 			AddTask(replicationTracker.Task);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(replicationTracker);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicationTracker);
@@ -347,7 +360,10 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(replicationTracker);
 
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
-				db.Config.WriterCheckpoint, db.Config.ReplicationCheckpoint, vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);
+				db.Config.WriterCheckpoint.AsReadOnly(),
+				db.Config.ReplicationCheckpoint.AsReadOnly(),
+				vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);
+
 			AddTask(indexCommitterService.Task);
 
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(indexCommitterService);
@@ -355,18 +371,30 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<StorageMessage.CommitAck>(indexCommitterService);
 			_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
-			var chaser = new TFChunkChaser(db, db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint,
+			var chaser = new TFChunkChaser(
+				db,
+				db.Config.WriterCheckpoint.AsReadOnly(),
+				db.Config.ChaserCheckpoint,
 				db.Config.OptimizeReadSideCache);
-			var storageChaser = new StorageChaser(_mainQueue, db.Config.WriterCheckpoint, chaser, indexCommitterService,
-				epochManager, _queueStatsManager);
+
+			var storageChaser = new StorageChaser(
+				_mainQueue,
+				db.Config.WriterCheckpoint.AsReadOnly(),
+				chaser,
+				indexCommitterService,
+				epochManager,
+				_queueStatsManager);
 			AddTask(storageChaser.Task);
 
 #if DEBUG
-			_queueStatsManager.InitializeCheckpoints(db.Config.WriterCheckpoint, db.Config.ChaserCheckpoint);
+			_queueStatsManager.InitializeCheckpoints(
+				db.Config.WriterCheckpoint.AsReadOnly(),
+				db.Config.ChaserCheckpoint.AsReadOnly());
 #endif
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageChaser);
+			// REPLICATION TRACKING END
 
 			var httpPipe = new HttpMessagePipe();
 			var httpSendService = new HttpSendService(httpPipe, true, _externalServerCertificateValidator);
@@ -739,8 +767,8 @@ namespace EventStore.Core {
 					_mainQueue, 
 					memberInfo, 
 					vNodeSettings.ClusterNodeCount,
-					db.Config.WriterCheckpoint, 
-					db.Config.ChaserCheckpoint,
+					db.Config.WriterCheckpoint.AsReadOnly(),
+					db.Config.ChaserCheckpoint.AsReadOnly(),
 					db.Config.ProposalCheckpoint,
 					epochManager,
 					() => readIndex.LastIndexedPosition, 
@@ -752,8 +780,13 @@ namespace EventStore.Core {
 			if (!isSingleNode || vNodeSettings.GossipOnSingleNode) {
 				// GOSSIP
 
-				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, memberInfo, db.Config.WriterCheckpoint,
-					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastIndexedPosition,
+				var gossip = new NodeGossipService(
+					_mainQueue,
+					gossipSeedSource,
+					memberInfo,
+					db.Config.WriterCheckpoint.AsReadOnly(),
+					db.Config.ChaserCheckpoint.AsReadOnly(),
+					epochManager, () => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference,
 					vNodeSettings.GossipTimeout,
 					vNodeSettings.DeadMemberRemovalPeriod,
