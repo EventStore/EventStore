@@ -23,7 +23,8 @@ namespace EventStore.ClientAPI.Internal {
 		private readonly TimeSpan _gossipTimeout;
 
 		private readonly NodePreference _nodePreference;
-		private readonly bool _legacyGossipDiscovery;
+		private readonly ICompatibilityMode _compatibilityMode;
+		private readonly bool _insecureMode;
 
 		public ClusterDnsEndPointDiscoverer(ILogger log,
 			string clusterDns,
@@ -32,9 +33,9 @@ namespace EventStore.ClientAPI.Internal {
 			GossipSeed[] gossipSeeds,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
-			bool legacyGossipDiscovery,
-			bool enableVersion5Compability,
-			HttpMessageHandler httpMessageHandler = null) {
+			ICompatibilityMode compatibilityMode,
+			HttpMessageHandler httpMessageHandler = null,
+			bool insecureMode = false) {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
@@ -44,9 +45,10 @@ namespace EventStore.ClientAPI.Internal {
 			_maxDiscoverAttempts = maxDiscoverAttempts;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
-			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler, enableVersion5Compability);
+			_compatibilityMode = compatibilityMode;
+			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler, _compatibilityMode);
 			_nodePreference = nodePreference;
-			_legacyGossipDiscovery = legacyGossipDiscovery;
+			_insecureMode = insecureMode;
 		}
 
 		public Task<NodeEndPoints> DiscoverAsync(EndPoint failedTcpEndPoint) {
@@ -103,7 +105,7 @@ namespace EventStore.ClientAPI.Internal {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
 			var endpoints = _gossipSeeds != null && _gossipSeeds.Length > 0
 				? _gossipSeeds
-				: new[] {new GossipSeed(_clusterDns, !_legacyGossipDiscovery)};
+				: new[] {new GossipSeed(_clusterDns, !(_insecureMode || _compatibilityMode.IsVersion5CompatibilityModeEnabled()))};
 
 			RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			return endpoints;

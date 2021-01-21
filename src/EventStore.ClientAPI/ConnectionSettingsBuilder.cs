@@ -36,12 +36,11 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
-		private bool _legacyGossipDiscovery;
 		private int _httpPort = Consts.DefaultHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Leader;
-		private bool _enableVersion5Compability;
+		private string _compatibilityMode = "";
 		private HttpMessageHandler _customHttpMessageHandler;
 
 		internal ConnectionSettingsBuilder() {
@@ -335,16 +334,6 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Sets whether the discover:// protocol will use non-TLS (http) instead of TLS (https).
-		/// </summary>
-		/// <param name="legacyGossipDiscovery">Whether we should use http not https for discover gossip.</param>
-		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
-		public ConnectionSettingsBuilder SetLegacyGossipDiscovery(bool legacyGossipDiscovery) {
-			_legacyGossipDiscovery = legacyGossipDiscovery;
-			return this;
-		}
-
-		/// <summary>
 		/// Sets the period after which gossip times out if none is received.
 		/// </summary>
 		/// <param name="timeout">The period after which gossip times out if none is received.</param>
@@ -453,11 +442,11 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Specifies if the client should run in Version 5 compability mode.
+		/// Specifies if the client should run in a specific version compatibility mode.
 		/// </summary>
 		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
-		public ConnectionSettingsBuilder SetVersion5Compability(bool value) {
-			_enableVersion5Compability = value;
+		public ConnectionSettingsBuilder SetCompatibilityMode(string value) {
+			_compatibilityMode = value;
 			return this;
 		}
 
@@ -497,11 +486,10 @@ namespace EventStore.ClientAPI {
 				_clusterDns,
 				_gossipSeeds,
 				_maxDiscoverAttempts,
-				_legacyGossipDiscovery,
 				_httpPort,
 				_gossipTimeout,
 				_nodePreference,
-				_enableVersion5Compability,
+				_compatibilityMode,
 				_customHttpMessageHandler);
 		}
 	}
