@@ -41,7 +41,7 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Leader;
-		private bool _enableVersion5Compability;
+		private string _compatibilityMode = "";
 		private HttpMessageHandler _customHttpMessageHandler;
 
 		internal ConnectionSettingsBuilder() {
@@ -453,11 +453,11 @@ namespace EventStore.ClientAPI {
 		}
 
 		/// <summary>
-		/// Specifies if the client should run in Version 5 compability mode.
+		/// Specifies if the client should run in a specific version compatibility mode.
 		/// </summary>
 		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
-		public ConnectionSettingsBuilder SetVersion5Compability(bool value) {
-			_enableVersion5Compability = value;
+		public ConnectionSettingsBuilder SetCompatibilityMode(string value) {
+			_compatibilityMode = value;
 			return this;
 		}
 
@@ -497,11 +497,10 @@ namespace EventStore.ClientAPI {
 				_clusterDns,
 				_gossipSeeds,
 				_maxDiscoverAttempts,
-				_legacyGossipDiscovery,
 				_httpPort,
 				_gossipTimeout,
 				_nodePreference,
-				_enableVersion5Compability,
+				_compatibilityMode,
 				_customHttpMessageHandler);
 		}
 	}
