@@ -101,8 +101,9 @@ namespace EventStore.ClientAPI {
 						connectionSettings.HeartbeatInterval, connectionSettings.HeartbeatTimeout,
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
 						connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
+						connectionSettings.LegacyGossipDiscovery,
 						connectionSettings.GossipPort, connectionSettings.GossipTimeout,
-						connectionSettings.NodePreference, connectionSettings.CustomHttpMessageHandler);
+						connectionSettings.NodePreference, connectionSettings.EnableVersion5Compability, connectionSettings.CustomHttpMessageHandler);
 				}
 
 				if (scheme == "discover") {
@@ -199,6 +200,8 @@ namespace EventStore.ClientAPI {
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
 				clusterSettings.NodePreference,
+				connectionSettings.LegacyGossipDiscovery,
+				connectionSettings.EnableVersion5Compability,
 				connectionSettings.CustomHttpMessageHandler);
 
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,

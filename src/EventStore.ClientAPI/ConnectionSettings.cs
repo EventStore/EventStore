@@ -21,6 +21,7 @@ namespace EventStore.ClientAPI {
 			get { return DefaultSettings.Value; }
 		}
 
+
 		/// <summary>
 		/// Creates a new set of <see cref="ConnectionSettings"/>.
 		/// </summary>
@@ -130,6 +131,12 @@ namespace EventStore.ClientAPI {
 		public readonly int MaxDiscoverAttempts;
 
 		/// <summary>
+		/// If true, use non-TLS for discover:// URIs
+		/// Useful for backwards compatibility with v5 clusters
+		/// </summary>
+		public bool LegacyGossipDiscovery;
+
+		/// <summary>
 		/// The well-known endpoint on which cluster nodes are running.
 		/// </summary>
 		public readonly int GossipPort;
@@ -154,6 +161,11 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		public readonly TimeSpan ClientConnectionTimeout;
 
+		/// <summary>
+		/// If true, switch the client into EventStoreDB Version 5 compatibility mode.
+		/// </summary>
+		public readonly bool EnableVersion5Compability;
+
 		internal ConnectionSettings(ILogger log,
 			bool verboseLogging,
 			int maxQueueSize,
@@ -175,9 +187,11 @@ namespace EventStore.ClientAPI {
 			string clusterDns,
 			GossipSeed[] gossipSeeds,
 			int maxDiscoverAttempts,
+			bool legacyGossipDiscovery,
 			int gossipPort,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
+			bool enableVersion5Compability,
 			HttpMessageHandler customHttpMessageHandler) {
 
 			Ensure.NotNull(log, "log");
@@ -219,9 +233,11 @@ namespace EventStore.ClientAPI {
 			ClusterDns = clusterDns;
 			GossipSeeds = gossipSeeds;
 			MaxDiscoverAttempts = maxDiscoverAttempts;
+			LegacyGossipDiscovery = legacyGossipDiscovery;
 			GossipPort = gossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
+			EnableVersion5Compability = enableVersion5Compability;
 			CustomHttpMessageHandler = customHttpMessageHandler;
 		}
 	}

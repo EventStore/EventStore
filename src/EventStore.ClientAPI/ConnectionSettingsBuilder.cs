@@ -36,12 +36,13 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
+		private bool _legacyGossipDiscovery;
 		private int _httpPort = Consts.DefaultHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Leader;
+		private bool _enableVersion5Compability;
 		private HttpMessageHandler _customHttpMessageHandler;
-
 
 		internal ConnectionSettingsBuilder() {
 		}
@@ -248,7 +249,7 @@ namespace EventStore.ClientAPI {
 			_defaultUserCredentials = userCredentials;
 			return this;
 		}
-		
+
 		/// <summary>
 		/// Disables TLS
 		/// </summary>
@@ -330,6 +331,16 @@ namespace EventStore.ClientAPI {
 					string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [1, infinity].",
 						maxDiscoverAttempts));
 			_maxDiscoverAttempts = maxDiscoverAttempts;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets whether the discover:// protocol will use non-TLS (http) instead of TLS (https).
+		/// </summary>
+		/// <param name="legacyGossipDiscovery">Whether we should use http not https for discover gossip.</param>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		public ConnectionSettingsBuilder SetLegacyGossipDiscovery(bool legacyGossipDiscovery) {
+			_legacyGossipDiscovery = legacyGossipDiscovery;
 			return this;
 		}
 
@@ -441,6 +452,14 @@ namespace EventStore.ClientAPI {
 			return this;
 		}
 
+		/// <summary>
+		/// Specifies if the client should run in Version 5 compability mode.
+		/// </summary>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		public ConnectionSettingsBuilder SetVersion5Compability(bool value) {
+			_enableVersion5Compability = value;
+			return this;
+		}
 
 		/// <summary>
 		/// Convert the mutable <see cref="ConnectionSettingsBuilder"/> object to an immutable
@@ -478,9 +497,11 @@ namespace EventStore.ClientAPI {
 				_clusterDns,
 				_gossipSeeds,
 				_maxDiscoverAttempts,
+				_legacyGossipDiscovery,
 				_httpPort,
 				_gossipTimeout,
 				_nodePreference,
+				_enableVersion5Compability,
 				_customHttpMessageHandler);
 		}
 	}
