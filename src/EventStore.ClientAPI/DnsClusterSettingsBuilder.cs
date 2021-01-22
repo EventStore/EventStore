@@ -9,7 +9,8 @@ namespace EventStore.ClientAPI {
 	/// using DNS discovery.
 	/// </summary>
 	public class DnsClusterSettingsBuilder {
-		private ClusterDnsSeed _clusterDns;
+		private string _clusterDns;
+		private bool _seedOverTls;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
 		private int _managerExternalHttpPort = Consts.DefaultClusterManagerExternalHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
@@ -23,7 +24,8 @@ namespace EventStore.ClientAPI {
 		/// <exception cref="ArgumentNullException">If <paramref name="clusterDns" /> is null or empty.</exception>
 		public DnsClusterSettingsBuilder SetClusterDns(string clusterDns, bool seedOverTls = false) {
 			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-			_clusterDns = new ClusterDnsSeed(clusterDns, seedOverTls);
+			_clusterDns = clusterDns;
+			_seedOverTls = seedOverTls;
 			return this;
 		}
 
@@ -121,7 +123,8 @@ namespace EventStore.ClientAPI {
 		/// Builds a <see cref="ClusterSettings"/> object from a <see cref="DnsClusterSettingsBuilder"/>.
 		/// </summary>
 		public ClusterSettings Build() {
-			return new ClusterSettings(this._clusterDns,
+			return new ClusterSettings(
+				new ClusterDnsSeed(string.Format("{0}:{1}",this._clusterDns, this._managerExternalHttpPort), _seedOverTls),
 				this._maxDiscoverAttempts,
 				this._managerExternalHttpPort,
 				this._gossipTimeout,
