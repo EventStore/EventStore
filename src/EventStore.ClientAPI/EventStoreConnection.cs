@@ -113,10 +113,6 @@ namespace EventStore.ClientAPI {
 						port,
 						connectionSettings.GossipTimeout, connectionSettings.NodePreference);
 
-					if (connectionSettings.UseSslConnection && string.IsNullOrEmpty(connectionSettings.TargetHost)) {
-						connectionSettings.UpdateTargetHost(uri.Host);
-					}
-
 					return Create(connectionSettings, clusterSettings, connectionName);
 				}
 

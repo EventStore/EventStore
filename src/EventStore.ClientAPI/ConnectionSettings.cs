@@ -107,7 +107,7 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// The host name of the server expected on the SSL certificate.
 		/// </summary>
-		public string TargetHost { get; private set;  }
+		public readonly string TargetHost;
 
 		/// <summary>
 		/// Whether to validate the server SSL certificate.
@@ -231,10 +231,6 @@ namespace EventStore.ClientAPI {
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
 			CustomHttpClient = customHttpClient;
-		}
-
-		internal void UpdateTargetHost(string host) {
-			TargetHost = host;
 		}
 	}
 }
