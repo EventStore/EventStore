@@ -67,14 +67,21 @@ namespace EventStore.ClientAPI.Transport.Http {
 		private void Receive(string method, string url, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException, string hostHeader = null) {
 			var request = new HttpRequestMessage();
-			request.RequestUri = new Uri(url);
+			var uriBuilder = new UriBuilder(url);
+
+			if (hostHeader != null) {
+				if (hostHeader == string.Empty) {
+					uriBuilder.Host = Dns.GetHostAddresses(uriBuilder.Uri.Host)[0].ToString();
+				} else {
+					uriBuilder.Host = hostHeader;
+				}
+			}
+
+			request.RequestUri = uriBuilder.Uri;
 			request.Method = new System.Net.Http.HttpMethod(method);
 
 			if (userCredentials != null)
 				AddAuthenticationHeader(request, userCredentials);
-
-			if (hostHeader != null)
-				request.Headers.Host = hostHeader;
 
 			var state = new ClientOperationState(request, onSuccess, onException);
 			_client.SendAsync(request).ContinueWith(RequestSent(state));
