@@ -6,7 +6,7 @@ namespace EventStore.ClientAPI.Transport.Http
 	public interface IHttpClient {
 		void Get(string url, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException,
-			string hostHeader = "");
+			string hostHeader = null);
 
 		void Post(string url, string body, string contentType, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException);

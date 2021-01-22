@@ -25,7 +25,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 
 		public void Get(string url, UserCredentials userCredentials,
 			Action<HttpResponse> onSuccess, Action<Exception> onException,
-			string hostHeader = "") {
+			string hostHeader = null) {
 			Ensure.NotNull(url, "url");
 			Ensure.NotNull(onSuccess, "onSuccess");
 			Ensure.NotNull(onException, "onException");
@@ -65,7 +65,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 		}
 
 		private void Receive(string method, string url, UserCredentials userCredentials,
-			Action<HttpResponse> onSuccess, Action<Exception> onException, string hostHeader = "") {
+			Action<HttpResponse> onSuccess, Action<Exception> onException, string hostHeader = null) {
 			var request = new HttpRequestMessage();
 			request.RequestUri = new Uri(url);
 			request.Method = new System.Net.Http.HttpMethod(method);
@@ -73,7 +73,7 @@ namespace EventStore.ClientAPI.Transport.Http {
 			if (userCredentials != null)
 				AddAuthenticationHeader(request, userCredentials);
 
-			if (!string.IsNullOrWhiteSpace(hostHeader))
+			if (hostHeader != null)
 				request.Headers.Host = hostHeader;
 
 			var state = new ClientOperationState(request, onSuccess, onException);
