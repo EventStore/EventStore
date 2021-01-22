@@ -107,7 +107,7 @@ namespace EventStore.ClientAPI {
 				}
 
 				if (scheme == "discover") {
-					var port = uri.Port == -1 ? 2113 : uri.Port;
+					var port = uri.Port == -1 ? throw new ArgumentException("Cluster gossip port not specified") : uri.Port;
 					var clusterDnsSeed = new ClusterDnsSeed(string.Format("{0}:{1}", uri.Host, port), connectionSettings.UseSslConnection);
 					var clusterSettings = new ClusterSettings(clusterDnsSeed, connectionSettings.MaxDiscoverAttempts,
 						port,
