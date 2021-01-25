@@ -14,11 +14,11 @@ services:
     command: >
       -c "es-gencert-cli create-ca -out /tmp/certs/ca &&
           es-gencert-cli create-node -ca-certificate /tmp/certs/ca/ca.crt -ca-key /tmp/certs/ca/ca.key -out \
-          /tmp/certs/node1 -ip-addresses 127.0.0.1,172.30.240.11 &&
+          /tmp/certs/node1 -ip-addresses 127.0.0.1,172.30.240.11 -dns-names localhost &&
           es-gencert-cli create-node -ca-certificate /tmp/certs/ca/ca.crt -ca-key /tmp/certs/ca/ca.key -out \
-          /tmp/certs/node2 -ip-addresses 127.0.0.1,172.30.240.12 &&
+          /tmp/certs/node2 -ip-addresses 127.0.0.1,172.30.240.12 -dns-names localhost &&
           es-gencert-cli create-node -ca-certificate /tmp/certs/ca/ca.crt -ca-key /tmp/certs/ca/ca.key -out \
-          /tmp/certs/node3 -ip-addresses 127.0.0.1,172.30.240.13"
+          /tmp/certs/node3 -ip-addresses 127.0.0.1,172.30.240.13 -dns-names localhost"
     user: "1000:1000"
     volumes:
       - "./certs:/tmp/certs"
