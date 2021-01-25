@@ -112,7 +112,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					Log.Debug("Subscription {subscriptionId}: read checkpoint {checkpoint}", _settings.SubscriptionId,
 						checkpoint.Value);
 					_streamBufferSource.SetResult(new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, true));
-					TryReadingNewBatch();
+					_settings.MessageParker.BeginLoadStats(TryReadingNewBatch);
 				}
 			}
 		}

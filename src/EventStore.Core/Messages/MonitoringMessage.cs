@@ -123,6 +123,7 @@ namespace EventStore.Core.Messages {
 			public int OutstandingMessagesCount { get; set; }
 			public string NamedConsumerStrategy { get; set; }
 			public int MaxSubscriberCount { get; set; }
+			public long ParkedMessageCount { get; set; }
 		}
 
 		public class ConnectionInfo {

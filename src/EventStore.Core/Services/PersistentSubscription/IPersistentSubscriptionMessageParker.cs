@@ -8,5 +8,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		void BeginReadEndSequence(Action<long?> completed);
 		void BeginMarkParkedMessagesReprocessed(long sequence);
 		void BeginDelete(Action<IPersistentSubscriptionMessageParker> completed);
+		long ParkedMessageCount { get; }
+		public void BeginLoadStats(Action completed);
 	}
 }

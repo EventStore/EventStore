@@ -46,6 +46,11 @@ namespace EventStore.ClientAPI.PersistentSubscriptions {
 		/// Number of items seen since last measurement on this connection (used as the basis for <see cref="AverageItemsPerSecond"/>).
 		/// </summary>
 		public long CountSinceLastMeasurement { get; set; }
+		
+		/// <summary>
+		/// Number of messages that have been parked on this subscription.
+		/// </summary>
+		public long ParkedMessageCount { get; set; }
 
 		/// <summary>
 		/// Last processed target stream version.
