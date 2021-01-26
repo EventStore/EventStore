@@ -1468,6 +1468,10 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			// Message 2 should be retried on client 1 as it wasn't acked.
 			Assert.AreEqual(2, client1Envelope.Replies.Count);
 			Assert.AreEqual(1, client2Envelope.Replies.Count);
+
+			// Retry count should have increased
+			Assert.AreEqual(1,
+				((ClientMessage.PersistentSubscriptionStreamEventAppeared)client1Envelope.Replies.Last()).RetryCount);
 		}
 
 		[Test]
@@ -1507,6 +1511,10 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			// Message 2 should be retried on client 1 as it wasn't acked.
 			Assert.AreEqual(2, client1Envelope.Replies.Count);
 			Assert.AreEqual(1, client2Envelope.Replies.Count);
+
+			// Retry count should have increased
+			Assert.AreEqual(1,
+				((ClientMessage.PersistentSubscriptionStreamEventAppeared)client1Envelope.Replies.Last()).RetryCount);
 		}
 	}
 

@@ -262,9 +262,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void RemoveClientByConnectionId(Guid connectionId) {
 			lock (_lock) {
 				var lostMessages =
-					_pushClients.RemoveClientByConnectionId(connectionId).OrderBy(v => v.OriginalEventNumber);
+					_pushClients.RemoveClientByConnectionId(connectionId).OrderBy(v => v.ResolvedEvent.OriginalEventNumber);
 				foreach (var m in lostMessages) {
-					RetryMessage(m, 0);
+					if (ActionTakenForRetriedMessage(m))
+						return;
+					RetryMessage(m.ResolvedEvent, m.RetryCount);
 				}
 
 				TryPushingMessagesToClients();
@@ -274,9 +276,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification) {
 			lock (_lock) {
 				var lostMessages = _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification)
-					.OrderBy(v => v.OriginalEventNumber);
+					.OrderBy(v => v.ResolvedEvent.OriginalEventNumber);
 				foreach (var m in lostMessages) {
-					RetryMessage(m, 0);
+					RetryMessage(m.ResolvedEvent, m.RetryCount);
 				}
 
 				TryPushingMessagesToClients();
