@@ -8,7 +8,6 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using Grpc.Core;
 using Serilog;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
@@ -24,18 +23,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly uint _maxSearchWindow;
-			private readonly uint _checkpointIntervalMultiplier;
 			private readonly Func<Position, Task> _checkpointReached;
 			private readonly TaskCompletionSource<bool> _subscriptionStarted;
 			private readonly CancellationToken _cancellationToken;
 			private readonly Channel<(ResolvedEvent?, Position?)> _channel;
 			private readonly uint _checkpointInterval;
 			private readonly SemaphoreSlim _semaphore;
+			private readonly TFPos _startPositionExclusive;
 
 			private ResolvedEvent? _current;
 			private bool _disposed;
 			private long _checkpointIntervalCounter;
-			private readonly TFPos _startPositionExclusive;
+			private Position _lastCheckpoint;
 
 			public ResolvedEvent Current => _current.GetValueOrDefault();
 			public Task Started => _subscriptionStarted.Task;
@@ -79,13 +78,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_maxSearchWindow = maxSearchWindow ?? ReadBatchSize;
-				_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
 				_checkpointReached = checkpointReached;
 				_cancellationToken = cancellationToken;
 				_subscriptionStarted = new TaskCompletionSource<bool>();
 				_channel = Channel.CreateBounded<(ResolvedEvent?, Position?)>(BoundedChannelOptions);
 				_checkpointInterval = checkpointIntervalMultiplier * _maxSearchWindow;
 				_semaphore = new SemaphoreSlim(1, 1);
+				_lastCheckpoint = Position.Start;
 
 				SubscriptionId = _subscriptionId.ToString();
 
@@ -139,8 +138,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return true;
 				}
 
-				if (position.HasValue) {
+				if (position.HasValue && position.Value > _lastCheckpoint) {
 					await _checkpointReached(position.Value).ConfigureAwait(false);
+					_lastCheckpoint = position.Value;
 				}
 
 				goto ReadLoop;
@@ -241,7 +241,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.FilteredSubscribeToStream(Guid.NewGuid(), _subscriptionId,
 					new ContinuationEnvelope(OnSubscriptionMessage, _semaphore, _cancellationToken), _subscriptionId,
-					string.Empty, _resolveLinks, _user, _eventFilter, (int)_checkpointIntervalMultiplier));
+					string.Empty, _resolveLinks, _user, _eventFilter, (int)_checkpointInterval));
 
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
 
