@@ -73,11 +73,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		[OneTimeTearDown]
-		public override async Task TestFixtureTearDown() {
-			this.Dispose();
-			await base.TestFixtureTearDown();
-		}
-		// epoch manager is stateful with TFLog, 
+		public override Task TestFixtureTearDown() => base.TestFixtureTearDown();
+
+		// epoch manager is stateful with TFLog,
 		// and TFLog is expesive to build fresh for each test
 		// and the tests depend on previous state in the epoch manager
 		// so this test will run through the test cases 
