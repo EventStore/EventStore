@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Performance counter error message on linux / macOS [EventStore#2775](https://github.com/EventStore/EventStore/pull/2775)
 - --insecure has stopped working after targeting .NET 5.0 [EventStore#2779](https://github.com/EventStore/EventStore/pull/2779)
 - failing test [EventStore#2788](https://github.com/EventStore/EventStore/pull/2788)
+- Track retry count for persistent subscription messages after a client has lost connection. [EventStore#2797](https://github.com/EventStore/EventStore/pull/2797)
 
 ### Ideally the `discover
 - //` protocol would stay non-TLS (HTTP) and we'd see the introduction of a `discovers://` (discover secure) scheme that uses HTTPS but I think that would be a breaking change now. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
