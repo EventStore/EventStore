@@ -219,12 +219,23 @@ namespace EventStore.Core.Tests.Helpers {
 						_started.TrySetResult(true);
 					}));
 			}
-			Node.MainBus.Subscribe(
-				new AdHocHandler<AuthenticationMessage.AuthenticationProviderInitialized>(m => {
-					_adminUserCreated.TrySetResult(true);
-				}));
+
+			AdHocHandler<StorageMessage.EventCommitted> waitForAdminUser = null;
+			waitForAdminUser = new AdHocHandler<StorageMessage.EventCommitted>(WaitForAdminUser);
+			Node.MainBus.Subscribe(waitForAdminUser);
+
+			void WaitForAdminUser(StorageMessage.EventCommitted m) {
+				if (m.Event.EventStreamId != "$user-admin") {
+					return;
+				}
+
+				_adminUserCreated.TrySetResult(true);
+				Node.MainBus.Unsubscribe(waitForAdminUser);
+			}
+
 			_host.Start();
 			Node.Start();
+
 		}
 
 		public HttpClient CreateHttpClient() {
