@@ -365,7 +365,8 @@ namespace EventStore.Transport.Tcp {
 						}
 					}
 
-					_sendingBytes = Math.Min((int)_memoryStream.Length - (int) _memoryStreamOffset, TcpConnection.MaxSendPacketSize);
+					/*the multiplier: 3 * MaxSendPacketSize was empirically tested on linux. A lower multiplier results in transfer speed regression with the mono runtime.*/
+					_sendingBytes = Math.Min((int)_memoryStream.Length - (int) _memoryStreamOffset, 3 * TcpConnection.MaxSendPacketSize);
 
 					NotifySendStarting(_sendingBytes);
 					var result = _sslStream.BeginWrite(_memoryStream.GetBuffer(), (int)_memoryStreamOffset, _sendingBytes, OnEndWrite, null);
