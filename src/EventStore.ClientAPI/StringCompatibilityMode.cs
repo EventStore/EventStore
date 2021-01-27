@@ -6,28 +6,33 @@ namespace EventStore.ClientAPI {
 	/// Parses a version string following that format X[.Y[.Z]]
 	/// </summary>
 	public class StringCompatibilityMode : ICompatibilityMode {
-	private readonly int _majorNum;
+		private readonly int? _majorNum;
+		private readonly bool _auto;
 
-	/// <summary>
-	/// Constructs a <see cref="StringCompatibilityMode"/>.
-	/// </summary>
-	/// <param name="compatibilityModeStr"></param>
-	public StringCompatibilityMode(string compatibilityModeStr) {
-		Ensure.NotNullOrEmpty(compatibilityModeStr, "compatibilityModeStr");
-		var splits = compatibilityModeStr.Split('.');
+		/// <summary>
+		/// Constructs a <see cref="StringCompatibilityMode"/>.
+		/// </summary>
+		/// <param name="compatibilityModeStr"></param>
+		public StringCompatibilityMode(string compatibilityModeStr) {
+			Ensure.NotNullOrEmpty(compatibilityModeStr, "compatibilityModeStr");
+			var splits = compatibilityModeStr.Split('.');
 
-		if (!int.TryParse(splits[0], out var majNum)) {
-			throw new ArgumentException($"Invalid compability version string {compatibilityModeStr}");
+			if (int.TryParse(splits[0], out var majNum)) {
+				_majorNum = majNum;
+			} else if (compatibilityModeStr.Trim().ToLowerInvariant() == "auto") {
+				_auto = true;
+			}
 		}
 
-		_majorNum = majNum;
-	}
+		public bool IsAutoCompatibilityModeEnabled() {
+			return _auto;
+		}
 
-	/// <summary>
-	/// Is EventStoreDB Version 5 compatibility mode enabled.
-	/// </summary>
-	public bool IsVersion5CompatibilityModeEnabled() {
-		return _majorNum == 5;
-	}
+		/// <summary>
+		/// Is EventStoreDB Version 5 compatibility mode enabled.
+		/// </summary>
+		public bool IsVersion5CompatibilityModeEnabled() {
+			return _majorNum == 5;
+		}
 	}
 }

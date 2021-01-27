@@ -7,5 +7,6 @@ namespace EventStore.ClientAPI {
 		/// Is EventStoreDB Version 5 compatibility mode enabled.
 		/// </summary>
 		public bool IsVersion5CompatibilityModeEnabled();
+		public bool IsAutoCompatibilityModeEnabled();
 	}
 }
