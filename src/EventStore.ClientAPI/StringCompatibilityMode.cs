@@ -24,6 +24,9 @@ namespace EventStore.ClientAPI {
 			}
 		}
 
+		/// <summary>
+		/// Is EventStoreDB Auto compatibility mode enabled.
+		/// </summary>
 		public bool IsAutoCompatibilityModeEnabled() {
 			return _auto;
 		}

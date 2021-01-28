@@ -36,7 +36,6 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _clientConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private string _clusterDns;
 		private int _maxDiscoverAttempts = Consts.DefaultMaxClusterDiscoverAttempts;
-		private bool _legacyGossipDiscovery;
 		private int _httpPort = Consts.DefaultHttpPort;
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
@@ -331,16 +330,6 @@ namespace EventStore.ClientAPI {
 					string.Format("maxDiscoverAttempts value is out of range: {0}. Allowed range: [1, infinity].",
 						maxDiscoverAttempts));
 			_maxDiscoverAttempts = maxDiscoverAttempts;
-			return this;
-		}
-
-		/// <summary>
-		/// Sets whether the discover:// protocol will use non-TLS (http) instead of TLS (https).
-		/// </summary>
-		/// <param name="legacyGossipDiscovery">Whether we should use http not https for discover gossip.</param>
-		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
-		public ConnectionSettingsBuilder SetLegacyGossipDiscovery(bool legacyGossipDiscovery) {
-			_legacyGossipDiscovery = legacyGossipDiscovery;
 			return this;
 		}
 
