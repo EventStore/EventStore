@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
@@ -94,6 +95,26 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			// we forwarding with InternalCorrId, not client's CorrelationId!!!
 			if (msg.User == UserManagement.SystemAccounts.System) {
 				return new TcpPackage(command, TcpFlags.TrustedWrite, msg.InternalCorrId, null, null, dto.Serialize());
+			}
+
+			foreach (var identity in msg.User.Identities) {
+				if (!(identity is DelegatedClaimsIdentity dci)) {
+					continue;
+				}
+
+				var jwtClaim = dci.FindFirst("jwt");
+				if (jwtClaim != null) {
+					return new TcpPackage(command, TcpFlags.Authenticated, msg.InternalCorrId, jwtClaim.Value,
+						dto.Serialize());
+				}
+
+				var uidClaim = dci.FindFirst("uid");
+				var pwdClaim = dci.FindFirst("pwd");
+
+				if (uidClaim != null && pwdClaim != null) {
+					return new TcpPackage(command, TcpFlags.Authenticated, msg.InternalCorrId, uidClaim.Value,
+						pwdClaim.Value, dto.Serialize());
+				}
 			}
 
 			return msg.Login != null && msg.Password != null

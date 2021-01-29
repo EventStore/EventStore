@@ -1,17 +1,24 @@
 ﻿using System;
+using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class PassthroughHttpAuthenticationProvider : IHttpAuthenticationProvider {
-		private readonly PassthroughAuthenticationProvider _passthroughAuthenticationProvider;
+		private readonly IAuthenticationProvider _passthroughAuthenticationProvider;
 
 		public PassthroughHttpAuthenticationProvider(IAuthenticationProvider internalAuthenticationProvider) {
-			if (!(internalAuthenticationProvider is PassthroughAuthenticationProvider passthroughAuthenticationProvider))
-				throw new ArgumentException("PassthroughHttpAuthenticationProvider can be initialized only with a PassthroughAuthenticationProvider");
-			_passthroughAuthenticationProvider = passthroughAuthenticationProvider;
+			_passthroughAuthenticationProvider = GetProvider(internalAuthenticationProvider);
 		}
+
+		private static PassthroughAuthenticationProvider GetProvider(IAuthenticationProvider provider) =>
+			provider switch {
+				PassthroughAuthenticationProvider p => p,
+				DelegatedAuthenticationProvider d => GetProvider(d.Inner),
+				_ => throw new ArgumentException(
+					"PassthroughHttpAuthenticationProvider can be initialized only with a PassthroughAuthenticationProvider.")
+			};
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
 			request = new HttpAuthenticationRequest(context, null, null);
