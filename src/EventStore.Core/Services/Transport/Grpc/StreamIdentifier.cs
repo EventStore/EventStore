@@ -13,10 +13,7 @@ namespace EventStore.Client.Shared  {
 			return source._cached;
 		}
 
-		public static implicit operator StreamIdentifier(string source) {
-			var result = new StreamIdentifier();
-			result.StreamName = ByteString.CopyFromUtf8(source);
-			return result;
-		}
+		public static implicit operator StreamIdentifier(string source) =>
+			new StreamIdentifier {StreamName = ByteString.CopyFromUtf8(source)};
 	}
 }

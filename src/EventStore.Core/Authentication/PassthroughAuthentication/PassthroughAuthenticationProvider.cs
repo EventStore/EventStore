@@ -4,7 +4,7 @@ using EventStore.Core.Services.UserManagement;
 using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Routing;
 
-namespace EventStore.Core.Authentication.InternalAuthentication {
+namespace EventStore.Core.Authentication.PassthroughAuthentication {
 	public class PassthroughAuthenticationProvider : IAuthenticationProvider {
 		public void Authenticate(AuthenticationRequest authenticationRequest) =>
 			authenticationRequest.Authenticated(SystemAccounts.System);

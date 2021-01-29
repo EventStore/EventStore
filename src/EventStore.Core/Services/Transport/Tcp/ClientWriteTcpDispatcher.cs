@@ -184,7 +184,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.TransactionWrite>();
 			if (dto == null) return null;
 
-			var events = new Event[dto.Events == null ? 0 : dto.Events.Length];
+			var events = new Event[dto.Events?.Length ?? 0];
 			for (int i = 0; i < events.Length; ++i) {
 				// ReSharper disable PossibleNullReferenceException
 				var e = dto.Events[i];

@@ -48,8 +48,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		public void Authenticate(AuthenticationRequest authenticationRequest) {
-			Tuple<string, ClaimsPrincipal> cached;
-			if (_userPasswordsCache.TryGet(authenticationRequest.Name, out cached)) {
+			if (_userPasswordsCache.TryGet(authenticationRequest.Name, out var cached)) {
 				AuthenticateWithPassword(authenticationRequest, cached.Item1, cached.Item2);
 			} else {
 				var userStreamId = "$user-" + authenticationRequest.Name;

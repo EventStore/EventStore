@@ -192,7 +192,7 @@ namespace EventStore.Core.Services {
 							request.Headers.Add(headerKey, srcReq.GetHeaderValues(headerKey).ToString());
 							break;
 					}
-				} catch (System.FormatException) {
+				} catch (FormatException) {
 					request.Headers.TryAddWithoutValidation(headerKey, srcReq.GetHeaderValues(headerKey).ToString());
 				}
 			}
