@@ -369,6 +369,7 @@ namespace EventStore.ClientAPI {
 		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
 		public ConnectionSettingsBuilder PreferFollowerNode() {
 			_nodePreference = NodePreference.Follower;
+			_requireLeader = false;
 			return this;
 		}
 
