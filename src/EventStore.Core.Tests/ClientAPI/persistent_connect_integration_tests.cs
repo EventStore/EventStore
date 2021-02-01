@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly ManualResetEvent _eventsReceived = new ManualResetEvent(false);
 		private int _eventReceivedCount;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
 		[Test]
 		public async Task Test() {
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly ManualResetEvent _eventsReceived = new ManualResetEvent(false);
 		private int _eventReceivedCount;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
 		[Test]
 		public async Task Test() {
@@ -112,7 +112,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly ManualResetEvent _eventsReceived = new ManualResetEvent(false);
 		private int _eventReceivedCount;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
+
 
 		[Test]
 		public async Task Test() {
@@ -160,7 +161,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly ManualResetEvent _eventsReceived = new ManualResetEvent(false);
 		private int _eventReceivedCount;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
+
 
 		[Test]
 		public async Task Test() {
@@ -208,7 +210,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly ManualResetEvent _eventsReceived = new ManualResetEvent(false);
 		private int _eventReceivedCount;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
 		[Test]
 		public async Task Test() {
@@ -260,7 +262,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly ManualResetEvent _eventsReceived = new ManualResetEvent(false);
 		private int _eventReceivedCount;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
 		[Test]
 		public async Task Test() {
@@ -310,7 +312,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly ManualResetEvent _eventsReceived = new ManualResetEvent(false);
 		private int _eventReceivedCount;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
 		[Test]
 		public async Task Test() {
@@ -358,7 +360,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private readonly TaskCompletionSource<bool> _eventReceived = new TaskCompletionSource<bool>();
 		private ResolvedEvent _receivedEvent;
 
-		protected override Task When() => Task.CompletedTask;
+		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
 		[Test]
 		public async Task Test() {
