@@ -44,7 +44,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			bool stopOnEof,
 			bool isBiState,
 			bool orderedPartitionProcessing,
-			IEmittedStreamsTracker emittedStreamsTracker)
+			IEmittedStreamsTracker emittedStreamsTracker,
+			bool enableContentTypeValidation)
 			: base(
 				publisher,
 				inputQueue,
@@ -64,7 +65,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				stopOnEof,
 				orderedPartitionProcessing,
 				isBiState,
-				emittedStreamsTracker) {
+				emittedStreamsTracker,
+				enableContentTypeValidation) {
 			_projectionStateHandler = projectionStateHandler;
 			_definesStateTransform = definesStateTransform;
 			_statePartitionSelector = statePartitionSelector;

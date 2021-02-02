@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Services {
 		/// </summary>
 		/// <returns>true - if event was processed (new state must be returned) </returns>
 		bool ProcessEvent(
-			string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
+			string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event, out string newState,
 			out string newSharedState, out EmittedEventEnvelope[] emittedEvents);
 
 		/// <summary>
@@ -35,11 +35,11 @@ namespace EventStore.Projections.Core.Services {
 		/// </summary>
 		/// <param name="partition"></param>
 		/// <param name="createPosition"></param>
-		/// <param name="data"></param>
+		/// <param name="event"></param>
 		/// <param name="emittedEvents"></param>
 		/// <returns>true - if notification was processed (new state must be returned)</returns>
 		bool ProcessPartitionCreated(
-			string partition, CheckpointTag createPosition, ResolvedEvent data,
+			string partition, CheckpointTag createPosition, ResolvedEvent @event,
 			out EmittedEventEnvelope[] emittedEvents);
 
 		/// <summary>

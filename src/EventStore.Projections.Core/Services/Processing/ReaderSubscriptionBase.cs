@@ -4,6 +4,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class ReaderSubscriptionBase {
@@ -27,6 +28,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private DateTime _lastProgressPublished;
 		private TimeSpan _checkpointAfter;
 		private DateTime _lastCheckpointTime = DateTime.MinValue;
+		private bool _enableContentTypeValidation;
+		private ILogger _logger;
 
 		protected ReaderSubscriptionBase(
 			IPublisher publisher,
@@ -38,7 +41,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			int? checkpointProcessedEventsThreshold,
 			int checkpointAfterMs,
 			bool stopOnEof,
-			int? stopAfterNEvents) {
+			int? stopAfterNEvents,
+			bool enableContentTypeValidation) {
 			if (publisher == null) throw new ArgumentNullException("publisher");
 			if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
 			if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -61,6 +65,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_positionTagger = readerStrategy.PositionTagger;
 			_positionTracker = new PositionTracker(_positionTagger);
 			_positionTracker.UpdateByCheckpointTagInitial(@from);
+			_enableContentTypeValidation = enableContentTypeValidation;
+			_logger = Serilog.Log.ForContext<ReaderSubscriptionBase>();
 		}
 
 		public string Tag {
@@ -82,6 +88,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			bool passesStreamSourceFilter = _eventFilter.PassesSource(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType);
 			bool passesEventFilter = _eventFilter.Passes(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType, message.Data.IsStreamDeletedEvent);
+			bool isValid = !_enableContentTypeValidation || _eventFilter.PassesValidation(message.Data.IsJson, message.Data.Data);
+			if (!isValid) {
+				_logger.Verbose($"Event {message.Data.EventSequenceNumber}@{message.Data.EventStreamId} is not valid json. Data: ({message.Data.Data})");
+			}
+
 			CheckpointTag eventCheckpointTag = null;
 
 			if (passesStreamSourceFilter) {
@@ -101,7 +112,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			var now = _timeProvider.UtcNow;
 			var timeDifference = now - _lastCheckpointTime;
-			if (passesEventFilter) {
+			if (isValid && passesEventFilter) {
 				Debug.Assert(passesStreamSourceFilter, "Event passes event filter but not source filter");
 				Debug.Assert(eventCheckpointTag != null, "Event checkpoint tag is null");
 

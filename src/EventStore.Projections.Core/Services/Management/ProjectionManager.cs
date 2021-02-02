@@ -1171,7 +1171,8 @@ namespace EventStore.Projections.Core.Services.Management {
 						MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight,
 						Epoch = -1,
 						Version = version,
-						RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null
+						RunAs = _enableRunAs ? SerializedRunAs.SerializePrincipal(_runAs) : null,
+						ProjectionSubsystemVersion = ProjectionsSubsystem.VERSION
 					},
 					_replyEnvelope);
 			}

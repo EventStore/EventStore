@@ -49,7 +49,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_wi
 				_readerSubscriptionOptions = new ReaderSubscriptionOptions(
 					checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100,
 					checkpointAfterMs: 10000, stopOnEof: true,
-					stopAfterNEvents: null);
+					stopAfterNEvents: null,
+					enableContentTypeValidation: true);
 			}
 
 			protected override IEnumerable<WhenStep> When() {

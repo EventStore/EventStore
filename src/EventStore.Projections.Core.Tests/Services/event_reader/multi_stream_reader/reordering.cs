@@ -23,8 +23,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 			protected override void Given() {
 				base.Given();
 				AllWritesSucceed();
-				ExistingEvent("stream-a", "type1", "{}", "{Data: 1}");
-				ExistingEvent("stream-b", "type1", "{}", "{Data: 2}");
+				ExistingEvent("stream-a", "type1", "{}", "{\"Data\": 1}");
+				ExistingEvent("stream-b", "type1", "{}", "{\"Data\": 2}");
 
 				GivenOtherEvents();
 
@@ -45,7 +45,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 				_readerSubscriptionOptions = new ReaderSubscriptionOptions(
 					checkpointUnhandledBytesThreshold: 10000, checkpointProcessedEventsThreshold: 100,
 					checkpointAfterMs: 10000, stopOnEof: false,
-					stopAfterNEvents: null);
+					stopAfterNEvents: null,
+					enableContentTypeValidation: false);
 			}
 
 			protected abstract void GivenOtherEvents();
