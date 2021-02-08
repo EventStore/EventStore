@@ -2,25 +2,22 @@
 using System.Net;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Integration {
 	public class specification_with_cluster : SpecificationWithDirectoryPerTestFixture {
-		protected MiniClusterNode[] _nodes = new MiniClusterNode[3];
-		protected Endpoints[] _nodeEndpoints = new Endpoints[3];
+		protected readonly MiniClusterNode[] _nodes = new MiniClusterNode[3];
+		protected readonly Endpoints[] _nodeEndpoints = new Endpoints[3];
 		protected IEventStoreConnection _conn;
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 
-		protected Dictionary<int, Func<bool, MiniClusterNode>> _nodeCreationFactory =
+		private readonly Dictionary<int, Func<bool, MiniClusterNode>> _nodeCreationFactory =
 			new Dictionary<int, Func<bool, MiniClusterNode>>();
-
 
 		protected class Endpoints {
 			public readonly IPEndPoint InternalTcp;
@@ -79,9 +76,8 @@ namespace EventStore.Core.Tests.Integration {
 				}
 			}
 
-			private IPEndPoint CopyEndpoint(IPEndPoint endpoint) {
-				return new IPEndPoint(endpoint.Address, endpoint.Port);
-			}
+			private static IPEndPoint CopyEndpoint(IPEndPoint endpoint) =>
+				new IPEndPoint(endpoint.Address, endpoint.Port);
 		}
 
 		[OneTimeSetUp]
@@ -133,28 +129,22 @@ namespace EventStore.Core.Tests.Integration {
 			await Given();
 		}
 
-		protected virtual IEventStoreConnection CreateConnection() {
-			return EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
-		}
+		protected virtual IEventStoreConnection CreateConnection() =>
+			EventStoreConnection.Create(_nodes[0].ExternalTcpEndPoint);
 
 		protected virtual void BeforeNodesStart() {
 		}
 
 		protected virtual Task Given() => Task.CompletedTask;
 
-		protected Task ShutdownNode(int nodeNum) {
-			return _nodes[nodeNum].Shutdown(keepDb: true);
-		}
+		protected Task ShutdownNode(int nodeNum) => _nodes[nodeNum].Shutdown(keepDb: true);
 
 		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
-			bool wait = true) {
-			var node = new MiniClusterNode(
-				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec,
-				endpoints.ExternalTcp,
-				endpoints.ExternalTcpSec, endpoints.HttpEndPoint, skipInitializeStandardUsersCheck: false,
-				subsystems: new ISubsystem[] { }, gossipSeeds: gossipSeeds, inMemDb: false);
-			return node;
-		}
+			bool wait = true) => new MiniClusterNode(
+			PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec,
+			endpoints.ExternalTcp,
+			endpoints.ExternalTcpSec, endpoints.HttpEndPoint, skipInitializeStandardUsersCheck: false,
+			subsystems: Array.Empty<ISubsystem>(), gossipSeeds: gossipSeeds, inMemDb: false);
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
@@ -170,12 +160,8 @@ namespace EventStore.Core.Tests.Integration {
 		protected static void WaitIdle() {
 		}
 
-		protected MiniClusterNode GetLeader() {
-			return _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
-		}
+		protected MiniClusterNode GetLeader() => _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
 
-		protected MiniClusterNode[] GetFollowers() {
-			return _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
-		}
+		protected MiniClusterNode[] GetFollowers() => _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
 	}
 }

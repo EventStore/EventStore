@@ -2,8 +2,7 @@
 using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Http;
 
-namespace EventStore.Core.Authentication
-{
+namespace EventStore.Core.Authentication {
 	public class AuthenticationProviderFactoryComponents {
 		public IPublisher MainQueue { get; set; }
 		public ISubscriber MainBus { get; set; }

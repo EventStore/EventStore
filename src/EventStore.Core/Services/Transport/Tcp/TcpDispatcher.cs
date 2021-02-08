@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_unwrappers[1] =
 				new Func<TcpPackage, IEnvelope, ClaimsPrincipal, IReadOnlyDictionary<string, string>, TcpConnectionManager, Message>[255];
 
-			_wrappers = new Dictionary<Type, Func<Message, TcpPackage>>[2];
+			_wrappers = new IDictionary<Type, Func<Message, TcpPackage>>[2];
 			_wrappers[0] = new Dictionary<Type, Func<Message, TcpPackage>>();
 			_wrappers[1] = new Dictionary<Type, Func<Message, TcpPackage>>();
 		}
@@ -72,13 +72,12 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		public TcpPackage? WrapMessage(Message message, byte version) {
 			if (message == null)
-				throw new ArgumentNullException("message");
+				throw new ArgumentNullException(nameof(message));
 
 			try {
-				Func<Message, TcpPackage> wrapper;
-				if (_wrappers[version].TryGetValue(message.GetType(), out wrapper))
+				if (_wrappers[version].TryGetValue(message.GetType(), out var wrapper))
 					return wrapper(message);
-				if (_wrappers[_wrappers.Length - 1].TryGetValue(message.GetType(), out wrapper))
+				if (_wrappers[^1].TryGetValue(message.GetType(), out wrapper))
 					return wrapper(message);
 			} catch (Exception exc) {
 				Log.Error(exc, "Error while wrapping message {message}.", message);

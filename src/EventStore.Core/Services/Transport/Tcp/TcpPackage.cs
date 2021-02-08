@@ -32,11 +32,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly string _password;
 		private readonly string _authToken;
 
-		public IReadOnlyDictionary<string, string> Tokens => _login == null && _authToken == null
-			? NotAuthenticated
-			: _login == null
-				? new Dictionary<string, string> {["jwt"] = _authToken}
-				: new Dictionary<string, string> {["uid"] = _login, ["pwd"] = _password};
+		public IReadOnlyDictionary<string, string> Tokens => (_login, _authToken) switch {
+			(null, null) => NotAuthenticated,
+			(null, _) => new Dictionary<string, string> {["jwt"] = _authToken},
+			_ => new Dictionary<string, string> {["uid"] = _login, ["pwd"] = _password}
+		};
 
 		public static TcpPackage FromArraySegment(ArraySegment<byte> data) {
 			if (data.Count < MandatorySize)
