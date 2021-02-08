@@ -11,6 +11,8 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
@@ -39,6 +41,11 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly HttpMessageHandler HttpMessageHandler;
 
 		private readonly TestServer _kestrelTestServer;
+		private readonly TaskCompletionSource<bool> _started;
+		private readonly TaskCompletionSource<bool> _adminUserCreated;
+
+		public Task Started => _started.Task;
+		public Task AdminUserCreated => _adminUserCreated.Task;
 
 		public MiniNode(string pathname,
 			int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null,
@@ -150,6 +157,8 @@ namespace EventStore.Core.Tests.Helpers {
 			_kestrelTestServer = new TestServer(new WebHostBuilder()
 				.UseKestrel()
 				.UseStartup(Node.Startup));
+			_started = new TaskCompletionSource<bool>();
+			_adminUserCreated = new TaskCompletionSource<bool>();
 			HttpMessageHandler = _kestrelTestServer.CreateHandler();
 			HttpClient = new HttpClient(HttpMessageHandler) {
 				BaseAddress = new UriBuilder {
@@ -160,6 +169,23 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public async Task Start() {
 			StartingTime.Start();
+			Node.MainBus.Subscribe(
+				new AdHocHandler<SystemMessage.BecomeLeader>(m => {
+					_started.TrySetResult(true);
+				}));
+
+			AdHocHandler<StorageMessage.EventCommitted> waitForAdminUser = null;
+			waitForAdminUser = new AdHocHandler<StorageMessage.EventCommitted>(WaitForAdminUser);
+			Node.MainBus.Subscribe(waitForAdminUser);
+
+			void WaitForAdminUser(StorageMessage.EventCommitted m) {
+				if (m.Event.EventStreamId != "$user-admin") {
+					return;
+				}
+
+				_adminUserCreated.TrySetResult(true);
+				Node.MainBus.Unsubscribe(waitForAdminUser);
+			}
 
 			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60))
 				.ConfigureAwait(false); //starts the node
