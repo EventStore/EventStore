@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - failing test [EventStore#2788](https://github.com/EventStore/EventStore/pull/2788)
 - Track retry count for persistent subscription messages after a client has lost connection. [EventStore#2797](https://github.com/EventStore/EventStore/pull/2797)
 - failing test [EventStore#2800](https://github.com/EventStore/EventStore/pull/2800)
+- Permission Denied when performing privileged commands on a follower [EventStore#2803](https://github.com/EventStore/EventStore/pull/2803)
 
 ### Ideally the `discover
 - //` protocol would stay non-TLS (HTTP) and we'd see the introduction of a `discovers://` (discover secure) scheme that uses HTTPS but I think that would be a breaking change now. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
