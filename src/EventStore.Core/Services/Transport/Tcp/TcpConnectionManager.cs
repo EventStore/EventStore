@@ -429,10 +429,10 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			 */
 			else if (message.SendProgressIndicator == sendProgressIndicator) {
 				SendPackage(new TcpPackage(TcpCommand.HeartbeatRequestCommand, Guid.NewGuid(), null));
-				Log.Trace(
-					"Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] Proactive heartbeat request sent to the remote party since no data was sent during the last heartbeat interval.",
-					ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
-					_connection.RemoteEndPoint, ConnectionId);
+				//Log.Trace(
+				//	"Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] Proactive heartbeat request sent to the remote party since no data was sent during the last heartbeat interval.",
+				//	ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
+				//	_connection.RemoteEndPoint, ConnectionId);
 			}
 
 			//schedule the next heartbeat regardless of whether or not there's an active heartbeat request
