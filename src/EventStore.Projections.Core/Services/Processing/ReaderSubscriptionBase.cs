@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
@@ -79,30 +80,31 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var roundedProgress = (float)Math.Round(message.Progress, 1);
 			bool progressChanged = _progress != roundedProgress;
 
-			// NOTE: after joining heading distribution point it delivers all cached events to the subscription
-			// some of this events we may have already received. The delivered events may have different order 
-			// (in case of partially ordered cases multi-stream reader etc). We discard all the messages that are not 
-			// after the last available checkpoint tag
+			bool passesStreamSourceFilter = _eventFilter.PassesSource(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType);
+			bool passesEventFilter = _eventFilter.Passes(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType, message.Data.IsStreamDeletedEvent);
+			CheckpointTag eventCheckpointTag = null;
 
-			//NOTE: older events can appear here when replaying events from the heading event reader
-			//      or when event-by-type-index reader reads TF and both event and resolved-event appear as output
+			if (passesStreamSourceFilter) {
+				// NOTE: after joining heading distribution point it delivers all cached events to the subscription
+				// some of this events we may have already received. The delivered events may have different order
+				// (in case of partially ordered cases multi-stream reader etc). We discard all the messages that are not
+				// after the last available checkpoint tag
 
-			if (!_positionTagger.IsMessageAfterCheckpointTag(_positionTracker.LastTag, message)) {
-/*
-                _logger.Trace(
-                    "Skipping replayed event {positionSequenceNumber}@{positionStreamId} at position {position}. the last processed event checkpoint tag is: {lastTag}",
-                    message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
-*/
-				return;
+				//NOTE: older events can appear here when replaying events from the heading event reader
+				//      or when event-by-type-index reader reads TF and both event and resolved-event appear as output
+				if (!_positionTagger.IsMessageAfterCheckpointTag(_positionTracker.LastTag, message))
+					return;
+
+				eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+				_positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
 			}
 
-			var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
-			_positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
 			var now = _timeProvider.UtcNow;
 			var timeDifference = now - _lastCheckpointTime;
-			if (_eventFilter.Passes(
-				message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType,
-				message.Data.IsStreamDeletedEvent)) {
+			if (passesEventFilter) {
+				Debug.Assert(passesStreamSourceFilter, "Event passes event filter but not source filter");
+				Debug.Assert(eventCheckpointTag != null, "Event checkpoint tag is null");
+
 				_lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
 				var convertedMessage =
 					EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
