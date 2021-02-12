@@ -11,15 +11,17 @@ namespace EventStore.Projections.Core.Services.Processing {
 		protected readonly IQuerySources _sourceDefinition;
 		private readonly ReaderSubscriptionDispatcher _subscriptionDispatcher;
 		private readonly bool _isBiState;
+		protected readonly bool _enableContentTypeValidation;
 
 		protected EventReaderBasedProjectionProcessingStrategy(
 			string name, ProjectionVersion projectionVersion, ProjectionConfig projectionConfig,
-			IQuerySources sourceDefinition, Serilog.ILogger logger, ReaderSubscriptionDispatcher subscriptionDispatcher)
+			IQuerySources sourceDefinition, Serilog.ILogger logger, ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation)
 			: base(name, projectionVersion, logger) {
 			_projectionConfig = projectionConfig;
 			_sourceDefinition = sourceDefinition;
 			_subscriptionDispatcher = subscriptionDispatcher;
 			_isBiState = sourceDefinition.IsBiState;
+			_enableContentTypeValidation = enableContentTypeValidation;
 		}
 
 		public override sealed IProjectionProcessingPhase[] CreateProcessingPhases(
@@ -167,8 +169,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		protected DefaultProjectionProcessingStrategy(
 			string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
 			ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-			ReaderSubscriptionDispatcher subscriptionDispatcher)
-			: base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher) {
+			ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation)
+			: base(name, projectionVersion, projectionConfig, sourceDefinition, logger, subscriptionDispatcher, enableContentTypeValidation) {
 			_stateHandler = stateHandler;
 		}
 
@@ -210,7 +212,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				this.GetStopOnEof(),
 				_sourceDefinition.IsBiState,
 				orderedPartitionProcessing: orderedPartitionProcessing,
-				emittedStreamsTracker: emittedStreamsTracker);
+				emittedStreamsTracker: emittedStreamsTracker,
+				enableContentTypeValidation: _enableContentTypeValidation);
 		}
 
 		protected virtual StatePartitionSelector CreateStatePartitionSelector() {

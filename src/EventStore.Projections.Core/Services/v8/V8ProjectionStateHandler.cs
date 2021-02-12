@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.Serialization;
 using EventStore.Common.Utils;
-using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.v8;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Linq;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.v8 {
@@ -21,10 +18,11 @@ namespace EventStore.Projections.Core.Services.v8 {
 		private bool _disposed;
 		private static readonly char[] LinkToSeparator = { '@' };
 		private static readonly string LinkType = "$>";
+		private bool _enableContentTypeValidation;
 
 		public V8ProjectionStateHandler(
 			string preludeName, string querySource, Func<string, Tuple<string, string>> getModuleSource,
-			Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory) {
+			Action<string, object[]> logger, Action<int, Action> cancelCallbackFactory, bool enableContentTypeValidation) {
 			var preludeSource = getModuleSource(preludeName);
 			var prelude = new PreludeScript(preludeSource.Item1, preludeSource.Item2, getModuleSource,
 				cancelCallbackFactory, logger);
@@ -39,6 +37,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			_prelude = prelude;
 			_query = query;
+			_enableContentTypeValidation = enableContentTypeValidation;
 		}
 
 		[DataContract]
@@ -60,6 +59,12 @@ namespace EventStore.Projections.Core.Services.v8 {
 			}
 		}
 
+		private string GetEventData(ResolvedEvent evnt) {
+			if (_enableContentTypeValidation) {
+				return (evnt.IsJson ? evnt.Data : evnt.Data ?? string.Empty)?.Trim();
+			}
+			return evnt.Data?.Trim();
+		}
 
 		private void QueryOnEmit(string json) {
 			EmittedEventJsonContract emittedEvent;
@@ -122,7 +127,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			CheckDisposed();
 			if (@event == null) throw new ArgumentNullException("event");
 			var partition = _query.GetPartition(
-				@event.Data.Trim(), // trimming data passed to a JS 
+				GetEventData(@event),
 				new string[] {
 					@event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
 					@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
@@ -135,23 +140,25 @@ namespace EventStore.Projections.Core.Services.v8 {
 		}
 
 		public bool ProcessEvent(
-			string partition, CheckpointTag eventPosition, string category, ResolvedEvent data, out string newState,
+			string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event, out string newState,
 			out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
 			CheckDisposed();
 			_eventPosition = eventPosition;
 			_emittedEvents = null;
 			Tuple<string, string> newStates = null;
-			if (data == null || data.Data == null) {
+
+			var data = GetEventData(@event);
+			if (@event == null || data == null) {
 				newStates = _query.Push(
 					"",
 					new string[] { });
 			} else {
 				newStates = _query.Push(
-					data.Data.Trim(), // trimming data passed to a JS 
+					data,
 					new[] {
-						data.IsJson ? "1" : "", data.EventStreamId, data.EventType, category ?? "",
-						data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
-						data.PositionMetadata ?? "", partition, ""
+						@event.IsJson ? "1" : "", @event.EventStreamId, @event.EventType, category ?? "",
+						@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+						@event.PositionMetadata ?? "", partition, ""
 					});
 			}
 
@@ -177,22 +184,24 @@ namespace EventStore.Projections.Core.Services.v8 {
 			return true;
 		}
 
-		public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent data,
+		public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent @event,
 			out EmittedEventEnvelope[] emittedEvents) {
 			CheckDisposed();
 			_eventPosition = createPosition;
 			_emittedEvents = null;
-			if (data == null || data.Data == null) {
+
+			var data = GetEventData(@event);
+			if (@event == null || data == null) {
 				emittedEvents = null;
 				return true;
 			}
 
 			_query.NotifyCreated(
-				data.Data.Trim(), // trimming data passed to a JS 
+				data,
 				new[] {
-					data.IsJson ? "1" : "", data.EventStreamId, data.EventType, "",
-					data.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), data.Metadata ?? "",
-					data.PositionMetadata ?? "", partition, ""
+					@event.IsJson ? "1" : "", @event.EventStreamId, @event.EventType, "",
+					@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+					@event.PositionMetadata ?? "", partition, ""
 				});
 			emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
 			return true;

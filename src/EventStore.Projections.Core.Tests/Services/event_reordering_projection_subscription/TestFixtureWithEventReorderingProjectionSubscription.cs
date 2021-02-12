@@ -32,7 +32,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reordering_projection
 				_readerStrategy,
 				_timeProvider,
 				_checkpointUnhandledBytesThreshold, _checkpointProcessedEventsThreshold, _checkpointAfterMs,
-				_processingLagMs);
+				_processingLagMs,
+				false,
+				null,
+				false);
 		}
 	}
 }

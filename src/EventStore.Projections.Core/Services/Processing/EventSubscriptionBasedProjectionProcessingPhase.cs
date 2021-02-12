@@ -43,6 +43,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		protected readonly bool _stopOnEof;
 		private readonly bool _isBiState;
 		protected readonly IEmittedStreamsTracker _emittedStreamsTracker;
+		protected readonly bool _enableContentTypeValidation;
 
 		private readonly Action _updateStatistics;
 
@@ -65,7 +66,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			bool stopOnEof,
 			bool orderedPartitionProcessing,
 			bool isBiState,
-			IEmittedStreamsTracker emittedStreamsTracker) {
+			IEmittedStreamsTracker emittedStreamsTracker,
+			bool enableContentTypeValidation) {
 			_publisher = publisher;
 			_inputQueue = inputQueue;
 			_coreProjection = coreProjection;
@@ -90,6 +92,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_progressResultWriter = new ProgressResultWriter(this, _resultWriter);
 			_inutQueueEnvelope = new PublishEnvelope(_inputQueue);
 			_emittedStreamsTracker = emittedStreamsTracker;
+			_enableContentTypeValidation = enableContentTypeValidation;
 		}
 
 		public void UnlockAndForgetBefore(CheckpointTag checkpointTag) {
@@ -275,7 +278,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return new ReaderSubscriptionOptions(
 				_projectionConfig.CheckpointUnhandledBytesThreshold, _projectionConfig.CheckpointHandledThreshold,
 				_projectionConfig.CheckpointAfterMs,
-				_stopOnEof, stopAfterNEvents: null);
+				_stopOnEof, stopAfterNEvents: null, _enableContentTypeValidation);
 		}
 
 		protected void SubscribeReaders(CheckpointTag checkpointTag) {

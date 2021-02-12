@@ -30,14 +30,14 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 
 		[Test, Category("v8")]
 		public void it_can_be_created() {
-			using (_stateHandlerFactory.Create("JS", @"")) {
+			using (_stateHandlerFactory.Create("JS", @"", true)) {
 			}
 		}
 
 		[Test, Category("v8")]
 		public void it_can_log_messages() {
 			string m = null;
-			using (_stateHandlerFactory.Create("JS", @"log(""Message1"");", logger: (s, _) => m = s)) {
+			using (_stateHandlerFactory.Create("JS", @"log(""Message1"");", true, logger: (s, _) => m = s)) {
 			}
 
 			Assert.AreEqual("Message1", m);
@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 		[Test, Category("v8")]
 		public void js_syntax_errors_are_reported() {
 			try {
-				using (_stateHandlerFactory.Create("JS", @"log(1;", logger: (s, _) => { })) {
+				using (_stateHandlerFactory.Create("JS", @"log(1;", true, logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<Js1Exception>(ex);
@@ -57,7 +57,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 		[Test, Category("v8")]
 		public void js_exceptions_errors_are_reported() {
 			try {
-				using (_stateHandlerFactory.Create("JS", @"throw 123;", logger: (s, _) => { })) {
+				using (_stateHandlerFactory.Create("JS", @"throw 123;", true, logger: (s, _) => { })) {
 				}
 			} catch (Exception ex) {
 				Assert.IsInstanceOf<Js1Exception>(ex);
@@ -73,6 +73,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
                                 var i = 0;
                                 while (true) i++;
                     ",
+					true,
 					logger: (s, _) => { },
 					cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state => {
 						Console.WriteLine("Calling a callback in " + timeout + "ms");
@@ -100,6 +101,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
                             }
                         });
                     ",
+					true,
 					logger: Console.WriteLine,
 					cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state => {
 						Console.WriteLine("Calling a callback in " + timeout + "ms");
@@ -137,6 +139,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
                                 while (true) i++;
                         });
                     ",
+					true,
 					logger: Console.WriteLine,
 					cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(state => {
 						Console.WriteLine("Calling a callback in " + timeout + "ms");
@@ -173,7 +176,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
                             while (true) i++;
                         }
                     });
-                ", logger: Console.WriteLine,
+                ", true, logger: Console.WriteLine,
 						cancelCallbackFactory: (timeout, action) => ThreadPool.QueueUserWorkItem(
 							state => {
 								Console.WriteLine("Calling a callback in " + timeout + "ms");

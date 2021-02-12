@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public abstract class EventFilter {
@@ -25,6 +26,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return (PassesSource(resolvedFromLinkTo, eventStreamId, eventName))
 			       && ((_allEvents || _events != null && _events.Contains(eventName))
 			           && (!isStreamDeletedEvent || _includeDeletedStreamEvents));
+		}
+
+		public bool PassesValidation(bool isJson, string data) {
+			if (!isJson) return true;
+			if (data is null) {
+				return false;
+			}
+			return data.IsValidJson();
 		}
 
 		protected abstract bool DeletedNotificationPasses(string positionStreamId);

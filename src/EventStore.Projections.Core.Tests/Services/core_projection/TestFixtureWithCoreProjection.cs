@@ -79,13 +79,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		protected ProjectionProcessingStrategy CreateProjectionProcessingStrategy() {
 			return new ContinuousProjectionProcessingStrategy(
 				_projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-				_subscriptionDispatcher);
+				_subscriptionDispatcher, true);
 		}
 
 		protected ProjectionProcessingStrategy CreateQueryProcessingStrategy() {
 			return new QueryProcessingStrategy(
 				_projectionName, _version, _stateHandler, _projectionConfig, _stateHandler.GetSourceDefinition(), null,
-				_subscriptionDispatcher);
+				_subscriptionDispatcher, true);
 		}
 
 		protected virtual ProjectionConfig GivenProjectionConfig() {

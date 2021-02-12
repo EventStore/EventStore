@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
 				_projectionId, _workerId, "test-projection", 
 				new ProjectionVersion(), ProjectionConfig.GetTest(),
-				"JS", "fromStream('$user-admin').outputState()"));
+				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 		}
 
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
 				_projectionId, _workerId, "test-projection", 
 				new ProjectionVersion(), ProjectionConfig.GetTest(),
-				"JS", "fromStream('$user-admin').outputState()"));
+				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCoreTimeout(_stopCorrelationId));
 		}
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services.projection_core_service {
 			_service.Handle(new CoreProjectionManagementMessage.CreateAndPrepare(
 				_projectionId, _workerId, "test-projection", 
 				new ProjectionVersion(), ProjectionConfig.GetTest(),
-				"JS", "fromStream('$user-admin').outputState()"));
+				"JS", "fromStream('$user-admin').outputState()", true));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCore(_stopCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StopCoreTimeout(Guid.NewGuid()));
 		}
