@@ -1,10 +1,8 @@
 using System.Threading.Tasks;
-using EventStore.Client;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
 using NUnit.Framework;
-using Empty = Google.Protobuf.WellKnownTypes.Empty;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
@@ -17,14 +15,12 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			protected override async Task When() {
 				_response = await AppendToStreamBatch(new BatchAppendReq {
-					Options = new BatchAppendReq.Types.Options {
-						Any = new Empty(),
-						StreamIdentifier = new StreamIdentifier {
-							StreamName = ByteString.CopyFromUtf8("stream")
-						}
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("stream") }
 					},
 					IsFinal = true,
-					ProposedMessages = {CreateEvents(1)},
+					ProposedMessages = { CreateEvents(1) },
 					CorrelationId = Uuid.NewUuid().ToDto()
 				});
 			}
@@ -44,18 +40,16 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			protected override async Task When() {
 				var correlationId = Uuid.NewUuid();
 				_response = await AppendToStreamBatch(new BatchAppendReq {
-					Options = new BatchAppendReq.Types.Options {
-						Any = new Empty(),
-						StreamIdentifier = new StreamIdentifier {
-							StreamName = ByteString.CopyFromUtf8("stream")
-						}
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("stream") }
 					},
 					IsFinal = false,
-					ProposedMessages = {CreateEvents(1)},
+					ProposedMessages = { CreateEvents(1) },
 					CorrelationId = correlationId.ToDto(),
-				}, new BatchAppendReq {
+				}, new() {
 					IsFinal = true,
-					ProposedMessages = {CreateEvents(1)},
+					ProposedMessages = { CreateEvents(1) },
 					CorrelationId = correlationId.ToDto()
 				});
 			}

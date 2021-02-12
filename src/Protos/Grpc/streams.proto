@@ -91,6 +91,8 @@ message ReadResp {
 		SubscriptionConfirmation confirmation = 2;
 		Checkpoint checkpoint = 3;
 		StreamNotFound stream_not_found = 4;
+		StreamPosition stream_position = 5;
+		AllStreamPosition all_stream_position = 6;
 	}
 
 	message ReadEvent {
@@ -121,6 +123,15 @@ message ReadResp {
 	}
 	message StreamNotFound {
 		event_store.client.StreamIdentifier stream_identifier = 1;
+	}
+	message StreamPosition {
+		uint64 last_stream_position = 1;
+		uint64 next_stream_position = 2;
+	}
+
+	message AllStreamPosition {
+		event_store.client.AllStreamPosition last_position = 1;
+		event_store.client.AllStreamPosition next_position = 2;
 	}
 }
 

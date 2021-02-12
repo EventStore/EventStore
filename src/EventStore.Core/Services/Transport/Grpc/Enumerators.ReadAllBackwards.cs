@@ -8,26 +8,25 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client;
-using Grpc.Core;
+using EventStore.Client.Streams;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public static partial class Enumerators {
-		public class ReadAllBackwards : IAsyncEnumerator<ResolvedEvent> {
+	partial class Enumerators {
+		public class ReadAllBackwards : IAsyncEnumerator<ReadResp> {
 			private readonly IPublisher _bus;
 			private readonly ulong _maxCount;
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly DateTime _deadline;
+			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
 			private readonly CancellationToken _cancellationToken;
 			private readonly SemaphoreSlim _semaphore;
-			private readonly Channel<ResolvedEvent> _channel;
+			private readonly Channel<ReadResp> _channel;
 
-			private ResolvedEvent _current;
-			private ulong _readCount;
+			private ReadResp _current;
 
-			public ResolvedEvent Current => _current;
+			public ReadResp Current => _current;
 
 			public ReadAllBackwards(IPublisher bus,
 				Position position,
@@ -36,6 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				DateTime deadline,
+				ReadReq.Types.Options.Types.UUIDOption uuidOption,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -47,9 +47,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_deadline = deadline;
+				_uuidOption = uuidOption;
 				_cancellationToken = cancellationToken;
 				_semaphore = new SemaphoreSlim(1, 1);
-				_channel = Channel.CreateBounded<ResolvedEvent>(BoundedChannelOptions);
+				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
 
 				ReadPage(position);
 			}
@@ -60,20 +61,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (_readCount >= _maxCount) {
-					return false;
-				}
-
 				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
 					return false;
 				}
 
 				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-				_readCount++;
+
 				return true;
 			}
 
-			private void ReadPage(Position startPosition) {
+			private void ReadPage(Position startPosition, ulong readCount = 0) {
 				var correlationId = Guid.NewGuid();
 
 				var (commitPosition, preparePosition) = startPosition.ToInt64();
@@ -98,18 +95,53 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					switch (completed.Result) {
 						case ReadAllResult.Success:
+							var nextPosition = completed.NextPos;
+
 							foreach (var @event in completed.Events) {
-								await _channel.Writer.WriteAsync(@event, _cancellationToken).ConfigureAwait(false);
+								if (readCount >= _maxCount) {
+									await _channel.Writer.WriteAsync(new ReadResp {
+										AllStreamPosition = new() {
+											NextPosition = new() {
+												CommitPosition = (ulong)nextPosition.CommitPosition,
+												PreparePosition = (ulong)nextPosition.PreparePosition
+											},
+											LastPosition = new() {
+												CommitPosition = (ulong)completed.CurrentPos.CommitPosition,
+												PreparePosition = (ulong)completed.CurrentPos.PreparePosition
+											}
+										}
+									}, ct).ConfigureAwait(false);
+									_channel.Writer.TryComplete();
+									return;
+								}
+
+								await _channel.Writer.WriteAsync(new ReadResp {
+									Event = ConvertToReadEvent(_uuidOption, @event)
+								}, _cancellationToken).ConfigureAwait(false);
+								nextPosition = @event.OriginalPosition ?? TFPos.Invalid;
+								readCount++;
 							}
 
 							if (completed.IsEndOfStream) {
+								await _channel.Writer.WriteAsync(new ReadResp {
+									AllStreamPosition = new() {
+										NextPosition = new() {
+											CommitPosition = (ulong)nextPosition.CommitPosition,
+											PreparePosition = (ulong)nextPosition.PreparePosition
+										},
+										LastPosition = new() {
+											CommitPosition = (ulong)completed.CurrentPos.CommitPosition,
+											PreparePosition = (ulong)completed.CurrentPos.PreparePosition
+										}
+									}
+								}, ct).ConfigureAwait(false);
 								_channel.Writer.TryComplete();
 								return;
 							}
 
 							ReadPage(Position.FromInt64(
 								completed.NextPos.CommitPosition,
-								completed.NextPos.PreparePosition));
+								completed.NextPos.PreparePosition), readCount);
 							return;
 						case ReadAllResult.AccessDenied:
 							_channel.Writer.TryComplete(RpcExceptions.AccessDenied());

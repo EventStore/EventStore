@@ -4,15 +4,15 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using EventStore.Client.Streams;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public static partial class Enumerators {
-		public class ReadStreamBackwards : IAsyncEnumerator<ResolvedEvent> {
+	partial class Enumerators {
+		public class ReadStreamBackwards : IAsyncEnumerator<ReadResp> {
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
 			private readonly ulong _maxCount;
@@ -20,15 +20,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
 			private readonly DateTime _deadline;
-			private readonly Func<RpcException, Task> _onStreamNotFound;
+			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
 			private readonly CancellationToken _cancellationToken;
 			private readonly SemaphoreSlim _semaphore;
-			private readonly Channel<ResolvedEvent> _channel;
-			
-			private ResolvedEvent _current;
-			private ulong _readCount;
+			private readonly Channel<ReadResp> _channel;
 
-			public ResolvedEvent Current => _current;
+			private ReadResp _current;
+
+			public ReadResp Current => _current;
 
 			public ReadStreamBackwards(IPublisher bus,
 				string streamName,
@@ -38,7 +37,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ClaimsPrincipal user,
 				bool requiresLeader,
 				DateTime deadline,
-				Func<RpcException, Task> onStreamNotFound,
+				ReadReq.Types.Options.Types.UUIDOption uuidOption,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -55,10 +54,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_deadline = deadline;
-				_onStreamNotFound = onStreamNotFound;
+				_uuidOption = uuidOption;
 				_cancellationToken = cancellationToken;
 				_semaphore = new SemaphoreSlim(1, 1);
-				_channel = Channel.CreateBounded<ResolvedEvent>(BoundedChannelOptions);
+				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
 
 				ReadPage(startRevision);
 			}
@@ -70,26 +69,22 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				if (_readCount >= _maxCount) {
-					return false;
-				}
-
 				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
 					return false;
 				}
 
 				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-				_readCount++;
+
 				return true;
 			}
-			
-			private void ReadPage(StreamRevision startRevision) {
+
+			private void ReadPage(StreamRevision startRevision, ulong readCount = 0) {
 				Guid correlationId = Guid.NewGuid();
 
 				_bus.Publish(new ClientMessage.ReadStreamEventsBackward(
 					correlationId, correlationId, new ContinuationEnvelope(OnMessage, _semaphore, _cancellationToken),
 					_streamName, startRevision.ToInt64(), (int)Math.Min(ReadBatchSize, _maxCount), _resolveLinks,
-					_requiresLeader, default, _user, _deadline));
+					_requiresLeader, null, _user, _deadline));
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
@@ -106,19 +101,45 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					switch (completed.Result) {
 						case ReadStreamResult.Success:
+							var nextStreamPosition = (ulong)completed.NextEventNumber;
 							foreach (var @event in completed.Events) {
-								await _channel.Writer.WriteAsync(@event, ct).ConfigureAwait(false);
+								if (readCount >= _maxCount) {
+									await _channel.Writer.WriteAsync(new ReadResp {
+										StreamPosition = new() {
+											LastStreamPosition = (ulong)completed.LastEventNumber,
+											NextStreamPosition = nextStreamPosition
+										}
+									}, ct).ConfigureAwait(false);
+
+									_channel.Writer.TryComplete();
+								}
+
+								await _channel.Writer.WriteAsync(new ReadResp {
+									Event = ConvertToReadEvent(_uuidOption, @event)
+								}, ct).ConfigureAwait(false);
+								nextStreamPosition = (uint)@event.OriginalEvent.EventNumber;
+								readCount++;
 							}
 
 							if (completed.IsEndOfStream) {
+								await _channel.Writer.WriteAsync(new ReadResp {
+									StreamPosition = new() {
+										LastStreamPosition = (ulong)completed.LastEventNumber,
+										NextStreamPosition = nextStreamPosition
+									}
+								}, ct).ConfigureAwait(false);
 								_channel.Writer.TryComplete();
 								return;
 							}
 
-							ReadPage(StreamRevision.FromInt64(completed.NextEventNumber));
+							ReadPage(StreamRevision.FromInt64(completed.NextEventNumber), readCount);
 							return;
 						case ReadStreamResult.NoStream:
-							await _onStreamNotFound(RpcExceptions.StreamNotFound(_streamName)).ConfigureAwait(false);
+							await _channel.Writer.WriteAsync(new ReadResp {
+								StreamNotFound = new ReadResp.Types.StreamNotFound {
+									StreamIdentifier = _streamName
+								}
+							}, _cancellationToken).ConfigureAwait(false);
 							_channel.Writer.TryComplete();
 							return;
 						case ReadStreamResult.StreamDeleted:

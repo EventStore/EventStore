@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -155,5 +156,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return;
 			}
 		}
+
+		protected static RpcException InvalidCombination<T>(T combination) where T : ITuple
+			=> new RpcException(new Status(StatusCode.InvalidArgument, $"The combination of {combination} is invalid."));
 	}
 }
