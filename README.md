@@ -90,3 +90,7 @@ We attempt to do our best to ensure that the history remains clean and to do so,
 
 If you want to switch to a particular release, you can check out the tag for this particular version. For example:  
 `git checkout oss-v6.0.0-preview1`
+
+### Proto Changes
+
+If you update the protos, continuous integration will fail. After ensuring the proto change is backwards compatible, please run `./protolock.sh commit` at the root of this repository.

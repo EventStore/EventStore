@@ -1,0 +1,4713 @@
+{
+  "definitions": [
+    {
+      "protopath": "ClientAPI:/:ClientMessageDtos.proto",
+      "def": {
+        "enums": [
+          {
+            "name": "OperationResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "PrepareTimeout",
+                "integer": 1
+              },
+              {
+                "name": "CommitTimeout",
+                "integer": 2
+              },
+              {
+                "name": "ForwardTimeout",
+                "integer": 3
+              },
+              {
+                "name": "WrongExpectedVersion",
+                "integer": 4
+              },
+              {
+                "name": "StreamDeleted",
+                "integer": 5
+              },
+              {
+                "name": "InvalidTransaction",
+                "integer": 6
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 7
+              }
+            ]
+          },
+          {
+            "name": "ReadEventCompleted.ReadEventResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "NotFound",
+                "integer": 1
+              },
+              {
+                "name": "NoStream",
+                "integer": 2
+              },
+              {
+                "name": "StreamDeleted",
+                "integer": 3
+              },
+              {
+                "name": "Error",
+                "integer": 4
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 5
+              }
+            ]
+          },
+          {
+            "name": "ReadStreamEventsCompleted.ReadStreamResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "NoStream",
+                "integer": 1
+              },
+              {
+                "name": "StreamDeleted",
+                "integer": 2
+              },
+              {
+                "name": "NotModified",
+                "integer": 3
+              },
+              {
+                "name": "Error",
+                "integer": 4
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 5
+              }
+            ]
+          },
+          {
+            "name": "ReadAllEventsCompleted.ReadAllResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "NotModified",
+                "integer": 1
+              },
+              {
+                "name": "Error",
+                "integer": 2
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 3
+              }
+            ]
+          },
+          {
+            "name": "Filter.FilterContext",
+            "enum_fields": [
+              {
+                "name": "StreamId"
+              },
+              {
+                "name": "EventType",
+                "integer": 1
+              }
+            ]
+          },
+          {
+            "name": "Filter.FilterType",
+            "enum_fields": [
+              {
+                "name": "Regex"
+              },
+              {
+                "name": "Prefix",
+                "integer": 1
+              }
+            ]
+          },
+          {
+            "name": "FilteredReadAllEventsCompleted.FilteredReadAllResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "NotModified",
+                "integer": 1
+              },
+              {
+                "name": "Error",
+                "integer": 2
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 3
+              }
+            ]
+          },
+          {
+            "name": "UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "DoesNotExist",
+                "integer": 1
+              },
+              {
+                "name": "Fail",
+                "integer": 2
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 3
+              }
+            ]
+          },
+          {
+            "name": "CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "AlreadyExists",
+                "integer": 1
+              },
+              {
+                "name": "Fail",
+                "integer": 2
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 3
+              }
+            ]
+          },
+          {
+            "name": "DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult",
+            "enum_fields": [
+              {
+                "name": "Success"
+              },
+              {
+                "name": "DoesNotExist",
+                "integer": 1
+              },
+              {
+                "name": "Fail",
+                "integer": 2
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 3
+              }
+            ]
+          },
+          {
+            "name": "PersistentSubscriptionNakEvents.NakAction",
+            "enum_fields": [
+              {
+                "name": "Unknown"
+              },
+              {
+                "name": "Park",
+                "integer": 1
+              },
+              {
+                "name": "Retry",
+                "integer": 2
+              },
+              {
+                "name": "Skip",
+                "integer": 3
+              },
+              {
+                "name": "Stop",
+                "integer": 4
+              }
+            ]
+          },
+          {
+            "name": "SubscriptionDropped.SubscriptionDropReason",
+            "enum_fields": [
+              {
+                "name": "Unsubscribed"
+              },
+              {
+                "name": "AccessDenied",
+                "integer": 1
+              },
+              {
+                "name": "NotFound",
+                "integer": 2
+              },
+              {
+                "name": "PersistentSubscriptionDeleted",
+                "integer": 3
+              },
+              {
+                "name": "SubscriberMaxCountReached",
+                "integer": 4
+              }
+            ]
+          },
+          {
+            "name": "NotHandled.NotHandledReason",
+            "enum_fields": [
+              {
+                "name": "NotReady"
+              },
+              {
+                "name": "TooBusy",
+                "integer": 1
+              },
+              {
+                "name": "NotLeader",
+                "integer": 2
+              },
+              {
+                "name": "IsReadOnly",
+                "integer": 3
+              }
+            ]
+          },
+          {
+            "name": "ScavengeDatabaseResponse.ScavengeResult",
+            "enum_fields": [
+              {
+                "name": "Started"
+              },
+              {
+                "name": "InProgress",
+                "integer": 1
+              },
+              {
+                "name": "Unauthorized",
+                "integer": 2
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "name": "NewEvent",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "event_type",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "data_content_type",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "metadata_content_type",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "data",
+                "type": "bytes"
+              },
+              {
+                "id": 6,
+                "name": "metadata",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "EventRecord",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "event_number",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "event_id",
+                "type": "bytes"
+              },
+              {
+                "id": 4,
+                "name": "event_type",
+                "type": "string"
+              },
+              {
+                "id": 5,
+                "name": "data_content_type",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "metadata_content_type",
+                "type": "int32"
+              },
+              {
+                "id": 7,
+                "name": "data",
+                "type": "bytes"
+              },
+              {
+                "id": 8,
+                "name": "metadata",
+                "type": "bytes"
+              },
+              {
+                "id": 9,
+                "name": "created",
+                "type": "int64"
+              },
+              {
+                "id": 10,
+                "name": "created_epoch",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "ResolvedIndexedEvent",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event",
+                "type": "EventRecord"
+              },
+              {
+                "id": 2,
+                "name": "link",
+                "type": "EventRecord"
+              }
+            ]
+          },
+          {
+            "name": "ResolvedEvent",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event",
+                "type": "EventRecord"
+              },
+              {
+                "id": 2,
+                "name": "link",
+                "type": "EventRecord"
+              },
+              {
+                "id": 3,
+                "name": "commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "prepare_position",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "WriteEvents",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "expected_version",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "events",
+                "type": "NewEvent",
+                "is_repeated": true
+              },
+              {
+                "id": 4,
+                "name": "require_leader",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "WriteEventsCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "OperationResult"
+              },
+              {
+                "id": 2,
+                "name": "message",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "first_event_number",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "last_event_number",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 6,
+                "name": "commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "current_version",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "DeleteStream",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "expected_version",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "require_leader",
+                "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "hard_delete",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "DeleteStreamCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "OperationResult"
+              },
+              {
+                "id": 2,
+                "name": "message",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "commit_position",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "TransactionStart",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "expected_version",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "require_leader",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "TransactionStartCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "transaction_id",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "result",
+                "type": "OperationResult"
+              },
+              {
+                "id": 3,
+                "name": "message",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "TransactionWrite",
+            "fields": [
+              {
+                "id": 1,
+                "name": "transaction_id",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "events",
+                "type": "NewEvent",
+                "is_repeated": true
+              },
+              {
+                "id": 3,
+                "name": "require_leader",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "TransactionWriteCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "transaction_id",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "result",
+                "type": "OperationResult"
+              },
+              {
+                "id": 3,
+                "name": "message",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "TransactionCommit",
+            "fields": [
+              {
+                "id": 1,
+                "name": "transaction_id",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "require_leader",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "TransactionCommitCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "transaction_id",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "result",
+                "type": "OperationResult"
+              },
+              {
+                "id": 3,
+                "name": "message",
+                "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "first_event_number",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "last_event_number",
+                "type": "int64"
+              },
+              {
+                "id": 6,
+                "name": "prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "commit_position",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "ReadEvent",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "event_number",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "require_leader",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "ReadEventCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "ReadEventResult"
+              },
+              {
+                "id": 2,
+                "name": "event",
+                "type": "ResolvedIndexedEvent"
+              },
+              {
+                "id": 3,
+                "name": "error",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "ReadStreamEvents",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "from_event_number",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "max_count",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 5,
+                "name": "require_leader",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "ReadStreamEventsCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "events",
+                "type": "ResolvedIndexedEvent",
+                "is_repeated": true
+              },
+              {
+                "id": 2,
+                "name": "result",
+                "type": "ReadStreamResult"
+              },
+              {
+                "id": 3,
+                "name": "next_event_number",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "last_event_number",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "is_end_of_stream",
+                "type": "bool"
+              },
+              {
+                "id": 6,
+                "name": "last_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "error",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "ReadAllEvents",
+            "fields": [
+              {
+                "id": 1,
+                "name": "commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "max_count",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 5,
+                "name": "require_leader",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "ReadAllEventsCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "events",
+                "type": "ResolvedEvent",
+                "is_repeated": true
+              },
+              {
+                "id": 4,
+                "name": "next_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "next_prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 6,
+                "name": "result",
+                "type": "ReadAllResult",
+                "options": [
+                  {
+                    "name": "default",
+                    "value": "Success"
+                  }
+                ]
+              },
+              {
+                "id": 7,
+                "name": "error",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "Filter",
+            "fields": [
+              {
+                "id": 1,
+                "name": "context",
+                "type": "FilterContext"
+              },
+              {
+                "id": 2,
+                "name": "type",
+                "type": "FilterType"
+              },
+              {
+                "id": 3,
+                "name": "data",
+                "type": "string",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "FilteredReadAllEvents",
+            "fields": [
+              {
+                "id": 1,
+                "name": "commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "max_count",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "max_search_window",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 6,
+                "name": "require_leader",
+                "type": "bool"
+              },
+              {
+                "id": 7,
+                "name": "filter",
+                "type": "Filter"
+              }
+            ]
+          },
+          {
+            "name": "FilteredReadAllEventsCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "events",
+                "type": "ResolvedEvent",
+                "is_repeated": true
+              },
+              {
+                "id": 4,
+                "name": "next_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "next_prepare_position",
+                "type": "int64"
+              },
+              {
+                "id": 6,
+                "name": "is_end_of_stream",
+                "type": "bool"
+              },
+              {
+                "id": 7,
+                "name": "result",
+                "type": "FilteredReadAllResult",
+                "options": [
+                  {
+                    "name": "default",
+                    "value": "Success"
+                  }
+                ]
+              },
+              {
+                "id": 8,
+                "name": "error",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "CreatePersistentSubscription",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_group_name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "start_from",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "message_timeout_milliseconds",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "record_statistics",
+                "type": "bool"
+              },
+              {
+                "id": 7,
+                "name": "live_buffer_size",
+                "type": "int32"
+              },
+              {
+                "id": 8,
+                "name": "read_batch_size",
+                "type": "int32"
+              },
+              {
+                "id": 9,
+                "name": "buffer_size",
+                "type": "int32"
+              },
+              {
+                "id": 10,
+                "name": "max_retry_count",
+                "type": "int32"
+              },
+              {
+                "id": 11,
+                "name": "prefer_round_robin",
+                "type": "bool"
+              },
+              {
+                "id": 12,
+                "name": "checkpoint_after_time",
+                "type": "int32"
+              },
+              {
+                "id": 13,
+                "name": "checkpoint_max_count",
+                "type": "int32"
+              },
+              {
+                "id": 14,
+                "name": "checkpoint_min_count",
+                "type": "int32"
+              },
+              {
+                "id": 15,
+                "name": "subscriber_max_count",
+                "type": "int32"
+              },
+              {
+                "id": 16,
+                "name": "named_consumer_strategy",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "DeletePersistentSubscription",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_group_name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "event_stream_id",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "UpdatePersistentSubscription",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_group_name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "start_from",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "message_timeout_milliseconds",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "record_statistics",
+                "type": "bool"
+              },
+              {
+                "id": 7,
+                "name": "live_buffer_size",
+                "type": "int32"
+              },
+              {
+                "id": 8,
+                "name": "read_batch_size",
+                "type": "int32"
+              },
+              {
+                "id": 9,
+                "name": "buffer_size",
+                "type": "int32"
+              },
+              {
+                "id": 10,
+                "name": "max_retry_count",
+                "type": "int32"
+              },
+              {
+                "id": 11,
+                "name": "prefer_round_robin",
+                "type": "bool"
+              },
+              {
+                "id": 12,
+                "name": "checkpoint_after_time",
+                "type": "int32"
+              },
+              {
+                "id": 13,
+                "name": "checkpoint_max_count",
+                "type": "int32"
+              },
+              {
+                "id": 14,
+                "name": "checkpoint_min_count",
+                "type": "int32"
+              },
+              {
+                "id": 15,
+                "name": "subscriber_max_count",
+                "type": "int32"
+              },
+              {
+                "id": 16,
+                "name": "named_consumer_strategy",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "UpdatePersistentSubscriptionCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "UpdatePersistentSubscriptionResult",
+                "options": [
+                  {
+                    "name": "default",
+                    "value": "Success"
+                  }
+                ]
+              },
+              {
+                "id": 2,
+                "name": "reason",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "CreatePersistentSubscriptionCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "CreatePersistentSubscriptionResult",
+                "options": [
+                  {
+                    "name": "default",
+                    "value": "Success"
+                  }
+                ]
+              },
+              {
+                "id": 2,
+                "name": "reason",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "DeletePersistentSubscriptionCompleted",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "DeletePersistentSubscriptionResult",
+                "options": [
+                  {
+                    "name": "default",
+                    "value": "Success"
+                  }
+                ]
+              },
+              {
+                "id": 2,
+                "name": "reason",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "ConnectToPersistentSubscription",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "allowed_in_flight_messages",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "PersistentSubscriptionAckEvents",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "processed_event_ids",
+                "type": "bytes",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "PersistentSubscriptionNakEvents",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "processed_event_ids",
+                "type": "bytes",
+                "is_repeated": true
+              },
+              {
+                "id": 3,
+                "name": "message",
+                "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "action",
+                "type": "NakAction",
+                "options": [
+                  {
+                    "name": "default",
+                    "value": "Unknown"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "PersistentSubscriptionConfirmation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "last_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "last_event_number",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "PersistentSubscriptionStreamEventAppeared",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event",
+                "type": "ResolvedIndexedEvent"
+              },
+              {
+                "id": 2,
+                "name": "retryCount",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "SubscribeToStream",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "FilteredSubscribeToStream",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_stream_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 3,
+                "name": "filter",
+                "type": "Filter"
+              },
+              {
+                "id": 4,
+                "name": "checkpoint_interval",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "CheckpointReached",
+            "fields": [
+              {
+                "id": 1,
+                "name": "commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "prepare_position",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "SubscriptionConfirmation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "last_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "last_event_number",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "StreamEventAppeared",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event",
+                "type": "ResolvedEvent"
+              }
+            ]
+          },
+          {
+            "name": "UnsubscribeFromStream"
+          },
+          {
+            "name": "SubscriptionDropped",
+            "fields": [
+              {
+                "id": 1,
+                "name": "reason",
+                "type": "SubscriptionDropReason",
+                "options": [
+                  {
+                    "name": "default",
+                    "value": "Unsubscribed"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "NotHandled",
+            "fields": [
+              {
+                "id": 1,
+                "name": "reason",
+                "type": "NotHandledReason"
+              },
+              {
+                "id": 2,
+                "name": "additional_info",
+                "type": "bytes"
+              }
+            ],
+            "messages": [
+              {
+                "name": "LeaderInfo",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "external_tcp_address",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "external_tcp_port",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 3,
+                    "name": "http_address",
+                    "type": "string"
+                  },
+                  {
+                    "id": 4,
+                    "name": "http_port",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 5,
+                    "name": "external_secure_tcp_address",
+                    "type": "string"
+                  },
+                  {
+                    "id": 6,
+                    "name": "external_secure_tcp_port",
+                    "type": "int32"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ScavengeDatabase"
+          },
+          {
+            "name": "ScavengeDatabaseResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "ScavengeResult"
+              },
+              {
+                "id": 2,
+                "name": "scavengeId",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "IdentifyClient",
+            "fields": [
+              {
+                "id": 1,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "connection_name",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "ClientIdentified"
+          }
+        ],
+        "package": {
+          "name": "EventStore.Client.Messages"
+        }
+      }
+    },
+    {
+      "protopath": "Grpc:/:cluster.proto",
+      "def": {
+        "enums": [
+          {
+            "name": "MemberInfo.VNodeState",
+            "enum_fields": [
+              {
+                "name": "Initializing"
+              },
+              {
+                "name": "DiscoverLeader",
+                "integer": 1
+              },
+              {
+                "name": "Unknown",
+                "integer": 2
+              },
+              {
+                "name": "PreReplica",
+                "integer": 3
+              },
+              {
+                "name": "CatchingUp",
+                "integer": 4
+              },
+              {
+                "name": "Clone",
+                "integer": 5
+              },
+              {
+                "name": "Follower",
+                "integer": 6
+              },
+              {
+                "name": "PreLeader",
+                "integer": 7
+              },
+              {
+                "name": "Leader",
+                "integer": 8
+              },
+              {
+                "name": "Manager",
+                "integer": 9
+              },
+              {
+                "name": "ShuttingDown",
+                "integer": 10
+              },
+              {
+                "name": "Shutdown",
+                "integer": 11
+              },
+              {
+                "name": "ReadOnlyLeaderless",
+                "integer": 12
+              },
+              {
+                "name": "PreReadOnlyReplica",
+                "integer": 13
+              },
+              {
+                "name": "ReadOnlyReplica",
+                "integer": 14
+              },
+              {
+                "name": "ResigningLeader",
+                "integer": 15
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "name": "GossipRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "info",
+                "type": "ClusterInfo"
+              },
+              {
+                "id": 2,
+                "name": "server",
+                "type": "EndPoint"
+              }
+            ]
+          },
+          {
+            "name": "ViewChangeRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "server_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "server_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 3,
+                "name": "attempted_view",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "ViewChangeProofRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "server_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "server_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 3,
+                "name": "installed_view",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "PrepareRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "server_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "server_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 3,
+                "name": "view",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "PrepareOkRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "view",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "server_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 3,
+                "name": "server_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 4,
+                "name": "epoch_number",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "epoch_position",
+                "type": "int64"
+              },
+              {
+                "id": 6,
+                "name": "epoch_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 7,
+                "name": "epoch_leader_instance_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 8,
+                "name": "last_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 9,
+                "name": "writer_checkpoint",
+                "type": "int64"
+              },
+              {
+                "id": 10,
+                "name": "chaser_checkpoint",
+                "type": "int64"
+              },
+              {
+                "id": 11,
+                "name": "node_priority",
+                "type": "int32"
+              },
+              {
+                "id": 12,
+                "name": "cluster_info",
+                "type": "ClusterInfo"
+              }
+            ]
+          },
+          {
+            "name": "ProposalRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "server_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "server_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 3,
+                "name": "leader_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 4,
+                "name": "leader_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 5,
+                "name": "view",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "epoch_number",
+                "type": "int32"
+              },
+              {
+                "id": 7,
+                "name": "epoch_position",
+                "type": "int64"
+              },
+              {
+                "id": 8,
+                "name": "epoch_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 9,
+                "name": "epoch_leader_instance_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 10,
+                "name": "last_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 11,
+                "name": "writer_checkpoint",
+                "type": "int64"
+              },
+              {
+                "id": 12,
+                "name": "chaser_checkpoint",
+                "type": "int64"
+              },
+              {
+                "id": 13,
+                "name": "node_priority",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "AcceptRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "server_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "server_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 3,
+                "name": "leader_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 4,
+                "name": "leader_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 5,
+                "name": "view",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "LeaderIsResigningRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "leader_http",
+                "type": "EndPoint"
+              }
+            ]
+          },
+          {
+            "name": "LeaderIsResigningOkRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "leader_http",
+                "type": "EndPoint"
+              },
+              {
+                "id": 3,
+                "name": "server_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 4,
+                "name": "server_http",
+                "type": "EndPoint"
+              }
+            ]
+          },
+          {
+            "name": "ClusterInfo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "members",
+                "type": "MemberInfo",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "EndPoint",
+            "fields": [
+              {
+                "id": 1,
+                "name": "address",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "port",
+                "type": "uint32"
+              }
+            ]
+          },
+          {
+            "name": "MemberInfo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "instance_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "time_stamp",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "state",
+                "type": "VNodeState"
+              },
+              {
+                "id": 4,
+                "name": "is_alive",
+                "type": "bool"
+              },
+              {
+                "id": 5,
+                "name": "http_end_point",
+                "type": "EndPoint"
+              },
+              {
+                "id": 6,
+                "name": "internal_tcp",
+                "type": "EndPoint"
+              },
+              {
+                "id": 7,
+                "name": "external_tcp",
+                "type": "EndPoint"
+              },
+              {
+                "id": 8,
+                "name": "internal_tcp_uses_tls",
+                "type": "bool"
+              },
+              {
+                "id": 9,
+                "name": "external_tcp_uses_tls",
+                "type": "bool"
+              },
+              {
+                "id": 10,
+                "name": "last_commit_position",
+                "type": "int64"
+              },
+              {
+                "id": 11,
+                "name": "writer_checkpoint",
+                "type": "int64"
+              },
+              {
+                "id": 12,
+                "name": "chaser_checkpoint",
+                "type": "int64"
+              },
+              {
+                "id": 13,
+                "name": "epoch_position",
+                "type": "int64"
+              },
+              {
+                "id": 14,
+                "name": "epoch_number",
+                "type": "int32"
+              },
+              {
+                "id": 15,
+                "name": "epoch_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 16,
+                "name": "node_priority",
+                "type": "int32"
+              },
+              {
+                "id": 17,
+                "name": "is_read_only_replica",
+                "type": "bool"
+              },
+              {
+                "id": 18,
+                "name": "advertise_host_to_client_as",
+                "type": "string"
+              },
+              {
+                "id": 19,
+                "name": "advertise_http_port_to_client_as",
+                "type": "uint32"
+              },
+              {
+                "id": 20,
+                "name": "advertise_tcp_port_to_client_as",
+                "type": "uint32"
+              }
+            ]
+          }
+        ],
+        "services": [
+          {
+            "name": "Gossip",
+            "rpcs": [
+              {
+                "name": "Update",
+                "in_type": "GossipRequest",
+                "out_type": "ClusterInfo"
+              },
+              {
+                "name": "Read",
+                "in_type": "event_store.client.shared.Empty",
+                "out_type": "ClusterInfo"
+              }
+            ]
+          },
+          {
+            "name": "Elections",
+            "rpcs": [
+              {
+                "name": "ViewChange",
+                "in_type": "ViewChangeRequest",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "ViewChangeProof",
+                "in_type": "ViewChangeProofRequest",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "Prepare",
+                "in_type": "PrepareRequest",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "PrepareOk",
+                "in_type": "PrepareOkRequest",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "Proposal",
+                "in_type": "ProposalRequest",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "Accept",
+                "in_type": "AcceptRequest",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "LeaderIsResigning",
+                "in_type": "LeaderIsResigningRequest",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "LeaderIsResigningOk",
+                "in_type": "LeaderIsResigningOkRequest",
+                "out_type": "event_store.client.shared.Empty"
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.cluster"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.cluster"
+          }
+        ]
+      }
+    },
+    {
+      "protopath": "Grpc:/:gossip.proto",
+      "def": {
+        "enums": [
+          {
+            "name": "MemberInfo.VNodeState",
+            "enum_fields": [
+              {
+                "name": "Initializing"
+              },
+              {
+                "name": "DiscoverLeader",
+                "integer": 1
+              },
+              {
+                "name": "Unknown",
+                "integer": 2
+              },
+              {
+                "name": "PreReplica",
+                "integer": 3
+              },
+              {
+                "name": "CatchingUp",
+                "integer": 4
+              },
+              {
+                "name": "Clone",
+                "integer": 5
+              },
+              {
+                "name": "Follower",
+                "integer": 6
+              },
+              {
+                "name": "PreLeader",
+                "integer": 7
+              },
+              {
+                "name": "Leader",
+                "integer": 8
+              },
+              {
+                "name": "Manager",
+                "integer": 9
+              },
+              {
+                "name": "ShuttingDown",
+                "integer": 10
+              },
+              {
+                "name": "Shutdown",
+                "integer": 11
+              },
+              {
+                "name": "ReadOnlyLeaderless",
+                "integer": 12
+              },
+              {
+                "name": "PreReadOnlyReplica",
+                "integer": 13
+              },
+              {
+                "name": "ReadOnlyReplica",
+                "integer": 14
+              },
+              {
+                "name": "ResigningLeader",
+                "integer": 15
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "name": "ClusterInfo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "members",
+                "type": "MemberInfo",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "EndPoint",
+            "fields": [
+              {
+                "id": 1,
+                "name": "address",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "port",
+                "type": "uint32"
+              }
+            ]
+          },
+          {
+            "name": "MemberInfo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "instance_id",
+                "type": "event_store.client.shared.UUID"
+              },
+              {
+                "id": 2,
+                "name": "time_stamp",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "state",
+                "type": "VNodeState"
+              },
+              {
+                "id": 4,
+                "name": "is_alive",
+                "type": "bool"
+              },
+              {
+                "id": 5,
+                "name": "http_end_point",
+                "type": "EndPoint"
+              }
+            ]
+          }
+        ],
+        "services": [
+          {
+            "name": "Gossip",
+            "rpcs": [
+              {
+                "name": "Read",
+                "in_type": "event_store.client.shared.Empty",
+                "out_type": "ClusterInfo"
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.client.gossip"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.gossip"
+          }
+        ]
+      }
+    },
+    {
+      "protopath": "Grpc:/:operations.proto",
+      "def": {
+        "enums": [
+          {
+            "name": "ScavengeResp.ScavengeResult",
+            "enum_fields": [
+              {
+                "name": "Started"
+              },
+              {
+                "name": "InProgress",
+                "integer": 1
+              },
+              {
+                "name": "Stopped",
+                "integer": 2
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "name": "StartScavengeReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "thread_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 2,
+                    "name": "start_from_chunk",
+                    "type": "int32"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "StopScavengeReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "scavenge_id",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ScavengeResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "scavenge_id",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "scavenge_result",
+                "type": "ScavengeResult"
+              }
+            ]
+          },
+          {
+            "name": "SetNodePriorityReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "priority",
+                "type": "int32"
+              }
+            ]
+          }
+        ],
+        "services": [
+          {
+            "name": "Operations",
+            "rpcs": [
+              {
+                "name": "StartScavenge",
+                "in_type": "StartScavengeReq",
+                "out_type": "ScavengeResp"
+              },
+              {
+                "name": "StopScavenge",
+                "in_type": "StopScavengeReq",
+                "out_type": "ScavengeResp"
+              },
+              {
+                "name": "Shutdown",
+                "in_type": "event_store.client.shared.Empty",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "MergeIndexes",
+                "in_type": "event_store.client.shared.Empty",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "ResignNode",
+                "in_type": "event_store.client.shared.Empty",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "SetNodePriority",
+                "in_type": "SetNodePriorityReq",
+                "out_type": "event_store.client.shared.Empty"
+              },
+              {
+                "name": "RestartPersistentSubscriptions",
+                "in_type": "event_store.client.shared.Empty",
+                "out_type": "event_store.client.shared.Empty"
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.client.operations"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.operations"
+          }
+        ]
+      }
+    },
+    {
+      "protopath": "Grpc:/:persistent.proto",
+      "def": {
+        "enums": [
+          {
+            "name": "Nack.Action",
+            "enum_fields": [
+              {
+                "name": "Unknown"
+              },
+              {
+                "name": "Park",
+                "integer": 1
+              },
+              {
+                "name": "Retry",
+                "integer": 2
+              },
+              {
+                "name": "Skip",
+                "integer": 3
+              },
+              {
+                "name": "Stop",
+                "integer": 4
+              }
+            ]
+          },
+          {
+            "name": "CreateReq.ConsumerStrategy",
+            "enum_fields": [
+              {
+                "name": "DispatchToSingle"
+              },
+              {
+                "name": "RoundRobin",
+                "integer": 1
+              },
+              {
+                "name": "Pinned",
+                "integer": 2
+              }
+            ]
+          },
+          {
+            "name": "UpdateReq.ConsumerStrategy",
+            "enum_fields": [
+              {
+                "name": "DispatchToSingle"
+              },
+              {
+                "name": "RoundRobin",
+                "integer": 1
+              },
+              {
+                "name": "Pinned",
+                "integer": 2
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "name": "ReadReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              },
+              {
+                "id": 2,
+                "name": "ack",
+                "type": "Ack"
+              },
+              {
+                "id": 3,
+                "name": "nack",
+                "type": "Nack"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "group_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "buffer_size",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 4,
+                    "name": "uuid_option",
+                    "type": "UUIDOption"
+                  }
+                ],
+                "messages": [
+                  {
+                    "name": "UUIDOption",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "structured",
+                        "type": "event_store.client.shared.Empty"
+                      },
+                      {
+                        "id": 2,
+                        "name": "string",
+                        "type": "event_store.client.shared.Empty"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "Ack",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "id",
+                    "type": "bytes"
+                  },
+                  {
+                    "id": 2,
+                    "name": "ids",
+                    "type": "event_store.client.shared.UUID",
+                    "is_repeated": true
+                  }
+                ]
+              },
+              {
+                "name": "Nack",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "id",
+                    "type": "bytes"
+                  },
+                  {
+                    "id": 2,
+                    "name": "ids",
+                    "type": "event_store.client.shared.UUID",
+                    "is_repeated": true
+                  },
+                  {
+                    "id": 3,
+                    "name": "action",
+                    "type": "Action"
+                  },
+                  {
+                    "id": 4,
+                    "name": "reason",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ReadResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event",
+                "type": "ReadEvent"
+              },
+              {
+                "id": 2,
+                "name": "subscription_confirmation",
+                "type": "SubscriptionConfirmation"
+              }
+            ],
+            "messages": [
+              {
+                "name": "ReadEvent",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "event",
+                    "type": "RecordedEvent"
+                  },
+                  {
+                    "id": 2,
+                    "name": "link",
+                    "type": "RecordedEvent"
+                  },
+                  {
+                    "id": 3,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 4,
+                    "name": "no_position",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 5,
+                    "name": "retry_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 6,
+                    "name": "no_retry_count",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ],
+                "messages": [
+                  {
+                    "name": "RecordedEvent",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "id",
+                        "type": "event_store.client.shared.UUID"
+                      },
+                      {
+                        "id": 2,
+                        "name": "stream_identifier",
+                        "type": "event_store.client.shared.StreamIdentifier"
+                      },
+                      {
+                        "id": 3,
+                        "name": "stream_revision",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 4,
+                        "name": "prepare_position",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 5,
+                        "name": "commit_position",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 7,
+                        "name": "custom_metadata",
+                        "type": "bytes"
+                      },
+                      {
+                        "id": 8,
+                        "name": "data",
+                        "type": "bytes"
+                      }
+                    ],
+                    "maps": [
+                      {
+                        "key_type": "string",
+                        "field": {
+                          "id": 6,
+                          "name": "metadata",
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "SubscriptionConfirmation",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "subscription_id",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "CreateReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "group_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "settings",
+                    "type": "Settings"
+                  }
+                ]
+              },
+              {
+                "name": "Settings",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "resolve_links",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 2,
+                    "name": "revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "extra_statistics",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 5,
+                    "name": "max_retry_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 7,
+                    "name": "min_checkpoint_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 8,
+                    "name": "max_checkpoint_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 9,
+                    "name": "max_subscriber_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 10,
+                    "name": "live_buffer_size",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 11,
+                    "name": "read_batch_size",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 12,
+                    "name": "history_buffer_size",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 13,
+                    "name": "named_consumer_strategy",
+                    "type": "ConsumerStrategy"
+                  },
+                  {
+                    "id": 4,
+                    "name": "message_timeout_ticks",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 14,
+                    "name": "message_timeout_ms",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 6,
+                    "name": "checkpoint_after_ticks",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 15,
+                    "name": "checkpoint_after_ms",
+                    "type": "int32"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "CreateResp"
+          },
+          {
+            "name": "UpdateReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "group_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "settings",
+                    "type": "Settings"
+                  }
+                ]
+              },
+              {
+                "name": "Settings",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "resolve_links",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 2,
+                    "name": "revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "extra_statistics",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 5,
+                    "name": "max_retry_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 7,
+                    "name": "min_checkpoint_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 8,
+                    "name": "max_checkpoint_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 9,
+                    "name": "max_subscriber_count",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 10,
+                    "name": "live_buffer_size",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 11,
+                    "name": "read_batch_size",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 12,
+                    "name": "history_buffer_size",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 13,
+                    "name": "named_consumer_strategy",
+                    "type": "ConsumerStrategy"
+                  },
+                  {
+                    "id": 4,
+                    "name": "message_timeout_ticks",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 14,
+                    "name": "message_timeout_ms",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 6,
+                    "name": "checkpoint_after_ticks",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 15,
+                    "name": "checkpoint_after_ms",
+                    "type": "int32"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "UpdateResp"
+          },
+          {
+            "name": "DeleteReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "group_name",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DeleteResp"
+          }
+        ],
+        "services": [
+          {
+            "name": "PersistentSubscriptions",
+            "rpcs": [
+              {
+                "name": "Create",
+                "in_type": "CreateReq",
+                "out_type": "CreateResp"
+              },
+              {
+                "name": "Update",
+                "in_type": "UpdateReq",
+                "out_type": "UpdateResp"
+              },
+              {
+                "name": "Delete",
+                "in_type": "DeleteReq",
+                "out_type": "DeleteResp"
+              },
+              {
+                "name": "Read",
+                "in_type": "ReadReq",
+                "out_type": "ReadResp",
+                "in_streamed": true,
+                "out_streamed": true
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.client.persistent_subscriptions"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.persistentsubscriptions"
+          }
+        ]
+      }
+    },
+    {
+      "protopath": "Grpc:/:projections.proto",
+      "def": {
+        "messages": [
+          {
+            "name": "CreateReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "one_time",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 2,
+                    "name": "transient",
+                    "type": "Transient"
+                  },
+                  {
+                    "id": 3,
+                    "name": "continuous",
+                    "type": "Continuous"
+                  },
+                  {
+                    "id": 4,
+                    "name": "query",
+                    "type": "string"
+                  }
+                ],
+                "messages": [
+                  {
+                    "name": "Transient",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "name",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "Continuous",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "name",
+                        "type": "string"
+                      },
+                      {
+                        "id": 2,
+                        "name": "track_emitted_streams",
+                        "type": "bool"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "CreateResp"
+          },
+          {
+            "name": "UpdateReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "query",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "emit_enabled",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 4,
+                    "name": "no_emit_options",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "UpdateResp"
+          },
+          {
+            "name": "DeleteReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "delete_emitted_streams",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 3,
+                    "name": "delete_state_stream",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 4,
+                    "name": "delete_checkpoint_stream",
+                    "type": "bool"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DeleteResp"
+          },
+          {
+            "name": "StatisticsReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "all",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 3,
+                    "name": "transient",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "continuous",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 5,
+                    "name": "one_time",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "StatisticsResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "details",
+                "type": "Details"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Details",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "coreProcessingTime",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "version",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "epoch",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 4,
+                    "name": "effectiveName",
+                    "type": "string"
+                  },
+                  {
+                    "id": 5,
+                    "name": "writesInProgress",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 6,
+                    "name": "readsInProgress",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 7,
+                    "name": "partitionsCached",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 8,
+                    "name": "status",
+                    "type": "string"
+                  },
+                  {
+                    "id": 9,
+                    "name": "stateReason",
+                    "type": "string"
+                  },
+                  {
+                    "id": 10,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 11,
+                    "name": "mode",
+                    "type": "string"
+                  },
+                  {
+                    "id": 12,
+                    "name": "position",
+                    "type": "string"
+                  },
+                  {
+                    "id": 13,
+                    "name": "progress",
+                    "type": "float"
+                  },
+                  {
+                    "id": 14,
+                    "name": "lastCheckpoint",
+                    "type": "string"
+                  },
+                  {
+                    "id": 15,
+                    "name": "eventsProcessedAfterRestart",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 16,
+                    "name": "checkpointStatus",
+                    "type": "string"
+                  },
+                  {
+                    "id": 17,
+                    "name": "bufferedEvents",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 18,
+                    "name": "writePendingEventsBeforeCheckpoint",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 19,
+                    "name": "writePendingEventsAfterCheckpoint",
+                    "type": "int32"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "StateReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "partition",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "StateResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "state",
+                "type": "google.protobuf.Value"
+              }
+            ]
+          },
+          {
+            "name": "ResultReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "partition",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ResultResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "result",
+                "type": "google.protobuf.Value"
+              }
+            ]
+          },
+          {
+            "name": "ResetReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "write_checkpoint",
+                    "type": "bool"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ResetResp"
+          },
+          {
+            "name": "EnableReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "EnableResp"
+          },
+          {
+            "name": "DisableReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "write_checkpoint",
+                    "type": "bool"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DisableResp"
+          }
+        ],
+        "services": [
+          {
+            "name": "Projections",
+            "rpcs": [
+              {
+                "name": "Create",
+                "in_type": "CreateReq",
+                "out_type": "CreateResp"
+              },
+              {
+                "name": "Update",
+                "in_type": "UpdateReq",
+                "out_type": "UpdateResp"
+              },
+              {
+                "name": "Delete",
+                "in_type": "DeleteReq",
+                "out_type": "DeleteResp"
+              },
+              {
+                "name": "Statistics",
+                "in_type": "StatisticsReq",
+                "out_type": "StatisticsResp",
+                "out_streamed": true
+              },
+              {
+                "name": "Disable",
+                "in_type": "DisableReq",
+                "out_type": "DisableResp"
+              },
+              {
+                "name": "Enable",
+                "in_type": "EnableReq",
+                "out_type": "EnableResp"
+              },
+              {
+                "name": "Reset",
+                "in_type": "ResetReq",
+                "out_type": "ResetResp"
+              },
+              {
+                "name": "State",
+                "in_type": "StateReq",
+                "out_type": "StateResp"
+              },
+              {
+                "name": "Result",
+                "in_type": "ResultReq",
+                "out_type": "ResultResp"
+              },
+              {
+                "name": "RestartSubsystem",
+                "in_type": "event_store.client.shared.Empty",
+                "out_type": "event_store.client.shared.Empty"
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "google/protobuf/struct.proto"
+          },
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.client.projections"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.projections"
+          }
+        ]
+      }
+    },
+    {
+      "protopath": "Grpc:/:shared.proto",
+      "def": {
+        "messages": [
+          {
+            "name": "UUID",
+            "fields": [
+              {
+                "id": 1,
+                "name": "structured",
+                "type": "Structured"
+              },
+              {
+                "id": 2,
+                "name": "string",
+                "type": "string"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Structured",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "most_significant_bits",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "least_significant_bits",
+                    "type": "int64"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Empty"
+          },
+          {
+            "name": "StreamIdentifier",
+            "fields": [
+              {
+                "id": 3,
+                "name": "streamName",
+                "type": "bytes"
+              }
+            ],
+            "reserved_ids": [
+              1,
+              2
+            ]
+          }
+        ],
+        "package": {
+          "name": "event_store.client.shared"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.shared"
+          }
+        ]
+      }
+    },
+    {
+      "protopath": "Grpc:/:streams.proto",
+      "def": {
+        "enums": [
+          {
+            "name": "Options.ReadDirection",
+            "enum_fields": [
+              {
+                "name": "Forwards"
+              },
+              {
+                "name": "Backwards",
+                "integer": 1
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "name": "ReadReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream",
+                    "type": "StreamOptions"
+                  },
+                  {
+                    "id": 2,
+                    "name": "all",
+                    "type": "AllOptions"
+                  },
+                  {
+                    "id": 3,
+                    "name": "read_direction",
+                    "type": "ReadDirection"
+                  },
+                  {
+                    "id": 4,
+                    "name": "resolve_links",
+                    "type": "bool"
+                  },
+                  {
+                    "id": 5,
+                    "name": "count",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 6,
+                    "name": "subscription",
+                    "type": "SubscriptionOptions"
+                  },
+                  {
+                    "id": 7,
+                    "name": "filter",
+                    "type": "FilterOptions"
+                  },
+                  {
+                    "id": 8,
+                    "name": "no_filter",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 9,
+                    "name": "uuid_option",
+                    "type": "UUIDOption"
+                  }
+                ],
+                "messages": [
+                  {
+                    "name": "StreamOptions",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "stream_identifier",
+                        "type": "event_store.client.shared.StreamIdentifier"
+                      },
+                      {
+                        "id": 2,
+                        "name": "revision",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 3,
+                        "name": "start",
+                        "type": "event_store.client.shared.Empty"
+                      },
+                      {
+                        "id": 4,
+                        "name": "end",
+                        "type": "event_store.client.shared.Empty"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "AllOptions",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "position",
+                        "type": "Position"
+                      },
+                      {
+                        "id": 2,
+                        "name": "start",
+                        "type": "event_store.client.shared.Empty"
+                      },
+                      {
+                        "id": 3,
+                        "name": "end",
+                        "type": "event_store.client.shared.Empty"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "SubscriptionOptions"
+                  },
+                  {
+                    "name": "Position",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "commit_position",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 2,
+                        "name": "prepare_position",
+                        "type": "uint64"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "FilterOptions",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "stream_identifier",
+                        "type": "Expression"
+                      },
+                      {
+                        "id": 2,
+                        "name": "event_type",
+                        "type": "Expression"
+                      },
+                      {
+                        "id": 3,
+                        "name": "max",
+                        "type": "uint32"
+                      },
+                      {
+                        "id": 4,
+                        "name": "count",
+                        "type": "event_store.client.shared.Empty"
+                      },
+                      {
+                        "id": 5,
+                        "name": "checkpointIntervalMultiplier",
+                        "type": "uint32"
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "name": "Expression",
+                        "fields": [
+                          {
+                            "id": 1,
+                            "name": "regex",
+                            "type": "string"
+                          },
+                          {
+                            "id": 2,
+                            "name": "prefix",
+                            "type": "string",
+                            "is_repeated": true
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "UUIDOption",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "structured",
+                        "type": "event_store.client.shared.Empty"
+                      },
+                      {
+                        "id": 2,
+                        "name": "string",
+                        "type": "event_store.client.shared.Empty"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ReadResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event",
+                "type": "ReadEvent"
+              },
+              {
+                "id": 2,
+                "name": "confirmation",
+                "type": "SubscriptionConfirmation"
+              },
+              {
+                "id": 3,
+                "name": "checkpoint",
+                "type": "Checkpoint"
+              },
+              {
+                "id": 4,
+                "name": "stream_not_found",
+                "type": "StreamNotFound"
+              }
+            ],
+            "messages": [
+              {
+                "name": "ReadEvent",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "event",
+                    "type": "RecordedEvent"
+                  },
+                  {
+                    "id": 2,
+                    "name": "link",
+                    "type": "RecordedEvent"
+                  },
+                  {
+                    "id": 3,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 4,
+                    "name": "no_position",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ],
+                "messages": [
+                  {
+                    "name": "RecordedEvent",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "id",
+                        "type": "event_store.client.shared.UUID"
+                      },
+                      {
+                        "id": 2,
+                        "name": "stream_identifier",
+                        "type": "event_store.client.shared.StreamIdentifier"
+                      },
+                      {
+                        "id": 3,
+                        "name": "stream_revision",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 4,
+                        "name": "prepare_position",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 5,
+                        "name": "commit_position",
+                        "type": "uint64"
+                      },
+                      {
+                        "id": 7,
+                        "name": "custom_metadata",
+                        "type": "bytes"
+                      },
+                      {
+                        "id": 8,
+                        "name": "data",
+                        "type": "bytes"
+                      }
+                    ],
+                    "maps": [
+                      {
+                        "key_type": "string",
+                        "field": {
+                          "id": 6,
+                          "name": "metadata",
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "SubscriptionConfirmation",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "subscription_id",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "name": "Checkpoint",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "prepare_position",
+                    "type": "uint64"
+                  }
+                ]
+              },
+              {
+                "name": "StreamNotFound",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "AppendReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              },
+              {
+                "id": 2,
+                "name": "proposed_message",
+                "type": "ProposedMessage"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "no_stream",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "any",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 5,
+                    "name": "stream_exists",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              },
+              {
+                "name": "ProposedMessage",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "id",
+                    "type": "event_store.client.shared.UUID"
+                  },
+                  {
+                    "id": 3,
+                    "name": "custom_metadata",
+                    "type": "bytes"
+                  },
+                  {
+                    "id": 4,
+                    "name": "data",
+                    "type": "bytes"
+                  }
+                ],
+                "maps": [
+                  {
+                    "key_type": "string",
+                    "field": {
+                      "id": 2,
+                      "name": "metadata",
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "AppendResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "success",
+                "type": "Success"
+              },
+              {
+                "id": 2,
+                "name": "wrong_expected_version",
+                "type": "WrongExpectedVersion"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Position",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "prepare_position",
+                    "type": "uint64"
+                  }
+                ]
+              },
+              {
+                "name": "Success",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "current_revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "no_stream",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 3,
+                    "name": "position",
+                    "type": "Position"
+                  },
+                  {
+                    "id": 4,
+                    "name": "no_position",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              },
+              {
+                "name": "WrongExpectedVersion",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "current_revision_20_6_0",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "no_stream_20_6_0",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 3,
+                    "name": "expected_revision_20_6_0",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 4,
+                    "name": "any_20_6_0",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 5,
+                    "name": "stream_exists_20_6_0",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 6,
+                    "name": "current_revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 7,
+                    "name": "current_no_stream",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 8,
+                    "name": "expected_revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 9,
+                    "name": "expected_any",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 10,
+                    "name": "expected_stream_exists",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 11,
+                    "name": "expected_no_stream",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DeleteReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "no_stream",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "any",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 5,
+                    "name": "stream_exists",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DeleteResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "position",
+                "type": "Position"
+              },
+              {
+                "id": 2,
+                "name": "no_position",
+                "type": "event_store.client.shared.Empty"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Position",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "prepare_position",
+                    "type": "uint64"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "TombstoneReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "no_stream",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "any",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 5,
+                    "name": "stream_exists",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "TombstoneResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "position",
+                "type": "Position"
+              },
+              {
+                "id": 2,
+                "name": "no_position",
+                "type": "event_store.client.shared.Empty"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Position",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "prepare_position",
+                    "type": "uint64"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "services": [
+          {
+            "name": "Streams",
+            "rpcs": [
+              {
+                "name": "Read",
+                "in_type": "ReadReq",
+                "out_type": "ReadResp",
+                "out_streamed": true
+              },
+              {
+                "name": "Append",
+                "in_type": "AppendReq",
+                "out_type": "AppendResp",
+                "in_streamed": true
+              },
+              {
+                "name": "Delete",
+                "in_type": "DeleteReq",
+                "out_type": "DeleteResp"
+              },
+              {
+                "name": "Tombstone",
+                "in_type": "TombstoneReq",
+                "out_type": "TombstoneResp"
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.client.streams"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.streams"
+          }
+        ]
+      }
+    },
+    {
+      "protopath": "Grpc:/:users.proto",
+      "def": {
+        "messages": [
+          {
+            "name": "CreateReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "password",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "full_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 4,
+                    "name": "groups",
+                    "type": "string",
+                    "is_repeated": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "CreateResp"
+          },
+          {
+            "name": "UpdateReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "password",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "full_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 4,
+                    "name": "groups",
+                    "type": "string",
+                    "is_repeated": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "UpdateResp"
+          },
+          {
+            "name": "DeleteReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DeleteResp"
+          },
+          {
+            "name": "EnableReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "EnableResp"
+          },
+          {
+            "name": "DisableReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DisableResp"
+          },
+          {
+            "name": "DetailsReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "DetailsResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "user_details",
+                "type": "UserDetails"
+              }
+            ],
+            "messages": [
+              {
+                "name": "UserDetails",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "full_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "groups",
+                    "type": "string",
+                    "is_repeated": true
+                  },
+                  {
+                    "id": 4,
+                    "name": "last_updated",
+                    "type": "DateTime"
+                  },
+                  {
+                    "id": 5,
+                    "name": "disabled",
+                    "type": "bool"
+                  }
+                ],
+                "messages": [
+                  {
+                    "name": "DateTime",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "ticks_since_epoch",
+                        "type": "int64"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ChangePasswordReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "current_password",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "new_password",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ChangePasswordResp"
+          },
+          {
+            "name": "ResetPasswordReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "login_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "new_password",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ResetPasswordResp"
+          }
+        ],
+        "services": [
+          {
+            "name": "Users",
+            "rpcs": [
+              {
+                "name": "Create",
+                "in_type": "CreateReq",
+                "out_type": "CreateResp"
+              },
+              {
+                "name": "Update",
+                "in_type": "UpdateReq",
+                "out_type": "UpdateResp"
+              },
+              {
+                "name": "Delete",
+                "in_type": "DeleteReq",
+                "out_type": "DeleteResp"
+              },
+              {
+                "name": "Disable",
+                "in_type": "DisableReq",
+                "out_type": "DisableResp"
+              },
+              {
+                "name": "Enable",
+                "in_type": "EnableReq",
+                "out_type": "EnableResp"
+              },
+              {
+                "name": "Details",
+                "in_type": "DetailsReq",
+                "out_type": "DetailsResp",
+                "out_streamed": true
+              },
+              {
+                "name": "ChangePassword",
+                "in_type": "ChangePasswordReq",
+                "out_type": "ChangePasswordResp"
+              },
+              {
+                "name": "ResetPassword",
+                "in_type": "ResetPasswordReq",
+                "out_type": "ResetPasswordResp"
+              }
+            ]
+          }
+        ],
+        "package": {
+          "name": "event_store.client.users"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.users"
+          }
+        ]
+      }
+    }
+  ]
+}
