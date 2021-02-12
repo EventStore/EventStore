@@ -117,6 +117,7 @@ namespace EventStore.Projections.Core.Messages {
 			private readonly string _query;
 			private readonly string _name;
 			private readonly ProjectionVersion _version;
+			private readonly bool _enableContentTypeValidation;
 
 			public CreateAndPrepare(
 				Guid projectionId,
@@ -125,13 +126,15 @@ namespace EventStore.Projections.Core.Messages {
 				ProjectionVersion version,
 				ProjectionConfig config,
 				string handlerType,
-				string query)
+				string query,
+				bool enableContentTypeValidation)
 				: base(projectionId, workerId) {
 				_name = name;
 				_version = version;
 				_config = config;
 				_handlerType = handlerType;
 				_query = query;
+				_enableContentTypeValidation = enableContentTypeValidation;
 			}
 
 			public ProjectionConfig Config {
@@ -153,6 +156,10 @@ namespace EventStore.Projections.Core.Messages {
 			public string Query {
 				get { return _query; }
 			}
+
+			public bool EnableContentTypeValidation {
+				get { return _enableContentTypeValidation; }
+			}
 		}
 
 		public class CreatePrepared : CoreProjectionManagementControlMessage {
@@ -168,6 +175,7 @@ namespace EventStore.Projections.Core.Messages {
 			private readonly string _query;
 			private readonly string _name;
 			private readonly ProjectionVersion _version;
+			private readonly bool _enableContentTypeValidation;
 
 			public CreatePrepared(
 				Guid projectionId,
@@ -177,7 +185,8 @@ namespace EventStore.Projections.Core.Messages {
 				ProjectionConfig config,
 				QuerySourcesDefinition sourceDefinition,
 				string handlerType,
-				string query)
+				string query,
+				bool enableContentTypeValidation)
 				: base(projectionId, workerId) {
 				if (name == null) throw new ArgumentNullException("name");
 				if (config == null) throw new ArgumentNullException("config");
@@ -190,6 +199,7 @@ namespace EventStore.Projections.Core.Messages {
 				_sourceDefinition = sourceDefinition;
 				_handlerType = handlerType;
 				_query = query;
+				_enableContentTypeValidation = enableContentTypeValidation;
 			}
 
 			public ProjectionConfig Config {
@@ -214,6 +224,10 @@ namespace EventStore.Projections.Core.Messages {
 
 			public string Query {
 				get { return _query; }
+			}
+
+			public bool EnableContentTypeValidation {
+				get { return _enableContentTypeValidation; }
 			}
 		}
 

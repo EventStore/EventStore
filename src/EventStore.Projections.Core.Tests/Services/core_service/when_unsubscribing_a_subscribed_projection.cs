@@ -21,11 +21,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_service {
 			_readerService.Handle(
 				new ReaderSubscriptionManagement.Subscribe(
 					_projectionCorrelationId, CheckpointTag.FromPosition(0, 0, 0), CreateReaderStrategy(),
-					new ReaderSubscriptionOptions(1000, 2000, 10000, false, stopAfterNEvents: null)));
+					new ReaderSubscriptionOptions(1000, 2000, 10000, false, stopAfterNEvents: null, enableContentTypeValidation: true)));
 			_readerService.Handle(
 				new ReaderSubscriptionManagement.Subscribe(
 					_projectionCorrelationId2, CheckpointTag.FromPosition(0, 0, 0), CreateReaderStrategy(),
-					new ReaderSubscriptionOptions(1000, 2000, 10000, false, stopAfterNEvents: null)));
+					new ReaderSubscriptionOptions(1000, 2000, 10000, false, stopAfterNEvents: null, enableContentTypeValidation: true)));
 			// when
 			_readerService.Handle(new ReaderSubscriptionManagement.Unsubscribe(_projectionCorrelationId));
 		}

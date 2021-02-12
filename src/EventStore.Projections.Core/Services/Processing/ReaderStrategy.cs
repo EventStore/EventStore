@@ -148,7 +148,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					readerSubscriptionOptions.CheckpointAfterMs,
 					_processingLag,
 					readerSubscriptionOptions.StopOnEof,
-					readerSubscriptionOptions.StopAfterNEvents);
+					readerSubscriptionOptions.StopAfterNEvents,
+					readerSubscriptionOptions.EnableContentTypeValidation);
 			else
 				return new ReaderSubscription(
 					_tag,
@@ -161,7 +162,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					readerSubscriptionOptions.CheckpointProcessedEventsThreshold,
 					readerSubscriptionOptions.CheckpointAfterMs,
 					readerSubscriptionOptions.StopOnEof,
-					readerSubscriptionOptions.StopAfterNEvents);
+					readerSubscriptionOptions.StopAfterNEvents,
+					readerSubscriptionOptions.EnableContentTypeValidation);
 		}
 
 		public IEventReader CreatePausedEventReader(

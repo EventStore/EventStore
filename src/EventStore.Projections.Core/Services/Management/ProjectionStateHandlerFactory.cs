@@ -5,7 +5,9 @@ using System.Linq;
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionStateHandlerFactory {
 		public IProjectionStateHandler Create(
-			string factoryType, string source, Action<int, Action> cancelCallbackFactory = null,
+			string factoryType, string source,
+			bool enableContentTypeValidation,
+			Action<int, Action> cancelCallbackFactory = null,
 			Action<string, object[]> logger = null) {
 			var colonPos = factoryType.IndexOf(':');
 			string kind = null;
@@ -20,7 +22,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IProjectionStateHandler result;
 			switch (kind.ToLowerInvariant()) {
 				case "js":
-					result = new DefaultV8ProjectionStateHandler(source, logger, cancelCallbackFactory);
+					result = new DefaultV8ProjectionStateHandler(source, logger, cancelCallbackFactory, enableContentTypeValidation);
 					break;
 				case "native":
 					var type = Type.GetType(rest);

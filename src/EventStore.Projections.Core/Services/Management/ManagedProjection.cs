@@ -51,6 +51,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			public int PendingEventsThreshold { get; set; }
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
+			public int? ProjectionSubsystemVersion { get; set; }
 
 			public PersistedState() {
 				CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold;
@@ -97,11 +98,9 @@ namespace EventStore.Projections.Core.Services.Management {
 		internal PersistedState PersistedProjectionState = new PersistedState();
 
 		private bool _persistedStateLoaded = false;
-		//private int _version;
 
 		private string _faultedReason;
 
-		//private List<IEnvelope> _debugStateRequests;
 		private ProjectionStatistics _lastReceivedStatistics;
 		private DateTime _lastAccessed;
 		private long _lastWrittenVersion = -1;
@@ -205,6 +204,13 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		public ClaimsPrincipal RunAs {
 			get { return _runAs; }
+		}
+
+		public bool EnableContentTypeValidation {
+			get {
+				return PersistedProjectionState.ProjectionSubsystemVersion >=
+				       ProjectionsSubsystem.CONTENT_TYPE_VALIDATION_VERSION;
+			}
 		}
 
 		internal void SetState(ManagedProjectionState value) {
@@ -830,7 +836,8 @@ namespace EventStore.Projections.Core.Services.Management {
 						PersistedProjectionState.Version ?? 0),
 					config,
 					HandlerType,
-					Query);
+					Query,
+					EnableContentTypeValidation);
 		}
 
 		private CoreProjectionManagementMessage.CreatePrepared CreatePreparedMessage(ProjectionConfig config) {
@@ -847,7 +854,8 @@ namespace EventStore.Projections.Core.Services.Management {
 				config,
 				QuerySourcesDefinition.From(PersistedProjectionState.SourceDefinition),
 				HandlerType,
-				Query);
+				Query,
+				EnableContentTypeValidation);
 			return createProjectionMessage;
 		}
 
@@ -1024,9 +1032,10 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		private void UpdateProjectionVersion(bool force = false) {
-			if (_lastWrittenVersion == PersistedProjectionState.Version)
+			if (_lastWrittenVersion == PersistedProjectionState.Version) {
 				PersistedProjectionState.Version++;
-			else if (force)
+				PersistedProjectionState.ProjectionSubsystemVersion = ProjectionsSubsystem.VERSION;
+			} else if (force)
 				throw new ApplicationException(
 					"Internal error: projection definition must be saved before forced updating version");
 		}

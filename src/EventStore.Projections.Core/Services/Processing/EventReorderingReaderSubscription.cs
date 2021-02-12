@@ -22,8 +22,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			int? checkpointProcessedEventsThreshold,
 			int checkpointAfterMs,
 			int processingLagMs,
-			bool stopOnEof = false,
-			int? stopAfterNEvents = null)
+			bool stopOnEof,
+			int? stopAfterNEvents,
+			bool enableContentTypeValidation)
 			: base(
 				publisher,
 				subscriptionId,
@@ -34,7 +35,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				checkpointProcessedEventsThreshold,
 				checkpointAfterMs,
 				stopOnEof,
-				stopAfterNEvents) {
+				stopAfterNEvents,
+				enableContentTypeValidation) {
 			_processingLagMs = processingLagMs;
 		}
 
