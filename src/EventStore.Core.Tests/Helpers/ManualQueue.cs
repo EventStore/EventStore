@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Helpers {
 				var orderedTimerMessages = _timerQueue.OrderBy(v => v.Scheduled.Add(v.Message.TriggerAfter)).ToArray();
 				_timerQueue.Clear();
 				foreach (var timerMessage in orderedTimerMessages) {
-					if (timerMessage.Scheduled.Add(timerMessage.Message.TriggerAfter) <= _time.Now)
+					if (timerMessage.Scheduled.Add(timerMessage.Message.TriggerAfter) <= _time.UtcNow)
 						timerMessage.Message.Reply();
 					else
 						_timerQueue.Add(timerMessage);
@@ -75,7 +75,7 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		public void Handle(TimerMessage.Schedule message) {
-			_timerQueue.Add(new InternalSchedule(message, _time.Now));
+			_timerQueue.Add(new InternalSchedule(message, _time.UtcNow));
 		}
 	}
 }

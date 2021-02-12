@@ -44,13 +44,13 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_fi
 						ResolvedEvent.ForUnresolvedEvent(
 							new EventRecord(
 								1, 50, Guid.NewGuid(), _firstEventId, 50, 0, "a", ExpectedVersion.Any,
-								_fakeTimeProvider.Now,
+								_fakeTimeProvider.UtcNow,
 								PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 								"event_type1", new byte[] {1}, new byte[] {2}), 100),
 						ResolvedEvent.ForUnresolvedEvent(
 							new EventRecord(
 								2, 150, Guid.NewGuid(), _secondEventId, 150, 0, "a", ExpectedVersion.Any,
-								_fakeTimeProvider.Now,
+								_fakeTimeProvider.UtcNow,
 								PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
 								SystemEventTypes.StreamDeleted, new byte[] {1}, new byte[] {2}), 200),
 					}, null, false, 100,

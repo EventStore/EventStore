@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.TimerService {
 		}
 
 		public void Schedule(TimeSpan after, Action<IScheduler, object> callback, object state) {
-			_pending.Enqueue(new ScheduledTask(_timeProvider.Now.Add(after), callback, state));
+			_pending.Enqueue(new ScheduledTask(_timeProvider.UtcNow.Add(after), callback, state));
 		}
 
 		private void DoTiming() {
@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.TimerService {
 
 					_queueStats.ProcessingStarted<ExecuteScheduledTasks>(_tasks.Count);
 					int processed = 0;
-					while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.Now) {
+					while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.UtcNow) {
 						processed += 1;
 						var scheduledTask = _tasks.DeleteMin();
 						scheduledTask.Action(this, scheduledTask.State);

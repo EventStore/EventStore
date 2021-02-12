@@ -615,7 +615,8 @@ namespace EventStore.Core {
 				var gossip = new NodeGossipService(_mainQueue, gossipSeedSource, gossipInfo, db.Config.WriterCheckpoint,
 					db.Config.ChaserCheckpoint, epochManager, () => readIndex.LastCommitPosition,
 					vNodeSettings.NodePriority, vNodeSettings.GossipInterval,
-					vNodeSettings.GossipAllowedTimeDifference);
+					vNodeSettings.GossipAllowedTimeDifference,
+					_timeProvider);
 				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
 				_mainBus.Subscribe<GossipMessage.GotGossipSeedSources>(gossip);
@@ -625,6 +626,9 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GossipSendFailed>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionEstablished>(gossip);
 				_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(gossip);
+				_mainBus.Subscribe<GossipMessage.GetGossipFailed>(gossip);
+				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
+				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
 
 			AddTasks(_workersHandler.Start());

@@ -186,7 +186,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			bool? isAlive = null,
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null) {
-			ClusterInfo.Members[nodeIndex] = ClusterInfo.Members[nodeIndex].Updated(state: role,
+			ClusterInfo.Members[nodeIndex] = ClusterInfo.Members[nodeIndex].Updated(
+				DateTime.UtcNow,
+				state: role,
 				isAlive: isAlive,
 				writerCheckpoint: writerCheckpoint,
 				chaserCheckpoint: chaserCheckpoint);

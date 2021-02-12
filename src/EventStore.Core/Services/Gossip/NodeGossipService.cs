@@ -5,7 +5,7 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog.Checkpoint;
-using System.Net;
+using EventStore.Core.Services.TimerService;
 
 namespace EventStore.Core.Services.Gossip {
 	public class NodeGossipService : GossipServiceBase {
@@ -14,6 +14,7 @@ namespace EventStore.Core.Services.Gossip {
 		private readonly IEpochManager _epochManager;
 		private readonly Func<long> _getLastCommitPosition;
 		private readonly int _nodePriority;
+		private readonly ITimeProvider _timeProvider;
 
 		public NodeGossipService(IPublisher bus,
 			IGossipSeedSource gossipSeedSource,
@@ -24,8 +25,11 @@ namespace EventStore.Core.Services.Gossip {
 			Func<long> getLastCommitPosition,
 			int nodePriority,
 			TimeSpan interval,
-			TimeSpan allowedTimeDifference)
-			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference) {
+			TimeSpan allowedTimeDifference,
+			ITimeProvider timeProvider,
+			Func<MemberInfo[], MemberInfo> getNodeToGossipTo = null
+			)
+			: base(bus, gossipSeedSource, nodeInfo, interval, allowedTimeDifference, timeProvider, getNodeToGossipTo) {
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNull(chaserCheckpoint, "chaserCheckpoint");
 			Ensure.NotNull(epochManager, "epochManager");
@@ -36,12 +40,13 @@ namespace EventStore.Core.Services.Gossip {
 			_epochManager = epochManager;
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
+			_timeProvider = timeProvider;
 		}
 
 		protected override MemberInfo GetInitialMe() {
 			var lastEpoch = _epochManager.GetLastEpoch();
 			return MemberInfo.ForVNode(NodeInfo.InstanceId,
-				DateTime.UtcNow,
+				_timeProvider.UtcNow,
 				VNodeState.Unknown,
 				true,
 				NodeInfo.InternalTcp,
@@ -65,7 +70,8 @@ namespace EventStore.Core.Services.Gossip {
 				lastCommitPosition: _getLastCommitPosition(),
 				writerCheckpoint: _writerCheckpoint.ReadNonFlushed(),
 				chaserCheckpoint: _chaserCheckpoint.ReadNonFlushed(),
-				epoch: _epochManager.GetLastEpoch());
+				epoch: _epochManager.GetLastEpoch(),
+				utcNow: _timeProvider.UtcNow);
 		}
 	}
 }

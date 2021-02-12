@@ -83,6 +83,7 @@ namespace EventStore.Transport.Tcp {
 
 		private readonly Queue<ReceivedData> _receiveQueue = new Queue<ReceivedData>();
 		private readonly MemoryStream _memoryStream = new MemoryStream();
+		private long _memoryStreamOffset = 0L;
 
 		private readonly object _receivingLock = new object();
 		private readonly object _sendLock = new object();
@@ -155,16 +156,23 @@ namespace EventStore.Transport.Tcp {
 						_isSending = true;
 					}
 
-					_memoryStream.SetLength(0);
+					if (_memoryStreamOffset >= _memoryStream.Length) {
+						_memoryStream.SetLength(0);
+						_memoryStreamOffset = 0L;
 
-					ArraySegment<byte> sendPiece;
-					while (_sendQueue.TryDequeue(out sendPiece)) {
-						_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
-						if (_memoryStream.Length >= MaxSendPacketSize)
-							break;
+						ArraySegment<byte> sendPiece;
+						while (_sendQueue.TryDequeue(out sendPiece)) {
+							_memoryStream.Write(sendPiece.Array, sendPiece.Offset, sendPiece.Count);
+							if (_memoryStream.Length >= MaxSendPacketSize)
+								break;
+						}
 					}
 
-					_sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), 0, (int)_memoryStream.Length);
+					/*the multiplier: 3 * MaxSendPacketSize was empirically tested on linux. A lower multiplier results in transfer speed regression with the mono runtime.*/
+					int sendingBytes = Math.Min((int)_memoryStream.Length - (int) _memoryStreamOffset, 3 * MaxSendPacketSize);
+
+					_sendSocketArgs.SetBuffer(_memoryStream.GetBuffer(), (int) _memoryStreamOffset, sendingBytes);
+					_memoryStreamOffset += sendingBytes;
 
 					NotifySendStarting(_sendSocketArgs.Count);
 					var firedAsync = _sendSocketArgs.AcceptSocket.SendAsync(_sendSocketArgs);
