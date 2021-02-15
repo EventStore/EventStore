@@ -22,6 +22,16 @@ jobs:
         cd src
         dotnet restore
         dotnet tool run dotnet-retire
+  protolock:
+    runs-on: ubuntu-latest
+    name: ci/github/protolock
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Protolock Status
+      shell: bash
+      run: |
+        ./protolock.sh status --uptodate
   docker-compose:
     runs-on: ubuntu-latest
     name: ci/github/docker-compose
@@ -175,7 +185,7 @@ jobs:
         name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
         path: test-results
   package:
-    needs: [vulnerability-scan, build, docker-compose]
+    needs: [vulnerability-scan, build, docker-compose, protolock]
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
