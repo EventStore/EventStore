@@ -1530,7 +1530,7 @@ namespace EventStore.Core {
 
 		private IGossipSeedSource GetGossipSource() {
 			IGossipSeedSource gossipSeedSource;
-			if (_discoverViaDns) {
+			if (_discoverViaDns && _clusterNodeCount > 1) {
 				gossipSeedSource = new DnsGossipSeedSource(_clusterDns, _clusterGossipPort);
 			} else {
 				if ((_gossipSeeds == null || _gossipSeeds.Count == 0) && _clusterNodeCount > 1) {

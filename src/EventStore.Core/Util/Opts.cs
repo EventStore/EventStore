@@ -81,7 +81,7 @@ namespace EventStore.Core.Util {
 		public const string GossipOnSingleNodeDescr =
 			"When enabled tells a single node to run gossip as if it is a cluster";
 
-		public const bool GossipOnSingleNodeDefault = false;
+		public const bool GossipOnSingleNodeDefault = true;
 
 		public const string StatsPeriodDescr = "The number of seconds between statistics gathers.";
 		public const int StatsPeriodDefault = 30;

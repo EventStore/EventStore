@@ -110,6 +110,10 @@ namespace EventStore.ClusterNode {
 					$"- The '{nameof(Options.DisableExternalTcpTls)}' option has been deprecated as of version 20.6.1.\n";
 			}
 
+			if(!opts.GossipOnSingleNode)
+				deprecationMessages +=
+					$"- The '{nameof(Options.GossipOnSingleNode)}' option has been deprecated as of version 21.2\n";
+
 			if (deprecationMessages.Any()) {
 				Log.Warning($"DEPRECATED\n{deprecationMessages}");
 			}
