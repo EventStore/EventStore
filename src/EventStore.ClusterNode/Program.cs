@@ -56,34 +56,39 @@ namespace EventStore.ClusterNode {
 					builder.AddEnvironmentVariables().AddCommandLine(args ?? Array.Empty<string>()))
 				.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
 				.ConfigureLogging(logging => logging.AddSerilog())
-				.ConfigureWebHostDefaults(builder =>
-					builder.UseKestrel(server => {
-							server.Listen(hostedService.Options.ExtIp, hostedService.Options.HttpPort,
-								listenOptions => {
-									if (hostedService.Node.DisableHttps) {
-										listenOptions.Use(next => new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
-									} else {
-										listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
-											ServerCertificateSelector = delegate {
-												return hostedService.Node.CertificateSelector();
-											},
-											ClientCertificateMode = ClientCertificateMode.AllowCertificate,
-											ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
-												var (isValid, error) =
-													hostedService.Node.InternalClientCertificateValidator(certificate,
-														chain,
-														sslPolicyErrors);
-												if (!isValid && error != null) {
-													Log.Error("Client certificate validation error: {e}", error);
-												}
-
-												return isValid;
+				.ConfigureWebHostDefaults(builder => builder
+					.UseKestrel(server => {
+						server.Limits.Http2.KeepAlivePingDelay =
+							TimeSpan.FromMilliseconds(hostedService.Options.KeepAliveInterval);
+						server.Limits.Http2.KeepAlivePingTimeout =
+							TimeSpan.FromMilliseconds(hostedService.Options.KeepAliveTimeout);
+						server.Listen(hostedService.Options.ExtIp, hostedService.Options.HttpPort,
+							listenOptions => {
+								if (hostedService.Node.DisableHttps) {
+									listenOptions.Use(next =>
+										new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
+								} else {
+									listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
+										ServerCertificateSelector = delegate {
+											return hostedService.Node.CertificateSelector();
+										},
+										ClientCertificateMode = ClientCertificateMode.AllowCertificate,
+										ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+											var (isValid, error) =
+												hostedService.Node.InternalClientCertificateValidator(certificate,
+													chain,
+													sslPolicyErrors);
+											if (!isValid && error != null) {
+												Log.Error("Client certificate validation error: {e}", error);
 											}
-										});
-									}
-								});
-						})
-						.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
-						.Configure(hostedService.Node.Startup.Configure));
+
+											return isValid;
+										}
+									});
+								}
+							});
+					})
+					.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
+					.Configure(hostedService.Node.Startup.Configure));
 	}
 }

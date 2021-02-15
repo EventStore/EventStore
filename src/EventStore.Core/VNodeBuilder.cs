@@ -154,6 +154,8 @@ namespace EventStore.Core {
 		private bool _readOnlyReplica;
 		private bool _unsafeAllowSurplusNodes;
 		private AuthorizationProviderFactory _authorizationProviderFactory;
+		private TimeSpan _keepAliveInterval;
+		private TimeSpan _keepAliveTimeout;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -262,6 +264,9 @@ namespace EventStore.Core {
 			_maxAppendSize = Opts.MaxAppendSizeDefault;
 			_deadMemberRemovalPeriod = TimeSpan.FromSeconds(Opts.DeadMemberRemovalPeriodDefault);
 			_maxTruncation = Opts.MaxTruncationDefault;
+
+			_keepAliveInterval = TimeSpan.FromMilliseconds(Opts.KeepAliveIntervalDefault);
+			_keepAliveTimeout = TimeSpan.FromMilliseconds(Opts.KeepAliveTimeoutDefault);
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -1299,6 +1304,26 @@ namespace EventStore.Core {
 		public VNodeBuilder EnableReadOnlyReplica() {
 			_readOnlyReplica = true;
 
+			return this;
+		}
+
+		/// <summary>
+		/// The period after which a keepalive ping is sent on the transport.
+		/// </summary>
+		/// <param name="keepAliveInterval">The interval.</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithKeepAliveInterval(TimeSpan keepAliveInterval) {
+			_keepAliveInterval = keepAliveInterval;
+			return this;
+		}
+
+		/// <summary>
+		/// The amount of time the sender of the keepalive ping waits for an acknowledgement. If it does not receive an acknowledgment within this time, it will close the connection.
+		/// </summary>
+		/// <param name="keepAliveTimeout">The timeout.</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithKeepAliveTimeout(TimeSpan keepAliveTimeout) {
+			_keepAliveTimeout = keepAliveTimeout;
 			return this;
 		}
 
