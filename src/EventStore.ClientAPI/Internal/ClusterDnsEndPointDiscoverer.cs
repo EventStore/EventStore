@@ -190,7 +190,7 @@ namespace EventStore.ClientAPI.Internal {
 				null,
 				response => {
 					if (response.HttpStatusCode != HttpStatusCode.OK) {
-						_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode, response.StatusDescription);
+						_log.Info("[{0}] responded with {1} ({2})", endPoint.EndPoint, response.HttpStatusCode, response.StatusDescription);
 						completed.Set();
 						return;
 					}
@@ -201,7 +201,7 @@ namespace EventStore.ClientAPI.Internal {
 					} catch (Exception e) {
 						if (e is AggregateException ae)
 							e = ae.Flatten();
-						_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e);
+						_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint.EndPoint, e);
 					}
 
 					completed.Set();
@@ -209,11 +209,13 @@ namespace EventStore.ClientAPI.Internal {
 				e => {
 					if (e is AggregateException ae)
 						e = ae.Flatten();
-					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
+					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint.EndPoint, e);
 					completed.Set();
 				}, endPoint.HostHeader);
 
-			completed.Wait();
+			if (!completed.Wait(_gossipTimeout)) {
+				_log.Error("Timed out trying to get cluster info from [{0}].", endPoint.EndPoint);
+			}
 			return result;
 		}
 
