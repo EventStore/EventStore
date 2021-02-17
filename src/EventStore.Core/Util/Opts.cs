@@ -20,6 +20,7 @@ namespace EventStore.Core.Util {
 		public const string CertificatesFromStoreGroup = "Certificate Options (from store)";
 		public const string ClusterGroup = "Cluster Options";
 		public const string ManagerGroup = "Manager Options";
+		public const string GrpcGroup = "gRPC Options";
 
 		/*
 		 *  COMMON OPTIONS
@@ -398,6 +399,15 @@ namespace EventStore.Core.Util {
 		public const string DisableFirstLevelHttpAuthorizationDescr = "Disables first level authorization checks on all HTTP endpoints. This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.";
 		public static readonly bool DisableFirstLevelHttpAuthorizationDefault = false;
 
+		/*
+		 * gRPC Options
+		 */
+
+		public const string KeepAliveIntervalDescr = "Controls the period (in milliseconds) after which a keepalive ping is sent on the transport.";
+		public const int KeepAliveIntervalDefault = 10000;
+
+		public const string KeepAliveTimeoutDescr = "Controls the amount of time (in milliseconds) the sender of the keepalive ping waits for an acknowledgement. If it does not receive an acknowledgment within this time, it will close the connection.";
+		public const int KeepAliveTimeoutDefault = 10000;
 		/*
 		 * Scavenge options
 		 */
