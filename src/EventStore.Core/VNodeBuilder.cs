@@ -153,6 +153,8 @@ namespace EventStore.Core {
 		private bool _readOnlyReplica;
 		private bool _unsafeAllowSurplusNodes;
 		private AuthorizationProviderFactory _authorizationProviderFactory;
+		private TimeSpan _keepAliveInterval;
+		private TimeSpan _keepAliveTimeout;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -260,6 +262,9 @@ namespace EventStore.Core {
 			_maxAppendSize = Opts.MaxAppendSizeDefault;
 			_deadMemberRemovalPeriod = TimeSpan.FromSeconds(Opts.DeadMemberRemovalPeriodDefault);
 			_maxTruncation = Opts.MaxTruncationDefault;
+
+			_keepAliveInterval = TimeSpan.FromMilliseconds(Opts.KeepAliveIntervalDefault);
+			_keepAliveTimeout = TimeSpan.FromMilliseconds(Opts.KeepAliveTimeoutDefault);
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -1290,6 +1295,26 @@ namespace EventStore.Core {
 			return this;
 		}
 
+		/// <summary>
+		/// The period after which a keepalive ping is sent on the transport.
+		/// </summary>
+		/// <param name="keepAliveInterval">The interval.</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithKeepAliveInterval(TimeSpan keepAliveInterval) {
+			_keepAliveInterval = keepAliveInterval;
+			return this;
+		}
+
+		/// <summary>
+		/// The amount of time the sender of the keepalive ping waits for an acknowledgement. If it does not receive an acknowledgment within this time, it will close the connection.
+		/// </summary>
+		/// <param name="keepAliveTimeout">The timeout.</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithKeepAliveTimeout(TimeSpan keepAliveTimeout) {
+			_keepAliveTimeout = keepAliveTimeout;
+			return this;
+		}
+
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
 			if (_gossipAdvertiseInfo == null) {
 				Ensure.Equal(false, _internalTcp == null && _internalSecureTcp == null, "Both internal TCP endpoints are null");
@@ -1442,31 +1467,32 @@ namespace EventStore.Core {
 				_connectionPendingSendBytesThreshold,
 				_connectionQueueSizeThreshold,
 				ComputePTableMaxReaderCount(ESConsts.PTableInitialReaderCount, _readerThreadsCount),
+				_keepAliveInterval, _keepAliveTimeout,
 				_index,
-				_enableHistograms,
-				_skipIndexVerify,
-				_indexCacheDepth,
-				_indexBitnessVersion,
-				_optimizeIndexMerge,
-				consumerStrategies,
-				_unsafeIgnoreHardDelete,
-				_readerThreadsCount,
-				_alwaysKeepScavenged,
-				_gossipOnSingleNode,
-				_skipIndexScanOnReads,
-				_reduceFileCachePressure,
-				_initializationThreads,
-				_faultOutOfOrderProjections,
-				_maxAutoMergeIndexLevel,
-				_disableFirstLevelHttpAuthorization,
-				_logFailedAuthenticationAttempts,
-				_maxTruncation,
-				_readOnlyReplica,
-				_maxAppendSize,
-				_unsafeAllowSurplusNodes,
-				_enableExternalTCP,
-				_enableAtomPubOverHTTP,
-				_disableHttps);
+				enableHistograms: _enableHistograms,
+				skipIndexVerify: _skipIndexVerify,
+				indexCacheDepth: _indexCacheDepth,
+				indexBitnessVersion: _indexBitnessVersion,
+				optimizeIndexMerge: _optimizeIndexMerge,
+				additionalConsumerStrategies: consumerStrategies,
+				unsafeIgnoreHardDeletes: _unsafeIgnoreHardDelete,
+				readerThreadsCount: _readerThreadsCount,
+				alwaysKeepScavenged: _alwaysKeepScavenged,
+				gossipOnSingleNode: _gossipOnSingleNode,
+				skipIndexScanOnReads: _skipIndexScanOnReads,
+				reduceFileCachePressure: _reduceFileCachePressure,
+				initializationThreads: _initializationThreads,
+				faultOutOfOrderProjections: _faultOutOfOrderProjections,
+				maxAutoMergeIndexLevel: _maxAutoMergeIndexLevel,
+				disableFirstLevelHttpAuthorization: _disableFirstLevelHttpAuthorization,
+				logFailedAuthenticationAttempts: _logFailedAuthenticationAttempts,
+				maxTruncation: _maxTruncation,
+				readOnlyReplica: _readOnlyReplica,
+				maxAppendSize: _maxAppendSize,
+				unsafeAllowSurplusNodes: _unsafeAllowSurplusNodes,
+				enableExternalTCP: _enableExternalTCP,
+				enableAtomPubOverHTTP: _enableAtomPubOverHTTP,
+				disableHttps: _disableHttps);
 
 			var infoControllerBuilder = new InfoControllerBuilder()
 				.WithOptions(options)
