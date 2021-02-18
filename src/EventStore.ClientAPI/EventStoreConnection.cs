@@ -200,9 +200,8 @@ namespace EventStore.ClientAPI {
 				clusterSettings.GossipTimeout,
 				clusterSettings.NodePreference,
 				CompatibilityMode.Create(connectionSettings.CompatibilityMode),
-				connectionSettings.CustomHttpMessageHandler,
-				!connectionSettings.UseSslConnection);
-
+				connectionSettings.CustomHttpMessageHandler);
+			
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
 				connectionName);
 		}

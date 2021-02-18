@@ -21,13 +21,20 @@ namespace EventStore.ClientAPI {
 		public readonly bool SeedOverTls;
 
 		/// <summary>
+		/// If Gossip should be requested with no "Host" header to be compatible with v5 clusters.
+		/// </summary>
+		public readonly bool V5HostHeader;
+
+		/// <summary>
 		/// Creates a new <see cref="GossipSeed" />.
 		/// </summary>
 		/// <param name="endPoint">The <see cref="EndPoint"/> for the HTTP endpoint of the gossip seed. The standard port is 2113.</param>
 		/// <param name="seedOverTls">Specifies that eventstore should use https when connecting to gossip</param>
-		public GossipSeed(EndPoint endPoint, bool seedOverTls = true) {
+		/// <param name="v5HostHeader">Specifies that eventstore should request gossip with no "Host" header to be compatible with v5 clusters.</param>
+		public GossipSeed(EndPoint endPoint, bool seedOverTls = true, bool v5HostHeader = false) {
 			EndPoint = endPoint;
 			SeedOverTls = seedOverTls;
+			V5HostHeader = v5HostHeader;
 		}
 	}
 }
