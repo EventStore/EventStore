@@ -9,7 +9,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkManager : IDisposable {
 		private static readonly ILogger Log = LogManager.GetLoggerFor<TFChunkManager>();
 
-		public const int MaxChunksCount = 100000; // that's enough for about 25 Tb of data
+		public const int MaxChunksCount = 200000; 
 
 		public int ChunksCount {
 			get { return _chunksCount; }
