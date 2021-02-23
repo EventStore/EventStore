@@ -19,11 +19,11 @@ namespace EventStore.ClientAPI.Internal {
 		private readonly GossipSeed[] _gossipSeeds;
 
 		private readonly IHttpClient _client;
-		private ClusterMessages.MemberInfoDto[] _oldGossip;
+		private Tuple<ClusterMessages.MemberInfoDto[], GossipSeed> _oldGossip;
 		private readonly TimeSpan _gossipTimeout;
 
 		private readonly NodePreference _nodePreference;
-		private readonly bool _legacyGossipDiscovery;
+		private readonly ICompatibilityMode _compatibilityMode;
 
 		public ClusterDnsEndPointDiscoverer(ILogger log,
 			string clusterDns,
@@ -32,8 +32,7 @@ namespace EventStore.ClientAPI.Internal {
 			GossipSeed[] gossipSeeds,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
-			bool legacyGossipDiscovery,
-			bool enableVersion5Compability,
+			ICompatibilityMode compatibilityMode,
 			HttpMessageHandler httpMessageHandler = null) {
 			Ensure.NotNull(log, "log");
 
@@ -44,9 +43,9 @@ namespace EventStore.ClientAPI.Internal {
 			_maxDiscoverAttempts = maxDiscoverAttempts;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
-			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler, enableVersion5Compability);
+			_compatibilityMode = compatibilityMode;
+			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
 			_nodePreference = nodePreference;
-			_legacyGossipDiscovery = legacyGossipDiscovery;
 		}
 
 		public Task<NodeEndPoints> DiscoverAsync(EndPoint failedTcpEndPoint) {
@@ -82,8 +81,8 @@ namespace EventStore.ClientAPI.Internal {
 		private NodeEndPoints? DiscoverEndPoint(EndPoint failedEndPoint) {
 			var oldGossip = Interlocked.Exchange(ref _oldGossip, null);
 			var gossipCandidates = oldGossip != null
-				? GetGossipCandidatesFromOldGossip(oldGossip, failedEndPoint)
-				: GetGossipCandidatesFromDns();
+				? GetGossipCandidatesFromOldGossip(oldGossip.Item1, oldGossip.Item2, failedEndPoint)
+				: GetGossipCandidatesFromConfig();
 			for (int i = 0; i < gossipCandidates.Length; ++i) {
 				var gossip = TryGetGossipFrom(gossipCandidates[i]);
 				if (gossip == null || gossip.Members == null || gossip.Members.Length == 0)
@@ -91,7 +90,7 @@ namespace EventStore.ClientAPI.Internal {
 
 				var bestNode = TryDetermineBestNode(gossip.Members, _nodePreference);
 				if (bestNode != null) {
-					_oldGossip = gossip.Members;
+					_oldGossip = Tuple.Create(gossip.Members, gossipCandidates[i]);
 					return bestNode;
 				}
 			}
@@ -99,37 +98,57 @@ namespace EventStore.ClientAPI.Internal {
 			return null;
 		}
 
-		private GossipSeed[] GetGossipCandidatesFromDns() {
+		private GossipSeed[] GetGossipCandidatesFromConfig() {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
-			var endpoints = _gossipSeeds != null && _gossipSeeds.Length > 0
-				? _gossipSeeds
-				: new[] {new GossipSeed(_clusterDns, !_legacyGossipDiscovery)};
+			var endpoints = _gossipSeeds;
 
-			RandomShuffle(endpoints, 0, endpoints.Length - 1);
+			if ((endpoints?.Length ?? 0) == 0) {
+				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
+					endpoints = new[] {
+						new GossipSeed(_clusterDns, seedOverTls: true, v5HostHeader: false), // Try HTTPS gossip first (v20 defaults)
+						new GossipSeed(_clusterDns, seedOverTls: false, v5HostHeader: true) // Then HTTP gossip (v5 defaults)
+					};
+				} else if (_compatibilityMode.IsVersion5CompatibilityModeEnabled()) {
+					// if v5 compatibility mode is enabled, then use v5 defaults
+					endpoints = new[] {
+						new GossipSeed(_clusterDns, seedOverTls: false, v5HostHeader: true)
+					};
+				} else {
+					// Use only v20 defaults 
+					endpoints = new[] {
+						new GossipSeed(_clusterDns, seedOverTls: true, v5HostHeader: false)
+					};
+				}
+			} else {
+				RandomShuffle(endpoints, 0, endpoints.Length - 1);
+			}
+
 			return endpoints;
 		}
 
 		private GossipSeed[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip,
+			GossipSeed discoveredFrom,
 			EndPoint failedTcpEndPoint) {
 			var gossipCandidates = failedTcpEndPoint == null
 				? oldGossip.ToArray()
 				: oldGossip.Where(x => !(x.ExternalTcpPort == failedTcpEndPoint.GetPort()
-				                         && x.ExternalTcpIp.Equals(failedTcpEndPoint.GetHost())))
+										 && x.ExternalTcpIp.Equals(failedTcpEndPoint.GetHost())))
 					.ToArray();
-			return ArrangeGossipCandidates(gossipCandidates);
+			return ArrangeGossipCandidates(gossipCandidates, discoveredFrom);
 		}
 
-		private GossipSeed[] ArrangeGossipCandidates(ClusterMessages.MemberInfoDto[] members) {
+		private GossipSeed[] ArrangeGossipCandidates(ClusterMessages.MemberInfoDto[] members, GossipSeed discoveredFrom) {
+			// We assume that if the members are discovered via a non-TLS endpoint, the members will also be non-TLS.  Same for v5 header stuff.
 			var result = new GossipSeed[members.Length];
 			int i = -1;
 			int j = members.Length;
 			for (int k = 0; k < members.Length; ++k) {
 				if (members[k].State == ClusterMessages.VNodeState.Manager)
 					result[--j] = new GossipSeed(new DnsEndPoint(members[k].HttpAddress,
-						members[k].HttpPort));
+						members[k].HttpPort), discoveredFrom.SeedOverTls, discoveredFrom.V5HostHeader);
 				else
 					result[++i] = new GossipSeed(new DnsEndPoint(members[k].HttpAddress,
-						members[k].HttpPort));
+						members[k].HttpPort), discoveredFrom.SeedOverTls, discoveredFrom.V5HostHeader);
 			}
 
 			RandomShuffle(result, 0, i); // shuffle nodes
@@ -163,30 +182,36 @@ namespace EventStore.ClientAPI.Internal {
 				url,
 				null,
 				response => {
-					if (response.HttpStatusCode != HttpStatusCode.OK) {
-						_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode,
-							response.StatusDescription);
-						completed.Set();
-						return;
-					}
-
 					try {
-						result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
-						//_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
-					} catch (Exception e) {
-						if (e is AggregateException ae)
-							e = ae.Flatten();
-						_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e);
-					}
+						if (response.HttpStatusCode != HttpStatusCode.OK) {
+							_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode,
+								response.StatusDescription);
+							return;
+						}
 
-					completed.Set();
+						try {
+							result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
+							//_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
+						} catch (Exception e) {
+							if (e is AggregateException ae)
+								e = ae.Flatten();
+							_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e);
+						}
+					} finally {
+						completed.Set();
+					}
 				},
 				e => {
-					if (e is AggregateException ae)
-						e = ae.Flatten();
-					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
-					completed.Set();
-				}, endPoint.EndPoint.GetHost());
+					try {
+						if (e is AggregateException ae)
+							e = ae.Flatten();
+						_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
+					} finally {
+						completed.Set();
+					}
+				},
+				// https://github.com/EventStore/EventStore/pull/2744#pullrequestreview-562358658
+				endPoint.V5HostHeader ? "" : endPoint.EndPoint.GetHost());
 
 			completed.Wait();
 			return result;
@@ -229,7 +254,7 @@ namespace EventStore.ClientAPI.Internal {
 						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
 					RandomShuffle(nodes, 0,
 						nodes.Count(nodeEntry => nodeEntry.State == ClusterMessages.VNodeState.Follower ||
-						                         nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
+												 nodeEntry.State == ClusterMessages.VNodeState.Slave) - 1);
 					break;
 				case NodePreference.ReadOnlyReplica:
 					nodes = nodes.OrderBy(nodeEntry => !IsReadOnlyReplicaState(nodeEntry.State))
@@ -257,7 +282,7 @@ namespace EventStore.ClientAPI.Internal {
 
 		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {
 			return state == ClusterMessages.VNodeState.ReadOnlyLeaderless
-			       || state == ClusterMessages.VNodeState.ReadOnlyReplica;
+				   || state == ClusterMessages.VNodeState.ReadOnlyReplica;
 		}
 	}
 }

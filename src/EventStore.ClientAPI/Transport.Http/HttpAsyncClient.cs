@@ -15,7 +15,6 @@ namespace EventStore.ClientAPI.Transport.Http {
 	public class HttpAsyncClient : IHttpClient {
 		private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 		private HttpClient _client;
-		private readonly bool _enableVersion5Compability;
 
 		static HttpAsyncClient() {
 			ServicePointManager.MaxServicePointIdleTime = 10000;
@@ -27,11 +26,9 @@ namespace EventStore.ClientAPI.Transport.Http {
 		/// </summary>
 		/// <param name="timeout"></param>
 		/// <param name="clientHandler"></param>
-		/// <param name="enableVersion5Compability"></param>
-		public HttpAsyncClient(TimeSpan timeout, HttpMessageHandler clientHandler = null, bool enableVersion5Compability = false) {
+		public HttpAsyncClient(TimeSpan timeout, HttpMessageHandler clientHandler = null) {
 			_client = clientHandler == null ? new HttpClient() : new HttpClient(clientHandler);
 			_client.Timeout = timeout;
-			_enableVersion5Compability = enableVersion5Compability;
 		}
 
 		/// <inheritdoc />
@@ -88,9 +85,6 @@ namespace EventStore.ClientAPI.Transport.Http {
 			if (userCredentials != null)
 				AddAuthenticationHeader(request, userCredentials);
 			
-			if (_enableVersion5Compability)
-				hostHeader = "";
-
 			if (!string.IsNullOrWhiteSpace(hostHeader))
 				request.Headers.Host = hostHeader;
 
