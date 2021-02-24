@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Content Type Validation to projections which will allow projections to only handle valid json events if isJson is set to true [EventStore#2812](https://github.com/EventStore/EventStore/pull/2812)
 - script to check for proto changes [EventStore#2817](https://github.com/EventStore/EventStore/pull/2817)
 - Server Support for gRPC Keep Alive [EventStore#2819](https://github.com/EventStore/EventStore/pull/2819)
+- Introduce compatibility mode. [EventStore#2796](https://github.com/EventStore/EventStore/pull/2796)
 
 ### Changed
 - Updated internal dependencies and added client builds for .NET 5.0 [EventStore#2764](https://github.com/EventStore/EventStore/pull/2764)
