@@ -30,6 +30,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private DateTime _lastCheckpointTime = DateTime.MinValue;
 		private bool _enableContentTypeValidation;
 		private ILogger _logger;
+		private CheckpointTag _lastCheckpointTag;
 
 		protected ReaderSubscriptionBase(
 			IPublisher publisher,
@@ -65,6 +66,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_positionTagger = readerStrategy.PositionTagger;
 			_positionTracker = new PositionTracker(_positionTagger);
 			_positionTracker.UpdateByCheckpointTagInitial(@from);
+			_lastCheckpointTag = _positionTracker.LastTag;
 			_enableContentTypeValidation = enableContentTypeValidation;
 			_logger = Serilog.Log.ForContext<ReaderSubscriptionBase>();
 		}
@@ -125,7 +127,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_eventsSinceLastCheckpointSuggestedOrStart++;
 				if (_checkpointProcessedEventsThreshold > 0
 				    && timeDifference > _checkpointAfter
-				    && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold)
+				    && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold
+				    && _lastCheckpointTag != _positionTracker.LastTag)
 					SuggestCheckpoint(message);
 				if (_stopAfterNEvents > 0 && _eventsSinceLastCheckpointSuggestedOrStart >= _stopAfterNEvents)
 					NEventsReached();
@@ -134,7 +137,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				    && timeDifference > _checkpointAfter
 				    && (_lastPassedOrCheckpointedEventPosition != null
 				        && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
-				        > _checkpointUnhandledBytesThreshold))
+				        > _checkpointUnhandledBytesThreshold)
+				    && _lastCheckpointTag != _positionTracker.LastTag)
 					SuggestCheckpoint(message);
 				else if (progressChanged)
 					PublishProgress(roundedProgress);
@@ -178,6 +182,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void SuggestCheckpoint(ReaderSubscriptionMessage.CommittedEventDistributed message) {
 			_lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
+			_lastCheckpointTag = _positionTracker.LastTag;
 			_publisher.Publish(
 				new EventReaderSubscriptionMessage.CheckpointSuggested(
 					_subscriptionId, _positionTracker.LastTag, message.Progress,

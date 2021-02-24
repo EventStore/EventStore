@@ -21,12 +21,8 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 	[TestFixture("good-stream", "good-event-type", "good-stream", "bad-event-type", true, false)]
 	[TestFixture("good-stream", "good-event-type", "good-stream", "bad-event-type", false, true)]
 	[TestFixture("good-stream", "good-event-type", "good-stream", "bad-event-type", false, false)]
-	[TestFixture("good-stream", "good-event-type", "bad-stream", "good-event-type", true, true)]
-	[TestFixture("good-stream", "good-event-type", "bad-stream", "good-event-type", true, false)]
 	[TestFixture("good-stream", "good-event-type", "bad-stream", "good-event-type", false, true)]
 	[TestFixture("good-stream", "good-event-type", "bad-stream", "good-event-type", false, false)]
-	[TestFixture("good-stream", "good-event-type", "bad-stream", "bad-event-type", true, true)]
-	[TestFixture("good-stream", "good-event-type", "bad-stream", "bad-event-type", true, false)]
 	[TestFixture("good-stream", "good-event-type", "bad-stream", "bad-event-type", false, true)]
 	[TestFixture("good-stream", "good-event-type", "bad-stream", "bad-event-type", false, false)]
 	public class
