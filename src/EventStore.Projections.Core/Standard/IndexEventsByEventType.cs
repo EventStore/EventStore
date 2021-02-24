@@ -10,6 +10,7 @@ namespace EventStore.Projections.Core.Standard {
 	public class IndexEventsByEventType : IProjectionStateHandler, IProjectionCheckpointHandler {
 		private readonly string _indexStreamPrefix;
 		private readonly string _indexCheckpointStream;
+		private CheckpointTag _lastCheckpoint;
 
 		public IndexEventsByEventType(string source, Action<string, object[]> logger) {
 			if (!string.IsNullOrWhiteSpace(source))
@@ -94,11 +95,16 @@ namespace EventStore.Projections.Core.Standard {
 		}
 
 		public void ProcessNewCheckpoint(CheckpointTag checkpointPosition, out EmittedEventEnvelope[] emittedEvents) {
+			if (_lastCheckpoint == checkpointPosition) {
+				emittedEvents = Array.Empty<EmittedEventEnvelope>();
+				return;
+			}
+
+			_lastCheckpoint = checkpointPosition;
 			emittedEvents = new[] {
-				new EmittedEventEnvelope(
-					new EmittedDataEvent(
-						_indexCheckpointStream, Guid.NewGuid(), ProjectionEventTypes.PartitionCheckpoint,
-						true, checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null))
+				new EmittedEventEnvelope(new EmittedDataEvent(
+					_indexCheckpointStream, Guid.NewGuid(), ProjectionEventTypes.PartitionCheckpoint,
+					true, checkpointPosition.ToJsonString(), null, checkpointPosition, expectedTag: null))
 			};
 		}
 
