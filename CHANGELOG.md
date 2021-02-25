@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - failing test [EventStore#2800](https://github.com/EventStore/EventStore/pull/2800)
 - Permission Denied when performing privileged commands on a follower [EventStore#2803](https://github.com/EventStore/EventStore/pull/2803)
 - Check for old/replayed events only if the event passes the event filter [Projections] [EventStore#2809](https://github.com/EventStore/EventStore/pull/2809)
+- Prevent a projection checkpoint from being emitted at same position twice [EventStore#2824](https://github.com/EventStore/EventStore/pull/2824)
 
 ### Ideally the `discover
 - //` protocol would stay non-TLS (HTTP) and we'd see the introduction of a `discovers://` (discover secure) scheme that uses HTTPS but I think that would be a breaking change now. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
