@@ -30,6 +30,7 @@ namespace EventStore.ClientAPI {
 		private bool _useSslConnection;
 		private string _targetHost;
 		private bool _validateServer;
+		private bool _skipCertificateValidation;
 
 		private bool _failOnNoServerResponse;
 		private TimeSpan _heartbeatInterval = TimeSpan.FromMilliseconds(750);
@@ -41,6 +42,7 @@ namespace EventStore.ClientAPI {
 		private TimeSpan _gossipTimeout = TimeSpan.FromSeconds(1);
 		private GossipSeed[] _gossipSeeds;
 		private NodePreference _nodePreference = NodePreference.Master;
+		private string _compatibilityMode = "disabled";
 		private IHttpClient _customHttpClient = null;
 
 
@@ -250,12 +252,14 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		/// <param name="targetHost">HostName of server certificate.</param>
 		/// <param name="validateServer">Whether to accept connection from server with not trusted certificate.</param>
+		/// <param name="skipCertificateValidation">Whether to skip certificate validation of the server.</param>
 		/// <returns></returns>
-		public ConnectionSettingsBuilder UseSslConnection(string targetHost, bool validateServer) {
+		public ConnectionSettingsBuilder UseSslConnection(string targetHost, bool validateServer, bool skipCertificateValidation = false) {
 			Ensure.NotNullOrEmpty(targetHost, "targetHost");
 			_useSslConnection = true;
 			_targetHost = targetHost;
 			_validateServer = validateServer;
+			_skipCertificateValidation = skipCertificateValidation;
 			return this;
 		}
 
@@ -437,7 +441,15 @@ namespace EventStore.ClientAPI {
 			return this;
 		}
 
-
+		/// <summary>
+		/// Specifies if the client should run in a specific version compatibility mode.
+		/// </summary>
+		/// <returns>A <see cref="ConnectionSettingsBuilder"/> for further configuration.</returns>
+		public ConnectionSettingsBuilder SetCompatibilityMode(string value) {
+			_compatibilityMode = value;
+			return this;
+		}
+		
 		/// <summary>
 		/// Convert the mutable <see cref="ConnectionSettingsBuilder"/> object to an immutable
 		/// <see cref="ConnectionSettings"/> object.
@@ -468,6 +480,7 @@ namespace EventStore.ClientAPI {
 				_useSslConnection,
 				_targetHost,
 				_validateServer,
+				_skipCertificateValidation,
 				_failOnNoServerResponse,
 				_heartbeatInterval,
 				_heartbeatTimeout,
@@ -478,6 +491,7 @@ namespace EventStore.ClientAPI {
 				_gossipExternalHttpPort,
 				_gossipTimeout,
 				_nodePreference,
+				_compatibilityMode,
 				_customHttpClient);
 		}
 	}

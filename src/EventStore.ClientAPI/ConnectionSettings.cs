@@ -164,6 +164,11 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		public readonly TimeSpan ClientConnectionTimeout;
 
+		/// <summary>
+		/// Switch the client into a specific EventStoreDB version compatibility mode.
+		/// </summary>
+		public readonly string CompatibilityMode;
+
 		internal ConnectionSettings(ILogger log,
 			bool verboseLogging,
 			int maxQueueSize,
@@ -179,6 +184,7 @@ namespace EventStore.ClientAPI {
 			bool useSslConnection,
 			string targetHost,
 			bool validateServer,
+			bool skipCertificateValidation,
 			bool failOnNoServerResponse,
 			TimeSpan heartbeatInterval,
 			TimeSpan heartbeatTimeout,
@@ -189,6 +195,7 @@ namespace EventStore.ClientAPI {
 			int externalGossipPort,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
+			string compatibilityMode,
 			IHttpClient customHttpClient) {
 
 			Ensure.NotNull(log, "log");
@@ -220,6 +227,7 @@ namespace EventStore.ClientAPI {
 			UseSslConnection = useSslConnection;
 			TargetHost = targetHost;
 			ValidateServer = validateServer;
+			SkipCertificateValidation = skipCertificateValidation;
 
 			FailOnNoServerResponse = failOnNoServerResponse;
 			HeartbeatInterval = heartbeatInterval;
@@ -230,6 +238,7 @@ namespace EventStore.ClientAPI {
 			ExternalGossipPort = externalGossipPort;
 			GossipTimeout = gossipTimeout;
 			NodePreference = nodePreference;
+			CompatibilityMode = compatibilityMode;
 			CustomHttpClient = customHttpClient;
 		}
 	}

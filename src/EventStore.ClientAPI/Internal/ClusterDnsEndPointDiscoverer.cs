@@ -24,6 +24,7 @@ namespace EventStore.ClientAPI.Internal {
 		private TimeSpan _gossipTimeout;
 
 		private readonly NodePreference _nodePreference;
+		private readonly ICompatibilityMode _compatibilityMode;
 
 		public ClusterDnsEndPointDiscoverer(ILogger log,
 			string clusterDns,
@@ -32,6 +33,7 @@ namespace EventStore.ClientAPI.Internal {
 			GossipSeed[] gossipSeeds,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
+			ICompatibilityMode compatibilityMode,
 			IHttpClient client,
 			bool skipCertificateValidation) {
 			Ensure.NotNull(log, "log");
@@ -54,6 +56,7 @@ namespace EventStore.ClientAPI.Internal {
 				};
 #endif
 			}
+			_compatibilityMode = compatibilityMode;
 			_client = client ?? new HttpAsyncClient(_gossipTimeout, handler);
 			_nodePreference = nodePreference;
 		}
@@ -93,7 +96,7 @@ namespace EventStore.ClientAPI.Internal {
 			var oldGossip = Interlocked.Exchange(ref _oldGossip, null);
 			var gossipCandidates = oldGossip != null
 				? GetGossipCandidatesFromOldGossip(oldGossip, failedEndPoint)
-				: GetGossipCandidatesFromDns();
+				: GetGossipCandidatesFromConfig();
 			for (int i = 0; i < gossipCandidates.Length; ++i) {
 				var gossip = TryGetGossipFrom(gossipCandidates[i]);
 				if (gossip == null || gossip.Members == null || gossip.Members.Length == 0)
@@ -109,17 +112,31 @@ namespace EventStore.ClientAPI.Internal {
 			return null;
 		}
 
-		private GossipSeed[] GetGossipCandidatesFromDns() {
+		private IGossipSeed[] GetGossipCandidatesFromConfig() {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
-			GossipSeed[] endpoints;
-			if (_gossipSeeds != null && _gossipSeeds.Length > 0) {
-				endpoints = _gossipSeeds;
-			} else {
-				endpoints = ResolveDns(_clusterDns)
-					.Select(x => new GossipSeed(new IPEndPoint(x, _managerExternalHttpPort))).ToArray();
-			}
 
-			RandomShuffle(endpoints, 0, endpoints.Length - 1);
+			// Safe in this case.
+			IGossipSeed[] endpoints = _gossipSeeds;
+
+			if ((endpoints?.Length ?? 0) == 0) {
+				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
+					endpoints = new[] {
+						new ClusterDnsSeed(_clusterDns, _managerExternalHttpPort, seedOverTls: true, v20Compatibility: true), // Try HTTPS gossip first (v20 defaults)
+						new ClusterDnsSeed(_clusterDns, _managerExternalHttpPort, seedOverTls: false, v20Compatibility: false), // Then HTTP gossip (v5 defaults)
+					};
+				} else if (_compatibilityMode.IsVersion5CompatibilityModeEnabled()) {
+					// if v5 compatibility mode is enabled, then use v5 defaults
+					endpoints = ResolveDns(_clusterDns)
+						.Select(x => new GossipSeed(new IPEndPoint(x, _managerExternalHttpPort))).ToArray();
+				} else {
+					// Use only v20 defaults
+					endpoints = new[] {
+						new ClusterDnsSeed(_clusterDns, _managerExternalHttpPort, seedOverTls: true, v20Compatibility: true)
+					};
+				}
+			} else {
+				RandomShuffle(endpoints, 0, endpoints.Length - 1);
+			}
 			return endpoints;
 		}
 
@@ -178,13 +195,13 @@ namespace EventStore.ClientAPI.Internal {
 			}
 		}
 
-		private ClusterMessages.ClusterInfoDto TryGetGossipFrom(GossipSeed endPoint) {
+		private ClusterMessages.ClusterInfoDto TryGetGossipFrom(IGossipSeed endPoint) {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: Trying to get gossip from [{0}].", endPoint);
 
 			ClusterMessages.ClusterInfoDto result = null;
 			var completed = new ManualResetEventSlim(false);
 
-			var url = endPoint.EndPoint.ToHttpUrl(endPoint.SeedOverTls ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA, "/gossip?format=json");
+			var url = endPoint.ToHttpUrl();
 			_client.Get(
 				url,
 				null,
@@ -211,7 +228,7 @@ namespace EventStore.ClientAPI.Internal {
 						e = ae.Flatten();
 					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
 					completed.Set();
-				}, endPoint.HostHeader);
+				}, endPoint.GetHostHeader());
 
 			completed.Wait();
 			return result;
@@ -235,7 +252,7 @@ namespace EventStore.ClientAPI.Internal {
 					RandomShuffle(nodes, 0, nodes.Length - 1);
 					break;
 				case NodePreference.Slave:
-					nodes = nodes.OrderBy(nodeEntry => 
+					nodes = nodes.OrderBy(nodeEntry =>
 							nodeEntry.State != ClusterMessages.VNodeState.Follower &&
 							 nodeEntry.State != ClusterMessages.VNodeState.Slave)
 						.ToArray(); // OrderBy is a stable sort and only affects order of matching entries
@@ -258,15 +275,17 @@ namespace EventStore.ClientAPI.Internal {
 				return null;
 			}
 
-			var normTcp = new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalTcpPort);
+			var nodeAddress = Resolution.Resolve(node.ExternalTcpIp);
+
+			var normTcp = new IPEndPoint(nodeAddress, node.ExternalTcpPort);
 			var secTcp = node.ExternalSecureTcpPort > 0
-				? new IPEndPoint(IPAddress.Parse(node.ExternalTcpIp), node.ExternalSecureTcpPort)
+				? new IPEndPoint(nodeAddress, node.ExternalSecureTcpPort)
 				: null;
 			_log.Info("Discovering: found best choice [{0},{1}] ({2}).", normTcp,
 				secTcp == null ? "n/a" : secTcp.ToString(), node.State);
 			return new NodeEndPoints(normTcp, secTcp);
 		}
-		
+
 		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {
 			return state == ClusterMessages.VNodeState.ReadOnlyLeaderless
 			       || state == ClusterMessages.VNodeState.PreReadOnlyReplica
