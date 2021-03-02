@@ -1,9 +1,9 @@
 ﻿using System.Net;
 using System.Linq;
-using System.Net.Sockets;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Internal;
 using System;
+using System.Net.Http;
 using System.Runtime.ExceptionServices;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
@@ -193,9 +193,21 @@ namespace EventStore.ClientAPI {
 			Ensure.NotNull(connectionSettings, "connectionSettings");
 			Ensure.NotNull(clusterSettings, "clusterSettings");
 
-			var discoverClient = new HttpAsyncClient(
-				clusterSettings.GossipTimeout,
-				connectionSettings.CustomHttpMessageHandler);
+			var handler = connectionSettings.CustomHttpMessageHandler;
+			if (handler is null) {
+				if (!connectionSettings.ValidateServer) {
+#if NET452
+					connectionSettings.Log.Info(
+						"Setting the Http Message Handler via connection settings is not supported in .NET 4.5.2");
+#else
+					handler = new HttpClientHandler {
+						ServerCertificateCustomValidationCallback = delegate { return true; }
+					};
+#endif
+				}
+			}
+
+			var discoverClient = new HttpAsyncClient(connectionSettings.GossipTimeout, handler);
 			var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
 				clusterSettings.ClusterDns,
 				clusterSettings.MaxDiscoverAttempts,
