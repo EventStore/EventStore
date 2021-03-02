@@ -32,7 +32,7 @@ namespace EventStore.ClientAPI.Internal {
 			GossipSeed[] gossipSeeds,
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
-			HttpMessageHandler httpMessageHandler = null) {
+			IHttpClient httpAsyncClient) {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
@@ -41,7 +41,7 @@ namespace EventStore.ClientAPI.Internal {
 			_httpGossipPort = httpGossipPort;
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
-			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
+			_client = httpAsyncClient;
 			_nodePreference = nodePreference;
 		}
 
@@ -177,11 +177,24 @@ namespace EventStore.ClientAPI.Internal {
 				url,
 				null,
 				response => {
-					if (response.HttpStatusCode != HttpStatusCode.OK) {
-						_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode,
-							response.StatusDescription);
+					try {
+						if (response.HttpStatusCode != HttpStatusCode.OK) {
+							_log.Info("[{0}] responded with {1} ({2})", endPoint.EndPoint, response.HttpStatusCode,
+								response.StatusDescription);
+							return;
+						}
+
+						try {
+							result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
+							//_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
+						} catch (Exception e) {
+							if (e is AggregateException ae)
+								e = ae.Flatten();
+							_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.",
+								endPoint.EndPoint, e);
+						}
+					} finally {
 						completed.Set();
-						return;
 					}
 
 					try {
@@ -190,19 +203,20 @@ namespace EventStore.ClientAPI.Internal {
 					} catch (Exception e) {
 						if (e is AggregateException ae)
 							e = ae.Flatten();
-						_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e);
+						_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.",
+							endPoint.EndPoint, e);
+					} finally {
+						completed.Set();
 					}
 
 					completed.Set();
-				},
-				e => {
-					if (e is AggregateException ae)
+				}, e => {
+					if (e is AggregateException ae) 
 						e = ae.Flatten();
 					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
 					completed.Set();
 				}, endPoint.EndPoint.GetHost());
-
-			completed.Wait();
+			completed.Wait(_gossipTimeout);
 			return result;
 		}
 
