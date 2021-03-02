@@ -33,7 +33,7 @@ namespace EventStore.ClientAPI.Internal {
 			TimeSpan gossipTimeout,
 			NodePreference nodePreference,
 			ICompatibilityMode compatibilityMode,
-			HttpMessageHandler httpMessageHandler = null) {
+			IHttpClient httpAsyncClient) {
 			Ensure.NotNull(log, "log");
 
 			_log = log;
@@ -44,7 +44,7 @@ namespace EventStore.ClientAPI.Internal {
 			_gossipSeeds = gossipSeeds;
 			_gossipTimeout = gossipTimeout;
 			_compatibilityMode = compatibilityMode;
-			_client = new HttpAsyncClient(_gossipTimeout, httpMessageHandler);
+			_client = httpAsyncClient;
 			_nodePreference = nodePreference;
 		}
 
@@ -184,7 +184,7 @@ namespace EventStore.ClientAPI.Internal {
 				response => {
 					try {
 						if (response.HttpStatusCode != HttpStatusCode.OK) {
-							_log.Info("[{0}] responded with {1} ({2})", endPoint, response.HttpStatusCode,
+							_log.Info("[{0}] responded with {1} ({2})", endPoint.EndPoint, response.HttpStatusCode,
 								response.StatusDescription);
 							return;
 						}
@@ -195,7 +195,7 @@ namespace EventStore.ClientAPI.Internal {
 						} catch (Exception e) {
 							if (e is AggregateException ae)
 								e = ae.Flatten();
-							_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint, e);
+							_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.", endPoint.EndPoint, e);
 						}
 					} finally {
 						completed.Set();
@@ -205,15 +205,14 @@ namespace EventStore.ClientAPI.Internal {
 					try {
 						if (e is AggregateException ae)
 							e = ae.Flatten();
-						_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
+						_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint.EndPoint, e);
 					} finally {
 						completed.Set();
 					}
 				},
 				// https://github.com/EventStore/EventStore/pull/2744#pullrequestreview-562358658
 				endPoint.V5HostHeader ? "" : endPoint.EndPoint.GetHost());
-
-			completed.Wait();
+			completed.Wait(_gossipTimeout);
 			return result;
 		}
 
