@@ -151,7 +151,7 @@ namespace EventStore.Transport.Tcp {
 			try {
 				do {
 					lock (_sendLock) {
-						if (_isSending || _sendQueue.IsEmpty || _sendSocketArgs == null) return;
+						if (_isSending || (_sendQueue.IsEmpty && _memoryStreamOffset >= _memoryStream.Length) || _sendSocketArgs == null) return;
 						if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 						_isSending = true;
 					}
