@@ -21,12 +21,12 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[Test]
 		public void should_set_memdb_to_false() {
-			Assert.IsFalse(_dbConfig.InMemDb);
+			Assert.IsFalse(_node.Db.Config.InMemDb);
 		}
 
 		[Test]
 		public void should_set_the_db_path() {
-			Assert.AreEqual(_dbPath, _dbConfig.Path);
+			Assert.AreEqual(_dbPath, _node.Db.Config.Path);
 		}
 	}
 
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[Test]
 		public void should_set_memdb_to_true() {
-			Assert.IsTrue(_dbConfig.InMemDb);
+			Assert.IsTrue(_node.Db.Config.InMemDb);
 		}
 	}
 
@@ -397,7 +397,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 				.WithExternalTcpOn(_externalTcp)
 				.WithInternalTcpOn(_internalTcp);
 		}
-		
+
 		[Test]
 		public void should_set_http_endpoint() {
 			Assert.AreEqual(_httpEndPoint, _settings.NodeInfo.HttpEndPoint);
@@ -485,7 +485,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[Test]
 		public void should_set_chunk_size() {
-			Assert.AreEqual(_chunkSize, _dbConfig.ChunkSize);
+			Assert.AreEqual(_chunkSize, _node.Db.Config.ChunkSize);
 		}
 	}
 
@@ -500,7 +500,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 
 		[Test]
 		public void should_set_max_chunk_cache_size() {
-			Assert.AreEqual(_chunkCacheSize, _dbConfig.MaxChunksCacheSize);
+			Assert.AreEqual(_chunkCacheSize, _node.Db.Config.MaxChunksCacheSize);
 		}
 	}
 
@@ -513,7 +513,7 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_max_chunk_size_to_the_size_of_the_number_of_cached_chunks() {
 			var chunkSizeResult = 10 * (long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size);
-			Assert.AreEqual(chunkSizeResult, _dbConfig.MaxChunksCacheSize);
+			Assert.AreEqual(chunkSizeResult, _node.Db.Config.MaxChunksCacheSize);
 		}
 	}
 

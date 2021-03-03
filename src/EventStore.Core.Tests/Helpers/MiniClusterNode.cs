@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -14,16 +12,11 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
-using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
-using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Core.Util;
 using EventStore.Core.Data;
 using Microsoft.AspNetCore.Hosting;
@@ -53,7 +46,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly int DebugIndex;
 
 		public readonly ClusterVNode Node;
-		public readonly TFChunkDb Db;
+		public TFChunkDb Db => Node.Db;
 		private readonly string _dbPath;
 		private readonly bool _isReadOnlyReplica;
 		private readonly TaskCompletionSource<bool> _started = new TaskCompletionSource<bool>();
@@ -65,7 +58,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public VNodeState NodeState = VNodeState.Unknown;
 		private readonly IWebHost _host;
 
-		private TestServer _kestrelTestServer;
+		private readonly TestServer _kestrelTestServer;
 
 		private static bool EnableHttps() {
 			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
@@ -73,7 +66,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec,
-			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, EndPoint[] gossipSeeds,
+			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, IPEndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
@@ -95,9 +88,6 @@ namespace EventStore.Core.Tests.Helpers {
 
 			Directory.CreateDirectory(_dbPath);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
-			Db =
-				new TFChunkDb(
-					CreateDbConfig(chunkSize ?? ChunkSize, _dbPath, cachedChunkSize ?? CachedChunkSize, inMemDb));
 
 			InternalTcpEndPoint = internalTcp;
 			InternalTcpSecEndPoint = internalTcpSec;
@@ -107,44 +97,74 @@ namespace EventStore.Core.Tests.Helpers {
 			HttpEndPoint = httpEndPoint;
 
 			var useHttps = EnableHttps();
-			var certificate = useHttps ? ssl_connections.GetServerCertificate() : null;
+
+			var options = ClusterVNodeOptions.Default with {
+				Application = ClusterVNodeOptions.Default.Application with {
+					Insecure = !useHttps,
+					WorkerThreads = 1,
+					StatsPeriodSec = (int)TimeSpan.FromHours(1).TotalSeconds
+				},
+				Cluster = ClusterVNodeOptions.Default.Cluster with {
+					DiscoverViaDns = false,
+					ClusterDns = string.Empty,
+					GossipSeed = gossipSeeds,
+					ClusterSize = 3,
+					PrepareCount = 2,
+					CommitCount = 2,
+					NodePriority = 0,
+					GossipIntervalMs = 2_000,
+					GossipAllowedDifferenceMs = 1_000,
+					GossipTimeoutMs = 2_000,
+					DeadMemberRemovalPeriodSec = 1_800_000,
+					ReadOnlyReplica = readOnlyReplica
+				},
+				Interface = ClusterVNodeOptions.Default.Interface with {
+					IntIp = InternalTcpEndPoint.Address,
+					ExtIp = ExternalTcpEndPoint.Address,
+					IntTcpPort = InternalTcpEndPoint.Port,
+					ExtTcpPort = ExternalTcpEndPoint.Port,
+					EnableExternalTcp = ExternalTcpEndPoint != null,
+					HttpPort = HttpEndPoint.Port,
+					DisableExternalTcpTls = false,
+					DisableInternalTcpTls = false,
+					ExtTcpHeartbeatTimeout = 2_000,
+					IntTcpHeartbeatTimeout = 2_000,
+					ExtTcpHeartbeatInterval = 2_000,
+					IntTcpHeartbeatInterval = 2_000,
+					EnableAtomPubOverHttp = true,
+					EnableTrustedAuth = enableTrustedAuth
+				},
+				Database = ClusterVNodeOptions.Default.Database with {
+					MinFlushDelayMs = TFConsts.MinFlushDelayMs.TotalMilliseconds,
+					PrepareTimeoutMs = 10_000,
+					CommitTimeoutMs = 10_000,
+					WriteTimeoutMs = 10_000,
+					StatsStorage = StatsStorage.None,
+					DisableScavengeMerging = true,
+					ScavengeHistoryMaxAge = 30,
+					SkipDbVerify = true,
+					MaxMemTableSize = memTableSize,
+					MemDb = inMemDb,
+					Db = _dbPath,
+					ChunkSize = chunkSize ?? TFConsts.ChunkSize,
+					ChunksCacheSize = cachedChunkSize ?? TFConsts.ChunksCacheSize
+				},
+				Projections = ClusterVNodeOptions.Default.Projections with {
+					RunProjections = ProjectionType.None
+				},
+				Subsystems = subsystems
+			};
+
+			var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;
 			var trustedRootCertificates =
 				useHttps ? new X509Certificate2Collection(ssl_connections.GetRootCertificate()) : null;
+			options = useHttps
+				? options with {
+					ServerCertificate = serverCertificate,
+					TrustedRootCertificates = trustedRootCertificates
+				}
+				: options;
 
-			var singleVNodeSettings = new ClusterVNodeSettings(
-				Guid.NewGuid(), debugIndex, () => new ClusterNodeOptions(),
-				InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
-				ExternalTcpSecEndPoint, HttpEndPoint,
-				new Data.GossipAdvertiseInfo(
-					InternalTcpEndPoint.ToDnsEndPoint(),
-					InternalTcpSecEndPoint.ToDnsEndPoint(),
-					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(), HttpEndPoint.ToDnsEndPoint(),
-					null, null, 0, null, 0, 0), enableTrustedAuth,
-				certificate, trustedRootCertificates, Opts.CertificateReservedNodeCommonNameDefault, 1, false,
-				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
-				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
-				new AuthenticationProviderFactory(components => 
-					new InternalAuthenticationProviderFactory(components)),
-				new AuthorizationProviderFactory(components =>
-					new LegacyAuthorizationProviderFactory(components.MainQueue)),
-				disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
-				adminOnPublic: true,
-				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
-				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),
-				intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2), 
-				extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2),
-				extTcpHeartbeatInterval: TimeSpan.FromSeconds(2), deadMemberRemovalPeriod: TimeSpan.FromSeconds(1800),
-				verifyDbHash: false,
-				maxMemtableEntryCount: memTableSize, hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault, startStandardProjections: false,
-				disableHTTPCaching: false,
-				logHttpRequests: false,
-				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
-				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
-				streamInfoCacheCapacity: Opts.StreamInfoCacheCapacityDefault,
-				keepAliveInterval: TimeSpan.FromSeconds(10), keepAliveTimeout: TimeSpan.FromSeconds(10),
-				readOnlyReplica: readOnlyReplica,
-				enableExternalTCP: true, enableAtomPubOverHTTP: true, disableHttps: !useHttps);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(
@@ -159,10 +179,10 @@ namespace EventStore.Core.Tests.Helpers {
 				ExternalTcpEndPoint, "ExTCP SECURE ENDPOINT:", ExternalTcpSecEndPoint, "ExHTTP ENDPOINT:",
 				HttpEndPoint);
 
-			Node = new ClusterVNode(Db, singleVNodeSettings,
-				infoControllerBuilder: new InfoControllerBuilder()
-				, subsystems: subsystems,
-				gossipSeedSource: new KnownEndpointGossipSeedSource(gossipSeeds));
+			Node = new ClusterVNode(options, new AuthenticationProviderFactory(components =>
+					new InternalAuthenticationProviderFactory(components)),
+				new AuthorizationProviderFactory(components =>
+					new LegacyAuthorizationProviderFactory(components.MainQueue)), Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 
 			_host = new WebHostBuilder()
@@ -172,7 +192,7 @@ namespace EventStore.Core.Tests.Helpers {
 							options.Protocols = HttpProtocols.Http2;
 						} else { 
 							options.UseHttps(new HttpsConnectionAdapterOptions {
-								ServerCertificate = certificate,
+								ServerCertificate = serverCertificate,
 								ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 									var (isValid, error) =
@@ -267,54 +287,6 @@ namespace EventStore.Core.Tests.Helpers {
 				Debug.WriteLine("Failed to remove directory {0}", directory);
 				Debug.WriteLine(e);
 			}
-		}
-
-		private TFChunkDbConfig CreateDbConfig(int chunkSize, string dbPath, long chunksCacheSize, bool inMemDb) {
-			ICheckpoint writerChk;
-			ICheckpoint chaserChk;
-			ICheckpoint epochChk;
-			ICheckpoint proposalChk;
-			ICheckpoint truncateChk;
-			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
-			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
-			if (inMemDb) {
-				writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
-				chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
-				epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
-				proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
-				truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
-			} else {
-				var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
-				var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
-				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
-				var proposalFilename = Path.Combine(dbPath, Checkpoint.Proposal + ".chk");
-				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-				epochChk = new MemoryMappedFileCheckpoint(
-					epochCheckFilename, Checkpoint.Epoch, cached: true, initValue: -1);
-				proposalChk = new MemoryMappedFileCheckpoint(
-					proposalFilename, Checkpoint.Proposal, cached: true, initValue: -1);
-				truncateChk = new MemoryMappedFileCheckpoint(
-					truncateCheckFilename, Checkpoint.Truncate, cached: true, initValue: -1);
-			}
-
-			var nodeConfig = new TFChunkDbConfig(
-				dbPath, 
-				new VersionedPatternFileNamingStrategy(dbPath, "chunk-"), 
-				chunkSize, 
-				chunksCacheSize, 
-				writerChk,
-				chaserChk, 
-				epochChk, 
-				proposalChk, 
-				truncateChk, 
-				replicationCheckpoint, 
-				indexCheckpoint, 
-				Constants.TFChunkInitialReaderCountDefault, 
-				Constants.TFChunkMaxReaderCountDefault, 
-				inMemDb);
-			return nodeConfig;
 		}
 	}
 }

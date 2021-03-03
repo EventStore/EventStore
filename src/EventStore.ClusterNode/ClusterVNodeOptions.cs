@@ -1,18 +1,27 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Configuration;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 #nullable enable
 namespace EventStore.Core {
 	public partial record ClusterVNodeOptions {
+		public static readonly ClusterVNodeOptions Default = new ClusterVNodeOptions();
+
 		internal IConfigurationRoot? ConfigurationRoot { get; init; }
 		public ApplicationOptions Application { get; init; } = new();
 		public AuthOptions Auth { get; init; } = new();
@@ -25,7 +34,85 @@ namespace EventStore.Core {
 		public InterfaceOptions Interface { get; init; } = new();
 		public ProjectionOptions Projections { get; init; } = new();
 
+		internal byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
+		internal IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies { get; init; } =
+			Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
+		internal IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
+
+		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
+			Subsystems = new List<ISubsystem>(Subsystems) {subsystem}
+		};
+
+		private X509Certificate2? _serverCertificate;
+		internal X509Certificate2 ServerCertificate {
+			init {
+				_serverCertificate = value;
+			}
+		}
+
+		public X509Certificate2 LoadServerCertificate() {
+			if (_serverCertificate == null) {
+				if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreLocation)) {
+					var location =
+						CertificateLoader.GetCertificateStoreLocation(CertificateStore.CertificateStoreLocation);
+					var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
+					_serverCertificate = CertificateLoader.FromStore(location, name, CertificateStore.CertificateSubjectName,
+						CertificateStore.CertificateThumbprint);
+				} else if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreName)) {
+					var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
+					_serverCertificate = CertificateLoader.FromStore(name, CertificateStore.CertificateSubjectName,
+						CertificateStore.CertificateThumbprint);
+				} else if (CertificateFile.CertificateFile.IsNotEmptyString()) {
+					_serverCertificate = CertificateLoader.FromFile(
+						CertificateFile.CertificateFile,
+						CertificateFile.CertificatePrivateKeyFile,
+						CertificateFile.CertificatePassword);
+				} else {
+					throw new InvalidConfigurationException(
+						"A certificate is required but none was provided in the configuration.");
+				}
+			}
+
+			return _serverCertificate!;
+		}
+
+		private X509Certificate2Collection? _trustedRootCertificates;
+		internal X509Certificate2Collection TrustedRootCertificates {
+			init {
+				_trustedRootCertificates = value;
+			}
+		}
+
+		internal X509Certificate2Collection LoadTrustedRootCertificates() {
+			if (_trustedRootCertificates == null) {
+				var trustedRootCerts = new X509Certificate2Collection();
+				if (!string.IsNullOrEmpty(Certificate.TrustedRootCertificatesPath)) {
+					Log.Information("Loading trusted root certificates.");
+					foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(Certificate
+						.TrustedRootCertificatesPath)) {
+						trustedRootCerts.Add(cert);
+						Log.Information("Trusted root certificate file loaded: {file}", fileName);
+					}
+
+					if (trustedRootCerts.Count == 0)
+						throw new InvalidConfigurationException(
+							$"No trusted root certificate files were loaded from the specified path: {Certificate.TrustedRootCertificatesPath}");
+				} else {
+					throw new InvalidConfigurationException(
+						$"{nameof(Certificate.TrustedRootCertificatesPath)} was not specified in the configuration.");
+				}
+
+				_trustedRootCertificates = trustedRootCerts;
+			}
+
+			return _trustedRootCertificates;
+		}
+
 		internal string? DebugView => ConfigurationRoot?.GetDebugView();
+
+		private ClusterVNodeOptions() {
+
+		}
 
 		public static ClusterVNodeOptions FromConfiguration(string[] args, IDictionary environment) {
 			if (args == null) throw new ArgumentNullException(nameof(args));
@@ -52,7 +139,8 @@ namespace EventStore.Core {
 				Grpc = GrpcOptions.FromConfiguration(configurationRoot),
 				Interface = InterfaceOptions.FromConfiguration(configurationRoot),
 				Projections = ProjectionOptions.FromConfiguration(configurationRoot),
-				ConfigurationRoot = configurationRoot
+				ConfigurationRoot = configurationRoot,
+
 			};
 		}
 
@@ -108,7 +196,7 @@ namespace EventStore.Core {
 			[Description("Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces.")]
 			public bool Insecure { get; init; } = false;
 
-			public static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				Log = configurationRoot.GetValue<string>(nameof(Log)),
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
@@ -147,7 +235,7 @@ namespace EventStore.Core {
 			             "This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.")]
 			public bool DisableFirstLevelHttpAuthorization { get; init; } = false;
 
-			public static AuthOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static AuthOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				AuthorizationType = configurationRoot.GetValue<string>(nameof(AuthorizationType)),
 				AuthenticationConfig = configurationRoot.GetValue<string>(nameof(AuthenticationConfig)),
 				AuthenticationType = configurationRoot.GetValue<string>(nameof(AuthenticationType)),
@@ -186,7 +274,7 @@ namespace EventStore.Core {
 			[Description("The reserved common name to authenticate EventStoreDB nodes/servers from certificates")]
 			public string CertificateReservedNodeCommonName { get; init; } = "eventstoredb-node";
 
-			public static CertificateOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static CertificateOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				TrustedRootCertificatesPath = configurationRoot.GetValue<string>(nameof(TrustedRootCertificatesPath)),
 				CertificateReservedNodeCommonName =
 					configurationRoot.GetValue<string>(nameof(CertificateReservedNodeCommonName))
@@ -207,7 +295,7 @@ namespace EventStore.Core {
 			[Description("The certificate fingerprint/thumbprint.")]
 			public string CertificateThumbprint { get; init; } = string.Empty;
 
-			public static CertificateStoreOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static CertificateStoreOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				CertificateStoreLocation = configurationRoot.GetValue<string>(nameof(CertificateStoreLocation)),
 				CertificateStoreName = configurationRoot.GetValue<string>(nameof(CertificateStoreName)),
 				CertificateSubjectName = configurationRoot.GetValue<string>(nameof(CertificateSubjectName)),
@@ -264,7 +352,11 @@ namespace EventStore.Core {
 			[Description("The number of seconds a dead node will remain in the gossip before being pruned.")]
 			public int DeadMemberRemovalPeriodSec { get; init; } = 1_800;
 
-			public static ClusterOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
+			internal int PrepareAckCount => PrepareCount > QuorumSize ? PrepareCount : QuorumSize;
+			internal int CommitAckCount => CommitCount > QuorumSize ? CommitCount : QuorumSize;
+
+			internal static ClusterOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				GossipSeed = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)),
 					ParseEndPoint),
 				DiscoverViaDns = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
@@ -299,7 +391,7 @@ namespace EventStore.Core {
 			public int CachedChunks { get; init; } = -1;
 
 			[Description("The amount of unmanaged memory to use for caching chunks in bytes.")]
-			public int ChunksCacheSize { get; init; } = TFConsts.ChunksCacheSize;
+			public long ChunksCacheSize { get; init; } = TFConsts.ChunksCacheSize;
 
 			[Description("Adjusts the maximum size of a mem table.")]
 			public int MaxMemTableSize { get; init; } = 1_000_000;
@@ -374,22 +466,51 @@ namespace EventStore.Core {
 			public int MaxAutoMergeIndexLevel { get; init; } = int.MaxValue;
 
 			[Description("Set this option to write statistics to the database.")]
-			public bool WriteStatsToDb { get; init; } = false;
+			public bool WriteStatsToDb {
+				get => (StatsStorage.Stream & StatsStorage) != 0;
+				init => StatsStorage = value ? StatsStorage.StreamAndFile : StatsStorage.File;
+			}
 
 			[Description("When truncate.chk is set, the database will be truncated on startup. " +
 			             "This is a safety check to ensure large amounts of data truncation does not happen " +
 			             "accidentally. This value should be set in the low 10,000s for allow for " +
 			             "standard cluster recovery operations. -1 is no max.")]
-			public int MaxTruncation { get; init; } = 256 * 1_024 * 1_024;
+			public long MaxTruncation { get; init; } = 256 * 1_024 * 1_024;
 
-			public static DatabaseOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal int ChunkSize { get; init; } = TFConsts.ChunkSize;
+
+			internal StatsStorage StatsStorage { get; init; } = StatsStorage.File;
+
+			public int GetPTableMaxReaderCount() {
+				var ptableMaxReaderCount = 1 /* StorageWriter */
+				                           + 1 /* StorageChaser */
+				                           + 1 /* Projections */
+				                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+				                           + 1 /* Subscription LinkTos resolving */
+				                           + ReaderThreadsCount
+				                           + 5 /* just in case reserve :) */;
+				return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
+			}
+
+
+			internal int GetTFChunkMaxReaderCount() {
+				var tfChunkMaxReaderCount =
+					GetPTableMaxReaderCount() +
+					2 + /* for caching/uncaching, populating midpoints */
+					1 + /* for epoch manager usage of elections/replica service */
+					1 /* for epoch manager usage of leader replication service */;
+				return Math.Max(tfChunkMaxReaderCount, ChunkInitialReaderCount);
+			}
+
+
+			internal static DatabaseOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				MinFlushDelayMs = configurationRoot.GetValue<double>(nameof(MinFlushDelayMs)),
 				DisableScavengeMerging = configurationRoot.GetValue<bool>(nameof(DisableScavengeMerging)),
 				MemDb = configurationRoot.GetValue<bool>(nameof(MemDb)),
 				Db = configurationRoot.GetValue<string>(nameof(Db)),
 				ScavengeHistoryMaxAge = configurationRoot.GetValue<int>(nameof(ScavengeHistoryMaxAge)),
 				CachedChunks = configurationRoot.GetValue<int>(nameof(CachedChunks)),
-				ChunksCacheSize = configurationRoot.GetValue<int>(nameof(ChunksCacheSize)),
+				ChunksCacheSize = configurationRoot.GetValue<long>(nameof(ChunksCacheSize)),
 				MaxMemTableSize = configurationRoot.GetValue<int>(nameof(MaxMemTableSize)),
 				HashCollisionReadLimit = configurationRoot.GetValue<int>(nameof(HashCollisionReadLimit)),
 				Index = configurationRoot.GetValue<string?>(nameof(Index)),
@@ -411,7 +532,7 @@ namespace EventStore.Core {
 				ReaderThreadsCount = configurationRoot.GetValue<int>(nameof(ReaderThreadsCount)),
 				MaxAutoMergeIndexLevel = configurationRoot.GetValue<int>(nameof(MaxAutoMergeIndexLevel)),
 				WriteStatsToDb = configurationRoot.GetValue<bool>(nameof(WriteStatsToDb)),
-				MaxTruncation = configurationRoot.GetValue<int>(nameof(MaxTruncation))
+				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation))
 			};
 		}
 
@@ -426,7 +547,7 @@ namespace EventStore.Core {
 			             "it will close the connection.")]
 			public int KeepAliveTimeout { get; init; } = 10_000;
 
-			public static GrpcOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static GrpcOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				KeepAliveInterval = configurationRoot.GetValue<int>(nameof(KeepAliveInterval)),
 				KeepAliveTimeout = configurationRoot.GetValue<int>(nameof(KeepAliveTimeout))
 			};
@@ -515,7 +636,7 @@ namespace EventStore.Core {
 			[Description("Enable AtomPub over HTTP Interface.")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
 
-			public static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				GossipOnSingleNode = configurationRoot.GetValue<bool?>(nameof(GossipOnSingleNode)),
 				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp))),
 				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp))),
@@ -564,7 +685,7 @@ namespace EventStore.Core {
 			             "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
-			public static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
 				ProjectionThreads = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
 				ProjectionsQueryExpiry = configurationRoot.GetValue<int>(nameof(ProjectionsQueryExpiry)),

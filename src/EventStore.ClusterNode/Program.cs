@@ -1,6 +1,8 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Http;
@@ -14,95 +16,154 @@ using Serilog;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
-		public static int Main(string[] args) {
-			try {
-				Serilog.Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
-				var cts = new CancellationTokenSource();
-				var hostedService = new ClusterVNodeHostedService(args);
-				if (hostedService.SkipRun)
-					return 0;
+		public static async Task<int> Main(string[] args) {
+			ClusterVNodeOptions options;
+			var exitCodeSource = new TaskCompletionSource<int>();
+			var cts = new CancellationTokenSource();
 
-				var exitCodeSource = new TaskCompletionSource<int>();
+			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
+			try {
+				try {
+					options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
+				} catch (Exception ex) {
+					Log.Fatal($"Error while parsing options: {ex.Message}");
+					Log.Information($"Options:{Environment.NewLine}{ClusterVNodeOptions.HelpText}");
+
+					return 1;
+				}
+
+				var logsDirectory = string.IsNullOrWhiteSpace(options.Application.Log)
+					? Locations.DefaultLogDirectory
+					: options.Application.Log;
+				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName());
+
+				if (options.Application.Help) {
+					await Console.Out.WriteLineAsync(ClusterVNodeOptions.HelpText);
+					return 0;
+				}
+
+				Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
+					VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
+				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor,
+					Environment.OSVersion);
+				Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:",
+					OS.GetRuntimeVersion(),
+					Marshal.SizeOf(typeof(IntPtr)) * 8);
+				Log.Information("{description,-25} {maxGeneration}", "GC:",
+					GC.MaxGeneration == 0
+						? "NON-GENERATION (PROBABLY BOEHM)"
+						: $"{GC.MaxGeneration + 1} GENERATIONS");
+				Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
+				Log.Information(options.DumpOptions());
+
+				var deprecationWarnings = options.GetDeprecationWarnings();
+				if (deprecationWarnings != null) {
+					Log.Warning($"DEPRECATED{Environment.NewLine}{deprecationWarnings}");
+				}
+
+				if (options.Application.Insecure) {
+					Log.Warning(
+						"\n==============================================================================================================\n" +
+						"INSECURE MODE IS ON. THIS MODE IS *NOT* RECOMMENDED FOR PRODUCTION USE.\n" +
+						"INSECURE MODE WILL DISABLE ALL AUTHENTICATION, AUTHORIZATION AND TRANSPORT SECURITY FOR ALL CLIENTS AND NODES.\n" +
+						"==============================================================================================================\n");
+				}
+
+				if (!options.Cluster.DiscoverViaDns && options.Cluster.GossipSeed.Length == 0 &&
+				    options.Cluster.ClusterSize == 1) {
+					Log.Information(
+						"DNS discovery is disabled, but no gossip seed endpoints have been specified. Since "
+						+ "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
+						+ "using the `GossipSeed` option.");
+				}
+
+				var hostedService = new ClusterVNodeHostedService2(options);
 				Application.RegisterExitAction(code => {
 					cts.Cancel();
 					exitCodeSource.SetResult(code);
 				});
+
+				if (options.Application.Version || options.Application.WhatIf) {
+					await Console.Out.WriteLineAsync(VersionInfo.Text);
+
+					if (options.Application.Version) {
+						return 0;
+					} else {
+						Application.Exit(0, "WhatIf option specified.");
+						return await exitCodeSource.Task;
+					}
+				}
+
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
-
-				if (hostedService.Options.WhatIf) {
-					Log.Information("Exiting with exit code: 0.\nExit reason: WhatIf option specified");
-					return (int)ExitCode.Success;
-				}
-
 				var signal = new ManualResetEventSlim(false);
-				using (hostedService) {
-					var t = Run(hostedService, exitCodeSource, args, cts.Token, signal);
-					// ReSharper disable once MethodSupportsCancellation
-					signal.Wait();
+				_ = Run();
+				signal.Wait();
+
+				return await exitCodeSource.Task;
+
+				async Task Run() {
+					try {
+						await new HostBuilder()
+							.ConfigureHostConfiguration(builder =>
+								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
+							.ConfigureAppConfiguration(builder =>
+								builder.AddEnvironmentVariables().AddCommandLine(args))
+							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
+							.ConfigureLogging(logging => logging.AddSerilog())
+							.ConfigureWebHostDefaults(builder => builder
+								.UseKestrel(server => {
+									server.Limits.Http2.KeepAlivePingDelay =
+										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveInterval);
+									server.Limits.Http2.KeepAlivePingTimeout =
+										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
+									server.Listen(options.Interface.ExtIp, options.Interface.HttpPort,
+										listenOptions => {
+											if (hostedService.Node.DisableHttps) {
+												listenOptions.Use(next =>
+													new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
+											} else {
+												listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
+													ServerCertificateSelector = delegate {
+														return hostedService.Node.CertificateSelector();
+													},
+													ClientCertificateMode = ClientCertificateMode.AllowCertificate,
+													ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+														var (isValid, error) =
+															hostedService.Node.InternalClientCertificateValidator(
+																certificate,
+																chain,
+																sslPolicyErrors);
+														if (!isValid && error != null) {
+															Log.Error("Client certificate validation error: {e}", error);
+														}
+
+														return isValid;
+													}
+												});
+											}
+										});
+								})
+								.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
+								.Configure(hostedService.Node.Startup.Configure))
+							.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
+
+					} finally {
+						signal.Set();
+					}
 				}
 
-				return exitCodeSource.Task.Result;
-			} catch (Exception ex) {
+			} catch (InvalidConfigurationException ex) {
+				Log.Fatal("Invalid Configuration: " + ex.Message);
+				return 1;
+			}
+			catch (Exception ex) {
 				Log.Fatal(ex, "Host terminated unexpectedly.");
 				return 1;
 			} finally {
 				Log.CloseAndFlush();
 			}
 		}
-
-		public static async Task Run(ClusterVNodeHostedService hostedService, TaskCompletionSource<int> exitCodeSource, string[] args, CancellationToken token, ManualResetEventSlim signal) {
-			try {
-				await CreateHostBuilder(hostedService, args)
-					.RunConsoleAsync(options => options.SuppressStatusMessages = true, token);
-				await exitCodeSource.Task;
-			} finally {
-				signal.Set();
-			}
-		}
-
-		private static IHostBuilder CreateHostBuilder(ClusterVNodeHostedService hostedService, string[] args) =>
-			new HostBuilder()
-				.ConfigureHostConfiguration(builder =>
-					builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args ?? Array.Empty<string>()))
-				.ConfigureAppConfiguration(builder =>
-					builder.AddEnvironmentVariables().AddCommandLine(args ?? Array.Empty<string>()))
-				.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
-				.ConfigureLogging(logging => logging.AddSerilog())
-				.ConfigureWebHostDefaults(builder => builder
-					.UseKestrel(server => {
-						server.Limits.Http2.KeepAlivePingDelay =
-							TimeSpan.FromMilliseconds(hostedService.Options.KeepAliveInterval);
-						server.Limits.Http2.KeepAlivePingTimeout =
-							TimeSpan.FromMilliseconds(hostedService.Options.KeepAliveTimeout);
-						server.Listen(hostedService.Options.ExtIp, hostedService.Options.HttpPort,
-							listenOptions => {
-								if (hostedService.Node.DisableHttps) {
-									listenOptions.Use(next =>
-										new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
-								} else {
-									listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
-										ServerCertificateSelector = delegate {
-											return hostedService.Node.CertificateSelector();
-										},
-										ClientCertificateMode = ClientCertificateMode.AllowCertificate,
-										ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
-											var (isValid, error) =
-												hostedService.Node.InternalClientCertificateValidator(certificate,
-													chain,
-													sslPolicyErrors);
-											if (!isValid && error != null) {
-												Log.Error("Client certificate validation error: {e}", error);
-											}
-
-											return isValid;
-										}
-									});
-								}
-							});
-					})
-					.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
-					.Configure(hostedService.Node.Startup.Configure));
-		}
 	}
+}

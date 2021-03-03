@@ -72,8 +72,8 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(Opts.ExtTcpHeartbeatTimeoutDefault, _settings.ExtTcpHeartbeatTimeout.TotalMilliseconds,
 				"ExtTcpHeartbeatTimeout");
 
-			Assert.AreEqual(TFConsts.ChunkSize, _dbConfig.ChunkSize, "ChunkSize");
-			Assert.AreEqual(Opts.ChunksCacheSizeDefault, _dbConfig.MaxChunksCacheSize, "MaxChunksCacheSize");
+			Assert.AreEqual(TFConsts.ChunkSize, _node.Db.Config.ChunkSize, "ChunkSize");
+			Assert.AreEqual(Opts.ChunksCacheSizeDefault, _node.Db.Config.MaxChunksCacheSize, "MaxChunksCacheSize");
 		}
 	}
 
@@ -109,47 +109,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_use_tls() {
 			Assert.IsFalse(_settings.DisableInternalTcpTls);
 			Assert.IsFalse(_settings.DisableExternalTcpTls);
-		}
-
-		[Test]
-		public void should_set_command_line_args_to_default_values() {
-			Assert.AreEqual(Opts.EnableTrustedAuthDefault, _settings.EnableTrustedAuth, "EnableTrustedAuth");
-			Assert.AreEqual(Opts.LogHttpRequestsDefault, _settings.LogHttpRequests, "LogHttpRequests");
-			Assert.AreEqual(Opts.WorkerThreadsDefault, _settings.WorkerThreads, "WorkerThreads");
-			Assert.AreEqual(Opts.DiscoverViaDnsDefault, _settings.DiscoverViaDns, "DiscoverViaDns");
-			Assert.AreEqual(Opts.StatsPeriodDefault, _settings.StatsPeriod.Seconds, "StatsPeriod");
-			Assert.AreEqual(Opts.HistogramEnabledDefault, _settings.EnableHistograms, "EnableHistograms");
-			Assert.AreEqual(Opts.DisableHttpCachingDefault, _settings.DisableHTTPCaching, "DisableHTTPCaching");
-			Assert.AreEqual(Opts.SkipDbVerifyDefault, !_settings.VerifyDbHash, "VerifyDbHash");
-			Assert.AreEqual(Opts.MinFlushDelayMsDefault, _settings.MinFlushDelay.TotalMilliseconds, "MinFlushDelay");
-			Assert.AreEqual(Opts.ScavengeHistoryMaxAgeDefault, _settings.ScavengeHistoryMaxAge,
-				"ScavengeHistoryMaxAge");
-			Assert.AreEqual(Opts.DisableScavengeMergeDefault, _settings.DisableScavengeMerging,
-				"DisableScavengeMerging");
-			Assert.AreEqual(Opts.DisableAdminUiDefault, !_settings.AdminOnPublic, "AdminOnPublic");
-			Assert.AreEqual(Opts.DisableStatsOnHttpDefault, !_settings.StatsOnPublic, "StatsOnPublic");
-			Assert.AreEqual(Opts.DisableGossipOnHttpDefault, !_settings.GossipOnPublic, "GossipOnPublic");
-			Assert.AreEqual(Opts.MaxMemtableSizeDefault, _settings.MaxMemtableEntryCount, "MaxMemtableEntryCount");
-			Assert.AreEqual(Opts.StartStandardProjectionsDefault, _settings.StartStandardProjections,
-				"StartStandardProjections");
-			Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _settings.UnsafeIgnoreHardDeletes,
-				"UnsafeIgnoreHardDeletes");
-			Assert.That(string.IsNullOrEmpty(_settings.Index), "IndexPath");
-			Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _settings.PrepareTimeout.TotalMilliseconds, "PrepareTimeout");
-			Assert.AreEqual(Opts.CommitTimeoutMsDefault, _settings.CommitTimeout.TotalMilliseconds, "CommitTimeout");
-
-			Assert.AreEqual(Opts.IntTcpHeartbeatIntervalDefault, _settings.IntTcpHeartbeatInterval.TotalMilliseconds,
-				"IntTcpHeartbeatInterval");
-			Assert.AreEqual(Opts.IntTcpHeartbeatTimeoutDefault, _settings.IntTcpHeartbeatTimeout.TotalMilliseconds,
-				"IntTcpHeartbeatTimeout");
-			Assert.AreEqual(Opts.ExtTcpHeartbeatIntervalDefault, _settings.ExtTcpHeartbeatInterval.TotalMilliseconds,
-				"ExtTcpHeartbeatInterval");
-			Assert.AreEqual(Opts.ExtTcpHeartbeatTimeoutDefault, _settings.ExtTcpHeartbeatTimeout.TotalMilliseconds,
-				"ExtTcpHeartbeatTimeout");
-
-			Assert.AreEqual(TFConsts.ChunkSize, _dbConfig.ChunkSize, "ChunkSize");
-			Assert.AreEqual(Opts.ChunksCacheSizeDefault, _dbConfig.MaxChunksCacheSize, "MaxChunksCacheSize");
-			Assert.AreEqual(Opts.AlwaysKeepScavengedDefault, _settings.AlwaysKeepScavenged, "AlwaysKeepScavenged");
 		}
 
 		[Test]

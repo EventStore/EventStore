@@ -151,7 +151,7 @@ namespace EventStore.Core.Tests.Helpers {
 				"HTTP ENDPOINT:", HttpEndPoint);
 
 			Node = builder.Build();
-			Db = builder.GetDb();
+			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 			_kestrelTestServer = new TestServer(new WebHostBuilder()

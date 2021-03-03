@@ -15,7 +15,6 @@ namespace EventStore.Core {
 		private static readonly IEnumerable<Type> OptionSections;
 		public static readonly string HelpText;
 
-		internal IReadOnlyList<ISubsystem> Subsystems { get; private init; } = Array.Empty<ISubsystem>();
 
 		public string GetComponentName() => $"{Interface.ExtIp}-{Interface.HttpPort}-cluster-node";
 
@@ -33,17 +32,12 @@ namespace EventStore.Core {
 			var defaultInstance = Activator.CreateInstance(type)!;
 
 			return type.GetProperties().Select(property =>
-				new KeyValuePair<string, object?>(property.Name, GetDefaultValue(property)));
-
-			object? GetDefaultValue(PropertyInfo property) => property.PropertyType switch {
-				{IsArray: true} => string.Join(",", ((Array)property.GetValue(defaultInstance)!).OfType<object>()),
-				_ => property.GetValue(defaultInstance)
-			};
+				new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
+					{IsArray: true} => string.Join(",",
+						((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
+					_ => property.GetValue(defaultInstance)
+				}));
 		}
-
-		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
-			Subsystems = new List<ISubsystem>(Subsystems) {subsystem}
-		};
 
 		public string? DumpOptions() =>
 			ConfigurationRoot == null ? null : new OptionsDumper(OptionSections).Dump(ConfigurationRoot);

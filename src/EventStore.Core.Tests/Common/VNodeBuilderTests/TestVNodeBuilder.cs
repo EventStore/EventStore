@@ -1,5 +1,4 @@
 using EventStore.Core.Cluster.Settings;
-using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 	public class TestVNodeBuilder : VNodeBuilder {
@@ -21,14 +20,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 
 		public ClusterVNodeSettings GetSettings() {
 			return _vNodeSettings;
-		}
-
-		public TFChunkDb GetDb() {
-			return _db;
-		}
-
-		public TFChunkDbConfig GetDbConfig() {
-			return _dbConfig;
 		}
 	}
 }

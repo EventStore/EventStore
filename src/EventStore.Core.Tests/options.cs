@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using EventStore.Common.Configuration;
+using EventStore.Core.Index;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using NUnit.Framework;
@@ -72,7 +73,7 @@ namespace EventStore.Core.Tests {
 
 		[Test]
 		public void dump() {
-			var dumpedOptions = ClusterVNodeOptions.FromConfiguration(new[] {"--force+", "--dev"}, new Hashtable {
+			var dumpedOptions = ClusterVNodeOptions.FromConfiguration(new[] {"--mem-db"}, new Hashtable {
 				["EVENTSTORE_MAX_APPEND_SIZE"] = "10"
 			}).DumpOptions();
 			Console.WriteLine(dumpedOptions);

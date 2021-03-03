@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using Microsoft.Extensions.Configuration;
@@ -45,6 +46,11 @@ namespace EventStore.Common.Log {
 		public static void Initialize(string logsDirectory, string componentName, string logConfig = "logconfig.json") {
 			if (Interlocked.Exchange(ref Initialized, 1) == 1) {
 				throw new InvalidOperationException($"{nameof(Initialize)} may not be called more than once.");
+			}
+
+			if (logsDirectory.StartsWith("~")) {
+				throw new ApplicationInitializationException(
+					"The given log path starts with a '~'. Event Store does not expand '~'.");
 			}
 
 			var potentialLogConfigurationDirectories = new[] {

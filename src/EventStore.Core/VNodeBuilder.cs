@@ -127,9 +127,7 @@ namespace EventStore.Core {
 		protected TimeSpan _projectionsQueryExpiry;
 		protected bool _faultOutOfOrderProjections;
 
-		protected TFChunkDb _db;
 		protected ClusterVNodeSettings _vNodeSettings;
-		protected TFChunkDbConfig _dbConfig;
 		private string _advertiseInternalHostAs;
 		private string _advertiseExternalHostAs;
 		private int _advertiseHttpPortAs;
@@ -1409,7 +1407,9 @@ namespace EventStore.Core {
 			SetUpProjectionsIfNeeded();
 			_gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
 
-			_dbConfig = CreateDbConfig(_chunkSize,
+			FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
+
+			var dbConfig = CreateDbConfig(_chunkSize,
 				_cachedChunks,
 				_dbPath,
 				_chunksCacheSize,
@@ -1422,9 +1422,7 @@ namespace EventStore.Core {
 				_reduceFileCachePressure,
 				_maxTruncation,
 				_log);
-			FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
-
-			_db = new TFChunkDb(_dbConfig);
+			var db = new TFChunkDb(dbConfig);
 
 			_vNodeSettings = new ClusterVNodeSettings(Guid.NewGuid(),
 				0,
@@ -1506,31 +1504,7 @@ namespace EventStore.Core {
 				enableAtomPubOverHTTP: _enableAtomPubOverHTTP,
 				disableHttps: _disableHttps);
 
-			var infoControllerBuilder = new InfoControllerBuilder()
-				.WithOptions(options)
-				.WithFeatures(new Dictionary<string, bool> {
-					{"projections", _projectionType != ProjectionType.None},
-					{"userManagement", _authenticationProviderIsInternal},
-					{"atomPub", _enableAtomPubOverHTTP}
-				});
-
-			var writerCheckpoint = _db.Config.WriterCheckpoint.Read();
-			var chaserCheckpoint = _db.Config.ChaserCheckpoint.Read();
-			var epochCheckpoint = _db.Config.EpochCheckpoint.Read();
-			var truncateCheckpoint = _db.Config.TruncateCheckpoint.Read();
-
-			_log.Information("{description,-25} {instanceId}", "INSTANCE ID:", _vNodeSettings.NodeInfo.InstanceId);
-			_log.Information("{description,-25} {path}", "DATABASE:", _db.Config.Path);
-			_log.Information("{description,-25} {writerCheckpoint} (0x{writerCheckpoint:X})", "WRITER CHECKPOINT:",
-				writerCheckpoint, writerCheckpoint);
-			_log.Information("{description,-25} {chaserCheckpoint} (0x{chaserCheckpoint:X})", "CHASER CHECKPOINT:",
-				chaserCheckpoint, chaserCheckpoint);
-			_log.Information("{description,-25} {epochCheckpoint} (0x{epochCheckpoint:X})", "EPOCH CHECKPOINT:",
-				epochCheckpoint, epochCheckpoint);
-			_log.Information("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
-				truncateCheckpoint, truncateCheckpoint);
-
-			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoControllerBuilder, _subsystems.ToArray());
+			throw new NotImplementedException();
 		}
 
 		private int ComputePTableMaxReaderCount(int ptableInitialReaderCount, int readerThreadsCount) {

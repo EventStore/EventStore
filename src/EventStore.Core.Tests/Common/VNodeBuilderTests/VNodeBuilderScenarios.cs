@@ -1,5 +1,4 @@
 using EventStore.Core.Cluster.Settings;
-using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
@@ -11,7 +10,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		protected VNodeBuilder _builder;
 		protected ClusterVNode _node;
 		protected ClusterVNodeSettings _settings;
-		protected TFChunkDbConfig _dbConfig;
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
@@ -21,7 +19,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 			Given();
 			_node = _builder.Build();
 			_settings = ((TestVNodeBuilder)_builder).GetSettings();
-			_dbConfig = ((TestVNodeBuilder)_builder).GetDbConfig();
 			_node.Start();
 		}
 
@@ -42,7 +39,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 		protected VNodeBuilder _builder;
 		protected ClusterVNode _node;
 		protected ClusterVNodeSettings _settings;
-		protected TFChunkDbConfig _dbConfig;
 		protected int _clusterSize = 3;
 		protected int _quorumSize;
 
@@ -55,7 +51,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
 			Given();
 			_node = _builder.Build();
 			_settings = ((TestVNodeBuilder)_builder).GetSettings();
-			_dbConfig = ((TestVNodeBuilder)_builder).GetDbConfig();
 			_node.Start();
 		}
 
