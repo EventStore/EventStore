@@ -4,12 +4,20 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Introduce compatibility mode. [EventStore#2796](https://github.com/EventStore/EventStore/pull/2796)
+- Add LegacyGossipDiscovery. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
+
+### Fixed
+- Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
+
+## [21.2.0] Server - 2021-02-26
+
+### Added
 - --stream-info-cache-capacity option to allow setting the cache capacity of the ReadIndex. [EventStore#2762](https://github.com/EventStore/EventStore/pull/2762)
 - Parked message count is now available on persistent subscription stats [EventStore#2792](https://github.com/EventStore/EventStore/pull/2792)
 - Content Type Validation to projections which will allow projections to only handle valid json events if isJson is set to true [EventStore#2812](https://github.com/EventStore/EventStore/pull/2812)
 - script to check for proto changes [EventStore#2817](https://github.com/EventStore/EventStore/pull/2817)
 - Server Support for gRPC Keep Alive [EventStore#2819](https://github.com/EventStore/EventStore/pull/2819)
-- Introduce compatibility mode. [EventStore#2796](https://github.com/EventStore/EventStore/pull/2796)
 
 ### Changed
 - Updated internal dependencies and added client builds for .NET 5.0 [EventStore#2764](https://github.com/EventStore/EventStore/pull/2764)
@@ -28,10 +36,6 @@ All notable changes to this project will be documented in this file.
 - Permission Denied when performing privileged commands on a follower [EventStore#2803](https://github.com/EventStore/EventStore/pull/2803)
 - Check for old/replayed events only if the event passes the event filter [Projections] [EventStore#2809](https://github.com/EventStore/EventStore/pull/2809)
 - Prevent a projection checkpoint from being emitted at same position twice [EventStore#2824](https://github.com/EventStore/EventStore/pull/2824)
-- Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
-
-### Ideally the `discover
-- //` protocol would stay non-TLS (HTTP) and we'd see the introduction of a `discovers://` (discover secure) scheme that uses HTTPS but I think that would be a breaking change now. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
 
 ## [20.10.0] - 2020-12-16
 
