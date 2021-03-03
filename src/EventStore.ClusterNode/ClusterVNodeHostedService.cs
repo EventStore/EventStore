@@ -18,8 +18,8 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 
 namespace EventStore.ClusterNode {
-	internal class ClusterVNodeHostedService2 : IHostedService {
-		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeHostedService2>();
+	internal class ClusterVNodeHostedService : IHostedService {
+		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeHostedService>();
 
 		private readonly ClusterVNodeOptions _options;
 		private readonly ExclusiveDbLock _dbLock;
@@ -27,7 +27,7 @@ namespace EventStore.ClusterNode {
 
 		public ClusterVNode Node { get; }
 
-		public ClusterVNodeHostedService2(ClusterVNodeOptions options) {
+		public ClusterVNodeHostedService(ClusterVNodeOptions options) {
 			if (options == null) throw new ArgumentNullException(nameof(options));
 			_options = options;
 
