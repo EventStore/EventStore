@@ -37,7 +37,7 @@ To tell the EventStoreDB server to use a different configuration file, you pass 
 
 ## Environment variables
 
-You can set all arguments can also as environment variables. All variables are prefixed with `EVENTSTORE_` and normally follow the pattern `EVENTSTORE_{option}`. For example, setting the `EVENTSTORE_LOG` variable would instruct the server to use a custom location for log files.
+You can also set all arguments with environment variables. All variables are prefixed with `EVENTSTORE_` and normally follow the pattern `EVENTSTORE_{option}`. For example, setting the `EVENTSTORE_LOG` variable would instruct the server to use a custom location for log files.
 
 Environment variables override all the options specified in configuration files.
 
@@ -186,4 +186,3 @@ DEFAULT OPTIONS:
 	DEAD MEMBER REMOVAL PERIOD SEC: 1800 (<DEFAULT>)
 ```
 :::
-
