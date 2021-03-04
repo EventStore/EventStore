@@ -2,7 +2,6 @@ using System.Net;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
-using EventStore.Rags;
 
 namespace EventStore.TestClient {
 	/// <summary>
@@ -10,20 +9,18 @@ namespace EventStore.TestClient {
 	/// This contract is handled by CommandLine project for .NET
 	/// </summary>
 	public sealed class ClientOptions : IOptions {
-		[ArgDescription(Opts.ShowHelpDescr)] public bool Help { get; set; }
+		public bool Help { get; set; }
 
-		[ArgDescription(Opts.ShowVersionDescr)]
 		public bool Version { get; set; }
 
-		[ArgDescription(Opts.LogsDescr)] public string Log { get; set; }
-		[ArgDescription(Opts.ConfigsDescr)] public string Config { get; set; }
+		public string Log { get; set; }
+		public string Config { get; set; }
 
-		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
 		public bool WhatIf { get; set; }
 
-		[ArgDescription(Opts.HostDescr)] public string Host { get; set; }
-		[ArgDescription(Opts.TcpPortDescr)] public int TcpPort { get; set; }
-		[ArgDescription(Opts.HttpPortDescr)] public int HttpPort { get; set; }
+		public string Host { get; set; }
+		public int TcpPort { get; set; }
+		public int HttpPort { get; set; }
 		public int Timeout { get; set; }
 		public int ReadWindow { get; set; }
 		public int WriteWindow { get; set; }

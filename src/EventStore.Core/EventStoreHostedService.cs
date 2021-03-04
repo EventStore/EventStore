@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
-using EventStore.Core.Util;
-using EventStore.Rags;
 using Microsoft.Extensions.Hosting;
 using ILogger = Serilog.ILogger;
 
@@ -28,12 +24,11 @@ namespace EventStore.Core {
 		protected EventStoreHostedService(string[] args) {
 			try {
 				_args = args;
-				Options = LoadConfig();
+				Options = new TOptions();
 				if (Options.Help) {
 					Console.WriteLine("EventStoreDB version {0} ({1}/{2}, {3})",
 						VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
 					Console.WriteLine();
-					Console.WriteLine(EventStoreOptions.GetUsage<TOptions>());
 					_skipRun = true;
 				} else if (Options.Version) {
 					Console.WriteLine("EventStoreDB version {0} ({1}/{2}, {3})",
@@ -44,12 +39,6 @@ namespace EventStore.Core {
 					Init(Options);
 					Create(Options);
 				}
-			} catch (OptionException exc) {
-				Log.Error("Error while parsing options:");
-				Log.Error(FormatExceptionMessage(exc));
-				Log.Information("Options:");
-				Log.Information(EventStoreOptions.GetUsage<TOptions>());
-				_skipRun = true;
 			} catch (InvalidConfigurationException exc) {
 				Log.Error("Invalid Configuration Encountered");
 				Log.Error(exc.Message);
@@ -61,14 +50,6 @@ namespace EventStore.Core {
 		protected abstract string GetComponentName(TOptions options);
 
 		protected abstract void Create(TOptions options);
-
-		protected virtual IEnumerable<OptionSource>
-			MutateEffectiveOptions(IEnumerable<OptionSource> effectiveOptions) =>
-			effectiveOptions;
-
-		public TOptions LoadConfig() => EventStoreOptions.Parse<TOptions>(_args, Opts.EnvPrefix,
-			Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
-			MutateEffectiveOptions);
 
 		protected abstract Task StartInternalAsync(CancellationToken cancellationToken);
 		protected abstract Task StopInternalAsync(CancellationToken cancellationToken);
@@ -97,8 +78,6 @@ namespace EventStore.Core {
 					? "NON-GENERATION (PROBABLY BOEHM)"
 					: $"{GC.MaxGeneration + 1} GENERATIONS");
 			Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
-
-			Log.Information(EventStoreOptions.DumpOptions());
 		}
 
 		private string FormatExceptionMessage(Exception ex) {

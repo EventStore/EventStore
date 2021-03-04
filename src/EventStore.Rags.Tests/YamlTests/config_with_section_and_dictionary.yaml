@@ -1,5 +1,0 @@
-﻿Name: foo
-Section:
-  Roles: 
-      'accounting': $admins
-      'it-experts': $experts

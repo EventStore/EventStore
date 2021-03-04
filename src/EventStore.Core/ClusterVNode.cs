@@ -72,6 +72,8 @@ namespace EventStore.Core {
 		public TFChunkDb Db { get; }
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
+		public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
+
 		public IQueuedHandler MainQueue {
 			get { return _mainQueue; }
 		}
@@ -158,7 +160,6 @@ namespace EventStore.Core {
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
 		public object _taskAddLock = new object();
-		public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 #endif
 
 		protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e) {
