@@ -10,7 +10,7 @@ You can check what version of EventStoreDB you have installed by using the `--ve
 
 ```bash
 $ eventstore --version
-EventStoreDB version v20.1.0 (tags/oss-v20.6.1/9ea108855, Unknown)
+EventStoreDB version v21.2.0 (tags/oss-v21.2.0/bc30009, Unknown)
 ```
 
 The full list of available options is available from the currently installed server by using the `--help` option in the command line.
