@@ -22,5 +22,4 @@ To use the DNS discovery, you need to set the `ClusterDns` option to the DNS nam
 
 It will be used only if the cluster has more than one node. You must set the `ClusterDns` setting to a proper DNS name.
 
-When using DNS for cluster gossip, you'd need to set the `GossipPort` setting to the internal (usual) or external HTTP port, depending on your cluster networking configuration. Refer to [gossip port](./gossip.md#gossip-port) option documentation to learn more.
-
+When using DNS for cluster gossip, you'd need to set the `GossipPort` setting to the HTTP port, depending on your cluster networking configuration. Refer to [gossip port](./gossip.md#gossip-port) option documentation to learn more.
