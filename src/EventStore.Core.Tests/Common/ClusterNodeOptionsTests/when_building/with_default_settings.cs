@@ -35,45 +35,45 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 		[Test]
 		public void should_set_command_line_args_to_default_values() {
-			Assert.AreEqual(Opts.EnableTrustedAuthDefault, _options.Interface.EnableTrustedAuth, "EnableTrustedAuth");
-			Assert.AreEqual(Opts.LogHttpRequestsDefault, _options.Application.LogHttpRequests, "LogHttpRequests");
-			Assert.AreEqual(Opts.WorkerThreadsDefault, _options.Application.WorkerThreads, "WorkerThreads");
-			Assert.AreEqual(Opts.DiscoverViaDnsDefault, _options.Cluster.DiscoverViaDns, "DiscoverViaDns");
-			Assert.AreEqual(Opts.StatsPeriodDefault, _options.Application.StatsPeriodSec, "StatsPeriod");
-			Assert.AreEqual(Opts.HistogramEnabledDefault, _options.Application.EnableHistograms, "EnableHistograms");
-			Assert.AreEqual(Opts.DisableHttpCachingDefault, _options.Application.DisableHttpCaching, "DisableHTTPCaching");
-			Assert.AreEqual(Opts.SkipDbVerifyDefault, _options.Database.SkipDbVerify, "VerifyDbHash");
-			Assert.AreEqual(Opts.MinFlushDelayMsDefault, _options.Database.MinFlushDelayMs, "MinFlushDelay");
-			Assert.AreEqual(Opts.ScavengeHistoryMaxAgeDefault, _options.Database.ScavengeHistoryMaxAge,
+			Assert.AreEqual(false, _options.Interface.EnableTrustedAuth, "EnableTrustedAuth");
+			Assert.AreEqual(false, _options.Application.LogHttpRequests, "LogHttpRequests");
+			Assert.AreEqual(5, _options.Application.WorkerThreads, "WorkerThreads");
+			Assert.AreEqual(true, _options.Cluster.DiscoverViaDns, "DiscoverViaDns");
+			Assert.AreEqual(30, _options.Application.StatsPeriodSec, "StatsPeriod");
+			Assert.AreEqual(false, _options.Application.EnableHistograms, "EnableHistograms");
+			Assert.AreEqual(false, _options.Application.DisableHttpCaching, "DisableHTTPCaching");
+			Assert.AreEqual(false, _options.Database.SkipDbVerify, "VerifyDbHash");
+			Assert.AreEqual(TFConsts.MinFlushDelayMs.TotalMilliseconds, _options.Database.MinFlushDelayMs, "MinFlushDelay");
+			Assert.AreEqual(30, _options.Database.ScavengeHistoryMaxAge,
 				"ScavengeHistoryMaxAge");
-			Assert.AreEqual(Opts.DisableScavengeMergeDefault, _options.Database.DisableScavengeMerging,
+			Assert.AreEqual(false, _options.Database.DisableScavengeMerging,
 				"DisableScavengeMerging");
-			Assert.AreEqual(Opts.DisableAdminUiDefault, _options.Interface.DisableAdminUi, "AdminOnPublic");
-			Assert.AreEqual(Opts.DisableStatsOnHttpDefault, _options.Interface.DisableStatsOnHttp, "StatsOnPublic");
-			Assert.AreEqual(Opts.DisableGossipOnHttpDefault, _options.Interface.DisableGossipOnHttp, "GossipOnPublic");
-			Assert.AreEqual(Opts.MaxMemtableSizeDefault, _options.Database.MaxMemTableSize, "MaxMemtableEntryCount");
-			Assert.AreEqual(Opts.StartStandardProjectionsDefault, _options.Projections.RunProjections > ProjectionType.System,
+			Assert.AreEqual(false, _options.Interface.DisableAdminUi, "AdminOnPublic");
+			Assert.AreEqual(false, _options.Interface.DisableStatsOnHttp, "StatsOnPublic");
+			Assert.AreEqual(false, _options.Interface.DisableGossipOnHttp, "GossipOnPublic");
+			Assert.AreEqual(1_000_000, _options.Database.MaxMemTableSize, "MaxMemtableEntryCount");
+			Assert.AreEqual(false, _options.Projections.RunProjections > ProjectionType.System,
 				"StartStandardProjections");
-			Assert.AreEqual(Opts.UnsafeIgnoreHardDeleteDefault, _options.Database.UnsafeIgnoreHardDelete,
+			Assert.AreEqual(false, _options.Database.UnsafeIgnoreHardDelete,
 				"UnsafeIgnoreHardDeletes");
 			Assert.That(string.IsNullOrEmpty(_options.Database.Index), "IndexPath");
 			Assert.AreEqual(1, _options.Cluster.PrepareAckCount, "PrepareAckCount");
 			Assert.AreEqual(1, _options.Cluster.CommitAckCount, "CommitAckCount");
-			Assert.AreEqual(Opts.PrepareTimeoutMsDefault, _options.Database.PrepareTimeoutMs, "PrepareTimeout");
-			Assert.AreEqual(Opts.CommitTimeoutMsDefault, _options.Database.CommitTimeoutMs, "CommitTimeout");
-			Assert.AreEqual(Opts.WriteTimeoutMsDefault, _options.Database.WriteTimeoutMs, "WriteTimeout");
+			Assert.AreEqual(2000, _options.Database.PrepareTimeoutMs, "PrepareTimeout");
+			Assert.AreEqual(2000, _options.Database.CommitTimeoutMs, "CommitTimeout");
+			Assert.AreEqual(2000, _options.Database.WriteTimeoutMs, "WriteTimeout");
 
-			Assert.AreEqual(Opts.IntTcpHeartbeatIntervalDefault, _options.Interface.IntTcpHeartbeatInterval,
+			Assert.AreEqual(700, _options.Interface.IntTcpHeartbeatInterval,
 				"IntTcpHeartbeatInterval");
-			Assert.AreEqual(Opts.IntTcpHeartbeatTimeoutDefault, _options.Interface.IntTcpHeartbeatTimeout,
+			Assert.AreEqual(700, _options.Interface.IntTcpHeartbeatTimeout,
 				"IntTcpHeartbeatTimeout");
-			Assert.AreEqual(Opts.ExtTcpHeartbeatIntervalDefault, _options.Interface.ExtTcpHeartbeatInterval,
+			Assert.AreEqual(2000, _options.Interface.ExtTcpHeartbeatInterval,
 				"ExtTcpHeartbeatInterval");
-			Assert.AreEqual(Opts.ExtTcpHeartbeatTimeoutDefault, _options.Interface.ExtTcpHeartbeatTimeout,
+			Assert.AreEqual(1000, _options.Interface.ExtTcpHeartbeatTimeout,
 				"ExtTcpHeartbeatTimeout");
 
 			Assert.AreEqual(TFConsts.ChunkSize, _node.Db.Config.ChunkSize, "ChunkSize");
-			Assert.AreEqual(Opts.ChunksCacheSizeDefault, _node.Db.Config.MaxChunksCacheSize, "MaxChunksCacheSize");
+			Assert.AreEqual(TFConsts.ChunksCacheSize, _node.Db.Config.MaxChunksCacheSize, "MaxChunksCacheSize");
 		}
 	}
 

@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10), 
 				TimeSpan.FromSeconds(1800),
-				true, Opts.MaxMemtableSizeDefault, Opts.HashCollisionReadLimitDefault, false,
+				true, 1000000, Opts.HashCollisionReadLimitDefault, false,
 				false, false,
 				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault,
 				Constants.PTableMaxReaderCountDefault,

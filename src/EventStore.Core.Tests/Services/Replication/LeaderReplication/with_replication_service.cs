@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
 
 			manager = new TcpConnectionManager(
-				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
+				"Test Subscription Connection manager", TcpServiceType.External, new ClientTcpDispatcher(2000),
 				InMemoryBus.CreateTest(), tcpConn, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),

@@ -27,11 +27,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 		[OneTimeSetUp]
 		public void Setup() {
-			_dispatcher = new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault);
+			_dispatcher = new ClientTcpDispatcher(2000);
 
 			var dummyConnection = new DummyTcpConnection();
 			_connection = new TcpConnectionManager(
-				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(Opts.WriteTimeoutMsDefault),
+				Guid.NewGuid().ToString(), TcpServiceType.External, new ClientTcpDispatcher(2000),
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
 					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
