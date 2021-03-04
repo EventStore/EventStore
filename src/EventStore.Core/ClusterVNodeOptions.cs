@@ -20,7 +20,7 @@ using Serilog;
 #nullable enable
 namespace EventStore.Core {
 	public partial record ClusterVNodeOptions {
-		public static readonly ClusterVNodeOptions Default = new ClusterVNodeOptions();
+		public static readonly ClusterVNodeOptions Default = new();
 
 		internal IConfigurationRoot? ConfigurationRoot { get; init; }
 		public ApplicationOptions Application { get; init; } = new();
@@ -35,8 +35,10 @@ namespace EventStore.Core {
 		public ProjectionOptions Projections { get; init; } = new();
 
 		internal byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
+
 		internal IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies { get; init; } =
 			Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
+
 		internal IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
 
 		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
@@ -44,6 +46,7 @@ namespace EventStore.Core {
 		};
 
 		private X509Certificate2? _serverCertificate;
+
 		internal X509Certificate2 ServerCertificate {
 			init {
 				_serverCertificate = value;
@@ -56,7 +59,8 @@ namespace EventStore.Core {
 					var location =
 						CertificateLoader.GetCertificateStoreLocation(CertificateStore.CertificateStoreLocation);
 					var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
-					_serverCertificate = CertificateLoader.FromStore(location, name, CertificateStore.CertificateSubjectName,
+					_serverCertificate = CertificateLoader.FromStore(location, name,
+						CertificateStore.CertificateSubjectName,
 						CertificateStore.CertificateThumbprint);
 				} else if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreName)) {
 					var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
@@ -77,6 +81,7 @@ namespace EventStore.Core {
 		}
 
 		private X509Certificate2Collection? _trustedRootCertificates;
+
 		internal X509Certificate2Collection TrustedRootCertificates {
 			init {
 				_trustedRootCertificates = value;
@@ -110,10 +115,6 @@ namespace EventStore.Core {
 
 		internal string? DebugView => ConfigurationRoot?.GetDebugView();
 
-		private ClusterVNodeOptions() {
-
-		}
-
 		public static ClusterVNodeOptions FromConfiguration(string[] args, IDictionary environment) {
 			if (args == null) throw new ArgumentNullException(nameof(args));
 			if (environment == null) throw new ArgumentNullException(nameof(environment));
@@ -140,7 +141,6 @@ namespace EventStore.Core {
 				Interface = InterfaceOptions.FromConfiguration(configurationRoot),
 				Projections = ProjectionOptions.FromConfiguration(configurationRoot),
 				ConfigurationRoot = configurationRoot,
-
 			};
 		}
 
@@ -431,8 +431,16 @@ namespace EventStore.Core {
 			[Description("Write timeout (in milliseconds).")]
 			public int WriteTimeoutMs { get; init; } = 2_000;
 
+			private readonly bool _unsafeDisableFlushToDisk = false;
+
 			[Description("Disable flushing to disk. (UNSAFE: on power off)")]
-			public bool UnsafeDisableFlushToDisk { get; init; } = false;
+			public bool UnsafeDisableFlushToDisk {
+				get => _unsafeDisableFlushToDisk;
+				init {
+					_unsafeDisableFlushToDisk = value;
+					FileStreamExtensions.ConfigureFlush(value);
+				}
+			}
 
 			[Description("Disables Hard Deletes. (UNSAFE: use to remove hard deletes)")]
 			public bool UnsafeIgnoreHardDelete { get; init; } = false;

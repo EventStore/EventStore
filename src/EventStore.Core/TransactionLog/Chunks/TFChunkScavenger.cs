@@ -29,7 +29,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly bool _unsafeIgnoreHardDeletes;
 		private readonly int _threads;
 		private const int MaxRetryCount = 5;
-		internal const int MaxThreadCount = 4;
+		public const int MaxThreadCount = 4;
 		private const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk
 
 		public TFChunkScavenger(TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex tableIndex,

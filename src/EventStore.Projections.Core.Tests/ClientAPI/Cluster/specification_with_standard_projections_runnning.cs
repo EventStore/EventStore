@@ -122,7 +122,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 #endif
 		}
 
-		private MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds) {
+		private MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds) {
 			_projections[index] = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
 				startStandardProjections: false,
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),

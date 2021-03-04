@@ -5,7 +5,7 @@ using EventStore.Plugins.Authentication;
 using Microsoft.AspNetCore.Routing;
 using Serilog;
 
-namespace EventStore.Core.Tests.Common.VNodeBuilderTests {
+namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 	public class TestAuthenticationProviderFactory : IAuthenticationProviderFactory {
 		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) {
 			return new TestAuthenticationProvider();

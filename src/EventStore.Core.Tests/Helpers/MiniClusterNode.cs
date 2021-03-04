@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public MiniClusterNode(
 			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec,
-			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, IPEndPoint[] gossipSeeds,
+			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, EndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
@@ -98,13 +98,13 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var useHttps = EnableHttps();
 
-			var options = ClusterVNodeOptions.Default with {
-				Application = ClusterVNodeOptions.Default.Application with {
+			var options = new ClusterVNodeOptions {
+				Application = new() {
 					Insecure = !useHttps,
 					WorkerThreads = 1,
 					StatsPeriodSec = (int)TimeSpan.FromHours(1).TotalSeconds
 				},
-				Cluster = ClusterVNodeOptions.Default.Cluster with {
+				Cluster = new() {
 					DiscoverViaDns = false,
 					ClusterDns = string.Empty,
 					GossipSeed = gossipSeeds,
@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Helpers {
 					DeadMemberRemovalPeriodSec = 1_800_000,
 					ReadOnlyReplica = readOnlyReplica
 				},
-				Interface = ClusterVNodeOptions.Default.Interface with {
+				Interface = new() {
 					IntIp = InternalTcpEndPoint.Address,
 					ExtIp = ExternalTcpEndPoint.Address,
 					IntTcpPort = InternalTcpEndPoint.Port,
@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.Helpers {
 					EnableAtomPubOverHttp = true,
 					EnableTrustedAuth = enableTrustedAuth
 				},
-				Database = ClusterVNodeOptions.Default.Database with {
+				Database = new() {
 					MinFlushDelayMs = TFConsts.MinFlushDelayMs.TotalMilliseconds,
 					PrepareTimeoutMs = 10_000,
 					CommitTimeoutMs = 10_000,
@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.Helpers {
 					ChunkSize = chunkSize ?? TFConsts.ChunkSize,
 					ChunksCacheSize = cachedChunkSize ?? TFConsts.ChunksCacheSize
 				},
-				Projections = ClusterVNodeOptions.Default.Projections with {
+				Projections = new() {
 					RunProjections = ProjectionType.None
 				},
 				Subsystems = subsystems
@@ -159,10 +159,7 @@ namespace EventStore.Core.Tests.Helpers {
 			var trustedRootCertificates =
 				useHttps ? new X509Certificate2Collection(ssl_connections.GetRootCertificate()) : null;
 			options = useHttps
-				? options with {
-					ServerCertificate = serverCertificate,
-					TrustedRootCertificates = trustedRootCertificates
-				}
+				? options.Secure(trustedRootCertificates, serverCertificate)
 				: options;
 
 			_isReadOnlyReplica = readOnlyReplica;

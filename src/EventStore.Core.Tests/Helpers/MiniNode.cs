@@ -1,15 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -83,52 +84,49 @@ namespace EventStore.Core.Tests.Helpers {
 			IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
 			HttpEndPoint = new IPEndPoint(ip, httpEndPointPort);
 
-			var builder = TestVNodeBuilder.AsSingleNode();
-			if (inMemDb)
-				builder.RunInMemory();
-			else
-				builder.RunOnDisk(DbPath);
-
-			builder.WithInternalTcpOn(IntTcpEndPoint)
+			var options = new ClusterVNodeOptions {
+					IndexBitnessVersion = indexBitnessVersion,
+					Application = new() {
+						StatsPeriodSec = 60 * 60,
+						WorkerThreads = 1
+					},
+					Interface = new() {
+						ExtTcpHeartbeatInterval = 10_000,
+						ExtTcpHeartbeatTimeout = 10_000,
+						IntTcpHeartbeatInterval = 10_000,
+						IntTcpHeartbeatTimeout = 10_000,
+						EnableTrustedAuth = enableTrustedAuth,
+						EnableAtomPubOverHttp = true
+					},
+					Cluster = new() {
+						DiscoverViaDns = false,
+						ReadOnlyReplica = isReadOnlyReplica
+					},
+					Database = new() {
+						ChunkSize = chunkSize ?? ChunkSize,
+						ChunksCacheSize = cachedChunkSize ?? CachedChunkSize,
+						SkipDbVerify = true,
+						StatsStorage = StatsStorage.None,
+						MaxMemTableSize = memTableSize,
+						DisableScavengeMerging = true,
+						HashCollisionReadLimit = hashCollisionReadLimit,
+						CommitTimeoutMs = 10_000,
+						PrepareTimeoutMs = 10_000,
+						UnsafeDisableFlushToDisk = disableFlushToDisk
+					},
+					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
+				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+					ssl_connections.GetRootCertificate())
+				.WithInternalTcpOn(IntTcpEndPoint)
 				.WithInternalSecureTcpOn(IntSecTcpEndPoint)
 				.WithExternalTcpOn(TcpEndPoint)
 				.WithExternalSecureTcpOn(TcpSecEndPoint)
 				.WithHttpOn(HttpEndPoint)
-				.WithTfChunkSize(chunkSize ?? ChunkSize)
-				.WithTfChunksCacheSize(cachedChunkSize ?? CachedChunkSize)
-				.WithServerCertificate(ssl_connections.GetServerCertificate())
-				.WithWorkerThreads(1)
-				.DisableDnsDiscovery()
-				.WithPrepareTimeout(TimeSpan.FromSeconds(10))
-				.WithCommitTimeout(TimeSpan.FromSeconds(10))
-				.WithStatsPeriod(TimeSpan.FromHours(1))
-				.DisableScavengeMerging()
-				.WithInternalHeartbeatInterval(TimeSpan.FromSeconds(10))
-				.WithInternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
-				.WithExternalHeartbeatInterval(TimeSpan.FromSeconds(10))
-				.WithExternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
-				.MaximumMemoryTableSizeOf(memTableSize)
-				.DoNotVerifyDbHashes()
-				.WithStatsStorage(StatsStorage.None)
-				.AdvertiseExternalHostAs(advertisedExtHostAddress)
-				.AdvertiseHttpPortAs(advertisedHttpPort)
-				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
-				.WithIndexBitnessVersion(indexBitnessVersion)
-				.EnableExternalTCP()
-				.WithEnableAtomPubOverHTTP(true);
+				.AdvertiseHttpHostAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
 
-			if (enableTrustedAuth)
-				builder.EnableTrustedAuth();
-			if (disableFlushToDisk)
-				builder.WithUnsafeDisableFlushToDisk();
-			if (isReadOnlyReplica)
-				builder.EnableReadOnlyReplica();
-
-			if (subsystems != null) {
-				foreach (var subsystem in subsystems) {
-					builder.AddCustomSubsystem(subsystem);
-				}
-			}
+			options = inMemDb
+				? options.RunInMemory()
+				: options.RunOnDisk(DbPath);
 
 			Log.Information("\n{0,-25} {1} ({2}/{3}, {4})\n"
 					 + "{5,-25} {6} ({7})\n"
@@ -150,7 +148,7 @@ namespace EventStore.Core.Tests.Helpers {
 				"TCP SECURE ENDPOINT:", TcpSecEndPoint,
 				"HTTP ENDPOINT:", HttpEndPoint);
 
-			Node = builder.Build();
+			Node = new ClusterVNode(options);
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

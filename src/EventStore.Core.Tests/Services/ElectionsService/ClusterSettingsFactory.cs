@@ -32,7 +32,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var trustedRootCertificate = useHttps ? ssl_connections.GetRootCertificate() : null;
 
 			var vnode = new ClusterVNodeSettings(Guid.NewGuid(), 0,
-				() => new ClusterNodeOptions(),
 				GetLoopbackForPort(tcpIntPort), null,
 				GetLoopbackForPort(tcpExtPort), null,
 				GetLoopbackForPort(httpPort),

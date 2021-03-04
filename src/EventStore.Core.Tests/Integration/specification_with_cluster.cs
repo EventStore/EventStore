@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected Task ShutdownNode(int nodeNum) => _nodes[nodeNum].Shutdown(keepDb: true);
 
-		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, IPEndPoint[] gossipSeeds,
+		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
 			bool wait = true) => new(
 			PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec,
 			endpoints.ExternalTcp,

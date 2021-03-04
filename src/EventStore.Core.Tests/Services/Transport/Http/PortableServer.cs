@@ -9,7 +9,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Tests.Authorization;
-using EventStore.Core.Tests.Common.VNodeBuilderTests;
+using EventStore.Core.Tests.Common.ClusterNodeOptionsTests;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Transport.Http.Client;
 using Microsoft.AspNetCore.Builder;

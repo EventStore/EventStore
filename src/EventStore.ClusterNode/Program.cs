@@ -77,29 +77,24 @@ namespace EventStore.ClusterNode {
 						+ "using the `GossipSeed` option.");
 				}
 
-				var hostedService = new ClusterVNodeHostedService2(options);
+				if (options.Application.Version || options.Application.WhatIf) {
+					await Console.Out.WriteLineAsync(VersionInfo.Text);
+
+					return 0;
+				}
+
 				Application.RegisterExitAction(code => {
 					cts.Cancel();
 					exitCodeSource.SetResult(code);
 				});
 
-				if (options.Application.Version || options.Application.WhatIf) {
-					await Console.Out.WriteLineAsync(VersionInfo.Text);
-
-					if (options.Application.Version) {
-						return 0;
-					} else {
-						Application.Exit(0, "WhatIf option specified.");
-						return await exitCodeSource.Task;
-					}
-				}
-
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
+				var hostedService = new ClusterVNodeHostedService(options);
 				var signal = new ManualResetEventSlim(false);
-				_ = Run();
-				signal.Wait();
+                _ = Run();
+                signal.Wait();
 
 				return await exitCodeSource.Task;
 

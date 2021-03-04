@@ -158,6 +158,7 @@ namespace EventStore.Core {
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
 		public object _taskAddLock = new object();
+		public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 #endif
 
 		protected virtual void OnNodeStatusChanged(VNodeStatusChangeArgs e) {
@@ -642,7 +643,7 @@ namespace EventStore.Core {
 				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
 			});
 
-			var gossipAdvertiseInfo = GetGossipAdvertiseInfo();
+			GossipAdvertiseInfo = GetGossipAdvertiseInfo();
 			GossipAdvertiseInfo GetGossipAdvertiseInfo() {
 				IPAddress intIpAddress = options.Interface.IntIp; //this value is just opts.IntIP
 
@@ -702,8 +703,8 @@ namespace EventStore.Core {
 
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
 				_workersHandler, options.Application.LogHttpRequests,
-				gossipAdvertiseInfo.AdvertiseExternalHostAs,
-				gossipAdvertiseInfo.AdvertiseHttpPortAs,
+				GossipAdvertiseInfo.AdvertiseExternalHostAs,
+				GossipAdvertiseInfo.AdvertiseHttpPortAs,
 				options.Auth.DisableFirstLevelHttpAuthorization,
 				NodeInfo.HttpEndPoint);
 
@@ -1029,14 +1030,14 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
 
 			var memberInfo = MemberInfo.Initial(NodeInfo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
-				gossipAdvertiseInfo.InternalTcp,
-				gossipAdvertiseInfo.InternalSecureTcp,
-				gossipAdvertiseInfo.ExternalTcp,
-				gossipAdvertiseInfo.ExternalSecureTcp,
-				gossipAdvertiseInfo.HttpEndPoint,
-				gossipAdvertiseInfo.AdvertiseHostToClientAs,
-				gossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
-				gossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
+				GossipAdvertiseInfo.InternalTcp,
+				GossipAdvertiseInfo.InternalSecureTcp,
+				GossipAdvertiseInfo.ExternalTcp,
+				GossipAdvertiseInfo.ExternalSecureTcp,
+				GossipAdvertiseInfo.HttpEndPoint,
+				GossipAdvertiseInfo.AdvertiseHostToClientAs,
+				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
+				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica);
 
 			if (!isSingleNode) {
@@ -1057,7 +1058,7 @@ namespace EventStore.Core {
 				// REPLICA REPLICATION
 				var replicaService = new ReplicaService(_mainQueue, Db, epochManager, _workersHandler,
 					_authenticationProvider, AuthorizationGateway,
-					gossipAdvertiseInfo.InternalTcp ?? gossipAdvertiseInfo.InternalSecureTcp,
+					GossipAdvertiseInfo.InternalTcp ?? GossipAdvertiseInfo.InternalSecureTcp,
 					options.Cluster.ReadOnlyReplica,
 					!disableInternalTcpTls, _internalServerCertificateValidator,
 					_certificateSelector,
