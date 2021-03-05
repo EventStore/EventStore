@@ -1,5 +1,6 @@
 using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
+#pragma warning disable 1591
 
 namespace EventStore.TestClient.Commands.DvuBasic {
 	public class Status {

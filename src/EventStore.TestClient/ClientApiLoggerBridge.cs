@@ -3,7 +3,7 @@ using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
-	public class ClientApiLoggerBridge : ClientAPI.ILogger {
+	internal class ClientApiLoggerBridge : ClientAPI.ILogger {
 		public static readonly ClientApiLoggerBridge Default =
 			new ClientApiLoggerBridge(Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName,
 				"client-api"));

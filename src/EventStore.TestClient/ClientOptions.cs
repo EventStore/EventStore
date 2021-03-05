@@ -1,43 +1,33 @@
+using System;
+using System.Collections;
+using System.Linq;
 using System.Net;
-using EventStore.Common.Options;
-using EventStore.Common.Utils;
-using EventStore.Core.Util;
+using System.Reflection;
+using System.Text;
+
+#pragma warning disable 1591
 
 namespace EventStore.TestClient {
 	/// <summary>
 	/// Data contract for the command-line options accepted by test client.
 	/// This contract is handled by CommandLine project for .NET
 	/// </summary>
-	public sealed class ClientOptions : IOptions {
-		public bool Help { get; set; }
-
-		public bool Version { get; set; }
-
-		public string Log { get; set; }
-		public string Config { get; set; }
-
-		public bool WhatIf { get; set; }
-
-		public string Host { get; set; }
-		public int TcpPort { get; set; }
-		public int HttpPort { get; set; }
-		public int Timeout { get; set; }
-		public int ReadWindow { get; set; }
-		public int WriteWindow { get; set; }
-		public int PingWindow { get; set; }
-		public string[] Command { get; set; }
+	public sealed record ClientOptions {
+		public string Host { get; init; }
+		public int TcpPort { get; init; }
+		public int HttpPort { get; init; }
+		public int Timeout { get; init; }
+		public int ReadWindow { get; init; }
+		public int WriteWindow { get; init; }
+		public int PingWindow { get; init; }
+		public string[] Command { get; init; }
 		public bool Reconnect { get; set; }
 
-		public bool UseTls { get; set; }
-		public bool TlsValidateServer { get; set; }
+		public bool UseTls { get; init; }
+		public bool TlsValidateServer { get; init; }
 
 		public ClientOptions() {
-			Config = "";
-			Command = new string[] { };
-			Help = Opts.ShowHelpDefault;
-			Version = Opts.ShowVersionDefault;
-			Log = Locations.DefaultTestClientLogDirectory;
-			WhatIf = Opts.WhatIfDefault;
+			Command = Array.Empty<string>();
 			Host = IPAddress.Loopback.ToString();
 			TcpPort = 1113;
 			HttpPort = 2113;
@@ -48,6 +38,18 @@ namespace EventStore.TestClient {
 			Reconnect = true;
 			UseTls = false;
 			TlsValidateServer = false;
+		}
+
+		public override string ToString() {
+			return GetType()
+				.GetProperties()
+				.Aggregate(new StringBuilder(),
+					(builder, option) => builder.AppendLine($"{option.Name}: {GetValue(option)}"))
+				.ToString();
+
+			object GetValue(PropertyInfo propertyInfo) => propertyInfo.PropertyType.IsArray
+				? string.Join(",", ((IEnumerable)propertyInfo.GetValue(this)).OfType<object>())
+				: propertyInfo.GetValue(this);
 		}
 	}
 }

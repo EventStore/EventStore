@@ -13,6 +13,7 @@ using EventStore.Transport.Tcp.Formatting;
 using EventStore.Transport.Tcp.Framing;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
+#pragma warning disable 1591
 
 namespace EventStore.TestClient {
 	public class Client {

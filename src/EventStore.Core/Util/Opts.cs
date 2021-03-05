@@ -5,13 +5,6 @@ using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Util {
 	public static class Opts {
-
-		public const bool WhatIfDefault = false;
-
-		public const bool ShowHelpDefault = false;
-
-		public const bool ShowVersionDefault = false;
-
 		public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
 		
 		public const int ConnectionQueueSizeThresholdDefault = 50000;
