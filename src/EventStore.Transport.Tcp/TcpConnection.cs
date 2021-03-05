@@ -11,7 +11,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.Transport.Tcp {
 	public class TcpConnection : TcpConnectionBase, ITcpConnection {
-		internal const int MaxSendPacketSize = 64 * 1024;
+		internal const int MaxSendPacketSize = 65535 /*Max IP packet size*/ - 20 /*IP packet header size*/ - 32 /*TCP min header size*/;
 
 		internal static readonly BufferManager BufferManager =
 			new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
@@ -151,7 +151,7 @@ namespace EventStore.Transport.Tcp {
 			try {
 				do {
 					lock (_sendLock) {
-						if (_isSending || _sendQueue.IsEmpty || _sendSocketArgs == null) return;
+						if (_isSending || (_sendQueue.IsEmpty && _memoryStreamOffset >= _memoryStream.Length) || _sendSocketArgs == null) return;
 						if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 						_isSending = true;
 					}
