@@ -12,6 +12,9 @@ using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using System.Threading.Tasks;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
@@ -30,11 +33,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<MiniNode>();
 
-		public IPEndPoint TcpEndPoint { get; private set; }
-		public IPEndPoint TcpSecEndPoint { get; private set; }
-		public IPEndPoint IntTcpEndPoint { get; private set; }
-		public IPEndPoint IntSecTcpEndPoint { get; private set; }
-		public IPEndPoint HttpEndPoint { get; private set; }
+		public IPEndPoint TcpEndPoint { get; }
+		public IPEndPoint IntTcpEndPoint { get; }
+		public IPEndPoint HttpEndPoint { get; }
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
@@ -49,39 +50,34 @@ namespace EventStore.Core.Tests.Helpers {
 		public Task AdminUserCreated => _adminUserCreated.Task;
 
 		public MiniNode(string pathname,
-			int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null,
+			int? tcpPort = null, int? httpPort = null,
 			ISubsystem[] subsystems = null,
 			int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false,
-			bool skipInitializeStandardUsersCheck = true,
 			int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false,
 			string advertisedExtHostAddress = null, int advertisedHttpPort = 0,
-			int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
-			byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
+			int hashCollisionReadLimit = Util.Opts.HashCollisionReadLimitDefault,
+			byte indexBitnessVersion = Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false) {
 			RunningTime.Start();
 			RunCount += 1;
 
-			var ip = IPAddress.Loopback; //GetLocalIp();
+			var ip = IPAddress.Loopback;
 			
 
 			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
-			int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
 			int httpEndPointPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 			int intTcpPort = PortsHelper.GetAvailablePort(ip);
-			int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
 
 			if (string.IsNullOrEmpty(dbPath)) {
 				DbPath = Path.Combine(pathname,
-					$"mini-node-db-{extTcpPort}-{extSecTcpPort}-{httpEndPointPort}");
+					$"mini-node-db-{extTcpPort}-{httpEndPointPort}");
 			} else {
 				DbPath = dbPath;
 			}
 
 			TcpEndPoint = new IPEndPoint(ip, extTcpPort);
-			TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
 			IntTcpEndPoint = new IPEndPoint(ip, intTcpPort);
-			IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
 			HttpEndPoint = new IPEndPoint(ip, httpEndPointPort);
 
 			var options = new ClusterVNodeOptions {
@@ -116,13 +112,13 @@ namespace EventStore.Core.Tests.Helpers {
 					},
 					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
 				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-					ssl_connections.GetRootCertificate())
-				.WithInternalTcpOn(IntTcpEndPoint)
-				.WithInternalSecureTcpOn(IntSecTcpEndPoint)
-				.WithExternalTcpOn(TcpEndPoint)
-				.WithExternalSecureTcpOn(TcpSecEndPoint)
-				.WithHttpOn(HttpEndPoint)
-				.AdvertiseHttpHostAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
+					ssl_connections.GetServerCertificate())
+				.WithInternalSecureTcpOn(IntTcpEndPoint)
+				.WithExternalSecureTcpOn(TcpEndPoint)
+				.WithHttpOn(HttpEndPoint);
+
+			if (advertisedExtHostAddress != null)
+				options = options.AdvertiseHttpHostAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
 
 			options = inMemDb
 				? options.RunInMemory()
@@ -142,13 +138,14 @@ namespace EventStore.Core.Tests.Helpers {
 				"GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
-					: string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+					: $"{GC.MaxGeneration + 1} GENERATIONS",
 				"DBPATH:", DbPath,
 				"TCP ENDPOINT:", TcpEndPoint,
-				"TCP SECURE ENDPOINT:", TcpSecEndPoint,
 				"HTTP ENDPOINT:", HttpEndPoint);
 
-			Node = new ClusterVNode(options);
+			Node = new ClusterVNode(options,
+				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

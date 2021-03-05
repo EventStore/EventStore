@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.To(node, TcpType.Normal);
+			return TestConnection.To(node, TcpType.Ssl);
 		}
 
 		[Test, Category("LongRunning"), Category("Network")]

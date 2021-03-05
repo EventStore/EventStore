@@ -54,63 +54,63 @@ namespace EventStore.Core {
 		}
 
 		public X509Certificate2 LoadServerCertificate() {
-			if (_serverCertificate == null) {
-				if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreLocation)) {
-					var location =
-						CertificateLoader.GetCertificateStoreLocation(CertificateStore.CertificateStoreLocation);
-					var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
-					_serverCertificate = CertificateLoader.FromStore(location, name,
-						CertificateStore.CertificateSubjectName,
-						CertificateStore.CertificateThumbprint);
-				} else if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreName)) {
-					var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
-					_serverCertificate = CertificateLoader.FromStore(name, CertificateStore.CertificateSubjectName,
-						CertificateStore.CertificateThumbprint);
-				} else if (CertificateFile.CertificateFile.IsNotEmptyString()) {
-					_serverCertificate = CertificateLoader.FromFile(
-						CertificateFile.CertificateFile,
-						CertificateFile.CertificatePrivateKeyFile,
-						CertificateFile.CertificatePassword);
-				} else {
-					throw new InvalidConfigurationException(
-						"A certificate is required but none was provided in the configuration.");
-				}
+			if (_serverCertificate != null) {
+				return _serverCertificate!;
+			}
+			if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreLocation)) {
+				var location =
+					CertificateLoader.GetCertificateStoreLocation(CertificateStore.CertificateStoreLocation);
+				var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
+				return CertificateLoader.FromStore(location, name,
+					CertificateStore.CertificateSubjectName,
+					CertificateStore.CertificateThumbprint);
 			}
 
-			return _serverCertificate!;
+			if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreName)) {
+				var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
+				return CertificateLoader.FromStore(name, CertificateStore.CertificateSubjectName,
+					CertificateStore.CertificateThumbprint);
+			}
+
+			if (CertificateFile.CertificateFile.IsNotEmptyString()) {
+				return CertificateLoader.FromFile(
+					CertificateFile.CertificateFile,
+					CertificateFile.CertificatePrivateKeyFile,
+					CertificateFile.CertificatePassword);
+			}
+
+			throw new InvalidConfigurationException(
+				"A certificate is required but none was provided in the configuration.");
+
 		}
 
 		private X509Certificate2Collection? _trustedRootCertificates;
 
-		internal X509Certificate2Collection TrustedRootCertificates {
+		internal X509Certificate2Collection? TrustedRootCertificates {
 			init {
 				_trustedRootCertificates = value;
 			}
 		}
 
 		internal X509Certificate2Collection LoadTrustedRootCertificates() {
-			if (_trustedRootCertificates == null) {
-				var trustedRootCerts = new X509Certificate2Collection();
-				if (!string.IsNullOrEmpty(Certificate.TrustedRootCertificatesPath)) {
-					Log.Information("Loading trusted root certificates.");
-					foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(Certificate
-						.TrustedRootCertificatesPath)) {
-						trustedRootCerts.Add(cert);
-						Log.Information("Trusted root certificate file loaded: {file}", fileName);
-					}
-
-					if (trustedRootCerts.Count == 0)
-						throw new InvalidConfigurationException(
-							$"No trusted root certificate files were loaded from the specified path: {Certificate.TrustedRootCertificatesPath}");
-				} else {
-					throw new InvalidConfigurationException(
-						$"{nameof(Certificate.TrustedRootCertificatesPath)} was not specified in the configuration.");
+			if (_trustedRootCertificates != null) return _trustedRootCertificates;
+			var trustedRootCerts = new X509Certificate2Collection();
+			if (!string.IsNullOrEmpty(Certificate.TrustedRootCertificatesPath)) {
+				Log.Information("Loading trusted root certificates.");
+				foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(Certificate
+					.TrustedRootCertificatesPath)) {
+					trustedRootCerts.Add(cert);
+					Log.Information("Trusted root certificate file loaded: {file}", fileName);
 				}
 
-				_trustedRootCertificates = trustedRootCerts;
+				if (trustedRootCerts.Count == 0)
+					throw new InvalidConfigurationException(
+						$"No trusted root certificate files were loaded from the specified path: {Certificate.TrustedRootCertificatesPath}");
+				return trustedRootCerts;
 			}
 
-			return _trustedRootCertificates;
+			throw new InvalidConfigurationException(
+				$"{nameof(Certificate.TrustedRootCertificatesPath)} was not specified in the configuration.");
 		}
 
 		internal string? DebugView => ConfigurationRoot?.GetDebugView();

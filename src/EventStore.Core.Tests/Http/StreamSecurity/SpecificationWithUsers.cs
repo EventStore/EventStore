@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 		}
 
 		protected override MiniNode CreateMiniNode() {
-			return new MiniNode(PathName, skipInitializeStandardUsersCheck: GivenSkipInitializeStandardUsersCheck(),
+			return new MiniNode(PathName,
 				enableTrustedAuth: true);
 		}
 

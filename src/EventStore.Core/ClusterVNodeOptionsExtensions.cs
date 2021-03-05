@@ -48,7 +48,9 @@ namespace EventStore.Core {
 			},
 			Interface = options.Interface with {
 				DisableExternalTcpTls = true
-			}
+			},
+			ServerCertificate = null,
+			TrustedRootCertificates = null
 		};
 
 		/// <summary>

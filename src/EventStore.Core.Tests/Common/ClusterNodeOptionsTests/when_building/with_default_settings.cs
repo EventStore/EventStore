@@ -150,11 +150,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(quorumSize, _options.Cluster.CommitAckCount, "CommitAckCount");
 		}
 
-		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options with {
-			Application = options.Application with {
-				Insecure = true
-			}
-		};
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
+			options.Insecure();
 	}
 
 }

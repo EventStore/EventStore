@@ -37,11 +37,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode>();
 
-		public IPEndPoint InternalTcpEndPoint { get; private set; }
-		public IPEndPoint InternalTcpSecEndPoint { get; private set; }
-		public IPEndPoint ExternalTcpEndPoint { get; private set; }
-		public IPEndPoint ExternalTcpSecEndPoint { get; private set; }
-		public IPEndPoint HttpEndPoint { get; private set; }
+		public IPEndPoint InternalTcpEndPoint { get; }
+		public IPEndPoint ExternalTcpEndPoint { get; }
+		public IPEndPoint HttpEndPoint { get; }
 
 		public readonly int DebugIndex;
 
@@ -49,8 +47,8 @@ namespace EventStore.Core.Tests.Helpers {
 		public TFChunkDb Db => Node.Db;
 		private readonly string _dbPath;
 		private readonly bool _isReadOnlyReplica;
-		private readonly TaskCompletionSource<bool> _started = new TaskCompletionSource<bool>();
-		private readonly TaskCompletionSource<bool> _adminUserCreated = new TaskCompletionSource<bool>();
+		private readonly TaskCompletionSource<bool> _started = new();
+		private readonly TaskCompletionSource<bool> _adminUserCreated = new();
 
 		public Task Started => _started.Task;
 		public Task AdminUserCreated => _adminUserCreated.Task;
@@ -64,13 +62,11 @@ namespace EventStore.Core.Tests.Helpers {
 			return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 		}
 
-		public MiniClusterNode(
-			string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint internalTcpSec,
-			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, EndPoint[] gossipSeeds,
-			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
-			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
-			
+		public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
+			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null, int? chunkSize = null,
+			int? cachedChunkSize = null, bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
+			bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
 					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
@@ -80,21 +76,16 @@ namespace EventStore.Core.Tests.Helpers {
 			RunCount += 1;
 
 			DebugIndex = debugIndex;
+			InternalTcpEndPoint = internalTcp;
+			ExternalTcpEndPoint = externalTcp;
+			HttpEndPoint = httpEndPoint;
 
 			_dbPath = Path.Combine(
 				pathname,
-				string.Format(
-					"mini-cluster-node-db-{0}-{1}-{2}", externalTcp.Port, externalTcpSec.Port, httpEndPoint.Port));
+				$"mini-cluster-node-db-{externalTcp.Port}-{httpEndPoint.Port}");
 
 			Directory.CreateDirectory(_dbPath);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk);
-
-			InternalTcpEndPoint = internalTcp;
-			InternalTcpSecEndPoint = internalTcpSec;
-
-			ExternalTcpEndPoint = externalTcp;
-			ExternalTcpSecEndPoint = externalTcpSec;
-			HttpEndPoint = httpEndPoint;
 
 			var useHttps = EnableHttps();
 
@@ -152,7 +143,7 @@ namespace EventStore.Core.Tests.Helpers {
 				Projections = new() {
 					RunProjections = ProjectionType.None
 				},
-				Subsystems = subsystems
+				Subsystems = subsystems ?? Array.Empty<ISubsystem>()
 			};
 
 			var serverCertificate = useHttps ? ssl_connections.GetServerCertificate() : null;
@@ -172,8 +163,8 @@ namespace EventStore.Core.Tests.Helpers {
 				Marshal.SizeOf(typeof(IntPtr)) * 8, "GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
-					: string.Format("{0} GENERATIONS", GC.MaxGeneration + 1), "DBPATH:", _dbPath, "ExTCP ENDPOINT:",
-				ExternalTcpEndPoint, "ExTCP SECURE ENDPOINT:", ExternalTcpSecEndPoint, "ExHTTP ENDPOINT:",
+					: $"{GC.MaxGeneration + 1} GENERATIONS", "DBPATH:", _dbPath, "ExTCP ENDPOINT:",
+				ExternalTcpEndPoint, "ExHTTP ENDPOINT:",
 				HttpEndPoint);
 
 			Node = new ClusterVNode(options, new AuthenticationProviderFactory(components =>
@@ -237,7 +228,7 @@ namespace EventStore.Core.Tests.Helpers {
 					}));
 			}
 
-			AdHocHandler<StorageMessage.EventCommitted> waitForAdminUser = null;
+			AdHocHandler<StorageMessage.EventCommitted> waitForAdminUser = null!;
 			waitForAdminUser = new AdHocHandler<StorageMessage.EventCommitted>(WaitForAdminUser);
 			Node.MainBus.Subscribe(waitForAdminUser);
 

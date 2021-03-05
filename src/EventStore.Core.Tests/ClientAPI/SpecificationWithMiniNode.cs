@@ -18,13 +18,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 		protected abstract Task When();
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl);
 		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
+			_node = new MiniNode(PathName);
 			await _node.Start();
 			_HttpEndPoint = _node.HttpEndPoint;
 			_conn = BuildConnection(_node);

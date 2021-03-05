@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.Transport.Tcp;
@@ -12,9 +15,11 @@ namespace EventStore.Core.Tests.ClientOperations {
 		private readonly List<IDisposable> _disposables = new List<IDisposable>();
 		public void CreateTestNode() {
 			_node = new ClusterVNode(new ClusterVNodeOptions()
-				.RunInMemory()
-				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-					ssl_connections.GetServerCertificate()));
+					.RunInMemory()
+					.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+						ssl_connections.GetServerCertificate()),
+				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			_node.StartAsync(true).Wait();
 		}
 		public void Publish(Message message) {

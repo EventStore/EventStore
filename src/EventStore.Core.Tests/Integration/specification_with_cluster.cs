@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -14,23 +13,17 @@ namespace EventStore.Core.Tests.Integration {
 		protected readonly MiniClusterNode[] _nodes = new MiniClusterNode[3];
 		protected readonly Endpoints[] _nodeEndpoints = new Endpoints[3];
 		protected IEventStoreConnection _conn;
-		protected UserCredentials _admin = DefaultData.AdminCredentials;
 
-		private readonly Dictionary<int, Func<bool, MiniClusterNode>> _nodeCreationFactory =
-			new Dictionary<int, Func<bool, MiniClusterNode>>();
+		private readonly Dictionary<int, Func<bool, MiniClusterNode>> _nodeCreationFactory = new();
 
 		protected class Endpoints {
 			public readonly IPEndPoint InternalTcp;
-			public readonly IPEndPoint InternalTcpSec;
 			public readonly IPEndPoint ExternalTcp;
-			public readonly IPEndPoint ExternalTcpSec;
 			public readonly IPEndPoint HttpEndPoint;
 
 			public IEnumerable<int> Ports() {
 				yield return InternalTcp.Port;
-				yield return InternalTcpSec.Port;
 				yield return ExternalTcp.Port;
-				yield return ExternalTcpSec.Port;
 				yield return HttpEndPoint.Port;
 			}
 
@@ -45,28 +38,16 @@ namespace EventStore.Core.Tests.Integration {
 				internalTcp.Bind(defaultLoopBack);
 				_sockets.Add(internalTcp);
 
-				var internalTcpSecure =
-					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				internalTcpSecure.Bind(defaultLoopBack);
-				_sockets.Add(internalTcpSecure);
-
 				var externalTcp = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				externalTcp.Bind(defaultLoopBack);
 				_sockets.Add(externalTcp);
-
-				var externalTcpSecure =
-					new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				externalTcpSecure.Bind(defaultLoopBack);
-				_sockets.Add(externalTcpSecure);
 
 				var httpEndPoint = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 				httpEndPoint.Bind(defaultLoopBack);
 				_sockets.Add(httpEndPoint);
 
 				InternalTcp = CopyEndpoint((IPEndPoint)internalTcp.LocalEndPoint);
-				InternalTcpSec = CopyEndpoint((IPEndPoint)internalTcpSecure.LocalEndPoint);
 				ExternalTcp = CopyEndpoint((IPEndPoint)externalTcp.LocalEndPoint);
-				ExternalTcpSec = CopyEndpoint((IPEndPoint)externalTcpSecure.LocalEndPoint);
 				HttpEndPoint = CopyEndpoint((IPEndPoint)httpEndPoint.LocalEndPoint);
 			}
 
@@ -77,7 +58,7 @@ namespace EventStore.Core.Tests.Integration {
 			}
 
 			private static IPEndPoint CopyEndpoint(IPEndPoint endpoint) =>
-				new IPEndPoint(endpoint.Address, endpoint.Port);
+				new(endpoint.Address, endpoint.Port);
 		}
 
 		[OneTimeSetUp]
@@ -141,9 +122,8 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
 			bool wait = true) => new(
-			PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec,
-			endpoints.ExternalTcp,
-			endpoints.ExternalTcpSec, endpoints.HttpEndPoint, skipInitializeStandardUsersCheck: false,
+			PathName, index, endpoints.InternalTcp,
+			endpoints.ExternalTcp, endpoints.HttpEndPoint,
 			subsystems: Array.Empty<ISubsystem>(), gossipSeeds: gossipSeeds, inMemDb: false);
 
 		[OneTimeTearDown]

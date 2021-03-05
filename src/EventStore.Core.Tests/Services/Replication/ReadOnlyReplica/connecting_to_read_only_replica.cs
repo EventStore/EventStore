@@ -15,10 +15,8 @@ namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
 			bool wait = true) {
 			var isReadOnly = index == 2;
 			var node = new MiniClusterNode(
-				PathName, index, endpoints.InternalTcp, endpoints.InternalTcpSec,
-				endpoints.ExternalTcp,
-				endpoints.ExternalTcpSec, endpoints.HttpEndPoint, skipInitializeStandardUsersCheck: false,
-				subsystems: new ISubsystem[] { }, gossipSeeds: gossipSeeds, inMemDb: false,
+				PathName, index, endpoints.InternalTcp,
+				endpoints.ExternalTcp, endpoints.HttpEndPoint, gossipSeeds, inMemDb: false,
 				readOnlyReplica: isReadOnly);
 			if (wait && !isReadOnly)
 				WaitIdle();
@@ -27,7 +25,7 @@ namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
 
 		protected override IEventStoreConnection CreateConnection() {
 			var settings = ConnectionSettings.Create()
-				.DisableTls()
+				.DisableServerCertificateValidation()
 				.PerformOnAnyNode();
 			return EventStoreConnection.Create(settings, _nodes[2].ExternalTcpEndPoint);
 		}

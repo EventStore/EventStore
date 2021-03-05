@@ -104,7 +104,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
 	public class not_connected_tests {
-		private readonly TcpType _tcpType = TcpType.Normal;
+		private readonly TcpType _tcpType = TcpType.Ssl;
 
 		[Test]
 		public async Task should_timeout_connection_after_configured_amount_time_on_conenct() {
