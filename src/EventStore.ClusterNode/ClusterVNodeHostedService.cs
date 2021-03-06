@@ -25,7 +25,7 @@ using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.ClusterNode {
-	internal class ClusterVNodeHostedService : EventStoreHostedService<ClusterNodeOptions> {
+	internal class ClusterVNodeHostedService : EventStoreHostedService<ClusterNodeOptions>, IDisposable {
 		private ExclusiveDbLock _dbLock;
 		private ClusterNodeMutex _clusterNodeMutex;
 
@@ -554,13 +554,15 @@ namespace EventStore.ClusterNode {
 		protected override Task StartInternalAsync(CancellationToken cancellationToken) => Node.StartAsync(false);
 
 		protected override Task StopInternalAsync(CancellationToken cancellationToken) {
+			return Node.StopAsync(cancellationToken: cancellationToken);
+		}
+
+		public void Dispose() {
 			if (_dbLock != null && _dbLock.IsAcquired) {
 				using (_dbLock) {
 					_dbLock.Release();
 				}
 			}
-
-			return Node.StopAsync(cancellationToken: cancellationToken);
 		}
 	}
 }
