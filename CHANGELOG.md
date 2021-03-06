@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
+- Regression in TCP connection introduced by commit: cd2aa67926dd06d48c894888d547d92e0d2b9cc1 from PR: https://github.com/EventStore/EventStore/pull/2772 [EventStore#2834](https://github.com/EventStore/EventStore/pull/2834)
 
 ## [21.2.0] Server - 2021-02-26
 
