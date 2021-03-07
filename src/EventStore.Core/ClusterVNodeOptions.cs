@@ -6,16 +6,13 @@ using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Configuration;
-using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
-using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
-using Serilog;
 
 #nullable enable
 namespace EventStore.Core {
@@ -36,82 +33,15 @@ namespace EventStore.Core {
 
 		internal byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
-		internal IPersistentSubscriptionConsumerStrategyFactory[] AdditionalConsumerStrategies { get; init; } =
-			Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
-
 		internal IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
 
 		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
 			Subsystems = new List<ISubsystem>(Subsystems) {subsystem}
 		};
 
-		private X509Certificate2? _serverCertificate;
+		internal X509Certificate2? ServerCertificate { get; init; }
 
-		internal X509Certificate2 ServerCertificate {
-			init {
-				_serverCertificate = value;
-			}
-		}
-
-		public X509Certificate2 LoadServerCertificate() {
-			if (_serverCertificate != null) {
-				return _serverCertificate!;
-			}
-			if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreLocation)) {
-				var location =
-					CertificateLoader.GetCertificateStoreLocation(CertificateStore.CertificateStoreLocation);
-				var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
-				return CertificateLoader.FromStore(location, name,
-					CertificateStore.CertificateSubjectName,
-					CertificateStore.CertificateThumbprint);
-			}
-
-			if (!string.IsNullOrWhiteSpace(CertificateStore.CertificateStoreName)) {
-				var name = CertificateLoader.GetCertificateStoreName(CertificateStore.CertificateStoreName);
-				return CertificateLoader.FromStore(name, CertificateStore.CertificateSubjectName,
-					CertificateStore.CertificateThumbprint);
-			}
-
-			if (CertificateFile.CertificateFile.IsNotEmptyString()) {
-				return CertificateLoader.FromFile(
-					CertificateFile.CertificateFile,
-					CertificateFile.CertificatePrivateKeyFile,
-					CertificateFile.CertificatePassword);
-			}
-
-			throw new InvalidConfigurationException(
-				"A certificate is required but none was provided in the configuration.");
-
-		}
-
-		private X509Certificate2Collection? _trustedRootCertificates;
-
-		internal X509Certificate2Collection? TrustedRootCertificates {
-			init {
-				_trustedRootCertificates = value;
-			}
-		}
-
-		internal X509Certificate2Collection LoadTrustedRootCertificates() {
-			if (_trustedRootCertificates != null) return _trustedRootCertificates;
-			var trustedRootCerts = new X509Certificate2Collection();
-			if (!string.IsNullOrEmpty(Certificate.TrustedRootCertificatesPath)) {
-				Log.Information("Loading trusted root certificates.");
-				foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(Certificate
-					.TrustedRootCertificatesPath)) {
-					trustedRootCerts.Add(cert);
-					Log.Information("Trusted root certificate file loaded: {file}", fileName);
-				}
-
-				if (trustedRootCerts.Count == 0)
-					throw new InvalidConfigurationException(
-						$"No trusted root certificate files were loaded from the specified path: {Certificate.TrustedRootCertificatesPath}");
-				return trustedRootCerts;
-			}
-
-			throw new InvalidConfigurationException(
-				$"{nameof(Certificate.TrustedRootCertificatesPath)} was not specified in the configuration.");
-		}
+		internal X509Certificate2Collection? TrustedRootCertificates { get; init; }
 
 		internal string? DebugView => ConfigurationRoot?.GetDebugView();
 

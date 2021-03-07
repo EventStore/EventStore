@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Exceptions;
@@ -12,8 +13,11 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.PluginModel;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Projections.Core;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -29,7 +33,12 @@ namespace EventStore.ClusterNode {
 
 		public ClusterVNodeHostedService(ClusterVNodeOptions options) {
 			if (options == null) throw new ArgumentNullException(nameof(options));
-			_options = options;
+			_options = options.Projections.RunProjections >= ProjectionType.System
+				? options.WithSubsystem(new ProjectionsSubsystem(options.Projections.ProjectionThreads,
+					options.Projections.RunProjections, false,
+					TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
+					options.Projections.FaultOutOfOrderProjections))
+				: options;
 
 			if (!options.Database.MemDb) {
 				var absolutePath = Path.GetFullPath(options.Database.Db);
@@ -55,7 +64,12 @@ namespace EventStore.ClusterNode {
 
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 
-			Node = new ClusterVNode(options, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory());
+			var plugInContainer = FindPlugins();
+
+			Node = new ClusterVNode(
+				options, GetAuthenticationProviderFactory(),
+				GetAuthorizationProviderFactory(),
+				additionalPersistentSubscriptionConsumerStrategyFactories: GetPersistentSubscriptionConsumerStrategyFactories());
 
 			var runProjections = options.Projections.RunProjections;
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
@@ -95,6 +109,48 @@ namespace EventStore.ClusterNode {
 				}
 
 				return factory;
+			}
+
+			static CompositionContainer FindPlugins() {
+				var catalog = new AggregateCatalog();
+
+				catalog.Catalogs.Add(new AssemblyCatalog(typeof(ClusterVNodeHostedService).Assembly));
+
+				if (Directory.Exists(Locations.PluginsDirectory)) {
+					Log.Information("Plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
+
+					Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", Locations.PluginsDirectory);
+					catalog.Catalogs.Add(new DirectoryCatalog(Locations.PluginsDirectory));
+
+					foreach (string dirPath in Directory.GetDirectories(Locations.PluginsDirectory, "*",
+						SearchOption.TopDirectoryOnly)) {
+						Log.Information("Adding: {pluginsDirectory} to the plugin catalog.", dirPath);
+						catalog.Catalogs.Add(new DirectoryCatalog(dirPath));
+					}
+				} else {
+					Log.Information("Cannot find plugins path: {pluginsDirectory}", Locations.PluginsDirectory);
+				}
+
+				return new CompositionContainer(catalog);
+			}
+
+			IPersistentSubscriptionConsumerStrategyFactory[] GetPersistentSubscriptionConsumerStrategyFactories() {
+				var allPlugins = plugInContainer.GetExports<IPersistentSubscriptionConsumerStrategyPlugin>();
+
+				var strategyFactories = new List<IPersistentSubscriptionConsumerStrategyFactory>();
+
+				foreach (var potentialPlugin in allPlugins) {
+					try {
+						var plugin = potentialPlugin.Value;
+						Log.Information("Loaded consumer strategy plugin: {plugin} version {version}.", plugin.Name,
+							plugin.Version);
+						strategyFactories.Add(plugin.GetConsumerStrategyFactory());
+					} catch (CompositionException ex) {
+						Log.Error(ex, "Error loading consumer strategy plugin.");
+					}
+				}
+
+				return strategyFactories.ToArray();
 			}
 
 			AuthenticationProviderFactory GetAuthenticationProviderFactory() {

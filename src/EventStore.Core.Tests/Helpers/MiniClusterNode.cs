@@ -17,8 +17,8 @@ using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Util;
 using EventStore.Core.Data;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -170,7 +170,8 @@ namespace EventStore.Core.Tests.Helpers {
 			Node = new ClusterVNode(options, new AuthenticationProviderFactory(components =>
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
-					new LegacyAuthorizationProviderFactory(components.MainQueue)), Guid.NewGuid(), debugIndex);
+					new LegacyAuthorizationProviderFactory(components.MainQueue)),
+				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(), Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 
 			_host = new WebHostBuilder()

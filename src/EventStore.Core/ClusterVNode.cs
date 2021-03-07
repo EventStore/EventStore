@@ -171,6 +171,8 @@ namespace EventStore.Core {
 		public ClusterVNode(ClusterVNodeOptions options,
 			AuthenticationProviderFactory authenticationProviderFactory = null,
 			AuthorizationProviderFactory authorizationProviderFactory = null,
+			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
+				additionalPersistentSubscriptionConsumerStrategyFactories = null,
 			Guid? instanceId = null, int debugIndex = 0) {
 
 			if (options == null) {
@@ -725,6 +727,8 @@ namespace EventStore.Core {
 			authenticationProviderFactory ??= !options.Application.Insecure
 				? throw new InvalidConfigurationException($"An {nameof(AuthenticationProviderFactory)} is required when running securely.")
 				: new AuthenticationProviderFactory(_ => new PassthroughAuthenticationProviderFactory());
+			additionalPersistentSubscriptionConsumerStrategyFactories ??=
+				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
 
 			_authenticationProvider = new DelegatedAuthenticationProvider(
 				authenticationProviderFactory.GetFactory(components).Build(
@@ -978,9 +982,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionsRestart, Message>());
 
 			//TODO CC can have multiple threads working on subscription if partition
-			var consumerStrategyRegistry =
-				new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
-					options.AdditionalConsumerStrategies);
+			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
+				additionalPersistentSubscriptionConsumerStrategyFactories);
 			var persistentSubscription = new PersistentSubscriptionService(perSubscrQueue, readIndex, ioDispatcher,
 				_mainQueue, consumerStrategyRegistry);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);

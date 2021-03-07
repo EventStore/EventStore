@@ -1,7 +1,10 @@
 using System;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Exceptions;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
+using Serilog;
 
 namespace EventStore.Core {
 	public static class ClusterVNodeOptionsExtensions {
@@ -210,5 +213,62 @@ namespace EventStore.Core {
 					HttpPortAdvertiseAs = endPoint.GetPort()
 				}
 			};
+
+		/// <summary>
+		/// Loads an <see cref="X509Certificate2"/> from the options set
+		/// </summary>
+		/// <param name="options"></param>
+		/// <returns></returns>
+		/// <exception cref="InvalidConfigurationException"></exception>
+		public static X509Certificate2 LoadServerCertificate(this ClusterVNodeOptions options) {
+			if (options.ServerCertificate != null) {
+				return options.ServerCertificate!;
+			}
+			if (!string.IsNullOrWhiteSpace(options.CertificateStore.CertificateStoreLocation)) {
+				var location =
+					CertificateLoader.GetCertificateStoreLocation(options.CertificateStore.CertificateStoreLocation);
+				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStore.CertificateStoreName);
+				return CertificateLoader.FromStore(location, name, options.CertificateStore.CertificateSubjectName, options.CertificateStore.CertificateThumbprint);
+			}
+
+			if (!string.IsNullOrWhiteSpace(options.CertificateStore.CertificateStoreName)) {
+				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStore.CertificateStoreName);
+				return CertificateLoader.FromStore(name, options.CertificateStore.CertificateSubjectName, options.CertificateStore.CertificateThumbprint);
+			}
+
+			if (options.CertificateFile.CertificateFile.IsNotEmptyString()) {
+				return CertificateLoader.FromFile(options.CertificateFile.CertificateFile, options.CertificateFile.CertificatePrivateKeyFile, options.CertificateFile.CertificatePassword);
+			}
+
+			throw new InvalidConfigurationException(
+				"A certificate is required unless insecure mode (--insecure) is set.");
+		}
+
+		/// <summary>
+		/// Loads an <see cref="X509Certificate2Collection"/> from the options set
+		/// </summary>
+		/// <param name="options"></param>
+		/// <returns></returns>
+		/// <exception cref="InvalidConfigurationException"></exception>
+		public static X509Certificate2Collection LoadTrustedRootCertificates(this ClusterVNodeOptions options) {
+			if (options.TrustedRootCertificates != null) return options.TrustedRootCertificates;
+			var trustedRootCerts = new X509Certificate2Collection();
+			if (string.IsNullOrEmpty(options.Certificate.TrustedRootCertificatesPath)) {
+				throw new InvalidConfigurationException(
+					$"{nameof(options.Certificate.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) is set.");
+			}
+			Log.Information("Loading trusted root certificates.");
+			foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(options.Certificate
+				.TrustedRootCertificatesPath)) {
+				trustedRootCerts.Add(cert);
+				Log.Information("Trusted root certificate file loaded: {file}", fileName);
+			}
+
+			if (trustedRootCerts.Count == 0)
+				throw new InvalidConfigurationException(
+					$"No trusted root certificate files were loaded from the specified path: {options.Certificate.TrustedRootCertificatesPath}");
+			return trustedRootCerts;
+
+		}
 	}
 }
