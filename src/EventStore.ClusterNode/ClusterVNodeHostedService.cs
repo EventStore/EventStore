@@ -22,7 +22,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 
 namespace EventStore.ClusterNode {
-	internal class ClusterVNodeHostedService : IHostedService {
+	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeHostedService>();
 
 		private readonly ClusterVNodeOptions _options;
@@ -195,14 +195,16 @@ namespace EventStore.ClusterNode {
 		public Task StartAsync(CancellationToken cancellationToken) =>
 			_options.Application.WhatIf ? Task.CompletedTask : Node.StartAsync(false);
 
-		public Task StopAsync(CancellationToken cancellationToken) {
-			if (_dbLock is {IsAcquired: true}) {
-				using (_dbLock) {
-					_dbLock.Release();
-				}
-			}
+		public Task StopAsync(CancellationToken cancellationToken) =>
+			Node.StopAsync(cancellationToken: cancellationToken);
 
-			return Node.StopAsync(cancellationToken: cancellationToken);
+		public void Dispose() {
+			if (_dbLock is not {IsAcquired: true}) {
+				return;
+			}
+			using (_dbLock) {
+				_dbLock.Release();
+			}
 		}
 	}
 }

@@ -91,14 +91,15 @@ namespace EventStore.ClusterNode {
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
-				var hostedService = new ClusterVNodeHostedService(options);
-				var signal = new ManualResetEventSlim(false);
-                _ = Run();
-                signal.Wait();
+				using (var hostedService = new ClusterVNodeHostedService(options)) {
+					using var signal = new ManualResetEventSlim(false);
+					_ = Run(hostedService, signal);
+					signal.Wait();
+				}
 
 				return await exitCodeSource.Task;
 
-				async Task Run() {
+				async Task Run(ClusterVNodeHostedService hostedService, ManualResetEventSlim signal) {
 					try {
 						await new HostBuilder()
 							.ConfigureHostConfiguration(builder =>
