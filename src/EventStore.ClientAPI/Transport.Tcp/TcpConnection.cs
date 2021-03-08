@@ -19,7 +19,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 
 		internal static ITcpConnection CreateConnectingConnection(ILogger log,
 			Guid connectionId,
-			IPEndPoint remoteEndPoint,
+			EndPoint remoteEndPoint,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
 			Action<ITcpConnection> onConnectionEstablished,
@@ -75,7 +75,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 		private readonly Action<ITcpConnection, SocketError> _onConnectionClosed;
 
-		private TcpConnection(ILogger log, Guid connectionId, IPEndPoint remoteEndPoint,
+		private TcpConnection(ILogger log, Guid connectionId, EndPoint remoteEndPoint,
 			Action<ITcpConnection, SocketError> onConnectionClosed)
 			: base(remoteEndPoint) {
 			Ensure.NotNull(log, "log");

@@ -47,14 +47,14 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			}
 
 			return TcpConnection.CreateConnectingConnection(
-				log, connectionId, remoteEndPoint.ResolveDnsToIPAddress(), this, timeout,
+				log, connectionId, remoteEndPoint, this, timeout,
 				onConnectionEstablished, onConnectionFailed, onConnectionClosed);
 		}
 
-		internal void InitConnect(IPEndPoint serverEndPoint,
+		internal void InitConnect(EndPoint serverEndPoint,
 			Action<Socket> onSocketAssigned,
-			Action<IPEndPoint, Socket> onConnectionEstablished,
-			Action<IPEndPoint, SocketError> onConnectionFailed,
+			Action<EndPoint, Socket> onConnectionEstablished,
+			Action<EndPoint, SocketError> onConnectionFailed,
 			ITcpConnection connection,
 			TimeSpan connectionTimeout) {
 			if (serverEndPoint == null)
@@ -113,7 +113,7 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			_connectSocketArgsPool.Return(socketArgs);
 
 			if (RemoveFromConnecting(pendingConnection))
-				onConnectionFailed((IPEndPoint)serverEndPoint, socketError);
+				onConnectionFailed(serverEndPoint, socketError);
 		}
 
 		private void OnSocketConnected(SocketAsyncEventArgs socketArgs) {
@@ -151,8 +151,8 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 		}
 
 		private class CallbacksStateToken {
-			public Action<IPEndPoint, Socket> OnConnectionEstablished;
-			public Action<IPEndPoint, SocketError> OnConnectionFailed;
+			public Action<EndPoint, Socket> OnConnectionEstablished;
+			public Action<EndPoint, SocketError> OnConnectionFailed;
 			public PendingConnection PendingConnection;
 
 			public void Reset() {

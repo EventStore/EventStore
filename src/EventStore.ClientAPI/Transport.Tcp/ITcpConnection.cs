@@ -5,7 +5,7 @@ using System.Net;
 namespace EventStore.ClientAPI.Transport.Tcp {
 	internal interface ITcpConnection {
 		Guid ConnectionId { get; }
-		IPEndPoint RemoteEndPoint { get; }
+		EndPoint RemoteEndPoint { get; }
 		IPEndPoint LocalEndPoint { get; }
 		int SendQueueSize { get; }
 		bool IsClosed { get; }
