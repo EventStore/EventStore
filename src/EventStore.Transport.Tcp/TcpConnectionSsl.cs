@@ -348,7 +348,7 @@ namespace EventStore.Transport.Tcp {
 			try {
 				do {
 					lock (_streamLock) {
-						if (_isSending || _sendQueue.IsEmpty || _sslStream == null || !_isAuthenticated) return;
+						if (_isSending || (_sendQueue.IsEmpty && _memoryStreamOffset >= _memoryStream.Length) || _sslStream == null || !_isAuthenticated) return;
 						if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
 						_isSending = true;
 					}
