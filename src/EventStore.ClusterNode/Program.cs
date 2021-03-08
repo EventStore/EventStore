@@ -15,7 +15,7 @@ using Serilog.Core;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
-		public static async Task<int> Main(string[] args) {
+		public static int Main(string[] args) {
 			try {
 				Serilog.Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 				var cts = new CancellationTokenSource();
@@ -37,14 +37,29 @@ namespace EventStore.ClusterNode {
 					return (int)ExitCode.Success;
 				}
 
-				await CreateHostBuilder(hostedService, args)
-					.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
-				return await exitCodeSource.Task;
+				var signal = new ManualResetEventSlim(false);
+				using (hostedService) {
+					var t = Run(hostedService, exitCodeSource, args, cts.Token, signal);
+					// ReSharper disable once MethodSupportsCancellation
+					signal.Wait();
+				}
+
+				return exitCodeSource.Task.Result;
 			} catch (Exception ex) {
 				Log.Fatal(ex, "Host terminated unexpectedly.");
 				return 1;
 			} finally {
 				Log.CloseAndFlush();
+			}
+		}
+
+		public static async Task Run(ClusterVNodeHostedService hostedService, TaskCompletionSource<int> exitCodeSource, string[] args, CancellationToken token, ManualResetEventSlim signal) {
+			try {
+				await CreateHostBuilder(hostedService, args)
+					.RunConsoleAsync(options => options.SuppressStatusMessages = true, token);
+				await exitCodeSource.Task;
+			} finally {
+				signal.Set();
 			}
 		}
 
@@ -90,5 +105,5 @@ namespace EventStore.ClusterNode {
 					})
 					.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 					.Configure(hostedService.Node.Startup.Configure));
+		}
 	}
-}
