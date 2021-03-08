@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
+using System.Threading.Tasks;
 using EventStore.Common.Configuration;
-using EventStore.Core.Index;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using NUnit.Framework;
@@ -77,6 +79,35 @@ namespace EventStore.Core.Tests {
 				["EVENTSTORE_MAX_APPEND_SIZE"] = "10"
 			}).DumpOptions();
 			Console.WriteLine(dumpedOptions);
+		}
+
+		[Test]
+		public async Task reading_from_disk() {
+			var yamlConfiguration = new FileInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+			try {
+				await WriteConfiguration();
+
+				var options = ClusterVNodeOptions.FromConfiguration(new[] {"--config", yamlConfiguration.FullName},
+					new Hashtable());
+
+				Assert.AreEqual(yamlConfiguration.FullName, options.Application.Config);
+				Assert.IsTrue(options.Database.MemDb);
+
+			} finally {
+				yamlConfiguration.Delete();
+			}
+
+			async Task WriteConfiguration() {
+				await using var stream = yamlConfiguration.Create();
+				await using var writer = new StreamWriter(stream);
+				await writer.WriteAsync(new StringBuilder()
+					.AppendLine("---")
+					.AppendLine("MemDb: true")
+					.AppendLine("SECTION:")
+					.AppendLine("  Something: Value")
+				);
+				await writer.FlushAsync();
+			}
 		}
 
 		[Test]
