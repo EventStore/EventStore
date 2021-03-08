@@ -62,7 +62,7 @@ If your cluster network is congested, you might increase the gossip timeout usin
 | YAML                 | `GossipTimeoutMs` |
 | Environment variable | `EVENTSTORE_GOSSIP_TIMEOUT_MS` |
 
-**Default**: `500` (in milliseconds).
+**Default**: `2500` (in milliseconds).
 
 ## Gossip on single node
 
