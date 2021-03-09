@@ -10,7 +10,7 @@ You can check what version of EventStoreDB you have installed by using the `--ve
 
 ```bash
 $ eventstore --version
-EventStoreDB version v21.2.0 (tags/oss-v21.2.0/bc30009, Unknown)
+EventStoreDB version v20.10.1 (tags/oss-v20.10.1/a9d8df5, Unknown)
 ```
 
 The full list of available options is available from the currently installed server by using the `--help` option in the command line.
@@ -105,7 +105,7 @@ DEFAULT OPTIONS:
 	EXT TCP HEARTBEAT TIMEOUT: 1000 (<DEFAULT>)
 	INT TCP HEARTBEAT INTERVAL: 700 (<DEFAULT>)
 	EXT TCP HEARTBEAT INTERVAL: 2000 (<DEFAULT>)
-	GOSSIP ON SINGLE NODE:    True (<DEFAULT>)
+	GOSSIP ON SINGLE NODE:    False (<DEFAULT>)
 	CONNECTION PENDING SEND BYTES THRESHOLD: 10485760 (<DEFAULT>)
 	CONNECTION QUEUE SIZE THRESHOLD: 50000 (<DEFAULT>)
 	CLUSTER SIZE:             1 (<DEFAULT>)
