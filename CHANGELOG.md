@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
 - Regression in TCP connection introduced by commit: cd2aa67926dd06d48c894888d547d92e0d2b9cc1 from PR: https://github.com/EventStore/EventStore/pull/2772 [EventStore#2834](https://github.com/EventStore/EventStore/pull/2834)
+- Mutex being released on wrong thread resulting in an annoying log message on shutdown [EventStore#2838](https://github.com/EventStore/EventStore/pull/2838)
+
+### Based on the agreement made with @jageall (see notes here https
+- //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
 
 ## [21.2.0] Server - 2021-02-26
 
