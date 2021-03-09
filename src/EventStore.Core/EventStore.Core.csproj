@@ -15,9 +15,9 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="EventStore.Plugins" Version="21.2.0" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.34.0" />
 		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.34.0">
+		<PackageReference Include="Grpc.AspNetCore" Version="2.35.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.36.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
@@ -71,7 +71,7 @@
 	    <Link>Services\Transport\Grpc\Protos\users.proto</Link>
 	  </Protobuf>
 		<Protobuf Include="..\Protos\Grpc\monitoring.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
-			<Link>Services\Transport\Grpc\Protos\monitoring.proto</Link>	
+			<Link>Services\Transport\Grpc\Protos\monitoring.proto</Link>
 		</Protobuf>
 	</ItemGroup>
 </Project>

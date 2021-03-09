@@ -64,4 +64,5 @@
 			<Compile Remove="FakePlugin\**" />
 			<Content Include="FakePlugin\**" CopyToOutputDirectory="Always" />
 	</ItemGroup>
+
 </Project>
