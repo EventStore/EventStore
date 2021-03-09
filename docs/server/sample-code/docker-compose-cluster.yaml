@@ -1,0 +1,137 @@
+version: '3.4'
+
+services:
+  eventstore.db1:
+    image: eventstore/eventstore:release-v5
+    environment:
+      - EVENTSTORE_WORKER_THREADS=5
+      - EVENTSTORE_CLUSTER_SIZE=3
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_DB=/var/lib/eventstore-data
+      - EVENTSTORE_INDEX=/var/lib/eventstore-index
+      - EVENTSTORE_LOG=/var/log/eventstore
+      - EVENTSTORE_CLUSTER_GOSSIP_PORT=2112
+      - EVENTSTORE_INT_TCP_PORT=1112
+      - EVENTSTORE_EXT_TCP_PORT=1113
+      - EVENTSTORE_INT_HTTP_PORT=2112
+      - EVENTSTORE_EXT_HTTP_PORT=2113
+      - EVENTSTORE_DISCOVER_VIA_DNS=true
+      - EVENTSTORE_CLUSTER_DNS=eventstore.local
+      - EVENTSTORE_INT_IP=172.42.238.3
+      - EVENTSTORE_EXT_IP=172.42.238.3
+    ports:
+      - "1112:1112"
+      - "1113:1113"
+      - "2112:2112"
+      - "2113:2113"
+    networks:
+      app_net:
+        aliases:
+          - eventstore.local
+        ipv4_address: 172.42.238.3
+    volumes:
+      - type: volume
+        source: eventstore-volume-data1
+        target: /var/lib/eventstore-data
+      - type: volume
+        source: eventstore-volume-index1
+        target: /var/lib/eventstore-index
+      - type: volume
+        source: eventstore-volume-logs1
+        target: /var/log/eventstore
+
+  eventstore.db2:
+    image: eventstore/eventstore:release-v5
+    environment:
+      - EVENTSTORE_WORKER_THREADS=5
+      - EVENTSTORE_CLUSTER_SIZE=3
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_DB=/var/lib/eventstore-data
+      - EVENTSTORE_INDEX=/var/lib/eventstore-index
+      - EVENTSTORE_LOG=/var/log/eventstore
+      - EVENTSTORE_CLUSTER_GOSSIP_PORT=2112
+      - EVENTSTORE_INT_TCP_PORT=1112
+      - EVENTSTORE_EXT_TCP_PORT=1113
+      - EVENTSTORE_INT_HTTP_PORT=2112
+      - EVENTSTORE_EXT_HTTP_PORT=2113
+      - EVENTSTORE_DISCOVER_VIA_DNS=true
+      - EVENTSTORE_CLUSTER_DNS=eventstore.local
+      - EVENTSTORE_INT_IP=172.42.238.4
+      - EVENTSTORE_EXT_IP=172.42.238.4
+    expose:
+      - "1112"
+      - "1113"
+      - "2112"
+      - "2113"
+    networks:
+      app_net:
+        aliases:
+          - eventstore.local
+        ipv4_address: 172.42.238.4
+    volumes:
+      - type: volume
+        source: eventstore-volume-data2
+        target: /var/lib/eventstore-data
+      - type: volume
+        source: eventstore-volume-index2
+        target: /var/lib/eventstore-index
+      - type: volume
+        source: eventstore-volume-logs2
+        target: /var/log/eventstore
+
+  eventstore.db3:
+    image: eventstore/eventstore:release-v5
+    environment:
+      - EVENTSTORE_WORKER_THREADS=5
+      - EVENTSTORE_CLUSTER_SIZE=3
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_DB=/var/lib/eventstore-data
+      - EVENTSTORE_INDEX=/var/lib/eventstore-index
+      - EVENTSTORE_LOG=/var/log/eventstore
+      - EVENTSTORE_CLUSTER_GOSSIP_PORT=2112
+      - EVENTSTORE_INT_TCP_PORT=1112
+      - EVENTSTORE_EXT_TCP_PORT=1113
+      - EVENTSTORE_INT_HTTP_PORT=2112
+      - EVENTSTORE_EXT_HTTP_PORT=2113
+      - EVENTSTORE_DISCOVER_VIA_DNS=true
+      - EVENTSTORE_CLUSTER_DNS=eventstore.local
+      - EVENTSTORE_INT_IP=172.42.238.5
+      - EVENTSTORE_EXT_IP=172.42.238.5
+    expose:
+      - "1112"
+      - "1113"
+      - "2112"
+      - "2113"
+    networks:
+      app_net:
+        aliases:
+          - eventstore.local
+        ipv4_address: 172.42.238.5
+    volumes:
+      - type: volume
+        source: eventstore-volume-data3
+        target: /var/lib/eventstore-data
+      - type: volume
+        source: eventstore-volume-index3
+        target: /var/lib/eventstore-index
+      - type: volume
+        source: eventstore-volume-logs3
+        target: /var/log/eventstore
+
+volumes:
+  eventstore-volume-data1:
+  eventstore-volume-index1:
+  eventstore-volume-logs1:
+  eventstore-volume-data2:
+  eventstore-volume-index2:
+  eventstore-volume-logs2:
+  eventstore-volume-data3:
+  eventstore-volume-index3:
+  eventstore-volume-logs3:
+
+networks:
+  app_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.42.238.0/24"
