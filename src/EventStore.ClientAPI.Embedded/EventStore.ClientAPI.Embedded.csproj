@@ -5,6 +5,7 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
 		<Platforms>x64</Platforms>
+		<MinVerTagPrefix>dotnet-client-v</MinVerTagPrefix>
 	</PropertyGroup>
 	<PropertyGroup>
 		<PackageId>EventStore.Client.Embedded</PackageId>
