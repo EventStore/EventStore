@@ -15,6 +15,9 @@ All notable changes to this project will be documented in this file.
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
 
+### Changed
+- ValidateServer also sets whether HTTP certificate validation is enabled. [EventStore#2832](https://github.com/EventStore/EventStore/pull/2832)
+
 ## [21.2.0] Server - 2021-02-26
 
 ### Added
