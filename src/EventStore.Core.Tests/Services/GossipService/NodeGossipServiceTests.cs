@@ -835,12 +835,12 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 
 			var nodeToBeRemoved =
-				TestNodeFor(2, isAlive: false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
+				TestNodeFor(2, false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
 
 			var updatedCluster = GossipServiceBase.UpdateCluster(new ClusterInfo(
-					TestNodeFor(1, isAlive: false, timeProvider.UtcNow),
+					TestNodeFor(1, false, timeProvider.UtcNow),
 					nodeToBeRemoved,
-					TestNodeFor(3, isAlive: false, timeProvider.UtcNow)), info => info,
+					TestNodeFor(3, false, timeProvider.UtcNow)), info => info,
 				timeProvider, deadMemberRemovalTimeout);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(2));
@@ -854,12 +854,12 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 
 			var nodeToNotBeRemoved =
-				TestNodeFor(2, isAlive: true, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
+				TestNodeFor(2, true, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
 
 			var updatedCluster = GossipServiceBase.UpdateCluster(new ClusterInfo(
-					TestNodeFor(1, isAlive: false, timeProvider.UtcNow),
+					TestNodeFor(1, false, timeProvider.UtcNow),
 					nodeToNotBeRemoved,
-					TestNodeFor(3, isAlive: false, timeProvider.UtcNow)), info => info,
+					TestNodeFor(3, false, timeProvider.UtcNow)), info => info,
 				timeProvider, deadMemberRemovalTimeout);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
@@ -888,10 +888,10 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 			var allowedTimeDifference = TimeSpan.FromMilliseconds(1000);
 
-			var me = TestNodeFor(1, isAlive: false, timeProvider.UtcNow);
+			var me = TestNodeFor(1, false, timeProvider.UtcNow);
 			var nodeToBeRemoved =
-				TestNodeFor(2, isAlive: false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
-			var peer = TestNodeFor(3, isAlive: false, timeProvider.UtcNow);
+				TestNodeFor(2, false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
+			var peer = TestNodeFor(3, false, timeProvider.UtcNow);
 			var cluster = new ClusterInfo(me, nodeToBeRemoved, peer);
 
 			var updatedCluster = GossipServiceBase.MergeClusters(
@@ -910,9 +910,9 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 			var allowedTimeDifference = TimeSpan.FromMilliseconds(1000);
 
-			var me = TestNodeFor(1, isAlive: true, timeProvider.UtcNow);
-			var nodeToBeRemoved = TestNodeFor(2, isAlive: true, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
-			var peer = TestNodeFor(3, isAlive: true, timeProvider.UtcNow);
+			var me = TestNodeFor(1, true, timeProvider.UtcNow);
+			var nodeToBeRemoved = TestNodeFor(2, true, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
+			var peer = TestNodeFor(3, true, timeProvider.UtcNow);
 			var cluster = new ClusterInfo(me, nodeToBeRemoved, peer);
 
 			var updatedCluster = GossipServiceBase.MergeClusters(
