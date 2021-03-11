@@ -69,8 +69,8 @@ namespace EventStore.ClientAPI {
 		/// <returns>a new <see cref="IEventStoreConnection"/></returns>
 		public static IEventStoreConnection
 			Create(ConnectionSettings connectionSettings, string connectionName = null) {
-			if (connectionSettings.GossipSeeds == null || connectionSettings.GossipSeeds.Length == 0)
-				throw new ArgumentException("No gossip seeds specified", nameof(connectionSettings));
+			if (string.IsNullOrEmpty(connectionSettings.ClusterDns) && (connectionSettings.GossipSeeds == null || connectionSettings.GossipSeeds.Length == 0))
+				throw new ArgumentException("No gossip seeds or cluster dns specified", nameof(connectionSettings));
 			return Create(connectionSettings, (Uri)null, connectionName);
 		}
 
@@ -103,7 +103,7 @@ namespace EventStore.ClientAPI {
 						connectionSettings.ClientConnectionTimeout, connectionSettings.ClusterDns,
 						connectionSettings.GossipSeeds, connectionSettings.MaxDiscoverAttempts,
 						connectionSettings.ExternalGossipPort, connectionSettings.GossipTimeout,
-						connectionSettings.NodePreference, connectionSettings.CustomHttpClient);
+						connectionSettings.NodePreference, connectionSettings.CompatibilityMode, connectionSettings.CustomHttpClient);
 				}
 
 				if (scheme == "discover") {
@@ -120,6 +120,13 @@ namespace EventStore.ClientAPI {
 				}
 
 				throw new Exception(string.Format("Unknown scheme for connection '{0}'", scheme));
+			}
+			
+			if (connectionSettings.ClusterDns != null) {
+				var clusterSettings = new ClusterSettings(connectionSettings.ClusterDns, connectionSettings.MaxDiscoverAttempts, connectionSettings.ExternalGossipPort,
+					connectionSettings.GossipTimeout, connectionSettings.NodePreference);
+
+				return Create(connectionSettings, clusterSettings, connectionName);
 			}
 
 			if (connectionSettings.GossipSeeds != null && connectionSettings.GossipSeeds.Length > 0) {
@@ -210,6 +217,7 @@ namespace EventStore.ClientAPI {
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
 				clusterSettings.NodePreference,
+				CompatibilityMode.Create(connectionSettings.CompatibilityMode),
 				connectionSettings.CustomHttpClient,
 				connectionSettings.SkipCertificateValidation);
 

@@ -2,6 +2,7 @@
 using System.Net;
 using System.Runtime.ExceptionServices;
 using EventStore.ClientAPI.Internal;
+using EventStore.ClientAPI.Common.Utils;
 
 namespace EventStore.ClientAPI.Messages {
 	internal static partial class ClientMessage {
@@ -9,17 +10,19 @@ namespace EventStore.ClientAPI.Messages {
 			public partial class MasterInfo {
 				public IPEndPoint ExternalTcpEndPoint {
 					get {
-						return ExternalTcpAddress == null
-							? null
-							: new IPEndPoint(IPAddress.Parse(ExternalTcpAddress), ExternalTcpPort);
+						if (ExternalTcpAddress == null)
+							return null;
+
+						return new IPEndPoint(Resolution.Resolve(ExternalTcpAddress), ExternalTcpPort);
 					}
 				}
 
 				public IPEndPoint ExternalSecureTcpEndPoint {
 					get {
-						return ExternalSecureTcpAddress == null || ExternalSecureTcpPort == null
-							? null
-							: new IPEndPoint(IPAddress.Parse(ExternalSecureTcpAddress), ExternalSecureTcpPort.Value);
+						if (ExternalSecureTcpAddress == null || ExternalSecureTcpPort == null)
+							return null;
+
+						return new IPEndPoint(Resolution.Resolve(ExternalSecureTcpAddress), ExternalSecureTcpPort.Value);
 					}
 				}
 

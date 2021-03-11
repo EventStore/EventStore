@@ -1,10 +1,11 @@
 ﻿using System.Net;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
 	/// Represents a source of cluster gossip.
 	/// </summary>
-	public class GossipSeed {
+	public class GossipSeed: IGossipSeed {
 		/// <summary>
 		/// The <see cref="IPEndPoint"/> for the External HTTP endpoint of the gossip seed.
 		///
@@ -32,8 +33,17 @@ namespace EventStore.ClientAPI {
 		/// <param name="seedOverTls">Specifies that eventstore should use https when connecting to gossip</param>
 		public GossipSeed(IPEndPoint endPoint, string hostHeader = "", bool seedOverTls = false) {
 			EndPoint = endPoint;
-			HostHeader = hostHeader;
+			HostHeader = hostHeader == string.Empty ? null : hostHeader;
 			SeedOverTls = seedOverTls;
+		}
+		
+		public string ToHttpUrl() {
+			return EndPoint.ToHttpUrl(SeedOverTls ? EndpointExtensions.HTTPS_SCHEMA : EndpointExtensions.HTTP_SCHEMA,
+				"/gossip?format=json");
+		}
+		
+		public string GetHostHeader() {
+			return HostHeader;
 		}
 	}
 }
