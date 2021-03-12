@@ -15,7 +15,6 @@ namespace EventStore.Core {
 		private static readonly IEnumerable<Type> OptionSections;
 		public static readonly string HelpText;
 
-
 		public string GetComponentName() => $"{Interface.ExtIp}-{Interface.HttpPort}-cluster-node";
 
 		static ClusterVNodeOptions() {
@@ -60,7 +59,7 @@ namespace EventStore.Core {
 			return builder.Length != 0 ? builder.ToString() : null;
 		}
 
-		private  static EndPoint ParseEndPoint(string val) {
+		private static EndPoint ParseEndPoint(string val) {
 			var parts = val.Split(':', 2);
 			return IPAddress.TryParse(parts[0], out var ip)
 				? new IPEndPoint(ip, int.Parse(parts[1]))
@@ -72,11 +71,10 @@ namespace EventStore.Core {
 			const string DESCRIPTION = nameof(DESCRIPTION);
 			const string DEFAULT = nameof(DEFAULT);
 
-			var optionColumnWidth = OptionNames().Max(OptionHeaderColumnWidth);
-			var defaultColumnWidth = Options().Select(DefaultValue).Max(DefaultValueColumnWidth);
+			var optionColumnWidth = Options().Max(o =>
+				OptionHeaderColumnWidth(o.Name, DefaultValue(o)));
 
-			var header =
-				$"{OPTION.PadRight(optionColumnWidth, ' ')}{DEFAULT.PadRight(defaultColumnWidth, ' ')}{DESCRIPTION}";
+			var header = $"{OPTION.PadRight(optionColumnWidth, ' ')}{DESCRIPTION}";
 
 			var optionGroups = Options().GroupBy(option =>
 				option.DeclaringType?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty);
@@ -89,30 +87,50 @@ namespace EventStore.Core {
 				.ToString();
 
 			string Line(PropertyInfo property) {
-				var gnuOption = new string(GnuOption(property.Name).ToArray());
-				var defaultValue = DefaultValue(property);
 				var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
 				if (property.PropertyType.IsEnum) {
 					description += $" ({string.Join(", ", Enum.GetNames(property.PropertyType))})";
 				}
 
-				return Runtime.IsWindows
-					? Environment.NewLine + $" -{property.Name}"
-					: $"{gnuOption.PadRight(optionColumnWidth, ' ')}{defaultValue.PadRight(defaultColumnWidth, ' ')}{description}";
+				return GetOption(property).PadRight(optionColumnWidth, ' ') + description;
+			}
+
+			string GetOption(PropertyInfo property) {
+				var builder = new StringBuilder();
+				if (Runtime.IsWindows) {
+					builder.Append('-').Append(property.Name);
+				} else {
+					builder.AppendJoin(string.Empty, GnuOption(property.Name));
+				}
+
+				var defaultValue = DefaultValue(property);
+
+				if (defaultValue != string.Empty) {
+					builder.Append('=').Append(defaultValue);
+				}
+
+				return builder.ToString();
 			}
 
 			static IEnumerable<PropertyInfo> Options() => OptionSections.SelectMany(type => type.GetProperties());
 
-			static IEnumerable<string> OptionNames() => Options().Select(p => p.Name);
+			static int OptionWidth(string name, string @default) =>
+				(name + @default).Count(char.IsUpper) + 1 + 1 + (name + @default).Length;
 
-			static int OptionWidth(string x) => x.Count(char.IsUpper) + 1 + x.Length;
+			int OptionHeaderColumnWidth(string name, string @default) =>
+				Math.Max(OptionWidth(name, @default) + 1, OPTION.Length);
 
-			int OptionHeaderColumnWidth(string x) => Math.Max(OptionWidth(x) + 1, OPTION.Length);
+			static string DefaultValue(PropertyInfo option) {
+				var value = option.GetValue(Activator.CreateInstance(option.DeclaringType!));
+				return (value, Runtime.IsWindows) switch {
+					(bool b, false) => b.ToString().ToLower(),
+					(bool b, true) => b.ToString(),
+					(Array {Length: 0}, _) => string.Empty,
+					(Array {Length: >0} a, _) => string.Join(",", a.OfType<object>()),
+					_ => value?.ToString() ?? string.Empty
+				};
+			}
 
-			static string DefaultValue(PropertyInfo option) =>
-				option.GetCustomAttribute<DefaultValueAttribute>()?.Value?.ToString() ?? string.Empty;
-
-			int DefaultValueColumnWidth(string x) => Math.Max(x?.Length + 1 ?? 0, DEFAULT.Length);
 
 			static IEnumerable<char> GnuOption(string x) {
 				yield return '-';
