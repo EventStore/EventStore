@@ -1,48 +1,132 @@
-# Database backup
+# Database backup and restore
 
-Backing up an EventStoreDB database is straightforward, but relies on you carrying out the steps below in the correct order.
+Backing up an EventStoreDB database is straightforward, but relies on you  carrying out the steps below in the correct order.
 
-## Backing up a database
+## Types of backups
 
-1.  Copy all _*.chk_ files to your backup location.
-2.  Copy the remaining files and directories to your backup location.
+There are 2 main ways to perform backups:
+
+### Disk Snapshotting 
+
+If you the infrastructure is virtualized, disk _snapshots_ is an option and the easiest to perform backup and restore operations.
+
+### Regular file copy
+
+- Simple full backup: when the size of the DB is small and the frequency of appends is low.
+
+- Differential backup: when the size of the DB is large or the system has a high append frequency.
+
+## Considerations for backup and restore procedures
+
+Backing up one node should be enough.
+However ensure that the node chosen as target for the backup is up to date and connected to the cluster.
+For additional safety you can also backup at least a quorum of nodes.
+
+Try to avoid backing up a node at the same time as running a scavenge operation.
+
+[Read-only replica](../clustering/node-roles.md#read-only-replica) nodes may be used as backup source.
+
+When restoring a database, do not mix backup files of different nodes onto the same target node.
+
+The restore must happen on a _stopped_ node.
+
+The restore process can happen on any failed node of a cluster.
+
+You can restore any number of nodes in a cluster from the same backup source.
+This means, for example, in the event a non recoverable 3 nodes cluster, that the same
+backup source can be used to restore a completely new 3 nodes cluster.
+
+When you restore a node that was the source of the backup, perform a full backup after recovery.  
+
+## Database Files Information
+
+There are 2 directories containing data that needs to be included in the backup:
+`db\ ` where the data is located & `index\ ` where the indexes are kept.
+
+The exact name and location is dependent on your configuration.
+
+- `db\ ` contains 
+  - the chunks files, named `chk-X.Y` where `X` is the chunk number and `Y` the version.
+  - the checkpoints files, `*.chk` (`chaser.chk`, `epoch.chk`, `proposal.chk`, `truncate.chk`, `writer.chk`)
+- `index\ ` contains 
+  - the index map : `indexmap`
+  - the indexes : UUID named files , e.g `5a1a8395-94ee-40c1-bf93-aa757b5887f8`
+
+## Disks Snapshot
+
+If the `db\ ` and `index\ ` directories are on the same volume, a snapshot of that volume is enough.
+However, if they are on different volumes, take first a snapshot 
+of the volume containing the `index\ ` directory and then a snapshot of the volume containing the `db \` directtory 
+    
+## Simple full backup & restore
+
+### Backup 
+
+1. Copy the indexes to your backup location, the content of the `index\` directory.
+2. Copy all checkpoints (`*.chk`) files to your backup location.
+3. Copy the chunks files (`chk-X.Y`) to your backup location.
 
 For example:
-
-```bash
+``` bash
+rsync -a /data/eventstore/db/index /backup/eventstore/db/index
 rsync -a /data/eventstore/db/*.chk /backup/eventstore/db/
-rsync -a /data/eventstore/db/index /backup/eventstore/db/
 rsync -a /data/eventstore/db/*.0* /backup/eventstore/db/
 ```
 
-## Restoring a database
+### Restoring a database
 
-1.  Ensure your EventStoreDB database is stopped. Restoring a database on running instance is not possible and in most cases will lead to data corruption.
-2.  Copy all files to the desired location.
-3.  Create a copy of _chaser.chk_ and call it _truncate.chk_ (which override already existing _truncate.chk_).
+1. Ensure the Event Store DB process is stopped. Restoring a database on running instance is not possible and in most cases will lead to data corruption.
+2. Copy all files to the desired location.
+3. Create a copy of `chaser.chk` and call it `truncate.chk`, this effectively overwrites the restored `truncate.chk`.
 
-## Differential backup
+## Differential backup & restore
 
-EventStoreDB keeps most of the data in _chunk files_, named `chunkX.Y`, where `X` is the chunk number, and `Y` is the version of that chunk file. As EventStoreDB scavenges, it creates new versions of scavenged chunks which are interchangeable with older versions (but for the removed data).
+The following procedure is designed to minimize the backup storage space, and can 
+be used to do a full and differential backup.
 
-It's only necessary to keep the file whose name has the highest `Y` for each `X`, as well as the checkpoint files and the index directory (to avoid expensive index rebuilding).
+### Backing up
+
+1. Make a list of the difference between files between the backup location and the source location.
+2. Mark for removal any Chunk (`*.chk`) or index  files in backup that are not also in source.
+3. Copy the `indexmap` to backup.
+4. Copy all non-writer checkpoints (`chaser.chk`, `epoch.chk`, `proposal.chk`, `truncate.chk`).
+5. Copy the writer checkpoint (`writer.chk`).
+6. Mark for copy all chunks (`chck-X.Y`) & Index Files in source.
+7. Copy all marked for copy files in source, skipping matching file names in the backup.
+8. Delete all marked for removal files in the backup directory.
+
+if any files marked for removal (step 2) or copy (step 6) is changed during the backup,
+the backup may be stopped and restarted. In this case only newly changed files will be backuped.
+
+### Restoring a database
+
+1. Ensure the  Event Store DB process is stopped. Restoring a database on running instance is not possible and in most cases will lead to data corruption.
+2. Copy all files to the desired location.
+3. Create a copy of `chaser.chk` and call it `truncate.chk`, this effectively overwrites the restored `truncate.chk`.
+
 
 ## Other options
 
-There are many other options available for backing up an EventStoreDB database. You can find the most common options here.
+There are other options available for ensuring data recovery, that are not strictly speaking backups.
 
 ### Additional node
 
-Increase the cluster node counts to keep further copies of data. Increasing the number of cluster nodes, however, impacts the write performance of the cluster as more nodes need to confirm each write. 
+Increase the cluster node counts to keep further copies of data.
+Increasing the number of cluster nodes, however, impacts the write performance of the 
+cluster as more nodes need to confirm each write. 
 
-Alternatively, you can use a [read-only replica](../clustering/node-roles.md#read-only-replica) node, which is not a part of the cluster. In this case, the write performance won't be affected.
+Alternatively, you can use a [read-only replica](../clustering/node-roles.md#read-only-replica) node, which is not a part of the cluster.
+In this case, the write performance won't be affected.
 
 ### Alternative storage
 
-Set up a durable subscription that writes all events to another storage mechanism such as a key/value or column store. These methods would require a manual set up for restoring back to a cluster group.
+Set up a durable subscription that writes all events to another storage mechanism such as a key/value or column store. 
+These methods would require a manual set up for restoring a cluster node or group.
 
 ### Backup cluster
 
 Use a second EventStoreDB cluster as a back up. Such a strategy is known as a primary/secondary back up scheme. 
 
-The primary cluster asynchronously pushes data to the second cluster using a durable subscription. The second cluster is available in case of a disaster on the primary cluster. If you are using this strategy, we recommend you only to support manual failover from primary to secondary as automated strategies risk causing a [split brain](http://en.wikipedia.org/wiki/Split-brain_%28computing%29) problem.
+The primary cluster asynchronously pushes data to the second cluster using a durable subscription.
+The second cluster is available in case of a disaster on the primary cluster.
+If you are using this strategy, we recommend you only support manual failover from primary to secondary as automated strategies risk causing a [split brain](http://en.wikipedia.org/wiki/Split-brain_%28computing%29) problem.
