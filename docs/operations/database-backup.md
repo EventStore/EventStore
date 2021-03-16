@@ -8,7 +8,7 @@ There are 2 main ways to perform backups:
 
 ### Disk Snapshotting 
 
-If you the infrastructure is virtualized, disk _snapshots_ is an option and the easiest to perform backup and restore operations.
+If your infrastructure is virtualized, disk _snapshots_ is an option and the easiest to perform backup and restore operations.
 
 ### Regular file copy
 
@@ -86,12 +86,12 @@ be used to do a full and differential backup.
 
 ### Backing up
 
-1. Make a list of the difference between files between the backup location and the source location.
-2. Mark for removal any Chunk (`*.chk`) or index  files in backup that are not also in source.
+1. Make a list of the difference between files in the backup location and the source location.
+2. Mark for removal any chunks (`*.chk`) or index  files in backup that are not also in source.
 3. Copy the `indexmap` to backup.
 4. Copy all non-writer checkpoints (`chaser.chk`, `epoch.chk`, `proposal.chk`, `truncate.chk`).
 5. Copy the writer checkpoint (`writer.chk`).
-6. Mark for copy all chunks (`chck-X.Y`) & Index Files in source.
+6. Mark for copy all chunks (`chck-X.Y`) & index files in source.
 7. Copy all marked for copy files in source, skipping matching file names in the backup.
 8. Delete all marked for removal files in the backup directory.
 
@@ -111,7 +111,7 @@ There are other options available for ensuring data recovery, that are not stric
 
 ### Additional node
 
-Increase the cluster node counts to keep further copies of data.
+Increase the cluster nodes count to keep further copies of data.
 Increasing the number of cluster nodes, however, impacts the write performance of the 
 cluster as more nodes need to confirm each write. 
 
