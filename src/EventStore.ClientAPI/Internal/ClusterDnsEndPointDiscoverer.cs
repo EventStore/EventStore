@@ -114,11 +114,38 @@ namespace EventStore.ClientAPI.Internal {
 
 		private IGossipSeed[] GetGossipCandidatesFromConfig() {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
+			
+			IGossipSeed[] endpoints;
 
-			// Safe in this case.
-			IGossipSeed[] endpoints = _gossipSeeds;
+			if ((_gossipSeeds?.Length ?? 0) != 0) {
+				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
+					var tmp = new List<IGossipSeed>();
+					for (var i = 0; i != _gossipSeeds.Length; i++) {
+						var current = _gossipSeeds[i];
+						
+						// We try v20 first
+						tmp.Add(new GossipSeed(current.EndPoint, current.HostHeader, seedOverTls: true, v20Compatibility: true));
+						// Then v5
+						tmp.Add(current);
+					}
 
-			if ((endpoints?.Length ?? 0) == 0) {
+					endpoints = tmp.ToArray();
+				} else if (_compatibilityMode.IsVersion5CompatibilityModeEnabled()) {
+					// Safe in this case.
+					endpoints = _gossipSeeds;
+					RandomShuffle(endpoints, 0, endpoints.Length - 1);
+				} else {
+					// Convert to v20.
+					endpoints = new IGossipSeed[_gossipSeeds.Length];
+					for (var i = 0; i != _gossipSeeds.Length; i++) {
+						var current = _gossipSeeds[i];
+						endpoints[i] = new GossipSeed(current.EndPoint, current.HostHeader, true,
+							v20Compatibility: true);
+					}
+					
+					RandomShuffle(endpoints, 0, endpoints.Length - 1);
+				}
+			} else {
 				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
 					endpoints = new[] {
 						new ClusterDnsSeed(_clusterDns, _managerExternalHttpPort, seedOverTls: true, v20Compatibility: true), // Try HTTPS gossip first (v20 defaults)
@@ -134,9 +161,8 @@ namespace EventStore.ClientAPI.Internal {
 						new ClusterDnsSeed(_clusterDns, _managerExternalHttpPort, seedOverTls: true, v20Compatibility: true)
 					};
 				}
-			} else {
-				RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			}
+			
 			return endpoints;
 		}
 
