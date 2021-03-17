@@ -41,6 +41,7 @@ namespace EventStore.ClientAPI.Internal {
 
 		private int _packageNumber;
 		private TcpPackageConnection _connection;
+		private ICompatibilityMode _compatibilityMode;
 
 		public EventStoreConnectionLogicHandler(IEventStoreConnection esConnection, ConnectionSettings settings) {
 			Ensure.NotNull(esConnection, "esConnection");
@@ -48,6 +49,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			_esConnection = esConnection;
 			_settings = settings;
+			_compatibilityMode = CompatibilityMode.Create(_settings.CompatibilityMode);
 
 			_operations = new OperationsManager(_esConnection.ConnectionName, settings);
 			_subscriptions = new SubscriptionsManager(_esConnection.ConnectionName, settings);
@@ -146,13 +148,22 @@ namespace EventStore.ClientAPI.Internal {
 				endPoint,
 				Guid.NewGuid(),
 				_settings.UseSslConnection,
-				_settings.TargetHost,
+				_compatibilityMode.IsAutoCompatibilityModeEnabled() && !string.IsNullOrEmpty(endPoints.Host) ? endPoints.Host : _settings.TargetHost,
 				_settings.ValidateServer,
 				_settings.ClientConnectionTimeout,
 				(connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
 				(connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
 				connection => EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
 				(connection, error) => EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
+
+			// If possible to end in a situation where the client is in a stalled state if for example an secure 
+			// connection is misconfigured. Currently, if that condition is true, it means that the user asked for 
+			// a secured connection but didn't provide a valid targetHost, whether it was null or empty.
+			if (_connection.ConnectionId == Guid.Empty) {
+				EnqueueMessage(new TcpConnectionErrorMessage(_connection, new ArgumentException("Invalid connection configuration")));
+				return;
+			}
+			
 			_connection.StartReceiving();
 		}
 
