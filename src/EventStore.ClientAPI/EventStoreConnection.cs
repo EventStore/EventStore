@@ -7,6 +7,7 @@ using System;
 using System.Runtime.ExceptionServices;
 using EventStore.ClientAPI.Messages;
 using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Transport.Http;
 
 namespace EventStore.ClientAPI {
 	/// <summary>
@@ -192,6 +193,9 @@ namespace EventStore.ClientAPI {
 			Ensure.NotNull(connectionSettings, "connectionSettings");
 			Ensure.NotNull(clusterSettings, "clusterSettings");
 
+			var discoverClient = new HttpAsyncClient(
+				clusterSettings.GossipTimeout,
+				connectionSettings.CustomHttpMessageHandler);
 			var endPointDiscoverer = new ClusterDnsEndPointDiscoverer(connectionSettings.Log,
 				clusterSettings.ClusterDns,
 				clusterSettings.MaxDiscoverAttempts,
@@ -199,8 +203,7 @@ namespace EventStore.ClientAPI {
 				clusterSettings.GossipSeeds,
 				clusterSettings.GossipTimeout,
 				clusterSettings.NodePreference,
-				connectionSettings.CustomHttpMessageHandler);
-
+				discoverClient);
 			return new EventStoreNodeConnection(connectionSettings, clusterSettings, endPointDiscoverer,
 				connectionName);
 		}

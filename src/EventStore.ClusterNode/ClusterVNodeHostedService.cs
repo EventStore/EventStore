@@ -17,10 +17,10 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Util;
-using EventStore.Rags;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 

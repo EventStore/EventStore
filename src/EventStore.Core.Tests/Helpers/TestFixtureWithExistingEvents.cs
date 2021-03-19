@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Helpers {
 					_fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
 					_timeProvider.UtcNow,
 					PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
-					eventType, Helper.UTF8NoBom.GetBytes(eventData),
+					eventType, eventData is null ? null : Helper.UTF8NoBom.GetBytes(eventData),
 					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)));
 			list.Add(eventRecord);
 			var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);

@@ -68,7 +68,10 @@ namespace EventStore.Projections.Core.Tests.Services.projection_subscription {
 				_timeProvider,
 				_checkpointUnhandledBytesThreshold,
 				_checkpointProcessedEventsThreshold,
-				_checkpointAfterMs);
+				_checkpointAfterMs,
+				false,
+				null,
+				false);
 		}
 
 		protected virtual void Given() {

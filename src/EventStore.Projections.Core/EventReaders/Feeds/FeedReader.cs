@@ -85,7 +85,9 @@ namespace EventStore.Projections.Core.EventReaders.Feeds {
 				checkpointAfterMs: 10000,
 				checkpointProcessedEventsThreshold: null,
 				stopOnEof: true,
-				stopAfterNEvents: _maxEvents);
+				stopAfterNEvents: _maxEvents,
+				// The projection must be stopped for debugging, so will enable content type validation automatically
+				enableContentTypeValidation: true);
 
 			_subscriptionId =
 				_subscriptionDispatcher.PublishSubscribe(

@@ -1,8 +1,10 @@
 using System;
+using System.Diagnostics;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Messages;
+using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class ReaderSubscriptionBase {
@@ -26,6 +28,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private DateTime _lastProgressPublished;
 		private TimeSpan _checkpointAfter;
 		private DateTime _lastCheckpointTime = DateTime.MinValue;
+		private bool _enableContentTypeValidation;
+		private ILogger _logger;
+		private CheckpointTag _lastCheckpointTag;
 
 		protected ReaderSubscriptionBase(
 			IPublisher publisher,
@@ -37,7 +42,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			int? checkpointProcessedEventsThreshold,
 			int checkpointAfterMs,
 			bool stopOnEof,
-			int? stopAfterNEvents) {
+			int? stopAfterNEvents,
+			bool enableContentTypeValidation) {
 			if (publisher == null) throw new ArgumentNullException("publisher");
 			if (readerStrategy == null) throw new ArgumentNullException("readerStrategy");
 			if (timeProvider == null) throw new ArgumentNullException("timeProvider");
@@ -60,6 +66,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_positionTagger = readerStrategy.PositionTagger;
 			_positionTracker = new PositionTracker(_positionTagger);
 			_positionTracker.UpdateByCheckpointTagInitial(@from);
+			_lastCheckpointTag = _positionTracker.LastTag;
+			_enableContentTypeValidation = enableContentTypeValidation;
+			_logger = Serilog.Log.ForContext<ReaderSubscriptionBase>();
 		}
 
 		public string Tag {
@@ -79,30 +88,36 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var roundedProgress = (float)Math.Round(message.Progress, 1);
 			bool progressChanged = _progress != roundedProgress;
 
-			// NOTE: after joining heading distribution point it delivers all cached events to the subscription
-			// some of this events we may have already received. The delivered events may have different order 
-			// (in case of partially ordered cases multi-stream reader etc). We discard all the messages that are not 
-			// after the last available checkpoint tag
-
-			//NOTE: older events can appear here when replaying events from the heading event reader
-			//      or when event-by-type-index reader reads TF and both event and resolved-event appear as output
-
-			if (!_positionTagger.IsMessageAfterCheckpointTag(_positionTracker.LastTag, message)) {
-/*
-                _logger.Trace(
-                    "Skipping replayed event {positionSequenceNumber}@{positionStreamId} at position {position}. the last processed event checkpoint tag is: {lastTag}",
-                    message.PositionSequenceNumber, message.PositionStreamId, message.Position, _positionTracker.LastTag);
-*/
-				return;
+			bool passesStreamSourceFilter = _eventFilter.PassesSource(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType);
+			bool passesEventFilter = _eventFilter.Passes(message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType, message.Data.IsStreamDeletedEvent);
+			bool isValid = !_enableContentTypeValidation || _eventFilter.PassesValidation(message.Data.IsJson, message.Data.Data);
+			if (!isValid) {
+				_logger.Verbose($"Event {message.Data.EventSequenceNumber}@{message.Data.EventStreamId} is not valid json. Data: ({message.Data.Data})");
 			}
 
-			var eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
-			_positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
+			CheckpointTag eventCheckpointTag = null;
+
+			if (passesStreamSourceFilter) {
+				// NOTE: after joining heading distribution point it delivers all cached events to the subscription
+				// some of this events we may have already received. The delivered events may have different order
+				// (in case of partially ordered cases multi-stream reader etc). We discard all the messages that are not
+				// after the last available checkpoint tag
+
+				//NOTE: older events can appear here when replaying events from the heading event reader
+				//      or when event-by-type-index reader reads TF and both event and resolved-event appear as output
+				if (!_positionTagger.IsMessageAfterCheckpointTag(_positionTracker.LastTag, message))
+					return;
+
+				eventCheckpointTag = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
+				_positionTracker.UpdateByCheckpointTagForward(eventCheckpointTag);
+			}
+
 			var now = _timeProvider.UtcNow;
 			var timeDifference = now - _lastCheckpointTime;
-			if (_eventFilter.Passes(
-				message.Data.ResolvedLinkTo, message.Data.PositionStreamId, message.Data.EventType,
-				message.Data.IsStreamDeletedEvent)) {
+			if (isValid && passesEventFilter) {
+				Debug.Assert(passesStreamSourceFilter, "Event passes event filter but not source filter");
+				Debug.Assert(eventCheckpointTag != null, "Event checkpoint tag is null");
+
 				_lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
 				var convertedMessage =
 					EventReaderSubscriptionMessage.CommittedEventReceived.FromCommittedEventDistributed(
@@ -112,7 +127,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_eventsSinceLastCheckpointSuggestedOrStart++;
 				if (_checkpointProcessedEventsThreshold > 0
 				    && timeDifference > _checkpointAfter
-				    && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold)
+				    && _eventsSinceLastCheckpointSuggestedOrStart >= _checkpointProcessedEventsThreshold
+				    && _lastCheckpointTag != _positionTracker.LastTag)
 					SuggestCheckpoint(message);
 				if (_stopAfterNEvents > 0 && _eventsSinceLastCheckpointSuggestedOrStart >= _stopAfterNEvents)
 					NEventsReached();
@@ -121,7 +137,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				    && timeDifference > _checkpointAfter
 				    && (_lastPassedOrCheckpointedEventPosition != null
 				        && message.Data.Position.PreparePosition - _lastPassedOrCheckpointedEventPosition.Value
-				        > _checkpointUnhandledBytesThreshold))
+				        > _checkpointUnhandledBytesThreshold)
+				    && _lastCheckpointTag != _positionTracker.LastTag)
 					SuggestCheckpoint(message);
 				else if (progressChanged)
 					PublishProgress(roundedProgress);
@@ -165,6 +182,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private void SuggestCheckpoint(ReaderSubscriptionMessage.CommittedEventDistributed message) {
 			_lastPassedOrCheckpointedEventPosition = message.Data.Position.PreparePosition;
+			_lastCheckpointTag = _positionTracker.LastTag;
 			_publisher.Publish(
 				new EventReaderSubscriptionMessage.CheckpointSuggested(
 					_subscriptionId, _positionTracker.LastTag, message.Progress,

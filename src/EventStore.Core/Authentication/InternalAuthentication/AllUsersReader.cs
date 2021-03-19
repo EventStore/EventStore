@@ -21,7 +21,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		public void Run(Action<UserManagementMessage.Error, UserManagementMessage.UserData[]> completed) {
-			if (completed == null) throw new ArgumentNullException("completed");
+			if (completed == null) throw new ArgumentNullException(nameof(completed));
 			if (_onCompleted != null) throw new InvalidOperationException("AllUsersReader cannot be re-used");
 
 			_onCompleted = completed;

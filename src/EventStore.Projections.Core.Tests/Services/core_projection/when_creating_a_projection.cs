@@ -45,7 +45,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					projectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -71,7 +72,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					projectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -95,7 +97,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					_defaultProjectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -119,7 +122,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					_defaultProjectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -143,7 +147,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					_defaultProjectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -167,7 +172,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					_defaultProjectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					null,
 					Guid.NewGuid(),
@@ -190,7 +196,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				_defaultProjectionConfig,
 				projectionStateHandler.GetSourceDefinition(),
 				null,
-				_subscriptionDispatcher).Create(
+				_subscriptionDispatcher,
+				true).Create(
 				Guid.NewGuid(),
 				new FakePublisher(),
 				Guid.NewGuid(),
@@ -213,7 +220,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					_defaultProjectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -237,7 +245,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					_defaultProjectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -263,7 +272,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					projectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),
@@ -287,7 +297,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 					_defaultProjectionConfig,
 					projectionStateHandler.GetSourceDefinition(),
 					null,
-					_subscriptionDispatcher).Create(
+					_subscriptionDispatcher,
+					true).Create(
 					Guid.NewGuid(),
 					new FakePublisher(),
 					Guid.NewGuid(),

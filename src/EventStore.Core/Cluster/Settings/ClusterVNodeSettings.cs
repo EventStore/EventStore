@@ -95,6 +95,9 @@ namespace EventStore.Core.Cluster.Settings {
 		public int PTableMaxReaderCount;
 		public readonly bool UnsafeAllowSurplusNodes;
 
+		public readonly TimeSpan KeepAliveInterval;
+		public readonly TimeSpan KeepAliveTimeout;
+
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			Func<ClusterNodeOptions> loadConfigFunc,
 			IPEndPoint internalTcpEndPoint,
@@ -147,6 +150,8 @@ namespace EventStore.Core.Cluster.Settings {
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold,
 			int ptableMaxReaderCount,
+			TimeSpan keepAliveInterval,
+			TimeSpan keepAliveTimeout,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -185,6 +190,15 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.Positive(commitAckCount, "commitAckCount");
 			Ensure.Positive(initializationThreads, "initializationThreads");
 			Ensure.NotNull(gossipAdvertiseInfo, "gossipAdvertiseInfo");
+
+			if (keepAliveInterval <= TimeSpan.Zero) {
+				throw new ArgumentOutOfRangeException(nameof(keepAliveInterval));
+			}
+
+			if (keepAliveTimeout <= TimeSpan.Zero) {
+				throw new ArgumentOutOfRangeException(nameof(keepAliveTimeout));
+			}
+
 			if (maxAppendSize > TFConsts.EffectiveMaxLogRecordSize) {
 				throw new ArgumentOutOfRangeException(nameof(maxAppendSize), $"{nameof(maxAppendSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
 			}
@@ -279,6 +293,8 @@ namespace EventStore.Core.Cluster.Settings {
 			PTableMaxReaderCount = ptableMaxReaderCount;
 			UnsafeAllowSurplusNodes = unsafeAllowSurplusNodes;
 			MaxTruncation = maxTruncation;
+			KeepAliveInterval = keepAliveInterval;
+			KeepAliveTimeout = keepAliveTimeout;
 		}
 
 		public override string ToString() =>
@@ -313,6 +329,8 @@ namespace EventStore.Core.Cluster.Settings {
 			$"ReadOnlyReplica: {ReadOnlyReplica}\n" +
 			$"UnsafeAllowSurplusNodes: {UnsafeAllowSurplusNodes}\n" +
 			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n" +
-			$"MaxTruncation: {MaxTruncation}\n";
+			$"MaxTruncation: {MaxTruncation}\n" +
+			$"KeepAliveInterval: {KeepAliveInterval}\n" +
+			$"KeepAliveTimeout: {KeepAliveTimeout}";
 	}
 }

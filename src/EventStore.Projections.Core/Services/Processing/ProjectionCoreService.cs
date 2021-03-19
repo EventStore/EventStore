@@ -148,7 +148,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_timeoutScheduler,
 					_logger,
 					message.HandlerType,
-					message.Query);
+					message.Query,
+					message.EnableContentTypeValidation);
 
 				string name = message.Name;
 				var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
@@ -165,7 +166,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					projectionConfig,
 					stateHandler,
 					message.HandlerType,
-					message.Query);
+					message.Query,
+					message.EnableContentTypeValidation);
 
 				CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
 				_publisher.Publish(
@@ -193,7 +195,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					projectionConfig,
 					null,
 					message.HandlerType,
-					message.Query);
+					message.Query,
+					message.EnableContentTypeValidation);
 
 				CreateCoreProjection(message.ProjectionId, projectionConfig.RunAs, projectionProcessingStrategy);
 				_publisher.Publish(
@@ -293,10 +296,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ISingletonTimeoutScheduler singletonTimeoutScheduler,
 			ILogger logger,
 			string handlerType,
-			string query) {
+			string query,
+			bool enableContentTypeValidation) {
 			var stateHandler = new ProjectionStateHandlerFactory().Create(
 				handlerType,
 				query,
+				enableContentTypeValidation,
 				logger: logger.Verbose,
 				cancelCallbackFactory:
 				singletonTimeoutScheduler == null ? (Action<int, Action>)null : singletonTimeoutScheduler.Schedule);

@@ -8,8 +8,6 @@ on:
     tags:
     - oss-v*
 
-env:
-  DOTNET_SDK_VERSION: 3.1.301
 jobs:
   vulnerability-scan:
     runs-on: ubuntu-latest
@@ -47,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container-runtime: [bionic, buster-slim]
+        container-runtime: [focal, buster-slim]
         runtime: [linux-x64]
     runs-on: ubuntu-latest
     name: ci/github/build-${{ matrix.container-runtime }}
@@ -57,10 +55,10 @@ jobs:
     - shell: bash
       run: |
         git fetch --prune --unshallow
-    - name: Install Dotnet
+    - name: Install net5.0
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+        dotnet-version: 5.0.x
     - name: Calculate Version
       run: |
         dotnet tool restore
@@ -134,10 +132,14 @@ jobs:
     - shell: bash
       run: |
         git fetch --prune --unshallow
-    - name: Install Dotnet
+    - name: Install netcoreapp3.1
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+        dotnet-version: 3.1.x
+    - name: Install net5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
     - name: Compile
       shell: bash
       run: |
@@ -179,10 +181,14 @@ jobs:
     - shell: bash
       run: |
         git fetch --prune --unshallow
-    - name: Install Dotnet
+    - name: Install netcoreapp3.1
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+        dotnet-version: 3.1.x
+    - name: Install net5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
     - name: Pack
       shell: bash
       run: |

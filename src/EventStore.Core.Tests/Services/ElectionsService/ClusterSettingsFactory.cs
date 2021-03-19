@@ -59,6 +59,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				false, false,
 				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault,
 				Constants.PTableMaxReaderCountDefault,
+				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				readOnlyReplica: isReadOnlyReplica,
 				disableHttps: !useHttps);
 

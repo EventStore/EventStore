@@ -320,6 +320,12 @@ namespace EventStore.Core {
 
 		[ArgDescription(Opts.DeadMemberRemovalPeriodDescr, Opts.ClusterGroup)]
 		public int DeadMemberRemovalPeriodSec { get; set; }
+
+		[ArgDescription(Opts.KeepAliveIntervalDescr, Opts.GrpcGroup)]
+		public int KeepAliveInterval { get; set; }
+
+		[ArgDescription(Opts.KeepAliveTimeoutDescr, Opts.GrpcGroup)]
+		public int KeepAliveTimeout { get; set; }
 		
 		public ClusterNodeOptions() {
 			Config = "";
@@ -445,6 +451,9 @@ namespace EventStore.Core {
 			ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
 
 			MaxAutoMergeIndexLevel = Opts.MaxAutoMergeIndexLevelDefault;
+
+			KeepAliveInterval = Opts.KeepAliveIntervalDefault;
+			KeepAliveTimeout = Opts.KeepAliveTimeoutDefault;
 
 			WriteStatsToDb = Opts.WriteStatsToDbDefault;
 			MaxTruncation = Opts.MaxTruncationDefault;

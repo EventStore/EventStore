@@ -10,10 +10,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		public QueryProcessingStrategy(
 			string name, ProjectionVersion projectionVersion, IProjectionStateHandler stateHandler,
 			ProjectionConfig projectionConfig, IQuerySources sourceDefinition, ILogger logger,
-			ReaderSubscriptionDispatcher subscriptionDispatcher)
+			ReaderSubscriptionDispatcher subscriptionDispatcher, bool enableContentTypeValidation)
 			: base(
 				name, projectionVersion, stateHandler, projectionConfig, sourceDefinition, logger,
-				subscriptionDispatcher) {
+				subscriptionDispatcher, enableContentTypeValidation) {
 		}
 
 		public override bool GetStopOnEof() {

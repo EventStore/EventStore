@@ -41,6 +41,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
+using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
 using EventStore.Native.UnixSignalManager;
@@ -396,9 +397,9 @@ namespace EventStore.Core {
 			};
 
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
-			_authenticationProvider =
+			_authenticationProvider = new DelegatedAuthenticationProvider(
 				vNodeSettings.AuthenticationProviderFactory.GetFactory(components).Build(
-					vNodeSettings.LogFailedAuthenticationAttempts, Log);
+					vNodeSettings.LogFailedAuthenticationAttempts, Log));
 			Ensure.NotNull(_authenticationProvider, nameof(_authenticationProvider));
 
 			_authorizationProvider = vNodeSettings.AuthorizationProviderFactory

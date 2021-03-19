@@ -40,7 +40,8 @@ namespace EventStore.Projections.Core {
 		private readonly bool _startStandardProjections;
 		private readonly TimeSpan _projectionsQueryExpiry;
 		private readonly ILogger _logger = Serilog.Log.ForContext<ProjectionsSubsystem>();
-		public const int VERSION = 3;
+		public const int VERSION = 4;
+		public const int CONTENT_TYPE_VALIDATION_VERSION = 4;
 
 		private IQueuedHandler _leaderInputQueue;
 		private readonly InMemoryBus _leaderMainBus;

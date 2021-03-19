@@ -123,7 +123,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			var dispatcher = _dispatcherFactory(conn.ConnectionId, _serverEndPoint);
 			var manager = new TcpConnectionManager(
-				string.Format("{0}-{1}", _serviceType.ToString().ToLower(), _securityType.ToString().ToLower()),
+				$"{_serviceType.ToString().ToLower()}-{_securityType.ToString().ToLower()}",
 				_serviceType,
 				dispatcher,
 				_publisher,

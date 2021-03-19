@@ -131,19 +131,19 @@ namespace EventStore.Core.Tests.Helpers {
 				adminOnPublic: true,
 				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(2),
 				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(3),
-				extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), extTcpHeartbeatInterval: TimeSpan.FromSeconds(2),
 				intTcpHeartbeatTimeout: TimeSpan.FromSeconds(2), intTcpHeartbeatInterval: TimeSpan.FromSeconds(2), 
-				 deadMemberRemovalPeriod: TimeSpan.FromSeconds(1800),
-				verifyDbHash: false, maxMemtableEntryCount: memTableSize,
-				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
-				startStandardProjections: false, disableHTTPCaching: false, logHttpRequests: false,
+				extTcpHeartbeatTimeout: TimeSpan.FromSeconds(2),
+				extTcpHeartbeatInterval: TimeSpan.FromSeconds(2), deadMemberRemovalPeriod: TimeSpan.FromSeconds(1800),
+				verifyDbHash: false,
+				maxMemtableEntryCount: memTableSize, hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault, startStandardProjections: false,
+				disableHTTPCaching: false,
+				logHttpRequests: false,
 				connectionPendingSendBytesThreshold: Opts.ConnectionPendingSendBytesThresholdDefault,
 				connectionQueueSizeThreshold: Opts.ConnectionQueueSizeThresholdDefault,
-				readOnlyReplica: readOnlyReplica,
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
-				enableExternalTCP: true,
-				disableHttps: !useHttps,
-				enableAtomPubOverHTTP: true);
+				keepAliveInterval: TimeSpan.FromSeconds(10), keepAliveTimeout: TimeSpan.FromSeconds(10),
+				readOnlyReplica: readOnlyReplica,
+				enableExternalTCP: true, enableAtomPubOverHTTP: true, disableHttps: !useHttps);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(
@@ -218,12 +218,23 @@ namespace EventStore.Core.Tests.Helpers {
 						_started.TrySetResult(true);
 					}));
 			}
-			Node.MainBus.Subscribe(
-				new AdHocHandler<AuthenticationMessage.AuthenticationProviderInitialized>(m => {
-					_adminUserCreated.TrySetResult(true);
-				}));
+
+			AdHocHandler<StorageMessage.EventCommitted> waitForAdminUser = null;
+			waitForAdminUser = new AdHocHandler<StorageMessage.EventCommitted>(WaitForAdminUser);
+			Node.MainBus.Subscribe(waitForAdminUser);
+
+			void WaitForAdminUser(StorageMessage.EventCommitted m) {
+				if (m.Event.EventStreamId != "$user-admin") {
+					return;
+				}
+
+				_adminUserCreated.TrySetResult(true);
+				Node.MainBus.Unsubscribe(waitForAdminUser);
+			}
+
 			_host.Start();
 			Node.Start();
+
 		}
 
 		public HttpClient CreateHttpClient() {

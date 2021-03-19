@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;netcoreapp3.1;net452</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netcoreapp3.1;net452;net5.0</TargetFrameworks>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<LangVersion>latest</LangVersion>
 		<Platforms>x64</Platforms>

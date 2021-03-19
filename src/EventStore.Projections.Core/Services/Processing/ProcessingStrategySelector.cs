@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ProjectionNamesBuilder namesBuilder,
 			IQuerySources sourceDefinition,
 			ProjectionConfig projectionConfig,
-			IProjectionStateHandler stateHandler, string handlerType, string query) {
+			IProjectionStateHandler stateHandler, string handlerType, string query, bool enableContentTypeValidation) {
 
 			return projectionConfig.StopOnEof
 				? (ProjectionProcessingStrategy)
@@ -28,7 +28,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					projectionConfig,
 					sourceDefinition,
 					_logger,
-					_subscriptionDispatcher)
+					_subscriptionDispatcher,
+					enableContentTypeValidation)
 				: new ContinuousProjectionProcessingStrategy(
 					name,
 					projectionVersion,
@@ -36,7 +37,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					projectionConfig,
 					sourceDefinition,
 					_logger,
-					_subscriptionDispatcher);
+					_subscriptionDispatcher,
+					enableContentTypeValidation);
 		}
 	}
 }
