@@ -120,7 +120,7 @@ namespace EventStore.ClientAPI.Internal {
 			if ((_gossipSeeds?.Length ?? 0) != 0) {
 				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
 					var tmp = new List<IGossipSeed>();
-					for (var i = 0; i != _gossipSeeds.Length; i++) {
+					for (var i = 0; i < _gossipSeeds.Length; i++) {
 						var current = _gossipSeeds[i];
 						
 						// We try v20 first
@@ -137,7 +137,7 @@ namespace EventStore.ClientAPI.Internal {
 				} else {
 					// Convert to v20.
 					endpoints = new IGossipSeed[_gossipSeeds.Length];
-					for (var i = 0; i != _gossipSeeds.Length; i++) {
+					for (var i = 0; i < _gossipSeeds.Length; i++) {
 						var current = _gossipSeeds[i];
 						endpoints[i] = new GossipSeed(current.EndPoint, current.HostHeader, true,
 							v20Compatibility: true);

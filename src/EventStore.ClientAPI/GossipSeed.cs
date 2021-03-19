@@ -54,7 +54,7 @@ namespace EventStore.ClientAPI {
 		}
 		
 		public string GetHostHeader() {
-			return _v20Compatibility ? HostHeader : "";
+			return HostHeader;
 		}
 	}
 }

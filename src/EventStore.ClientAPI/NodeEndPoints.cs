@@ -32,7 +32,12 @@ namespace EventStore.ClientAPI {
 			if ((tcpEndPoint ?? secureTcpEndPoint) == null) throw new ArgumentException("Both endpoints are null.");
 			TcpEndPoint = tcpEndPoint;
 			SecureTcpEndPoint = secureTcpEndPoint;
-			Host = host;
+
+			if (string.IsNullOrEmpty(host)) {
+				Host = (tcpEndPoint ?? secureTcpEndPoint).Address.ToString();
+			} else {
+				Host = host;
+			}
 		}
 
 		/// <summary>

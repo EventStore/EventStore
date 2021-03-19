@@ -129,7 +129,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private void EstablishTcpConnection(NodeEndPoints endPoints) {
-			var endPoint = _settings.UseSslConnection
+			var endPoint = _compatibilityMode.IsAutoCompatibilityModeEnabled() || _settings.UseSslConnection
 				? endPoints.SecureTcpEndPoint ?? endPoints.TcpEndPoint
 				: endPoints.TcpEndPoint;
 			if (endPoint == null) {
@@ -142,13 +142,21 @@ namespace EventStore.ClientAPI.Internal {
 			if (_state != ConnectionState.Connecting) return;
 			if (_connectingPhase != ConnectingPhase.EndPointDiscovery) return;
 
+			var targetHost = string.Empty;
+
+			if (!string.IsNullOrEmpty(_settings.TargetHost)) {
+				targetHost = _settings.TargetHost;
+			} else if (_compatibilityMode.IsAutoCompatibilityModeEnabled() && !string.IsNullOrEmpty(endPoints.Host)) {
+				targetHost = endPoints.Host;
+			}
+
 			_connectingPhase = ConnectingPhase.ConnectionEstablishing;
 			_connection = new TcpPackageConnection(
 				_settings.Log,
 				endPoint,
 				Guid.NewGuid(),
-				_settings.UseSslConnection,
-				_compatibilityMode.IsAutoCompatibilityModeEnabled() && !string.IsNullOrEmpty(endPoints.Host) ? endPoints.Host : _settings.TargetHost,
+				(_compatibilityMode.IsAutoCompatibilityModeEnabled() && endPoints.SecureTcpEndPoint != null) || _settings.UseSslConnection,
+				targetHost,
 				_settings.ValidateServer,
 				_settings.ClientConnectionTimeout,
 				(connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
@@ -557,7 +565,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private void ReconnectTo(NodeEndPoints endPoints) {
-			IPEndPoint endPoint = _settings.UseSslConnection
+			IPEndPoint endPoint = _compatibilityMode.IsAutoCompatibilityModeEnabled() || _settings.UseSslConnection
 				? endPoints.SecureTcpEndPoint ?? endPoints.TcpEndPoint
 				: endPoints.TcpEndPoint;
 			if (endPoint == null) {
