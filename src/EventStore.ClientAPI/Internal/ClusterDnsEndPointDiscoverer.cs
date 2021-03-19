@@ -184,20 +184,6 @@ namespace EventStore.ClientAPI.Internal {
 							return;
 						}
 
-						try {
-							result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
-							//_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
-						} catch (Exception e) {
-							if (e is AggregateException ae)
-								e = ae.Flatten();
-							_log.Error("Failed to get cluster info from [{0}]: deserialization error: {1}.",
-								endPoint.EndPoint, e);
-						}
-					} finally {
-						completed.Set();
-					}
-
-					try {
 						result = response.Body.ParseJson<ClusterMessages.ClusterInfoDto>();
 						//_log.Debug("ClusterDnsEndPointDiscoverer: Got gossip from [{0}]:\n{1}.", endPoint, string.Join("\n", result.Members.Select(x => x.ToString())));
 					} catch (Exception e) {
@@ -210,10 +196,11 @@ namespace EventStore.ClientAPI.Internal {
 					}
 
 					completed.Set();
-				}, e => {
-					if (e is AggregateException ae) 
+				},
+				e => {
+					if (e is AggregateException ae)
 						e = ae.Flatten();
-					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint, e);
+					_log.Error("Failed to get cluster info from [{0}]: request failed, error: {1}.", endPoint.EndPoint, e);
 					completed.Set();
 				}, endPoint.EndPoint.GetHost());
 			completed.Wait(_gossipTimeout);
