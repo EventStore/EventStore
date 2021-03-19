@@ -94,7 +94,9 @@ namespace EventStore.ClusterNode {
 				using (var hostedService = new ClusterVNodeHostedService(options)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
+					// ReSharper disable MethodSupportsCancellation
 					signal.Wait();
+					// ReSharper restore MethodSupportsCancellation
 				}
 
 				return await exitCodeSource.Task;

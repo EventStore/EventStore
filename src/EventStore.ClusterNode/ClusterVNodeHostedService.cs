@@ -12,6 +12,7 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.PluginModel;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
@@ -40,38 +41,36 @@ namespace EventStore.ClusterNode {
 					options.Projections.FaultOutOfOrderProjections))
 				: options;
 
-			if (!options.Database.MemDb) {
-				var absolutePath = Path.GetFullPath(options.Database.Db);
+			if (!_options.Database.MemDb) {
+				var absolutePath = Path.GetFullPath(_options.Database.Db);
 				if (Runtime.IsWindows)
 					absolutePath = absolutePath.ToLower();
 
 				_dbLock = new ExclusiveDbLock(absolutePath);
 				if (!_dbLock.Acquire())
-					throw new InvalidConfigurationException($"Couldn't acquire exclusive lock on DB at '{options.Database.Db}'.");
+					throw new InvalidConfigurationException($"Couldn't acquire exclusive lock on DB at '{_options.Database.Db}'.");
 			}
 
 			_clusterNodeMutex = new ClusterNodeMutex();
 			if (!_clusterNodeMutex.Acquire())
 				throw new InvalidConfigurationException($"Couldn't acquire exclusive Cluster Node mutex '{_clusterNodeMutex.MutexName}'.");
 
-			var authorizationConfig = string.IsNullOrEmpty(options.Auth.AuthorizationConfig)
-				? options.Application.Config
-				: options.Auth.AuthorizationConfig;
+			var authorizationConfig = string.IsNullOrEmpty(_options.Auth.AuthorizationConfig)
+				? _options.Application.Config
+				: _options.Auth.AuthorizationConfig;
 
-			var authenticationConfig = string.IsNullOrEmpty(options.Auth.AuthenticationConfig)
-				? options.Application.Config
-				: options.Auth.AuthenticationConfig;
+			var authenticationConfig = string.IsNullOrEmpty(_options.Auth.AuthenticationConfig)
+				? _options.Application.Config
+				: _options.Auth.AuthenticationConfig;
 
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 
 			var plugInContainer = FindPlugins();
 
-			Node = new ClusterVNode(
-				options, GetAuthenticationProviderFactory(),
-				GetAuthorizationProviderFactory(),
-				additionalPersistentSubscriptionConsumerStrategyFactories: GetPersistentSubscriptionConsumerStrategyFactories());
+			Node = new ClusterVNode(_options, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
+				GetPersistentSubscriptionConsumerStrategyFactories());
 
-			var runProjections = options.Projections.RunProjections;
+			var runProjections = _options.Projections.RunProjections;
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
 				? new[] {NodeSubsystems.Projections}
 				: Array.Empty<NodeSubsystems>();
@@ -79,6 +78,9 @@ namespace EventStore.ClusterNode {
 			RegisterWebControllers(enabledNodeSubsystems);
 
 			AuthorizationProviderFactory GetAuthorizationProviderFactory() {
+				if (_options.Application.Insecure) {
+					return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
+				}
 				var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 					{
 						"internal", new AuthorizationProviderFactory(components =>
@@ -100,9 +102,10 @@ namespace EventStore.ClusterNode {
 					}
 				}
 
-				if (!authorizationTypeToPlugin.TryGetValue(options.Auth.AuthorizationType.ToLowerInvariant(), out var factory)) {
+				if (!authorizationTypeToPlugin.TryGetValue(_options.Auth.AuthorizationType.ToLowerInvariant(),
+					out var factory)) {
 					throw new ApplicationInitializationException(
-						$"The authorization type {options.Auth.AuthorizationType} is not recognised. If this is supposed " +
+						$"The authorization type {_options.Auth.AuthorizationType} is not recognised. If this is supposed " +
 						$"to be provided by an authorization plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
 						Environment.NewLine +
 						$"Valid options for authorization are: {string.Join(", ", authorizationTypeToPlugin.Keys)}.");
@@ -154,6 +157,10 @@ namespace EventStore.ClusterNode {
 			}
 
 			AuthenticationProviderFactory GetAuthenticationProviderFactory() {
+				if (_options.Application.Insecure) {
+					return new AuthenticationProviderFactory(_ => new PassthroughAuthenticationProviderFactory());
+				}
+
 				var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
 					{
 						"internal", new AuthenticationProviderFactory(components =>
@@ -175,10 +182,11 @@ namespace EventStore.ClusterNode {
 					}
 				}
 
-				return authenticationTypeToPlugin.TryGetValue(options.Auth.AuthenticationType.ToLowerInvariant(), out var factory)
+				return authenticationTypeToPlugin.TryGetValue(_options.Auth.AuthenticationType.ToLowerInvariant(),
+					out var factory)
 					? factory
 					: throw new ApplicationInitializationException(
-						$"The authentication type {options.Auth.AuthenticationType} is not recognised. If this is supposed " +
+						$"The authentication type {_options.Auth.AuthenticationType} is not recognised. If this is supposed " +
 						$"to be provided by an authentication plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
 						Environment.NewLine +
 						$"Valid options for authentication are: {string.Join(", ", authenticationTypeToPlugin.Keys)}.");
