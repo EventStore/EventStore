@@ -43,18 +43,18 @@ namespace EventStore.Core {
 
 		public string? GetDeprecationWarnings() {
 			var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
-			var builder = OptionSections.SelectMany(section => section.GetProperties())
-				.Where(option => option.GetCustomAttribute<DeprecatedAttribute>() != null)
-				.Select(option => new {
-					name = option.Name,
-					configured = ConfigurationRoot.AsEnumerable().Any(x =>
-						string.Equals(x.Key, option.Name, StringComparison.OrdinalIgnoreCase)),
-					value = ConfigurationRoot.GetValue<object?>(option.Name),
-					deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()!.Message
-				})
-				.Where(_ => _.configured && defaultValues.TryGetValue(_.name, out var defaultValue) &&
-				            _.value != defaultValue)
-				.Aggregate(new StringBuilder(), (builder, _) => builder.AppendLine(_.deprecationWarning));
+
+			var deprecationWarnings = from section in OptionSections
+				from option in section.GetProperties()
+				let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
+				where deprecationWarning is not null
+				let value = ConfigurationRoot.GetValue<string?>(option.Name)
+				where defaultValues.TryGetValue(option.Name, out var defaultValue)
+				      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
+				      select deprecationWarning;
+
+			var builder = deprecationWarnings
+				.Aggregate(new StringBuilder(), (builder, deprecationWarning) => builder.AppendLine(deprecationWarning));
 
 			return builder.Length != 0 ? builder.ToString() : null;
 		}

@@ -500,7 +500,9 @@ namespace EventStore.Core {
 			[Description("The port to run the HTTP server on.")]
 			public int HttpPort { get; init; } = 2113;
 
-			[Description("Whether to enable external TCP communication")]
+			[Description("Whether to enable external TCP communication"),
+			 Deprecated(
+				 "The Legacy TCP Client Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.")]
 			public bool EnableExternalTcp { get; init; } = false;
 
 			[Description("Internal TCP Port.")] public int IntTcpPort { get; init; } = 1112;
@@ -544,7 +546,7 @@ namespace EventStore.Core {
 			public int ExtTcpHeartbeatInterval { get; init; } = 2_000;
 
 			[Description("When enabled, tells a single node to run gossip as if it is a cluster."),
-			 Deprecated("The 'GossipOnSingleNode' option has been deprecated as of version 21.2.")]
+			 Deprecated("The '" + nameof(GossipOnSingleNode) + "' option has been deprecated as of version 21.2.")]
 			public bool? GossipOnSingleNode { get; init; } = null;
 
 			[Description("The maximum number of pending send bytes allowed before a connection is closed.")]
@@ -565,13 +567,19 @@ namespace EventStore.Core {
 			[Description("Enables trusted authentication by an intermediary in the HTTP.")]
 			public bool EnableTrustedAuth { get; init; } = false;
 
-			[Description("Whether to disable secure internal TCP communication.")]
+			[Description("Whether to disable secure internal TCP communication."),
+			 Deprecated("The '" + nameof(DisableInternalTcpTls) +
+			            "' option has been deprecated as of version 20.6.1 and currently has no effect. Please use the '" +
+			            nameof(Application.Insecure) + "' option instead.")]
 			public bool DisableInternalTcpTls { get; init; } = false;
 
-			[Description("Whether to disable secure external TCP communication.")]
+			[Description("Whether to disable secure external TCP communication."),
+			Deprecated("The '" + nameof(DisableExternalTcpTls) + "' option has been deprecated as of version 20.6.1.")]
 			public bool DisableExternalTcpTls { get; init; } = false;
 
-			[Description("Enable AtomPub over HTTP Interface.")]
+			[Description("Enable AtomPub over HTTP Interface."),
+			 Deprecated(
+				 "AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
 
 			internal static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
