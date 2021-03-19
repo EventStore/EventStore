@@ -42,6 +42,8 @@ namespace EventStore.ClientAPI.Internal {
 		private int _packageNumber;
 		private TcpPackageConnection _connection;
 
+		private ICompatibilityMode _compatibilityMode;
+
 		public EventStoreConnectionLogicHandler(IEventStoreConnection esConnection, ConnectionSettings settings) {
 			Ensure.NotNull(esConnection, "esConnection");
 			Ensure.NotNull(settings, "settings");
@@ -69,6 +71,8 @@ namespace EventStore.ClientAPI.Internal {
 			_queue.RegisterHandler<TimerTickMessage>(msg => TimerTick());
 
 			_timer = new Timer(_ => EnqueueMessage(TimerTickMessage), null, Consts.TimerPeriod, Consts.TimerPeriod);
+
+			_compatibilityMode = CompatibilityMode.Create(_settings.CompatibilityMode);
 		}
 
 		public void EnqueueMessage(Message message) {
@@ -140,13 +144,16 @@ namespace EventStore.ClientAPI.Internal {
 			if (_state != ConnectionState.Connecting) return;
 			if (_connectingPhase != ConnectingPhase.EndPointDiscovery) return;
 
+			var targetHost = _compatibilityMode.IsVersion5CompatibilityModeEnabled()
+				? _settings.TargetHost
+				: endPoints.TargetHost;
 			_connectingPhase = ConnectingPhase.ConnectionEstablishing;
 			_connection = new TcpPackageConnection(
 				_settings.Log,
 				endPoint,
 				Guid.NewGuid(),
 				_settings.UseSslConnection,
-				_settings.TargetHost,
+				targetHost,
 				_settings.ValidateServer,
 				_settings.ClientConnectionTimeout,
 				(connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
@@ -505,7 +512,7 @@ namespace EventStore.ClientAPI.Internal {
 						_operations.ScheduleOperationRetry(operation);
 						break;
 					case InspectionDecision.Reconnect:
-						ReconnectTo(new NodeEndPoints(result.TcpEndPoint, result.SecureTcpEndPoint));
+						ReconnectTo(new NodeEndPoints(result.TcpEndPoint, result.SecureTcpEndPoint, result.TargetHost));
 						_operations.ScheduleOperationRetry(operation);
 						break;
 					case InspectionDecision.NotSupported:
@@ -531,7 +538,7 @@ namespace EventStore.ClientAPI.Internal {
 						_subscriptions.ScheduleSubscriptionRetry(subscription);
 						break;
 					case InspectionDecision.Reconnect:
-						ReconnectTo(new NodeEndPoints(result.TcpEndPoint, result.SecureTcpEndPoint));
+						ReconnectTo(new NodeEndPoints(result.TcpEndPoint, result.SecureTcpEndPoint, result.TargetHost));
 						_subscriptions.ScheduleSubscriptionRetry(subscription);
 						break;
 					case InspectionDecision.Subscribed:

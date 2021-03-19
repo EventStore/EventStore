@@ -311,7 +311,7 @@ namespace EventStore.ClientAPI.Internal {
 				: null;
 			_log.Info("Discovering: found best choice [{0},{1}] ({2}).", normTcp,
 				secTcp == null ? "n/a" : secTcp.ToString(), node.State);
-			return new NodeEndPoints(normTcp, secTcp);
+			return new NodeEndPoints(normTcp, secTcp, node.ExternalTcpIp);
 		}
 
 		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {

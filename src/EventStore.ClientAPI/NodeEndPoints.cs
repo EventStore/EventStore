@@ -12,9 +12,14 @@ namespace EventStore.ClientAPI {
 		public readonly IPEndPoint TcpEndPoint;
 
 		/// <summary>
-		/// The ssl endpoint of the node
+		/// The ssl endpoint of the node.
 		/// </summary>
 		public readonly IPEndPoint SecureTcpEndPoint;
+
+		/// <summary>
+		/// The target host for this node.
+		/// </summary>
+		public readonly string TargetHost;
 
 
 		/// <summary>
@@ -22,19 +27,22 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		/// <param name="tcpEndPoint">The tcp endpoint of the node</param>
 		/// <param name="secureTcpEndPoint">The ssl endpoint of the node</param>
-		public NodeEndPoints(IPEndPoint tcpEndPoint, IPEndPoint secureTcpEndPoint) {
+		public NodeEndPoints(IPEndPoint tcpEndPoint, IPEndPoint secureTcpEndPoint, string targetHost) {
 			if ((tcpEndPoint ?? secureTcpEndPoint) == null) throw new ArgumentException("Both endpoints are null.");
+			if (targetHost == null) throw new ArgumentException(nameof(targetHost));
 			TcpEndPoint = tcpEndPoint;
 			SecureTcpEndPoint = secureTcpEndPoint;
+			TargetHost = targetHost;
 		}
 
 		/// <summary>
 		/// Formats the endpoints as a string
 		/// </summary>
 		public override string ToString() {
-			return string.Format("[{0}, {1}]",
+			return string.Format("[{0}, {1}, ({2})]",
 				TcpEndPoint == null ? "n/a" : TcpEndPoint.ToString(),
-				SecureTcpEndPoint == null ? "n/a" : SecureTcpEndPoint.ToString());
+				SecureTcpEndPoint == null ? "n/a" : SecureTcpEndPoint.ToString(),
+				TargetHost);
 		}
 	}
 }

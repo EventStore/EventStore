@@ -117,7 +117,7 @@ namespace EventStore.ClientAPI {
 				if (scheme == "tcp") {
 					var tcpEndPoint = GetSingleNodeIPEndPointFrom(uri);
 					return new EventStoreNodeConnection(connectionSettings, null,
-						new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection), connectionName);
+						new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection, connectionSettings.TargetHost), connectionName);
 				}
 
 				throw new Exception(string.Format("Unknown scheme for connection '{0}'", scheme));
@@ -195,7 +195,7 @@ namespace EventStore.ClientAPI {
 			Ensure.NotNull(connectionSettings, "settings");
 			Ensure.NotNull(tcpEndPoint, "tcpEndPoint");
 			return new EventStoreNodeConnection(connectionSettings, null,
-				new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection), connectionName);
+				new StaticEndPointDiscoverer(tcpEndPoint, connectionSettings.UseSslConnection, connectionSettings.TargetHost), connectionName);
 		}
 
 		/// <summary>

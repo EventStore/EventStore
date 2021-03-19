@@ -8,9 +8,10 @@ namespace EventStore.ClientAPI.SystemData {
 		public readonly string Description;
 		public readonly IPEndPoint TcpEndPoint;
 		public readonly IPEndPoint SecureTcpEndPoint;
+		public readonly string TargetHost;
 
 		public InspectionResult(InspectionDecision decision, string description, IPEndPoint tcpEndPoint = null,
-			IPEndPoint secureTcpEndPoint = null) {
+			IPEndPoint secureTcpEndPoint = null, string targetHost = null) {
 			if (decision == InspectionDecision.Reconnect) {
 				if (tcpEndPoint == null && secureTcpEndPoint == null) {
 					throw new ArgumentException("tcpEndPoint and secureTcpEndPoint cannot both be null");
@@ -25,6 +26,7 @@ namespace EventStore.ClientAPI.SystemData {
 			Description = description;
 			TcpEndPoint = tcpEndPoint;
 			SecureTcpEndPoint = secureTcpEndPoint;
+			TargetHost = targetHost;
 		}
 	}
 }
