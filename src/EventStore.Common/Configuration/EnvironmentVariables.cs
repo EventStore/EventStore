@@ -18,14 +18,16 @@ namespace EventStore.Common.Configuration {
 		}
 
 		public override void Load() {
-			Data = (from entry in _environment.OfType<DictionaryEntry>()
-					let key = (string)entry.Key
-					where key.StartsWith(_prefix)
-					select new {
-						key = StringExtensions.Computerize(key.Remove(0, _prefix.Length)),
-						value = (string)entry.Value
-					})
-				.ToDictionary(x => x.key, x => x.value);
+			Data.Clear();
+
+			foreach (var k in _environment.Keys) {
+				var key = k.ToString() ?? _prefix;
+				if (!key.StartsWith(_prefix)) {
+					continue;
+				}
+
+				Data[StringExtensions.Computerize(key.Remove(0, _prefix.Length))] = _environment[k]?.ToString();
+			}
 		}
 	}
 }

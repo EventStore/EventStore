@@ -67,6 +67,72 @@ namespace EventStore.Core.Tests {
 			CollectionAssert.AreEquivalent(expected, actual);
 		}
 
+		public static IEnumerable<PrecedenceCase> PrecedenceCases() {
+			yield return new(
+				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				string.Empty,
+				new Dictionary<string, string>(),
+				Array.Empty<string>(),
+				1
+			);
+			yield return new(
+				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				$"{nameof(ClusterVNodeOptions.Application.StatsPeriodSec)}: 2",
+				new Dictionary<string, string>(),
+				Array.Empty<string>(),
+				2
+			);
+			yield return new(
+				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				$"{nameof(ClusterVNodeOptions.Application.StatsPeriodSec)}: 2",
+				new Dictionary<string, string> {["EVENTSTORE_STATS_PERIOD_SEC"] = "3"},
+				Array.Empty<string>(),
+				3
+			);
+			yield return new(
+				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				$"{nameof(ClusterVNodeOptions.Application.StatsPeriodSec)}: 2",
+				new Dictionary<string, string> {["EVENTSTORE_STATS_PERIOD_SEC"] = "3"},
+				new[] {"--stats-period-sec=4"},
+				4
+			);
+		}
+
+		public record PrecedenceCase(IEnumerable<KeyValuePair<string, object>> defaultValues,
+			string configurationFileContent, IDictionary environment, string[] args, int expected) {
+			public override string ToString() =>
+				$"Default: {string.Join(", ", defaultValues.Select(p => $"{p.Key}={p.Value}"))}" +
+				Environment.NewLine +
+				$"Conf: {configurationFileContent}" +
+				Environment.NewLine +
+				$"Env: {string.Join(", ", environment.Keys.OfType<object>().Select(key => $"{key}={environment[key]}"))}" +
+				Environment.NewLine +
+				$"Args: {string.Join(" ", args)} " +
+				Environment.NewLine +
+				$"Expected: {expected}";
+		}
+
+		[TestCaseSource(nameof(PrecedenceCases))]
+		public async Task precedence(PrecedenceCase testCase) {
+			var (defaultValues, configurationFileContent, environment, args, expected) = testCase;
+			var configurationFile = new FileInfo(Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():n}.conf"));
+			try {
+				await using var writer = configurationFile.CreateText();
+				await writer.WriteAsync(configurationFileContent);
+				await writer.FlushAsync();
+				var options = ClusterVNodeOptions.FromConfiguration(new ConfigurationBuilder()
+					.AddEventStore(args, environment, defaultValues.Concat(new[] {
+						new KeyValuePair<string, object>(nameof(ClusterVNodeOptions.Application.Config),
+							configurationFile.FullName)
+					}))
+					.Build());
+
+				Assert.AreEqual(expected, options.Application.StatsPeriodSec);
+			} finally {
+				configurationFile.Delete();
+			}
+		}
+
 		[Test]
 		public void print_help_text() {
 			var helpText = ClusterVNodeOptions.HelpText;
@@ -92,7 +158,6 @@ namespace EventStore.Core.Tests {
 
 				Assert.AreEqual(yamlConfiguration.FullName, options.Application.Config);
 				Assert.IsTrue(options.Database.MemDb);
-
 			} finally {
 				yamlConfiguration.Delete();
 			}

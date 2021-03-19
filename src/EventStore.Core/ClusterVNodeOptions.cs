@@ -576,8 +576,10 @@ namespace EventStore.Core {
 
 			internal static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				GossipOnSingleNode = configurationRoot.GetValue<bool?>(nameof(GossipOnSingleNode)),
-				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp))),
-				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp))),
+				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp)) ??
+				                        IPAddress.Loopback.ToString()),
+				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp)) ??
+				                        IPAddress.Loopback.ToString()),
 				HttpPort = configurationRoot.GetValue<int>(nameof(HttpPort)),
 				EnableExternalTcp = configurationRoot.GetValue<bool>(nameof(EnableExternalTcp)),
 				ExtTcpPort = configurationRoot.GetValue<int>(nameof(ExtTcpPort)),

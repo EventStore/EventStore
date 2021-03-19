@@ -16,12 +16,15 @@ namespace EventStore.Common.Configuration {
 
 			var configurationPath = root.GetValue<string>("Config");
 
-			return builder.Add<YamlSource>(s => {
-				s.Path = configurationPath;
-				s.Optional = true;
-				s.ReloadOnChange = true;
-				s.ResolveFileProvider();
-			});
+			var yamlSource = new YamlSource {
+				Path = configurationPath,
+				Optional = true,
+				ReloadOnChange = true
+			};
+			yamlSource.ResolveFileProvider();
+			builder.Sources.Insert(1, yamlSource);
+
+			return builder;
 		}
 	}
 }
