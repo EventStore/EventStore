@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - ValidateServer also sets whether HTTP certificate validation is enabled. [EventStore#2832](https://github.com/EventStore/EventStore/pull/2832)
+- Make Microsoft.NETFramework.ReferenceAssemblies reference private [EventStore#2859](https://github.com/EventStore/EventStore/pull/2859)
 
 ### changed
 - minver prefix for tcp clients [EventStore#2846](https://github.com/EventStore/EventStore/pull/2846)
