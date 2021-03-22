@@ -4,10 +4,10 @@ The `ES-HardDelete` header controls deleting a stream. By default EventStoreDB s
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/hard-delete-stream.sh#curl
+<<< @/samples/http-api/delete-stream/hard-delete-stream.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/hard-delete-stream.sh#response
+<<< @/samples/http-api/delete-stream/hard-delete-stream.sh#response
 :::
 ::::
 

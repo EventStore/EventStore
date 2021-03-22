@@ -30,7 +30,7 @@ EventStoreDB has a Docker image available for any platform that supports Docker.
 
 Create file `docker-compose.yaml` with following content:
 
-<<< @/docs/server/v5/server/sample-code/docker-compose.yaml
+<<< @/samples/server/docker-compose.yaml
 
 Run the instance:
 

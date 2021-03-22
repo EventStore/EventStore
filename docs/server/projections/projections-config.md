@@ -15,7 +15,7 @@ You change the configuration of a projection by setting the relevant key and val
 
 <!-- TODO: Further explanation here -->
 
-<<< @/docs/server/v5/http-api/sample-code/projections/create-projection.sh
+<<< @/samples/http-api/projections/create-projection.sh
 
 ::::
 :::: tab .NET Client

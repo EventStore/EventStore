@@ -16,10 +16,10 @@ You should not access metadata by constructing this URL yourself, as the right t
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/read-metadata.sh#curl
+<<< @/samples/http-api/read-metadata.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/read-metadata.sh#response
+<<< @/samples/http-api/read-metadata.sh#response
 :::
 ::::
 
@@ -33,10 +33,10 @@ If you have security enabled, reading metadata may require that you pass credent
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/missing-credentials.sh#curl
+<<< @/samples/http-api/missing-credentials.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/missing-credentials.sh#response
+<<< @/samples/http-api/missing-credentials.sh#response
 :::
 ::::
 
@@ -46,7 +46,7 @@ To update the metadata for a stream, issue a `POST` request to the metadata reso
 
 Inside a file named _metadata.json_:
 
-<<< @/docs/server/v5/http-api/sample-code/metadata.json
+<<< @/samples/http-api/metadata.json
 
 You can also add user-specified metadata here. Some examples user-specified metadata are:
 
@@ -58,10 +58,10 @@ You then post this information is then posted to the stream:
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/update-metadata.sh#curl
+<<< @/samples/http-api/update-metadata.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/update-metadata.sh#response
+<<< @/samples/http-api/update-metadata.sh#response
 :::
 ::::
 

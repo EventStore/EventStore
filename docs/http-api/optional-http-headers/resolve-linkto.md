@@ -6,10 +6,10 @@ You can see the differences in behaviour in the following cURL commands.
 
 :::: code-group
 ::: code Request
-<<< @/docs//server/v5/http-api/sample-code/resolve-links.sh#curl
+<<< @/samples/http-api/resolve-links.sh#curl
 :::
 ::: code Response
-<<< @/docs//server/v5/http-api/sample-code/resolve-links.sh#response
+<<< @/samples/http-api/resolve-links.sh#response
 :::
 ::::
 
@@ -19,9 +19,9 @@ The content links are pointing to the original projection stream. The linked eve
 
 :::: code-group
 ::: code Request
-<<< @/docs//server/v5/http-api/sample-code/resolve-links-false.sh#curl
+<<< @/samples/http-api/resolve-links-false.sh#curl
 :::
 ::: code Response
-<<< @/docs//server/v5/http-api/sample-code/resolve-links-false.sh#response
+<<< @/samples/http-api/resolve-links-false.sh#response
 :::
 ::::

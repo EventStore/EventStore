@@ -21,10 +21,10 @@ The client is able to request the description document by passing `application/v
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/get-dd.sh#curl
+<<< @/samples/http-api/get-dd.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/get-dd.sh#response
+<<< @/samples/http-api/get-dd.sh#response
 :::
 ::::
 

@@ -10,14 +10,14 @@ EventStoreDB supports basic HTTP authentication to internal users. You create th
 
 When using the HTTP API, you can send the following JSON payload to the server:
 
-<<< @/docs//server/v5/http-api/sample-code/new-user.json
+<<< @/samples/http-api/new-user.json
 
 :::: code-group
 ::: code Request
-<<< @/docs//server/v5/http-api/sample-code/new-user.sh
+<<< @/samples/http-api/new-user.sh
 :::
 ::: code Response
-<<< @/docs//server/v5/http-api/sample-code/new-user.http
+<<< @/samples/http-api/new-user.http
 :::
 ::::
 
@@ -27,10 +27,10 @@ If you were to use the wrong user or no user when a request requires one, you re
 
 :::: code-group
 ::: code Request
-<<< @/docs//server/v5/http-api/sample-code/incorrect-user.sh
+<<< @/samples/http-api/incorrect-user.sh
 :::
 ::: code Response
-<<< @/docs//server/v5/http-api/sample-code/incorrect-user.http
+<<< @/samples/http-api/incorrect-user.http
 :::
 ::::
 
@@ -48,15 +48,15 @@ The ACL below gives `writer` read and write permission on the stream, while `rea
 
 The request body placed in the file named _metadata.json_:
 
-<<< @/docs//server/v5/server/sample-code/metadata.json
+<<< @/samples/server/metadata.json
 
 Then, when you execute HTTP request as follows:
 
-<<< @/docs//server/v5/server/sample-code/update-acl.sh#curl
+<<< @/samples/server/update-acl.sh#curl
 
 You get a confirmation from the server:
 
-<<< @/docs//server/v5/server/sample-code/update-acl.sh#response
+<<< @/samples/server/update-acl.sh#response
 
 ## Default ACL
 
@@ -64,14 +64,14 @@ You get a confirmation from the server:
 All these examples assume you have created a user named `ouro` with password `ouroboros`.
 :::
 
-<<< @/docs//server/v5/server/sample-code/override-default.json
+<<< @/samples/server/override-default.json
 
 :::: code-group
 ::: code Request
-<<< @/docs//server/v5/server/sample-code/update-default-acl.sh
+<<< @/samples/server/update-default-acl.sh
 :::
 ::: code Response
-<<< @/docs//server/v5/server/sample-code/update-default-acl.http
+<<< @/samples/server/update-default-acl.http
 :::
 ::::
 

@@ -6,10 +6,10 @@ To delete a stream over the Atom interface, issue a `DELETE` request to the reso
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/delete-stream.sh
+<<< @/samples/http-api/delete-stream/delete-stream.sh
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/delete-stream-response.http
+<<< @/samples/http-api/delete-stream/delete-stream-response.http
 :::
 ::::
 
@@ -17,10 +17,10 @@ By default when you delete a stream, EventStoreDB soft deletes it. This means yo
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/get-deleted-stream.sh
+<<< @/samples/http-api/delete-stream/get-deleted-stream.sh
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/get-deleted-stream-response.http
+<<< @/samples/http-api/delete-stream/get-deleted-stream-response.http
 :::
 ::::
 
@@ -28,10 +28,10 @@ You can recreate the stream by appending new events to it (like creating a new s
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/append-event.sh#curl
+<<< @/samples/http-api/append-event.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/append-event.http
+<<< @/samples/http-api/append-event.http
 :::
 ::::
 
@@ -49,10 +49,10 @@ Issue the `DELETE` as before but with the permanent delete header:
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/hard-delete-stream.sh
+<<< @/samples/http-api/delete-stream/hard-delete-stream.sh
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/hard-delete-stream.http
+<<< @/samples/http-api/delete-stream/hard-delete-stream.http
 :::
 ::::
 
@@ -60,10 +60,10 @@ The stream is now permanently deleted, and now the response is a `410`.
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/get-deleted-stream.sh#curl
+<<< @/samples/http-api/delete-stream/get-deleted-stream.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/get-deleted-stream-response.http
+<<< @/samples/http-api/delete-stream/get-deleted-stream-response.http
 :::
 ::::
 
@@ -71,9 +71,9 @@ If you try to recreate the stream as in the above example you also receive a `41
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/append-event-deleted.sh#curl
+<<< @/samples/http-api/delete-stream/append-event-deleted.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/delete-stream/append-event-deleted.sh#response
+<<< @/samples/http-api/delete-stream/append-event-deleted.sh#response
 :::
 ::::

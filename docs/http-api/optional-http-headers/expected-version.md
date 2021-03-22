@@ -17,10 +17,10 @@ In the following cURL command `ExpectedVersion` is not set, and it appends or cr
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/append-event-to-new-stream.sh#curl
+<<< @/samples/http-api/append-event-to-new-stream.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/append-event-to-new-stream.sh#response
+<<< @/samples/http-api/append-event-to-new-stream.sh#response
 :::
 ::::
 
@@ -28,10 +28,10 @@ The stream `newstream` has one event. If you append with an expected version of 
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/append-event-wrong-version.sh#curl
+<<< @/samples/http-api/append-event-wrong-version.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/append-event-wrong-version.sh#response
+<<< @/samples/http-api/append-event-wrong-version.sh#response
 :::
 ::::
 
@@ -39,9 +39,9 @@ You can see from the `ES-CurrentVersion` header above that the stream is at vers
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/append-event-version.sh#curl
+<<< @/samples/http-api/append-event-version.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/append-event-version.sh#response
+<<< @/samples/http-api/append-event-version.sh#response
 :::
 ::::

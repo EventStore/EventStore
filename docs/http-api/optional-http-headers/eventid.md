@@ -6,10 +6,10 @@ You can include an event ID on an event by specifying this header.
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/append-event-to-new-stream.sh#curl
+<<< @/samples/http-api/append-event-to-new-stream.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/append-event-to-new-stream.sh#response
+<<< @/samples/http-api/append-event-to-new-stream.sh#response
 :::
 ::::
 
@@ -17,10 +17,10 @@ If you don't add an `ES-EventId` header on an append where the body is considere
 
 :::: code-group
 ::: code Request
-<<< @/docs/server/v5/http-api/sample-code/append-event-no-id.sh#curl
+<<< @/samples/http-api/append-event-no-id.sh#curl
 :::
 ::: code Response
-<<< @/docs/server/v5/http-api/sample-code/append-event-no-id.sh#response
+<<< @/samples/http-api/append-event-no-id.sh#response
 :::
 ::::
 
