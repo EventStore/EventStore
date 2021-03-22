@@ -24,7 +24,7 @@ You start a scavenge by issuing an empty `POST` request to the HTTP API with the
 Scavenge operations have other options you can set to improve performance. For example, you can set the number of threads to use.
 :::
 
-<<< @/docs/server/v20/server/sample-code/scavenge.sh#curl
+<<< @/samples/server/scavenge.sh#curl
 
 ::: tip Restart scavenging
 If you need to restart a stopped scavenge, you can specify the starting chunk ID.

@@ -1,0 +1,8 @@
+[
+    {
+        "eventType": "event-type",
+        "data": {
+            "a": "1"
+        }
+    }
+]

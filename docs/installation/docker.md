@@ -39,7 +39,7 @@ You can use Docker Compose to run EventStoreDB in the same setup as the `docker 
 
 Create file `docker-compose.yaml` with following content:
 
-<<< @/docs/server/v20/server/sample-code/docker-compose.yaml
+<<< @/samples/server/docker-compose.yaml
 
 Run the instance:
 
@@ -55,11 +55,11 @@ With Docker Compose, you can also run a three-node cluster with security enabled
 
 Create file `docker-compose.yaml` with following content:
 
-<<< @/docs/server/v20/server/sample-code/docker-compose-cluster.yaml
+<<< @/samples/server/docker-compose-cluster.yaml
 
 Quite a few settings are shared between the nodes and we use the `env` file to avoid repeating those settings. So, add the `vars.env` file to the same location:
 
-<<< @/docs/server/v20/server/sample-code/vars.env
+<<< @/samples/server/vars.env
 
 Containers will use the shared volume using the local `./certs` directory for certificates. However, if you let Docker to create the directory on startup, the container won't be able to get write access to it. Therefore, create the `certs` directory manually. You only need to do it once.
 
@@ -75,18 +75,18 @@ docker-compose up
 
 Check the log messages, after some time the elections process completes and you'd be able to connect to each node using the Admin UI. Nodes should be accessible on the loopback address (`127.0.0.1` or `localhost`) over HTTP and TCP, using ports specified below:
 
-| Node | TCP port | HTTP port |
-| :--- | :------- | :-------- |
-| node1 | 1111 | 2111 |
-| node2 | 1112 | 2112 |
-| node3 | 1113 | 2113 |
+| Node  | TCP port | HTTP port |
+| :---- | :------- | :-------- |
+| node1 | 1111     | 2111      |
+| node2 | 1112     | 2112      |
+| node3 | 1113     | 2113      |
 
 You have tell your client to use secure connection for both TCP and gRPC.
 
-| Protocol | Connection string |
-| :------- | :---------------- |
-| TCP | `GossipSeeds=localhost:1111,localhost:1112,localhost:1113;ValidateServer=False;UseSslConnection=True` |
-| gRPC | `esdb://localhost:2111,localhost:2112,localhost:2113?tls=true&tlsVerifyCert=false` |
+| Protocol | Connection string                                                                                     |
+| :------- | :---------------------------------------------------------------------------------------------------- |
+| TCP      | `GossipSeeds=localhost:1111,localhost:1112,localhost:1113;ValidateServer=False;UseSslConnection=True` |
+| gRPC     | `esdb://localhost:2111,localhost:2112,localhost:2113?tls=true&tlsVerifyCert=false`                    |
 
 As you might've noticed, both connection strings have a setting to disable the certificate validation (`ValidateServer=False` for `TCP` and `tlsVerifyCert=false` for `gRPC`). It would prevent the invalid certificate error since the cluster uses self-signed certificates. 
 
