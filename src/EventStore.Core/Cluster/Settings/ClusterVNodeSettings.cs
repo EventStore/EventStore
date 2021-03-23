@@ -197,8 +197,8 @@ namespace EventStore.Core.Cluster.Settings {
 				throw new ArgumentOutOfRangeException(nameof(keepAliveInterval));
 			}
 
-			if (keepAliveInterval <= TimeSpan.Zero) {
-				throw new ArgumentOutOfRangeException(nameof(keepAliveInterval));
+			if (keepAliveTimeout <= TimeSpan.Zero) {
+				throw new ArgumentOutOfRangeException(nameof(keepAliveTimeout));
 			}
 
 			if (maxAppendSize > TFConsts.EffectiveMaxLogRecordSize) {
