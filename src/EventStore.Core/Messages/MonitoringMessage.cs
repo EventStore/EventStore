@@ -77,11 +77,11 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly OperationStatus Result;
-			public readonly List<SubscriptionInfo> SubscriptionStats;
+			public readonly List<PersistentSubscriptionInfo> SubscriptionStats;
 			public string ErrorString;
 
 			public GetPersistentSubscriptionStatsCompleted(OperationStatus result,
-				List<SubscriptionInfo> subscriptionStats, string errorString = "") {
+				List<PersistentSubscriptionInfo> subscriptionStats, string errorString = "") {
 				Result = result;
 				SubscriptionStats = subscriptionStats;
 				ErrorString = errorString;
@@ -95,18 +95,18 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class SubscriptionInfo {
-			public string EventStreamId { get; set; }
+		public class PersistentSubscriptionInfo {
+			public string EventSource { get; set; }
 			public string GroupName { get; set; }
 			public string Status { get; set; }
 			public List<ConnectionInfo> Connections { get; set; }
 			public int AveragePerSecond { get; set; }
 			public long TotalItems { get; set; }
 			public long CountSinceLastMeasurement { get; set; }
-			public long LastProcessedEventNumber { get; set; }
-			public long LastKnownMessage { get; set; }
+			public string LastProcessedEventPosition { get; set; }
+			public string LastKnownMessage { get; set; }
 			public bool ResolveLinktos { get; set; }
-			public long StartFrom { get; set; }
+			public string StartFrom { get; set; }
 			public int MessageTimeoutMilliseconds { get; set; }
 			public bool ExtraStatistics { get; set; }
 			public int MaxRetryCount { get; set; }

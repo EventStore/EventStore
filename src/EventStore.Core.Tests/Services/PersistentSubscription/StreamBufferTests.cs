@@ -5,33 +5,37 @@ using EventStore.Core.Services.PersistentSubscription;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
-	[TestFixture]
+	[TestFixture(EventSource.SingleStream)]
+	[TestFixture(EventSource.AllStream)]
 	public class StreamBufferTests {
+		private EventSource _eventSource;
+
+		public StreamBufferTests(EventSource eventSource) {
+			_eventSource = eventSource;
+		}
+
 		[Test]
 		public void adding_read_message_in_correct_order() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id, 0));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddReadMessage(BuildMessageAt(0));
 			Assert.AreEqual(1, buffer.BufferCount);
 			OutstandingMessage message = buffer.Scan().First().Message;
-			Assert.AreEqual(id, message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), message.EventId);
 			Assert.IsFalse(buffer.Live);
 		}
 
 		[Test]
 		public void adding_multiple_read_message_in_correct_order() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			var id2 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id1, 0));
-			buffer.AddReadMessage(BuildMessageAt(id2, 1));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddReadMessage(BuildMessageAt(0));
+			buffer.AddReadMessage(BuildMessageAt(1));
 			Assert.AreEqual(2, buffer.BufferCount);
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id1, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(1, buffer.BufferCount);
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id2, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(1), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 			Assert.IsFalse(buffer.Live);
@@ -40,18 +44,16 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		[Test]
 		public void adding_multiple_read_message_in_wrong_order() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			var id2 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id1, 1));
-			buffer.AddReadMessage(BuildMessageAt(id2, 0));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddReadMessage(BuildMessageAt(1));
+			buffer.AddReadMessage(BuildMessageAt(0));
 			Assert.AreEqual(2, buffer.BufferCount);
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id1, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(1), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(1, buffer.BufferCount);
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id2, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 			Assert.IsFalse(buffer.Live);
@@ -59,17 +61,16 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		[Test]
 		public void adding_multiple_same_read_message() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id1, 0));
-			buffer.AddReadMessage(BuildMessageAt(id1, 0));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddReadMessage(BuildMessageAt(0));
+			buffer.AddReadMessage(BuildMessageAt(0));
 			Assert.AreEqual(2, buffer.BufferCount);
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id1, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(1, buffer.BufferCount);
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id1, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 			Assert.IsFalse(buffer.Live);
@@ -77,110 +78,99 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		[Test]
 		public void adding_messages_to_read_after_same_on_live_switches_to_live() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			buffer.AddLiveMessage(BuildMessageAt(id1, 0));
-			buffer.AddReadMessage(BuildMessageAt(id1, 0));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddLiveMessage(BuildMessageAt(0));
+			buffer.AddReadMessage(BuildMessageAt(0));
 			Assert.IsTrue(buffer.Live);
 			Assert.AreEqual(1, buffer.BufferCount);
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id1, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 		}
 
 		[Test]
 		public void adding_messages_to_read_after_later_live_does_not_switch() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			var id2 = Guid.NewGuid();
-			buffer.AddLiveMessage(BuildMessageAt(id1, 5));
-			buffer.AddReadMessage(BuildMessageAt(id2, 0));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddLiveMessage(BuildMessageAt(5));
+			buffer.AddReadMessage(BuildMessageAt(0));
 			Assert.IsFalse(buffer.Live);
 			Assert.AreEqual(1, buffer.BufferCount);
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id2, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 		}
 
 		[Test]
 		public void adding_messages_to_live_without_start_from_beginning() {
-			var buffer = new StreamBuffer(10, 10, -1, false);
-			var id1 = Guid.NewGuid();
-			var id2 = Guid.NewGuid();
-			buffer.AddLiveMessage(BuildMessageAt(id1, 6));
-			buffer.AddLiveMessage(BuildMessageAt(id2, 7));
+			var buffer = new StreamBuffer(10, 10, null, false);
+			buffer.AddLiveMessage(BuildMessageAt(6));
+			buffer.AddLiveMessage(BuildMessageAt(7));
 			Assert.IsTrue(buffer.Live);
 			Assert.AreEqual(2, buffer.BufferCount);
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id1, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(6), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(1, buffer.BufferCount);
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id2, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(7), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 		}
 
 		[Test]
 		public void adding_messages_with_lower_in_live() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			var id2 = Guid.NewGuid();
-			buffer.AddLiveMessage(BuildMessageAt(id1, 5));
-			buffer.AddLiveMessage(BuildMessageAt(id1, 6));
-			buffer.AddLiveMessage(BuildMessageAt(id2, 7));
-			buffer.AddReadMessage(BuildMessageAt(id1, 7));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			var id = Guid.NewGuid();
+			buffer.AddLiveMessage(BuildMessageAt(5));
+			buffer.AddLiveMessage(BuildMessageAt(6));
+			buffer.AddLiveMessage(BuildMessageAt(7, id));
+			buffer.AddReadMessage(BuildMessageAt(7));
 			Assert.IsTrue(buffer.Live);
 			Assert.AreEqual(1, buffer.BufferCount);
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id2, messagePointer.Message.EventId);
+			Assert.AreEqual(id, messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 		}
 
 		[Test]
 		public void skipped_messages_are_not_removed() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id1, 0));
-			var id2 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id2, 1));
-			var id3 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id3, 2));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddReadMessage(BuildMessageAt(0));
+			buffer.AddReadMessage(BuildMessageAt(1));
+			buffer.AddReadMessage(BuildMessageAt(2));
 			Assert.AreEqual(3, buffer.BufferCount);
 
 			var messagePointer2 = buffer.Scan().Skip(1).First(); // Skip the first message.
-			Assert.AreEqual(id2, messagePointer2.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(1), messagePointer2.Message.EventId);
 			messagePointer2.MarkSent();
 			Assert.AreEqual(2, buffer.BufferCount);
 
 			var messagePointers = buffer.Scan().ToArray();
-			Assert.AreEqual(id1, messagePointers[0].Message.EventId);
-			Assert.AreEqual(id3, messagePointers[1].Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointers[0].Message.EventId);
+			Assert.AreEqual(GetEventIdFor(2), messagePointers[1].Message.EventId);
 		}
 
 		[Test]
 		public void retried_messages_appear_first() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id1, 0));
-			var id2 = Guid.NewGuid();
-			buffer.AddRetry(BuildMessageAt(id2, 2));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddReadMessage(BuildMessageAt(0));
+			buffer.AddRetry(BuildMessageAt(2));
 			Assert.AreEqual(2, buffer.BufferCount);
 			Assert.AreEqual(1, buffer.RetryBufferCount);
 			Assert.AreEqual(1, buffer.ReadBufferCount);
 
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id2, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(2), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(1, buffer.BufferCount);
 			Assert.AreEqual(0, buffer.RetryBufferCount);
 			Assert.AreEqual(1, buffer.ReadBufferCount);
 
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id1, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(0), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 			Assert.AreEqual(0, buffer.BufferCount);
 			Assert.AreEqual(0, buffer.RetryBufferCount);
@@ -191,61 +181,66 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		[Test]
 		public void retried_messages_appear_in_version_order() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			var id1 = Guid.NewGuid();
-			buffer.AddReadMessage(BuildMessageAt(id1, 0));
-			var id2 = Guid.NewGuid();
-			var id3 = Guid.NewGuid();
-			var id4 = Guid.NewGuid();
-			var id5 = Guid.NewGuid();
-			buffer.AddRetry(BuildMessageAt(id2, 2));
-			buffer.AddRetry(BuildMessageAt(id3, 3));
-			buffer.AddRetry(BuildMessageAt(id4, 1));
-			buffer.AddRetry(BuildMessageAt(id5, 2));
+			var buffer = new StreamBuffer(10, 10, null, true);
+			var id2Retry1 = Guid.NewGuid();
+			var id2Retry2 = Guid.NewGuid();
+			buffer.AddReadMessage(BuildMessageAt(0));
+			buffer.AddRetry(BuildMessageAt(2, id2Retry1));
+			buffer.AddRetry(BuildMessageAt(3));
+			buffer.AddRetry(BuildMessageAt(1));
+			buffer.AddRetry(BuildMessageAt(2, id2Retry2));
 
 			var messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id4, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(1), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id2, messagePointer.Message.EventId);
+			Assert.AreEqual(id2Retry1, messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id5, messagePointer.Message.EventId);
+			Assert.AreEqual(id2Retry2, messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 
 			messagePointer = buffer.Scan().First();
-			Assert.AreEqual(id3, messagePointer.Message.EventId);
+			Assert.AreEqual(GetEventIdFor(3), messagePointer.Message.EventId);
 			messagePointer.MarkSent();
 		}
 
 		[Test]
 		public void lowest_retry_doesnt_assume_order() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 4));
-			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 2));
-			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 3));
-			Assert.AreEqual(2, buffer.GetLowestRetry());
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddRetry(BuildMessageAt(4));
+			buffer.AddRetry(BuildMessageAt(2));
+			buffer.AddRetry(BuildMessageAt(3));
+			Assert.AreEqual(2, buffer.GetLowestRetry().sequenceNumber);
 		}
 
 		[Test]
 		public void lowest_retry_ignores_replayed_events() {
-			var buffer = new StreamBuffer(10, 10, -1, true);
-			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 4));
-			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 2));
-			buffer.AddRetry(BuildMessageAt(Guid.NewGuid(), 3));
-			//add parked event
-			buffer.AddRetry(new OutstandingMessage(Guid.NewGuid(), null, Helper.BuildFakeEvent(Guid.NewGuid(), "foo", "$persistentsubscription-foo::group-parked", 1), 0));
-			Assert.AreEqual(2, buffer.GetLowestRetry());
+			var buffer = new StreamBuffer(10, 10, null, true);
+			buffer.AddRetry(BuildMessageAt(4));
+			buffer.AddRetry(BuildMessageAt(2));
+			buffer.AddRetry(BuildMessageAt(3));
+			//add parked events
+			buffer.AddRetry(OutstandingMessage.ForParkedEvent(Helper.BuildFakeEvent(Guid.NewGuid(), "foo", "$persistentsubscription-foo::group-parked", 1)));
+			Assert.AreEqual(2, buffer.GetLowestRetry().sequenceNumber);
 		}
 
-		private OutstandingMessage BuildMessageAt(Guid id, int version) {
-			return new OutstandingMessage(id, null, BuildEventAt(id, version), 0);
+		private OutstandingMessage BuildMessageAt(int position, Guid? forcedEventId = null) {
+			IPersistentSubscriptionStreamPosition previousEventPosition =
+				position > 0 ? Helper.GetStreamPositionFor(position - 1, _eventSource) : null;
+			var @event = BuildEventAt(position, forcedEventId);
+			return OutstandingMessage.ForPushedEvent(
+				OutstandingMessage.ForNewEvent(@event, Helper.GetStreamPositionFor(position, _eventSource)), position, previousEventPosition).message;
 		}
 
-		private ResolvedEvent BuildEventAt(Guid id, int version) {
-			return Helper.BuildFakeEvent(id, "foo", "bar", version);
+		private Guid GetEventIdFor(int position) {
+			return Helper.GetEventIdFor(position);
+		}
+
+		private ResolvedEvent BuildEventAt(int position, Guid? forcedEventId = null) {
+			return Helper.GetFakeEventFor(position, _eventSource, forcedEventId);
 		}
 	}
 }

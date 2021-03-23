@@ -451,18 +451,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				(args, message) => http.ResponseCodec.To(message),
 				(args, message) => {
 					int code;
-					var m = message as ClientMessage.CreatePersistentSubscriptionCompleted;
+					var m = message as ClientMessage.CreatePersistentSubscriptionToStreamCompleted;
 					if (m == null) throw new Exception("unexpected message " + message);
 					switch (m.Result) {
-						case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult
+						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult
 							.Success:
 							code = HttpStatusCode.Created;
 							break;
-						case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult
+						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult
 							.AlreadyExists:
 							code = HttpStatusCode.Conflict;
 							break;
-						case ClientMessage.CreatePersistentSubscriptionCompleted.CreatePersistentSubscriptionResult
+						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult
 							.AccessDenied:
 							code = HttpStatusCode.Unauthorized;
 							break;
@@ -481,13 +481,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var data = http.RequestCodec.From<SubscriptionConfigData>(s);
 					var config = ParseConfig(data);
 					if (!ValidateConfig(config, http)) return;
-					var message = new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(),
+					var message = new ClientMessage.CreatePersistentSubscriptionToStream(Guid.NewGuid(),
 						Guid.NewGuid(),
 						envelope,
 						stream,
 						groupname,
 						config.ResolveLinktos,
-						config.StartFrom,
+						#pragma warning disable 612
+						config.StartPosition != null ? long.Parse(config.StartPosition) : config.StartFrom,
+						#pragma warning restore 612
 						config.MessageTimeoutMilliseconds,
 						config.ExtraStatistics,
 						config.MaxRetryCount,
@@ -514,19 +516,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				(args, message) => http.ResponseCodec.To(message),
 				(args, message) => {
 					int code;
-					var m = message as ClientMessage.UpdatePersistentSubscriptionCompleted;
+					var m = message as ClientMessage.UpdatePersistentSubscriptionToStreamCompleted;
 					if (m == null) throw new Exception("unexpected message " + message);
 					switch (m.Result) {
-						case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult
+						case ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult
 							.Success:
 							code = HttpStatusCode.OK;
 							//TODO competing return uri to subscription
 							break;
-						case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult
+						case ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult
 							.DoesNotExist:
 							code = HttpStatusCode.NotFound;
 							break;
-						case ClientMessage.UpdatePersistentSubscriptionCompleted.UpdatePersistentSubscriptionResult
+						case ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult
 							.AccessDenied:
 							code = HttpStatusCode.Unauthorized;
 							break;
@@ -545,13 +547,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var data = http.RequestCodec.From<SubscriptionConfigData>(s);
 					var config = ParseConfig(data);
 					if (!ValidateConfig(config, http)) return;
-					var message = new ClientMessage.UpdatePersistentSubscription(Guid.NewGuid(),
+					var message = new ClientMessage.UpdatePersistentSubscriptionToStream(Guid.NewGuid(),
 						Guid.NewGuid(),
 						envelope,
 						stream,
 						groupname,
 						config.ResolveLinktos,
-						config.StartFrom,
+						#pragma warning disable 612
+						config.StartPosition != null ? long.Parse(config.StartPosition) : config.StartFrom,
+						#pragma warning restore 612
 						config.MessageTimeoutMilliseconds,
 						config.ExtraStatistics,
 						config.MaxRetryCount,
@@ -575,7 +579,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 			return new SubscriptionConfigData {
 				ResolveLinktos = config.ResolveLinktos,
+				#pragma warning disable 612
 				StartFrom = config.StartFrom,
+				#pragma warning restore 612
+				StartPosition = config.StartPosition,
 				MessageTimeoutMilliseconds = config.MessageTimeoutMilliseconds,
 				ExtraStatistics = config.ExtraStatistics,
 				MaxRetryCount = config.MaxRetryCount,
@@ -649,18 +656,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				(args, message) => http.ResponseCodec.To(message),
 				(args, message) => {
 					int code;
-					var m = message as ClientMessage.DeletePersistentSubscriptionCompleted;
+					var m = message as ClientMessage.DeletePersistentSubscriptionToStreamCompleted;
 					if (m == null) throw new Exception("unexpected message " + message);
 					switch (m.Result) {
-						case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult
+						case ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult
 							.Success:
 							code = HttpStatusCode.OK;
 							break;
-						case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult
+						case ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult
 							.DoesNotExist:
 							code = HttpStatusCode.NotFound;
 							break;
-						case ClientMessage.DeletePersistentSubscriptionCompleted.DeletePersistentSubscriptionResult
+						case ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult
 							.AccessDenied:
 							code = HttpStatusCode.Unauthorized;
 							break;
@@ -674,7 +681,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				});
 			var groupname = match.BoundVariables["subscription"];
 			var stream = match.BoundVariables["stream"];
-			var cmd = new ClientMessage.DeletePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(), envelope, stream,
+			var cmd = new ClientMessage.DeletePersistentSubscriptionToStream(Guid.NewGuid(), Guid.NewGuid(), envelope, stream,
 				groupname, http.User);
 			Publish(cmd);
 		}
@@ -848,7 +855,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (message.SubscriptionStats == null) yield break;
 
 			foreach (var stat in message.SubscriptionStats) {
-				string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+				string escapedStreamId = Uri.EscapeDataString(stat.EventSource);
 				string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
 				var info = new SubscriptionInfo {
 					Links = new List<RelLink>() {
@@ -861,14 +868,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 								string.Format("/subscriptions/{0}/{1}/replayParked", escapedStreamId,
 									escapedGroupName)), "replayParked")
 					},
-					EventStreamId = stat.EventStreamId,
+					EventStreamId = stat.EventSource,
 					GroupName = stat.GroupName,
 					Status = stat.Status,
 					AverageItemsPerSecond = stat.AveragePerSecond,
 					TotalItemsProcessed = stat.TotalItems,
 					CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
-					LastKnownEventNumber = stat.LastKnownMessage,
-					LastProcessedEventNumber = stat.LastProcessedEventNumber,
+					#pragma warning disable 612
+					LastKnownEventNumber = long.TryParse(stat.LastKnownMessage, out var lastKnownMsg) ? lastKnownMsg : 0,
+					#pragma warning restore 612
+					LastKnownEventPosition = stat.LastKnownMessage,
+					#pragma warning disable 612
+					LastProcessedEventNumber = long.TryParse(stat.LastProcessedEventPosition, out var lastProcessedPos) ? lastProcessedPos : 0,
+					#pragma warning restore 612
+					LastProcessedEventPosition = stat.LastProcessedEventPosition,
 					ReadBufferCount = stat.ReadBufferCount,
 					LiveBufferCount = stat.LiveBufferCount,
 					RetryBufferCount = stat.RetryBufferCount,
@@ -891,7 +904,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						PreferRoundRobin = stat.NamedConsumerStrategy == SystemConsumerStrategies.RoundRobin,
 						ReadBatchSize = stat.ReadBatchSize,
 						ResolveLinktos = stat.ResolveLinktos,
-						StartFrom = stat.StartFrom,
+						#pragma warning disable 612
+						StartFrom = long.TryParse(stat.StartFrom, out var startFrom) ? startFrom : 0,
+						#pragma warning restore 612
+						StartPosition = stat.StartFrom,
 						ExtraStatistics = stat.ExtraStatistics,
 						MaxSubscriberCount = stat.MaxSubscriberCount,
 					},
@@ -924,7 +940,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (message.SubscriptionStats == null) yield break;
 
 			foreach (var stat in message.SubscriptionStats) {
-				string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+				string escapedStreamId = Uri.EscapeDataString(stat.EventSource);
 				string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
 				var info = new SubscriptionSummary {
 					Links = new List<RelLink>() {
@@ -933,13 +949,19 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 								string.Format("/subscriptions/{0}/{1}/info", escapedStreamId, escapedGroupName)),
 							"detail"),
 					},
-					EventStreamId = stat.EventStreamId,
+					EventStreamId = stat.EventSource,
 					GroupName = stat.GroupName,
 					Status = stat.Status,
 					AverageItemsPerSecond = stat.AveragePerSecond,
 					TotalItemsProcessed = stat.TotalItems,
-					LastKnownEventNumber = stat.LastKnownMessage,
-					LastProcessedEventNumber = stat.LastProcessedEventNumber,
+					#pragma warning disable 612
+					LastKnownEventNumber = long.TryParse(stat.LastKnownMessage, out var lastKnownMsg) ? lastKnownMsg : 0,
+					#pragma warning restore 612
+					LastKnownEventPosition = stat.LastKnownMessage,
+					#pragma warning disable 612
+					LastProcessedEventNumber = long.TryParse(stat.LastProcessedEventPosition, out var lastEventPos) ? lastEventPos : 0,
+					#pragma warning restore 612
+					LastProcessedEventPosition = stat.LastProcessedEventPosition,
 					ParkedMessageUri = MakeUrl(manager,
 						string.Format(parkedMessageUriTemplate, escapedStreamId, escapedGroupName)),
 					GetMessagesUri = MakeUrl(manager,
@@ -957,7 +979,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		public class SubscriptionConfigData {
 			public bool ResolveLinktos { get; set; }
-			public long StartFrom { get; set; }
+			[Obsolete] public long StartFrom { get; set; }
+			public string StartPosition { get; set; }
 			public int MessageTimeoutMilliseconds { get; set; }
 			public bool ExtraStatistics { get; set; }
 			public int MaxRetryCount { get; set; }
@@ -972,7 +995,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string NamedConsumerStrategy { get; set; }
 
 			public SubscriptionConfigData() {
+				#pragma warning disable 612
 				StartFrom = 0;
+				#pragma warning restore 612
+				StartPosition = null;
 				MessageTimeoutMilliseconds = 10000;
 				MaxRetryCount = 10;
 				CheckPointAfterMilliseconds = 1000;
@@ -996,8 +1022,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string Status { get; set; }
 			public decimal AverageItemsPerSecond { get; set; }
 			public long TotalItemsProcessed { get; set; }
-			public long LastProcessedEventNumber { get; set; }
-			public long LastKnownEventNumber { get; set; }
+			[Obsolete] public long LastProcessedEventNumber { get; set; }
+			public string LastProcessedEventPosition { get; set; }
+			[Obsolete] public long LastKnownEventNumber { get; set; }
+			public string LastKnownEventPosition { get; set; }
 			public int ConnectionCount { get; set; }
 			public int TotalInFlightMessages { get; set; }
 		}
@@ -1013,8 +1041,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string GetMessagesUri { get; set; }
 			public long TotalItemsProcessed { get; set; }
 			public long CountSinceLastMeasurement { get; set; }
-			public long LastProcessedEventNumber { get; set; }
-			public long LastKnownEventNumber { get; set; }
+			[Obsolete] public long LastProcessedEventNumber { get; set; }
+			public string LastProcessedEventPosition { get; set; }
+			[Obsolete] public long LastKnownEventNumber { get; set; }
+			public string LastKnownEventPosition { get; set; }
 			public int ReadBufferCount { get; set; }
 			public long LiveBufferCount { get; set; }
 			public int RetryBufferCount { get; set; }

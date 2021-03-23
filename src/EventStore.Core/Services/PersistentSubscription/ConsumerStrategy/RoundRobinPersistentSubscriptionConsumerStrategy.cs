@@ -29,10 +29,10 @@ namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 			}
 		}
 
-		public virtual ConsumerPushResult PushMessageToClient(ResolvedEvent ev, int retryCount) {
+		public virtual ConsumerPushResult PushMessageToClient(OutstandingMessage message) {
 			for (int i = 0; i < Clients.Count; i++) {
 				var c = Clients.Dequeue();
-				var pushed = c.Push(ev, retryCount);
+				var pushed = c.Push(message);
 				Clients.Enqueue(c);
 				if (pushed) {
 					return ConsumerPushResult.Sent;

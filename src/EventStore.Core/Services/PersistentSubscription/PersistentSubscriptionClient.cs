@@ -90,20 +90,21 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return removedAny;
 		}
 
-		public bool Push(ResolvedEvent evnt, int retryCount) {
+		public bool Push(OutstandingMessage message) {
 			if (!CanSend()) {
 				return false;
 			}
 
+			var evnt = message.ResolvedEvent;
 			_allowedMessages--;
 			Interlocked.Increment(ref _totalItems);
 			if (_extraStatistics != null)
 				_extraStatistics.StartOperation(evnt.OriginalEvent.EventId);
 
 			_envelope.ReplyWith(
-				new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt, retryCount));
+				new ClientMessage.PersistentSubscriptionStreamEventAppeared(CorrelationId, evnt, message.RetryCount));
 			if (!_unconfirmedEvents.ContainsKey(evnt.OriginalEvent.EventId)) {
-				_unconfirmedEvents.Add(evnt.OriginalEvent.EventId, new OutstandingMessage(evnt.OriginalEvent.EventId, this, evnt, retryCount));
+				_unconfirmedEvents.Add(evnt.OriginalEvent.EventId, message);
 			}
 
 			return true;

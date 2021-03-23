@@ -149,10 +149,14 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.TransactionWrite>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionCommit>().ForwardTo(_outputBus)
 				.When<ClientMessage.DeleteStream>().ForwardTo(_outputBus)
-				.When<ClientMessage.CreatePersistentSubscription>().ForwardTo(_outputBus)
-				.When<ClientMessage.ConnectToPersistentSubscription>().ForwardTo(_outputBus)
-				.When<ClientMessage.UpdatePersistentSubscription>().ForwardTo(_outputBus)
-				.When<ClientMessage.DeletePersistentSubscription>().ForwardTo(_outputBus)
+				.When<ClientMessage.CreatePersistentSubscriptionToStream>().ForwardTo(_outputBus)
+				.When<ClientMessage.ConnectToPersistentSubscriptionToStream>().ForwardTo(_outputBus)
+				.When<ClientMessage.UpdatePersistentSubscriptionToStream>().ForwardTo(_outputBus)
+				.When<ClientMessage.DeletePersistentSubscriptionToStream>().ForwardTo(_outputBus)
+				.When<ClientMessage.CreatePersistentSubscriptionToAll>().ForwardTo(_outputBus)
+				.When<ClientMessage.ConnectToPersistentSubscriptionToAll>().ForwardTo(_outputBus)
+				.When<ClientMessage.UpdatePersistentSubscriptionToAll>().ForwardTo(_outputBus)
+				.When<ClientMessage.DeletePersistentSubscriptionToAll>().ForwardTo(_outputBus)
 				.When<SystemMessage.InitiateLeaderResignation>().Do(Handle)
 				.When<SystemMessage.BecomeResigningLeader>().Do(Handle)
 				.InState(VNodeState.ResigningLeader)
@@ -166,10 +170,14 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.TransactionWrite>().Ignore()
 				.When<ClientMessage.TransactionCommit>().Ignore()
 				.When<ClientMessage.DeleteStream>().Ignore()
-				.When<ClientMessage.CreatePersistentSubscription>().Ignore()
-				.When<ClientMessage.ConnectToPersistentSubscription>().Ignore()
-				.When<ClientMessage.UpdatePersistentSubscription>().Ignore()
-				.When<ClientMessage.DeletePersistentSubscription>().Ignore()
+				.When<ClientMessage.CreatePersistentSubscriptionToStream>().Ignore()
+				.When<ClientMessage.ConnectToPersistentSubscriptionToStream>().Ignore()
+				.When<ClientMessage.UpdatePersistentSubscriptionToStream>().Ignore()
+				.When<ClientMessage.DeletePersistentSubscriptionToStream>().Ignore()
+				.When<ClientMessage.CreatePersistentSubscriptionToAll>().Ignore()
+				.When<ClientMessage.ConnectToPersistentSubscriptionToAll>().Ignore()
+				.When<ClientMessage.UpdatePersistentSubscriptionToAll>().Ignore()
+				.When<ClientMessage.DeletePersistentSubscriptionToAll>().Ignore()
 				.When<SystemMessage.RequestQueueDrained>().Do(Handle)
 				.InAllStatesExcept(VNodeState.ResigningLeader)
 				.When<SystemMessage.RequestQueueDrained>().Ignore()
@@ -183,10 +191,14 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ReadAllEventsBackward>().Do(HandleAsNonLeader)
 				.When<ClientMessage.FilteredReadAllEventsForward>().Do(HandleAsNonLeader)
 				.When<ClientMessage.FilteredReadAllEventsBackward>().Do(HandleAsNonLeader)
-				.When<ClientMessage.CreatePersistentSubscription>().Do(HandleAsNonLeader)
-				.When<ClientMessage.ConnectToPersistentSubscription>().Do(HandleAsNonLeader)
-				.When<ClientMessage.UpdatePersistentSubscription>().Do(HandleAsNonLeader)
-				.When<ClientMessage.DeletePersistentSubscription>().Do(HandleAsNonLeader)
+				.When<ClientMessage.CreatePersistentSubscriptionToStream>().Do(HandleAsNonLeader)
+				.When<ClientMessage.ConnectToPersistentSubscriptionToStream>().Do(HandleAsNonLeader)
+				.When<ClientMessage.UpdatePersistentSubscriptionToStream>().Do(HandleAsNonLeader)
+				.When<ClientMessage.DeletePersistentSubscriptionToStream>().Do(HandleAsNonLeader)
+				.When<ClientMessage.CreatePersistentSubscriptionToAll>().Do(HandleAsNonLeader)
+				.When<ClientMessage.ConnectToPersistentSubscriptionToAll>().Do(HandleAsNonLeader)
+				.When<ClientMessage.UpdatePersistentSubscriptionToAll>().Do(HandleAsNonLeader)
+				.When<ClientMessage.DeletePersistentSubscriptionToAll>().Do(HandleAsNonLeader)
 				.InStates(VNodeState.ReadOnlyLeaderless, VNodeState.PreReadOnlyReplica, VNodeState.ReadOnlyReplica)
 				.When<ClientMessage.WriteEvents>().Do(HandleAsReadOnlyReplica)
 				.When<ClientMessage.TransactionStart>().Do(HandleAsReadOnlyReplica)
@@ -656,28 +668,56 @@ namespace EventStore.Core.Services.VNode {
 			}
 		}
 
-		private void HandleAsNonLeader(ClientMessage.CreatePersistentSubscription message) {
+		private void HandleAsNonLeader(ClientMessage.CreatePersistentSubscriptionToStream message) {
 			if (_leader == null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.ConnectToPersistentSubscription message) {
+		private void HandleAsNonLeader(ClientMessage.ConnectToPersistentSubscriptionToStream message) {
 			if (_leader == null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.UpdatePersistentSubscription message) {
+		private void HandleAsNonLeader(ClientMessage.UpdatePersistentSubscriptionToStream message) {
 			if (_leader == null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else
 				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
 		}
 
-		private void HandleAsNonLeader(ClientMessage.DeletePersistentSubscription message) {
+		private void HandleAsNonLeader(ClientMessage.DeletePersistentSubscriptionToStream message) {
+			if (_leader == null)
+				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+			else
+				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
+		}
+
+		private void HandleAsNonLeader(ClientMessage.CreatePersistentSubscriptionToAll message) {
+			if (_leader == null)
+				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+			else
+				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
+		}
+
+		private void HandleAsNonLeader(ClientMessage.ConnectToPersistentSubscriptionToAll message) {
+			if (_leader == null)
+				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+			else
+				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
+		}
+
+		private void HandleAsNonLeader(ClientMessage.UpdatePersistentSubscriptionToAll message) {
+			if (_leader == null)
+				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+			else
+				DenyRequestBecauseNotLeader(message.CorrelationId, message.Envelope);
+		}
+
+		private void HandleAsNonLeader(ClientMessage.DeletePersistentSubscriptionToAll message) {
 			if (_leader == null)
 				DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 			else

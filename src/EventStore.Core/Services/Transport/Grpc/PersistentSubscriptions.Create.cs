@@ -2,11 +2,15 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
+using EventStore.Core.Data;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
-using static EventStore.Core.Messages.ClientMessage.CreatePersistentSubscriptionCompleted;
+using static EventStore.Core.Messages.ClientMessage.CreatePersistentSubscriptionToStreamCompleted;
+using static EventStore.Core.Messages.ClientMessage.CreatePersistentSubscriptionToAllCompleted;
+using StreamOptionOneofCase = EventStore.Client.PersistentSubscriptions.CreateReq.Types.Options.StreamOptionOneofCase;
+using RevisionOptionOneofCase = EventStore.Client.PersistentSubscriptions.CreateReq.Types.StreamOptions.RevisionOptionOneofCase;
+using AllOptionOneofCase = EventStore.Client.PersistentSubscriptions.CreateReq.Types.AllOptions.AllOptionOneofCase;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class PersistentSubscriptions {
@@ -23,36 +27,115 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				CreateOperation, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
-			_publisher.Publish(new ClientMessage.CreatePersistentSubscription(
-				correlationId,
-				correlationId,
-				new CallbackEnvelope(HandleCreatePersistentSubscriptionCompleted),
-				request.Options.StreamIdentifier,
-				request.Options.GroupName,
-				settings.ResolveLinks,
-				new StreamRevision(settings.Revision).ToInt64(),
-				settings.MessageTimeoutCase switch {
-					CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutMs => settings.MessageTimeoutMs,
-					CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutTicks => (int)TimeSpan
-						.FromTicks(settings.MessageTimeoutTicks).TotalMilliseconds,
-					_ => 0
-				},
-				settings.ExtraStatistics,
-				settings.MaxRetryCount,
-				settings.HistoryBufferSize,
-				settings.LiveBufferSize,
-				settings.ReadBatchSize,
-				settings.CheckpointAfterCase switch {
-					CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterMs => settings.CheckpointAfterMs,
-					CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterTicks => (int)TimeSpan
-						.FromTicks(settings.CheckpointAfterTicks).TotalMilliseconds,
-					_ => 0
-				},
-				settings.MinCheckpointCount,
-				settings.MaxCheckpointCount,
-				settings.MaxSubscriberCount,
-				settings.NamedConsumerStrategy.ToString(),
-				user));
+
+			string streamId = null;
+
+			switch (request.Options.StreamOptionCase)
+			{
+				case StreamOptionOneofCase.Stream:
+				case StreamOptionOneofCase.None: /*for backwards compatibility*/
+				{
+					StreamRevision startRevision;
+
+					if (request.Options.StreamOptionCase == StreamOptionOneofCase.Stream) {
+						streamId = request.Options.Stream.StreamIdentifier;
+						startRevision = request.Options.Stream.RevisionOptionCase switch {
+							RevisionOptionOneofCase.Revision => new StreamRevision(request.Options.Stream.Revision),
+							RevisionOptionOneofCase.Start => StreamRevision.Start,
+							RevisionOptionOneofCase.End => StreamRevision.End,
+							_ => throw new InvalidOperationException()
+						};
+					} else { /*for backwards compatibility*/
+						#pragma warning disable 612
+						streamId = request.Options.StreamIdentifier;
+						startRevision = new StreamRevision(request.Options.Settings.Revision);
+						#pragma warning restore 612
+					}
+					_publisher.Publish(
+						new ClientMessage.CreatePersistentSubscriptionToStream(
+							correlationId,
+							correlationId,
+							new CallbackEnvelope(HandleCreatePersistentSubscriptionCompleted),
+							streamId,
+							request.Options.GroupName,
+							settings.ResolveLinks,
+							startRevision.ToInt64(),
+							settings.MessageTimeoutCase switch {
+								CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutMs => settings
+									.MessageTimeoutMs,
+								CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutTicks => (int)TimeSpan
+									.FromTicks(settings.MessageTimeoutTicks).TotalMilliseconds,
+								_ => 0
+							},
+							settings.ExtraStatistics,
+							settings.MaxRetryCount,
+							settings.HistoryBufferSize,
+							settings.LiveBufferSize,
+							settings.ReadBatchSize,
+							settings.CheckpointAfterCase switch {
+								CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterMs => settings
+									.CheckpointAfterMs,
+								CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterTicks => (int)TimeSpan
+									.FromTicks(settings.CheckpointAfterTicks).TotalMilliseconds,
+								_ => 0
+							},
+							settings.MinCheckpointCount,
+							settings.MaxCheckpointCount,
+							settings.MaxSubscriberCount,
+							settings.NamedConsumerStrategy.ToString(),
+							user));
+					break;
+				}
+				case StreamOptionOneofCase.All:
+					var startPosition = request.Options.All.AllOptionCase switch {
+						AllOptionOneofCase.Position => new Position(
+							request.Options.All.Position.CommitPosition,
+							request.Options.All.Position.PreparePosition),
+						AllOptionOneofCase.Start => Position.Start,
+						AllOptionOneofCase.End => Position.End,
+						_ => throw new InvalidOperationException()
+					};
+
+					streamId = SystemStreams.AllStream;
+					_publisher.Publish(
+						new ClientMessage.CreatePersistentSubscriptionToAll(
+							correlationId,
+							correlationId,
+							new CallbackEnvelope(HandleCreatePersistentSubscriptionCompleted),
+							request.Options.GroupName,
+							settings.ResolveLinks,
+							new TFPos(
+								startPosition.ToInt64().commitPosition,
+								startPosition.ToInt64().preparePosition
+							),
+							settings.MessageTimeoutCase switch {
+								CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutMs => settings
+									.MessageTimeoutMs,
+								CreateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutTicks => (int)TimeSpan
+									.FromTicks(settings.MessageTimeoutTicks).TotalMilliseconds,
+								_ => 0
+							},
+							settings.ExtraStatistics,
+							settings.MaxRetryCount,
+							settings.HistoryBufferSize,
+							settings.LiveBufferSize,
+							settings.ReadBatchSize,
+							settings.CheckpointAfterCase switch {
+								CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterMs => settings
+									.CheckpointAfterMs,
+								CreateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterTicks => (int)TimeSpan
+									.FromTicks(settings.CheckpointAfterTicks).TotalMilliseconds,
+								_ => 0
+							},
+							settings.MinCheckpointCount,
+							settings.MaxCheckpointCount,
+							settings.MaxSubscriberCount,
+							settings.NamedConsumerStrategy.ToString(),
+							user));
+					break;
+				default:
+					throw new InvalidOperationException();
+			}
 
 			return await createPersistentSubscriptionSource.Task.ConfigureAwait(false);
 
@@ -62,28 +145,62 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return;
 				}
 
-				if (!(message is ClientMessage.CreatePersistentSubscriptionCompleted completed)) {
-					createPersistentSubscriptionSource.TrySetException(
-						RpcExceptions.UnknownMessage<ClientMessage.CreatePersistentSubscriptionCompleted>(message));
-					return;
-				}
+				if (streamId != SystemStreams.AllStream) {
+					if (message is ClientMessage.CreatePersistentSubscriptionToStreamCompleted completed) {
+						switch (completed.Result) {
+							case CreatePersistentSubscriptionToStreamResult.Success:
+								createPersistentSubscriptionSource.TrySetResult(new CreateResp());
+								return;
+							case CreatePersistentSubscriptionToStreamResult.Fail:
+								createPersistentSubscriptionSource.TrySetException(
+									RpcExceptions.PersistentSubscriptionFailed(streamId, request.Options.GroupName,
+										completed.Reason));
+								return;
+							case CreatePersistentSubscriptionToStreamResult.AlreadyExists:
+								createPersistentSubscriptionSource.TrySetException(
+									RpcExceptions.PersistentSubscriptionExists(streamId, request.Options.GroupName));
+								return;
+							case CreatePersistentSubscriptionToStreamResult.AccessDenied:
+								createPersistentSubscriptionSource.TrySetException(RpcExceptions.AccessDenied());
+								return;
+							default:
+								createPersistentSubscriptionSource.TrySetException(
+									RpcExceptions.UnknownError(completed.Result));
+								return;
+						}
+					}
 
-				switch (completed.Result) {
-					case CreatePersistentSubscriptionResult.Success:
-						createPersistentSubscriptionSource.TrySetResult(new CreateResp());
-						return;
-					case CreatePersistentSubscriptionResult.Fail:
-						createPersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionFailed(request.Options.StreamIdentifier, request.Options.GroupName, completed.Reason));
-						return;
-					case CreatePersistentSubscriptionResult.AlreadyExists:
-						createPersistentSubscriptionSource.TrySetException(RpcExceptions.PersistentSubscriptionExists(request.Options.StreamIdentifier, request.Options.GroupName));
-						return;
-					case CreatePersistentSubscriptionResult.AccessDenied:
-						createPersistentSubscriptionSource.TrySetException(RpcExceptions.AccessDenied());
-						return;
-					default:
-						createPersistentSubscriptionSource.TrySetException(RpcExceptions.UnknownError(completed.Result));
-						return;
+					createPersistentSubscriptionSource.TrySetException(
+						RpcExceptions.UnknownMessage<ClientMessage.CreatePersistentSubscriptionToStreamCompleted>(
+							message));
+				} else {
+					if (message is ClientMessage.CreatePersistentSubscriptionToAllCompleted completedAll) {
+						switch (completedAll.Result) {
+							case CreatePersistentSubscriptionToAllResult.Success:
+								createPersistentSubscriptionSource.TrySetResult(new CreateResp());
+								return;
+							case CreatePersistentSubscriptionToAllResult.Fail:
+								createPersistentSubscriptionSource.TrySetException(
+									RpcExceptions.PersistentSubscriptionFailed(streamId, request.Options.GroupName,
+										completedAll.Reason));
+								return;
+							case CreatePersistentSubscriptionToAllResult.AlreadyExists:
+								createPersistentSubscriptionSource.TrySetException(
+									RpcExceptions.PersistentSubscriptionExists(streamId, request.Options.GroupName));
+								return;
+							case CreatePersistentSubscriptionToAllResult.AccessDenied:
+								createPersistentSubscriptionSource.TrySetException(RpcExceptions.AccessDenied());
+								return;
+							default:
+								createPersistentSubscriptionSource.TrySetException(
+									RpcExceptions.UnknownError(completedAll.Result));
+								return;
+						}
+					}
+
+					createPersistentSubscriptionSource.TrySetException(
+						RpcExceptions.UnknownMessage<ClientMessage.CreatePersistentSubscriptionToAllCompleted>(
+							message));
 				}
 			}
 		}

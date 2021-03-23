@@ -5,9 +5,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionParams {
 		private readonly bool _resolveLinkTos;
 		private readonly string _subscriptionId;
-		private readonly string _eventStreamId;
+		private readonly IPersistentSubscriptionEventSource _eventSource;
 		private readonly string _groupName;
-		private readonly long _startFrom;
+		private readonly IPersistentSubscriptionStreamPosition _startFrom;
 		private readonly bool _extraStatistics;
 		private readonly TimeSpan _messageTimeout;
 		private readonly TimeSpan _checkPointAfter;
@@ -25,9 +25,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private readonly IPersistentSubscriptionCheckpointWriter _checkpointWriter;
 		private IPersistentSubscriptionMessageParker _messageParker;
 
-		public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId, string eventStreamId,
+		public PersistentSubscriptionParams(bool resolveLinkTos, string subscriptionId,
+			IPersistentSubscriptionEventSource eventSource,
 			string groupName,
-			long startFrom, bool extraStatistics, TimeSpan messageTimeout,
+			IPersistentSubscriptionStreamPosition startFrom,
+			bool extraStatistics, TimeSpan messageTimeout,
 			int maxRetryCount, int liveBufferSize, int bufferSize, int readBatchSize,
 			TimeSpan checkPointAfter, int minCheckPointCount,
 			int maxCheckPointCount, int maxSubscriberCount,
@@ -38,7 +40,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			IPersistentSubscriptionMessageParker messageParker) {
 			_resolveLinkTos = resolveLinkTos;
 			_subscriptionId = subscriptionId;
-			_eventStreamId = eventStreamId;
+			_eventSource = eventSource;
 			_groupName = groupName;
 			_startFrom = startFrom;
 			_extraStatistics = extraStatistics;
@@ -66,15 +68,15 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			get { return _subscriptionId; }
 		}
 
-		public string EventStreamId {
-			get { return _eventStreamId; }
+		public IPersistentSubscriptionEventSource EventSource {
+			get { return _eventSource; }
 		}
 
 		public string GroupName {
 			get { return _groupName; }
 		}
 
-		public long StartFrom {
+		public IPersistentSubscriptionStreamPosition StartFrom {
 			get { return _startFrom; }
 		}
 
@@ -139,7 +141,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public string ParkedMessageStream {
-			get { return "$persistentsubscription-" + _eventStreamId + "::" + _groupName + "-parked"; }
+			get { return "$persistentsubscription-" + _eventSource + "::" + _groupName + "-parked"; }
 		}
 	}
 }
