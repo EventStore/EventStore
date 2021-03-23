@@ -57,7 +57,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public bool ResolveLinkTos;
 		public bool ExtraStatistics;
 		public int MessageTimeout;
-		public long StartFrom;
+		[Obsolete] public long StartFrom;
+		public string StartPosition;
 		public int LiveBufferSize;
 		public int HistoryBufferSize;
 		public int MaxRetryCount;

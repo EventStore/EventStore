@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class StreamBuffer {
 		private readonly int _maxBufferSize;
-		private readonly int _initialSequence;
+		private readonly IPersistentSubscriptionStreamPosition _initialSequence;
 		private readonly LinkedList<OutstandingMessage> _retry = new LinkedList<OutstandingMessage>();
 		private readonly LinkedList<OutstandingMessage> _buffer = new LinkedList<OutstandingMessage>();
 
@@ -34,7 +36,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return _maxBufferSize - BufferCount > count;
 		}
 
-		public StreamBuffer(int maxBufferSize, int maxLiveBufferSize, int initialSequence, bool startInHistory) {
+		public StreamBuffer(int maxBufferSize, int maxLiveBufferSize, IPersistentSubscriptionStreamPosition initialSequence, bool startInHistory) {
 			Live = !startInHistory;
 			_initialSequence = initialSequence;
 			_maxBufferSize = maxBufferSize;
@@ -49,22 +51,30 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Live = true;
 		}
 
-		private void DrainLiveTo(long eventNumber) {
-			while (_liveBuffer.Count > 0 && _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber < eventNumber) {
+		private void DrainLiveTo(IPersistentSubscriptionStreamPosition eventPosition) {
+			while (_liveBuffer.Count > 0 && _liveBuffer.Peek().EventPosition.CompareTo(eventPosition) < 0) {
 				_liveBuffer.Dequeue();
 			}
 		}
 
 		public void AddRetry(OutstandingMessage ev) {
-			// Insert the retried event before any events with higher version number.
+			//add parked messages at the end of the list
+			if (ev.IsReplayedEvent) {
+				_retry.AddLast(ev);
+				return;
+			}
 
-			var retryEventNumber = (ev.ResolvedEvent.Event ?? ev.ResolvedEvent.Link).EventNumber;
+			//if it's not a parked message, it should have an event position
+			Debug.Assert(ev.EventPosition != null);
+
+			// Insert the retried event before any events with higher version number.
+			var retryEventPosition = ev.EventPosition;
 
 			var currentNode = _retry.First;
 
 			while (currentNode != null) {
-				var resolvedEvent = currentNode.Value.ResolvedEvent.Event ?? currentNode.Value.ResolvedEvent.Link;
-				if (retryEventNumber < resolvedEvent.EventNumber) {
+				var currentEventPosition = currentNode.Value.EventPosition;
+				if (retryEventPosition.CompareTo(currentEventPosition) < 0) {
 					_retry.AddBefore(currentNode, ev);
 					return;
 				}
@@ -88,20 +98,23 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void AddReadMessage(OutstandingMessage ev) {
 			if (Live) return;
-			if (ev.ResolvedEvent.OriginalEventNumber <= _initialSequence)
+			if (_initialSequence != null &&
+			    ev.EventPosition.CompareTo(_initialSequence) <= 0)
 				return;
-			if (ev.ResolvedEvent.OriginalEventNumber < TryPeekLive()) {
+
+			var livePosition = TryPeekLive();
+			if (livePosition == null || ev.EventPosition.CompareTo(livePosition) < 0) {
 				_buffer.AddLast(ev);
-			} else if (ev.ResolvedEvent.OriginalEventNumber > TryPeekLive()) {
-				DrainLiveTo(ev.ResolvedEvent.OriginalEventNumber);
+			} else if (livePosition.CompareTo(ev.EventPosition) < 0) {
+				DrainLiveTo(ev.EventPosition);
 				SwitchToLive();
 			} else {
 				SwitchToLive();
 			}
 		}
 
-		private long TryPeekLive() {
-			return _liveBuffer.Count == 0 ? long.MaxValue : _liveBuffer.Peek().ResolvedEvent.OriginalEventNumber;
+		private IPersistentSubscriptionStreamPosition TryPeekLive() {
+			return _liveBuffer.Count == 0 ? null : _liveBuffer.Peek().EventPosition;
 		}
 
 		public IEnumerable<OutstandingMessagePointer> Scan() {
@@ -133,11 +146,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return false;
 		}
 
-		public long GetLowestRetry() {
-			long result = long.MaxValue;
-			foreach(var x in _retry){
-				if(!x.IsReplayedEvent)
-					result = Math.Min(result, x.ResolvedEvent.OriginalEventNumber);
+		public (OutstandingMessage? message, long sequenceNumber) GetLowestRetry() {
+			(OutstandingMessage? message, long sequenceNumber) result = (null, long.MaxValue);
+			foreach(var x in _retry) {
+				if (x.IsReplayedEvent || !x.EventSequenceNumber.HasValue) continue;
+				if (x.EventSequenceNumber.Value < result.sequenceNumber) {
+					result = (x, x.EventSequenceNumber.Value);
+				}
 			}
 			return result;
 		}

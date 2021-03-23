@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
+using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Services.PersistentSubscription {
@@ -41,7 +43,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				_byTime.Remove(new Tuple<DateTime, RetryableMessage>(m.Item1,
 					new RetryableMessage(m.Item2.EventId, m.Item1)));
 				_outstandingRequests.Remove(messageId);
-				_bySequences.Remove(m.Item2.ResolvedEvent.OriginalEventNumber);
+				if (m.Item2.EventSequenceNumber.HasValue) {
+					_bySequences.Remove(m.Item2.EventSequenceNumber.Value);
+				}
 			}
 		}
 
@@ -53,7 +57,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (_outstandingRequests.ContainsKey(message.EventId))
 				return StartMessageResult.SkippedDuplicate;
 			_outstandingRequests[message.EventId] = new Tuple<DateTime, OutstandingMessage>(expires, message);
-			_bySequences.Add(message.ResolvedEvent.OriginalEventNumber, message);
+			Debug.Assert(message.IsReplayedEvent || message.EventSequenceNumber.HasValue);
+			if (message.EventSequenceNumber.HasValue) {
+				_bySequences.Add(message.EventSequenceNumber.Value, message);
+			}
 			_byTime.Add(new Tuple<DateTime, RetryableMessage>(expires, new RetryableMessage(message.EventId, expires)),
 				false);
 
@@ -72,7 +79,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				if (_outstandingRequests.TryGetValue(item.Item2.MessageId, out m)) {
 					yield return _outstandingRequests[item.Item2.MessageId].Item2;
 					_outstandingRequests.Remove(item.Item2.MessageId);
-					_bySequences.Remove(m.Item2.ResolvedEvent.OriginalEventNumber);
+					if (m.Item2.EventSequenceNumber.HasValue) {
+						_bySequences.Remove(m.Item2.EventSequenceNumber.Value);
+					}
 				}
 			}
 		}
@@ -81,13 +90,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return _byTime.Keys;
 		}
 
-		public long GetLowestPosition() {
-			var result = long.MaxValue;
-			foreach(var x in _bySequences){
-				if(!x.Value.IsReplayedEvent)
-					return x.Value.ResolvedEvent.OriginalEventNumber;
+		public (OutstandingMessage? message, long sequenceNumber) GetLowestPosition() {
+			foreach(var x in _bySequences) {
+				if (!x.Value.IsReplayedEvent)
+					return (x.Value, x.Key);
 			}
-			return result;
+			return (null, long.MaxValue);
 		}
 
 		public bool GetMessageById(Guid id, out OutstandingMessage outstandingMessage) {

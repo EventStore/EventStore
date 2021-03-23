@@ -44,7 +44,7 @@
 			_state.DisconnectNode(nodeId);
 		}
 
-		public ConsumerPushResult PushMessageToClient(ResolvedEvent ev, int retryCount) {
+		public ConsumerPushResult PushMessageToClient(OutstandingMessage message) {
 			if (_state == null) {
 				return ConsumerPushResult.NoMoreCapacity;
 			}
@@ -54,13 +54,13 @@
 			}
 
 
-			uint bucket = GetAssignmentId(ev);
+			uint bucket = GetAssignmentId(message.ResolvedEvent);
 
 			if (_state.Assignments[bucket].State != BucketAssignment.BucketState.Assigned) {
 				_state.AssignBucket(bucket);
 			}
 
-			if (!_state.Assignments[bucket].Node.Client.Push(ev, retryCount)) {
+			if (!_state.Assignments[bucket].Node.Client.Push(message)) {
 				return ConsumerPushResult.Skipped;
 			}
 
