@@ -3,7 +3,6 @@ using System.Net;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Internal;
-using EventStore.ClientAPI.Embedded;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
 
@@ -43,29 +42,6 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 				settings.DisableTls();
 			}
 
-			return settings;
-		}
-	}
-
-	public static class EmbeddedTestConnection {
-		private static int _nextConnId = -1;
-
-		public static IEventStoreConnection To(MiniNode miniNode, UserCredentials credentials = null) {
-			return EmbeddedEventStoreConnection.Create(miniNode.Node, Settings(credentials),
-				string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
-		}
-
-		private static ConnectionSettingsBuilder Settings(UserCredentials credentials = null) {
-			var settings = ConnectionSettings.Create()
-				.SetDefaultUserCredentials(credentials)
-				.UseCustomLogger(ClientApiLoggerBridge.Default)
-				.EnableVerboseLogging()
-				.LimitReconnectionsTo(10)
-				.LimitAttemptsForOperationTo(1)
-				.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
-				.SetReconnectionDelayTo(TimeSpan.Zero)
-				.FailOnNoServerResponse()
-				.SetOperationTimeoutTo(TimeSpan.FromDays(1));
 			return settings;
 		}
 	}

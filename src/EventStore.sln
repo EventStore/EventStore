@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Projections.Core
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClusterNode.Web", "EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj", "{401862D3-E12F-470C-9137-B9DE10591AC6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI", "EventStore.ClientAPI\EventStore.ClientAPI.csproj", "{CE1876AA-FC14-451F-B52B-492260C59D7B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common", "EventStore.Common\EventStore.Common.csproj", "{3F955137-DC23-4AC1-B7F8-6D0857234CCB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Core.Tests", "EventStore.Core.Tests\EventStore.Core.Tests.csproj", "{F0E1719C-88FF-4E44-BCBE-8B59ADA29134}"
@@ -29,8 +27,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Transport.Tcp", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClusterNode", "EventStore.ClusterNode\EventStore.ClusterNode.csproj", "{FDFCE363-84A4-4A6F-B97C-D9F57D8D124F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.Embedded", "EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj", "{C1239448-07E3-4E26-A8B2-AF9687E99E7C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Native", "EventStore.Native\EventStore.Native.csproj", "{03FA0763-6D41-44C0-911D-662AE2B10084}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A19631BB-65CF-4726-8732-4EFD977E9B32}"
@@ -44,12 +40,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common.Utils", "EventStore.Common.Utils\EventStore.Common.Utils.csproj", "{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.Tests", "EventStore.ClientAPI.Tests\EventStore.ClientAPI.Tests.csproj", "{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.Embedded.Tests", "EventStore.ClientAPI.Embedded.Tests\EventStore.ClientAPI.Embedded.Tests.csproj", "{3A5068D9-7510-407D-91F4-D53B32F0C57E}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.ClientAPI.v5.Tests", "EventStore.ClientAPI.v5.Tests\EventStore.ClientAPI.v5.Tests.csproj", "{8B3FDD14-C959-4859-80C4-B157D1D94969}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.NETCore.Compatibility", "EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj", "{066B6514-86A0-41D8-BB6A-D9B05141D026}"
 EndProject
@@ -75,10 +65,6 @@ Global
 		{401862D3-E12F-470C-9137-B9DE10591AC6}.Debug|x64.Build.0 = Debug|x64
 		{401862D3-E12F-470C-9137-B9DE10591AC6}.Release|x64.ActiveCfg = Release|x64
 		{401862D3-E12F-470C-9137-B9DE10591AC6}.Release|x64.Build.0 = Release|x64
-		{CE1876AA-FC14-451F-B52B-492260C59D7B}.Debug|x64.ActiveCfg = Debug|x64
-		{CE1876AA-FC14-451F-B52B-492260C59D7B}.Debug|x64.Build.0 = Debug|x64
-		{CE1876AA-FC14-451F-B52B-492260C59D7B}.Release|x64.ActiveCfg = Release|x64
-		{CE1876AA-FC14-451F-B52B-492260C59D7B}.Release|x64.Build.0 = Release|x64
 		{3F955137-DC23-4AC1-B7F8-6D0857234CCB}.Debug|x64.ActiveCfg = Debug|x64
 		{3F955137-DC23-4AC1-B7F8-6D0857234CCB}.Debug|x64.Build.0 = Debug|x64
 		{3F955137-DC23-4AC1-B7F8-6D0857234CCB}.Release|x64.ActiveCfg = Release|x64
@@ -123,18 +109,6 @@ Global
 		{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}.Debug|x64.Build.0 = Debug|x64
 		{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}.Release|x64.ActiveCfg = Release|x64
 		{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}.Release|x64.Build.0 = Release|x64
-		{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}.Debug|x64.ActiveCfg = Debug|x64
-		{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}.Debug|x64.Build.0 = Debug|x64
-		{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}.Release|x64.ActiveCfg = Release|x64
-		{6E88832E-77B3-4B36-AF17-BFA608B6C3BF}.Release|x64.Build.0 = Release|x64
-		{3A5068D9-7510-407D-91F4-D53B32F0C57E}.Debug|x64.ActiveCfg = Debug|x64
-		{3A5068D9-7510-407D-91F4-D53B32F0C57E}.Debug|x64.Build.0 = Debug|x64
-		{3A5068D9-7510-407D-91F4-D53B32F0C57E}.Release|x64.ActiveCfg = Release|x64
-		{3A5068D9-7510-407D-91F4-D53B32F0C57E}.Release|x64.Build.0 = Release|x64
-		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Debug|x64.ActiveCfg = Debug|x64
-		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Debug|x64.Build.0 = Debug|x64
-		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Release|x64.ActiveCfg = Release|x64
-		{8B3FDD14-C959-4859-80C4-B157D1D94969}.Release|x64.Build.0 = Release|x64
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Debug|x64.Build.0 = Debug|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Release|x64.ActiveCfg = Release|Any CPU
