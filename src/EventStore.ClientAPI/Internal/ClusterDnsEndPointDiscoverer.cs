@@ -102,7 +102,7 @@ namespace EventStore.ClientAPI.Internal {
 				if (gossip == null || gossip.Members == null || gossip.Members.Length == 0)
 					continue;
 
-				var bestNode = TryDetermineBestNode(gossip.Members, _nodePreference);
+				var bestNode = TryDetermineBestNode(gossip.Members, _nodePreference, gossipCandidates[i].GetHostHeader());
 				if (bestNode != null) {
 					_oldGossip = gossip.Members;
 					return bestNode;
@@ -114,11 +114,38 @@ namespace EventStore.ClientAPI.Internal {
 
 		private IGossipSeed[] GetGossipCandidatesFromConfig() {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
+			
+			IGossipSeed[] endpoints;
 
-			// Safe in this case.
-			IGossipSeed[] endpoints = _gossipSeeds;
+			if ((_gossipSeeds?.Length ?? 0) != 0) {
+				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
+					var tmp = new List<IGossipSeed>();
+					for (var i = 0; i < _gossipSeeds.Length; i++) {
+						var current = _gossipSeeds[i];
+						
+						// We try v20 first
+						tmp.Add(new GossipSeed(current.EndPoint, current.HostHeader, seedOverTls: true, v20Compatibility: true));
+						// Then v5
+						tmp.Add(current);
+					}
 
-			if ((endpoints?.Length ?? 0) == 0) {
+					endpoints = tmp.ToArray();
+				} else if (_compatibilityMode.IsVersion5CompatibilityModeEnabled()) {
+					// Safe in this case.
+					endpoints = _gossipSeeds;
+					RandomShuffle(endpoints, 0, endpoints.Length - 1);
+				} else {
+					// Convert to v20.
+					endpoints = new IGossipSeed[_gossipSeeds.Length];
+					for (var i = 0; i < _gossipSeeds.Length; i++) {
+						var current = _gossipSeeds[i];
+						endpoints[i] = new GossipSeed(current.EndPoint, current.HostHeader, true,
+							v20Compatibility: true);
+					}
+					
+					RandomShuffle(endpoints, 0, endpoints.Length - 1);
+				}
+			} else {
 				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
 					endpoints = new[] {
 						new ClusterDnsSeed(_clusterDns, _managerExternalHttpPort, seedOverTls: true, v20Compatibility: true), // Try HTTPS gossip first (v20 defaults)
@@ -134,9 +161,8 @@ namespace EventStore.ClientAPI.Internal {
 						new ClusterDnsSeed(_clusterDns, _managerExternalHttpPort, seedOverTls: true, v20Compatibility: true)
 					};
 				}
-			} else {
-				RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			}
+			
 			return endpoints;
 		}
 
@@ -237,7 +263,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private NodeEndPoints? TryDetermineBestNode(IEnumerable<ClusterMessages.MemberInfoDto> members,
-			NodePreference nodePreference) {
+			NodePreference nodePreference, string host) {
 			var notAllowedStates = new[] {
 				ClusterMessages.VNodeState.Manager,
 				ClusterMessages.VNodeState.ShuttingDown,
@@ -285,7 +311,7 @@ namespace EventStore.ClientAPI.Internal {
 				: null;
 			_log.Info("Discovering: found best choice [{0},{1}] ({2}).", normTcp,
 				secTcp == null ? "n/a" : secTcp.ToString(), node.State);
-			return new NodeEndPoints(normTcp, secTcp);
+			return new NodeEndPoints(normTcp, secTcp, host);
 		}
 
 		private bool IsReadOnlyReplicaState(ClusterMessages.VNodeState state) {

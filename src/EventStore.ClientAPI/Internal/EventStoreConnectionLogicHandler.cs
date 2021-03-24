@@ -41,6 +41,7 @@ namespace EventStore.ClientAPI.Internal {
 
 		private int _packageNumber;
 		private TcpPackageConnection _connection;
+		private ICompatibilityMode _compatibilityMode;
 
 		public EventStoreConnectionLogicHandler(IEventStoreConnection esConnection, ConnectionSettings settings) {
 			Ensure.NotNull(esConnection, "esConnection");
@@ -48,6 +49,7 @@ namespace EventStore.ClientAPI.Internal {
 
 			_esConnection = esConnection;
 			_settings = settings;
+			_compatibilityMode = CompatibilityMode.Create(_settings.CompatibilityMode);
 
 			_operations = new OperationsManager(_esConnection.ConnectionName, settings);
 			_subscriptions = new SubscriptionsManager(_esConnection.ConnectionName, settings);
@@ -127,7 +129,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private void EstablishTcpConnection(NodeEndPoints endPoints) {
-			var endPoint = _settings.UseSslConnection
+			var endPoint = _compatibilityMode.IsAutoCompatibilityModeEnabled() || _settings.UseSslConnection
 				? endPoints.SecureTcpEndPoint ?? endPoints.TcpEndPoint
 				: endPoints.TcpEndPoint;
 			if (endPoint == null) {
@@ -140,19 +142,36 @@ namespace EventStore.ClientAPI.Internal {
 			if (_state != ConnectionState.Connecting) return;
 			if (_connectingPhase != ConnectingPhase.EndPointDiscovery) return;
 
+			var targetHost = string.Empty;
+
+			if (!string.IsNullOrEmpty(_settings.TargetHost)) {
+				targetHost = _settings.TargetHost;
+			} else if (_compatibilityMode.IsAutoCompatibilityModeEnabled() && !string.IsNullOrEmpty(endPoints.Host)) {
+				targetHost = endPoints.Host;
+			}
+
 			_connectingPhase = ConnectingPhase.ConnectionEstablishing;
 			_connection = new TcpPackageConnection(
 				_settings.Log,
 				endPoint,
 				Guid.NewGuid(),
-				_settings.UseSslConnection,
-				_settings.TargetHost,
+				(_compatibilityMode.IsAutoCompatibilityModeEnabled() && endPoints.SecureTcpEndPoint != null) || _settings.UseSslConnection,
+				targetHost,
 				_settings.ValidateServer,
 				_settings.ClientConnectionTimeout,
 				(connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
 				(connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
 				connection => EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
 				(connection, error) => EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
+
+			// If possible to end in a situation where the client is in a stalled state if for example an secure 
+			// connection is misconfigured. Currently, if that condition is true, it means that the user asked for 
+			// a secured connection but didn't provide a valid targetHost, whether it was null or empty.
+			if (_connection.ConnectionId == Guid.Empty) {
+				EnqueueMessage(new TcpConnectionErrorMessage(_connection, new ArgumentException("Invalid connection configuration")));
+				return;
+			}
+			
 			_connection.StartReceiving();
 		}
 
@@ -546,7 +565,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private void ReconnectTo(NodeEndPoints endPoints) {
-			IPEndPoint endPoint = _settings.UseSslConnection
+			IPEndPoint endPoint = _compatibilityMode.IsAutoCompatibilityModeEnabled() || _settings.UseSslConnection
 				? endPoints.SecureTcpEndPoint ?? endPoints.TcpEndPoint
 				: endPoints.TcpEndPoint;
 			if (endPoint == null) {

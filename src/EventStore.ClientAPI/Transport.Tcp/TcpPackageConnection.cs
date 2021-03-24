@@ -50,8 +50,10 @@ namespace EventStore.ClientAPI.Transport.Tcp {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
 			Ensure.NotEmptyGuid(connectionId, "connectionId");
 			Ensure.NotNull(handlePackage, "handlePackage");
-			if (ssl)
-				Ensure.NotNullOrEmpty(targetHost, "targetHost");
+			if (ssl && string.IsNullOrEmpty(targetHost)) {
+				log.Error("targetHost parameter is null or empty");
+				return;
+			}
 
 			ConnectionId = connectionId;
 			_log = log;
