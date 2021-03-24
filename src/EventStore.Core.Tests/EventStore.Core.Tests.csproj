@@ -7,6 +7,7 @@
 		<Platforms>x64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
+		<PackageReference Include="EventStore.Client" Version="21.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.5" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
@@ -15,8 +16,6 @@
 		<PackageReference Include="CompareNETObjects" Version="4.65.0" />
 	</ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\EventStore.ClientAPI.Embedded\EventStore.ClientAPI.Embedded.csproj" />
-		<ProjectReference Include="..\EventStore.ClientAPI\EventStore.ClientAPI.csproj" />
 		<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj" />
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
