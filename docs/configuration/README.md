@@ -8,10 +8,22 @@ When you don't change the configuration, EventStoreDB will use sensible defaults
 
 You can check what version of EventStoreDB you have installed by using the `--version` parameter in the command line. For example:
 
+:::: code-group
+::: code Linux
+
 ```bash
-$ eventstore --version
-EventStoreDB version v20.10.1 (tags/oss-v20.10.1/a9d8df5, Unknown)
+$ eventstored --version
+EventStoreDB version v20.1.0 (tags/oss-v20.6.1/9ea108855, Unknown)
 ```
+:::
+::: code Windows
+
+```
+> EventStore.ClusterNode.exe --version
+EventStoreDB version v20.1.0 (tags/oss-v20.6.1/9ea108855, Unknown)
+```
+:::
+::::
 
 The full list of available options is available from the currently installed server by using the `--help` option in the command line.
 
@@ -27,7 +39,7 @@ Db: "/volumes/data"
 Log: "/esdb/logs"
 ```
 
-:::tip
+::: tip
 You need to use the three dashes and spacing in your YAML file.
 :::
 
@@ -37,7 +49,7 @@ To tell the EventStoreDB server to use a different configuration file, you pass 
 
 ## Environment variables
 
-You can also set all arguments with environment variables. All variables are prefixed with `EVENTSTORE_` and normally follow the pattern `EVENTSTORE_{option}`. For example, setting the `EVENTSTORE_LOG` variable would instruct the server to use a custom location for log files.
+You can set all arguments can also as environment variables. All variables are prefixed with `EVENTSTORE_` and normally follow the pattern `EVENTSTORE_{option}`. For example, setting the `EVENTSTORE_LOG` variable would instruct the server to use a custom location for log files.
 
 Environment variables override all the options specified in configuration files.
 
@@ -49,11 +61,13 @@ For example, starting EventStoreDB with the `--log` option will override the def
 
 :::: code-group
 ::: code Linux
+
 ```bash
-eventstore --log /tmp/eventstore/logs
+eventstored --log /tmp/eventstore/logs
 ```
 :::
 ::: code Windows
+
 ```
 EventStore.ClusterNode.exe --log C:\Temp\EventStore\Logs
 ```
@@ -62,13 +76,17 @@ EventStore.ClusterNode.exe --log C:\Temp\EventStore\Logs
 
 ## Testing the configuration
 
-If more than one method is used to configure the server, it might be hard to find out what the effective configuration will be when the server starts. To help finding out just that, you can use the `--what-if` option. 
+If more than one method is used to configure the server, it might be hard to find out what the effective configuration will be when the server starts. You can use the `--what-if` option for that purpose. 
 
 When you run EventStoreDB with this option, it will print out the effective configuration applied from all available sources (default and custom configuration file, environment variables and command line parameters) and print it out to the console.
 
+::: warning
+Always run EventStoreDB as a service first, so it creates all the necessary directories using the service permissions. Running the service executable with `--what-if` option before starting the service _will create the data and log directories_ owned by the current user. It might prevent the service from running properly due to lack of write permissions for those directories.
+:::
+
 ::: detail Click here to see a WhatIf example
 ```
-$ eventstore --what-if
+$ eventstored --what-if
 [    1, 1,21:25:31.253,INF] "ES VERSION:"             "20.6.1.0" ("tags/oss-v20.6.1"/"9ea108855", "Unknown")
 [    1, 1,21:25:31.270,INF] "OS:"                     Linux ("Unix 4.19.76.0")
 [    1, 1,21:25:31.271,INF] "RUNTIME:"                ".NET 3.1.8" (64-bit)
@@ -186,3 +204,4 @@ DEFAULT OPTIONS:
 	DEAD MEMBER REMOVAL PERIOD SEC: 1800 (<DEFAULT>)
 ```
 :::
+
