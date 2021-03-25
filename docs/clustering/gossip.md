@@ -69,7 +69,7 @@ If your cluster network is congested, you might increase the gossip timeout usin
 You can connect using gossip seeds regardless of whether you have a cluster or not. In the previous versions of EventStoreDB gossip on a single node was disabled. Starting from 21.2 it's enabled by default.
 
 ::: warning
-Please note that the GossipOnSingleNode option has been deprecated in this version and will be removed in version 21.10.0.
+Please note that the `GossipOnSingleNode` option has been deprecated in this version and will be removed in version 21.10.0. The gossip endpoint is now unconditionally available for any deployment topology.
 :::
 
 | Format               | Syntax |
