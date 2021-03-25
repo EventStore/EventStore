@@ -6,9 +6,11 @@ EventStoreDB exposes streams as a resource located at `http(s)://{yourdomain.com
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/read-stream.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/read-stream.sh#response
 :::
 ::::
@@ -41,11 +43,18 @@ The non-atom version of the event has fewer details about the event.
 
 ## Feed paging
 
-The next step in understanding how to read a stream is the `first`/`last`/`previous`/`next` links within a stream. EventStoreDB supplies these links so you can read through a stream, and they follow the pattern defined in [RFC 5005](http://tools.ietf.org/html/rfc5005).
+The next step in understanding how to read a stream is the `first`/`last`/`previous`/`next` links within a stream. EventStoreDB supplies these links, so you can read through a stream, and they follow the pattern defined in [RFC 5005](http://tools.ietf.org/html/rfc5005).
 
 In the example above the server returned the following `links` as part of its result:
 
-<<< @/samples/http-api/read-stream.sh#links
+:::: code-group
+::: code Request
+<<< @/samples/http-api/read-stream.sh#curl
+:::
+::: code Response
+<<< @/samples/http-api/read-stream.sh#response
+:::
+::::
 
 This shows that there is not a `next` URL as all the information is in this request and that the URL requested is the first link. When dealing with these URLs, there are two ways of reading the data in the stream.
 
@@ -56,9 +65,11 @@ If you want to follow a live stream, then you keep following the `previous` link
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/read-stream-forwards.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/read-stream-forwards.sh#response
 :::
 ::::
@@ -71,9 +82,11 @@ Let's now try an example with more than a single page. First create the multiple
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/append-paging-events.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/append-paging-events.sh#response
 :::
 ::::
@@ -82,9 +95,11 @@ If you request the stream of events, you see a series of links above the events:
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/request-paging-events.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/request-paging-events.sh#response
 :::
 ::::
@@ -95,9 +110,11 @@ For example, if you request the `last` link from above:
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/request-last-link.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/request-last-link.sh#response
 :::
 ::::
@@ -118,9 +135,11 @@ To access the `$all` stream, you must use admin details. Find more information o
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/read-all-events.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/read-all-events.sh#response
 :::
 ::::
@@ -135,9 +154,11 @@ You can use this in your next request when polling the stream for changes by put
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/request-etag.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/request-etag.sh#response
 :::
 ::::
@@ -161,9 +182,11 @@ The `rich` embed mode returns more properties about the event (`eventtype`, `str
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/read-stream-rich.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/read-stream-rich.sh#response
 :::
 ::::
@@ -174,9 +197,11 @@ The `body` embed mode returns the JSON/XML body of the events into the feed as w
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/read-stream-body.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/read-stream-body.sh#response
 :::
 ::::
@@ -194,9 +219,11 @@ The XML format embeds no additional data, as only JSON supports embedding.
 
 :::: code-group
 ::: code Request
+
 <<< @/samples/http-api/read-stream-xml.sh#curl
 :::
 ::: code Response
+
 <<< @/samples/http-api/read-stream-xml.sh#response
 :::
 ::::

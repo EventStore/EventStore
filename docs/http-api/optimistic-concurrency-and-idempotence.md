@@ -10,11 +10,13 @@ For example:
 
 :::: code-group
 ::: code Request
+
 ```bash
 curl -i -d @event.txt "http://127.0.0.1:2113/streams/newstream"
 ```
 :::
 ::: code Response
+
 ```http
 HTTP/1.1 201 Created
 Access-Control-Allow-Origin: *
@@ -26,8 +28,8 @@ Date: Thu, 06 Sep 2012 19:49:37 GMT
 Content-Length: 107
 Keep-Alive: timeout=15,max=100
 ```
+:::
 ::::
-:::::
 
 Assuming you were posting to a new stream you would get the event appended once (and the stream created). The second event returns as the first but not write again.
 
@@ -39,11 +41,13 @@ For example:
 
 :::: code-group
 ::: code Request
+
 ```bash
 curl -i "http://127.0.0.1:2113/streams/newstream444"
 ```
 :::
 ::: code Response
+
 ```http
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
