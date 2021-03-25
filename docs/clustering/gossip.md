@@ -68,6 +68,10 @@ If your cluster network is congested, you might increase the gossip timeout usin
 
 When you run a single-node instance of EventStoreDB, the gossip communication is unnecessary. However, if your production environment uses a multi-node cluster and the test environment runs on a single node, you might want to keep the connection style consistent. EventStoreDB clients use either a single-node or gossip-style connection. So, to prevent changing the connection style, you might want to connect to your single-node instance using the gossip protocol as well. To do so, you'd need to enable gossip for that instance as it is disabled by default. Use the `GossipOnSingleNode` setting to change this behaviour.
 
+::: warning
+Please note that the `GossipOnSingleNode` option has been deprecated in this version and will be removed in version 21.10.0. The gossip endpoint is now unconditionally available for any deployment topology.
+:::
+
 | Format               | Syntax |
 | :------------------- | :----- |
 | Command line         | `--gossip-on-single-node` |
