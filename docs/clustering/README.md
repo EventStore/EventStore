@@ -40,20 +40,18 @@ Common values for the `ClusterSize` setting are three or five (to have a majorit
 
 Cluster nodes use the gossip protocol to discover each other and select the cluster leader. There could be only one leader and each client application connecting to the cluster would always be directed to the leader node. 
 
-Cluster nodes need to know about one another to gossip. To start this process, you provide gossip seeds or the addresses where it can find other nodes, to each node. When running with manager nodes, it normally uses the following approach:
+Cluster nodes need to know about one another to gossip. To start this process, you provide gossip seeds for each node. 
 
-- On each physical machine, configure the database node(s) with a gossip seed of the internal HTTP interface of the manager running on the same physical machine.
+Configure cluster nodes to discover other nodes in one of two ways:
+- [via a DNS entry](./using-dns.md) and a well-known [gossip port](./gossip.md#gossip-port)
+- [via a list of addresses](./using-ip-addresses.md) of other cluster nodes
 
-- Configure cluster nodes to discover other nodes in one of two ways:
-    - [via a DNS entry](./using-dns.md) and a well-known [gossip port](./gossip.md#gossip-port)
-    - [via a list of addresses](./using-ip-addresses.md) of other cluster nodes
-
-The preferred method is via a DNS entry. To set this up, create a DNS entry for the cluster with an A record pointing to each member of the cluster. Each node looks up other nodes in the cluster during the startup process based on the DNS name. Since DNS only provides information about addresses, you need to use a consistent TCP port across the cluster for gossip.
+The multi-address DNS name cluster discovery only works for clusters that use self-signed SSL certificates, or run insecure. For other scenarios you need to provide the gossip seed using hostnames of other cluster nodes.
 
 ## Internal communication
 
-When setting up a cluster the nodes must be able to reach each other over both the internal HTTP channel and the internal TCP channel. You should ensure that these ports are open on firewalls on the machines and between the machines.
+When setting up a cluster the nodes must be able to reach each other over both the HTTP channel, and the internal TCP channel. You should ensure that these ports are open on firewalls on the machines and between the machines.
 
-Learn more about the [internal networking configuration](../networking/internal.md) to set up the cluster properly.
+Learn more about [internal TCP configuration](../networking/tcp.md#internal) and [HTTP configuration](../networking/http.md) to set up the cluster properly.
 
 
