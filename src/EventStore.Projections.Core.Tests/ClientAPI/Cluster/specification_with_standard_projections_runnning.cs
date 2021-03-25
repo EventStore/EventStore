@@ -232,7 +232,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 							if (resultEventsReversed[index].Event.EventType != eventType)
 								DumpFailed("Invalid event type", streamId, events, resultEventsReversed);
-							else if (resultEventsReversed[index].Event.DebugDataView != eventData)
+							else if (resultEventsReversed[index].Event.DebugDataView() != eventData)
 								DumpFailed("Invalid event body", streamId, events, resultEventsReversed);
 						}
 					}
@@ -265,10 +265,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		private void DumpFailed(string message, string streamId, string[] events, ResolvedEvent[] resultEvents) {
 			var expected = events.Aggregate("", (a, v) => a + ", " + v);
 			var actual = resultEvents.Aggregate(
-				"", (a, v) => a + ", " + v.Event.EventType + ":" + v.Event.DebugDataView);
+				"", (a, v) => a + ", " + v.Event.EventType + ":" + v.Event.DebugDataView());
 
 			var actualMeta = resultEvents.Aggregate(
-				"", (a, v) => a + "\r\n" + v.Event.EventType + ":" + v.Event.DebugMetadataView);
+				"", (a, v) => a + "\r\n" + v.Event.EventType + ":" + v.Event.DebugMetadataView());
 
 
 			Assert.Fail(
@@ -279,10 +279,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 		private void Dump(string message, string streamId, ResolvedEvent[] resultEvents) {
 			var actual = resultEvents.Aggregate(
-				"", (a, v) => a + ", " + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugDataView);
+				"", (a, v) => a + ", " + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugDataView());
 
 			var actualMeta = resultEvents.Aggregate(
-				"", (a, v) => a + "\r\n" + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugMetadataView);
+				"", (a, v) => a + "\r\n" + v.OriginalEvent.EventType + ":" + v.OriginalEvent.DebugMetadataView());
 
 			Debug.WriteLine(
 				"Stream: '{0}'\r\n{1}\r\n\r\nExisting events: \r\n{2}\r\n \r\nActual metas:{3}", streamId,
