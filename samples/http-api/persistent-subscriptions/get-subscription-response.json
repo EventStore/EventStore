@@ -1,0 +1,43 @@
+{
+  "links": [
+    {
+      "href": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/info",
+      "rel": "detail"
+    },
+    {
+      "href": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/replayParked",
+      "rel": "replayParked"
+    }
+  ],
+  "config": {
+    "resolveLinktos": false,
+    "startFrom": 0,
+    "messageTimeoutMilliseconds": 10000,
+    "extraStatistics": false,
+    "maxRetryCount": 10,
+    "liveBufferSize": 500,
+    "bufferSize": 500,
+    "readBatchSize": 20,
+    "preferRoundRobin": true,
+    "checkPointAfterMilliseconds": 1000,
+    "minCheckPointCount": 10,
+    "maxCheckPointCount": 500,
+    "maxSubscriberCount": 10,
+    "namedConsumerStrategy": "RoundRobin"
+  },
+  "eventStreamId": "newstream",
+  "groupName": "competing_consumers_group1",
+  "status": "Live",
+  "averageItemsPerSecond": 0.0,
+  "parkedMessageUri": "http://localhost:2113/streams/$persistentsubscription-newstream::competing_consumers_group1-parked",
+  "getMessagesUri": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/1",
+  "totalItemsProcessed": 0,
+  "countSinceLastMeasurement": 0,
+  "lastProcessedEventNumber": -1,
+  "lastKnownEventNumber": 5,
+  "readBufferCount": 6,
+  "liveBufferCount": 5,
+  "retryBufferCount": 0,
+  "totalInFlightMessages": 0,
+  "connections": []
+}
