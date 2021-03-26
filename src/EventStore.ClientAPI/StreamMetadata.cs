@@ -43,34 +43,34 @@ namespace EventStore.ClientAPI {
 		/// <summary>
 		/// An enumerable of the keys in the user-provided metadata.
 		/// </summary>
-		public IEnumerable<string> CustomKeys {
-			get { return _customMetadata.Keys; }
-		}
+		public IEnumerable<string> CustomKeys => _customMetadata.Keys;
 
 		/// <summary>
 		/// An enumerable of key-value pairs of keys to JSON text for user-provider metadata.
 		/// </summary>
-		public IEnumerable<KeyValuePair<string, string>> CustomMetadataAsRawJsons {
-			get { return _customMetadata.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString())); }
-		}
+		public IEnumerable<KeyValuePair<string, string>> CustomMetadataAsRawJsons 
+			=> _customMetadata.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString()));
 
 		private readonly IDictionary<string, JToken> _customMetadata;
 
 		internal StreamMetadata(long? maxCount, TimeSpan? maxAge, long? truncateBefore, TimeSpan? cacheControl,
 			StreamAcl acl, IDictionary<string, JToken> customMetadata = null) {
 			if (maxCount <= 0)
-				throw new ArgumentOutOfRangeException("maxCount",
-					string.Format("{0} should be positive value.", SystemMetadata.MaxCount));
+				throw new ArgumentOutOfRangeException(nameof(maxCount),
+					$"{SystemMetadata.MaxCount} should be positive value."
+				);
 			if (maxAge <= TimeSpan.Zero)
-				throw new ArgumentOutOfRangeException("maxAge",
-					string.Format("{0} should be positive time span.", SystemMetadata.MaxAge));
+				throw new ArgumentOutOfRangeException(nameof(maxAge),
+					$"{SystemMetadata.MaxAge} should be positive time span."
+				);
 			if (truncateBefore < 0)
-				throw new ArgumentOutOfRangeException("truncateBefore",
-					string.Format("{0} should be non-negative value.", SystemMetadata.TruncateBefore));
-
+				throw new ArgumentOutOfRangeException(nameof(truncateBefore),
+					$"{SystemMetadata.TruncateBefore} should be non-negative value."
+				);
 			if (cacheControl <= TimeSpan.Zero)
-				throw new ArgumentOutOfRangeException("cacheControl",
-					string.Format("{0} should be positive time span.", SystemMetadata.CacheControl));
+				throw new ArgumentOutOfRangeException(nameof(cacheControl),
+					$"{SystemMetadata.CacheControl} should be positive time span."
+				);
 
 			MaxCount = maxCount;
 			MaxAge = maxAge;
@@ -136,10 +136,9 @@ namespace EventStore.ClientAPI {
 		/// <param name="key">A key.</param>
 		/// <returns>Value of type T for the key.</returns>
 		public T GetValue<T>(string key) {
-			T res;
-			if (!TryGetValue(key, out res))
-				throw new ArgumentException(string.Format("Key '{0}' not found in custom metadata.", key));
-			return res;
+			return !TryGetValue(key, out T res)
+				? throw new ArgumentException($"Key '{key}' not found in custom metadata.")
+				: res;
 		}
 
 		/// <summary>
@@ -154,9 +153,8 @@ namespace EventStore.ClientAPI {
 		public bool TryGetValue<T>(string key, out T value) {
 			Ensure.NotNull(key, "key");
 
-			JToken token;
-			if (!_customMetadata.TryGetValue(key, out token)) {
-				value = default(T);
+			if (!_customMetadata.TryGetValue(key, out var token)) {
+				value = default;
 				return false;
 			}
 
@@ -171,10 +169,9 @@ namespace EventStore.ClientAPI {
 		/// <returns>String containing raw JSON value for the key.</returns>
 		/// <exception cref="ArgumentException">If the key does not exist.</exception>
 		public string GetValueAsRawJsonString(string key) {
-			string res;
-			if (!TryGetValueAsRawJsonString(key, out res))
-				throw new ArgumentException(string.Format("No key '{0}' found in custom metadata.", key));
-			return res;
+			return !TryGetValueAsRawJsonString(key, out var res)
+				? throw new ArgumentException($"No key '{key}' found in custom metadata.")
+				: res;
 		}
 
 		/// <summary>
@@ -186,9 +183,8 @@ namespace EventStore.ClientAPI {
 		public bool TryGetValueAsRawJsonString(string key, out string value) {
 			Ensure.NotNull(key, "key");
 
-			JToken token;
-			if (!_customMetadata.TryGetValue(key, out token)) {
-				value = default(string);
+			if (!_customMetadata.TryGetValue(key, out var token)) {
+				value = default;
 				return false;
 			}
 
@@ -202,13 +198,12 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		/// <returns>Byte array representing the stream metadata.</returns>
 		public byte[] AsJsonBytes() {
-			using (var memoryStream = new MemoryStream()) {
-				using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, Helper.UTF8NoBom))) {
-					WriteAsJson(jsonWriter);
-				}
+			using var memoryStream = new MemoryStream();
+			using var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, Helper.UTF8NoBom));
 
-				return memoryStream.ToArray();
-			}
+			WriteAsJson(jsonWriter);
+
+			return memoryStream.ToArray();
 		}
 
 		/// <summary>
@@ -216,13 +211,12 @@ namespace EventStore.ClientAPI {
 		/// </summary>
 		/// <returns>A string representing the stream metadata.</returns>
 		public string AsJsonString() {
-			using (var stringWriter = new StringWriter()) {
-				using (var jsonWriter = new JsonTextWriter(stringWriter)) {
-					WriteAsJson(jsonWriter);
-				}
+			using var stringWriter = new StringWriter();
+			using var jsonWriter = new JsonTextWriter(stringWriter);
 
-				return stringWriter.ToString();
-			}
+			WriteAsJson(jsonWriter);
+
+			return stringWriter.ToString();
 		}
 
 		private void WriteAsJson(JsonTextWriter jsonWriter) {
@@ -290,65 +284,64 @@ namespace EventStore.ClientAPI {
 		/// <param name="json"></param>
 		/// <returns></returns>
 		public static StreamMetadata FromJsonBytes(byte[] json) {
-			using (var reader = new JsonTextReader(new StreamReader(new MemoryStream(json)))) {
+			using var reader = new JsonTextReader(new StreamReader(new MemoryStream(json)));
+
+			Check(reader.Read(), reader);
+			Check(JsonToken.StartObject, reader);
+
+			long?                      maxCount       = null;
+			TimeSpan?                  maxAge         = null;
+			long?                      truncateBefore = null;
+			TimeSpan?                  cacheControl   = null;
+			StreamAcl                  acl            = null;
+			Dictionary<string, JToken> customMetadata = null;
+
+			while (true) {
 				Check(reader.Read(), reader);
-				Check(JsonToken.StartObject, reader);
-
-				long? maxCount = null;
-				TimeSpan? maxAge = null;
-				long? truncateBefore = null;
-				TimeSpan? cacheControl = null;
-				StreamAcl acl = null;
-				Dictionary<string, JToken> customMetadata = null;
-
-				while (true) {
-					Check(reader.Read(), reader);
-					if (reader.TokenType == JsonToken.EndObject)
+				if (reader.TokenType == JsonToken.EndObject)
+					break;
+				Check(JsonToken.PropertyName, reader);
+				var name = (string)reader.Value;
+				switch (name) {
+					case SystemMetadata.MaxCount: {
+						Check(reader.Read(), reader);
+						Check(JsonToken.Integer, reader);
+						maxCount = (long)reader.Value;
 						break;
-					Check(JsonToken.PropertyName, reader);
-					var name = (string)reader.Value;
-					switch (name) {
-						case SystemMetadata.MaxCount: {
-							Check(reader.Read(), reader);
-							Check(JsonToken.Integer, reader);
-							maxCount = (long)reader.Value;
-							break;
-						}
-						case SystemMetadata.MaxAge: {
-							Check(reader.Read(), reader);
-							Check(JsonToken.Integer, reader);
-							maxAge = TimeSpan.FromSeconds((long)reader.Value);
-							break;
-						}
-						case SystemMetadata.TruncateBefore: {
-							Check(reader.Read(), reader);
-							Check(JsonToken.Integer, reader);
-							truncateBefore = (long)reader.Value;
-							break;
-						}
-						case SystemMetadata.CacheControl: {
-							Check(reader.Read(), reader);
-							Check(JsonToken.Integer, reader);
-							cacheControl = TimeSpan.FromSeconds((long)reader.Value);
-							break;
-						}
-						case SystemMetadata.Acl: {
-							acl = ReadAcl(reader);
-							break;
-						}
-						default: {
-							if (customMetadata == null)
-								customMetadata = new Dictionary<string, JToken>();
-							Check(reader.Read(), reader);
-							var jToken = JToken.ReadFrom(reader);
-							customMetadata.Add(name, jToken);
-							break;
-						}
+					}
+					case SystemMetadata.MaxAge: {
+						Check(reader.Read(), reader);
+						Check(JsonToken.Integer, reader);
+						maxAge = TimeSpan.FromSeconds((long)reader.Value);
+						break;
+					}
+					case SystemMetadata.TruncateBefore: {
+						Check(reader.Read(), reader);
+						Check(JsonToken.Integer, reader);
+						truncateBefore = (long)reader.Value;
+						break;
+					}
+					case SystemMetadata.CacheControl: {
+						Check(reader.Read(), reader);
+						Check(JsonToken.Integer, reader);
+						cacheControl = TimeSpan.FromSeconds((long)reader.Value);
+						break;
+					}
+					case SystemMetadata.Acl: {
+						acl = ReadAcl(reader);
+						break;
+					}
+					default: {
+						customMetadata ??= new Dictionary<string, JToken>();
+						Check(reader.Read(), reader);
+						var jToken = JToken.ReadFrom(reader);
+						customMetadata.Add(name, jToken);
+						break;
 					}
 				}
-
-				return new StreamMetadata(maxCount, maxAge, truncateBefore, cacheControl, acl, customMetadata);
 			}
+
+			return new StreamMetadata(maxCount, maxAge, truncateBefore, cacheControl, acl, customMetadata);
 		}
 
 		internal static StreamAcl ReadAcl(JsonTextReader reader) {
@@ -391,23 +384,24 @@ namespace EventStore.ClientAPI {
 
 		private static string[] ReadRoles(JsonTextReader reader) {
 			Check(reader.Read(), reader);
-			if (reader.TokenType == JsonToken.String)
-				return new[] {(string)reader.Value};
+			switch (reader.TokenType) {
+				case JsonToken.String:
+					return new[] {(string)reader.Value};
+				case JsonToken.StartArray: {
+					var roles = new List<string>();
+					while (true) {
+						Check(reader.Read(), reader);
+						if (reader.TokenType == JsonToken.EndArray)
+							break;
+						Check(JsonToken.String, reader);
+						roles.Add((string)reader.Value);
+					}
 
-			if (reader.TokenType == JsonToken.StartArray) {
-				var roles = new List<string>();
-				while (true) {
-					Check(reader.Read(), reader);
-					if (reader.TokenType == JsonToken.EndArray)
-						break;
-					Check(JsonToken.String, reader);
-					roles.Add((string)reader.Value);
+					return roles.ToArray();
 				}
-
-				return roles.ToArray();
+				default:
+					throw new Exception("Invalid JSON");
 			}
-
-			throw new Exception("Invalid JSON");
 		}
 
 		private static void Check(JsonToken type, JsonTextReader reader) {

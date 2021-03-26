@@ -55,7 +55,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(settings, "settings");
 			Ensure.NotNull(endPointDiscoverer, "endPointDiscoverer");
 
-			ConnectionName = connectionName ?? string.Format("ES-{0}", Guid.NewGuid());
+			ConnectionName = connectionName ?? $"ES-{Guid.NewGuid()}";
 			Settings = settings;
 			ClusterSettings = clusterSettings;
 			_endPointDiscoverer = endPointDiscoverer;
@@ -195,9 +195,9 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.Nonnegative(start, "start");
 			Ensure.Positive(count, "count");
 			if (count > ClientApiConstants.MaxReadSize)
-				throw new ArgumentException(string.Format(
-					"Count should be less than {0}. For larger reads you should page.",
-					ClientApiConstants.MaxReadSize));
+				throw new ArgumentException(
+					$"Count should be less than {ClientApiConstants.MaxReadSize}. For larger reads you should page."
+				);
 			var source = TaskCompletionSourceFactory.Create<StreamEventsSlice>();
 			var operation = new ReadStreamEventsForwardOperation(Settings.Log, source, stream, start, count,
 				resolveLinkTos, Settings.RequireLeader, userCredentials);
@@ -211,9 +211,9 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.Positive(count, "count");
 			Ensure.GreaterThanOrEqualTo(start, StreamPosition.End, nameof(start));
 			if (count > ClientApiConstants.MaxReadSize)
-				throw new ArgumentException(string.Format(
-					"Count should be less than {0}. For larger reads you should page.",
-					ClientApiConstants.MaxReadSize));
+				throw new ArgumentException(
+					$"Count should be less than {ClientApiConstants.MaxReadSize}. For larger reads you should page."
+				);
 			var source = TaskCompletionSourceFactory.Create<StreamEventsSlice>();
 			var operation = new ReadStreamEventsBackwardOperation(Settings.Log, source, stream, start, count,
 				resolveLinkTos, Settings.RequireLeader, userCredentials);
@@ -225,9 +225,9 @@ namespace EventStore.ClientAPI.Internal {
 			bool resolveLinkTos, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
 			if (maxCount > ClientApiConstants.MaxReadSize)
-				throw new ArgumentException(string.Format(
-					"Count should be less than {0}. For larger reads you should page.",
-					ClientApiConstants.MaxReadSize));
+				throw new ArgumentException(
+					$"Count should be less than {ClientApiConstants.MaxReadSize}. For larger reads you should page."
+				);
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsForwardOperation(Settings.Log, source, position, maxCount,
 				resolveLinkTos, Settings.RequireLeader, userCredentials);
@@ -250,9 +250,9 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNull(filter, nameof(filter));
 
 			if (maxCount > ClientApiConstants.MaxReadSize)
-				throw new ArgumentException(string.Format(
-					"Count should be less than {0}. For larger reads you should page.",
-					ClientApiConstants.MaxReadSize));
+				throw new ArgumentException(
+					$"Count should be less than {ClientApiConstants.MaxReadSize}. For larger reads you should page."
+				);
 
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new FilteredReadAllEventsForwardOperation(Settings.Log, source, position, maxCount,
@@ -266,9 +266,9 @@ namespace EventStore.ClientAPI.Internal {
 			bool resolveLinkTos, UserCredentials userCredentials = null) {
 			Ensure.Positive(maxCount, "maxCount");
 			if (maxCount > ClientApiConstants.MaxReadSize)
-				throw new ArgumentException(string.Format(
-					"Count should be less than {0}. For larger reads you should page.",
-					ClientApiConstants.MaxReadSize));
+				throw new ArgumentException(
+					$"Count should be less than {ClientApiConstants.MaxReadSize}. For larger reads you should page."
+				);
 			var source = TaskCompletionSourceFactory.Create<AllEventsSlice>();
 			var operation = new ReadAllEventsBackwardOperation(Settings.Log, source, position, maxCount,
 				resolveLinkTos, Settings.RequireLeader, userCredentials);
@@ -512,26 +512,23 @@ namespace EventStore.ClientAPI.Internal {
 
 			return subscription.Start();
 		}
-		/*
-
-		        public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
-		            string groupName,
-		            Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
-		            Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
-		            UserCredentials userCredentials = null,
-		            int? bufferSize = null,
-		            bool autoAck = true)
-		        {
-		            return ConnectToPersistentSubscription(groupName,
-		                SystemStreams.AllStream,
-		                eventAppeared,
-		                subscriptionDropped,
-		                userCredentials,
-		                bufferSize,
-		                autoAck);
-		        }
-		*/
-
+		
+		// public EventStorePersistentSubscription ConnectToPersistentSubscriptionForAll(
+		// 	string groupName,
+		// 	Action<EventStorePersistentSubscription, ResolvedEvent> eventAppeared,
+		// 	Action<EventStorePersistentSubscription, SubscriptionDropReason, Exception> subscriptionDropped = null,
+		// 	UserCredentials userCredentials = null,
+		// 	int? bufferSize = null,
+		// 	bool autoAck = true)
+		// {
+		// 	return ConnectToPersistentSubscription(groupName,
+		// 		SystemStreams.AllStream,
+		// 		eventAppeared,
+		// 		subscriptionDropped,
+		// 		userCredentials,
+		// 		bufferSize,
+		// 		autoAck);
+		// }
 
 		public async Task CreatePersistentSubscriptionAsync(string stream, string groupName,
 			PersistentSubscriptionSettings settings, UserCredentials credentials = null) {
@@ -559,18 +556,15 @@ namespace EventStore.ClientAPI.Internal {
 			await source.Task.ConfigureAwait(false);
 		}
 
-/*
+        // public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
+        // {
+        //     Ensure.NotNullOrEmpty(groupName, "groupName");
+        //     Ensure.NotNull(settings, "settings");
+        //     var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        //     EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, settings, userCredentials));
+        //     return source.Task;
+        // }
 
-        public Task<PersistentSubscriptionCreateResult> CreatePersistentSubscriptionForAllAsync(string groupName, PersistentSubscriptionSettings settings, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(groupName, "groupName");
-            Ensure.NotNull(settings, "settings");
-            var source = new TaskCompletionSource<PersistentSubscriptionCreateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new CreatePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, settings, userCredentials));
-            return source.Task;
-        }
-
-*/
 		public async Task DeletePersistentSubscriptionAsync(string stream, string groupName,
 			UserCredentials userCredentials = null) {
 			Ensure.NotNullOrEmpty(stream, "stream");
@@ -581,17 +575,14 @@ namespace EventStore.ClientAPI.Internal {
 			await EnqueueOperation(operation).ConfigureAwait(false);
 			await source.Task.ConfigureAwait(false);
 		}
-/*
 
-        public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
-        {
-            Ensure.NotNullOrEmpty(groupName, "groupName");
-            var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, userCredentials));
-            return source.Task;
-        }
-
-*/
+        // public Task<PersistentSubscriptionDeleteResult> DeletePersistentSubscriptionForAllAsync(string groupName, UserCredentials userCredentials = null)
+        // {
+        //     Ensure.NotNullOrEmpty(groupName, "groupName");
+        //     var source = new TaskCompletionSource<PersistentSubscriptionDeleteResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        //     EnqueueOperation(new DeletePersistentSubscriptionOperation(_settings.Log, source, SystemStreams.AllStream, groupName, userCredentials));
+        //     return source.Task;
+        // }
 
 		public Task<WriteResult> SetStreamMetadataAsync(string stream, long expectedMetastreamVersion,
 			StreamMetadata metadata, UserCredentials userCredentials = null) {
@@ -603,7 +594,7 @@ namespace EventStore.ClientAPI.Internal {
 			Ensure.NotNullOrEmpty(stream, "stream");
 			if (SystemStreams.IsMetastream(stream))
 				throw new ArgumentException(
-					string.Format("Setting metadata for metastream '{0}' is not supported.", stream), nameof(stream));
+					$"Setting metadata for metastream '{stream}' is not supported.", nameof(stream));
 
 			var source = TaskCompletionSourceFactory.Create<WriteResult>();
 
@@ -624,30 +615,30 @@ namespace EventStore.ClientAPI.Internal {
 		public Task<StreamMetadataResult>
 			GetStreamMetadataAsync(string stream, UserCredentials userCredentials = null) {
 			return GetStreamMetadataAsRawBytesAsync(stream, userCredentials).ContinueWith(t => {
-				if (t.Exception != null)
-					throw t.Exception.InnerException;
+				ThrowIfNotNull(t.Exception);
+				
 				var res = t.Result;
 				if (res.StreamMetadata == null || res.StreamMetadata.Length == 0)
 					return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion,
-						StreamMetadata.Create());
+						StreamMetadata.Create(), res.MetaEventCreated);
 				var metadata = StreamMetadata.FromJsonBytes(res.StreamMetadata);
-				return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, metadata);
+				return new StreamMetadataResult(res.Stream, res.IsStreamDeleted, res.MetastreamVersion, metadata, res.MetaEventCreated);
 			});
 		}
 
 		public Task<RawStreamMetadataResult> GetStreamMetadataAsRawBytesAsync(string stream,
 			UserCredentials userCredentials = null) {
 			return ReadEventAsync(SystemStreams.MetastreamOf(stream), -1, false, userCredentials).ContinueWith(t => {
-				if (t.Exception != null)
-					throw t.Exception.InnerException;
-
+				ThrowIfNotNull(t.Exception);
+				
 				var res = t.Result;
 				switch (res.Status) {
 					case EventReadStatus.Success:
 						if (res.Event == null) throw new Exception("Event is null while operation result is Success.");
 						var evnt = res.Event.Value.OriginalEvent;
-						if (evnt == null) return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
-						return new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data);
+						return evnt == null 
+							? new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray) 
+							: new RawStreamMetadataResult(stream, false, evnt.EventNumber, evnt.Data, evnt.Created);
 					case EventReadStatus.NotFound:
 					case EventReadStatus.NoStream:
 						return new RawStreamMetadataResult(stream, false, -1, Empty.ByteArray);
@@ -693,6 +684,11 @@ namespace EventStore.ClientAPI.Internal {
 		public event EventHandler<ClientAuthenticationFailedEventArgs> AuthenticationFailed {
 			add { _handler.AuthenticationFailed += value; }
 			remove { _handler.AuthenticationFailed -= value; }
+		}
+
+		private static void ThrowIfNotNull(Exception exception) {
+			if (exception?.InnerException != null)
+				throw exception.InnerException;
 		}
 	}
 }

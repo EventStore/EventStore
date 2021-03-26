@@ -1,3 +1,4 @@
+using System;
 using EventStore.ClientAPI.Common.Utils;
 using EventStore.ClientAPI.Internal;
 
@@ -23,6 +24,11 @@ namespace EventStore.ClientAPI {
 		public readonly long MetastreamVersion;
 
 		/// <summary>
+		/// The date of the last metastream update.
+		/// </summary>
+		public readonly DateTime MetaEventCreated;
+
+		/// <summary>
 		/// A byte array containing user-specified metadata.
 		/// </summary>
 		public readonly byte[] StreamMetadata;
@@ -34,14 +40,18 @@ namespace EventStore.ClientAPI {
 		/// <param name="isStreamDeleted">True if the stream is soft-deleted.</param>
 		/// <param name="metastreamVersion">The version of the metadata format.</param>
 		/// <param name="streamMetadata">A byte array containing user-specified metadata.</param>
-		public RawStreamMetadataResult(string stream, bool isStreamDeleted, long metastreamVersion,
-			byte[] streamMetadata) {
+		/// <param name="metaEventCreated"></param>
+		public RawStreamMetadataResult(
+			string stream, bool isStreamDeleted, long metastreamVersion,
+			byte[] streamMetadata, DateTime metaEventCreated = default
+		) {
 			Ensure.NotNullOrEmpty(stream, "stream");
 
 			Stream = stream;
 			IsStreamDeleted = isStreamDeleted;
 			MetastreamVersion = metastreamVersion;
 			StreamMetadata = streamMetadata ?? Empty.ByteArray;
+			MetaEventCreated = metaEventCreated;
 		}
 	}
 }
