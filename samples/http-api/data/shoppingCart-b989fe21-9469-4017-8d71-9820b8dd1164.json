@@ -1,0 +1,22 @@
+[
+    {
+        "eventId": "b989fe21-9469-4017-8d71-9820b8dd1164",
+        "eventType": "ItemAdded",
+        "data": {
+            "Description": "Xbox One S 1TB (Console)"
+        },
+        "metadata": {
+            "TimeStamp": "2016-12-23T08:00:00.9225401+01:00"
+        }
+    },
+    {
+        "eventId": "b989fe21-9469-4017-8d71-9820b8dd1174",
+        "eventType": "ItemAdded",
+        "data": {
+            "Description": "Gears of War 4"
+        },
+        "metadata": {
+            "TimeStamp": "2016-12-23T08:05:00.9225401+01:00"
+        }
+    }
+]

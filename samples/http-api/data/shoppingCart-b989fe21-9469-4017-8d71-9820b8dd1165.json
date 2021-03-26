@@ -1,0 +1,22 @@
+[
+    {
+        "eventId": "b989fe21-9469-4017-8d71-9820b8dd1165",
+        "eventType": "ItemAdded",
+        "data": {
+            "Description": "Xbox One S 500GB (Console)"
+        },
+        "metadata": {
+            "TimeStamp": "2016-12-23T09:00:00.9225401+01:00"
+        }
+    },
+    {
+        "eventId": "b989fe21-9469-4017-8d71-9820b8dd1175",
+        "eventType": "ItemAdded",
+        "data": {
+            "Description": "Xbox One Elite Controller"
+        },
+        "metadata": {
+            "TimeStamp": "2016-12-23T09:05:00.9225401+01:00"
+        }
+    }
+]
