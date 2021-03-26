@@ -1,0 +1,56 @@
+{
+  "title": "All Events Persistent Subscription",
+  "id": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1",
+  "updated": "2015-12-02T09:17:48.556545Z",
+  "author": {
+    "name": "EventStore"
+  },
+  "headOfStream": false,
+  "links": [
+    {
+      "uri": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/ack%3Fids=c322e299-cb73-4b47-97c5-5054f920746f",
+      "relation": "ackAll"
+    },
+    {
+      "uri": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/nack%3Fids=c322e299-cb73-4b47-97c5-5054f920746f",
+      "relation": "nackAll"
+    },
+    {
+      "uri": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/1%3Fembed=None",
+      "relation": "previous"
+    },
+    {
+      "uri": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1",
+      "relation": "self"
+    }
+  ],
+  "entries": [
+    {
+      "title": "1@newstream",
+      "id": "http://localhost:2113/streams/newstream/1",
+      "updated": "2015-12-02T09:17:48.556545Z",
+      "author": {
+        "name": "EventStore"
+      },
+      "summary": "SomeEvent",
+      "links": [
+        {
+          "uri": "http://localhost:2113/streams/newstream/1",
+          "relation": "edit"
+        },
+        {
+          "uri": "http://localhost:2113/streams/newstream/1",
+          "relation": "alternate"
+        },
+        {
+          "uri": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/ack/c322e299-cb73-4b47-97c5-5054f920746f",
+          "relation": "ack"
+        },
+        {
+          "uri": "http://localhost:2113/subscriptions/newstream/competing_consumers_group1/nack/c322e299-cb73-4b47-97c5-5054f920746f",
+          "relation": "nack"
+        }
+      ]
+    }
+  ]
+}

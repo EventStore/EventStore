@@ -1,0 +1,22 @@
+[
+    {
+        "eventId": "b989fe21-9469-4017-8d71-9820b8dd1166",
+        "eventType": "ItemAdded",
+        "data": {
+            "Description": "Xbox One S Minecraft Edition (Console)"
+        },
+        "metadata": {
+            "TimeStamp": "2016-12-23T10:00:00.9225401+01:00"
+        }
+    },
+    {
+        "eventId": "b989fe21-9469-4017-8d71-9820b8dd1176",
+        "eventType": "ItemAdded",
+        "data": {
+            "Description": "Fifa 2016 (Xbox)"
+        },
+        "metadata": {
+            "TimeStamp": "2016-12-23T10:05:00.9225401+01:00"
+        }
+    }
+]

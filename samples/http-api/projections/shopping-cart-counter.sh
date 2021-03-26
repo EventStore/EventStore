@@ -1,0 +1,1 @@
+curl -i --data-binary "@shopping-cart-counter.json" http://localhost:2113/projections/continuous?name=shopping-cart-item-counter%26type=js%26enabled=true%26emit=true%26trackemittedstreams=true -u admin:changeit
