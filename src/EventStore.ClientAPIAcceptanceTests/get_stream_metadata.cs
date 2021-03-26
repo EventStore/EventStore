@@ -24,6 +24,7 @@ namespace EventStore.ClientAPI.Tests {
 			Assert.False(meta.StreamMetadata.MaxAge.HasValue);
 			Assert.False(meta.StreamMetadata.TruncateBefore.HasValue);
 			Assert.False(meta.StreamMetadata.CacheControl.HasValue);
+			// Assert.Equal(meta.MetastreamUpdated, default);
 		}
 
 		[Theory, MemberData(nameof(UseSslTestCases))]
