@@ -1,0 +1,179 @@
+# Security
+
+EventStoreDB supports basic authentication for HTTP API calls, and access control lists (ACL).
+
+## Authentication
+
+### Creating users
+
+EventStoreDB supports basic HTTP authentication to internal users. You create these users with the HTTP API or the admin console. You need to use the credentials of the default user in the request, which has the user name of `admin`, and the password of `changeit`.
+
+When using the HTTP API, you can send the following JSON payload to the server:
+
+<<< @/samples/http-api/new-user.json
+
+:::: code-group
+::: code Request
+<<< @/samples/http-api/new-user.sh
+:::
+::: code Response
+<<< @/samples/http-api/new-user.http
+:::
+::::
+
+Once you have added users, you can use their details with requests.
+
+If you were to use the wrong user or no user when a request requires one, you receive a `401 Unauthorized` response.
+
+:::: code-group
+::: code Request
+<<< @/samples/http-api/incorrect-user.sh
+:::
+::: code Response
+<<< @/samples/http-api/incorrect-user.http
+:::
+::::
+
+As you pass the username and password in the request we recommend you to enable SSL to encrypt the user information. [Read this guide for instructions](/server/v5/server/security/).
+
+## Access control lists
+
+Alongside authentication, EventStoreDB supports per stream configuration of Access Control Lists (ACL). To configure the ACL of a stream go to its head and look for the `metadata` relationship link to fetch the metadata for the stream.
+
+To set access control lists over HTTP you can post to the metadata stream as [with setting any other metadata](../stream-metadata.md). You can also set Access Control Lists for a stream in the admin UI.
+
+### ACL example
+
+The ACL below gives `writer` read and write permission on the stream, while `reader` has read permission on the stream. Only users in the `$admins` group can delete the stream or read and write the metadata.
+
+The request body placed in the file named _metadata.json_:
+
+<<< @/samples/server/metadata.json
+
+Then, when you execute HTTP request as follows:
+
+<<< @/samples/server/update-acl.sh#curl
+
+You get a confirmation from the server:
+
+<<< @/samples/server/update-acl.sh#response
+
+## Default ACL
+
+::: tip
+All these examples assume you have created a user named `ouro` with password `ouroboros`.
+:::
+
+<<< @/samples/server/override-default.json
+
+:::: code-group
+::: code Request
+<<< @/samples/server/update-default-acl.sh
+:::
+::: code Response
+<<< @/samples/server/update-default-acl.http
+:::
+::::
+
+If you try to access the `$settings` stream as an unauthorized user, the server returns a 401 response.
+
+:::: code-group
+::: code Request
+```bash
+curl -i http://127.0.0.1:2113/streams/%24settings \
+    -u ouro:ouroboros
+```
+:::
+::: code Response
+```http
+HTTP/1.1 401 Unauthorized
+Access-Control-Allow-Methods: POST, DELETE, GET, OPTIONS
+Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-PINGOTHER, Authorization, ES-LongPoll, ES-ExpectedVersion, ES-EventId, ES-EventType, ES-RequiresMaster, ES-HardDelete, ES-ResolveLinkTo, ES-ExpectedVersion
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: Location, ES-Position
+WWW-Authenticate: Basic realm="ES"
+Content-Type: text/plain; charset=utf-8
+Server: Mono-HTTPAPI/1.0
+Date: Mon, 02 Mar 2015 15:21:27 GMT
+Content-Length: 0
+Keep-Alive: timeout=15,max=100
+```
+:::
+::::
+
+If you wanted to give `ouro` access by default to system streams, POST the following JSON:
+
+```json
+{
+  "$userStreamAcl": {
+    "$r": "$all",
+    "$w": "ouro",
+    "$d": "ouro",
+    "$mr": "ouro",
+    "$mw": "ouro"
+  },
+  "$systemStreamAcl": {
+    "$r": ["$admins", "ouro"],
+    "$w": "$admins",
+    "$d": "$admins",
+    "$mr": "$admins",
+    "$mw": "$admins"
+  }
+}
+```
+
+At which point `ouro` can read system streams by default:
+
+:::: code-group
+::: code Request
+```bash
+curl -i http://127.0.0.1:2113/streams/%24settings \
+    -u ouro:ouroboros
+```
+:::
+::: code Response
+```http
+HTTP/1.1 200 OK
+Access-Control-Allow-Methods: POST, DELETE, GET, OPTIONS
+Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-PINGOTHER, Authorization, ES-LongPoll, ES-ExpectedVersion, ES-EventId, ES-EventType, ES-RequiresMaster, ES-HardDelete, ES-ResolveLinkTo, ES-ExpectedVersion
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: Location, ES-Position
+Cache-Control: max-age=0, no-cache, must-revalidate
+Vary: Accept
+ETag: "1;-1296467268"
+Content-Type: application/atom+xml; charset=utf-8
+Server: Mono-HTTPAPI/1.0
+Date: Mon, 02 Mar 2015 15:25:17 GMT
+Content-Length: 1286
+Keep-Alive: timeout=15,max=100
+```
+:::
+::::
+
+You can also limit ACLs on particular streams which are then merged with the default ACLs.
+
+```json
+{
+  "$acl": {
+    "$r": ["reader", "also-reader"]
+  }
+}
+```
+
+If you add the above to a stream's ACL, then it overrides the read permission on that stream to allow `reader` and `also-reader` to read streams, but not `ouro`, resulting in the effective ACL below.
+
+```json
+{
+  "$acl": {
+    "$r": ["reader", "also-reader"],
+    "$w": "ouro",
+    "$d": "ouro",
+    "$mr": "ouro",
+    "$mw": "ouro"
+  }
+}
+```
+
+::: warning
+Caching is allowed on a stream if you have enabled it to be visible to `$all`. This is as a performance optimization to avoid having to set `cache=private` on all data. If people are bookmarking your URIs and they were cached by an intermediary then they may still be accessible after you change the permissions from `$all`. While clients should not be bookmarking URIs in this way, it's an important consideration.
+:::
