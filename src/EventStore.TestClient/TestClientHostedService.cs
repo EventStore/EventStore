@@ -7,15 +7,15 @@ namespace EventStore.TestClient {
 	public class TestClientHostedService : EventStoreHostedService<ClientOptions> {
 		private Client _client;
 
-		private readonly CancellationTokenSource _stopped;
+		private CancellationTokenSource _stopped;
 
 		private readonly TaskCompletionSource<int> _exitCode;
 		public Task<int> Exited => _exitCode.Task;
 
+		public CancellationToken CancellationToken => _stopped.Token;
+		
 		public TestClientHostedService(string[] args) : base(args) {
 			_exitCode = new TaskCompletionSource<int>();
-			_stopped = new CancellationTokenSource();
-			_stopped.Token.Register(() => _exitCode.TrySetResult(0));
 		}
 
 		protected override string GetLogsDirectory(ClientOptions options) =>
@@ -23,11 +23,20 @@ namespace EventStore.TestClient {
 
 		protected override string GetComponentName(ClientOptions options) => "client";
 
-		protected override void Create(ClientOptions options) => _client = new Client(options);
+		protected override void Create(ClientOptions options) {
+			_stopped = new CancellationTokenSource();
+			_stopped.Token.Register(() => _exitCode.TrySetResult(0));			
+			_client = new Client(options, _stopped);
+		}
 
 		protected override Task StartInternalAsync(CancellationToken cancellationToken) {
 			cancellationToken.Register(_stopped.Cancel);
-			Task.Run(() => _exitCode.SetResult(_client.Run()), _stopped.Token);
+			Task.Run(() => {
+				_exitCode.SetResult(_client.Run());
+				if (!_client.InteractiveMode) {
+					_stopped.Cancel();
+				}
+			}, _stopped.Token);
 			return Task.CompletedTask;
 		}
 

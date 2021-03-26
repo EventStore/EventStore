@@ -33,7 +33,7 @@ namespace EventStore.TestClient {
 
 		private readonly CommandsProcessor _commands = new CommandsProcessor(Log);
 
-		public Client(ClientOptions options) {
+		public Client(ClientOptions options, CancellationTokenSource cancellationTokenSource) {
 			Options = options;
 
 			TcpEndpoint = new DnsEndPoint(options.Host, options.TcpPort);
@@ -44,13 +44,12 @@ namespace EventStore.TestClient {
 
 			InteractiveMode = options.Command.IsEmpty();
 
-			RegisterProcessors();
-
+			RegisterProcessors(cancellationTokenSource);
 		}
 
-		private void RegisterProcessors() {
+		private void RegisterProcessors(CancellationTokenSource cancellationTokenSource) {
 			_commands.Register(new UsageProcessor(_commands), usageProcessor: true);
-			_commands.Register(new ExitProcessor());
+			_commands.Register(new ExitProcessor(cancellationTokenSource));
 
 			_commands.Register(new PingProcessor());
 			_commands.Register(new PingFloodProcessor());
