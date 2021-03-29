@@ -33,7 +33,7 @@ EventStoreDB is written in a mixture of C#, C++ and JavaScript. It can run on Wi
 ### Build EventStoreDB
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
 ```
-dotnet build -c Release src/EventStore.sln -f netcoreapp3.1 -r <runtime identifier>
+dotnet build -c Release src/EventStore.sln -f netcoreapp5.0 -r <runtime identifier>
 ```
 
 where `<runtime identifier>` needs to be replaced by the [RID of the platform you want to build for](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).
