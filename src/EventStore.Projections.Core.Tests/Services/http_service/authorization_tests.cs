@@ -128,8 +128,8 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			}
 			return base.TestFixtureTearDown();
 		}
-
-		[Test, Combinatorial]
+		//just using Ignore not being honored for Combinatorial tests in the dotnet test runner
+		//[Test, Combinatorial, Ignore("Invalid URl templates, retained for future refactoring")]
 		public async Task authorization_tests(
 			[Values(
 				"None",

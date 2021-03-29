@@ -11,6 +11,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private readonly Event[] _events;
 		private readonly CancellationToken _cancellationToken;
 		public WriteEvents(IPublisher publisher,
+			long startOffset,
 			TimeSpan timeout,
 			IEnvelope clientResponseEnvelope,
 			Guid internalCorrId,
@@ -22,6 +23,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			CancellationToken cancellationToken = default)
 			: base(
 					 publisher,
+					 startOffset,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
@@ -33,6 +35,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_streamId = streamId;
 			_events = events;
 			_cancellationToken = cancellationToken;
+			Result = OperationResult.CommitTimeout; // we need an unknown here
 		}
 
 		protected override Message WriteRequestMsg =>

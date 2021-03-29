@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		protected override TransactionCommit OnManager(FakePublisher publisher) {
 			return new TransactionCommit(
 				publisher,
-				PrepareTimeout,
+				1,
 				CommitTimeout,
 				Envelope,
 				InternalCorrId,

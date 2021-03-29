@@ -17,13 +17,15 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.AlreadyCommitted>,
-		IHandle<StorageMessage.RequestManagerTimerTick>,
 		IDisposable {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<RequestManagerBase>();
 
 		protected readonly IPublisher Publisher;
-		protected TimeSpan Timeout;
+		public readonly long StartOffset;
+		protected TimeSpan Timeout;		
+		protected long Phase;
+
 		protected readonly IEnvelope WriteReplyEnvelope;
 
 		private readonly IEnvelope _clientResponseEnvelope;
@@ -31,7 +33,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected readonly Guid ClientCorrId;
 		protected readonly long ExpectedVersion;
 
-		protected OperationResult Result;
+		public OperationResult Result { get; protected set; }
 		protected long FirstEventNumber = -1;
 		protected long LastEventNumber = -1;
 		protected string FailureMessage = string.Empty;
@@ -42,7 +44,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected long LastEventPosition;
 		protected bool Registered;
 		protected long CommitPosition = -1;
-		
+
 		private readonly HashSet<long> _prepareLogPositions = new HashSet<long>();
 
 		private bool _allEventsWritten;
@@ -52,12 +54,10 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private bool _commitReceived;
 		private readonly int _prepareCount;
 
-		protected DateTime NextTimeoutTime;
-		private readonly TimeSpan _timeoutOffset = TimeSpan.FromMilliseconds(30);
-
 
 		protected RequestManagerBase(
 				IPublisher publisher,
+				long startOffset,
 				TimeSpan timeout,
 				IEnvelope clientResponseEnvelope,
 				Guid internalCorrId,
@@ -72,8 +72,10 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(clientResponseEnvelope, nameof(clientResponseEnvelope));
 			Ensure.NotNull(commitSource, nameof(commitSource));
+			Ensure.Nonnegative(startOffset, nameof(startOffset));
 
 			Publisher = publisher;
+			StartOffset = startOffset;
 			Timeout = timeout;
 			_clientResponseEnvelope = clientResponseEnvelope;
 			InternalCorrId = internalCorrId;
@@ -84,26 +86,27 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_prepareCount = prepareCount;
 			TransactionId = transactionId;
 			_commitReceived = !waitForCommit; //if not waiting for commit flag as true
-			_allPreparesWritten = _prepareCount == 0; //if not waiting for prepares flag as true
+			_allPreparesWritten = _prepareCount == 0; //if not waiting for prepares flag as true			
 			if (prepareCount == 0 && waitForCommit == false) {
 				//empty operation just return success
 				var position = Math.Max(transactionId, 0);
 				ReturnCommitAt(position, 0, 0);
 			}
 		}
-		protected DateTime LiveUntil => NextTimeoutTime - _timeoutOffset;
-		
+
+
 		protected abstract Message WriteRequestMsg { get; }
 		protected abstract Message ClientSuccessMsg { get; }
 		protected abstract Message ClientFailMsg { get; }
 		public void Start() {
-			NextTimeoutTime = DateTime.UtcNow + Timeout;
+			Phase = 0;
 			Publisher.Publish(WriteRequestMsg);
+			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(0));
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
 			if (Interlocked.Read(ref _complete) == 1 || _allPreparesWritten) { return; }
-			NextTimeoutTime = DateTime.UtcNow + Timeout;
+			var phase = Interlocked.Increment(ref Phase);
 			if (message.Flags.HasAnyOf(PrepareFlags.TransactionBegin)) {
 				TransactionId = message.LogPosition;
 			}
@@ -118,10 +121,11 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allPreparesWritten) { AllPreparesWritten(); }
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (_allEventsWritten) { AllEventsWritten(); }
+			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 		}
 		public virtual void Handle(StorageMessage.CommitIndexed message) {
 			if (Interlocked.Read(ref _complete) == 1 || _commitReceived) { return; }
-			NextTimeoutTime = DateTime.UtcNow + Timeout;
+			var phase = Interlocked.Increment(ref Phase);
 			_commitReceived = true;
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (message.LogPosition > LastEventPosition) {
@@ -131,16 +135,17 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			LastEventNumber = message.LastEventNumber;
 			CommitPosition = message.LogPosition;
 			if (_allEventsWritten) { AllEventsWritten(); }
+			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 		}
 		protected virtual void AllPreparesWritten() { }
-		
-		protected virtual void AllEventsWritten() {
-			if (CommitSource.IndexedPosition >= LastEventPosition) {
-				Committed();
-			} else if (!Registered) {
-				CommitSource.NotifyFor(LastEventPosition, Committed);
+
+		protected virtual void AllEventsWritten() {			
+			if (!Registered) {
+				var phase = Interlocked.Increment(ref Phase);
+				CommitSource.NotifyOnIndexed(LastEventPosition, Committed);
+				CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 				Registered = true;
-			}
+			}			
 		}
 		protected virtual void Committed() {
 			if (Interlocked.Read(ref _complete) == 1) { return; }
@@ -149,10 +154,11 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
 		}
-		public void Handle(StorageMessage.RequestManagerTimerTick message) {
-			if (_allEventsWritten) { AllEventsWritten(); }
-			if (Interlocked.Read(ref _complete) == 1 || message.UtcNow < NextTimeoutTime)
-				return;
+		public void PhaseTimeout(long phase) {
+			if (Interlocked.Read(ref _complete) == 1 || Interlocked.Read(ref Phase) != phase) { return; }
+			CancelRequest();
+		}
+		public void CancelRequest() {
 			var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
 			var msg = !_allPreparesWritten ? "Prepare phase timeout." : "Commit phase timeout.";
 			CompleteFailedRequest(result, msg);

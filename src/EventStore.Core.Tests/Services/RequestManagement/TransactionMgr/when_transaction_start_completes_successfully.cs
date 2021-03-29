@@ -15,6 +15,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		protected override TransactionStart OnManager(FakePublisher publisher) {
 			return new TransactionStart(
 			 	publisher,
+				1,
 				PrepareTimeout,
 				Envelope,
 				InternalCorrId,
@@ -34,7 +35,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 
 		[Test]
 		public void successful_request_message_is_published() {
-			Assert.That(Produced.ContainsSingle<StorageMessage.RequestCompleted>(
+			AssertEx.IsOrBecomesTrue(()=> Publisher.Messages.ContainsSingle<StorageMessage.RequestCompleted>(
 				x => x.CorrelationId == InternalCorrId && x.Success));
 		}
 

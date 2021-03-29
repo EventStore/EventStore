@@ -50,7 +50,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 			Dispatcher.Subscribe<StorageMessage.StreamDeleted>(Manager);
 			Dispatcher.Subscribe<StorageMessage.WrongExpectedVersion>(Manager);
 			Dispatcher.Subscribe<StorageMessage.AlreadyCommitted>(Manager);
-			Dispatcher.Subscribe<StorageMessage.RequestManagerTimerTick>(Manager);
 			Dispatcher.Subscribe<StorageMessage.CommitIndexed>(Manager);
 			Dispatcher.Subscribe<ReplicationTrackingMessage.IndexedTo>(CommitSource);
 			Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(CommitSource);

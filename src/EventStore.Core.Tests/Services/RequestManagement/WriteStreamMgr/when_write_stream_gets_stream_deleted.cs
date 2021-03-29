@@ -12,7 +12,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 	public class when_write_stream_gets_stream_deleted : RequestManagerSpecification<WriteEvents> {
 		protected override WriteEvents OnManager(FakePublisher publisher) {
 				return new WriteEvents(
-				publisher, 
+				publisher,
+				1,
 				CommitTimeout, 
 				Envelope,
 				InternalCorrId,
