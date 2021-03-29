@@ -15,5 +15,5 @@ echo Usage:
 echo build.cmd ^[-Version=0.0.0.0^] ^[-Configuration=Debug^|Release^] ^[-Runtime=win10-x64] ^[-BuildUI=yes^|no^]
 echo.
 echo Prerequisites:
-echo Building EventStore database requires .NET Core SDK 3.1.100
+echo Building EventStore database requires .NET Core SDK 5.0.4
 echo Building the UI requires Node.js (v8.11.4+)
