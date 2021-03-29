@@ -12,7 +12,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	public class when_delete_stream_gets_stream_deleted : RequestManagerSpecification<DeleteStream> {
 		protected override DeleteStream OnManager(FakePublisher publisher) {
 			return new DeleteStream(
-				publisher, 
+				publisher,
+				1,
 				CommitTimeout, 
 				Envelope,
 				InternalCorrId,

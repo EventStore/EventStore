@@ -13,7 +13,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 		private long _commitLogPosition = 1000;
 		protected override WriteEvents OnManager(FakePublisher publisher) {
 			return new WriteEvents(
-				publisher, 
+				publisher,
+				1,
 				CommitTimeout, 
 				Envelope,
 				InternalCorrId,

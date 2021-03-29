@@ -387,27 +387,7 @@ namespace EventStore.Core.Messages {
 				CurrentVersion = currentVersion;
 			}
 		}
-
-		public class RequestManagerTimerTick : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
-			public DateTime UtcNow {
-				get { return _now ?? DateTime.UtcNow; }
-			}
-
-			private readonly DateTime? _now;
-
-			public RequestManagerTimerTick() {
-			}
-
-			public RequestManagerTimerTick(DateTime now) {
-				_now = now;
-			}
-		}
+		
 
 		public class BatchLogExpiredMessages : Message, IQueueAffineMessage {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);

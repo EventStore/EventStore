@@ -6,6 +6,7 @@ using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Bus.Helpers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 	[TestFixture]
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		protected override TransactionCommit OnManager(FakePublisher publisher) {
 			return new TransactionCommit(
 				publisher,
-				PrepareTimeout,
+				1,
 				CommitTimeout,
 				Envelope,
 				InternalCorrId,
@@ -29,8 +30,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		}
 
 		protected override Message When() {
-			return new StorageMessage.RequestManagerTimerTick(
-				DateTime.UtcNow + PrepareTimeout + TimeSpan.FromMinutes(5));
+			Manager.PhaseTimeout(0);
+			return new TestMessage();
 		}
 
 		[Test]

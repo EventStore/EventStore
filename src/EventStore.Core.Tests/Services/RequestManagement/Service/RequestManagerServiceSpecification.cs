@@ -43,16 +43,17 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 
 			Service = new RequestManagementService(
 				Dispatcher,
-				TimeSpan.FromSeconds(2),
-				TimeSpan.FromSeconds(2),
+				TimeSpan.FromSeconds(10),
+				TimeSpan.FromSeconds(10),
 				explicitTransactionsSupported: true);
+			
+			Dispatcher.Subscribe<SystemMessage.StateChangeMessage>(Service);
 			Dispatcher.Subscribe<ClientMessage.WriteEvents>(Service);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Service);
 			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Service);
 			Dispatcher.Subscribe<StorageMessage.StreamDeleted>(Service);
 			Dispatcher.Subscribe<StorageMessage.WrongExpectedVersion>(Service);
 			Dispatcher.Subscribe<StorageMessage.AlreadyCommitted>(Service);
-			Dispatcher.Subscribe<StorageMessage.RequestManagerTimerTick>(Service);
 			Dispatcher.Subscribe<StorageMessage.CommitIndexed>(Service);
 			Dispatcher.Subscribe<ReplicationTrackingMessage.IndexedTo>(Service);
 			Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(Service);

@@ -7,6 +7,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Bus.Helpers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 	public class when_transaction_commit_gets_timeout_before_cluster_commit : RequestManagerSpecification<TransactionCommit> {
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		protected override TransactionCommit OnManager(FakePublisher publisher) {
 			return new TransactionCommit(
 				publisher,
-				PrepareTimeout,
+				1,
 				CommitTimeout,
 				Envelope,
 				InternalCorrId,
@@ -31,8 +32,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		}
 
 		protected override Message When() {
-			return new StorageMessage.RequestManagerTimerTick(
-				DateTime.UtcNow + PrepareTimeout + CommitTimeout + TimeSpan.FromMinutes(5));
+			Manager.PhaseTimeout(1);
+			return new TestMessage();
 		}
 
 		[Test]

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -13,6 +14,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		public TransactionWrite(
 					IPublisher publisher,
+					long startOffset,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -22,6 +24,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					CommitSource commitSource)
 			: base(
 					 publisher,
+					 startOffset,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
@@ -32,6 +35,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 transactionId) {
 			_events = events;
 			_transactionId = transactionId;
+			Result = OperationResult.PrepareTimeout; // we need an unknown here
 		}
 		
 		protected override Message WriteRequestMsg =>
@@ -42,10 +46,10 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					_events);
 
 		protected override void AllEventsWritten() {
-			if (CommitSource.ReplicationPosition >= LastEventPosition) {
-				Committed();
-			} else if (!Registered) {
-				CommitSource.NotifyFor(LastEventPosition, Committed, CommitLevel.Replicated);
+			if (!Registered) {
+				var phase = Interlocked.Increment(ref Phase);
+				CommitSource.NotifyOnReplicated(LastEventPosition, Committed);
+				CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 				Registered = true;
 			}
 		}

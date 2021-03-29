@@ -1053,8 +1053,7 @@ namespace EventStore.Core {
 				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
 				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs),
 				logFormat.SupportsExplicitTransactions);
-
-			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
+						
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
 
 			_mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
@@ -1074,8 +1073,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
-
-			_mainBus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
+			
 
 			// SUBSCRIPTIONS
 			var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));

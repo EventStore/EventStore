@@ -6,13 +6,15 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Bus.Helpers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 	[TestFixture]
 	public class when_write_stream_gets_timeout_before_local_commit : RequestManagerSpecification<WriteEvents> {
 		protected override WriteEvents OnManager(FakePublisher publisher) {
 			return new WriteEvents(
-				publisher, 
+				publisher,
+				1,
 				CommitTimeout, 
 				Envelope,
 				InternalCorrId,
@@ -28,7 +30,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 		}
 
 		protected override Message When() {
-			return new StorageMessage.RequestManagerTimerTick(DateTime.UtcNow + CommitTimeout + CommitTimeout);
+			Manager.PhaseTimeout(0);
+			return new TestMessage();
 		}
 
 		[Test]

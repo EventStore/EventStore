@@ -16,6 +16,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		protected override DeleteStream OnManager(FakePublisher publisher) {
 			return new DeleteStream(
 				publisher,
+				1,
 				CommitTimeout,
 				Envelope,
 				InternalCorrId,

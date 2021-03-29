@@ -19,6 +19,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		protected override TransactionWrite OnManager(FakePublisher publisher) {
 			return new TransactionWrite(
 			 	publisher,
+				1,
 				PrepareTimeout,
 				Envelope,
 				InternalCorrId,
