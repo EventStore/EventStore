@@ -37,10 +37,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					LiveUntil);
 
 		protected override void AllEventsWritten() {
-			if (CommitSource.ReplicationPosition >= LastEventPosition) {
-				Committed();
-			} else if (!Registered) {
-				CommitSource.NotifyFor(LastEventPosition, Committed, CommitLevel.Replicated);
+			if (!Registered) {
+				CommitSource.RegisterReplicated(LastEventPosition, Committed);
 				Registered = true;
 			}
 		}

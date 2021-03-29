@@ -135,10 +135,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected virtual void AllPreparesWritten() { }
 		
 		protected virtual void AllEventsWritten() {
-			if (CommitSource.IndexedPosition >= LastEventPosition) {
-				Committed();
-			} else if (!Registered) {
-				CommitSource.NotifyFor(LastEventPosition, Committed);
+			 if (!Registered) {
+				CommitSource.RegisterIndexed(LastEventPosition, Committed);
 				Registered = true;
 			}
 		}
