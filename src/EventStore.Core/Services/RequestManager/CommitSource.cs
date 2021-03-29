@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 
@@ -10,63 +14,114 @@ namespace EventStore.Core.Services.RequestManager {
 	public class CommitSource :
 	IHandle<ReplicationTrackingMessage.IndexedTo>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo> {
-		private readonly ConcurrentDictionary<long, List<Action>> _notifyReplicated = new ConcurrentDictionary<long, List<Action>>();
-		private readonly ConcurrentDictionary<long, List<Action>> _notifyIndexed = new ConcurrentDictionary<long, List<Action>>();
-		private long _replicatedPosition;
-		private long _indexedPosition;
+		private LogNotificationTracker _indexTracker = new LogNotificationTracker(false);
+		private LogNotificationTracker _replicatedTracker = new LogNotificationTracker(false);
+		private LogNotificationTracker _delayTracker = new LogNotificationTracker(true);
 
-		public long ReplicationPosition => _replicatedPosition;
-		public long IndexedPosition => _indexedPosition;
-
-		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
-			Interlocked.Exchange(ref _replicatedPosition, message.LogPosition);
-			Notify(_notifyReplicated, message.LogPosition);
+		public void Handle(ReplicationTrackingMessage.ReplicatedTo @event) {
+			_replicatedTracker.TryEnqueLogPostion(@event.LogPosition);
+		}
+		public void Handle(ReplicationTrackingMessage.IndexedTo @event) {
+			_indexTracker.TryEnqueLogPostion(@event.LogPosition);
 		}
 
-		public void Handle(ReplicationTrackingMessage.IndexedTo message) {
-			Interlocked.Exchange(ref _indexedPosition, message.LogPosition);
-			Notify(_notifyIndexed, message.LogPosition);
+		public void NotifyOnReplicated(long position, Action target) {
+			_replicatedTracker.Register(position, target);
 		}
+		public void NotifyOnIndexed(long position, Action target) {
+			_indexTracker.Register(position, target);
+		}
+		public void NotifyAfter(TimeSpan delay, Action target) {
+			_delayTracker.Register(delay, target);
+		}
+	}
+	public class LogNotificationTracker {
+		//todo: replace with custom sorted list for performance as time alows
+		private readonly SortedList<long, List<Action>> _registeredActions = new SortedList<long, List<Action>>();
+		private readonly bool _isTimeLog;
+		private long _logPosition;
+		private Channel<long> _positionQueue;
+		private object _registerLock = new object();
+		ManualResetEventSlim _cancelNotifyAt = new ManualResetEventSlim();
+		Stopwatch _mainStopwatch = Stopwatch.StartNew();
 
-		public void NotifyFor(long position, Action target, CommitLevel level = CommitLevel.Indexed) {
-			long currentPosition;
-			ConcurrentDictionary<long, List<Action>> notificationDictionary;
-			switch (level) {
-				case CommitLevel.Replicated:
-					currentPosition = Interlocked.Read(ref _replicatedPosition);
-					notificationDictionary = _notifyReplicated;
-					break;
-				case CommitLevel.Indexed:
-					currentPosition = Interlocked.Read(ref _indexedPosition);
-					notificationDictionary = _notifyIndexed;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(level), level, null);
+		public LogNotificationTracker(bool isTimeLog) {
+			var discardingQueueOptions = new BoundedChannelOptions(1);
+			discardingQueueOptions.AllowSynchronousContinuations = false;
+			discardingQueueOptions.FullMode = BoundedChannelFullMode.DropOldest;
+			discardingQueueOptions.SingleReader = true;
+			_positionQueue = Channel.CreateBounded<long>(discardingQueueOptions);
+			Task.Run(() => Notify());
+			_isTimeLog = isTimeLog;
+		}
+		public bool TryEnqueLogPostion(long logPosition) => _positionQueue.Writer.TryWrite(logPosition);
+		private async void Notify() {
+			while (true) {
+				//We have a dedicated thread, it's faster to keep using it, (n.b. it's just a request to the scheduler) 
+#pragma warning disable CAC001 // ConfigureAwaitChecker
+				Notify(await _positionQueue.Reader.ReadAsync());
+#pragma warning restore CAC001 // ConfigureAwaitChecker
 			}
-			if (currentPosition >= position) { target(); }
-			if (!notificationDictionary.TryGetValue(position, out var actionList)) {
-				actionList = new List<Action> { target };
-				notificationDictionary.TryAdd(position, actionList);
-			} else {
-				lock (actionList) {
+		}
+		private void Notify(long logPosition) {
+			lock (_registerLock) {
+				_logPosition = logPosition;
+				while (!_registeredActions.Keys.IsEmpty() && _registeredActions.Keys[0] <= logPosition) {
+					if (_registeredActions.Remove(_registeredActions.Keys[0], out var targets)) {
+						foreach (Action target in targets) {
+							if (target != null) {
+								//n.b. targets should enque messages only
+								try {
+									target();
+								} catch {
+									//ignore									
+								}
+							}
+						}
+					}
+				}
+				if (_isTimeLog && !_registeredActions.Keys.IsEmpty()) {
+					_cancelNotifyAt = new ManualResetEventSlim();
+					Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
+				}
+			}
+		}
+		private void NotifyAt(long timePosition, ManualResetEventSlim cancel) {
+			if (!_isTimeLog) { return; }
+			var now = _mainStopwatch.ElapsedMilliseconds;
+			var delay = timePosition - now;
+			if (delay > 0) {
+				cancel.Wait((int)delay);
+				if (cancel.IsSet) { return; }
+			}
+			Notify(timePosition);
+		}
+		public void Register(TimeSpan delay, Action target) {
+			if (!_isTimeLog) { throw new InvalidOperationException("Timespan Delays can only be registered on TimeLogs"); }
+			
+			var now = _mainStopwatch.ElapsedMilliseconds;
+			var position = now + (long)delay.TotalMilliseconds;
+			Register(position, target);
+		}
+		public void Register(long position, Action target) {
+			lock (_registerLock) {
+				if (_logPosition >= position) {
+					target();
+					return;
+				};
+				if (!_registeredActions.TryGetValue(position, out var actionList)) {
+					actionList = new List<Action> { target };
+					_registeredActions.TryAdd(position, actionList);
+					if (_isTimeLog && !_registeredActions.Keys.IsEmpty() && position == _registeredActions.Keys[0]) {
+						_cancelNotifyAt.Set();
+						_cancelNotifyAt = new ManualResetEventSlim();
+						Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
+					}
+				} else {
 					actionList.Add(target);
 				}
 			}
 		}
-		private void Notify(ConcurrentDictionary<long, List<Action>> dictionary, long logPosition) {
-			if (dictionary.IsEmpty) { return; }
-			long[] positions;
-			lock (dictionary) {
-				positions = dictionary.Keys.ToArray();
-			}
-			Array.Sort(positions);
-			var actionList = new List<Action>();
-			for (int i = 0; i < positions.Length && positions[i] <= logPosition; i++) {
-				if (dictionary.TryRemove(positions[i], out var actions) && actions != null) {
-					actionList.AddRange(actions);
-				}
-			}
-			actionList?.ForEach(a => { try { a?.Invoke(); } catch { /*ignore*/ } });
-		}
+
 	}
 }

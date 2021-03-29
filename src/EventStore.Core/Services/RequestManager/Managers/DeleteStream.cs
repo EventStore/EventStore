@@ -12,6 +12,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		public DeleteStream(
 					IPublisher publisher,
+					long startOffset,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -23,6 +24,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					CancellationToken cancellationToken = default)
 			: base(
 					 publisher,
+					 startOffset,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
@@ -34,6 +36,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_hardDelete = hardDelete;
 			_cancellationToken = cancellationToken;
 			_streamId = streamId;
+			Result = OperationResult.CommitTimeout; // we need an unknown here
 		}
 
 		protected override Message WriteRequestMsg =>

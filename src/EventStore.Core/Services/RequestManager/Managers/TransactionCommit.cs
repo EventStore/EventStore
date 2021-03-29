@@ -5,13 +5,12 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionCommit : RequestManagerBase,
-		IHandle<StorageMessage.CommitIndexed> {
-		private readonly TimeSpan _commitTimeout;
+		IHandle<StorageMessage.CommitIndexed> {		
 		private bool _transactionWritten;
 		public TransactionCommit(
 					IPublisher publisher,
-					TimeSpan prepareTimeout,
-					TimeSpan commitTimeout,
+					long startOffset,
+					TimeSpan timeout,					
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
 					Guid clientCorrId,
@@ -19,7 +18,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					CommitSource commitSource)
 			: base(
 					 publisher,
-					 prepareTimeout,
+					 startOffset,
+					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
 					 clientCorrId,
@@ -28,19 +28,18 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 transactionId: transactionId,
 					 prepareCount: 1,
 					 waitForCommit: true) {
-			_commitTimeout = commitTimeout;
+			Result = OperationResult.CommitTimeout; // we need an unknown here
 		}
-
+		
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionEnd(
 					InternalCorrId,
 					WriteReplyEnvelope,
 					TransactionId,
-					LiveUntil);
+					DateTime.UtcNow + Timeout);
 
 		protected override void AllPreparesWritten() {
-			base.AllPreparesWritten();
-			NextTimeoutTime = DateTime.UtcNow + _commitTimeout;
+			base.AllPreparesWritten();			
 			Publisher.Publish(
 				new StorageMessage.WriteCommit(
 						InternalCorrId,

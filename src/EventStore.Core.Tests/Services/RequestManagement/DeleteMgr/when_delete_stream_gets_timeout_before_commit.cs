@@ -4,6 +4,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
+using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
@@ -12,7 +13,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	public class when_delete_stream_gets_timeout_before_commit : RequestManagerSpecification<DeleteStream> {
 		protected override DeleteStream OnManager(FakePublisher publisher) {
 			return new DeleteStream(
-				publisher, 
+				publisher,
+				1,
 				CommitTimeout, 
 				Envelope,
 				InternalCorrId,
@@ -28,8 +30,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		}
 
 		protected override Message When() {
-			return new StorageMessage.RequestManagerTimerTick(
-				DateTime.UtcNow + PrepareTimeout + TimeSpan.FromMinutes(5));
+			Manager.PhaseTimeout(0);
+			return new TestMessage();
 		}
 
 		[Test]
