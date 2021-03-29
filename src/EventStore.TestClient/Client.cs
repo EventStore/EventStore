@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using EventStore.BufferManagement;
 using EventStore.Common.Utils;
@@ -86,6 +88,11 @@ namespace EventStore.TestClient {
 			_commands.Register(new SubscriptionStressTestProcessor());
 		}
 
+		public string GetCommandList() {
+			var sb = new StringBuilder();
+			_commands.RegisteredProcessors.Select(x => x.Usage.ToUpper()).ToList().ForEach(s => sb.AppendLine(s));
+			return sb.ToString();
+		}
 		public int Run() {
 			if (!InteractiveMode) {
 				var args = ParseCommandLine(Options.Command[0]);
@@ -94,6 +101,7 @@ namespace EventStore.TestClient {
 
 			new Thread(() => {
 				Thread.Sleep(100);
+				Console.WriteLine(GetCommandList());
 				Console.Write(">>> ");
 
 				string line;
@@ -113,12 +121,12 @@ namespace EventStore.TestClient {
 						Console.Write(">>> ");
 					}
 				}
-			}) {IsBackground = true, Name = "Client Main Loop Thread"}.Start();
+			}) { IsBackground = true, Name = "Client Main Loop Thread" }.Start();
 			return 0;
 		}
 
 		private static string[] ParseCommandLine(string line) {
-			return line.Split(new[] {' ', '\t'}, StringSplitOptions.RemoveEmptyEntries);
+			return line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 		}
 
 		private int Execute(string[] args) {
@@ -179,7 +187,7 @@ namespace EventStore.TestClient {
 					endpoint.GetHost(),
 					endpoint.ResolveDnsToIPAddress(),
 					TcpConnectionManager.ConnectionTimeout,
-					(cert,chain,err) => (err == SslPolicyErrors.None || !ValidateServer, err.ToString()),
+					(cert, chain, err) => (err == SslPolicyErrors.None || !ValidateServer, err.ToString()),
 					() => null,
 					onConnectionEstablished,
 					onConnectionFailed,
