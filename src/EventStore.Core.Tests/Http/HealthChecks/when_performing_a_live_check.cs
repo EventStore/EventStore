@@ -12,14 +12,18 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_performing_a_live_check<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
-
+		private bool _nodeStarted;
 		[SetUp]
 		public void SetUp() {
 			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 		}
 
 		[TearDown]
-		public Task Teardown() => _node.Shutdown();
+		public async Task Teardown() {
+			if (_nodeStarted) {
+				await _node.Shutdown();
+			}
+		}
 
 		private static readonly object[] MethodAllowedTestCases = {
 			new object[] {HttpMethod.Head},
@@ -31,13 +35,13 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 			.Where(pi => pi.PropertyType == typeof(HttpMethod))
 			.Select(pi => (HttpMethod)pi.GetValue(null))
 			.Where(x => x != HttpMethod.Get && x != HttpMethod.Head)
-			.Select(x => new object[] {x})
+			.Select(x => new object[] { x })
 			.ToArray();
 
 		[TestCaseSource(nameof(MethodAllowedTestCases))]
 		public async Task before_start_returns_error(HttpMethod method) {
 			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live"));
-
+			_nodeStarted = false; //just for clarity
 			Assert.GreaterOrEqual((int)response.StatusCode, 500);
 		}
 
@@ -46,7 +50,7 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 			await _node.Start()
 				.WithTimeout()
 				.ConfigureAwait(false);
-
+			_nodeStarted = true;
 			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live") {
 				Version = new Version(2, 0)
 			});
@@ -60,7 +64,7 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 			await _node.Start()
 				.WithTimeout()
 				.ConfigureAwait(false);
-
+			_nodeStarted = true;
 			await _node.Node.StopAsync()
 				.WithTimeout()
 				.ConfigureAwait(false);
@@ -75,7 +79,7 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 			await _node.Start()
 				.WithTimeout()
 				.ConfigureAwait(false);
-
+			_nodeStarted = true;
 			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live"));
 
 			Assert.AreEqual(HttpStatusCode.MethodNotAllowed, response.StatusCode);

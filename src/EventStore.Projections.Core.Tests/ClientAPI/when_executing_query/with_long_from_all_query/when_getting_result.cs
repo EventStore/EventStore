@@ -25,7 +25,7 @@ fromAll().when({
     $init: function(){return {count:0}},
     type1: function(s,e){
         var start = new Date();
-        while(new Date()-start < 500){}
+        while(new Date()-start < 150){}
         
         s.count++;
     },
