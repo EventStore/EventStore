@@ -30,7 +30,7 @@ namespace EventStore.TestClient.Commands {
 			int clientsCnt = 1;
 			int minPerSecond = 1;
 			int maxPerSecond = 2;
-			int runTimeMinutes = 1;
+			double runTimeMinutes = 1;
 			string eventStreamId = null;
 
 			if (args.Length > 0) {
@@ -41,7 +41,7 @@ namespace EventStore.TestClient.Commands {
 					clientsCnt = int.Parse(args[0]);
 					minPerSecond = int.Parse(args[1]);
 					maxPerSecond = int.Parse(args[2]);
-					runTimeMinutes = int.Parse(args[3]);
+					runTimeMinutes = double.Parse(args[3]);
 					if (args.Length == 5)
 						eventStreamId = args[4];
 				} catch {
@@ -58,14 +58,14 @@ namespace EventStore.TestClient.Commands {
 			int clientsCnt,
 			int minPerSecond,
 			int maxPerSecond,
-			int runTimeMinutes) {
+			double	runTimeMinutes) {
 			context.IsAsync();
 
 			var clients = new List<TcpTypedConnection<byte[]>>();
 			var threads = new List<Thread>();
 			var doneEvent = new ManualResetEvent(false);
 			var done = false;
-
+			var runTimeSeconds = runTimeMinutes * 60;
 			var succ = 0;
 			var fail = 0;
 
@@ -119,7 +119,7 @@ namespace EventStore.TestClient.Commands {
 						lock (watchLockRoot)
 							elapsed = sw.Elapsed;
 
-						if (elapsed.TotalMinutes > runTimeMinutes) {
+						if (elapsed.TotalSeconds > runTimeSeconds) {
 							done = true;
 							doneEvent.Set();
 							break;

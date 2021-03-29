@@ -107,7 +107,8 @@ namespace EventStore.Core.Services.Storage {
 			Writer.Open();
 
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-
+			
+			//Bounded queue
 			var config = new BoundedChannelOptions(500) {
 				SingleReader = true,
 				FullMode = BoundedChannelFullMode.Wait,
@@ -121,7 +122,7 @@ namespace EventStore.Core.Services.Storage {
 				true,
 				TimeSpan.FromMilliseconds(500),
 				bounded: true,
-				config: config);
+				config: config);			
 			_tasks.Add(StorageWriterQueue.Start());
 
 			//Note: these control messages bypass the bounded write queue

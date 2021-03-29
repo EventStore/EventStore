@@ -74,7 +74,7 @@ namespace EventStore.Core.Bus {
 
 		private Channel<Message> BuildChannel() {
 			if (_bounded) {
-				return Channel.CreateBounded<Message>((BoundedChannelOptions)_config);				
+				return Channel.CreateBounded<Message>((BoundedChannelOptions)_config);
 			} else {
 				return Channel.CreateUnbounded<Message>((UnboundedChannelOptions)_config);
 			}
@@ -86,7 +86,7 @@ namespace EventStore.Core.Bus {
 
 			_stop = false;
 			_stopped.Reset();
-			_queueMonitor.Register(this);			
+			_queueMonitor.Register(this);
 			_tokenSource = new CancellationTokenSource();
 			Task.Run(() => ReadFromQueue(_tokenSource.Token));
 			return _tcs.Task;
@@ -94,12 +94,10 @@ namespace EventStore.Core.Bus {
 
 		public void Stop() {
 			_stop = true;
-			_channel.Writer.TryComplete();
 		}
 
 		public void RequestStop() {
 			_stop = true;
-			_channel.Writer.TryComplete();
 		}
 
 		private async void ReadFromQueue(CancellationToken cancelToken) {
@@ -119,10 +117,10 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 							_queueStats.Dequeued(msg);
 #endif
-						var queueDepth = _channel.Reader.Count;
+						var queueDepth = _bounded ? _channel.Reader.Count : 0;
 						_queueStats.ProcessingStarted(msg.GetType(), queueDepth);
 
-						if (_watchSlowMsg) {
+						if (_watchSlowMsg && _bounded) {
 							var start = DateTime.UtcNow;
 
 							_consumer.Handle(msg);
@@ -149,6 +147,8 @@ namespace EventStore.Core.Bus {
 						_queueStats.ProcessingEnded(1);
 					} catch (TaskCanceledException) {
 						throw;
+					} catch (InvalidOperationException) {
+						//channel stopped
 					} catch (Exception ex) {
 						Log.Error(ex, "Error while processing message {message} in queued handler '{queue}'.",
 							msg, Name);
@@ -178,10 +178,9 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 			_queueStats.Enqueued();
 #endif
-
-			//sync & blocking to match current behavior and there is no context here		
-			_channel.Writer.WriteAsync(message).GetAwaiter().GetResult();
-
+			//sync & blocking to match current behavior			
+			while (!_tokenSource.IsCancellationRequested && !_channel.Writer.TryWrite(message))
+				;
 		}
 
 		public void Handle(Message message) {
@@ -189,7 +188,8 @@ namespace EventStore.Core.Bus {
 		}
 
 		public QueueStats GetStatistics() {
-			return _queueStats.GetStatistics(_channel.Reader.Count);
+			var count = _bounded ? _channel.Reader.Count : 0;
+			return _queueStats.GetStatistics(count);
 		}
 	}
 }
