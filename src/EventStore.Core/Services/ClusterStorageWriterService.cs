@@ -46,12 +46,14 @@ namespace EventStore.Core.Services {
 			_getLastIndexedPosition = getLastIndexedPosition;
 			_framer = new LengthPrefixSuffixFramer(OnLogRecordUnframed, TFConsts.MaxLogRecordSize);
 
-			SubscribeToMessage<ReplicationMessage.ReplicaSubscribed>();
+			//Note: this bypasses the bounded write queue
+			subscribeToBus.Subscribe<ReplicationMessage.ReplicaSubscribed>(this);
+
 			SubscribeToMessage<ReplicationMessage.CreateChunk>();
 			SubscribeToMessage<ReplicationMessage.RawChunkBulk>();
 			SubscribeToMessage<ReplicationMessage.DataChunkBulk>();
 		}
-
+		//this overide is subscribed in the base class and this control message also bypasses the bounded write queue
 		public override void Handle(SystemMessage.StateChangeMessage message) {
 			if (message.State == VNodeState.PreLeader) {
 				if (_activeChunk != null) {

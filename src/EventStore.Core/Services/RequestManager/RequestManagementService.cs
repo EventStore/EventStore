@@ -29,7 +29,9 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<StorageMessage.RequestManagerTimerTick>,
 		IHandle<SystemMessage.StateChangeMessage> {
-		private readonly IPublisher _bus;
+		
+		private readonly IPublisher _mainBus;
+		private readonly IPublisher _storage;
 		private readonly TimerMessage.Schedule _tickRequestMessage;
 		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
 		private readonly Dictionary<Guid, Stopwatch> _currentTimedRequests = new Dictionary<Guid, Stopwatch>();
@@ -39,13 +41,18 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly CommitSource _commitSource;
 		private VNodeState _nodeState;		
 
-		public RequestManagementService(IPublisher bus,
+		public RequestManagementService(
+			IPublisher mainBus,
+			IPublisher storage,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout) {
-			Ensure.NotNull(bus, "bus");
-			_bus = bus;
+			Ensure.NotNull(mainBus, nameof(mainBus));
+			Ensure.NotNull(storage, nameof(storage));
+			_mainBus = mainBus;
+			_storage= storage;
+
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
-				new PublishEnvelope(bus),
+				new PublishEnvelope(_mainBus),
 				new StorageMessage.RequestManagerTimerTick());
 
 			_prepareTimeout = prepareTimeout;
@@ -55,7 +62,8 @@ namespace EventStore.Core.Services.RequestManager {
 		
 		public void Handle(ClientMessage.WriteEvents message) {
 			var manager = new WriteEvents(
-								_bus,
+								_mainBus,
+								_storage,
 								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -72,7 +80,8 @@ namespace EventStore.Core.Services.RequestManager {
 
 		public void Handle(ClientMessage.DeleteStream message) {
 			var manager = new DeleteStream(
-								_bus,
+								_mainBus,
+								_storage,
 								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -89,7 +98,8 @@ namespace EventStore.Core.Services.RequestManager {
 
 		public void Handle(ClientMessage.TransactionStart message) {
 			var manager = new TransactionStart(
-								_bus,
+								_mainBus,
+								_storage,
 								_prepareTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -104,7 +114,8 @@ namespace EventStore.Core.Services.RequestManager {
 
 		public void Handle(ClientMessage.TransactionWrite message) {
 			var manager = new TransactionWrite(
-								_bus,
+								_mainBus,
+								_storage,
 								_prepareTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -119,7 +130,8 @@ namespace EventStore.Core.Services.RequestManager {
 
 		public void Handle(ClientMessage.TransactionCommit message) {
 			var manager = new TransactionCommit(
-								_bus,
+								_mainBus,
+								_storage,
 								_prepareTimeout,
 								_commitTimeout,
 								message.Envelope,
@@ -139,7 +151,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			_bus.Publish(_tickRequestMessage);
+			_mainBus.Publish(_tickRequestMessage);
 		}
 
 		public void Handle(StorageMessage.RequestManagerTimerTick message) {
@@ -148,10 +160,10 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 			//TODO(clc): if we have become resigning leader should all requests be actively disposed?
 			if (_nodeState == VNodeState.ResigningLeader && _currentRequests.Count == 0) {
-				_bus.Publish(new SystemMessage.RequestQueueDrained());
+				_mainBus.Publish(new SystemMessage.RequestQueueDrained());
 			}
 
-			_bus.Publish(_tickRequestMessage);
+			_mainBus.Publish(_tickRequestMessage);
 		}
 
 		public void Handle(StorageMessage.RequestCompleted message) {

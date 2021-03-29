@@ -68,10 +68,13 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Register(long position, Action target) {
+			if (_logPosition >= position) {
+					target();					
+					return;
+				};
 			lock (_registerLock) {
 				if (_logPosition >= position) {
-					target();
-					//Task.Run(() => { try { target?.Invoke(); } catch { /*ignore*/ } });
+					target();					
 					return;
 				};
 				if (!_registeredActions.TryGetValue(position, out var actionList)) {

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -22,7 +23,9 @@ using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
-	public class StorageWriterService : IHandle<SystemMessage.SystemInit>,
+	public class StorageWriterService :
+		IPublisher,
+		IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.WriteEpoch>,
 		IHandle<SystemMessage.WaitForChaserToCatchUp>,
@@ -74,7 +77,8 @@ namespace EventStore.Core.Services.Storage {
 			get { return _tasks; }
 		}
 
-		public StorageWriterService(IPublisher bus,
+		public StorageWriterService(
+			IPublisher bus,
 			ISubscriber subscribeToBus,
 			TimeSpan minFlushDelay,
 			TFChunkDb db,
@@ -103,17 +107,29 @@ namespace EventStore.Core.Services.Storage {
 			Writer.Open();
 
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
+
+			var config = new BoundedChannelOptions(500) {
+				SingleReader = true,
+				FullMode = BoundedChannelFullMode.Wait,
+				AllowSynchronousContinuations = false,
+				SingleWriter = false
+			};
+
+			StorageWriterQueue = new QueuedHandlerChannel(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
 				queueStatsManager,
 				true,
-				TimeSpan.FromMilliseconds(500));
+				TimeSpan.FromMilliseconds(500),
+				bounded: true,
+				config: config);
 			_tasks.Add(StorageWriterQueue.Start());
 
-			SubscribeToMessage<SystemMessage.SystemInit>();
-			SubscribeToMessage<SystemMessage.StateChangeMessage>();
+			//Note: these control messages bypass the bounded write queue
+			subscribeToBus.Subscribe<SystemMessage.SystemInit>(this);
+			subscribeToBus.Subscribe<SystemMessage.StateChangeMessage>(this);
+			subscribeToBus.Subscribe<SystemMessage.WaitForChaserToCatchUp>(this);
+
 			SubscribeToMessage<SystemMessage.WriteEpoch>();
-			SubscribeToMessage<SystemMessage.WaitForChaserToCatchUp>();
 			SubscribeToMessage<StorageMessage.WritePrepares>();
 			SubscribeToMessage<StorageMessage.WriteDelete>();
 			SubscribeToMessage<StorageMessage.WriteTransactionStart>();
@@ -126,20 +142,14 @@ namespace EventStore.Core.Services.Storage {
 			_writerBus.Subscribe((IHandle<T>)this);
 			_subscribeToBus.Subscribe(new AdHocHandler<Message>(EnqueueMessage).WidenFrom<T, Message>());
 		}
-
+		//for direct connect to the request manager to support back pressure via the bounded channel queue
+		public void Publish(Message message) {
+			EnqueueMessage(message);
+		}
 		private void EnqueueMessage(Message message) {
 			if (message is StorageMessage.IFlushableMessage)
 				Interlocked.Increment(ref FlushMessagesInQueue);
-
 			StorageWriterQueue.Publish(message);
-
-			if (message is SystemMessage.BecomeShuttingDown)
-			// we need to handle this message on main thread to stop StorageWriterQueue
-			{
-				StorageWriterQueue.Stop();
-				BlockWriter = true;
-				Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
-			}
 		}
 
 		private void CommonHandle(Message message) {
@@ -174,7 +184,7 @@ namespace EventStore.Core.Services.Storage {
 
 		public virtual void Handle(SystemMessage.StateChangeMessage message) {
 			_vnodeState = message.State;
-
+			
 			switch (message.State) {
 				case VNodeState.Leader: {
 						_indexWriter.Reset();
@@ -182,6 +192,9 @@ namespace EventStore.Core.Services.Storage {
 						break;
 					}
 				case VNodeState.ShuttingDown: {
+						BlockWriter = true;
+						StorageWriterQueue.Stop();						
+						Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
 						Writer.Close();
 						break;
 					}
@@ -684,5 +697,7 @@ namespace EventStore.Core.Services.Storage {
 
 			message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
 		}
+
+
 	}
 }

@@ -583,8 +583,10 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(forwardingService);
 
 			// REQUEST MANAGEMENT
+			//n.b. RequestManagement sends write requests directly to storage
 			var requestManagement = new RequestManagementService(
 				_mainQueue,
+				storageWriter,
 				vNodeSettings.PrepareTimeout,
 				vNodeSettings.CommitTimeout);
 

@@ -22,7 +22,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<RequestManagerBase>();
 
-		protected readonly IPublisher Publisher;
+		protected readonly IPublisher MainBus;
+		protected readonly IPublisher Storage;
 		protected TimeSpan Timeout;
 		protected readonly IEnvelope WriteReplyEnvelope;
 
@@ -57,7 +58,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 
 		protected RequestManagerBase(
-				IPublisher publisher,
+				IPublisher mainBus,
+				IPublisher storage,
 				TimeSpan timeout,
 				IEnvelope clientResponseEnvelope,
 				Guid internalCorrId,
@@ -69,16 +71,18 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				bool waitForCommit = false) {
 			Ensure.NotEmptyGuid(internalCorrId, nameof(internalCorrId));
 			Ensure.NotEmptyGuid(clientCorrId, nameof(clientCorrId));
-			Ensure.NotNull(publisher, nameof(publisher));
+			Ensure.NotNull(mainBus, nameof(mainBus));
+			Ensure.NotNull(storage, nameof(storage));
 			Ensure.NotNull(clientResponseEnvelope, nameof(clientResponseEnvelope));
 			Ensure.NotNull(commitSource, nameof(commitSource));
 
-			Publisher = publisher;
+			MainBus = mainBus;
+			Storage = storage;
 			Timeout = timeout;
 			_clientResponseEnvelope = clientResponseEnvelope;
 			InternalCorrId = internalCorrId;
 			ClientCorrId = clientCorrId;
-			WriteReplyEnvelope = new PublishEnvelope(Publisher);
+			WriteReplyEnvelope = new PublishEnvelope(MainBus);
 			ExpectedVersion = expectedVersion;
 			CommitSource = commitSource;
 			_prepareCount = prepareCount;
@@ -98,7 +102,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected abstract Message ClientFailMsg { get; }
 		public void Start() {
 			NextTimeoutTime = DateTime.UtcNow + Timeout;
-			Publisher.Publish(WriteRequestMsg);
+			Storage.Publish(WriteRequestMsg);
+			//MainBus.Publish(WriteRequestMsg);
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
@@ -145,7 +150,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			Interlocked.Exchange(ref _complete, 1);
 			Result = OperationResult.Success;
 			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
-			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
+			MainBus.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
 		}
 		public void Handle(StorageMessage.RequestManagerTimerTick message) {
 			if (_allEventsWritten) { AllEventsWritten(); }
@@ -189,7 +194,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			Interlocked.Exchange(ref _complete, 1);
 			Result = result;
 			FailureMessage = error;
-			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, false, currentVersion));
+			MainBus.Publish(new StorageMessage.RequestCompleted(InternalCorrId, false, currentVersion));
 			_clientResponseEnvelope.ReplyWith(ClientFailMsg);
 		}
 

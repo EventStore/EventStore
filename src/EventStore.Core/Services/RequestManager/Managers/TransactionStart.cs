@@ -8,7 +8,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private readonly string _streamId;
 
 		public TransactionStart(
-					IPublisher publisher,
+					IPublisher mainBus,
+					IPublisher storage,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -17,7 +18,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long expectedVersion,
 					CommitSource commitSource)
 			: base(
-					 publisher,
+					 mainBus,
+					 storage,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,

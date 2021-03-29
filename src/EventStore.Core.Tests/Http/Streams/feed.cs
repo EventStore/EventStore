@@ -383,7 +383,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(1, _entries.Count());
 			}
 		}
-
+		/*
 		[TestFixture, Category("LongRunning")]
 		[Explicit("Failing test for Greg demonstrating NullReferenceException in Convert.cs")]
 		public class
@@ -403,7 +403,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(1, _entries.Count());
 			}
 		}
-
+		*/
 		[TestFixture, Category("LongRunning")]
 		public class when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled_as_xml :
 			HttpSpecificationWithLinkToToDeletedEvents {

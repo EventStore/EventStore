@@ -9,7 +9,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private readonly TimeSpan _commitTimeout;
 		private bool _transactionWritten;
 		public TransactionCommit(
-					IPublisher publisher,
+					IPublisher mainBus,
+					IPublisher storage,
 					TimeSpan prepareTimeout,
 					TimeSpan commitTimeout,
 					IEnvelope clientResponseEnvelope,
@@ -18,7 +19,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long transactionId,
 					CommitSource commitSource)
 			: base(
-					 publisher,
+					 mainBus,
+					 storage,
 					 prepareTimeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
@@ -41,7 +43,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected override void AllPreparesWritten() {
 			base.AllPreparesWritten();
 			NextTimeoutTime = DateTime.UtcNow + _commitTimeout;
-			Publisher.Publish(
+			MainBus.Publish(
 				new StorageMessage.WriteCommit(
 						InternalCorrId,
 						WriteReplyEnvelope,

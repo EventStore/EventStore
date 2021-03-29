@@ -13,6 +13,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 		protected override WriteEvents OnManager(FakePublisher publisher) {
 			return new WriteEvents(
 				publisher, 
+				publisher, 
 				CommitTimeout, 
 				Envelope,
 				InternalCorrId,

@@ -19,6 +19,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 				bool waitForCommit = false)
 			: base(
 				 publisher,
+				 publisher,
 				 timeout,
 				 clientResponseEnvelope,
 				 internalCorrId,

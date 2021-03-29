@@ -12,7 +12,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private long _transactionId;
 
 		public TransactionWrite(
-					IPublisher publisher,
+					IPublisher mainBus,
+					IPublisher storage,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -21,7 +22,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					long transactionId,
 					CommitSource commitSource)
 			: base(
-					 publisher,
+					 mainBus,
+					 storage,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,

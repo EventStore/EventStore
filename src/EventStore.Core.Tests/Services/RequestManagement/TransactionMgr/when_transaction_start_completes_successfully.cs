@@ -10,11 +10,12 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 	[TestFixture]
 	public class when_transaction_start_completes_successfully : RequestManagerSpecification<TransactionStart> {
-		private long _commitPosition =3000;
+		private long _commitPosition = 3000;
 		private long _transactionPosition = 1564;
 		protected override TransactionStart OnManager(FakePublisher publisher) {
 			return new TransactionStart(
 			 	publisher,
+				publisher,
 				PrepareTimeout,
 				Envelope,
 				InternalCorrId,
@@ -22,7 +23,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 				$"testStream-{nameof(when_transaction_commit_completes_successfully)}",
 				0,
 				CommitSource);
-			}
+		}
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new StorageMessage.PrepareAck(InternalCorrId, _transactionPosition, PrepareFlags.TransactionBegin);
@@ -41,8 +42,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		[Test]
 		public void the_envelope_is_replied_to_with_success() {
 			Assert.That(Envelope.Replies.ContainsSingle<ClientMessage.TransactionStartCompleted>(
-				x => 
-					x.CorrelationId == ClientCorrId && 
+				x =>
+					x.CorrelationId == ClientCorrId &&
 					x.Result == OperationResult.Success &&
 					x.TransactionId == _transactionPosition));
 		}

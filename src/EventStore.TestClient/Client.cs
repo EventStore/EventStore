@@ -98,7 +98,7 @@ namespace EventStore.TestClient {
 				var args = ParseCommandLine(Options.Command[0]);
 				return Execute(args);
 			}
-
+			
 			new Thread(() => {
 				Thread.Sleep(100);
 				Console.WriteLine(GetCommandList());
