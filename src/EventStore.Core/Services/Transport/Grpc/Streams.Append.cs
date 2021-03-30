@@ -33,14 +33,22 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
-
+			
+						
 			var user = context.GetHttpContext().User;
 			var op = WriteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
+			// recored request start time & pass on message
+			// add preflight check here: expected version 
+			// possible idempotency check ??
 
-			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
+
+			var token = await _writeTokenChannel.Reader.ReadAsync().ConfigureAwait(false);
+
+			var internalCorrelationId = Guid.NewGuid(); 
+			var clientCorrelationId =  Uuid.FromDto(requestStream.Current.ProposedMessage.Id).ToGuid(); //todo-clc: confirm this is the request id
 
 			var events = new List<Event>();
 
@@ -80,8 +88,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
 
 			_publisher.Publish(new ClientMessage.WriteEvents(
-				correlationId,
-				correlationId,
+				internalCorrelationId,
+				clientCorrelationId,
 				envelope,
 				requiresLeader,
 				streamName,
@@ -93,6 +101,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			return await appendResponseSource.Task.ConfigureAwait(false);
 
 			void HandleWriteEventsCompleted(Message message) {
+				_writeTokenChannel.Writer.TryWrite(token);
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					appendResponseSource.TrySetException(ex);
 					return;
