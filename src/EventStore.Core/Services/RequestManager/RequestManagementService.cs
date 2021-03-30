@@ -9,9 +9,13 @@ using EventStore.Core.Services.TimerService;
 using System.Diagnostics;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
+using System.Threading.Channels;
+using System.Reflection.Metadata.Ecma335;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.RequestManager {
-	public class RequestManagementService :		
+	
+	public class RequestManagementService :
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.DeleteStream>,
@@ -29,7 +33,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<StorageMessage.RequestManagerTimerTick>,
 		IHandle<SystemMessage.StateChangeMessage> {
-		
+
 		private readonly IPublisher _mainBus;
 		private readonly IPublisher _storage;
 		private readonly TimerMessage.Schedule _tickRequestMessage;
@@ -39,7 +43,8 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
 		private readonly CommitSource _commitSource;
-		private VNodeState _nodeState;		
+		private VNodeState _nodeState;
+
 
 		public RequestManagementService(
 			IPublisher mainBus,
@@ -49,7 +54,7 @@ namespace EventStore.Core.Services.RequestManager {
 			Ensure.NotNull(mainBus, nameof(mainBus));
 			Ensure.NotNull(storage, nameof(storage));
 			_mainBus = mainBus;
-			_storage= storage;
+			_storage = storage;
 
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
 				new PublishEnvelope(_mainBus),
@@ -57,9 +62,9 @@ namespace EventStore.Core.Services.RequestManager {
 
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
-			_commitSource = new CommitSource();
+			_commitSource = new CommitSource();			
 		}
-		
+	
 		public void Handle(ClientMessage.WriteEvents message) {
 			var manager = new WriteEvents(
 								_mainBus,
@@ -143,8 +148,8 @@ namespace EventStore.Core.Services.RequestManager {
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());
 			manager.Start();
 		}
-		
-		
+
+
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			//TODO(clc): if we have become resigning leader should all requests be actively disposed?
 			_nodeState = message.State;
@@ -177,22 +182,22 @@ namespace EventStore.Core.Services.RequestManager {
 			if (!_currentRequests.Remove(message.CorrelationId))
 				throw new InvalidOperationException("Should never complete request twice.");
 		}
-		
+
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 
-		public void Handle(StorageMessage.AlreadyCommitted message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.PrepareAck message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.CommitIndexed message) =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.WrongExpectedVersion message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.InvalidTransaction message)  =>	DispatchInternal(message.CorrelationId, message);
-		public void Handle(StorageMessage.StreamDeleted message)  =>	DispatchInternal(message.CorrelationId, message);
-		
+		public void Handle(StorageMessage.AlreadyCommitted message) => DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.PrepareAck message) => DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.CommitIndexed message) => DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.WrongExpectedVersion message) => DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.InvalidTransaction message) => DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.StreamDeleted message) => DispatchInternal(message.CorrelationId, message);
+
 		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
 			if (_currentRequests.TryGetValue(correlationId, out var manager)) {
 				var x = manager as IHandle<T>;
 				x?.Handle(message);
 			}
-		}		
+		}
 	}
 }

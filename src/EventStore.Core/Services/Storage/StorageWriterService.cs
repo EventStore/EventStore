@@ -109,9 +109,8 @@ namespace EventStore.Core.Services.Storage {
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
 			
 			//Bounded queue
-			var config = new BoundedChannelOptions(500) {
-				SingleReader = true,
-				FullMode = BoundedChannelFullMode.Wait,
+			var config = new UnboundedChannelOptions() {
+				SingleReader = true,				
 				AllowSynchronousContinuations = false,
 				SingleWriter = false
 			};
@@ -121,7 +120,6 @@ namespace EventStore.Core.Services.Storage {
 				queueStatsManager,
 				true,
 				TimeSpan.FromMilliseconds(500),
-				bounded: true,
 				config: config);			
 			_tasks.Add(StorageWriterQueue.Start());
 
