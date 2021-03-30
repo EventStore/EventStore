@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var options = requestStream.Current.Options;
 			var streamName = options.StreamIdentifier;
-			
+
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(
 					options.Revision).ToInt64(),
@@ -39,6 +39,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
+
+			// recored request start time & pass on message
+			// add preflight check here: expected version 
+			// possible idempotency check ??
+			AppendRequestToken token;
+			try {
+				token = await _writeTokenChannel.Reader.ReadAsync().ConfigureAwait(false);
+			} catch (Exception) {
+				throw new InvalidOperationException();
+			}
+
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
 
@@ -93,6 +104,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			return await appendResponseSource.Task.ConfigureAwait(false);
 
 			void HandleWriteEventsCompleted(Message message) {
+				if (token != null) { _writeTokenChannel.Writer.TryWrite(token); }
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					appendResponseSource.TrySetException(ex);
 					return;
