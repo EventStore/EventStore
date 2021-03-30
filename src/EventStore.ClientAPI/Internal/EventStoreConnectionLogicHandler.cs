@@ -34,6 +34,7 @@ namespace EventStore.ClientAPI.Internal {
 		private TimeSpan _lastTimeoutsTimeStamp;
 		private readonly OperationsManager _operations;
 		private readonly SubscriptionsManager _subscriptions;
+		private readonly ICompatibilityMode _compatibilityMode;
 
 		private ConnectionState _state = ConnectionState.Init;
 		private ConnectingPhase _connectingPhase = ConnectingPhase.Invalid;
@@ -77,6 +78,8 @@ namespace EventStore.ClientAPI.Internal {
 			_queue.RegisterHandler<TimerTickMessage>(msg => TimerTick());
 
 			_timer = new Timer(_ => EnqueueMessage(TimerTickMessage), null, Consts.TimerPeriod, Consts.TimerPeriod);
+
+			_compatibilityMode = CompatibilityMode.Create(_settings.CompatibilityMode);
 		}
 
 		public void EnqueueMessage(Message message) {
@@ -140,7 +143,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private void EstablishTcpConnection(NodeEndPoints endPoints) {
-			var endPoint = _settings.UseSslConnection
+			var endPoint = _compatibilityMode.IsAutoCompatibilityModeEnabled() || _settings.UseSslConnection
 				? endPoints.SecureTcpEndPoint ?? endPoints.TcpEndPoint
 				: endPoints.TcpEndPoint;
 			if (endPoint == null) {
@@ -163,18 +166,23 @@ namespace EventStore.ClientAPI.Internal {
 				return;
 			}
 
+			var useSsl = _compatibilityMode.IsAutoCompatibilityModeEnabled()
+				? endPoints.SecureTcpEndPoint != null
+				: _settings.UseSslConnection;
+
 			_connectingPhase = ConnectingPhase.ConnectionEstablishing;
 			_connection = new TcpPackageConnection(
 				_settings.Log,
 				endPoint,
 				Guid.NewGuid(),
-				_settings.UseSslConnection,
+				useSsl,
 				_settings.ValidateServer,
 				_settings.ClientConnectionTimeout,
 				(connection, package) => EnqueueMessage(new HandleTcpPackageMessage(connection, package)),
 				(connection, exc) => EnqueueMessage(new TcpConnectionErrorMessage(connection, exc)),
 				connection => EnqueueMessage(new TcpConnectionEstablishedMessage(connection)),
 				(connection, error) => EnqueueMessage(new TcpConnectionClosedMessage(connection, error)));
+
 			_connection.StartReceiving();
 		}
 
@@ -623,7 +631,7 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private void ReconnectTo(NodeEndPoints endPoints) {
-			EndPoint endPoint = _settings.UseSslConnection
+			EndPoint endPoint = _compatibilityMode.IsAutoCompatibilityModeEnabled() || _settings.UseSslConnection
 				? endPoints.SecureTcpEndPoint ?? endPoints.TcpEndPoint
 				: endPoints.TcpEndPoint;
 			if (endPoint == null) {

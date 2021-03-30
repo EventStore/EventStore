@@ -99,10 +99,25 @@ namespace EventStore.ClientAPI.Internal {
 		}
 
 		private GossipSeed[] GetGossipCandidatesFromConfig() {
-			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromDns");
 			var endpoints = _gossipSeeds;
+			if ((endpoints?.Length ?? 0) != 0) {
+				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
+					var tmp = new List<GossipSeed>();
+					foreach (var gossipSeed in _gossipSeeds) {
+						tmp.Add(gossipSeed);
+						tmp.Add(new GossipSeed(gossipSeed.EndPoint, seedOverTls: false, v5HostHeader: true));
+					}
+					endpoints = tmp.ToArray();
 
-			if ((endpoints?.Length ?? 0) == 0) {
+				} else if (_compatibilityMode.IsVersion5CompatibilityModeEnabled()) {
+					endpoints = _gossipSeeds.Select(x => new GossipSeed(x.EndPoint, false, true)).ToArray();
+					RandomShuffle(endpoints, 0, endpoints.Length - 1);
+				} else {
+					endpoints = _gossipSeeds;
+					RandomShuffle(endpoints, 0, endpoints.Length - 1);
+				}
+			} else {
+
 				if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
 					endpoints = new[] {
 						new GossipSeed(_clusterDns, seedOverTls: true, v5HostHeader: false), // Try HTTPS gossip first (v20 defaults)
@@ -119,10 +134,7 @@ namespace EventStore.ClientAPI.Internal {
 						new GossipSeed(_clusterDns, seedOverTls: true, v5HostHeader: false)
 					};
 				}
-			} else {
-				RandomShuffle(endpoints, 0, endpoints.Length - 1);
 			}
-
 			return endpoints;
 		}
 
