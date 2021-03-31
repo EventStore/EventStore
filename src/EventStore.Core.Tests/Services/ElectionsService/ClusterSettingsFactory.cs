@@ -9,6 +9,7 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
@@ -41,9 +42,9 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					GetLoopbackForPort(httpPort).ToDnsEndPoint(), null,
 					null, 0, null, 0, 0),
 				false, certificate, new X509Certificate2Collection(trustedRootCertificate),
-				Opts.CertificateReservedNodeCommonNameDefault, 1, false, "dns", new[] {GetLoopbackForPort(ManagerPort)},
+				Opts.CertificateReservedNodeCommonNameDefault, 1, 100, false, "dns", new[] {GetLoopbackForPort(ManagerPort)},
 				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
-				TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2), false, false,TimeSpan.FromHours(1),
+				TimeSpan.FromSeconds(2), CommitLevel.Indexed, TimeSpan.FromSeconds(2), false, false,TimeSpan.FromHours(1),
 				StatsStorage.StreamAndFile, 0,
 				new AuthenticationProviderFactory(components =>
 					new InternalAuthenticationProviderFactory(components)),

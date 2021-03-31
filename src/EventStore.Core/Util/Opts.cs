@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using EventStore.Common.Options;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Util {
@@ -164,6 +165,9 @@ namespace EventStore.Core.Util {
 		public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
 		public const int WorkerThreadsDefault = 5;
 
+		public const string MaxWriteConcurrencyDescr = "The max number of concurrent write requests on the server for gppc backpressure.";
+		public const int MaxWriteConcurrencyDefault = 100;
+
 		public const string UnsafeIgnoreHardDeleteDescr = "Disables Hard Deletes (UNSAFE: use to remove hard deletes)";
 		public static readonly bool UnsafeIgnoreHardDeleteDefault = false;
 
@@ -178,6 +182,9 @@ namespace EventStore.Core.Util {
 
 		public const string CommitTimeoutMsDescr = "Commit timeout (in milliseconds).";
 		public static readonly int CommitTimeoutMsDefault = 2000; // 2 seconds
+
+		public const string CommitLevelDescr = "Commit Level on Appends: Indexed, Quorum, Leader, Per-Stream";
+		public static readonly CommitLevel CommitLevelDefault = CommitLevel.Indexed;
 
 		public const string WriteTimeoutMsDescr = "Write timeout (in milliseconds).";
 		public static readonly int WriteTimeoutMsDefault = 2000; // 2 seconds

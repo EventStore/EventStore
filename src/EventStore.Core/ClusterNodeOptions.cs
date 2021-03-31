@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Util;
 using EventStore.Rags;
 
@@ -186,6 +187,9 @@ namespace EventStore.Core {
 
 		[ArgDescription(Opts.WorkerThreadsDescr, Opts.AppGroup)]
 		public int WorkerThreads { get; set; }
+		
+		[ArgDescription(Opts.MaxWriteConcurrencyDescr, Opts.AppGroup)]
+		public int MaxWriteConcurrency { get; set; }
 
 		[ArgDescription(Opts.ProjectionsQueryExpiryDescr, Opts.ProjectionsGroup)]
 		public int ProjectionsQueryExpiry { get; set; }
@@ -248,6 +252,9 @@ namespace EventStore.Core {
 
 		[ArgDescription(Opts.CommitTimeoutMsDescr, Opts.DbGroup)]
 		public int CommitTimeoutMs { get; set; }
+		
+		[ArgDescription(Opts.CommitLevelDescr, Opts.DbGroup)]
+		public CommitLevel CommitLevel { get; set; }
 
 		[ArgDescription(Opts.WriteTimeoutMsDescr, Opts.DbGroup)]
 		public int WriteTimeoutMs { get; set; }
@@ -374,6 +381,7 @@ namespace EventStore.Core {
 			ProjectionsQueryExpiry = Opts.ProjectionsQueryExpiryDefault;
 			FaultOutOfOrderProjections = Opts.FaultOutOfOrderProjectionsDefault;
 			WorkerThreads = Opts.WorkerThreadsDefault;
+			MaxWriteConcurrency = Opts.MaxWriteConcurrencyDefault;
 
 			EnableTrustedAuth = Opts.EnableTrustedAuthDefault;
 
@@ -420,6 +428,7 @@ namespace EventStore.Core {
 			UnsafeDisableFlushToDisk = Opts.UnsafeDisableFlushToDiskDefault;
 			PrepareTimeoutMs = Opts.PrepareTimeoutMsDefault;
 			CommitTimeoutMs = Opts.CommitTimeoutMsDefault;
+			CommitLevel = Opts.CommitLevelDefault;
 			WriteTimeoutMs = Opts.WriteTimeoutMsDefault;
 			DisableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			ScavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;

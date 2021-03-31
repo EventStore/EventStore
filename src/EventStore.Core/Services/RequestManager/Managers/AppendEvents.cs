@@ -47,7 +47,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (streamPrefix[0] != '$') { return CommitLevel.Indexed; } // Not '$' standard user stream
 			if (streamPrefix[1] != '!') { return CommitLevel.Indexed; } // Not '$!' system stream
 			if (streamPrefix[2] != '!') { return CommitLevel.Replicated; } // "$!" Replicated commit requested
-			return CommitLevel.Written; // "$!!" Written commit requested
+			if (streamPrefix[2] == '!') { return CommitLevel.Leader; } // "$!!" Written commit requested
+			return CommitLevel.Indexed; // we shuold not get here 
 		}
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WritePrepares(
@@ -60,7 +61,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected override void AllEventsWritten() {
 			if (!Registered) {
 				switch (_commitLevel) {
-					case CommitLevel.Written:
+					case CommitLevel.Leader:
 						Committed();
 						break;
 					case CommitLevel.Replicated:

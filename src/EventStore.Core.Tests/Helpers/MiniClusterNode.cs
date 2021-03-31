@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.Services.RequestManager;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode {
@@ -76,7 +77,7 @@ namespace EventStore.Core.Tests.Helpers {
 			IPEndPoint externalTcp, IPEndPoint externalTcpSec, IPEndPoint httpEndPoint, EndPoint[] gossipSeeds,
 			ISubsystem[] subsystems = null, int? chunkSize = null, int? cachedChunkSize = null,
 			bool enableTrustedAuth = false, bool skipInitializeStandardUsersCheck = true, int memTableSize = 1000,
-			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+			bool inMemDb = true, bool disableFlushToDisk = false, bool readOnlyReplica = false, CommitLevel commitLevel = CommitLevel.Indexed) {
 			
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
@@ -120,8 +121,8 @@ namespace EventStore.Core.Tests.Helpers {
 					InternalTcpSecEndPoint.ToDnsEndPoint(),
 					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(), HttpEndPoint.ToDnsEndPoint(),
 					null, null, 0, null, 0, 0), enableTrustedAuth,
-				certificate, trustedRootCertificates, Opts.CertificateReservedNodeCommonNameDefault, 1, false,
-				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
+				certificate, trustedRootCertificates, Opts.CertificateReservedNodeCommonNameDefault, 1, 50, false,
+				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), commitLevel,
 				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new AuthenticationProviderFactory(components => 
 					new InternalAuthenticationProviderFactory(components)),

@@ -25,6 +25,7 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Index;
 using EventStore.Core.Settings;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.Services.RequestManager;
 
 namespace EventStore.Core {
 	/// <summary>
@@ -58,6 +59,7 @@ namespace EventStore.Core {
 		private string _certificateReservedNodeCommonName;
 		
 		protected int _workerThreads;
+		protected int _maxWriteConcurrency;
 
 		protected bool _discoverViaDns;
 		protected string _clusterDns;
@@ -70,6 +72,7 @@ namespace EventStore.Core {
 		protected int _commitAckCount;
 		protected TimeSpan _prepareTimeout;
 		protected TimeSpan _commitTimeout;
+		protected CommitLevel _commitLevel;
 		protected TimeSpan _writeTimeout;
 
 		protected int _nodePriority;
@@ -186,6 +189,7 @@ namespace EventStore.Core {
 			_readerThreadsCount = Opts.ReaderThreadsCountDefault;
 			_certificate = null;
 			_workerThreads = Opts.WorkerThreadsDefault;
+			_maxWriteConcurrency = Opts.MaxWriteConcurrencyDefault;
 
 			_discoverViaDns = Opts.DiscoverViaDnsDefault;
 			_clusterDns = Opts.ClusterDnsDefault;
@@ -198,6 +202,7 @@ namespace EventStore.Core {
 			_commitAckCount = 1;
 			_prepareTimeout = TimeSpan.FromMilliseconds(Opts.PrepareTimeoutMsDefault);
 			_commitTimeout = TimeSpan.FromMilliseconds(Opts.CommitTimeoutMsDefault);
+			_commitLevel = Opts.CommitLevelDefault;
 			_writeTimeout = TimeSpan.FromMilliseconds(Opts.WriteTimeoutMsDefault);
 
 			_nodePriority = Opts.NodePriorityDefault;
@@ -1440,6 +1445,7 @@ namespace EventStore.Core {
 				_trustedRootCerts,
 				_certificateReservedNodeCommonName,
 				_workerThreads,
+				_maxWriteConcurrency,
 				_discoverViaDns,
 				_clusterDns,
 				_gossipSeeds.ToArray(),
@@ -1449,6 +1455,7 @@ namespace EventStore.Core {
 				_commitAckCount,
 				_prepareTimeout,
 				_commitTimeout,
+				_commitLevel,
 				_writeTimeout,
 				_disableInternalTcpTls,
 				_disableExternalTcpTls,
