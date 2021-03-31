@@ -238,7 +238,7 @@ namespace EventStore.TestClient.Commands {
 				};
 				Action<TcpTypedConnection<byte[]>, SocketError> closed = (_, __) => sent.Set();
 
-				context.Client.CreateTcpConnection(context, handlePackage, established, closed, false, tcpEndPoint);
+				context._tcpTestClient.CreateTcpConnection(context, handlePackage, established, closed, false, tcpEndPoint);
 				if (!sent.WaitOne(timeoutMilliseconds))
 					throw new ApplicationException("Connection to server was not closed in time.");
 			};
