@@ -8,6 +8,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Cluster.Settings {
@@ -20,6 +21,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public X509Certificate2Collection TrustedRootCerts;
 		public readonly string CertificateReservedNodeCommonName;
 		public readonly int WorkerThreads;
+		public readonly int MaxWriteConcurrency;
 		public readonly bool StartStandardProjections;
 		public readonly bool EnableAtomPubOverHTTP;
 		public readonly bool DisableHTTPCaching;
@@ -38,6 +40,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int CommitAckCount;
 		public readonly TimeSpan PrepareTimeout;
 		public readonly TimeSpan CommitTimeout;
+		public readonly CommitLevel CommitLevel;		
 		public readonly TimeSpan WriteTimeout;
 
 		public readonly int NodePriority;
@@ -112,6 +115,7 @@ namespace EventStore.Core.Cluster.Settings {
 			X509Certificate2Collection trustedRootCerts,
 			string certificateReservedNodeCommonName,
 			int workerThreads,
+			int maxWriteConcurrency,
 			bool discoverViaDns,
 			string clusterDns,
 			EndPoint[] gossipSeeds,
@@ -121,6 +125,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int commitAckCount,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
+			CommitLevel commitLevel,
 			TimeSpan writeTimeout,
 			bool disableInternalTcpTls,
 			bool disableExternalTcpTls,
@@ -185,6 +190,7 @@ namespace EventStore.Core.Cluster.Settings {
 			if ((clusterNodeCount>1 && internalSecureTcpEndPoint != null) || externalSecureTcpEndPoint != null || !disableHttps)
 				Ensure.NotNull(certificate, "certificate");
 			Ensure.Positive(workerThreads, "workerThreads");
+			Ensure.Positive(maxWriteConcurrency, nameof(maxWriteConcurrency));
 			Ensure.NotNull(clusterDns, "clusterDns");
 			Ensure.NotNull(gossipSeeds, "gossipSeeds");
 			Ensure.Positive(clusterNodeCount, "clusterNodeCount");
@@ -222,6 +228,7 @@ namespace EventStore.Core.Cluster.Settings {
 			CertificateReservedNodeCommonName = certificateReservedNodeCommonName;
 
 			WorkerThreads = workerThreads;
+			MaxWriteConcurrency = maxWriteConcurrency;
 			StartStandardProjections = startStandardProjections;
 			EnableAtomPubOverHTTP = enableAtomPubOverHTTP;
 			DisableHTTPCaching = disableHTTPCaching;
@@ -241,6 +248,7 @@ namespace EventStore.Core.Cluster.Settings {
 			CommitAckCount = commitAckCount;
 			PrepareTimeout = prepareTimeout;
 			CommitTimeout = commitTimeout;
+			CommitLevel = commitLevel;
 			WriteTimeout = writeTimeout;
 
 			DisableInternalTcpTls = disableInternalTcpTls;

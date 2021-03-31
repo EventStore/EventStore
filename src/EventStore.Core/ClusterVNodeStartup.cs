@@ -40,6 +40,7 @@ namespace EventStore.Core {
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex _readIndex;
 		private readonly int _maxAppendSize;
+		private readonly int _maxWriteConcurrency;
 		private readonly KestrelHttpService _httpService;
 		private readonly StatusCheck _statusCheck;
 
@@ -57,6 +58,7 @@ namespace EventStore.Core {
 			IAuthorizationProvider authorizationProvider,
 			IReadIndex readIndex,
 			int maxAppendSize,
+			int maxWriteConcurrency,
 			KestrelHttpService httpService) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
@@ -95,6 +97,7 @@ namespace EventStore.Core {
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;
+			_maxWriteConcurrency = maxWriteConcurrency;
 			_httpService = httpService;
 
 			_statusCheck = new StatusCheck(this);
@@ -144,7 +147,7 @@ namespace EventStore.Core {
 						.AddSingleton<AuthorizationMiddleware>()
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams(_mainQueue, _readIndex, _maxAppendSize, _authorizationProvider))
+						.AddSingleton(new Streams(_mainQueue, _readIndex, _maxAppendSize, _authorizationProvider, _maxWriteConcurrency))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))

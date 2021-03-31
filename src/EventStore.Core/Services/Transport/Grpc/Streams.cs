@@ -15,14 +15,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static readonly Operation WriteOperation = new Operation(Plugins.Authorization.Operations.Streams.Write);
 		private static readonly Operation DeleteOperation = new Operation(Plugins.Authorization.Operations.Streams.Delete);
 		public Streams(IPublisher publisher, IReadIndex readIndex,
-			int maxAppendSize, IAuthorizationProvider provider) {
+			int maxAppendSize, IAuthorizationProvider provider, int maxWriteConcurrency) {
 			if (publisher == null) throw new ArgumentNullException(nameof(publisher));
 			_publisher = publisher;
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;
 			_provider = provider;
-			_writeTokenChannel = Channel.CreateBounded<AppendRequestToken>(50);
-			for (int i = 0; i < 100; i++) {
+			_writeTokenChannel = Channel.CreateUnbounded<AppendRequestToken>();
+			for (int i = 0; i < maxWriteConcurrency; i++) {
 				_writeTokenChannel.Writer.TryWrite(new AppendRequestToken());
 			}
 		}

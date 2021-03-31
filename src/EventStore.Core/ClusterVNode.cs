@@ -586,7 +586,8 @@ namespace EventStore.Core {
 			var requestManagement = new RequestManagementService(
 				_mainQueue,
 				vNodeSettings.PrepareTimeout,
-				vNodeSettings.CommitTimeout);
+				vNodeSettings.CommitTimeout,
+				vNodeSettings.CommitLevel);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
@@ -831,7 +832,7 @@ namespace EventStore.Core {
 			}
 
 			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
-				_vNodeSettings.MaxAppendSize, _httpService);
+				_vNodeSettings.MaxAppendSize, _vNodeSettings.MaxWriteConcurrency, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}
