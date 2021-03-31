@@ -20,7 +20,7 @@ namespace EventStore.TestClient.Commands {
 
 			var streamByCorrId = new Dictionary<Guid, string>();
 
-			var connection = context.Client.CreateTcpConnection(
+			var connection = context._tcpTestClient.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => { },
 				handlePackage: (conn, pkg) => {

@@ -75,7 +75,7 @@ namespace EventStore.TestClient.Commands {
 				long sent = 0;
 				long received = 0;
 				var rnd = new Random();
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, pkg) => {
 						if (pkg.Command != TcpCommand.WriteEventsCompleted) {
@@ -161,7 +161,7 @@ namespace EventStore.TestClient.Commands {
 
 						var localSent = Interlocked.Increment(ref sent);
 						while (localSent - Interlocked.Read(ref received) >
-						       context.Client.Options.WriteWindow / clientsCnt) {
+						       context._tcpTestClient.Options.WriteWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}

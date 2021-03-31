@@ -66,11 +66,11 @@ namespace EventStore.TestClient.Commands {
 					.LimitReconnectionsTo(10)
 					.LimitRetriesForOperationTo(10)
 					.LimitOperationsQueueTo(10000)
-					.LimitConcurrentOperationsTo(context.Client.Options.WriteWindow / clientsCnt)
+					.LimitConcurrentOperationsTo(context._tcpTestClient.Options.WriteWindow / clientsCnt)
 					.FailOnNoServerResponse();
 
 				var client = EventStoreConnection.Create(settings,
-					new Uri($"tcp://{context.Client.TcpEndpoint.GetHost()}:{context.Client.TcpEndpoint.GetPort()}"));
+					new Uri($"tcp://{context._tcpTestClient.TcpEndpoint.GetHost()}:{context._tcpTestClient.TcpEndpoint.GetPort()}"));
 				clients.Add(client);
 
 				threads.Add(new Thread(_ => {

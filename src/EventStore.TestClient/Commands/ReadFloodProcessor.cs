@@ -58,7 +58,7 @@ namespace EventStore.TestClient.Commands {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
 				long received = 0;
 				long sent = 0;
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, pkg) => {
 						if (pkg.Command != TcpCommand.ReadEventCompleted) {
@@ -101,7 +101,7 @@ namespace EventStore.TestClient.Commands {
 
 						var localSent = Interlocked.Increment(ref sent);
 						while (localSent - Interlocked.Read(ref received) >
-						       context.Client.Options.ReadWindow / clientsCnt) {
+						       context._tcpTestClient.Options.ReadWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}
