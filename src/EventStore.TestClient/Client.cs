@@ -1,5 +1,6 @@
 using System;
-using System.Net;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.TestClient.Commands;
@@ -15,7 +16,6 @@ namespace EventStore.TestClient {
 		public readonly bool InteractiveMode;
 
 		public readonly ClientOptions Options;
-		public readonly EndPoint TcpEndpoint;
 
 		public readonly TcpTestClient _tcpTestClient;
 		public readonly GrpcTestClient _grpcTestClient;
@@ -26,10 +26,7 @@ namespace EventStore.TestClient {
 			Options = options;
 			
 			var interactiveMode = options.Command.IsEmpty();
-			var tcpEndpoint = new DnsEndPoint(options.Host, options.TcpPort);
-			var httpEndpoint = new DnsEndPoint(options.Host, options.HttpPort);
 
-			TcpEndpoint = tcpEndpoint;
 			InteractiveMode = options.Command.IsEmpty();
 
 			_tcpTestClient = new TcpTestClient(options, interactiveMode, Log);
@@ -79,6 +76,12 @@ namespace EventStore.TestClient {
 			_commands.Register(new GrpcCommands.WriteFloodProcessor());
 		}
 
+		public string GetCommandList() {
+			var sb = new StringBuilder();
+			_commands.RegisteredProcessors.Select(x => x.Usage.ToUpper()).ToList().ForEach(s => sb.AppendLine(s));
+			return sb.ToString();
+		}
+
 		public int Run() {
 			if (!InteractiveMode) {
 				var args = ParseCommandLine(Options.Command[0]);
@@ -87,6 +90,7 @@ namespace EventStore.TestClient {
 
 			new Thread(() => {
 				Thread.Sleep(100);
+				Console.WriteLine(GetCommandList());
 				Console.Write(">>> ");
 
 				string line;
