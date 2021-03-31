@@ -24,6 +24,9 @@ All notable changes to this project will be documented in this file.
 ### changed
 - minver prefix for tcp clients [EventStore#2846](https://github.com/EventStore/EventStore/pull/2846)
 
+### Changed Windows .dotnet prerequisite to https
+- //dotnet.microsoft.com/download/dotnet/5.0 and build command to dotnet build -c Release src/EventStore.sln -f netcoreapp5.0 -r <runtime identifier> [EventStore#2877](https://github.com/EventStore/EventStore/pull/2877)
+
 ## [21.2.0] Server - 2021-02-26
 
 ### Added
