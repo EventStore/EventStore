@@ -189,7 +189,7 @@ namespace EventStore.ClusterNode {
 				: 0;
 
 			var prepareCount = options.PrepareCount > quorumSize ? options.PrepareCount : quorumSize;
-			var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;
+			var commitCount = options.CommitCount > quorumSize ? options.CommitCount : quorumSize;			
 			Log.Information("Quorum size set to {quorum}", prepareCount);
 
 			if (options.ReadOnlyReplica && options.ClusterSize <= 1) {
@@ -226,6 +226,7 @@ namespace EventStore.ClusterNode {
 				.WithExternalSecureTcpOn(extSecTcp)
 				.WithHttpOn(httpEndPoint)
 				.WithWorkerThreads(options.WorkerThreads)
+				.WithMaxWriteConcurrency(options.MaxWriteConcurrency)
 				.WithInternalHeartbeatTimeout(TimeSpan.FromMilliseconds(options.IntTcpHeartbeatTimeout))
 				.WithInternalHeartbeatInterval(TimeSpan.FromMilliseconds(options.IntTcpHeartbeatInterval))
 				.WithExternalHeartbeatTimeout(TimeSpan.FromMilliseconds(options.ExtTcpHeartbeatTimeout))
@@ -239,6 +240,7 @@ namespace EventStore.ClusterNode {
 				.WithMinFlushDelay(TimeSpan.FromMilliseconds(options.MinFlushDelayMs))
 				.WithPrepareTimeout(TimeSpan.FromMilliseconds(options.PrepareTimeoutMs))
 				.WithCommitTimeout(TimeSpan.FromMilliseconds(options.CommitTimeoutMs))
+				.WithCommitlevel(options.CommitLevel)
 				.WithWriteTimeout(TimeSpan.FromMilliseconds(options.WriteTimeoutMs))
 				.WithStatsPeriod(TimeSpan.FromSeconds(options.StatsPeriodSec))
 				.WithDeadMemberRemovalPeriod(TimeSpan.FromSeconds(options.DeadMemberRemovalPeriodSec))

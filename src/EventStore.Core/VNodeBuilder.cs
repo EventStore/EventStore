@@ -701,7 +701,17 @@ namespace EventStore.Core {
 			_workerThreads = count;
 			return this;
 		}
-		
+
+		/// <summary>
+		/// Sets the MaxWriteConcurrency
+		/// </summary>
+		/// <param name="maxWriteConcurrency">Maximum number of inflight grpc writes</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithMaxWriteConcurrency(int maxWriteConcurrency) {
+			_maxWriteConcurrency = maxWriteConcurrency;
+			return this;
+		}
+
 		/// <summary>
 		/// Sets the Server TLS Certificate to be loaded from a file
 		/// </summary>
@@ -908,6 +918,16 @@ namespace EventStore.Core {
 			_commitTimeout = commitTimeout;
 			return this;
 		}
+		/// <summary>
+		/// Sets the commit level
+		/// </summary>
+		/// <param name="commitLevel">The commit level</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithCommitlevel(CommitLevel commitLevel) {
+			_commitLevel = commitLevel;
+			return this;
+		}
+		
 
 		/// <summary>
 		/// Sets the write timeout

@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 						new IHttpAuthenticationProvider[] {
 							new BasicHttpAuthenticationProvider(new TestAuthenticationProvider()),
 							new AnonymousHttpAuthenticationProvider(),
-						}, new TestAuthorizationProvider(), new FakeReadIndex(_ => false), 1024 * 1024, 100, _service)));
+						}, new TestAuthorizationProvider(), new FakeReadIndex(_ => false), 1024 * 1024, 97, _service)));
 			_httpMessageHandler = _server.CreateHandler();
 			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);
 			
