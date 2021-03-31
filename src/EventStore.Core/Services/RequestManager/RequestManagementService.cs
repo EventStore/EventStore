@@ -37,11 +37,13 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
 		private readonly CommitSource _commitSource;
-		private VNodeState _nodeState;		
+		private VNodeState _nodeState;
+		private CommitLevel _commitLevel;
 
 		public RequestManagementService(IPublisher bus,
 			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout) {
+			TimeSpan commitTimeout,
+			CommitLevel commitLevel) {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
@@ -50,11 +52,12 @@ namespace EventStore.Core.Services.RequestManager {
 
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
+			_commitLevel = commitLevel;
 			_commitSource = new CommitSource();
 		}
 		
 		public void Handle(ClientMessage.WriteEvents message) {
-			var manager = new WriteEvents(
+			var manager = new AppendEvents(
 								_bus,
 								_commitTimeout,
 								message.Envelope,
@@ -64,6 +67,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.ExpectedVersion,
 								message.Events,
 								_commitSource,
+								_commitLevel,
 								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
 			_currentTimedRequests.Add(message.InternalCorrId, Stopwatch.StartNew());

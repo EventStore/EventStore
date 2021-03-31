@@ -21,8 +21,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 		public void Handle(ReplicationTrackingMessage.IndexedTo @event) {
 			_indexTracker.TryEnqueLogPostion(@event.LogPosition);
-		}
-
+		}		
 		public void RegisterReplicated(long position, Action target) {
 			_replicatedTracker.Register(position, target);
 		}
@@ -71,7 +70,6 @@ namespace EventStore.Core.Services.RequestManager {
 			lock (_registerLock) {
 				if (_logPosition >= position) {
 					target();
-					//Task.Run(() => { try { target?.Invoke(); } catch { /*ignore*/ } });
 					return;
 				};
 				if (!_registeredActions.TryGetValue(position, out var actionList)) {
