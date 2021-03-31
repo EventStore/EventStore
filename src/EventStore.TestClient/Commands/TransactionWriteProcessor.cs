@@ -37,7 +37,7 @@ namespace EventStore.TestClient.Commands {
 			var stage = Stage.AcquiringTransactionId;
 			long transactionId = -1;
 			var writtenEvents = 0;
-			context.Client.CreateTcpConnection(
+			context._tcpTestClient.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Starting transaction...",

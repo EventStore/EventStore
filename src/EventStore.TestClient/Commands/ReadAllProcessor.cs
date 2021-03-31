@@ -56,7 +56,7 @@ namespace EventStore.TestClient.Commands {
 			var tcpCommand = forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward;
 			var tcpCommandToReceive = forward ? TcpCommand.ReadAllEventsForwardCompleted : TcpCommand.ReadAllEventsBackwardCompleted;
 
-			context.Client.CreateTcpConnection(
+			context._tcpTestClient.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...",
