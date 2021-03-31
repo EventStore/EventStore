@@ -37,7 +37,7 @@ namespace EventStore.TestClient.Commands {
 
 			context.IsAsync();
 			var sw = new Stopwatch();
-			context.Client.CreateTcpConnection(
+			context._tcpTestClient.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,

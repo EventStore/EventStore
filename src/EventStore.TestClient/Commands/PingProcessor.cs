@@ -14,12 +14,12 @@ namespace EventStore.TestClient.Commands {
 		public bool Execute(CommandProcessorContext context, string[] args) {
 			context.IsAsync();
 
-			context.Client.CreateTcpConnection(
+			context._tcpTestClient.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
 					var package = new TcpPackage(TcpCommand.Ping, Guid.NewGuid(), null);
-					context.Log.Information("[{ip}:{tcpPort}]: PING...", context.Client.Options.Host,
-						context.Client.Options.TcpPort);
+					context.Log.Information("[{ip}:{tcpPort}]: PING...", context._tcpTestClient.Options.Host,
+						context._tcpTestClient.Options.TcpPort);
 					conn.EnqueueSend(package.AsByteArray());
 				},
 				handlePackage: (conn, pkg) => {
@@ -28,8 +28,8 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					context.Log.Information("[{ip}:{tcpPort}]: PONG!", context.Client.Options.Host,
-						context.Client.Options.TcpPort);
+					context.Log.Information("[{ip}:{tcpPort}]: PONG!", context._tcpTestClient.Options.Host,
+						context._tcpTestClient.Options.TcpPort);
 					context.Success();
 					conn.Close();
 				},

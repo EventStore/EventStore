@@ -30,7 +30,7 @@ namespace EventStore.TestClient.Commands {
 					.UseCustomLogger(new ClientApiLoggerBridge(context.Log))
 					.FailOnNoServerResponse()
 				/*.EnableVerboseLogging()*/,
-				new Uri($"tcp://{context.Client.TcpEndpoint.GetHost()}:{context.Client.TcpEndpoint.GetPort()}"));
+				new Uri($"tcp://{context._tcpTestClient.TcpEndpoint.GetHost()}:{context._tcpTestClient.TcpEndpoint.GetPort()}"));
 			conn.ConnectAsync().Wait();
 
 			long appearedCnt = 0;
