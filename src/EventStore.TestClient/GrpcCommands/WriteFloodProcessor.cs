@@ -119,11 +119,10 @@ namespace EventStore.TestClient.GrpcCommands {
 								var elapsed = sw2.Elapsed;
 								sw2.Restart();
 								context.Log.Information(
-									"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted}) {localAll}, {currentInterval}].",
+									"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
 									localAll, elapsed, 1000.0 * (localAll - localInterval) / elapsed.TotalMilliseconds,
 									succ, fail,
-									wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted,
-									localAll, localInterval);
+									wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
 							}
 
 							monitor.EndOperation(corrid);
