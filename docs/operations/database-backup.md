@@ -18,19 +18,19 @@ If your infrastructure is virtualized, disk _snapshots_ is an option and the eas
 
 ## Considerations for backup and restore procedures
 
-Backing up one node should be enough.
+Backing up one node is recommended.
 However ensure that the node chosen as target for the backup is up to date and connected to the cluster.
 For additional safety you can also backup at least a quorum of nodes.
 
-Try to avoid backing up a node at the same time as running a scavenge operation.
+Do not back up a node at the same time as running a scavenge operation.
 
 [Read-only replica](../clustering/node-roles.md#read-only-replica) nodes may be used as backup source.
 
-When restoring a database, do not mix backup files of different nodes onto the same target node.
+When either running a backup or restoring, do not mix backup files of different nodes.
 
 The restore must happen on a _stopped_ node.
 
-The restore process can happen on any failed node of a cluster.
+The restore process can happen on any node of a cluster.
 
 You can restore any number of nodes in a cluster from the same backup source.
 This means, for example, in the event a non recoverable 3 nodes cluster, that the same
@@ -40,7 +40,7 @@ When you restore a node that was the source of the backup, perform a full backup
 
 ## Database Files Information
 
-There are 2 directories containing data that needs to be included in the backup:
+By default there are 2 directories containing data that needs to be included in the backup:
 `db\ ` where the data is located & `index\ ` where the indexes are kept.
 
 The exact name and location is dependent on your configuration.
@@ -87,16 +87,16 @@ be used to do a full and differential backup.
 ### Backing up
 
 1. Make a list of the difference between files in the backup location and the source location.
-2. Mark for removal any chunks (`*.chk`) or index  files in backup that are not also in source.
-3. Copy the `indexmap` to backup.
+2. List for removal any chunks (`chunk-X.Y`) or index files in backup that are not also in source, (These will be scavenged chunks, or merged indexes.)
+3. Copy the `indexmap` file to backup.
 4. Copy all non-writer checkpoints (`chaser.chk`, `epoch.chk`, `proposal.chk`, `truncate.chk`).
 5. Copy the writer checkpoint (`writer.chk`).
-6. Mark for copy all chunks (`chck-X.Y`) & index files in source.
+6. List for copy all chunks (`chunk-X.Y`) & index files in source.
 7. Copy all marked for copy files in source, skipping matching file names in the backup.
 8. Delete all marked for removal files in the backup directory.
 
-if any files marked for removal (step 2) or copy (step 6) is changed during the backup,
-the backup may be stopped and restarted. In this case only newly changed files will be backuped.
+if any files listed for removal (step 2) or copy (step 6) are changed during the backup,
+the backup may be stopped and restarted. In this case only newly changed files will be saved.
 
 ### Restoring a database
 
@@ -109,14 +109,13 @@ the backup may be stopped and restarted. In this case only newly changed files w
 
 There are other options available for ensuring data recovery, that are not strictly speaking backups.
 
-### Additional node
+### Additional node (aka Hot Backup)
 
-Increase the cluster nodes count to keep further copies of data.
-Increasing the number of cluster nodes, however, impacts the write performance of the 
-cluster as more nodes need to confirm each write. 
+Increase the cluster size from 3 to 5 to keep further copies of data.
+This increase in the cluster size will slow the write performance of the cluster as 2 follower nodes will need to confirm each write. 
 
 Alternatively, you can use a [read-only replica](../clustering/node-roles.md#read-only-replica) node, which is not a part of the cluster.
-In this case, the write performance won't be affected.
+In this case, the write performance will be minimally impacted.
 
 ### Alternative storage
 
