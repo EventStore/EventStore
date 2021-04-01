@@ -166,7 +166,7 @@ namespace EventStore.Core.Util {
 		public const int WorkerThreadsDefault = 5;
 
 		public const string MaxWriteConcurrencyDescr = "The max number of concurrent write requests on the server for gppc backpressure.";
-		public const int MaxWriteConcurrencyDefault = 100;
+		public const int MaxWriteConcurrencyDefault = 5000;
 
 		public const string UnsafeIgnoreHardDeleteDescr = "Disables Hard Deletes (UNSAFE: use to remove hard deletes)";
 		public static readonly bool UnsafeIgnoreHardDeleteDefault = false;

@@ -45,7 +45,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 				Dispatcher,
 				TimeSpan.FromSeconds(2),
 				TimeSpan.FromSeconds(2),
-				CommitLevel.Indexed);//todo-clc need to allow setting this for tests
+				CommitLevel.Indexed,
+				5000);//todo-clc need to allow setting this for tests
 			Dispatcher.Subscribe<ClientMessage.WriteEvents>(Service);
 			Dispatcher.Subscribe<StorageMessage.PrepareAck>(Service);
 			Dispatcher.Subscribe<StorageMessage.InvalidTransaction>(Service);

@@ -29,6 +29,7 @@ using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using EventStore.Core.Services.RequestManager;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -42,7 +43,7 @@ namespace EventStore.Core {
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex _readIndex;
 		private readonly int _maxAppendSize;
-		private readonly int _maxWriteConcurrency;		
+		private readonly CommitLevel _commitLevel;
 		private readonly KestrelHttpService _httpService;
 		private readonly StatusCheck _statusCheck;
 
@@ -61,7 +62,7 @@ namespace EventStore.Core {
 			IAuthorizationProvider authorizationProvider,
 			IReadIndex readIndex,
 			int maxAppendSize,
-			int maxWriteConcurrency,
+			CommitLevel commitLevel,
 			KestrelHttpService httpService) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
@@ -101,7 +102,7 @@ namespace EventStore.Core {
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;
-			_maxWriteConcurrency = maxWriteConcurrency;
+			_commitLevel = commitLevel;
 			_httpService = httpService;
 
 			_statusCheck = new StatusCheck(this);
@@ -138,11 +139,11 @@ namespace EventStore.Core {
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
-			.BuildServiceProvider()	;
+			.BuildServiceProvider();
 
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) =>
-			_subsystems				
+			_subsystems
 				.Aggregate(services
 						.AddRouting()
 						.AddSingleton(_httpAuthenticationProviders)
@@ -152,7 +153,7 @@ namespace EventStore.Core {
 						.AddSingleton<AuthorizationMiddleware>()
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams(_mainQueue, _writeQueue,_readIndex, _maxAppendSize, _authorizationProvider, _maxWriteConcurrency))
+						.AddSingleton(new Streams(_mainQueue, _writeQueue, _mainBus, _readIndex, _maxAppendSize, _commitLevel, _authorizationProvider))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
@@ -161,14 +162,15 @@ namespace EventStore.Core {
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
 						.AddGrpc()
 						.AddServiceOptions<Streams>(options =>
-							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)						
-						.Services.Configure<KestrelServerOptions>( options => {options.Limits.MaxConcurrentConnections = 5000;
-																				options.Limits.MaxConcurrentUpgradedConnections = 5000;
-																				options.Limits.Http2.InitialConnectionWindowSize = 131072 * 1024;
-																				options.Limits.Http2.InitialStreamWindowSize = 98304 * 1024;
-																				//options.Limits.Http2.MaxStreamsPerConnection = 5000;
-																				//options.Limits.Http2.MaxFrameSize = 16384 * 1024;
-																				}),
+							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
+						.Services.Configure<KestrelServerOptions>(options => {
+							options.Limits.MaxConcurrentConnections = 5000;
+							options.Limits.MaxConcurrentUpgradedConnections = 5000;
+							options.Limits.Http2.InitialConnectionWindowSize = 131072 * 1024;
+							options.Limits.Http2.InitialStreamWindowSize = 98304 * 1024;
+							//options.Limits.Http2.MaxStreamsPerConnection = 5000;
+							//options.Limits.Http2.MaxFrameSize = 16384 * 1024;
+						}),
 					(s, subsystem) => subsystem.ConfigureServices(s));
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;

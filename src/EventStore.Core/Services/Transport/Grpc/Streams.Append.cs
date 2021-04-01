@@ -8,6 +8,7 @@ using EventStore.Client.Shared;
 using EventStore.Client.Streams;
 using Google.Protobuf;
 using Grpc.Core;
+using EventStore.Core.Services.RequestManager;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams {
@@ -44,10 +45,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			// recored request start time & pass on message
 			// add preflight check here: expected version 
-		
+
 
 			var exCorrelationId = Guid.NewGuid(); //todo: this is the requestId
-			var inCorrelationId = Guid.NewGuid(); 
+			var inCorrelationId = Guid.NewGuid();
 
 			var events = new List<Event>();
 
@@ -87,7 +88,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var appendResponseSource = new TaskCompletionSource<AppendResp>();
 
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
-			_writeQueue.Publish(new ClientMessage.WriteEvents(
+			PublishWrite(new ClientMessage.WriteEvents(
 				inCorrelationId,
 				exCorrelationId,
 				envelope,
@@ -97,18 +98,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				events.ToArray(),
 				user,
 				cancellationToken: context.CancellationToken));
-			//short circut test
-			/*
-			HandleWriteEventsCompleted( new ClientMessage.WriteEventsCompleted(
-				 exCorrelationId,
-				 1,
-				 1,
-				 1,  
-				 1));
-			*/
+			if (_commitLevel == CommitLevel.Enqueued) {
+				//todo: add enqued response message
+				//todo: add return channel to announce writes and write faiures for enqueed writes
+				//todo: writequeue should be a bounded channel
+				HandleWriteEventsCompleted(new ClientMessage.WriteEventsCompleted(exCorrelationId, 0, 0, 0, 0));
+			}
 			return await appendResponseSource.Task.ConfigureAwait(false);
 
-			void HandleWriteEventsCompleted(Message message) {				
+			void HandleWriteEventsCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					appendResponseSource.TrySetException(ex);
 					return;

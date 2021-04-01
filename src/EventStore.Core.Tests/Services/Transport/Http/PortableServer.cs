@@ -6,6 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.Transport.Http;
 using EventStore.Core.Services.Transport.Http.Authentication;
 using EventStore.Core.Tests.Authorization;
@@ -74,8 +75,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 							},
 						new TestAuthorizationProvider(), 
 						new FakeReadIndex(_ => false),
-						1024 * 1024, 
-						100,						
+						1024 * 1024, 							
+						CommitLevel.Indexed,
 						_service)));
 			_httpMessageHandler = _server.CreateHandler();
 			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);

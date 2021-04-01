@@ -589,7 +589,8 @@ namespace EventStore.Core {
 				_mainQueue,
 				vNodeSettings.PrepareTimeout,
 				vNodeSettings.CommitTimeout,
-				vNodeSettings.CommitLevel);
+				vNodeSettings.CommitLevel,
+				vNodeSettings.MaxWriteConcurrency);
 			writeRequestPublisher.Target = msg => { if (msg is ClientMessage.WriteEvents @event) { requestManagement.Enque(@event); } };
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
@@ -833,8 +834,8 @@ namespace EventStore.Core {
 				}
 			}
 
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, new AdHocPublisher(msg => ((IHandle<Message>)_controller).Handle(msg)), _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
-				_vNodeSettings.MaxAppendSize, _vNodeSettings.MaxWriteConcurrency, _httpService);
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, writeRequestPublisher, _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
+				_vNodeSettings.MaxAppendSize, vNodeSettings.CommitLevel, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}

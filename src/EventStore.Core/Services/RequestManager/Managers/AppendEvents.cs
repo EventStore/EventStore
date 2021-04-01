@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_cancellationToken = cancellationToken;
 			//todo: min stream name length?						
 			if (commitLevel == CommitLevel.PerStream) {
-				_commitLevel = _streamId.Length >= 3 ? ParsePerStreamCommitLevel(_streamId.AsSpan(0, 3)) : CommitLevel.Indexed;				
+				_commitLevel = _streamId.Length >= 4 ? ParsePerStreamCommitLevel(_streamId.AsSpan(0, 4)) : CommitLevel.Indexed;
 			} else {
 				_commitLevel = _streamId.AsSpan(0, 1)[0] == '$' ? CommitLevel.Indexed : commitLevel; //systems streams '$' must always be read commited
 			}
@@ -47,8 +47,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (streamPrefix[0] != '$') { return CommitLevel.Indexed; } // Not '$' standard user stream
 			if (streamPrefix[1] != '!') { return CommitLevel.Indexed; } // Not '$!' system stream
 			if (streamPrefix[2] != '!') { return CommitLevel.Replicated; } // "$!" Replicated commit requested
-			if (streamPrefix[2] == '!') { return CommitLevel.Leader; } // "$!!" Written commit requested
-			return CommitLevel.Indexed; // we shuold not get here 
+			if (streamPrefix[3] != '!') { return CommitLevel.Leader; } // "$!!" Written commit requested
+			return CommitLevel.Enqueued; //Level request == enqued
 		}
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WritePrepares(
@@ -61,6 +61,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected override void AllEventsWritten() {
 			if (!Registered) {
 				switch (_commitLevel) {
+					case CommitLevel.Enqueued:
 					case CommitLevel.Leader:
 						Committed();
 						break;

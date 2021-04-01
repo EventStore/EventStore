@@ -49,7 +49,8 @@ namespace EventStore.Core.Services.RequestManager {
 			IPublisher bus,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
-			CommitLevel commitLevel) {
+			CommitLevel commitLevel,
+			int maxWriteConcurrency) {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
@@ -60,12 +61,13 @@ namespace EventStore.Core.Services.RequestManager {
 			_commitTimeout = commitTimeout;
 			_commitLevel = commitLevel;
 			_commitSource = new CommitSource();
-			var channelOptions = new UnboundedChannelOptions {
+			var channelOptions = new BoundedChannelOptions(maxWriteConcurrency) {
+				FullMode = BoundedChannelFullMode.Wait,
 				SingleReader = true,
 				SingleWriter = false,
 				AllowSynchronousContinuations = false
 			};
-			_grpcWrites = Channel.CreateUnbounded<ClientMessage.WriteEvents>(channelOptions);
+			_grpcWrites = Channel.CreateBounded<ClientMessage.WriteEvents>(channelOptions);
 			Task.Run(() => DequeWrites());
 		}
 		public void Enque(ClientMessage.WriteEvents @event) {
