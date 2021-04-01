@@ -75,7 +75,16 @@ namespace EventStore.TestClient.GrpcCommands {
 			long interval = 100000;
 			long currentInterval = 0;
 
-			var streams = Enumerable.Range(0, streamsCnt).Select(x => Guid.NewGuid().ToString()).ToArray();
+			var deterministicStreamNames = true;
+			var deterministicStreamSelection = true;
+			var streams = Enumerable
+				.Range(0, streamsCnt)
+				.Select(x => deterministicStreamNames
+					? $"{x}.{Guid.Empty}"
+					: Guid.NewGuid().ToString())
+				.ToArray();
+			Console.WriteLine($"Last stream: {streams.LastOrDefault()}");
+
 			var start = new TaskCompletionSource();
 			var sw2 = new Stopwatch();
 			var capacity = 2000 / clientsCnt;
@@ -84,13 +93,16 @@ namespace EventStore.TestClient.GrpcCommands {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
 
 				var client = context._grpcTestClient.CreateGrpcClient();
-				clientTasks.Add(RunClient(client, count));
+				clientTasks.Add(RunClient(i, client, count));
 			}
 
-			async Task RunClient(EventStoreClient client, long count) {
+			async Task RunClient(int clientNum, EventStoreClient client, long count) {
 				var rnd = new Random();
 				List<Task> pending = new List<Task>(capacity);
 				await start.Task;
+				int k = (streamsCnt / clientsCnt) * clientNum;
+				if (deterministicStreamSelection)
+					Console.WriteLine($"Writer {clientNum} writing {count} writes starting at stream {k}");
 				for (int j = 0; j < count; ++j) {
 
 					var events = new EventData[batchSize];
@@ -106,7 +118,14 @@ namespace EventStore.TestClient.GrpcCommands {
 					var corrid = Guid.NewGuid();
 					monitor.StartOperation(corrid);
 
-					pending.Add(client.AppendToStreamAsync(streams[rnd.Next(streamsCnt)], StreamState.Any, events)
+					var streamIndex = rnd.Next(streamsCnt);
+					if (deterministicStreamSelection) {
+						streamIndex = k++;
+						if (k >= streamsCnt)
+							k = 0;
+					}
+
+					pending.Add(client.AppendToStreamAsync(streams[streamIndex], StreamState.Any, events)
 						.ContinueWith(t => {
 							if (t.IsCompletedSuccessfully) Interlocked.Increment(ref succ);
 							else {

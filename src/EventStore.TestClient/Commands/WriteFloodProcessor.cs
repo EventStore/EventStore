@@ -67,8 +67,19 @@ namespace EventStore.TestClient.Commands {
 			long streamDeleted = 0;
 			long all = 0;
 
-			var streams = Enumerable.Range(0, streamsCnt).Select(x => Guid.NewGuid().ToString()).ToArray();
+			var deterministicStreamNames = true;
+			var deterministicStreamSelection = true;
+
+			var streams = Enumerable
+				.Range(0, streamsCnt)
+				.Select(x => deterministicStreamNames
+					? $"{x}.{Guid.Empty}"
+					: Guid.NewGuid().ToString())
+				.ToArray();
+
 			//var streams = Enumerable.Range(0, streamsCnt).Select(x => string.Format("stream-{0}", x)).ToArray();
+
+			Console.WriteLine($"Last stream: {streams.LastOrDefault()}");
 			var sw2 = new Stopwatch();
 			for (int i = 0; i < clientsCnt; i++) {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
@@ -136,7 +147,11 @@ namespace EventStore.TestClient.Commands {
 					connectionClosed: (conn, err) => context.Fail(reason: "Connection was closed prematurely."));
 				clients.Add(client);
 
+				var clientNum = i;
 				threads.Add(new Thread(() => {
+					int k = (streamsCnt / clientsCnt) * clientNum;
+					if (deterministicStreamSelection)
+						Console.WriteLine($"Writer {clientNum} writing {count} writes starting at stream {k}");
 					for (int j = 0; j < count; ++j) {
 						var events = new TcpClientMessageDto.NewEvent[batchSize];
 						for (int q = 0; q < batchSize; q++) {
@@ -150,8 +165,16 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						var corrid = Guid.NewGuid();
+
+						var streamIndex = rnd.Next(streamsCnt);
+						if (deterministicStreamSelection) {
+							streamIndex = k++;
+							if (k >= streamsCnt)
+								k = 0;
+						}
+
 						var write = new TcpClientMessageDto.WriteEvents(
-							streams[rnd.Next(streamsCnt)],
+							streams[streamIndex],
 							ExpectedVersion.Any,
 							events,
 							false);
