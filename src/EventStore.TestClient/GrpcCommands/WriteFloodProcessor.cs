@@ -13,7 +13,7 @@ namespace EventStore.TestClient.GrpcCommands {
 		private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(false);
 
 		public string Usage {
-			get { return "WRFLGRPC [<clients> <requests> [<streams-cnt> [<size>] [<batchsize>]]]"; }
+			get { return "WRFLGRPC [<clients> <requests> [<streams-cnt> [<size>] [<batchsize>] <streamNamePrefix>]]"; }
 		}
 
 		public string Keyword {
@@ -26,9 +26,10 @@ namespace EventStore.TestClient.GrpcCommands {
 			int streamsCnt = 1000;
 			int size = 256;
 			int batchSize = 1;
+			string streamNamePrefix = string.Empty;
 			if (args.Length > 0)
 			{
-			    if (args.Length < 2 || args.Length > 5)
+			    if (args.Length < 2 || args.Length > 6)
 			        return false;
 			
 			    try
@@ -41,6 +42,8 @@ namespace EventStore.TestClient.GrpcCommands {
 			            size = int.Parse(args[3]);
 			        if (args.Length >= 5)
 			            batchSize = int.Parse(args[4]);
+			        if (args.Length >= 6)
+				        streamNamePrefix = args[5];
 			    }
 			    catch
 			    {
@@ -50,7 +53,7 @@ namespace EventStore.TestClient.GrpcCommands {
 			
 			var monitor = new RequestMonitor();
 			try {
-				var task = WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, monitor);
+				var task = WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamNamePrefix, monitor);
 				task.Wait();
 			} catch (Exception ex) {
 				context.Fail(ex);
@@ -60,7 +63,7 @@ namespace EventStore.TestClient.GrpcCommands {
 		}
 
 		private async Task WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt,
-			int size, int batchSize, RequestMonitor monitor) {
+			int size, int batchSize, string streamNamePrefix, RequestMonitor monitor) {
 			context.IsAsync();
 
 			long succ = 0;
@@ -75,7 +78,12 @@ namespace EventStore.TestClient.GrpcCommands {
 			long interval = 100000;
 			long currentInterval = 0;
 
-			var streams = Enumerable.Range(0, streamsCnt).Select(x => Guid.NewGuid().ToString()).ToArray();
+			string[] streams = Enumerable.Range(0, streamsCnt).Select(x =>
+				string.IsNullOrWhiteSpace(streamNamePrefix)
+					? Guid.NewGuid().ToString()
+					: $"{streamNamePrefix}-{x}"
+			).ToArray();
+
 			var start = new TaskCompletionSource();
 			var sw2 = new Stopwatch();
 			var capacity = 2000 / clientsCnt;
