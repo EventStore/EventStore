@@ -14,9 +14,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<AppendResp> Append(
 			IAsyncStreamReader<AppendReq> requestStream,
 			ServerCallContext context) {
-#pragma warning disable CAC001 // ConfigureAwaitChecker
-			if (!await requestStream.MoveNext())
-#pragma warning restore CAC001 // ConfigureAwaitChecker
+
+			if (!await requestStream.MoveNext().ConfigureAwait(false))
+
 				throw new InvalidOperationException();
 
 			if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.Options)
@@ -52,9 +52,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var events = new List<Event>();
 
 			var size = 0;
-#pragma warning disable CAC001 // ConfigureAwaitChecker
-			while (await requestStream.MoveNext()) {
-#pragma warning restore CAC001 // ConfigureAwaitChecker
+
+			while (await requestStream.MoveNext().ConfigureAwait(false)) {
+
 				if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.ProposedMessage)
 					throw new InvalidOperationException();
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var appendResponseSource = new TaskCompletionSource<AppendResp>();
 
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
-			_ = Task.Run(()=> _writeQueue.Publish(new ClientMessage.WriteEvents(
+			_writeQueue.Publish(new ClientMessage.WriteEvents(
 				inCorrelationId,
 				exCorrelationId,
 				envelope,
@@ -96,8 +96,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				expectedVersion,
 				events.ToArray(),
 				user,
-				cancellationToken: context.CancellationToken)));
-
+				cancellationToken: context.CancellationToken));
+			//short circut test
+			/*
+			HandleWriteEventsCompleted( new ClientMessage.WriteEventsCompleted(
+				 exCorrelationId,
+				 1,
+				 1,
+				 1,  
+				 1));
+			*/
 			return await appendResponseSource.Task.ConfigureAwait(false);
 
 			void HandleWriteEventsCompleted(Message message) {				
