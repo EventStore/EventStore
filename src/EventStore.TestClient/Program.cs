@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,7 @@ using Serilog;
 namespace EventStore.TestClient {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
+			ThreadPool.SetMaxThreads(1000, 1000);
 			try {
 				var hostedService = new TestClientHostedService(args);
 				await CreateHostBuilder(hostedService, args)
