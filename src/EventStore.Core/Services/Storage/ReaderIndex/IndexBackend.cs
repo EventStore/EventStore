@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -33,8 +34,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.NotNull(readers, "readers");
 
 			_readers = readers;
-			_streamLastEventNumberCache = new LRUCache<string, EventNumberCached>(lastEventNumberCacheCapacity);
-			_streamMetadataCache = new LRUCache<string, MetadataCached>(metadataCacheCapacity);
+
+			switch (PerformanceSettings.ConcurrentLru) {
+				case LruType.Normal:
+					_streamLastEventNumberCache = new LRUCache<string, EventNumberCached>(lastEventNumberCacheCapacity);
+					_streamMetadataCache = new LRUCache<string, MetadataCached>(metadataCacheCapacity);
+					break;
+				case LruType.ConcurrentDictionary:
+					_streamLastEventNumberCache = new LRUCacheConcurrentDictionary<string, EventNumberCached>(12, 13_002_139);
+					_streamMetadataCache = new LRUCacheConcurrentDictionary<string, MetadataCached>(12, 13_002_139);
+					break;
+			}
 		}
 
 		public TFReaderLease BorrowReader() {
