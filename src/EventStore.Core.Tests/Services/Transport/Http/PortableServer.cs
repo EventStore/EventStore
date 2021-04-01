@@ -60,12 +60,23 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			bootstrap?.Invoke(_service);
 			_server = new TestServer(
 				new WebHostBuilder()
-					.UseStartup(new ClusterVNodeStartup(Array.Empty<ISubsystem>(), queue, _bus, _multiQueuedHandler,
+					.UseStartup(
+					new ClusterVNodeStartup(
+						Array.Empty<ISubsystem>(), 
+						queue, 
+						queue, 
+						_bus, 
+						_multiQueuedHandler,
 						new TestAuthenticationProvider(),						
 						new IHttpAuthenticationProvider[] {
 							new BasicHttpAuthenticationProvider(new TestAuthenticationProvider()),
-							new AnonymousHttpAuthenticationProvider(),
-						}, new TestAuthorizationProvider(), new FakeReadIndex(_ => false), 1024 * 1024, 97, _service)));
+							new AnonymousHttpAuthenticationProvider()
+							},
+						new TestAuthorizationProvider(), 
+						new FakeReadIndex(_ => false),
+						1024 * 1024, 
+						100,						
+						_service)));
 			_httpMessageHandler = _server.CreateHandler();
 			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);
 			

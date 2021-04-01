@@ -14,7 +14,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<AppendResp> Append(
 			IAsyncStreamReader<AppendReq> requestStream,
 			ServerCallContext context) {
-			if (!await requestStream.MoveNext().ConfigureAwait(false))
+#pragma warning disable CAC001 // ConfigureAwaitChecker
+			if (!await requestStream.MoveNext())
+#pragma warning restore CAC001 // ConfigureAwaitChecker
 				throw new InvalidOperationException();
 
 			if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.Options)
@@ -42,21 +44,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			// recored request start time & pass on message
 			// add preflight check here: expected version 
-			// possible idempotency check ??
-			AppendRequestToken token;
-			try {
-				token = await _writeTokenChannel.Reader.ReadAsync().ConfigureAwait(false);
-			} catch (Exception) {
-				throw new InvalidOperationException();
-			}
+		
 
-
-			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?
+			var exCorrelationId = Guid.NewGuid(); //todo: this is the requestId
+			var inCorrelationId = Guid.NewGuid(); 
 
 			var events = new List<Event>();
 
 			var size = 0;
-			while (await requestStream.MoveNext().ConfigureAwait(false)) {
+#pragma warning disable CAC001 // ConfigureAwaitChecker
+			while (await requestStream.MoveNext()) {
+#pragma warning restore CAC001 // ConfigureAwaitChecker
 				if (requestStream.Current.ContentCase != AppendReq.ContentOneofCase.ProposedMessage)
 					throw new InvalidOperationException();
 
@@ -89,22 +87,20 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var appendResponseSource = new TaskCompletionSource<AppendResp>();
 
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
-
-			_publisher.Publish(new ClientMessage.WriteEvents(
-				correlationId,
-				correlationId,
+			_ = Task.Run(()=> _writeQueue.Publish(new ClientMessage.WriteEvents(
+				inCorrelationId,
+				exCorrelationId,
 				envelope,
 				requiresLeader,
 				streamName,
 				expectedVersion,
 				events.ToArray(),
 				user,
-				cancellationToken: context.CancellationToken));
+				cancellationToken: context.CancellationToken)));
 
 			return await appendResponseSource.Task.ConfigureAwait(false);
 
-			void HandleWriteEventsCompleted(Message message) {
-				if (token != null) { _writeTokenChannel.Writer.TryWrite(token); }
+			void HandleWriteEventsCompleted(Message message) {				
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					appendResponseSource.TrySetException(ex);
 					return;

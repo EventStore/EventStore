@@ -28,6 +28,7 @@ using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Electio
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -35,12 +36,13 @@ namespace EventStore.Core {
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IPublisher _mainQueue;
+		private readonly IPublisher _writeQueue;
 		private readonly ISubscriber _mainBus;
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex _readIndex;
 		private readonly int _maxAppendSize;
-		private readonly int _maxWriteConcurrency;
+		private readonly int _maxWriteConcurrency;		
 		private readonly KestrelHttpService _httpService;
 		private readonly StatusCheck _statusCheck;
 
@@ -51,6 +53,7 @@ namespace EventStore.Core {
 		public ClusterVNodeStartup(
 			ISubsystem[] subsystems,
 			IPublisher mainQueue,
+			IPublisher writeQueue,
 			ISubscriber mainBus,
 			MultiQueuedHandler httpMessageHandler,
 			IAuthenticationProvider authenticationProvider,
@@ -72,7 +75,7 @@ namespace EventStore.Core {
 				throw new ArgumentNullException(nameof(httpAuthenticationProviders));
 			}
 
-			if(authorizationProvider == null)
+			if (authorizationProvider == null)
 				throw new ArgumentNullException(nameof(authorizationProvider));
 
 			if (readIndex == null) {
@@ -90,6 +93,7 @@ namespace EventStore.Core {
 			}
 			_subsystems = subsystems;
 			_mainQueue = mainQueue;
+			_writeQueue = writeQueue;
 			_mainBus = mainBus;
 			_httpMessageHandler = httpMessageHandler;
 			_authenticationProvider = authenticationProvider;
@@ -110,8 +114,8 @@ namespace EventStore.Core {
 			app.Map("/health", _statusCheck.Configure)
 				.UseMiddleware<AuthenticationMiddleware>()
 				.UseRouting()
-				.UseWhen(ctx => ctx.Request.Method == HttpMethods.Options 
-				                && !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
+				.UseWhen(ctx => ctx.Request.Method == HttpMethods.Options
+								&& !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
 					b => b
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
 				)
@@ -134,10 +138,11 @@ namespace EventStore.Core {
 		}
 
 		IServiceProvider IStartup.ConfigureServices(IServiceCollection services) => ConfigureServices(services)
-			.BuildServiceProvider();
+			.BuildServiceProvider()	;
+
 
 		public IServiceCollection ConfigureServices(IServiceCollection services) =>
-			_subsystems
+			_subsystems				
 				.Aggregate(services
 						.AddRouting()
 						.AddSingleton(_httpAuthenticationProviders)
@@ -147,7 +152,7 @@ namespace EventStore.Core {
 						.AddSingleton<AuthorizationMiddleware>()
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams(_mainQueue, _readIndex, _maxAppendSize, _authorizationProvider, _maxWriteConcurrency))
+						.AddSingleton(new Streams(_mainQueue, _writeQueue,_readIndex, _maxAppendSize, _authorizationProvider, _maxWriteConcurrency))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
@@ -156,8 +161,14 @@ namespace EventStore.Core {
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
 						.AddGrpc()
 						.AddServiceOptions<Streams>(options =>
-							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
-						.Services,
+							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)						
+						.Services.Configure<KestrelServerOptions>( options => {options.Limits.MaxConcurrentConnections = 5000;
+																				options.Limits.MaxConcurrentUpgradedConnections = 5000;
+																				options.Limits.Http2.InitialConnectionWindowSize = 131072 * 1024;
+																				options.Limits.Http2.InitialStreamWindowSize = 98304 * 1024;
+																				//options.Limits.Http2.MaxStreamsPerConnection = 5000;
+																				//options.Limits.Http2.MaxFrameSize = 16384 * 1024;
+																				}),
 					(s, subsystem) => subsystem.ConfigureServices(s));
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;

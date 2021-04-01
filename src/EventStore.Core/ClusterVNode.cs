@@ -55,6 +55,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
+using System.Threading.Channels;
 
 namespace EventStore.Core {
 	public class ClusterVNode :
@@ -62,7 +63,7 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,
-		IHandle<ClientMessage.ReloadConfig>{
+		IHandle<ClientMessage.ReloadConfig> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
 		public IQueuedHandler MainQueue {
@@ -90,7 +91,7 @@ namespace EventStore.Core {
 		public QueueStatsManager QueueStatsManager => _queueStatsManager;
 
 		public IStartup Startup => _startup;
-		
+
 		public IAuthenticationProvider AuthenticationProvider {
 			get { return _authenticationProvider; }
 		}
@@ -183,8 +184,8 @@ namespace EventStore.Core {
 			_certificateSelector = () => _certificate;
 			_trustedRootCertsSelector = () => _trustedRootCerts;
 
-			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
-			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_internalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_internalClientCertificateValidator = (cert, chain, errors) => ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 			_externalClientCertificateValidator = delegate { return (true, null); };
 			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 
@@ -208,13 +209,15 @@ namespace EventStore.Core {
 					groupName: "Workers",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
-
 			_subsystems = subsystems;
 
-			_controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this,
-				forwardingProxy, _subsystems);
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
+			var writeRequestPublisher = new AdHocPublisher(null); //wired into requestmanager below
+			_controller = new ClusterVNodeController((IPublisher)_mainBus, writeRequestPublisher, _nodeInfo, db, vNodeSettings, this,
+				forwardingProxy, _subsystems);
+
+			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
+			
 			_controller.SetMainQueue(_mainQueue);
 
 			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
@@ -504,8 +507,7 @@ namespace EventStore.Core {
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider>();
 
 			foreach (var authenticationScheme in _authenticationProvider.GetSupportedAuthenticationSchemes() ?? Enumerable.Empty<string>()) {
-				switch (authenticationScheme)
-				{
+				switch (authenticationScheme) {
 					case "Basic":
 						httpAuthenticationProviders.Add(new BasicHttpAuthenticationProvider(_authenticationProvider));
 						break;
@@ -588,7 +590,7 @@ namespace EventStore.Core {
 				vNodeSettings.PrepareTimeout,
 				vNodeSettings.CommitTimeout,
 				vNodeSettings.CommitLevel);
-
+			writeRequestPublisher.Target = msg => { if (msg is ClientMessage.WriteEvents @event) { requestManagement.Enque(@event); } };
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
 
@@ -731,7 +733,7 @@ namespace EventStore.Core {
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				vNodeSettings.NodePriority, vNodeSettings.ReadOnlyReplica);
-			
+
 			if (!isSingleNode) {
 				// LEADER REPLICATION
 				var leaderReplicationService = new LeaderReplicationService(_mainQueue, _nodeInfo.InstanceId, db,
@@ -766,14 +768,14 @@ namespace EventStore.Core {
 			// ELECTIONS
 			if (!vNodeSettings.NodeInfo.IsReadOnlyReplica) {
 				var electionsService = new ElectionsService(
-					_mainQueue, 
-					memberInfo, 
+					_mainQueue,
+					memberInfo,
 					vNodeSettings.ClusterNodeCount,
 					db.Config.WriterCheckpoint.AsReadOnly(),
 					db.Config.ChaserCheckpoint.AsReadOnly(),
 					db.Config.ProposalCheckpoint,
 					epochManager,
-					() => readIndex.LastIndexedPosition, 
+					() => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority,
 					_timeProvider);
 				electionsService.SubscribeMessages(_mainBus);
@@ -831,7 +833,7 @@ namespace EventStore.Core {
 				}
 			}
 
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, new AdHocPublisher(msg => ((IHandle<Message>)_controller).Handle(msg)), _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				_vNodeSettings.MaxAppendSize, _vNodeSettings.MaxWriteConcurrency, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
@@ -888,7 +890,7 @@ namespace EventStore.Core {
 		public void Handle(SystemMessage.BecomeShutdown message) {
 			_shutdownSource.TrySetResult(true);
 		}
-		
+
 		public void Handle(SystemMessage.SystemStart message) {
 			_authenticationProvider.Initialize().ContinueWith(t => {
 				if (t.Exception != null) {
@@ -1078,7 +1080,7 @@ namespace EventStore.Core {
 					trustedRootCerts.Add(cert);
 					Log.Information("Trusted root certificate file loaded: {file}", fileName);
 				}
-				if(trustedRootCerts.Count == 0)
+				if (trustedRootCerts.Count == 0)
 					throw new InvalidConfigurationException($"No trusted root certificate files were loaded from the specified path: {options.TrustedRootCertificatesPath}");
 			} else {
 				throw new InvalidConfigurationException(

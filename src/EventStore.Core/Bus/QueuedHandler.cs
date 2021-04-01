@@ -16,7 +16,8 @@ namespace EventStore.Core.Bus {
 			//    return new QueueHandlerUsingMpsc(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
 			//        groupName);
 			//}
-			return new QueuedHandler(consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
+			//return new QueuedHandler(consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
+			return new QueuedHandlerChannel(consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold,groupName);
 		}
 
 		public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);

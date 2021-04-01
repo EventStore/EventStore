@@ -26,6 +26,7 @@ namespace EventStore.Core.Services.VNode {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
 
 		private readonly IPublisher _outputBus;
+		private readonly IPublisher _writeChannel;
 		private readonly VNodeInfo _nodeInfo;
 		private readonly TFChunkDb _db;
 		private readonly ClusterVNode _node;
@@ -58,9 +59,8 @@ namespace EventStore.Core.Services.VNode {
 		                                        + 1 /* LeaderReplicationService */
 		                                        + 1 /* HttpService */;
 
-		private bool _exitProcessOnShutdown;
-
-		public ClusterVNodeController(IPublisher outputBus, VNodeInfo nodeInfo, TFChunkDb db,
+		private bool _exitProcessOnShutdown;		
+		public ClusterVNodeController(IPublisher outputBus, IPublisher writeChannel, VNodeInfo nodeInfo, TFChunkDb db,
 			ClusterVNodeSettings vnodeSettings, ClusterVNode node,
 			MessageForwardingProxy forwardingProxy, ISubsystem[] subSystems) {
 			Ensure.NotNull(outputBus, "outputBus");
@@ -71,6 +71,7 @@ namespace EventStore.Core.Services.VNode {
 			Ensure.NotNull(forwardingProxy, "forwardingProxy");
 
 			_outputBus = outputBus;
+			_writeChannel = writeChannel;
 			_nodeInfo = nodeInfo;
 			_db = db;
 			_node = node;
@@ -144,7 +145,7 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ReadAllEventsBackward>().ForwardTo(_outputBus)
 				.When<ClientMessage.FilteredReadAllEventsForward>().ForwardTo(_outputBus)
 				.When<ClientMessage.FilteredReadAllEventsBackward>().ForwardTo(_outputBus)
-				.When<ClientMessage.WriteEvents>().ForwardTo(_outputBus)
+				.When<ClientMessage.WriteEvents>().ForwardTo(_writeChannel)
 				.When<ClientMessage.TransactionStart>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionWrite>().ForwardTo(_outputBus)
 				.When<ClientMessage.TransactionCommit>().ForwardTo(_outputBus)

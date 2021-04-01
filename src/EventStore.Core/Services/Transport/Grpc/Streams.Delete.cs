@@ -94,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var envelope = new CallbackEnvelope(HandleStreamDeletedCompleted);
 
-			_publisher.Publish(new ClientMessage.DeleteStream(
+			_mainQueue.Publish(new ClientMessage.DeleteStream(
 				correlationId,
 				correlationId,
 				envelope,
