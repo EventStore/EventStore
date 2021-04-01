@@ -160,7 +160,7 @@ namespace EventStore.Core {
 						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
-						.AddGrpc()
+						.AddGrpc(o => { o.IgnoreUnknownServices = true; })
 						.AddServiceOptions<Streams>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
 						.Services.Configure<KestrelServerOptions>(options => {
@@ -170,7 +170,8 @@ namespace EventStore.Core {
 							options.Limits.Http2.InitialStreamWindowSize = 98304 * 1024;
 							//options.Limits.Http2.MaxStreamsPerConnection = 5000;
 							//options.Limits.Http2.MaxFrameSize = 16384 * 1024;
-						}),
+						})
+						.Configure<RouteOptions>(c => { c.SuppressCheckForUnhandledSecurityMetadata = true; }),
 					(s, subsystem) => subsystem.ConfigureServices(s));
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;

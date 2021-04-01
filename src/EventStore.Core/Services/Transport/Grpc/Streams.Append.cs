@@ -106,7 +106,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 			return await appendResponseSource.Task.ConfigureAwait(false);
 
-			void HandleWriteEventsCompleted(Message message) {
+			async void HandleWriteEventsCompleted(Message message) {
+				await Task.Yield();
 				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					appendResponseSource.TrySetException(ex);
 					return;
