@@ -45,6 +45,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_streamMetadataCache = new LRUCacheConcurrentDictionary<string, MetadataCached>(12, 13_002_139);
 					break;
 			}
+
+			Console.WriteLine($"##################################### SIMULATING PREPOPULATING CACHES with {PerformanceSettings.PrepopulateCaches:N0}");
+			var enc = new EventNumberCached(1, null);
+			var meta = new MetadataCached(1, new StreamMetadata());
+			for (int i = 0; i < PerformanceSettings.PrepopulateCaches; i++) {
+				// specific format required
+				var streamName = $"{i}.{Guid.Empty}";
+				var metaStreamName = SystemStreams.MetastreamOf(streamName);
+				_streamLastEventNumberCache.Put(streamName, enc);
+				_streamLastEventNumberCache.Put(metaStreamName, enc);
+				_streamMetadataCache.Put(streamName, meta);
+				_streamMetadataCache.Put(metaStreamName, meta);
+			}
+			Console.WriteLine("##################################### SIMULATING PREPOPULATED CACHES");
 		}
 
 		public TFReaderLease BorrowReader() {
