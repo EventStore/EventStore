@@ -199,9 +199,9 @@ namespace EventStore.ClientAPI {
 		/// <returns>Byte array representing the stream metadata.</returns>
 		public byte[] AsJsonBytes() {
 			using var memoryStream = new MemoryStream();
-			using var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, Helper.UTF8NoBom));
-
-			WriteAsJson(jsonWriter);
+			using (var jsonWriter = new JsonTextWriter(new StreamWriter(memoryStream, Helper.UTF8NoBom))) {
+				WriteAsJson(jsonWriter);
+			}
 
 			return memoryStream.ToArray();
 		}
@@ -289,11 +289,11 @@ namespace EventStore.ClientAPI {
 			Check(reader.Read(), reader);
 			Check(JsonToken.StartObject, reader);
 
-			long?                      maxCount       = null;
-			TimeSpan?                  maxAge         = null;
-			long?                      truncateBefore = null;
-			TimeSpan?                  cacheControl   = null;
-			StreamAcl                  acl            = null;
+			long? maxCount = null;
+			TimeSpan? maxAge = null;
+			long? truncateBefore = null;
+			TimeSpan? cacheControl = null;
+			StreamAcl acl = null;
 			Dictionary<string, JToken> customMetadata = null;
 
 			while (true) {
