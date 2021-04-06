@@ -20,14 +20,16 @@ namespace EventStore.TestClient {
 
 		public readonly TcpTestClient _tcpTestClient;
 		public readonly GrpcTestClient _grpcTestClient;
+		public readonly ClientApiTcpTestClient _clientApiTestClient;
 
 		private readonly ManualResetEventSlim _doneEvent;
 		private int _completed;
 		private int _timeout;
 
-		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient, int timeout, ILogger log, ManualResetEventSlim doneEvent) {
+		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient, ClientApiTcpTestClient clientApiTestClient, int timeout, ILogger log, ManualResetEventSlim doneEvent) {
 			_tcpTestClient = tcpTestClient;
 			_grpcTestClient = grpcTestClient;
+			_clientApiTestClient = clientApiTestClient;
 			Log = log;
 			_doneEvent = doneEvent;
 			_timeout = timeout;

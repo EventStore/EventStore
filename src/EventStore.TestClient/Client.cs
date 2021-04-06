@@ -18,6 +18,7 @@ namespace EventStore.TestClient {
 
 		public readonly TcpTestClient _tcpTestClient;
 		public readonly GrpcTestClient _grpcTestClient;
+		public readonly ClientApiTcpTestClient _clientApiTestClient;
 
 		private readonly CommandsProcessor _commands = new CommandsProcessor(Log);
 
@@ -30,6 +31,7 @@ namespace EventStore.TestClient {
 
 			_tcpTestClient = new TcpTestClient(options, interactiveMode, Log);
 			_grpcTestClient = new GrpcTestClient(options, Log);
+			_clientApiTestClient = new ClientApiTcpTestClient(options, Log);
 			RegisterProcessors(cancellationTokenSource);
 		}
 
@@ -73,6 +75,9 @@ namespace EventStore.TestClient {
 			
 			// gRPC
 			_commands.Register(new GrpcCommands.WriteFloodProcessor());
+
+			// TCP Client API
+			_commands.Register(new ClientApiTcpCommands.WriteFloodProcessor());
 		}
 
 		public string GetCommandList() {
@@ -120,7 +125,7 @@ namespace EventStore.TestClient {
 		private int Execute(string[] args) {
 			Log.Information("Processing command: {command}.", string.Join(" ", args));
 
-			var context = new CommandProcessorContext(_tcpTestClient, _grpcTestClient, Options.Timeout, Log, new ManualResetEventSlim(true));
+			var context = new CommandProcessorContext(_tcpTestClient, _grpcTestClient, _clientApiTestClient, Options.Timeout, Log, new ManualResetEventSlim(true));
 
 			int exitCode;
 			if (_commands.TryProcess(context, args, out exitCode)) {
