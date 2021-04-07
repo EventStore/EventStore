@@ -4,9 +4,13 @@ on:
   pull_request:
   push:
     branches:
-    - master
+      - master
     tags:
-    - oss-v*
+      - oss-v*
+    paths-ignore:
+      - "/docs/**"
+      - "/samples/**"
+      - "**.md"
 
 jobs:
   vulnerability-scan:
