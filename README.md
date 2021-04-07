@@ -12,7 +12,9 @@ Information on commercial support and options such as LDAP authentication can be
 [![Build Status](https://dev.azure.com/EventStoreOSS/EventStore/_apis/build/status/EventStore.EventStore?branchName=master)](https://dev.azure.com/EventStoreOSS/EventStore/_build/latest?definitionId=2)
 
 ## Documentation
-Documentation for Event Store can be found [here](https://eventstore.org/docs/)
+Documentation is located in the [`docs`](/docs) folder. It's orchestrated in the separate [documentation repository](https://github.com/EventStore/documentation). It's available online at https://developers.eventstore.com/.
+
+Read more in the [documentation contribution guidelines](./CONTRIBUTING.md#documentation).
 
 ## Community
 We have a fairly active [google groups list](https://groups.google.com/forum/#!forum/event-store). If you prefer slack, there is also an #eventstore channel [here](http://ddd-cqrs-es.herokuapp.com/).
@@ -108,4 +110,10 @@ Development is done on the `master` branch.
 We attempt to do our best to ensure that the history remains clean and to do so, we generally ask contributors to squash their commits into a set or single logical commit.
 
 If you want to switch to a particular release, you can check out the tag for this particular version. For example:  
-`git checkout oss-v4.1.0`
+`git checkout oss-v6.0.0-preview1`
+
+Read more in the [contribution guidelines](./CONTRIBUTING.md).
+
+### Proto Changes
+
+If you update the protos, continuous integration will fail. After ensuring the proto change is backwards compatible, please run `./protolock.sh commit` at the root of this repository.
