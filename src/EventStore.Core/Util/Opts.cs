@@ -77,7 +77,7 @@ namespace EventStore.Core.Util {
 		public const string StreamInfoCacheCapacityDescr =
 			"The maximum number of entries to keep in the stream info cache.";
 
-		public const int StreamInfoCacheCapacityDefault = 100000;
+		public const int StreamInfoCacheCapacityDefault = 0;
 
 		public const string GossipOnSingleNodeDescr =
 			"When enabled tells a single node to run gossip as if it is a cluster";

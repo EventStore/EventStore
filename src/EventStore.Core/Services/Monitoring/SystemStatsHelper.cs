@@ -164,7 +164,7 @@ namespace EventStore.Core.Services.Monitoring {
 		///<summary>
 		///Free system memory in bytes
 		///</summary>
-		private ulong GetFreeMem() {
+		public ulong GetFreeMem() {
 			switch (OS.OsFlavor) {
 				case OsFlavor.Windows:
 					return (ulong)_perfCounter.GetFreeMemory();

@@ -44,6 +44,7 @@ using EventStore.Common.Options;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
+using EventStore.Core.Util;
 using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
@@ -238,6 +239,11 @@ namespace EventStore.Core {
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
+			var statsCollectionPeriod = vNodeSettings.StatsPeriod > TimeSpan.Zero
+				? (long)vNodeSettings.StatsPeriod.TotalMilliseconds
+				: Timeout.Infinite;
+			var statsHelper = new SystemStatsHelper(Log, db.Config.WriterCheckpoint, db.Config.Path, statsCollectionPeriod);
+
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
@@ -247,7 +253,8 @@ namespace EventStore.Core {
 				_nodeInfo.HttpEndPoint,
 				vNodeSettings.StatsStorage,
 				_nodeInfo.ExternalTcp,
-				_nodeInfo.ExternalSecureTcp);
+				_nodeInfo.ExternalSecureTcp,
+				statsHelper);
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
@@ -281,6 +288,27 @@ namespace EventStore.Core {
 				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, vNodeSettings.PTableMaxReaderCount,
 				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
+
+			var streamInfoCacheCapacity = vNodeSettings.StreamInfoCacheCapacity;			
+			//qq thoughts
+			// 1. maybe now the default should be 0 (or even -1 to indicate dynamic or something)
+			// 2. i wonder if we should base the calculation off of total system memory rather than free memory, not sure.
+			// 3. there is some chance of GetFreeMem returning -1, we might want a different value to 50k in that case
+			// 4. probably best stick this as a method in another class for some easy unit testing
+			if (streamInfoCacheCapacity == Opts.StreamInfoCacheCapacityDefault) {
+				var availableMem = statsHelper.GetFreeMem();
+				if (availableMem > 2L * 1024 * 1024 * 1024) {
+					// capacity uses apporixmately 1kib per stream (including both caches)
+					// so we want capacity * 1024 = availableMem
+					ulong bytesPerUnitCapacity = 1024;
+					streamInfoCacheCapacity = (int)(availableMem / bytesPerUnitCapacity);
+				} else {
+					streamInfoCacheCapacity = 100_000;
+				}
+				Log.Information("Set StreamInfoCacheCapacity to {streamInfoCacheCapacity}. Calculated based on {availableMem} bytes of free memory.",
+					streamInfoCacheCapacity, availableMem);
+			}
+
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
 				new Murmur3AUnsafe(),
