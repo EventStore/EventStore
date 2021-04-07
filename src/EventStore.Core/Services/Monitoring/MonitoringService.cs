@@ -71,7 +71,8 @@ namespace EventStore.Core.Services.Monitoring {
 			EndPoint nodeEndpoint,
 			StatsStorage statsStorage,
 			IPEndPoint tcpEndpoint,
-			IPEndPoint tcpSecureEndpoint) {
+			IPEndPoint tcpSecureEndpoint,
+			SystemStatsHelper systemStatsHelper) {
 			Ensure.NotNull(monitoringQueue, "monitoringQueue");
 			Ensure.NotNull(statsCollectionBus, "statsCollectionBus");
 			Ensure.NotNull(mainBus, "mainBus");
@@ -92,7 +93,7 @@ namespace EventStore.Core.Services.Monitoring {
 			_tcpEndpoint = tcpEndpoint;
 			_tcpSecureEndpoint = tcpSecureEndpoint;
 			_timer = new Timer(OnTimerTick, null, Timeout.Infinite, Timeout.Infinite);
-			_systemStats = new SystemStatsHelper(Log, _writerCheckpoint, _dbPath, _statsCollectionPeriodMs);
+			_systemStats = systemStatsHelper;
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {

@@ -479,6 +479,11 @@ namespace EventStore.Core {
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
+			var statsCollectionPeriod = vNodeSettings.StatsPeriod > TimeSpan.Zero
+				? (long)vNodeSettings.StatsPeriod.TotalMilliseconds
+				: Timeout.Infinite;
+			var statsHelper = new SystemStatsHelper(Log, db.Config.WriterCheckpoint.AsReadOnly(), db.Config.Path, statsCollectionPeriod);
+
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
@@ -488,7 +493,8 @@ namespace EventStore.Core {
 				NodeInfo.HttpEndPoint,
 				options.Database.StatsStorage,
 				NodeInfo.ExternalTcp,
-				NodeInfo.ExternalSecureTcp);
+				NodeInfo.ExternalSecureTcp,
+				statsHelper);
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
@@ -525,6 +531,19 @@ namespace EventStore.Core {
 					Db,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
+
+			var streamInfoCacheCapacity = vNodeSettings.StreamInfoCacheCapacity;
+			if (streamInfoCacheCapacity == Opts.StreamInfoCacheCapacityDefault) {
+				var availableMem = statsHelper.GetFreeMem();
+				// TODO: Calculate cache size based on available memory
+				if (availableMem > 2L * 1024 * 1024 * 1024) {
+					streamInfoCacheCapacity = int.MaxValue;
+				} else {
+					streamInfoCacheCapacity = 50000;
+				}
+				Log.Debug("Set StreamInfoCacheCapacity to {streamInfoCacheCapacity}. Calculated based on {availableMem} bytes of free memory.",
+					streamInfoCacheCapacity, availableMem);
+			}
 
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
