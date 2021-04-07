@@ -9,7 +9,7 @@ namespace EventStore.Core.Util {
 		
 		public const int ConnectionQueueSizeThresholdDefault = 50000;
 
-		public const int StreamInfoCacheCapacityDefault = 100000;
+		public const int StreamInfoCacheCapacityDefault = 0;
 
 		public const int HashCollisionReadLimitDefault = 100;
 
