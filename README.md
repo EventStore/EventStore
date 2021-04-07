@@ -12,7 +12,9 @@ Information on support and commercial tools such as LDAP authentication can be f
 ![Build](https://github.com/EventStore/EventStore/workflows/Build/badge.svg)
 
 ## Documentation
-Documentation for EventStoreDB can be found here: [EventStoreDB Docs](https://eventstore.com/docs/)
+Documentation is located in the [`docs`](/docs) folder. It's orchestrated in the separate [documentation repository](https://github.com/EventStore/documentation). It's available online at https://developers.eventstore.com/.
+
+Read more in the [documentation contribution guidelines](./CONTRIBUTING.md#documentation).
 
 ## Community
 We have a community discussion space at [Event Store Discuss](https://discuss.eventstore.com/). If you prefer Slack, there is also an #eventstore channel in the [DDD-CQRS-ES](https://j.mp/ddd-es-cqrs) Slack community.
@@ -90,3 +92,9 @@ We attempt to do our best to ensure that the history remains clean and to do so,
 
 If you want to switch to a particular release, you can check out the tag for this particular version. For example:  
 `git checkout oss-v6.0.0-preview1`
+
+Read more in the [contribution guidelines](./CONTRIBUTING.md).
+
+### Proto Changes
+
+If you update the protos, continuous integration will fail. After ensuring the proto change is backwards compatible, please run `./protolock.sh commit` at the root of this repository.
