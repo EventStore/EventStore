@@ -1,0 +1,15 @@
+name: Cherry pick PR commits for label
+on:
+  pull_request_target:
+    types: [closed]
+jobs:
+  cherry_pick_pr_for_label:
+    if: github.event.pull_request.merged == 'true'
+    name: Cherry pick PR commits for label
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cherry Pick PR for label
+        uses: EventStore/Automations/cherry-pick-pr-for-label@cherry_pick_for_label
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
