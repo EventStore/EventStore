@@ -156,6 +156,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								.AccessDenied:
 								updatePersistentSubscriptionSource.TrySetException(RpcExceptions.AccessDenied());
 								return;
+							case ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+								.UpdatePersistentSubscriptionToStreamResult.DoesNotExist:
+								updatePersistentSubscriptionSource.TrySetException(
+									RpcExceptions.PersistentSubscriptionDoesNotExist(streamId, request.Options.GroupName));
+								return;
 							default:
 								updatePersistentSubscriptionSource.TrySetException(
 									RpcExceptions.UnknownError(completed.Result));
@@ -181,6 +186,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								.UpdatePersistentSubscriptionToAllResult
 								.AccessDenied:
 								updatePersistentSubscriptionSource.TrySetException(RpcExceptions.AccessDenied());
+								return;
+							case ClientMessage.UpdatePersistentSubscriptionToAllCompleted
+								.UpdatePersistentSubscriptionToAllResult.DoesNotExist:
+								updatePersistentSubscriptionSource.TrySetException(
+									RpcExceptions.PersistentSubscriptionDoesNotExist(streamId, request.Options.GroupName));
 								return;
 							default:
 								updatePersistentSubscriptionSource.TrySetException(
