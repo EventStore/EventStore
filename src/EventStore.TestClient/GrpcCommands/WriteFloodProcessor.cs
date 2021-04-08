@@ -13,7 +13,8 @@ namespace EventStore.TestClient.GrpcCommands {
 		private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(false);
 
 		public string Usage {
-			get { return "WRFLGRPC [<clients> <requests> [<streams-cnt> [<size>] [<batchsize>] <streamNamePrefix>]]"; }
+			//                         0          1            2           3          4              5
+			get { return "WRFLGRPC [<clients> <requests> [<streams-cnt> [<size> [<batchsize> [<stream-prefix>]]]]]"; }
 		}
 
 		public string Keyword {
@@ -83,6 +84,10 @@ namespace EventStore.TestClient.GrpcCommands {
 					? Guid.NewGuid().ToString()
 					: $"{streamNamePrefix}-{x}"
 			).ToArray();
+
+			context.Log.Information("Writing streams randomly between {first} and {last}",
+				streams.FirstOrDefault(),
+				streams.LastOrDefault());
 
 			var start = new TaskCompletionSource();
 			var sw2 = new Stopwatch();

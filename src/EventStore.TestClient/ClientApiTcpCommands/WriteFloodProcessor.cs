@@ -15,6 +15,7 @@ using WrongExpectedVersionException = EventStore.ClientAPI.Exceptions.WrongExpec
 namespace EventStore.TestClient.ClientApiTcpCommands {
 	internal class WriteFloodProcessor : ICmdProcessor {
 		public string Usage {
+			//                        0          1            2           3          4              5
 			get { return "WRFLTCP [<clients> <requests> [<streams-cnt> [<size> [<batchsize> [<stream-prefix>]]]]]"; }
 		}
 
@@ -76,6 +77,11 @@ namespace EventStore.TestClient.ClientApiTcpCommands {
 				string.IsNullOrWhiteSpace(streamPrefix)
 				? Guid.NewGuid().ToString()
 				: $"{streamPrefix}-{x}").ToArray();
+
+			context.Log.Information("Writing streams randomly between {first} and {last}",
+				streams.FirstOrDefault(),
+				streams.LastOrDefault());
+
 			var sw2 = new Stopwatch();
 			for (int i = 0; i < clientsCnt; i++) {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
