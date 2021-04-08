@@ -20,11 +20,22 @@ Documentation is located in the [`docs`](/docs) folder. It's orchestrated in the
 
 It's recommended to have documentation changes be put together with code changes.
 
-We're supporting multiple versions of the documentation. Versions are kept in the main (`master`) branch and specific release branches. 
+We're supporting multiple versions of the documentation. Versions are kept in:
+- the main (`master`) branch: all changes that refer to the upcoming release should be put there. That includes both non-released changes and enhancements to documentation for existing features.
+- specific release branches - the last version and older release are kept there (e.g. `release/oss-v5`, `release/oss-v20.10`, `release/oss-v21.2`). We aim to keep the up to date documentation for the last LTS releases and all further. Read more on the release strategy: [link](https://www.eventstore.com/blog/eventstoredb-20.10-lts-has-been-released).
 
-To update the specific database version's docs, it's recommended to create a feature branch based on the particular version release branch. If you're unsure which branch to select, the safe choice is the main branch (`master`).
+To update the specific database version's docs, it's recommended to create a feature branch based on the particular version release branch. For instance, if you want to change documentation in the `21.2` version, then you should:
+- checkout the latest `release/oss-v21.2`,
+- create a new branch and add your changes,
+- create pull request targeting the `release/oss-v21.2` branch.
 
-It's not needed to send multiple pull requests if your change should be reflected in multiple database versions documentation. Contributors reviewing the pull request should mark it with proper labels (e.g. as `cherry_pick:release/oss-v20.10`). We're using the [GitHub action](/.github/workflows/cherry-pick-pr-for-label.yml) based on the labels that should create pull requests with cherry-picks to the target branches. Action will inform about success or failure via the review comments to the initial pull request tagging the person that merged the pull request. It's recommended for contributors to monitor those notifications and make sure that cherry-picks succeeded. Read more in [action documentation](https://github.com/EventStore/Automations/tree/master/cherry-pick-pr-for-label).
+If you're unsure which branch to select, the safe choice is the main branch (`master`). 
+
+It's not needed to send multiple pull requests if your change should be reflected in multiple database versions documentation. Contributors reviewing the pull request should mark it with proper labels (e.g. as `cherry-pick:release/oss-v20.10`). We're using the [GitHub action](/.github/workflows/cherry-pick-pr-for-label.yml) based on the labels that should create pull requests with cherry-picks to the target branches. Action will inform about success or failure via the review comments to the initial pull request tagging the person that merged the pull request. It's recommended for contributors to monitor those notifications and make sure that cherry-picks succeeded. Read more in [action documentation](https://github.com/EventStore/Automations/tree/master/cherry-pick-pr-for-label).
+
+Taking the previous example. You sent a pull request targeting the `release/oss-v21.2`. You'd like to have it also for the upcoming release and version `20.10`. Contributor should label your pull request with:
+- `cherry-pick:master`,
+- `cherry-pick:release/oss-v20.10`.
 
 _**Note:** Cherry-pick action requires changes to be rebased. If there is a merge commit, then cherry-pick will fail. It will also fail if there is a conflict with the target branch (so `target_branch` from label suffix). If those cases happen then, it's needed to do manual cherry-picks._
 
