@@ -28,6 +28,7 @@ using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Electio
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -154,7 +155,12 @@ namespace EventStore.Core {
 						.AddGrpc()
 						.AddServiceOptions<Streams>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
-						.Services,
+						.Services.Configure<KestrelServerOptions>(options => {
+							options.Limits.MaxConcurrentConnections = 5000;
+							options.Limits.MaxConcurrentUpgradedConnections = 5000;
+							options.Limits.Http2.InitialConnectionWindowSize = 131072 * 1024;
+							options.Limits.Http2.InitialStreamWindowSize = 98304 * 1024;
+						}),
 					(s, subsystem) => subsystem.ConfigureServices(s));
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;

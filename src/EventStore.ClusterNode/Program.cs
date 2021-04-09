@@ -16,6 +16,8 @@ using Serilog.Core;
 namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
+			ThreadPool.SetMaxThreads(1000, 1000);
+			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
 				Serilog.Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 				var cts = new CancellationTokenSource();
