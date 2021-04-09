@@ -10,7 +10,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
 	public class append_to_stream : SpecificationWithDirectoryPerTestFixture {
-		private readonly TcpType _tcpType = TcpType.Normal;
+		private readonly TcpType _tcpType = TcpType.Ssl;
 		private MiniNode _node;
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {

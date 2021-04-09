@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -42,8 +43,12 @@ using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Core.Authentication.DelegatedAuthentication;
+using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
+using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.FileNamingStrategy;
+using EventStore.Core.Util;
 using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
@@ -63,7 +68,11 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<ClientMessage.ReloadConfig>{
+		private readonly ClusterVNodeOptions _options;
+		public TFChunkDb Db { get; }
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
+
+		public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 
 		public IQueuedHandler MainQueue {
 			get { return _mainQueue; }
@@ -101,9 +110,10 @@ namespace EventStore.Core {
 			get { return _workersHandler; }
 		}
 
+		public VNodeInfo NodeInfo { get; }
+
 		public IEnumerable<ISubsystem> Subsystems => _subsystems;
 
-		private readonly VNodeInfo _nodeInfo;
 		private readonly IQueuedHandler _mainQueue;
 		private readonly ISubscriber _mainBus;
 
@@ -132,9 +142,9 @@ namespace EventStore.Core {
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalServerCertificateValidator;
 
-		private readonly ClusterVNodeSettings _vNodeSettings;
 		private readonly ClusterVNodeStartup _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
+
 
 		private int _stopCalled;
 		private int _reloadingConfig;
@@ -158,25 +168,255 @@ namespace EventStore.Core {
 				handler(this, e);
 		}
 
-		public ClusterVNode(TFChunkDb db,
-			ClusterVNodeSettings vNodeSettings,
-			IGossipSeedSource gossipSeedSource,
-			InfoControllerBuilder infoControllerBuilder,
-			params ISubsystem[] subsystems) {
-			Ensure.NotNull(db, "db");
-			Ensure.NotNull(vNodeSettings, "vNodeSettings");
-			Ensure.NotNull(gossipSeedSource, "gossipSeedSource");
+		public ClusterVNode(ClusterVNodeOptions options,
+			AuthenticationProviderFactory authenticationProviderFactory = null,
+			AuthorizationProviderFactory authorizationProviderFactory = null,
+			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
+				additionalPersistentSubscriptionConsumerStrategyFactories = null,
+			Guid? instanceId = null, int debugIndex = 0) {
+
+			if (options == null) {
+				throw new ArgumentNullException(nameof(options));
+			}
+
+			ReloadLogOptions(options);
+
+			instanceId ??= Guid.NewGuid();
+			if (instanceId == Guid.Empty) {
+				throw new ArgumentException("InstanceId may not be empty.", nameof(instanceId));
+			}
+
+			if (options.Interface.ExtIp == null) {
+				throw new ArgumentNullException(nameof(options.Interface.ExtIp));
+			}
+
+			if (options.Interface.IntIp == null) {
+				throw new ArgumentNullException(nameof(options.Interface.IntIp));
+			}
+
+			if (options.Cluster.ClusterSize <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(options.Cluster.ClusterSize), options.Cluster.ClusterSize,
+					$"{nameof(options.Cluster.ClusterSize)} must be greater than 0.");
+			}
+
+			if (!options.Application.Insecure) {
+				ReloadCertificates(options);
+
+				if (_trustedRootCerts == null || _certificate == null) {
+					throw new InvalidConfigurationException("A certificate is required unless insecure mode (--insecure) is set.");
+				}
+			}
+
+			if (options.Application.WorkerThreads <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(options.Application.WorkerThreads),
+					options.Application.WorkerThreads,
+					$"{nameof(options.Application.WorkerThreads)} must be greater than 0.");
+			}
+
+			if (options.Cluster.ClusterDns == null) {
+				throw new ArgumentNullException(nameof(options.Cluster.ClusterDns));
+			}
+
+			if (options.Cluster.GossipSeed == null) {
+				throw new ArgumentNullException(nameof(options.Cluster.GossipSeed));
+			}
+
+			if (options.Cluster.PrepareAckCount <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(options.Cluster.PrepareAckCount),
+					options.Cluster.PrepareAckCount,
+					$"{nameof(options.Cluster.PrepareAckCount)} must be greater than 0.");
+			}
+
+			if (options.Cluster.CommitAckCount <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(options.Cluster.CommitAckCount),
+					options.Cluster.CommitAckCount,
+					$"{nameof(options.Cluster.CommitAckCount)} must be greater than 0.");
+			}
+
+			if (options.Database.InitializationThreads <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(options.Database.InitializationThreads),
+					options.Database.InitializationThreads,
+					$"{nameof(options.Database.InitializationThreads)} must be greater than 0.");
+			}
+
+			if (options.Grpc.KeepAliveTimeout <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(options.Grpc.KeepAliveTimeout));
+			}
+
+			if (options.Grpc.KeepAliveInterval <= 0) {
+				throw new ArgumentOutOfRangeException(nameof(options.Grpc.KeepAliveInterval));
+			}
+
+			if (options.Application.MaxAppendSize > TFConsts.EffectiveMaxLogRecordSize) {
+				throw new ArgumentOutOfRangeException(nameof(options.Application.MaxAppendSize),
+					$"{nameof(options.Application.MaxAppendSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
+			}
+
+			if (options.Cluster.DiscoverViaDns && string.IsNullOrWhiteSpace(options.Cluster.ClusterDns))
+				throw new ArgumentException(
+					"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
+
+			if (options.Database.Db.StartsWith("~")) {
+				throw new ApplicationInitializationException(
+					"The given database path starts with a '~'. Event Store does not expand '~'.");
+			}
+
+			if (options.Database.Index != null && options.Database.Db != null) {
+				string absolutePathIndex = Path.GetFullPath(options.Database.Index);
+				string absolutePathDb = Path.GetFullPath(options.Database.Db);
+				if (absolutePathDb.Equals(absolutePathIndex)) {
+					throw new ApplicationInitializationException(
+						$"The given database ({absolutePathDb}) and index ({absolutePathIndex}) paths cannot point to the same directory.");
+				}
+			}
+
+			if (options.Cluster.GossipSeed.Length > 1 && options.Cluster.ClusterSize == 1) {
+				throw new ApplicationInitializationException(
+					"The given ClusterSize is set to 1 but GossipSeeds are multiple. We will never be able to sync up with this configuration.");
+			}
+
+			if (options.Cluster.ReadOnlyReplica && options.Cluster.ClusterSize <= 1) {
+				throw new InvalidConfigurationException(
+					"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
+			}
+
+
+
+			_options = options;
 
 #if DEBUG
 			AddTask(_taskAddedTrigger.Task);
 #endif
 
-			var isSingleNode = vNodeSettings.ClusterNodeCount == 1;
-			_vNodeSettings = vNodeSettings;
-			_nodeInfo = vNodeSettings.NodeInfo;
-			_certificate = vNodeSettings.Certificate;
-			_trustedRootCerts = vNodeSettings.TrustedRootCerts;
-			_disableHttps = vNodeSettings.DisableHttps;
+			var disableInternalTcpTls = options.Application.Insecure;
+			var disableExternalTcpTls = options.Application.Insecure || options.Interface.DisableExternalTcpTls;
+
+			var httpEndPoint = new IPEndPoint(options.Interface.ExtIp, options.Interface.HttpPort);
+			var intTcp = disableInternalTcpTls
+				? new IPEndPoint(options.Interface.IntIp, options.Interface.IntTcpPort)
+				: null;
+			var intSecIp = !disableInternalTcpTls
+				? new IPEndPoint(options.Interface.IntIp, options.Interface.IntTcpPort)
+				: null;
+
+			var extTcp = disableExternalTcpTls
+				? new IPEndPoint(options.Interface.ExtIp, options.Interface.ExtTcpPort)
+				: null;
+			var extSecIp = !disableExternalTcpTls
+				? new IPEndPoint(options.Interface.ExtIp, options.Interface.ExtTcpPort)
+				: null;
+
+			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.IntTcpPortAdvertiseAs : 0;
+			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.IntTcpPortAdvertiseAs : 0;
+			var extTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && disableExternalTcpTls
+				? options.Interface.ExtTcpPortAdvertiseAs
+				: 0;
+			var extSecTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && !disableExternalTcpTls
+				? options.Interface.ExtTcpPortAdvertiseAs
+				: 0;
+
+			Log.Information("Quorum size set to {quorum}.", options.Cluster.PrepareAckCount);
+
+			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
+				httpEndPoint, options.Cluster.ReadOnlyReplica);
+
+			Db = new TFChunkDb(CreateDbConfig());
+
+			TFChunkDbConfig CreateDbConfig() {
+				ICheckpoint writerChk;
+				ICheckpoint chaserChk;
+				ICheckpoint epochChk;
+				ICheckpoint proposalChk;
+				ICheckpoint truncateChk;
+				//todo(clc) : promote these to file backed checkpoints re:project-io
+				ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+				ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+				var dbPath = options.Database.Db;
+
+				if (options.Database.MemDb) {
+					writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
+					chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
+					epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
+					proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
+					truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
+				} else {
+					try {
+						if (!Directory.Exists(dbPath)) // mono crashes without this check
+							Directory.CreateDirectory(dbPath);
+					} catch (UnauthorizedAccessException) {
+						if (dbPath == Locations.DefaultDataDirectory) {
+							Log.Information(
+								"Access to path {dbPath} denied. The Event Store database will be created in {fallbackDefaultDataDirectory}",
+								dbPath, Locations.FallbackDefaultDataDirectory);
+							dbPath = Locations.FallbackDefaultDataDirectory;
+							Log.Information("Defaulting DB Path to {dbPath}", dbPath);
+
+							if (!Directory.Exists(dbPath)) // mono crashes without this check
+								Directory.CreateDirectory(dbPath);
+						} else {
+							throw;
+						}
+					}
+
+					var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
+					var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
+					var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
+					var proposalCheckFilename = Path.Combine(dbPath, Checkpoint.Proposal + ".chk");
+					var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
+					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+					epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+						initValue: -1);
+					proposalChk = new MemoryMappedFileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
+						cached: true,
+						initValue: -1);
+					truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
+						cached: true, initValue: -1);
+				}
+
+				var cache = options.Database.CachedChunks >= 0
+					? options.Database.CachedChunks * (long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
+					: options.Database.ChunksCacheSize;
+
+				return new TFChunkDbConfig(dbPath,
+					new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
+					options.Database.ChunkSize,
+					cache,
+					writerChk,
+					chaserChk,
+					epochChk,
+					proposalChk,
+					truncateChk,
+					replicationChk,
+					indexChk,
+					options.Database.ChunkInitialReaderCount,
+					options.Database.GetTFChunkMaxReaderCount(),
+					options.Database.MemDb,
+					options.Database.Unbuffered,
+					options.Database.WriteThrough,
+					options.Database.OptimizeIndexMerge,
+					options.Database.ReduceFileCachePressure,
+					options.Database.MaxTruncation);
+			}
+
+			var writerCheckpoint = Db.Config.WriterCheckpoint.Read();
+			var chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
+			var epochCheckpoint = Db.Config.EpochCheckpoint.Read();
+			var truncateCheckpoint = Db.Config.TruncateCheckpoint.Read();
+
+			Log.Information("{description,-25} {instanceId}", "INSTANCE ID:", NodeInfo.InstanceId);
+			Log.Information("{description,-25} {path}", "DATABASE:", Db.Config.Path);
+			Log.Information("{description,-25} {writerCheckpoint} (0x{writerCheckpoint:X})", "WRITER CHECKPOINT:",
+				writerCheckpoint, writerCheckpoint);
+			Log.Information("{description,-25} {chaserCheckpoint} (0x{chaserCheckpoint:X})", "CHASER CHECKPOINT:",
+				chaserCheckpoint, chaserCheckpoint);
+			Log.Information("{description,-25} {epochCheckpoint} (0x{epochCheckpoint:X})", "EPOCH CHECKPOINT:",
+				epochCheckpoint, epochCheckpoint);
+			Log.Information("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
+				truncateCheckpoint, truncateCheckpoint);
+
+			var isSingleNode = options.Cluster.ClusterSize == 1;
+			_disableHttps = options.Application.Insecure;
 			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
 
@@ -189,30 +429,30 @@ namespace EventStore.Core {
 			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 
 			var forwardingProxy = new MessageForwardingProxy();
-			if (vNodeSettings.EnableHistograms) {
+			if (options.Application.EnableHistograms) {
 				HistogramService.CreateHistograms();
 				//start watching jitter
 				HistogramService.StartJitterMonitor();
 			}
 
 			// MISC WORKERS
-			_workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>
-				new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
+			_workerBuses = Enumerable.Range(0, options.Application.WorkerThreads).Select(queueNum =>
+				new InMemoryBus($"Worker #{queueNum + 1} Bus",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200))).ToArray();
 			_workersHandler = new MultiQueuedHandler(
-				vNodeSettings.WorkerThreads,
+				options.Application.WorkerThreads,
 				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
-					string.Format("Worker #{0}", queueNum + 1),
+					$"Worker #{queueNum + 1}",
 					_queueStatsManager,
 					groupName: "Workers",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
 
-			_subsystems = subsystems;
+			_subsystems = options.Subsystems.ToArray();
 
-			_controller = new ClusterVNodeController((IPublisher)_mainBus, _nodeInfo, db, vNodeSettings, this,
-				forwardingProxy, _subsystems);
+			_controller =
+				new ClusterVNodeController((IPublisher)_mainBus, NodeInfo, Db, options, this, forwardingProxy);
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
@@ -220,8 +460,9 @@ namespace EventStore.Core {
 			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
-						new UriBuilder(!_vNodeSettings.DisableHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
-							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificateSelector));
+						new UriBuilder(options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps,
+							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator,
+						_certificateSelector));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -241,13 +482,13 @@ namespace EventStore.Core {
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
-				db.Config.WriterCheckpoint.AsReadOnly(),
-				db.Config.Path,
-				vNodeSettings.StatsPeriod,
-				_nodeInfo.HttpEndPoint,
-				vNodeSettings.StatsStorage,
-				_nodeInfo.ExternalTcp,
-				_nodeInfo.ExternalSecureTcp);
+				Db.Config.WriterCheckpoint.AsReadOnly(),
+				Db.Config.Path,
+				TimeSpan.FromSeconds(options.Application.StatsPeriodSec),
+				NodeInfo.HttpEndPoint,
+				options.Database.StatsStorage,
+				NodeInfo.ExternalTcp,
+				NodeInfo.ExternalSecureTcp);
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
@@ -262,82 +503,79 @@ namespace EventStore.Core {
 			monitoringInnerBus.Subscribe<MonitoringMessage.GetFreshTcpConnectionStats>(monitoring);
 
 			// TRUNCATE IF NECESSARY
-			var truncPos = db.Config.TruncateCheckpoint.Read();
-			var writerCheckpoint = db.Config.WriterCheckpoint.Read();
-			var chaserCheckpoint = db.Config.ChaserCheckpoint.Read();
-			var epochCheckpoint = db.Config.EpochCheckpoint.Read();
+			var truncPos = Db.Config.TruncateCheckpoint.Read();
 			if (truncPos != -1) {
 				Log.Information(
 					"Truncate checkpoint is present. Truncate: {truncatePosition} (0x{truncatePosition:X}), Writer: {writerCheckpoint} (0x{writerCheckpoint:X}), Chaser: {chaserCheckpoint} (0x{chaserCheckpoint:X}), Epoch: {epochCheckpoint} (0x{epochCheckpoint:X})",
 					truncPos, truncPos, writerCheckpoint, writerCheckpoint, chaserCheckpoint, chaserCheckpoint,
 					epochCheckpoint, epochCheckpoint);
-				var truncator = new TFChunkDbTruncator(db.Config);
+				var truncator = new TFChunkDbTruncator(Db.Config);
 				truncator.TruncateDb(truncPos);
 			}
 
 			// STORAGE SUBSYSTEM
-			db.Open(vNodeSettings.VerifyDbHash, threads: vNodeSettings.InitializationThreads);
-			var indexPath = vNodeSettings.Index ?? Path.Combine(db.Config.Path, "index");
+			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
+			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, "index");
 
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool",
 				ESConsts.PTableInitialReaderCount,
-				vNodeSettings.PTableMaxReaderCount,
+				options.Database.GetPTableMaxReaderCount(),
 				() => new TFChunkReader(
-					db,
-					db.Config.WriterCheckpoint.AsReadOnly(),
-					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
+					Db,
+					Db.Config.WriterCheckpoint.AsReadOnly(),
+					optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
 
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
 				new Murmur3AUnsafe(),
-				() => new HashListMemTable(vNodeSettings.IndexBitnessVersion,
-					maxSize: vNodeSettings.MaxMemtableEntryCount * 2),
+				() => new HashListMemTable(options.IndexBitnessVersion,
+					maxSize: options.Database.MaxMemTableSize * 2),
 				() => new TFReaderLease(readerPool),
-				vNodeSettings.IndexBitnessVersion,
-				maxSizeForMemory: vNodeSettings.MaxMemtableEntryCount,
+				options.IndexBitnessVersion,
+				maxSizeForMemory: options.Database.MaxMemTableSize,
 				maxTablesPerLevel: 2,
-				inMem: db.Config.InMemDb,
-				skipIndexVerify: vNodeSettings.SkipIndexVerify,
-				indexCacheDepth: vNodeSettings.IndexCacheDepth,
-				initializationThreads: vNodeSettings.InitializationThreads,
+				inMem: Db.Config.InMemDb,
+				skipIndexVerify: options.Database.SkipIndexVerify,
+				indexCacheDepth: options.Database.IndexCacheDepth,
+				initializationThreads: options.Database.InitializationThreads,
 				additionalReclaim: false,
-				maxAutoMergeIndexLevel: vNodeSettings.MaxAutoMergeIndexLevel,
-				pTableMaxReaderCount: vNodeSettings.PTableMaxReaderCount);
+				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
+				pTableMaxReaderCount: options.Database.GetPTableMaxReaderCount());
 			var readIndex = new ReadIndex(_mainQueue,
 				readerPool,
 				tableIndex,
-				vNodeSettings.StreamInfoCacheCapacity,
+				options.Cluster.StreamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
-				vNodeSettings.HashCollisionReadLimit,
-				vNodeSettings.SkipIndexScanOnReads,
-				db.Config.ReplicationCheckpoint.AsReadOnly(),
-				db.Config.IndexCheckpoint);
+				options.Database.HashCollisionReadLimit,
+				options.Application.SkipIndexScanOnReads,
+				Db.Config.ReplicationCheckpoint.AsReadOnly(),
+				Db.Config.IndexCheckpoint);
 			_readIndex = readIndex;
-			var writer = new TFChunkWriter(db);
+			var writer = new TFChunkWriter(Db);
 			var epochManager = new EpochManager(_mainQueue,
 				ESConsts.CachedEpochCount,
-				db.Config.EpochCheckpoint,
+				Db.Config.EpochCheckpoint,
 				writer,
 				initialReaderCount: 1,
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(
-					db,
-					db.Config.WriterCheckpoint.AsReadOnly(),
-					optimizeReadSideCache: db.Config.OptimizeReadSideCache),
-				_nodeInfo.InstanceId);
+					Db,
+					Db.Config.WriterCheckpoint.AsReadOnly(),
+					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+				NodeInfo.InstanceId);
 			epochManager.Init();
 
-			var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus, vNodeSettings.MinFlushDelay,
-				db, writer, readIndex.IndexWriter, epochManager, _queueStatsManager,
-				() => readIndex.LastIndexedPosition); // subscribes internally
+			var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus,
+				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
+				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
 			var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex,
-				vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
+				options.Database.ReaderThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -348,9 +586,9 @@ namespace EventStore.Core {
 			// REPLICATION TRACKING
 			var replicationTracker = new ReplicationTrackingService(
 				_mainQueue,
-				vNodeSettings.ClusterNodeCount,
-				db.Config.ReplicationCheckpoint,
-				db.Config.WriterCheckpoint.AsReadOnly());
+				options.Cluster.ClusterSize,
+				Db.Config.ReplicationCheckpoint,
+				Db.Config.WriterCheckpoint.AsReadOnly());
 			AddTask(replicationTracker.Task);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(replicationTracker);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicationTracker);
@@ -361,9 +599,9 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(replicationTracker);
 
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
-				db.Config.WriterCheckpoint.AsReadOnly(),
-				db.Config.ReplicationCheckpoint.AsReadOnly(),
-				vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);
+				Db.Config.WriterCheckpoint.AsReadOnly(),
+				Db.Config.ReplicationCheckpoint.AsReadOnly(),
+				options.Cluster.CommitAckCount, tableIndex, _queueStatsManager);
 
 			AddTask(indexCommitterService.Task);
 
@@ -373,14 +611,14 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.MergeIndexes>(indexCommitterService);
 
 			var chaser = new TFChunkChaser(
-				db,
-				db.Config.WriterCheckpoint.AsReadOnly(),
-				db.Config.ChaserCheckpoint,
-				db.Config.OptimizeReadSideCache);
+				Db,
+				Db.Config.WriterCheckpoint.AsReadOnly(),
+				Db.Config.ChaserCheckpoint,
+				Db.Config.OptimizeReadSideCache);
 
 			var storageChaser = new StorageChaser(
 				_mainQueue,
-				db.Config.WriterCheckpoint.AsReadOnly(),
+				Db.Config.WriterCheckpoint.AsReadOnly(),
 				chaser,
 				indexCommitterService,
 				epochManager,
@@ -389,8 +627,8 @@ namespace EventStore.Core {
 
 #if DEBUG
 			_queueStatsManager.InitializeCheckpoints(
-				db.Config.WriterCheckpoint.AsReadOnly(),
-				db.Config.ChaserCheckpoint.AsReadOnly());
+				Db.Config.WriterCheckpoint.AsReadOnly(),
+				Db.Config.ChaserCheckpoint.AsReadOnly());
 #endif
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageChaser);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(storageChaser);
@@ -408,12 +646,70 @@ namespace EventStore.Core {
 				bus.Subscribe<GrpcMessage.SendOverGrpc>(grpcSendService);
 			});
 
+			GossipAdvertiseInfo = GetGossipAdvertiseInfo();
+			GossipAdvertiseInfo GetGossipAdvertiseInfo() {
+				IPAddress intIpAddress = options.Interface.IntIp; //this value is just opts.IntIP
+
+				var extIpAddress = options.Interface.ExtIp; //this value is just opts.ExtIP
+
+				var intHostToAdvertise = options.Interface.IntHostAdvertiseAs ?? intIpAddress.ToString();
+				var extHostToAdvertise = options.Interface.ExtHostAdvertiseAs ?? extIpAddress.ToString();
+
+				if (intIpAddress.Equals(IPAddress.Any) || extIpAddress.Equals(IPAddress.Any)) {
+					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
+					IPAddress addressToAdvertise = options.Cluster.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
+
+					if (intIpAddress.Equals(IPAddress.Any) && options.Interface.IntHostAdvertiseAs == null) {
+						intHostToAdvertise = addressToAdvertise.ToString();
+					}
+
+					if (extIpAddress.Equals(IPAddress.Any) && options.Interface.ExtHostAdvertiseAs == null) {
+						extHostToAdvertise = addressToAdvertise.ToString();
+					}
+				}
+
+				var intTcpEndPoint = NodeInfo.InternalTcp == null
+					? null
+					: new DnsEndPoint(intHostToAdvertise, intTcpPortAdvertiseAs > 0
+						? options.Interface.IntTcpPortAdvertiseAs
+						: NodeInfo.InternalTcp.Port);
+
+				var intSecureTcpEndPoint = NodeInfo.InternalSecureTcp == null
+					? null
+					: new DnsEndPoint(intHostToAdvertise, intSecTcpPortAdvertiseAs > 0
+						? intSecTcpPortAdvertiseAs
+						: NodeInfo.InternalSecureTcp.Port);
+
+				var extTcpEndPoint = NodeInfo.ExternalTcp == null
+					? null
+					: new DnsEndPoint(extHostToAdvertise, extTcpPortAdvertiseAs > 0
+						? extTcpPortAdvertiseAs
+						: NodeInfo.ExternalTcp.Port);
+
+				var extSecureTcpEndPoint = NodeInfo.ExternalSecureTcp == null
+					? null
+					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
+						? extSecTcpPortAdvertiseAs
+						: NodeInfo.ExternalSecureTcp.Port);
+
+				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
+					options.Interface.HttpPortAdvertiseAs > 0
+						? options.Interface.HttpPortAdvertiseAs
+						: NodeInfo.HttpEndPoint.GetPort());
+
+				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint, extTcpEndPoint,
+					extSecureTcpEndPoint, httpEndPoint, options.Interface.IntHostAdvertiseAs,
+					options.Interface.ExtHostAdvertiseAs, options.Interface.HttpPortAdvertiseAs,
+					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseHttpPortToClientAs,
+					options.Interface.AdvertiseTcpPortToClientAs);
+			}
+
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
-				_workersHandler, vNodeSettings.LogHttpRequests,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHostAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortAs,
-				vNodeSettings.DisableFirstLevelHttpAuthorization,
-				vNodeSettings.NodeInfo.HttpEndPoint);
+				_workersHandler, options.Application.LogHttpRequests,
+				GossipAdvertiseInfo.AdvertiseExternalHostAs,
+				GossipAdvertiseInfo.AdvertiseHttpPortAs,
+				options.Auth.DisableFirstLevelHttpAuthorization,
+				NodeInfo.HttpEndPoint);
 
 			var components = new AuthenticationProviderFactoryComponents {
 				MainBus = _mainBus,
@@ -425,12 +721,21 @@ namespace EventStore.Core {
 			};
 
 			// AUTHENTICATION INFRASTRUCTURE - delegate to plugins
+			authorizationProviderFactory ??= !options.Application.Insecure
+				? throw new InvalidConfigurationException($"An {nameof(AuthorizationProviderFactory)} is required when running securely.")
+				: new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
+			authenticationProviderFactory ??= !options.Application.Insecure
+				? throw new InvalidConfigurationException($"An {nameof(AuthenticationProviderFactory)} is required when running securely.")
+				: new AuthenticationProviderFactory(_ => new PassthroughAuthenticationProviderFactory());
+			additionalPersistentSubscriptionConsumerStrategyFactories ??=
+				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>();
+
 			_authenticationProvider = new DelegatedAuthenticationProvider(
-				vNodeSettings.AuthenticationProviderFactory.GetFactory(components).Build(
-					vNodeSettings.LogFailedAuthenticationAttempts, Log));
+				authenticationProviderFactory.GetFactory(components).Build(
+					options.Application.LogFailedAuthenticationAttempts, Log));
 			Ensure.NotNull(_authenticationProvider, nameof(_authenticationProvider));
 
-			_authorizationProvider = vNodeSettings.AuthorizationProviderFactory
+			_authorizationProvider = authorizationProviderFactory
 				.GetFactory(new AuthorizationProviderFactoryComponents {
 					MainQueue = _mainQueue
 				}).Build();
@@ -439,26 +744,29 @@ namespace EventStore.Core {
 			AuthorizationGateway = new AuthorizationGateway(_authorizationProvider);
 			{
 				// EXTERNAL TCP
-				if (_nodeInfo.ExternalTcp != null && vNodeSettings.EnableExternalTCP) {
-					var extTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalTcp, _workersHandler,
+				if (NodeInfo.ExternalTcp != null && options.Interface.EnableExternalTcp) {
+					var extTcpService = new TcpService(_mainQueue, NodeInfo.ExternalTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Normal,
-						new ClientTcpDispatcher(vNodeSettings.WriteTimeout),
-						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
+						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
+						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
+						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
 						_authenticationProvider, AuthorizationGateway, null, null,
-						vNodeSettings.ConnectionPendingSendBytesThreshold,
-					vNodeSettings.ConnectionQueueSizeThreshold);
+						options.Interface.ConnectionPendingSendBytesThreshold,
+						options.Interface.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extTcpService);
 					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extTcpService);
 				}
 				// EXTERNAL SECURE TCP
-				if (_nodeInfo.ExternalSecureTcp != null && vNodeSettings.EnableExternalTCP) {
-					var extSecTcpService = new TcpService(_mainQueue, _nodeInfo.ExternalSecureTcp, _workersHandler,
+				if (NodeInfo.ExternalSecureTcp != null && options.Interface.EnableExternalTcp) {
+					var extSecTcpService = new TcpService(_mainQueue, NodeInfo.ExternalSecureTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Secure,
-						new ClientTcpDispatcher(vNodeSettings.WriteTimeout),
-						vNodeSettings.ExtTcpHeartbeatInterval, vNodeSettings.ExtTcpHeartbeatTimeout,
+						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
+						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
+						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
 						_authenticationProvider, AuthorizationGateway, _certificateSelector, _externalClientCertificateValidator,
-						vNodeSettings.ConnectionPendingSendBytesThreshold, vNodeSettings.ConnectionQueueSizeThreshold);
+						options.Interface.ConnectionPendingSendBytesThreshold,
+						options.Interface.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
 					_mainBus.Subscribe<SystemMessage.SystemStart>(extSecTcpService);
 					_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(extSecTcpService);
@@ -466,11 +774,12 @@ namespace EventStore.Core {
 
 				if (!isSingleNode) {
 					// INTERNAL TCP
-					if (_nodeInfo.InternalTcp != null) {
-						var intTcpService = new TcpService(_mainQueue, _nodeInfo.InternalTcp, _workersHandler,
+					if (NodeInfo.InternalTcp != null) {
+						var intTcpService = new TcpService(_mainQueue, NodeInfo.InternalTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Normal,
-							new InternalTcpDispatcher(vNodeSettings.WriteTimeout),
-							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
+							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
+							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
+							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
 							_authenticationProvider, AuthorizationGateway, null, null, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
@@ -478,11 +787,12 @@ namespace EventStore.Core {
 						_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(intTcpService);
 					}
 					// INTERNAL SECURE TCP
-					if (_nodeInfo.InternalSecureTcp != null) {
-						var intSecTcpService = new TcpService(_mainQueue, _nodeInfo.InternalSecureTcp, _workersHandler,
+					if (NodeInfo.InternalSecureTcp != null) {
+						var intSecTcpService = new TcpService(_mainQueue, NodeInfo.InternalSecureTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Secure,
-							new InternalTcpDispatcher(vNodeSettings.WriteTimeout),
-							vNodeSettings.IntTcpHeartbeatInterval, vNodeSettings.IntTcpHeartbeatTimeout,
+							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
+							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
+							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
 							_authenticationProvider, AuthorizationGateway, _certificateSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
@@ -525,12 +835,12 @@ namespace EventStore.Core {
 				throw new InvalidConfigurationException($"The server does not support any authentication scheme supported by the '{_authenticationProvider.Name}' authentication provider.");
 			}
 
-			if (!_disableHttps) {
+			if (!options.Application.Insecure) {
 				//transport-level authentication providers
 				httpAuthenticationProviders.Add(
-					new ClientCertificateAuthenticationProvider(_vNodeSettings.CertificateReservedNodeCommonName));
+					new ClientCertificateAuthenticationProvider(options.Certificate.CertificateReservedNodeCommonName));
 
-				if (vNodeSettings.EnableTrustedAuth)
+				if (options.Interface.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
 			}
 
@@ -543,26 +853,30 @@ namespace EventStore.Core {
 			var histogramController = new HistogramController();
 			var statController = new StatController(monitoringQueue, _workersHandler);
 			var atomController = new AtomController(_mainQueue, _workersHandler,
-				vNodeSettings.DisableHTTPCaching, vNodeSettings.WriteTimeout);
+				options.Application.DisableHttpCaching, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 			var gossipController = new GossipController(_mainQueue, _workersHandler);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
-			var infoController = infoControllerBuilder
-				.WithAuthenticationProvider(_authenticationProvider)
-				.Build();
+			var infoController = new InfoController(options, new Dictionary<string, bool> {
+				["projections"] = options.Projections.RunProjections != ProjectionType.None,
+				["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault &&
+				                     !options.Application.Insecure,
+				["atomPub"] = options.Interface.EnableAtomPubOverHttp
+
+			}, _authenticationProvider);
 
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(infoController);
 
 			_httpService.SetupController(persistentSubscriptionController);
-			if (vNodeSettings.AdminOnPublic)
+			if (!options.Interface.DisableAdminUi)
 				_httpService.SetupController(adminController);
 			_httpService.SetupController(pingController);
 			_httpService.SetupController(infoController);
-			if (vNodeSettings.StatsOnPublic)
+			if (!options.Interface.DisableStatsOnHttp)
 				_httpService.SetupController(statController);
-			if (vNodeSettings.EnableAtomPubOverHTTP)
+			if (options.Interface.EnableAtomPubOverHttp)
 				_httpService.SetupController(atomController);
-			if (vNodeSettings.GossipOnPublic)
+			if (!options.Interface.DisableGossipOnHttp)
 				_httpService.SetupController(gossipController);
 			_httpService.SetupController(histogramController);
 
@@ -585,8 +899,8 @@ namespace EventStore.Core {
 			// REQUEST MANAGEMENT
 			var requestManagement = new RequestManagementService(
 				_mainQueue,
-				vNodeSettings.PrepareTimeout,
-				vNodeSettings.CommitTimeout);
+				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
+				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs));
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
@@ -668,9 +982,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SubscriptionMessage.PersistentSubscriptionsRestart, Message>());
 
 			//TODO CC can have multiple threads working on subscription if partition
-			var consumerStrategyRegistry =
-				new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
-					vNodeSettings.AdditionalConsumerStrategies);
+			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
+				additionalPersistentSubscriptionConsumerStrategyFactories);
 			var persistentSubscription = new PersistentSubscriptionService(perSubscrQueue, readIndex, ioDispatcher,
 				_mainQueue, consumerStrategyRegistry);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
@@ -695,15 +1008,15 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(persistentSubscription);
 
 			// STORAGE SCAVENGER
-			var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.HttpEndPoint.ToString(),
-				TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
-			var storageScavenger = new StorageScavenger(db,
+			var scavengerLogManager = new TFChunkScavengerLogManager(NodeInfo.HttpEndPoint.ToString(),
+				TimeSpan.FromDays(options.Database.ScavengeHistoryMaxAge), ioDispatcher);
+			var storageScavenger = new StorageScavenger(Db,
 				tableIndex,
 				readIndex,
 				scavengerLogManager,
-				vNodeSettings.AlwaysKeepScavenged,
-				!vNodeSettings.DisableScavengeMerging,
-				unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
+				options.Database.AlwaysKeepScavenged,
+				!options.Database.DisableScavengeMerging,
+				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
@@ -720,23 +1033,23 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
 			_mainBus.Subscribe<TimerMessage.Schedule>(_timerService);
 
-			var memberInfo = MemberInfo.Initial(_nodeInfo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
-				vNodeSettings.GossipAdvertiseInfo.InternalTcp,
-				vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
-				vNodeSettings.GossipAdvertiseInfo.ExternalTcp,
-				vNodeSettings.GossipAdvertiseInfo.ExternalSecureTcp,
-				vNodeSettings.GossipAdvertiseInfo.HttpEndPoint,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseHostToClientAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
-				vNodeSettings.NodePriority, vNodeSettings.ReadOnlyReplica);
-			
+			var memberInfo = MemberInfo.Initial(NodeInfo.InstanceId, _timeProvider.UtcNow, VNodeState.Unknown, true,
+				GossipAdvertiseInfo.InternalTcp,
+				GossipAdvertiseInfo.InternalSecureTcp,
+				GossipAdvertiseInfo.ExternalTcp,
+				GossipAdvertiseInfo.ExternalSecureTcp,
+				GossipAdvertiseInfo.HttpEndPoint,
+				GossipAdvertiseInfo.AdvertiseHostToClientAs,
+				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
+				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
+				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica);
+
 			if (!isSingleNode) {
 				// LEADER REPLICATION
-				var leaderReplicationService = new LeaderReplicationService(_mainQueue, _nodeInfo.InstanceId, db,
+				var leaderReplicationService = new LeaderReplicationService(_mainQueue, NodeInfo.InstanceId, Db,
 					_workersHandler,
-					epochManager, vNodeSettings.ClusterNodeCount,
-					vNodeSettings.UnsafeAllowSurplusNodes,
+					epochManager, options.Cluster.ClusterSize,
+					options.Cluster.UnsafeAllowSurplusNodes,
 					_queueStatsManager);
 				AddTask(leaderReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
@@ -747,14 +1060,15 @@ namespace EventStore.Core {
 				monitoringInnerBus.Subscribe<ReplicationMessage.GetReplicationStats>(leaderReplicationService);
 
 				// REPLICA REPLICATION
-				var replicaService = new ReplicaService(_mainQueue, db, epochManager, _workersHandler,
+				var replicaService = new ReplicaService(_mainQueue, Db, epochManager, _workersHandler,
 					_authenticationProvider, AuthorizationGateway,
-					_vNodeSettings.GossipAdvertiseInfo.InternalTcp ?? _vNodeSettings.GossipAdvertiseInfo.InternalSecureTcp,
-					_vNodeSettings.ReadOnlyReplica,
-					!vNodeSettings.DisableInternalTcpTls, _internalServerCertificateValidator,
+					GossipAdvertiseInfo.InternalTcp ?? GossipAdvertiseInfo.InternalSecureTcp,
+					options.Cluster.ReadOnlyReplica,
+					!disableInternalTcpTls, _internalServerCertificateValidator,
 					_certificateSelector,
-					vNodeSettings.IntTcpHeartbeatTimeout, vNodeSettings.ExtTcpHeartbeatInterval,
-					vNodeSettings.WriteTimeout);
+					TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
+					TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
+					TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.SubscribeToLeader>(replicaService);
@@ -763,34 +1077,47 @@ namespace EventStore.Core {
 			}
 
 			// ELECTIONS
-			if (!vNodeSettings.NodeInfo.IsReadOnlyReplica) {
+			if (!NodeInfo.IsReadOnlyReplica) {
 				var electionsService = new ElectionsService(
-					_mainQueue, 
-					memberInfo, 
-					vNodeSettings.ClusterNodeCount,
-					db.Config.WriterCheckpoint.AsReadOnly(),
-					db.Config.ChaserCheckpoint.AsReadOnly(),
-					db.Config.ProposalCheckpoint,
+					_mainQueue,
+					memberInfo,
+					options.Cluster.ClusterSize,
+					Db.Config.WriterCheckpoint.AsReadOnly(),
+					Db.Config.ChaserCheckpoint.AsReadOnly(),
+					Db.Config.ProposalCheckpoint,
 					epochManager,
-					() => readIndex.LastIndexedPosition, 
-					vNodeSettings.NodePriority,
+					() => readIndex.LastIndexedPosition,
+					options.Cluster.NodePriority,
 					_timeProvider);
 				electionsService.SubscribeMessages(_mainBus);
 			}
 
-			if (!isSingleNode || vNodeSettings.GossipOnSingleNode) {
+			if (!isSingleNode || (options.Interface.GossipOnSingleNode ?? true)) {
 				// GOSSIP
+
+				var gossipSeedSource = (
+					options.Cluster.DiscoverViaDns,
+					options.Cluster.ClusterSize > 1,
+					options.Cluster.GossipSeed is {Length: >0}) switch {
+					(true, true, _) => (IGossipSeedSource)new DnsGossipSeedSource(options.Cluster.ClusterDns,
+						options.Cluster.ClusterGossipPort),
+					(false, true, false) => throw new InvalidConfigurationException(
+						"DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+						+ "Specify gossip seeds using the `GossipSeed` option."),
+					_ => new KnownEndpointGossipSeedSource(options.Cluster.GossipSeed)
+				};
 
 				var gossip = new NodeGossipService(
 					_mainQueue,
 					gossipSeedSource,
 					memberInfo,
-					db.Config.WriterCheckpoint.AsReadOnly(),
-					db.Config.ChaserCheckpoint.AsReadOnly(),
+					Db.Config.WriterCheckpoint.AsReadOnly(),
+					Db.Config.ChaserCheckpoint.AsReadOnly(),
 					epochManager, () => readIndex.LastIndexedPosition,
-					vNodeSettings.NodePriority, vNodeSettings.GossipInterval, vNodeSettings.GossipAllowedTimeDifference,
-					vNodeSettings.GossipTimeout,
-					vNodeSettings.DeadMemberRemovalPeriod,
+					options.Cluster.NodePriority, TimeSpan.FromMilliseconds(options.Cluster.GossipIntervalMs),
+					TimeSpan.FromMilliseconds(options.Cluster.GossipAllowedDifferenceMs),
+					TimeSpan.FromMilliseconds(options.Cluster.GossipTimeoutMs),
+					TimeSpan.FromSeconds(options.Cluster.DeadMemberRemovalPeriodSec),
 					_timeProvider);
 				_mainBus.Subscribe<SystemMessage.SystemInit>(gossip);
 				_mainBus.Subscribe<GossipMessage.RetrieveGossipSeedSources>(gossip);
@@ -822,16 +1149,17 @@ namespace EventStore.Core {
 				});
 			}
 
-			if (subsystems != null) {
-				foreach (var subsystem in subsystems) {
+			if (_subsystems != null) {
+				foreach (var subsystem in _subsystems) {
 					var http = new[] { _httpService };
-					subsystem.Register(new StandardComponents(db, _mainQueue, _mainBus, _timerService, _timeProvider,
+					subsystem.Register(new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
 						httpSendService, http, _workersHandler, _queueStatsManager));
 				}
 			}
 
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler, _authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
-				_vNodeSettings.MaxAppendSize, _httpService);
+			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler,
+				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
+				options.Application.MaxAppendSize, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}
@@ -887,7 +1215,7 @@ namespace EventStore.Core {
 		public void Handle(SystemMessage.BecomeShutdown message) {
 			_shutdownSource.TrySetResult(true);
 		}
-		
+
 		public void Handle(SystemMessage.SystemStart message) {
 			_authenticationProvider.Initialize().ContinueWith(t => {
 				if (t.Exception != null) {
@@ -1016,7 +1344,7 @@ namespace EventStore.Core {
 
 			Task.Run(() => {
 				try {
-					var options = _vNodeSettings.LoadConfigFunc();
+					var options = _options.Reload();
 					ReloadLogOptions(options);
 					ReloadCertificates(options);
 					Log.Information("The node's configuration was successfully reloaded");
@@ -1028,75 +1356,38 @@ namespace EventStore.Core {
 			});
 		}
 
-		private void ReloadLogOptions(ClusterNodeOptions options) {
-			if (options.LogLevel != LogLevel.Default) {
-				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.LogLevel);
+		private void ReloadLogOptions(ClusterVNodeOptions options) {
+			if (options.Application.LogLevel != LogLevel.Default) {
+				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Application.LogLevel);
 				if (changed) {
-					Log.Information($"The log level was adjusted to: {options.LogLevel}");
+					Log.Information($"The log level was adjusted to: {options.Application.LogLevel}");
 
-					if (options.LogLevel > LogLevel.Information) {
-						Console.WriteLine($"The log level was adjusted to: {options.LogLevel}");
+					if (options.Application.LogLevel > LogLevel.Information) {
+						Console.WriteLine($"The log level was adjusted to: {options.Application.LogLevel}");
 					}
 				}
 			}
 		}
 
-		private void ReloadCertificates(ClusterNodeOptions options) {
-			var currentCertificate = _certificateSelector();
-			var currentTrustedRootCerts = _trustedRootCertsSelector();
-
-			if (currentCertificate == null || currentTrustedRootCerts == null) {
+		private void ReloadCertificates(ClusterVNodeOptions options) {
+			if (options.Application.Insecure) {
 				Log.Information("Skipping reload of certificates since TLS is disabled.");
 				return;
 			}
 
-			X509Certificate2 certificate;
-			if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
-				var location = CertificateLoader.GetCertificateStoreLocation(options.CertificateStoreLocation);
-				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
-				certificate = CertificateLoader.FromStore(location, name, options.CertificateSubjectName,
-					options.CertificateThumbprint);
-			} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
-				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
-				certificate = CertificateLoader.FromStore(name, options.CertificateSubjectName,
-					options.CertificateThumbprint);
-			} else if (options.CertificateFile.IsNotEmptyString()) {
-				certificate = CertificateLoader.FromFile(
-					options.CertificateFile,
-					options.CertificatePrivateKeyFile,
-					options.CertificatePassword);
-			} else {
-				throw new InvalidConfigurationException(
-					"A certificate is required but none was provided in the configuration.");
-			}
+			var certificate = options.LoadServerCertificate();
 
-			var trustedRootCerts = new X509Certificate2Collection();
-			if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
-				Log.Information("Loading trusted root certificates");
-				foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(options.TrustedRootCertificatesPath)) {
-					trustedRootCerts.Add(cert);
-					Log.Information("Trusted root certificate file loaded: {file}", fileName);
-				}
-				if(trustedRootCerts.Count == 0)
-					throw new InvalidConfigurationException($"No trusted root certificate files were loaded from the specified path: {options.TrustedRootCertificatesPath}");
-			} else {
-				throw new InvalidConfigurationException(
-					$"{nameof(options.TrustedRootCertificatesPath)} was not specified in the configuration.");
-			}
-
-			var previousThumbprint = _certificate.Thumbprint;
+			var previousThumbprint = _certificate?.Thumbprint;
 			var newThumbprint = certificate.Thumbprint;
 
 			//no need for a lock here since reference assignment is atomic
 			_certificate = certificate;
-			_trustedRootCerts = trustedRootCerts;
+			_trustedRootCerts = options.LoadTrustedRootCertificates();
 
 			Log.Information("Certificate loaded. Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}", previousThumbprint, newThumbprint);
 		}
 
-		public override string ToString() {
-			return
-				$"[{_nodeInfo.InstanceId:B}, {_nodeInfo.InternalTcp}, {_nodeInfo.ExternalTcp}, {_nodeInfo.HttpEndPoint}]";
-		}
+		public override string ToString() =>
+			$"[{NodeInfo.InstanceId:B}, {NodeInfo.InternalTcp}, {NodeInfo.ExternalTcp}, {NodeInfo.HttpEndPoint}]";
 	}
 }

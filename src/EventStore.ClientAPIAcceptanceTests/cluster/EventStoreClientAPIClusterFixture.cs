@@ -8,6 +8,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
 using EventStore.Core;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Util;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -25,22 +28,16 @@ namespace EventStore.ClientAPI.Tests {
 			var serverCertificate = GetServerCertificate();
 			var rootCertificates = new X509Certificate2Collection(GetRootCertificate());
 			for (var i = 0; i < ClusterSize; i++) {
-				var vNodeBuilder = ClusterVNodeBuilder
-					.AsClusterMember(ClusterSize)
-					.DisableDnsDiscovery()
-					.WithGossipSeeds(GetGossipSeedEndPointsExceptFor(i, false))
-					.WithHttpOn(new IPEndPoint(IPAddress.Loopback, HttpPort[i]))
-					.WithInternalTcpOn(new IPEndPoint(IPAddress.Loopback, InternalTcpPort[i]))
-					.WithInternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, InternalSecureTcpPort[i]))
-					.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalTcpPort[i]))
-					.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecureTcpPort[i]))
-					.WithServerCertificate(serverCertificate)
-					.WithTrustedRootCertificates(rootCertificates)
-					.WithCertificateReservedNodeCommonName(Opts.CertificateReservedNodeCommonNameDefault)
-					.RunInMemory()
-					.EnableExternalTCP();
-
-				_nodes[i] = vNodeBuilder.Build();
+				_nodes[i] = new ClusterVNode(new ClusterVNodeOptions()
+						.InCluster(ClusterSize)
+						.RunInMemory()
+						.Secure(rootCertificates, serverCertificate)
+						.WithGossipSeeds(GetGossipSeedEndPointsExceptFor(i, false))
+						.WithHttpOn(new IPEndPoint(IPAddress.Loopback, HttpPort[i]))
+						.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecureTcpPort[i]))
+						.WithInternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, InternalSecureTcpPort[i])),
+					new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
+					new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 
 				var httpEndPoint = new IPEndPoint(IPAddress.Loopback, HttpPort[i]);
 
@@ -115,6 +112,6 @@ namespace EventStore.ClientAPI.Tests {
 			await Task.WhenAll(_hosts.Select(host => host.StopAsync())).WithTimeout(TimeSpan.FromSeconds(10));
 		}
 
-		ValueTask IAsyncDisposable.DisposeAsync() => new ValueTask(DisposeAsync());
+		ValueTask IAsyncDisposable.DisposeAsync() => new(DisposeAsync());
 	}
 }

@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 
 		public virtual IEventStoreConnection SetupConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint, TcpType.Normal, _userCredentials);
+			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl, _userCredentials);
 		}
 
 		[OneTimeSetUp]

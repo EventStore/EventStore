@@ -12,7 +12,7 @@ namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 			new Dictionary<string, IPersistentSubscriptionConsumerStrategyFactory>();
 
 		public PersistentSubscriptionConsumerStrategyRegistry(IPublisher mainQueue, ISubscriber mainBus,
-			IPersistentSubscriptionConsumerStrategyFactory[] additionalConsumerStrategies) {
+			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> additionalConsumerStrategies) {
 			_mainQueue = mainQueue;
 			_mainBus = mainBus;
 			Register(new DelegatePersistentSubscriptionConsumerStrategyFactory(SystemConsumerStrategies.RoundRobin,

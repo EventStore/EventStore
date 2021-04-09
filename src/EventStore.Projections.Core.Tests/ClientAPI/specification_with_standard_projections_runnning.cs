@@ -42,12 +42,14 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
 			_node = new MiniNode(
-				PathName, inMemDb: true, skipInitializeStandardUsersCheck: false,
+				PathName, inMemDb: true,
 				subsystems: new ISubsystem[] {_projections});
 			_projectionsCreated = SystemProjections.Created(_projections.LeaderMainBus);
 
 			await _node.Start();
-			_conn = EventStoreConnection.Create(_node.TcpEndPoint);
+			_conn = EventStoreConnection.Create(new ConnectionSettingsBuilder()
+				.DisableServerCertificateValidation()
+				.Build(), _node.TcpEndPoint);
 			await _conn.ConnectAsync();
 
 			_manager = new ProjectionsManager(

@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		private MiniNode _node;
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.To(node, TcpType.Normal);
+			return TestConnection.To(node, TcpType.Ssl);
 		}
 
 		[OneTimeSetUp]
@@ -50,13 +50,12 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			}
 
 			var tcpPort = _node.TcpEndPoint.Port;
-			var tcpSecPort = _node.TcpSecEndPoint.Port;
 			var httpPort = _node.HttpEndPoint.Port;
 			await _node.Shutdown(keepDb: true);
 
 			//Restart the node to ensure the read index stream info cache is empty
 			_node = new MiniNode(PathName,
-				tcpPort, tcpSecPort, httpPort, inMemDb: false,
+				tcpPort, httpPort, inMemDb: false,
 				memTableSize: 20,
 				hashCollisionReadLimit: 1,
 				indexBitnessVersion: EventStore.Core.Index.PTableVersions.IndexV1);

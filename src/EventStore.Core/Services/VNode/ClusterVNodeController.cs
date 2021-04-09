@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -6,7 +7,6 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
-using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -43,7 +43,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private readonly MessageForwardingProxy _forwardingProxy;
 		private readonly TimeSpan _forwardingTimeout;
-		private readonly ISubsystem[] _subSystems;
+		private readonly IReadOnlyList<ISubsystem> _subSystems;
 
 		private int _subSystemInitsToExpect;
 
@@ -61,12 +61,10 @@ namespace EventStore.Core.Services.VNode {
 		private bool _exitProcessOnShutdown;
 
 		public ClusterVNodeController(IPublisher outputBus, VNodeInfo nodeInfo, TFChunkDb db,
-			ClusterVNodeSettings vnodeSettings, ClusterVNode node,
-			MessageForwardingProxy forwardingProxy, ISubsystem[] subSystems) {
+			ClusterVNodeOptions options, ClusterVNode node, MessageForwardingProxy forwardingProxy) {
 			Ensure.NotNull(outputBus, "outputBus");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
 			Ensure.NotNull(db, "dbConfig");
-			Ensure.NotNull(vnodeSettings, "vnodeSettings");
 			Ensure.NotNull(node, "node");
 			Ensure.NotNull(forwardingProxy, "forwardingProxy");
 
@@ -74,8 +72,8 @@ namespace EventStore.Core.Services.VNode {
 			_nodeInfo = nodeInfo;
 			_db = db;
 			_node = node;
-			_subSystems = subSystems;
-			_clusterSize = vnodeSettings.ClusterNodeCount;
+			_subSystems = options.Subsystems;
+			_clusterSize = options.Cluster.ClusterSize;
 			if (_clusterSize == 1) {
 				_serviceShutdownsToExpect = 1 /* StorageChaser */
 				                            + 1 /* StorageReader */
@@ -84,11 +82,11 @@ namespace EventStore.Core.Services.VNode {
 				                            + 1 /* HttpService */;
 			}
 
-			_subSystemInitsToExpect = _subSystems != null ? subSystems.Length : 0;
+			_subSystemInitsToExpect = _subSystems.Count;
 
 			_forwardingProxy = forwardingProxy;
-			_forwardingTimeout = vnodeSettings.PrepareTimeout + vnodeSettings.CommitTimeout +
-			                     TimeSpan.FromMilliseconds(300);
+			_forwardingTimeout = TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs +
+			                                               options.Database.CommitTimeoutMs + 300);
 
 			_fsm = CreateFSM();
 			_currentEpoch = -1;
@@ -564,7 +562,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.SystemCoreReady message) {
-			if (_subSystems == null || _subSystems.Length == 0) {
+			if (_subSystems == null || _subSystems.Count == 0) {
 				_outputBus.Publish(new SystemMessage.SystemReady());
 			} else {
 				_outputBus.Publish(message);

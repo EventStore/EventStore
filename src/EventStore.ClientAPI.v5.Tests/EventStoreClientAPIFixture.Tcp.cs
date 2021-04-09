@@ -12,7 +12,7 @@ namespace EventStore.ClientAPI.Tests {
 			return EventStoreConnection.Create(
 				settings,
 				new IPEndPoint(IPAddress.Loopback, port ?? (settings.UseSslConnection
-					                                   ? ExternalSecurePort
+					                                   ? ExternalPort
 					                                   : ExternalPort)));
 		}
 
@@ -22,9 +22,9 @@ namespace EventStore.ClientAPI.Tests {
 			int? port = default, bool useDnsEndPoint = false) {
 			var settings = configureSettings ?? DefaultConfigureSettingsForConnectionString;
 			var host = useDnsEndPoint ? "localhost" : IPAddress.Loopback.ToString();
-			port ??= (useSsl ? ExternalSecurePort : ExternalPort);
+			port ??= ExternalPort;
 
-			if (useSsl) settings += $"UseSslConnection=true;ValidateServer=false;TargetHost={host};";
+			settings += $"UseSslConnection=true;ValidateServer=false;TargetHost={host};";
 
 			var connectionString = $"ConnectTo=tcp://{host}:{port};{settings}";
 			return EventStoreConnection.Create(connectionString);

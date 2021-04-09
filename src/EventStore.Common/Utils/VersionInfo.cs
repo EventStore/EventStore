@@ -8,5 +8,7 @@ namespace EventStore.Common.Utils {
 		public static string Branch => ThisAssembly.Git.Branch;
 		public static string Hashtag => ThisAssembly.Git.Commit;
 		public static readonly string Timestamp = "Unknown";
+
+		public static string Text => $"EventStoreDB version {Version} ({Branch}/{Hashtag}, {Timestamp})";
 	}
 }

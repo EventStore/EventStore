@@ -3,17 +3,17 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.Data {
 	public class GossipAdvertiseInfo {
-		public DnsEndPoint InternalTcp { get; set; }
-		public DnsEndPoint InternalSecureTcp { get; set; }
-		public DnsEndPoint ExternalTcp { get; set; }
-		public DnsEndPoint ExternalSecureTcp { get; set; }
-		public DnsEndPoint HttpEndPoint { get; set; }
-		public string AdvertiseInternalHostAs { get; set; }
-		public string AdvertiseExternalHostAs { get; set; }
-		public int AdvertiseHttpPortAs { get; set; }
-		public string AdvertiseHostToClientAs { get; set; }
-		public int AdvertiseHttpPortToClientAs { get; set; }
-		public int AdvertiseTcpPortToClientAs { get; set; }
+		public DnsEndPoint InternalTcp { get; }
+		public DnsEndPoint InternalSecureTcp { get; }
+		public DnsEndPoint ExternalTcp { get; }
+		public DnsEndPoint ExternalSecureTcp { get; }
+		public DnsEndPoint HttpEndPoint { get; }
+		public string AdvertiseInternalHostAs { get; }
+		public string AdvertiseExternalHostAs { get; }
+		public int AdvertiseHttpPortAs { get; }
+		public string AdvertiseHostToClientAs { get; }
+		public int AdvertiseHttpPortToClientAs { get; }
+		public int AdvertiseTcpPortToClientAs { get; }
 
 		public GossipAdvertiseInfo(DnsEndPoint internalTcp, DnsEndPoint internalSecureTcp,
 			DnsEndPoint externalTcp, DnsEndPoint externalSecureTcp,

@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			_node = new MiniNode(PathName, skipInitializeStandardUsersCheck: false);
+			_node = new MiniNode(PathName);
 			await _node.Start();
 
 			var scavengeMessage =
@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		public async Task When() {
-			using (var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Normal, DefaultData.AdminCredentials)) {
+			using (var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Ssl, DefaultData.AdminCredentials)) {
 				await conn.ConnectAsync();
 				var countdown = new CountdownEvent(2);
 				_result = new List<ResolvedEvent>();

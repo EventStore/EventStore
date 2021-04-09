@@ -2,17 +2,18 @@ using System;
 using System.Net;
 using EventStore.Common.Utils;
 using EventStore.Core.Cluster.Settings;
+using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Services.ElectionsService {
 	public sealed class ClusterSettings {
-		public string ClusterDns { get; private set; }
+		public string ClusterDns { get; }
 
-		public ClusterVNodeSettings Self { get; private set; }
-		public ClusterVNodeSettings[] GroupMembers { get; private set; }
+		public ClusterVNodeSettings Self { get; }
+		public ClusterVNodeSettings[] GroupMembers { get; }
 
-		public IPEndPoint ClusterManager { get; private set; }
+		public IPEndPoint ClusterManager { get; }
 
-		public int ClusterNodesCount { get; private set; }
+		public int ClusterNodesCount { get; }
 
 		public ClusterSettings(string clusterDns,
 			IPEndPoint clusterManager,
@@ -20,34 +21,19 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			ClusterVNodeSettings[] groupMembers,
 			int expectedNodesCount) {
 			if (string.IsNullOrWhiteSpace(clusterDns))
-				throw new ArgumentException(string.Format("Wrong cluster DNS name: {0}", clusterDns), clusterDns);
+				throw new ArgumentException($"Wrong cluster DNS name: {clusterDns}", clusterDns);
 			if (self == null)
-				throw new ArgumentNullException("self");
+				throw new ArgumentNullException(nameof(self));
 			if (groupMembers == null)
-				throw new ArgumentNullException("groupMembers");
+				throw new ArgumentNullException(nameof(groupMembers));
 			if (clusterManager == null)
-				throw new ArgumentNullException("clusterManager");
+				throw new ArgumentNullException(nameof(clusterManager));
 
 			ClusterDns = clusterDns;
 			Self = self;
 			GroupMembers = groupMembers;
 			ClusterManager = clusterManager;
 			ClusterNodesCount = expectedNodesCount;
-		}
-
-		public ClusterSettings(string clusterDns, IPEndPoint clusterManager, ClusterVNodeSettings self,
-			int clusterNodesCount)
-			: this(clusterDns, clusterManager, self, new ClusterVNodeSettings[0], clusterNodesCount) {
-		}
-
-		public ClusterSettings(string clusterDns, IPEndPoint clusterManagerEndPoint, int clusterNodesCount) {
-			Ensure.NotNullOrEmpty(clusterDns, "clusterDns");
-			Ensure.NotNull(clusterManagerEndPoint, "clusterManagerEndPoint");
-
-			ClusterDns = clusterDns;
-			GroupMembers = new ClusterVNodeSettings[0];
-			ClusterManager = clusterManagerEndPoint;
-			ClusterNodesCount = clusterNodesCount;
 		}
 	}
 }

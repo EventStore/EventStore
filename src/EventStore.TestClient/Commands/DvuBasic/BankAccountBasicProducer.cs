@@ -5,9 +5,10 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Transport.Http.Codecs;
 using ILogger = Serilog.ILogger;
+#pragma warning disable 1591
 
 namespace EventStore.TestClient.Commands.DvuBasic {
-	public class BankAccountBasicProducer : IBasicProducer {
+	internal class BankAccountBasicProducer : IBasicProducer {
 		private static readonly ILogger Log = Serilog.Log.ForContext<BankAccountBasicProducer>();
 
 		public string Name {

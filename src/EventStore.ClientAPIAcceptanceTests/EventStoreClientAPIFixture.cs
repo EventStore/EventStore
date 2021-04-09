@@ -6,6 +6,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using EventStore.ClusterNode;
 using EventStore.Core;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using Xunit;
 
 namespace EventStore.ClientAPI.Tests {
@@ -19,18 +22,17 @@ namespace EventStore.ClientAPI.Tests {
 				.GetManifestResourceStream(typeof(EventStoreClientAPIFixture), "server.p12");
 			using var mem = new MemoryStream();
 			stream.CopyTo(mem);
-			var vNodeBuilder = ClusterVNodeBuilder
-				.AsSingleNode()
-				.WithExternalTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalPort))
-				.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalSecurePort))
-				.WithServerCertificate(new X509Certificate2(mem.ToArray(), "1111"))
-				.RunInMemory()
-				.EnableExternalTCP();
 
-			_node = vNodeBuilder.Build();
+			_node = new ClusterVNode(new ClusterVNodeOptions()
+					.RunInMemory()
+					.Secure(new X509Certificate2Collection(), new X509Certificate2(mem.ToArray(), "1111"))
+					.WithExternalSecureTcpOn(new IPEndPoint(IPAddress.Loopback, ExternalPort)),
+				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
+
 			Connections = new Dictionary<bool, IEventStoreConnection> {
-				[false] = CreateConnection(settings => settings.UseSsl(false), ExternalPort),
-				[true] = CreateConnection(settings => settings.UseSsl(true), ExternalSecurePort)
+				[false] = CreateConnection(settings => settings.UseSsl(true), ExternalPort),
+				[true] = CreateConnection(settings => settings.UseSsl(true), ExternalPort)
 			};
 		}
 
