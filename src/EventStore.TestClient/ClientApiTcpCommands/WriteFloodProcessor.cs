@@ -15,7 +15,7 @@ using WrongExpectedVersionException = EventStore.ClientAPI.Exceptions.WrongExpec
 namespace EventStore.TestClient.ClientApiTcpCommands {
 	internal class WriteFloodProcessor : ICmdProcessor {
 		public string Usage {
-			get { return "WRFLTCP [<clients> <requests> [<streams-cnt> [<size>] [<batchsize>] [<streamprefix>]]]"; }
+			get { return "WRFLTCP [<clients> <requests> [<streams-cnt> [<size> [<batchsize> [<stream-prefix>]]]]]"; }
 		}
 
 		public string Keyword {
