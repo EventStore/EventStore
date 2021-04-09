@@ -13,7 +13,7 @@ namespace EventStore.TestClient.GrpcCommands {
 		private static readonly UTF8Encoding UTF8NoBom = new UTF8Encoding(false);
 
 		public string Usage {
-			get { return "WRFLGRPC [<clients> <requests> [<streams-cnt> [<size>] [<batchsize>] <streamNamePrefix>]]"; }
+			get { return "WRFLGRPC [<clients> <requests> [<streams-cnt> [<size> [<batchsize> [<stream-prefix>]]]]]"; }
 		}
 
 		public string Keyword {

@@ -13,6 +13,9 @@ using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
+	/// <summary>
+	/// The Raw TCP client used by the TestClient commands that don't have a client suffix.
+	/// </summary>
 	public class TcpTestClient {
 		private readonly BufferManager _bufferManager =
 			new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
@@ -23,9 +26,21 @@ namespace EventStore.TestClient {
 		private readonly bool _useSsl;
 		private readonly ILogger _log;
 		private readonly bool _interactiveMode;
+		/// <summary>
+		/// The TCP EndPoint for the Event Store server.
+		/// </summary>
 		public readonly EndPoint TcpEndpoint;
+		/// <summary>
+		/// The ClientOptions for the TestClient.
+		/// </summary>
 		public readonly ClientOptions Options;
 
+		/// <summary>
+		/// Creates a Raw Tcp Test Client for a command
+		/// </summary>
+		/// <param name="options">The ClientOptions for the TestClient.</param>
+		/// <param name="interactiveMode">Whether the TestClient is in interactive mode.</param>
+		/// <param name="log"></param>
 		public TcpTestClient(ClientOptions options, bool interactiveMode, ILogger log) {
 			_interactiveMode = interactiveMode;
 			_log = log;
@@ -35,6 +50,17 @@ namespace EventStore.TestClient {
 			Options = options;
 		}
 
+		/// <summary>
+		/// Creates a connection for the command to use for its tests
+		/// </summary>
+		/// <param name="context">The context for this command</param>
+		/// <param name="handlePackage"></param>
+		/// <param name="connectionEstablished"></param>
+		/// <param name="connectionClosed"></param>
+		/// <param name="failContextOnError"></param>
+		/// <param name="tcpEndPoint"></param>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
 		public Connection CreateTcpConnection(CommandProcessorContext context,
 			Action<Connection, TcpPackage> handlePackage,
 			Action<Connection> connectionEstablished = null,

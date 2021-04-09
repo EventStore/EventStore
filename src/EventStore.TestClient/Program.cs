@@ -29,11 +29,12 @@ namespace EventStore.TestClient {
 		/// <param name="reconnect"></param>
 		/// <param name="useTls"></param>
 		/// <param name="tlsValidateServer"></param>
+		/// <param name="connectionString">A connection string to connect to a node/cluster. Used by gRPC only.</param>
 		/// <returns></returns>
 		public static async Task<int> Main(bool version = false, FileInfo? log = null, bool whatIf = false,
 			string[]? command = null, string host = "localhost", int tcpPort = 1113, int httpPort = 2113,
 			int timeout = Timeout.Infinite, int readWindow = 2000, int writeWindow = 2000, int pingWindow = 2000,
-			bool reconnect = true, bool useTls = false, bool tlsValidateServer = false) {
+			bool reconnect = true, bool useTls = false, bool tlsValidateServer = false, string connectionString = "") {
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 
 			try {

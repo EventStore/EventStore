@@ -26,7 +26,6 @@ namespace EventStore.TestClient {
 		public bool UseTls { get; init; }
 		public bool TlsValidateServer { get; init; }
 
-		[ArgDescription("A connection string to connect to a node/cluster. Used by gRPC only.")]
 		public string ConnectionString { get; set; }
 
 		public ClientOptions() {
