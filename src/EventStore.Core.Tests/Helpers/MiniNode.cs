@@ -1,16 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Tests.Common.VNodeBuilderTests;
 using System.Threading.Tasks;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
@@ -29,11 +33,9 @@ namespace EventStore.Core.Tests.Helpers {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<MiniNode>();
 
-		public IPEndPoint TcpEndPoint { get; private set; }
-		public IPEndPoint TcpSecEndPoint { get; private set; }
-		public IPEndPoint IntTcpEndPoint { get; private set; }
-		public IPEndPoint IntSecTcpEndPoint { get; private set; }
-		public IPEndPoint HttpEndPoint { get; private set; }
+		public IPEndPoint TcpEndPoint { get; }
+		public IPEndPoint IntTcpEndPoint { get; }
+		public IPEndPoint HttpEndPoint { get; }
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
@@ -48,87 +50,79 @@ namespace EventStore.Core.Tests.Helpers {
 		public Task AdminUserCreated => _adminUserCreated.Task;
 
 		public MiniNode(string pathname,
-			int? tcpPort = null, int? tcpSecPort = null, int? httpPort = null,
+			int? tcpPort = null, int? httpPort = null,
 			ISubsystem[] subsystems = null,
 			int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false,
-			bool skipInitializeStandardUsersCheck = true,
 			int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false,
 			string advertisedExtHostAddress = null, int advertisedHttpPort = 0,
-			int hashCollisionReadLimit = EventStore.Core.Util.Opts.HashCollisionReadLimitDefault,
-			byte indexBitnessVersion = EventStore.Core.Util.Opts.IndexBitnessVersionDefault,
+			int hashCollisionReadLimit = Util.Opts.HashCollisionReadLimitDefault,
+			byte indexBitnessVersion = Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false) {
 			RunningTime.Start();
 			RunCount += 1;
 
-			var ip = IPAddress.Loopback; //GetLocalIp();
+			var ip = IPAddress.Loopback;
 			
 
 			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
-			int extSecTcpPort = tcpSecPort ?? PortsHelper.GetAvailablePort(ip);
 			int httpEndPointPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 			int intTcpPort = PortsHelper.GetAvailablePort(ip);
-			int intSecTcpPort = PortsHelper.GetAvailablePort(ip);
 
 			if (string.IsNullOrEmpty(dbPath)) {
 				DbPath = Path.Combine(pathname,
-					$"mini-node-db-{extTcpPort}-{extSecTcpPort}-{httpEndPointPort}");
+					$"mini-node-db-{extTcpPort}-{httpEndPointPort}");
 			} else {
 				DbPath = dbPath;
 			}
 
 			TcpEndPoint = new IPEndPoint(ip, extTcpPort);
-			TcpSecEndPoint = new IPEndPoint(ip, extSecTcpPort);
 			IntTcpEndPoint = new IPEndPoint(ip, intTcpPort);
-			IntSecTcpEndPoint = new IPEndPoint(ip, intSecTcpPort);
 			HttpEndPoint = new IPEndPoint(ip, httpEndPointPort);
 
-			var builder = TestVNodeBuilder.AsSingleNode();
-			if (inMemDb)
-				builder.RunInMemory();
-			else
-				builder.RunOnDisk(DbPath);
+			var options = new ClusterVNodeOptions {
+					IndexBitnessVersion = indexBitnessVersion,
+					Application = new() {
+						StatsPeriodSec = 60 * 60,
+						WorkerThreads = 1
+					},
+					Interface = new() {
+						ExtTcpHeartbeatInterval = 10_000,
+						ExtTcpHeartbeatTimeout = 10_000,
+						IntTcpHeartbeatInterval = 10_000,
+						IntTcpHeartbeatTimeout = 10_000,
+						EnableTrustedAuth = enableTrustedAuth,
+						EnableAtomPubOverHttp = true
+					},
+					Cluster = new() {
+						DiscoverViaDns = false,
+						ReadOnlyReplica = isReadOnlyReplica
+					},
+					Database = new() {
+						ChunkSize = chunkSize ?? ChunkSize,
+						ChunksCacheSize = cachedChunkSize ?? CachedChunkSize,
+						SkipDbVerify = true,
+						StatsStorage = StatsStorage.None,
+						MaxMemTableSize = memTableSize,
+						DisableScavengeMerging = true,
+						HashCollisionReadLimit = hashCollisionReadLimit,
+						CommitTimeoutMs = 10_000,
+						PrepareTimeoutMs = 10_000,
+						UnsafeDisableFlushToDisk = disableFlushToDisk
+					},
+					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
+				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+					ssl_connections.GetServerCertificate())
+				.WithInternalSecureTcpOn(IntTcpEndPoint)
+				.WithExternalSecureTcpOn(TcpEndPoint)
+				.WithHttpOn(HttpEndPoint);
 
-			builder.WithInternalTcpOn(IntTcpEndPoint)
-				.WithInternalSecureTcpOn(IntSecTcpEndPoint)
-				.WithExternalTcpOn(TcpEndPoint)
-				.WithExternalSecureTcpOn(TcpSecEndPoint)
-				.WithHttpOn(HttpEndPoint)
-				.WithTfChunkSize(chunkSize ?? ChunkSize)
-				.WithTfChunksCacheSize(cachedChunkSize ?? CachedChunkSize)
-				.WithServerCertificate(ssl_connections.GetServerCertificate())
-				.WithWorkerThreads(1)
-				.DisableDnsDiscovery()
-				.WithPrepareTimeout(TimeSpan.FromSeconds(10))
-				.WithCommitTimeout(TimeSpan.FromSeconds(10))
-				.WithStatsPeriod(TimeSpan.FromHours(1))
-				.DisableScavengeMerging()
-				.WithInternalHeartbeatInterval(TimeSpan.FromSeconds(10))
-				.WithInternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
-				.WithExternalHeartbeatInterval(TimeSpan.FromSeconds(10))
-				.WithExternalHeartbeatTimeout(TimeSpan.FromSeconds(10))
-				.MaximumMemoryTableSizeOf(memTableSize)
-				.DoNotVerifyDbHashes()
-				.WithStatsStorage(StatsStorage.None)
-				.AdvertiseExternalHostAs(advertisedExtHostAddress)
-				.AdvertiseHttpPortAs(advertisedHttpPort)
-				.WithHashCollisionReadLimitOf(hashCollisionReadLimit)
-				.WithIndexBitnessVersion(indexBitnessVersion)
-				.EnableExternalTCP()
-				.WithEnableAtomPubOverHTTP(true);
+			if (advertisedExtHostAddress != null)
+				options = options.AdvertiseHttpHostAs(new DnsEndPoint(advertisedExtHostAddress, advertisedHttpPort));
 
-			if (enableTrustedAuth)
-				builder.EnableTrustedAuth();
-			if (disableFlushToDisk)
-				builder.WithUnsafeDisableFlushToDisk();
-			if (isReadOnlyReplica)
-				builder.EnableReadOnlyReplica();
-
-			if (subsystems != null) {
-				foreach (var subsystem in subsystems) {
-					builder.AddCustomSubsystem(subsystem);
-				}
-			}
+			options = inMemDb
+				? options.RunInMemory()
+				: options.RunOnDisk(DbPath);
 
 			Log.Information("\n{0,-25} {1} ({2}/{3}, {4})\n"
 					 + "{5,-25} {6} ({7})\n"
@@ -144,14 +138,15 @@ namespace EventStore.Core.Tests.Helpers {
 				"GC:",
 				GC.MaxGeneration == 0
 					? "NON-GENERATION (PROBABLY BOEHM)"
-					: string.Format("{0} GENERATIONS", GC.MaxGeneration + 1),
+					: $"{GC.MaxGeneration + 1} GENERATIONS",
 				"DBPATH:", DbPath,
 				"TCP ENDPOINT:", TcpEndPoint,
-				"TCP SECURE ENDPOINT:", TcpSecEndPoint,
 				"HTTP ENDPOINT:", HttpEndPoint);
 
-			Node = builder.Build();
-			Db = builder.GetDb();
+			Node = new ClusterVNode(options,
+				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
+			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 			_kestrelTestServer = new TestServer(new WebHostBuilder()

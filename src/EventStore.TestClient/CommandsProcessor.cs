@@ -6,7 +6,7 @@ using System.Threading;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
-	public class CommandsProcessor {
+	internal class CommandsProcessor {
 		public IEnumerable<ICmdProcessor> RegisteredProcessors {
 			get { return _processors.Values; }
 		}

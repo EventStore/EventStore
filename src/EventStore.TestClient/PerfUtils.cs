@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using ILogger = Serilog.ILogger;
+#pragma warning disable 1591
 
 namespace EventStore.TestClient {
 	public static class PerfUtils {

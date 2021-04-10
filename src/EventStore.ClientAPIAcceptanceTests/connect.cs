@@ -73,12 +73,12 @@ namespace EventStore.ClientAPI.Tests {
 		public async Task can_connect_to_dns_endpoint(bool useSsl) {
 			var streamName = $"{GetStreamName()}_{useSsl}";
 			using var connection = _fixture.CreateConnection(
-				builder => builder.UseSsl(useSsl)
+				builder => builder.UseSsl(true)
 					.LimitReconnectionsTo(1)
 					.WithConnectionTimeoutOf(TimeSpan.FromSeconds(10))
 					.SetReconnectionDelayTo(TimeSpan.Zero)
 					.FailOnNoServerResponse(),
-				useSsl ? EventStoreClientAPIFixture.ExternalSecurePort : EventStoreClientAPIFixture.ExternalPort,
+				EventStoreClientAPIFixture.ExternalPort,
 				useDnsEndPoint: true);
 			await connection.ConnectAsync().WithTimeout();
 			var writeResult =

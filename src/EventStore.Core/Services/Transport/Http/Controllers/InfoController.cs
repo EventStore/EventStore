@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using EventStore.Common.Options;
+using System.ComponentModel;
+using System.Reflection;
 using EventStore.Common.Utils;
-using EventStore.Rags;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
 using EventStore.Transport.Http.EntityManagement;
@@ -20,12 +20,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private static readonly ILogger Log = Serilog.Log.ForContext<InfoController>();
 		private static readonly ICodec[] SupportedCodecs = {Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
 
-		private readonly IOptions _options;
+		private readonly ClusterVNodeOptions _options;
 		private readonly IDictionary<string, bool> _features;
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private VNodeState _currentState;
 
-		public InfoController(IOptions options, IDictionary<string, bool> features, IAuthenticationProvider authenticationProvider) {
+		public InfoController(ClusterVNodeOptions options, IDictionary<string, bool> features, IAuthenticationProvider authenticationProvider) {
 			_options = options;
 			_features = features;
 			_authenticationProvider = authenticationProvider;
@@ -93,35 +93,35 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string[] PossibleValues { get; set; }
 		}
 
-		public OptionStructure[] GetOptionsInfo(IOptions options) {
+		public OptionStructure[] GetOptionsInfo(ClusterVNodeOptions options) {
 			var optionsToSendToClient = new List<OptionStructure>();
-			foreach (var property in options.GetType().GetProperties()) {
-				var argumentDescriptionAttribute = property.HasAttr<ArgDescriptionAttribute>()
-					? property.Attr<ArgDescriptionAttribute>()
-					: null;
-				var configFileOptionValue = property.GetValue(options, null);
-				string[] possibleValues = null;
-				if (property.PropertyType.IsEnum) {
-					possibleValues = property.PropertyType.GetEnumNames();
-				} else if (property.PropertyType.IsArray) {
-					var array = configFileOptionValue as Array;
-					if (array == null)
-						continue;
-					var configFileOptionValueAsString = String.Empty;
-					for (var i = 0; i < array.Length; i++) {
-						configFileOptionValueAsString += array.GetValue(i).ToString();
+			foreach (PropertyInfo sectionInfo in typeof(ClusterVNodeOptions).GetProperties()) {
+				var section = sectionInfo.GetValue(options, null);
+				foreach (PropertyInfo property in sectionInfo.PropertyType.GetProperties()) {
+					var argumentDescriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>();
+					var configFileOptionValue = property.GetValue(section, null);
+					string[] possibleValues = null;
+					if (property.PropertyType.IsEnum) {
+						possibleValues = property.PropertyType.GetEnumNames();
+					} else if (property.PropertyType.IsArray) {
+						var array = configFileOptionValue as Array;
+						if (array == null) continue;
+						var configFileOptionValueAsString = String.Empty;
+						for (var i = 0; i < array.Length; i++) {
+							configFileOptionValueAsString += array.GetValue(i).ToString();
+						}
+
+						configFileOptionValue = configFileOptionValueAsString;
 					}
 
-					configFileOptionValue = configFileOptionValueAsString;
+					optionsToSendToClient.Add(new OptionStructure {
+						Name = property.Name,
+						Description = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Description,
+						Group = property.DeclaringType?.GetCustomAttribute<DescriptionAttribute>()?.Description,
+						Value = configFileOptionValue == null ? "" : configFileOptionValue.ToString(),
+						PossibleValues = possibleValues
+					});
 				}
-
-				optionsToSendToClient.Add(new OptionStructure {
-					Name = property.Name,
-					Description = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Description,
-					Group = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Group,
-					Value = configFileOptionValue == null ? "" : configFileOptionValue.ToString(),
-					PossibleValues = possibleValues
-				});
 			}
 
 			return optionsToSendToClient.ToArray();

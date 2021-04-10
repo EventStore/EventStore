@@ -9,7 +9,7 @@ namespace EventStore.ClientAPI.Tests {
 		public string GetStreamName([CallerMemberName] string testMethod = default)
 			=> $"{GetType().Name}_{testMethod ?? "unknown"}";
 
-		protected static IEnumerable<bool> UseSsl => new[] {true, false};
+		protected static IEnumerable<bool> UseSsl => new[] {true};
 
 		protected static IEnumerable<(long expectedVersion, string displayName)> ExpectedVersions
 			=> new[] {

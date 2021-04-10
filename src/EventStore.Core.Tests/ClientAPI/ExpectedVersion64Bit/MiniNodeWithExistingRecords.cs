@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public abstract class MiniNodeWithExistingRecords : SpecificationWithDirectoryPerTestFixture {
-		private readonly TcpType _tcpType = TcpType.Normal;
+		private readonly TcpType _tcpType = TcpType.Ssl;
 		protected MiniNode Node;
 
 		protected readonly int MaxEntriesInMemTable = 20;

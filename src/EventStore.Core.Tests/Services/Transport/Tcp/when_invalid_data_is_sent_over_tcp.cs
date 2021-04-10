@@ -16,9 +16,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 		[Timeout(5000)]
 		[TestCase("InternalTcpEndPoint", false)]
-		[TestCase("InternalTcpSecEndPoint", true)]
 		[TestCase("ExternalTcpEndPoint", false)]
-		[TestCase("ExternalTcpSecEndPoint", true)]
 		public void connection_should_be_closed_by_remote_party(string endpointProperty, bool secure) {
 			IPEndPoint endpoint = (IPEndPoint)_nodes[0].GetType().GetProperty(endpointProperty).GetValue(_nodes[0], null);
 			var connectedEvent = new ManualResetEvent(false);

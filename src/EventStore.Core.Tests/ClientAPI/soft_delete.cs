@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
 			return EventStoreConnection.Create(
-				ConnectionSettings.Create().DisableTls().Build(),
+				ConnectionSettings.Create().DisableServerCertificateValidation().Build(),
 				node.TcpEndPoint.ToESTcpUri());
 		}
 

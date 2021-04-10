@@ -505,7 +505,8 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 			.StartFromCurrent();
 
 		protected override async Task Given() {
-			_conn = EventStoreConnection.Create(ConnectionSettings.Create().DisableTls().Build(), _node.TcpEndPoint);
+			_conn = EventStoreConnection.Create(ConnectionSettings.Create().DisableServerCertificateValidation().Build(),
+				_node.TcpEndPoint);
 			await _conn.ConnectAsync();
 			await _conn.CreatePersistentSubscriptionAsync(_streamName, _groupName, _settings,
 				DefaultData.AdminCredentials);

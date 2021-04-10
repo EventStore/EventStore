@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
+#pragma warning disable 1591
 
 namespace EventStore.TestClient {
 	public class ConsoleTable {

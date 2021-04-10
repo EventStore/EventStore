@@ -136,7 +136,7 @@ namespace EventStore.Core.Tests.Integration {
 				using var connection = EventStoreConnection.Create(ConnectionSettings.Create()
 						.DisableServerCertificateValidation()
 						.PreferFollowerNode(),
-					node.ExternalTcpSecEndPoint);
+					node.ExternalTcpEndPoint);
 				await connection.ConnectAsync();
 
 				try {

@@ -73,13 +73,10 @@ namespace EventStore.Core.Tests.Http {
 			get { return _tag; }
 		}
 
-		protected virtual MiniNode CreateMiniNode() {
-			return new MiniNode(PathName, skipInitializeStandardUsersCheck: GivenSkipInitializeStandardUsersCheck());
-		}
+		protected virtual MiniNode CreateMiniNode() =>
+			new(PathName);
 
-		protected virtual bool GivenSkipInitializeStandardUsersCheck() {
-			return false;
-		}
+		protected virtual bool GivenSkipInitializeStandardUsersCheck() => false;
 
 		public override async Task TestFixtureTearDown() {
 			_connection.Close();

@@ -11,18 +11,18 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 	public static class TestConnection {
 		private static int _nextConnId = -1;
 
-		public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Normal,
+		public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Ssl,
 			UserCredentials userCredentials = null) {
 			return EventStoreConnection.Create(Settings(tcpType, userCredentials),
 				endPoint.ToESTcpUri(),
-				string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
+				$"ESC-{Interlocked.Increment(ref _nextConnId)}");
 		}
 
 		public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType,
 			UserCredentials userCredentials = null) {
 			return EventStoreConnection.Create(Settings(tcpType, userCredentials),
-				tcpType == TcpType.Ssl ? miniNode.TcpSecEndPoint.ToESTcpUri() : miniNode.TcpEndPoint.ToESTcpUri(),
-				string.Format("ESC-{0}", Interlocked.Increment(ref _nextConnId)));
+				miniNode.TcpEndPoint.ToESTcpUri(),
+				$"ESC-{Interlocked.Increment(ref _nextConnId)}");
 		}
 
 		private static ConnectionSettingsBuilder Settings(TcpType tcpType, UserCredentials userCredentials) {

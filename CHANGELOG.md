@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Mutex being released on wrong thread resulting in an annoying log message on shutdown [EventStore#2838](https://github.com/EventStore/EventStore/pull/2838)
 - Keep alive timeout check [EventStore#2861](https://github.com/EventStore/EventStore/pull/2861)
 - TestClient not exiting after executing `--command`, which prevents it from being automated in an easy way. [EventStore#2871](https://github.com/EventStore/EventStore/pull/2871)
+- Rdall for TestClient [EventStore#2892](https://github.com/EventStore/EventStore/pull/2892)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
@@ -20,6 +21,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - ValidateServer also sets whether HTTP certificate validation is enabled. [EventStore#2832](https://github.com/EventStore/EventStore/pull/2832)
 - Make Microsoft.NETFramework.ReferenceAssemblies reference private [EventStore#2859](https://github.com/EventStore/EventStore/pull/2859)
+- internal configuration system now based on `Microsoft.Extensions.Configuration` [EventStore#2833](https://github.com/EventStore/EventStore/pull/2833)
 
 ### changed
 - minver prefix for tcp clients [EventStore#2846](https://github.com/EventStore/EventStore/pull/2846)

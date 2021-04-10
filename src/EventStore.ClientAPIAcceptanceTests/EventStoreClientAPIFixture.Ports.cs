@@ -4,12 +4,10 @@ using System.Net.Sockets;
 namespace EventStore.ClientAPI.Tests {
 	partial class EventStoreClientAPIFixture {
 		public static readonly int ExternalPort;
-		public static readonly int ExternalSecurePort;
 		public static readonly int UnusedPort;
 
 		static EventStoreClientAPIFixture() {
 			ExternalPort = GetFreePort();
-			ExternalSecurePort = GetFreePort();
 			UnusedPort = GetFreePort();
 
 			static int GetFreePort() {

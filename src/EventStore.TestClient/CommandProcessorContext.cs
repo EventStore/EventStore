@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using ILogger = Serilog.ILogger;
+#pragma warning disable 1591
 
 namespace EventStore.TestClient {
 	/// <summary>

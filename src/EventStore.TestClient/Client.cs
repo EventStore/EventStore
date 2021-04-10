@@ -7,6 +7,7 @@ using EventStore.TestClient.Commands;
 using EventStore.TestClient.Commands.DvuBasic;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
+#pragma warning disable 1591
 
 namespace EventStore.TestClient {
 	public class Client {

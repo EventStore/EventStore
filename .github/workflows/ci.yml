@@ -4,9 +4,13 @@ on:
   pull_request:
   push:
     branches:
-    - master
+      - master
     tags:
-    - oss-v*
+      - oss-v*
+    paths-ignore:
+      - "/docs/**"
+      - "/samples/**"
+      - "**.md"
 
 jobs:
   vulnerability-scan:
@@ -83,7 +87,7 @@ jobs:
           .
     - name: Verify Build
       run: |
-        docker run -e EVENTSTORE_DEV=true -e EVENTSTORE_WHAT_IF=true --rm eventstore
+        docker run -e EVENTSTORE_INSECURE=true -e EVENTSTORE_WHAT_IF=true --rm eventstore
     - name: Run Tests
       run: |
         docker build \
@@ -162,7 +166,7 @@ jobs:
     - name: Verify Build
       shell: bash
       run: |
-        dotnet run --project src/EventStore.ClusterNode --configuration ${{ matrix.configuration }} -- --dev --what-if
+        dotnet run --project src/EventStore.ClusterNode --configuration ${{ matrix.configuration }} -- --insecure --what-if
     - name: Run Tests
       shell: bash
       run: |

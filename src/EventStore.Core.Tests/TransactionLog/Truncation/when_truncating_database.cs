@@ -16,7 +16,6 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			await miniNode.Start();
 
 			var tcpPort = miniNode.TcpEndPoint.Port;
-			var tcpSecPort = miniNode.TcpSecEndPoint.Port;
 			var httpPort = miniNode.HttpEndPoint.Port;
 			const int cnt = 50;
 			var countdown = new CountdownEvent(cnt);
@@ -39,7 +38,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			await miniNode.Shutdown(keepDb: true);
 
 			// --- first restart and truncation
-			miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, inMemDb: false);
+			miniNode = new MiniNode(PathName, tcpPort, httpPort, inMemDb: false);
 
 			await miniNode.Start();
 			Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
@@ -53,7 +52,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			await miniNode.Shutdown(keepDb: true);
 
 			// -- second restart
-			miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, inMemDb: false);
+			miniNode = new MiniNode(PathName, tcpPort, httpPort, inMemDb: false);
 			Assert.AreEqual(-1, miniNode.Db.Config.TruncateCheckpoint.Read());
 			await miniNode.Start();
 
@@ -69,8 +68,6 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 			var miniNode = new MiniNode(PathName, chunkSize: chunkSize, cachedChunkSize: cachedSize, inMemDb: false);
 			await miniNode.Start();
 
-			var tcpPort = miniNode.TcpEndPoint.Port;
-			var tcpSecPort = miniNode.TcpSecEndPoint.Port;
 			var httpPort = miniNode.HttpEndPoint.Port;
 			const int cnt = 1;
 			var countdown = new CountdownEvent(cnt);
@@ -92,8 +89,10 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			await miniNode.Shutdown(keepDb: true);
 
+			var tcpPort = miniNode.TcpEndPoint.Port;
+
 			// --- first restart and truncation
-			miniNode = new MiniNode(PathName, tcpPort, tcpSecPort, httpPort, chunkSize: chunkSize,
+			miniNode = new MiniNode(PathName, tcpPort, httpPort, chunkSize: chunkSize,
 				cachedChunkSize: cachedSize, inMemDb: false);
 
 			await miniNode.Start();

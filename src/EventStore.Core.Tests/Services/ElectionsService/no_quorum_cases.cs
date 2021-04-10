@@ -11,8 +11,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 		[SetUp]
 		public void SetUp() {
-			var clusterSettingsFactory = new ClusterSettingsFactory();
-			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3, false);
+			var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
 
 			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 
@@ -40,8 +39,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 		[SetUp]
 		public void SetUp() {
-			var clusterSettingsFactory = new ClusterSettingsFactory();
-			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3, false);
+			var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
 
 			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 
@@ -77,8 +75,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 
 		[SetUp]
 		public void SetUp() {
-			var clusterSettingsFactory = new ClusterSettingsFactory();
-			var clusterSettings = clusterSettingsFactory.GetClusterSettings(1, 3, false);
+			var clusterSettings = ClusterSettingsFactory.GetClusterSettings(1, 3, false);
 
 			_electionsUnit = new ElectionsServiceUnit(clusterSettings);
 			_electionsUnit.UpdateClusterMemberInfo(0, isAlive: false);

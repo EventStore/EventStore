@@ -1,3 +1,4 @@
+#pragma warning disable 1591
 namespace EventStore.TestClient {
 	/// <summary>
 	/// Standalone command executable within the test client
