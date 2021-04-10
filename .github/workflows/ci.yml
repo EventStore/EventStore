@@ -155,10 +155,10 @@ jobs:
       with:
         dotnet-version: 5.0.x
     - name: Clear Nuget Cache
-      shell: bash
+      shell: powershell
       if: matrix.os == 'windows-2019'
       run: |
-        dotnet nuget locals all --clear
+        Remove-Item $env:APPDATA\NuGet\NuGet.Config
     - name: Compile
       shell: bash
       run: |
