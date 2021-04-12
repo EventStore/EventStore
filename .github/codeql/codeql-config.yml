@@ -1,0 +1,10 @@
+name: "EventStoreDb code scanning configuration"
+
+queries:
+  - uses: security-and-quality
+
+paths:
+  - src 
+paths-ignore: 
+  - '*.Tests/**'
+  - 'EventStore.TestClient/'
