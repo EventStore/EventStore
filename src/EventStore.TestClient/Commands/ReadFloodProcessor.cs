@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -9,7 +10,8 @@ using EventStore.Transport.Tcp;
 namespace EventStore.TestClient.Commands {
 	internal class ReadFloodProcessor : ICmdProcessor {
 		public string Usage {
-			get { return "RDFL [<clients> <requests> [<event-stream>]"; }
+			//                     0          1           2               3                  4
+			get { return "RDFL [<clients> <requests> [<streams-cnt> [<stream-prefix> [<require-leader>]]]]"; }
 		}
 
 		public string Keyword {
@@ -19,33 +21,44 @@ namespace EventStore.TestClient.Commands {
 		public bool Execute(CommandProcessorContext context, string[] args) {
 			int clientsCnt = 1;
 			long requestsCnt = 5000;
-			var eventStreamId = "test-stream";
+			int streamsCnt = 1;
+			var streamPrefix = "test-stream";
 			bool resolveLinkTos = false;
 			bool requireLeader = false;
 			if (args.Length > 0) {
-				if (args.Length != 2 && args.Length != 3 && args.Length != 4)
+				if (args.Length != 2 && args.Length != 3 && args.Length != 4 && args.Length != 5)
 					return false;
 
 				try {
 					clientsCnt = int.Parse(args[0]);
 					requestsCnt = long.Parse(args[1]);
 					if (args.Length >= 3)
-						eventStreamId = args[2];
+						streamsCnt = int.Parse(args[2]);
 					if (args.Length >= 4)
-						requireLeader = bool.Parse(args[3]);
+						streamPrefix = args[3];
+					if (args.Length >= 5)
+						requireLeader = bool.Parse(args[4]);
 				} catch {
 					return false;
 				}
 			}
 
 			RequestMonitor monitor = new RequestMonitor();
-			ReadFlood(context, eventStreamId, clientsCnt, requestsCnt, resolveLinkTos, requireLeader, monitor);
+			ReadFlood(context, streamPrefix, clientsCnt, requestsCnt, streamsCnt, resolveLinkTos, requireLeader, monitor);
 			return true;
 		}
 
-		private void ReadFlood(CommandProcessorContext context, string eventStreamId, int clientsCnt, long requestsCnt,
+		private void ReadFlood(CommandProcessorContext context, string streamPrefix, int clientsCnt, long requestsCnt, int streamsCnt,
 			bool resolveLinkTos, bool requireLeader, RequestMonitor monitor) {
 			context.IsAsync();
+
+			string[] streams = streamsCnt == 1
+				? new[] { streamPrefix }
+				: Enumerable.Range(0, streamsCnt).Select(x => $"{streamPrefix}-{x}").ToArray();
+
+			context.Log.Information("Reading streams {first} through to {last}",
+				streams.FirstOrDefault(),
+				streams.LastOrDefault());
 
 			var clients = new List<TcpTypedConnection<byte[]>>();
 			var threads = new List<Thread>();
@@ -58,7 +71,7 @@ namespace EventStore.TestClient.Commands {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
 				long received = 0;
 				long sent = 0;
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, pkg) => {
 						if (pkg.Command != TcpCommand.ReadEventCompleted) {
@@ -91,9 +104,17 @@ namespace EventStore.TestClient.Commands {
 					connectionClosed: (conn, err) => context.Fail(reason: "Connection was closed prematurely."));
 				clients.Add(client);
 
+				var clientNum = i;
 				threads.Add(new Thread(() => {
+					int streamIndex = (streamsCnt / clientsCnt) * clientNum;
+					context.Log.Information("Reader #{clientNum} performing {count} reads on {streamsCnt} streams starting at stream index {streamIndex}",
+						clientNum, count, streamsCnt, streamIndex);
 					for (int j = 0; j < count; ++j) {
 						var corrId = Guid.NewGuid();
+
+						var eventStreamId = streams[streamIndex++];
+						if (streamIndex >= streamsCnt)
+							streamIndex = 0;
 						var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireLeader);
 						var package = new TcpPackage(TcpCommand.ReadEvent, corrId, read.Serialize());
 						monitor.StartOperation(corrId);
@@ -101,7 +122,7 @@ namespace EventStore.TestClient.Commands {
 
 						var localSent = Interlocked.Increment(ref sent);
 						while (localSent - Interlocked.Read(ref received) >
-						       context.Client.Options.ReadWindow / clientsCnt) {
+						       context._tcpTestClient.Options.ReadWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}

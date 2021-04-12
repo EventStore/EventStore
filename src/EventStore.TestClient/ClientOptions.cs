@@ -34,6 +34,9 @@ namespace EventStore.TestClient {
 		public bool UseTls { get; set; }
 		public bool TlsValidateServer { get; set; }
 
+		//[ArgDescription("A connection string to connect to a node/cluster. Used by gRPC only.")]
+		public string ConnectionString { get; set; }
+
 		public ClientOptions() {
 			Config = "";
 			Command = new string[] { };
@@ -51,6 +54,7 @@ namespace EventStore.TestClient {
 			Reconnect = true;
 			UseTls = false;
 			TlsValidateServer = false;
+			ConnectionString = string.Empty;
 		}
 	}
 }

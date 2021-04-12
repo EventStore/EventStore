@@ -57,7 +57,7 @@ namespace EventStore.TestClient.Commands {
 				var autoEvent = new AutoResetEvent(false);
 				var eventStreamId = "es" + Guid.NewGuid();
 				var received = 0;
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, pkg) => {
 						if (pkg.Command != TcpCommand.WriteEventsCompleted) {

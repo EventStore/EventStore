@@ -13,7 +13,8 @@ using EventStore.Transport.Tcp;
 namespace EventStore.TestClient.Commands {
 	internal class WriteFloodProcessor : ICmdProcessor {
 		public string Usage {
-			get { return "WRFL [<clients> <requests> [<streams-cnt> [<size>] [<batchsize>]]]"; }
+			//                     0          1            2           3          4             5
+			get { return "WRFL [<clients> <requests> [<streams-cnt> [<size> [<batchsize> [<stream-prefix>]]]]]"; }
 		}
 
 		public string Keyword {
@@ -26,8 +27,9 @@ namespace EventStore.TestClient.Commands {
 			int streamsCnt = 1000;
 			int size = 256;
 			int batchSize = 1;
+			string streamNamePrefix = string.Empty;
 			if (args.Length > 0) {
-				if (args.Length < 2 || args.Length > 5)
+				if (args.Length < 2 || args.Length > 6)
 					return false;
 
 				try {
@@ -39,18 +41,20 @@ namespace EventStore.TestClient.Commands {
 						size = int.Parse(args[3]);
 					if (args.Length >= 5)
 						batchSize = int.Parse(args[4]);
+					if (args.Length >= 6)
+						streamNamePrefix = args[5];
 				} catch {
 					return false;
 				}
 			}
 
 			var monitor = new RequestMonitor();
-			WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, monitor);
+			WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamNamePrefix, monitor);
 			return true;
 		}
 
 		private void WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt,
-			int size, int batchSize, RequestMonitor monitor) {
+			int size, int batchSize, string streamNamePrefix, RequestMonitor monitor) {
 			context.IsAsync();
 
 			var doneEvent = new ManualResetEventSlim(false);
@@ -67,15 +71,24 @@ namespace EventStore.TestClient.Commands {
 			long streamDeleted = 0;
 			long all = 0;
 
-			var streams = Enumerable.Range(0, streamsCnt).Select(x => Guid.NewGuid().ToString()).ToArray();
-			//var streams = Enumerable.Range(0, streamsCnt).Select(x => string.Format("stream-{0}", x)).ToArray();
+			string[] streams = Enumerable.Range(0, streamsCnt).Select(x =>
+				string.IsNullOrWhiteSpace(streamNamePrefix)
+					? Guid.NewGuid().ToString()
+					: $"{streamNamePrefix}-{x}"
+			).ToArray();
+
+			context.Log.Information("Writing streams randomly between {first} and {last}",
+				streams.FirstOrDefault(),
+				streams.LastOrDefault());
+
+			Console.WriteLine($"Last stream: {streams.LastOrDefault()}");
 			var sw2 = new Stopwatch();
 			for (int i = 0; i < clientsCnt; i++) {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
 				long sent = 0;
 				long received = 0;
 				var rnd = new Random();
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, pkg) => {
 						if (pkg.Command != TcpCommand.WriteEventsCompleted) {
@@ -161,7 +174,7 @@ namespace EventStore.TestClient.Commands {
 
 						var localSent = Interlocked.Increment(ref sent);
 						while (localSent - Interlocked.Read(ref received) >
-						       context.Client.Options.WriteWindow / clientsCnt) {
+						       context._tcpTestClient.Options.WriteWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}
