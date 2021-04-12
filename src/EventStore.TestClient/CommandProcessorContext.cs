@@ -19,15 +19,21 @@ namespace EventStore.TestClient {
 		/// </summary>
 		public readonly Serilog.ILogger Log;
 
-		public readonly Client Client;
+		public readonly TcpTestClient _tcpTestClient;
+		public readonly GrpcTestClient _grpcTestClient;
+		public readonly ClientApiTcpTestClient _clientApiTestClient;
 
 		private readonly ManualResetEventSlim _doneEvent;
 		private int _completed;
+		private int _timeout;
 
-		public CommandProcessorContext(Client client, ILogger log, ManualResetEventSlim doneEvent) {
-			Client = client;
+		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient, ClientApiTcpTestClient clientApiTestClient, int timeout, ILogger log, ManualResetEventSlim doneEvent) {
+			_tcpTestClient = tcpTestClient;
+			_grpcTestClient = grpcTestClient;
+			_clientApiTestClient = clientApiTestClient;
 			Log = log;
 			_doneEvent = doneEvent;
+			_timeout = timeout;
 		}
 
 		public void Completed(int exitCode = (int)Common.Utils.ExitCode.Success, Exception error = null,
@@ -55,10 +61,10 @@ namespace EventStore.TestClient {
 		}
 
 		public void WaitForCompletion() {
-			if (Client.Options.Timeout < 0)
+			if (_timeout < 0)
 				_doneEvent.Wait();
 			else {
-				if (!_doneEvent.Wait(Client.Options.Timeout * 1000))
+				if (!_doneEvent.Wait(_timeout * 1000))
 					throw new TimeoutException("Command didn't finished within timeout.");
 			}
 		}

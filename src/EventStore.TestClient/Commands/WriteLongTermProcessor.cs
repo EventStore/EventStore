@@ -79,7 +79,7 @@ namespace EventStore.TestClient.Commands {
 			for (int i = 0; i < clientsCnt; i++) {
 				var esId = eventStreamId ?? "Stream-" + Thread.CurrentThread.ManagedThreadId % 3;
 
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, pkg) => {
 						if (pkg.Command != TcpCommand.WriteEventsCompleted) {
@@ -169,7 +169,7 @@ namespace EventStore.TestClient.Commands {
 						Thread.Sleep(sleepTime);
 						sentCount -= 1;
 
-						while (sent - received > context.Client.Options.WriteWindow / clientsCnt) {
+						while (sent - received > context._tcpTestClient.Options.WriteWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}

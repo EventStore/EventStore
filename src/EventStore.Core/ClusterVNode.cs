@@ -479,10 +479,10 @@ namespace EventStore.Core {
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
-			var statsCollectionPeriod = vNodeSettings.StatsPeriod > TimeSpan.Zero
-				? (long)vNodeSettings.StatsPeriod.TotalMilliseconds
+			var statsCollectionPeriod = options.Application.StatsPeriodSec > 0
+				? (long)options.Application.StatsPeriodSec * 1000
 				: Timeout.Infinite;
-			var statsHelper = new SystemStatsHelper(Log, db.Config.WriterCheckpoint.AsReadOnly(), db.Config.Path, statsCollectionPeriod);
+			var statsHelper = new SystemStatsHelper(Log, Db.Config.WriterCheckpoint.AsReadOnly(), Db.Config.Path, statsCollectionPeriod);
 
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
@@ -532,7 +532,7 @@ namespace EventStore.Core {
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
 
-			var streamInfoCacheCapacity = options.Cluster.StreamInfoCacheCapacity;			
+			var streamInfoCacheCapacity = options.Cluster.StreamInfoCacheCapacity;
 			//qq thoughts
 			// 1. maybe now the default should be 0 (or even -1 to indicate dynamic or something)
 			// 2. i wonder if we should base the calculation off of total system memory rather than free memory, not sure.
