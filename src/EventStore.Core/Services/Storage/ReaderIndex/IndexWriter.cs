@@ -64,7 +64,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			new BoundedCache<Guid, EventInfo>(int.MaxValue, ESConsts.CommitedEventsMemCacheLimit,
 				x => 16 + 4 + IntPtr.Size + 2 * x.StreamId.Length);
 
-		private readonly IStickyLRUCache<string, long> _streamVersions; 			
+		private readonly IStickyLRUCache<string, long> _streamVersions =
+			new StickyLRUCache<string, long>(ESConsts.IndexWriterCacheCapacity);
 
 		private readonly IStickyLRUCache<string, StreamMeta>
 			_streamRawMetas =
@@ -75,13 +76,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private long _cachedTransInfo;
 		private long _notCachedTransInfo;
 
-		public IndexWriter(IIndexBackend indexBackend, IIndexReader indexReader, int streamInfoCacheCapacity) {
+		public IndexWriter(IIndexBackend indexBackend, IIndexReader indexReader) {
 			Ensure.NotNull(indexBackend, "indexBackend");
 			Ensure.NotNull(indexReader, "indexReader");
 
 			_indexBackend = indexBackend;
 			_indexReader = indexReader;
-			_streamVersions = new StickyLRUCache<string, long>(streamInfoCacheCapacity);
 		}
 
 		public void Reset() {
