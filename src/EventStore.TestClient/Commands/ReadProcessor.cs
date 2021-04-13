@@ -66,7 +66,7 @@ namespace EventStore.TestClient.Commands {
 						eventStreamId,
 						eventStreamId,
 						dto.Event.Event.EventNumber,
-						(ReadEventResult)dto.Result,
+						dto.Result,
 						dto.Event.Event.EventType,
 						Helper.UTF8NoBom.GetString(dto.Event.Event.Data ?? new byte[0]),
 						Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata ?? new byte[0]));

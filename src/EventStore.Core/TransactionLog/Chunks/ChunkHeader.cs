@@ -6,7 +6,7 @@ using EventStore.Core.Index;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class ChunkHeader {
-		public const int Size = 128;
+		public const int Size = TFConsts.ChunkHeaderSize;
 
 		public readonly long ChunkStartPosition; // return ChunkStartNumber * (long)ChunkSize;
 		public readonly long ChunkEndPosition; // return (ChunkEndNumber + 1) * (long)ChunkSize;
