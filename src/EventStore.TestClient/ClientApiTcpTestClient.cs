@@ -2,24 +2,31 @@
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+	/// <summary>
+	/// A test client that connects using the legacy dotnet TCP client
+	/// </summary>
 	public class ClientApiTcpTestClient {
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+		/// <summary>
+		/// The options specified when starting the EventStore.TestClient
+		/// </summary>
 		public ClientOptions Options { get; set; }
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 		private ILogger _log;
 
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+		/// <summary>
+		/// Constructs a new <see cref="ClientApiTcpTestClient"/>
+		/// </summary>
+		/// <param name="options"></param>
+		/// <param name="log"></param>
 		public ClientApiTcpTestClient(ClientOptions options, ILogger log) {
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 			Options = options;
 			_log = log;
 		}
 
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+		/// <summary>
+		/// Creates a new TCP connection.
+		/// </summary>
+		/// <returns></returns>
 		public IEventStoreConnection CreateConnection() {
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 			var connectionString = string.IsNullOrWhiteSpace(Options.ConnectionString)
 				? $"ConnectTo=tcp://{Options.Host}:{Options.TcpPort};UseSslConnection={Options.UseTls};ValidateServer={Options.TlsValidateServer}"
 				: Options.ConnectionString;
