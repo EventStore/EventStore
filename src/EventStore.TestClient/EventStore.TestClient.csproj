@@ -1,29 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-		<PropertyGroup>
-				<TargetFramework>net5.0</TargetFramework>
-				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-				<OutputType>Exe</OutputType>
-				<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-				<Platforms>x64</Platforms>
-		</PropertyGroup>
-		<ItemGroup>
-				<PackageReference Include="EventStore.Client" Version="21.2.0" />
-				<PackageReference Include="EventStore.Client.Grpc.Streams" Version="21.2.0" />
-				<PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.20574.7" />
-				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
-		</ItemGroup>
-		<ItemGroup>
-				<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
-				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-				<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
-				<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
-		</ItemGroup>
-		<ItemGroup>
-				<None Include="..\EventStore.Common\Log\logconfig.json">
-						<Link>logconfig.json</Link>
-						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-				</None>
-		</ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<OutputType>Exe</OutputType>
+		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+		<NoWarn>1701;1702;1591</NoWarn>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="EventStore.Client" Version="21.2.0" />
+		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="21.2.0" />
+		<PackageReference Include="EventStore.Plugins" Version="21.2.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.15.8" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.36.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.37.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
+		<PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.20574.7" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
+		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\EventStore.Common\Log\logconfig.json">
+			<Link>logconfig.json</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>

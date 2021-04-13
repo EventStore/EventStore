@@ -6,7 +6,6 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
 
@@ -300,8 +299,8 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 
 			Action<TcpTypedConnection<byte[]>, TcpPackage> packageReceived = (conn, pkg) => {
 				var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-				switch ((ReadEventResult)dto.Result) {
-					case ReadEventResult.Success:
+				switch (dto.Result) {
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success:
 						if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data)) {
 							successes++;
 							if (successes % 1000 == 0)
@@ -312,11 +311,11 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 						}
 
 						break;
-					case ReadEventResult.NotFound:
-					case ReadEventResult.NoStream:
-					case ReadEventResult.StreamDeleted:
-					case ReadEventResult.Error:
-					case ReadEventResult.AccessDenied:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.NotFound:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.NoStream:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.StreamDeleted:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Error:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.AccessDenied:
 						fails++;
 						status.ReportNotFoundOnRead(readerIdx, _streams[streamIdx], eventidx);
 						break;
