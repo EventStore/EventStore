@@ -13,9 +13,10 @@ using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+	/// <summary>
+	/// A test client that connects over Raw TCP connections
+	/// </summary>
 	public class TcpTestClient {
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 		private readonly BufferManager _bufferManager =
 			new BufferManager(TcpConfiguration.BufferChunksCount, TcpConfiguration.SocketBufferSize);
 
@@ -25,16 +26,22 @@ namespace EventStore.TestClient {
 		private readonly bool _useSsl;
 		private readonly ILogger _log;
 		private readonly bool _interactiveMode;
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+		/// <summary>
+		/// The TCP EndPoint of the Event Store node
+		/// </summary>
 		public readonly EndPoint TcpEndpoint;
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+		/// <summary>
+		/// The Client Options used to start EventStore.TestClient
+		/// </summary>
 		public readonly ClientOptions Options;
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+		/// <summary>
+		/// Constructs a new <see cref="TcpTestClient"/>
+		/// </summary>
+		/// <param name="options"></param>
+		/// <param name="interactiveMode"></param>
+		/// <param name="log"></param>
 		public TcpTestClient(ClientOptions options, bool interactiveMode, ILogger log) {
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 			_interactiveMode = interactiveMode;
 			_log = log;
 			_useSsl = options.UseTls;
@@ -43,9 +50,18 @@ namespace EventStore.TestClient {
 			Options = options;
 		}
 
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+		/// <summary>
+		/// Creates a new raw TCP connection
+		/// </summary>
+		/// <param name="context"></param>
+		/// <param name="handlePackage"></param>
+		/// <param name="connectionEstablished"></param>
+		/// <param name="connectionClosed"></param>
+		/// <param name="failContextOnError"></param>
+		/// <param name="tcpEndPoint"></param>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
 		public Connection CreateTcpConnection(CommandProcessorContext context,
-#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 			Action<Connection, TcpPackage> handlePackage,
 			Action<Connection> connectionEstablished = null,
 			Action<Connection, SocketError> connectionClosed = null,
