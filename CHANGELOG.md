@@ -22,12 +22,16 @@ All notable changes to this project will be documented in this file.
 - ValidateServer also sets whether HTTP certificate validation is enabled. [EventStore#2832](https://github.com/EventStore/EventStore/pull/2832)
 - Make Microsoft.NETFramework.ReferenceAssemblies reference private [EventStore#2859](https://github.com/EventStore/EventStore/pull/2859)
 - internal configuration system now based on `Microsoft.Extensions.Configuration` [EventStore#2833](https://github.com/EventStore/EventStore/pull/2833)
+- TCP client moved from main repo to https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy [EventStore#2863](https://github.com/EventStore/EventStore/pull/2863)
 
 ### changed
 - minver prefix for tcp clients [EventStore#2846](https://github.com/EventStore/EventStore/pull/2846)
 
 ### Changed Windows .dotnet prerequisite to https
 - //dotnet.microsoft.com/download/dotnet/5.0 and build command to dotnet build -c Release src/EventStore.sln -f netcoreapp5.0 -r <runtime identifier> [EventStore#2877](https://github.com/EventStore/EventStore/pull/2877)
+
+### Removed the job check from cherry-pick-pr-for-label action. It was moved to the action itself
+- https://github.com/EventStore/Automations/pull/30. [EventStore#2903](https://github.com/EventStore/EventStore/pull/2903)
 
 ## [21.2.0] Server - 2021-02-26
 
