@@ -9,6 +9,7 @@ service Streams {
 	rpc Append (stream AppendReq) returns (AppendResp);
 	rpc Delete (DeleteReq) returns (DeleteResp);
 	rpc Tombstone (TombstoneReq) returns (TombstoneResp);
+	rpc Append2 (stream AppendReq2) returns (stream AppendResp2);
 }
 
 message ReadReq {
@@ -175,6 +176,79 @@ message AppendResp {
 			event_store.client.shared.Empty any_20_6_0 = 4;
 			event_store.client.shared.Empty stream_exists_20_6_0 = 5;
 		}
+		oneof current_revision_option {
+			uint64 current_revision = 6;
+			event_store.client.shared.Empty current_no_stream = 7;
+		}
+		oneof expected_revision_option {
+			uint64 expected_revision = 8;
+			event_store.client.shared.Empty expected_any = 9;
+			event_store.client.shared.Empty expected_stream_exists = 10;
+			event_store.client.shared.Empty expected_no_stream = 11;
+		}
+
+	}
+}
+
+message AppendReq2 {
+	oneof content {
+		Options options = 1;
+		ProposedMessage proposed_message = 2;
+		Commit commit = 3;
+		Batch batch = 5;
+	}
+	event_store.client.shared.UUID correlation = 4;
+
+	message Options {
+		event_store.client.shared.StreamIdentifier stream_identifier = 1;
+		oneof expected_stream_revision {
+			uint64 revision = 2;
+			event_store.client.shared.Empty no_stream = 3;
+			event_store.client.shared.Empty any = 4;
+			event_store.client.shared.Empty stream_exists = 5;
+		}
+	}
+	message ProposedMessage {
+		event_store.client.shared.UUID id = 1;
+		map<string, string> metadata = 2;
+		bytes custom_metadata = 3;
+		bytes data = 4;
+		
+	}
+
+	message Commit{}
+
+	message Batch{
+		Options options = 1;
+		repeated ProposedMessage proposed_messages = 2;
+		bool isFinal = 3;
+	}
+}
+
+message AppendResp2 {
+	oneof result {
+		Success success = 1;
+		WrongExpectedVersion wrong_expected_version = 2;
+	}
+	event_store.client.shared.UUID correlation = 3;
+	message Position {
+		uint64 commit_position = 1;
+		uint64 prepare_position = 2;
+	}
+
+	message Success {
+		oneof current_revision_option {
+			uint64 current_revision = 1;
+			event_store.client.shared.Empty no_stream = 2;
+		}
+		oneof position_option {
+			Position position = 3;
+			event_store.client.shared.Empty no_position = 4;
+		}
+	}
+
+	message WrongExpectedVersion {
+		reserved 1 to 5;
 		oneof current_revision_option {
 			uint64 current_revision = 6;
 			event_store.client.shared.Empty current_no_stream = 7;

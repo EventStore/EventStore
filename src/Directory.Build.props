@@ -13,6 +13,7 @@
 		<LangVersion>9.0</LangVersion>
 		<IsPackable>false</IsPackable>
 		<MinVerTagPrefix>oss-v</MinVerTagPrefix>
+		<OutputPath>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
 	</PropertyGroup>
 	<Target Name="UpdateAssemblyVersion" AfterTargets="MinVer">
   		<PropertyGroup>
