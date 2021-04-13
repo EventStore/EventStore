@@ -291,22 +291,26 @@ namespace EventStore.Core {
 
 			var streamInfoCacheCapacity = vNodeSettings.StreamInfoCacheCapacity;			
 			//qq thoughts
-			// 1. maybe now the default should be 0 (or even -1 to indicate dynamic or something)
+			// 1. [x] maybe now the default should be 0 (or even -1 to indicate dynamic or something)
 			// 2. i wonder if we should base the calculation off of total system memory rather than free memory, not sure.
 			// 3. there is some chance of GetFreeMem returning -1, we might want a different value to 50k in that case
 			// 4. probably best stick this as a method in another class for some easy unit testing
-			if (streamInfoCacheCapacity == Opts.StreamInfoCacheCapacityDefault) {
+			// 5. clc - there is another LRU cache in the index writer this needs to factored intot he mem size and if we want to reuse one of the others
+			
+			if (streamInfoCacheCapacity == 0) {
 				var availableMem = statsHelper.GetFreeMem();
-				if (availableMem > 2L * 1024 * 1024 * 1024) {
-					// capacity uses apporixmately 1kib per stream (including both caches)
-					// so we want capacity * 1024 = availableMem
+				if (availableMem > 2L * 1024 * 1024 * 1024) { //todo: it is not clear what we are calculating here
+															  // capacity uses apporixmately 1kib per stream (including both caches)
+															  // so we want capacity * 1024 = availableMem
 					ulong bytesPerUnitCapacity = 1024;
 					streamInfoCacheCapacity = (int)(availableMem / bytesPerUnitCapacity);
 				} else {
 					streamInfoCacheCapacity = 100_000;
 				}
-				Log.Information("Set StreamInfoCacheCapacity to {streamInfoCacheCapacity}. Calculated based on {availableMem} bytes of free memory.",
+				Log.Information("StreamInfoCacheCapacity set to {streamInfoCacheCapacity}. Calculated based on {availableMem} bytes of free memory.",
 					streamInfoCacheCapacity, availableMem);
+			} else {
+				Log.Information("StreamInfoCacheCapacity set to {streamInfoCacheCapacity} from settings.", streamInfoCacheCapacity);
 			}
 
 			var tableIndex = new TableIndex(indexPath,
@@ -328,7 +332,7 @@ namespace EventStore.Core {
 			var readIndex = new ReadIndex(_mainQueue,
 				readerPool,
 				tableIndex,
-				vNodeSettings.StreamInfoCacheCapacity,
+				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
 				vNodeSettings.HashCollisionReadLimit,
