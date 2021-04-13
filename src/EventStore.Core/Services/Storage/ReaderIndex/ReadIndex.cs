@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IIndexBackend indexBackend = new IndexBackend(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
 			_indexReader = new IndexReader(indexBackend, tableIndex, metastreamMetadata, hashCollisionReadLimit,
 				skipIndexScanOnReads);
-			_indexWriter = new IndexWriter(indexBackend, _indexReader, streamInfoCacheCapacity);
+			_indexWriter = new IndexWriter(indexBackend, _indexReader);
 			_indexCommitter = new IndexCommitter(bus, indexBackend, _indexReader, tableIndex, indexCheckpoint,additionalCommitChecks);
 			_allReader = new AllReader(indexBackend, _indexCommitter);
 		}
