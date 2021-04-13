@@ -86,6 +86,8 @@ namespace EventStore.TestClient {
 			_commands.Register(new TcpSanitazationCheckProcessor());
 
 			_commands.Register(new SubscriptionStressTestProcessor());
+
+			_commands.Register(new Commands.Grpc.WriteFloodProcessor());
 		}
 
 		public int Run() {
