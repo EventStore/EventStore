@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 	public class when_merging_to_ptable_v4_with_deleted_entries_from_v1 : SpecificationWithDirectoryPerTestFixture {
 		private readonly List<string> _files = new List<string>();
 		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher hasher;
+		private IHasher<string> hasher;
 		private string _newtableFile;
 
 		private PTable _newtable;
@@ -256,7 +256,7 @@ namespace EventStore.Core.Tests.Index.IndexV4 {
 	public class when_merging_to_ptable_v4_with_deleted_entries : SpecificationWithDirectoryPerTestFixture {
 		private readonly List<string> _files = new List<string>();
 		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher hasher;
+		private IHasher<string> hasher;
 		private string _newtableFile;
 
 		private PTable _newtable;

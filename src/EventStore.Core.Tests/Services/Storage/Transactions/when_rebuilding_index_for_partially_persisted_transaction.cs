@@ -28,17 +28,24 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 
 			var readers =
 				new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, WriterCheckpoint));
-			var lowHasher = new XXHashUnsafe();
-			var highHasher = new Murmur3AUnsafe();
-			TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
+			var lowHasher = _logFormat.LowHasher;
+			var highHasher = _logFormat.HighHasher;
+			var emptyStreamId = _logFormat.EmptyStreamId;
+			TableIndex = new TableIndex<string>(GetFilePathFor("index"), lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV2, maxSize: MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV2,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: MaxEntriesInMemTable);
-			ReadIndex = new ReadIndex(new NoopPublisher(),
+			ReadIndex = new ReadIndex<string>(new NoopPublisher(),
 				readers,
 				TableIndex,
+				_logFormat.StreamIds,
+				_logFormat.StreamNamesFactory,
+				_logFormat.SystemStreams,
+				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamIdSizer,
 				0,
 				additionalCommitChecks: true,
 				metastreamMaxCount: 1,
@@ -46,7 +53,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint);
-			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
+			((ReadIndex<string>)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 		}
 
 		protected override void WriteTestScenario() {

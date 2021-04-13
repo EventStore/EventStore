@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using EventStore.Common.Utils;
+using EventStore.Core.LogAbstraction;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
@@ -37,7 +38,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				}
 			}.RunInMemory();
 			try {
-				_ = new ClusterVNode(_options);
+				_ = new ClusterVNode<string>(_options, LogFormatAbstractor.V2);
 			} catch (Exception e) {
 				_caughtException = e;
 			}

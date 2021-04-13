@@ -23,8 +23,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				.CreateDb();
 		}
 
-		protected override LogRecord[][] KeptRecords(DbResult dbResult) {
-			return new[] {new LogRecord[0]};
+		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
+			return new[] {new ILogRecord[0]};
 		}
 
 		[Test]

@@ -9,7 +9,7 @@ namespace EventStore.Core.TransactionLog {
 		void Open();
 
 		SeqReadResult TryReadNext();
-		bool TryReadNext(out LogRecord record);
+		bool TryReadNext(out ILogRecord record);
 
 		void Close();
 		void Flush();

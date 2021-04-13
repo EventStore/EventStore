@@ -8,7 +8,7 @@
 
 	class PinnedByCorrelationPersistentSubscriptionConsumerStrategy : PinnedPersistentSubscriptionConsumerStrategy {
 		
-		public PinnedByCorrelationPersistentSubscriptionConsumerStrategy(IHasher streamHasher) : base(streamHasher) {
+		public PinnedByCorrelationPersistentSubscriptionConsumerStrategy(IHasher<string> streamHasher) : base(streamHasher) {
 		}
 
 		public override string Name {

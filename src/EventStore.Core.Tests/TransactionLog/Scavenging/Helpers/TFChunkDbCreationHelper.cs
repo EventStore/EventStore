@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.LogV2;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -37,9 +38,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		}
 
 		public DbResult CreateDb() {
-			var records = new LogRecord[_chunkRecs.Count][];
+			var records = new ILogRecord[_chunkRecs.Count][];
 			for (int i = 0; i < records.Length; ++i) {
-				records[i] = new LogRecord[_chunkRecs[i].Length];
+				records[i] = new ILogRecord[_chunkRecs[i].Length];
 			}
 
 			var transactions = new Dictionary<int, TransactionInfo>();
@@ -109,7 +110,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						transInfo.TransactionOffset = 0;
 					}
 
-					LogRecord record;
+					ILogRecord record;
 
 					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.Any;
 					switch (rec.Type) {
@@ -182,7 +183,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			return meta.ToJsonBytes();
 		}
 
-		private LogRecord CreateLogRecord(Rec rec, TransactionInfo transInfo, long logPos, long expectedVersion) {
+		private ILogRecord CreateLogRecord(Rec rec, TransactionInfo transInfo, long logPos, long expectedVersion) {
 			switch (rec.Type) {
 				case Rec.RecType.Prepare: {
 					int transOffset = transInfo.TransactionOffset;
@@ -197,7 +198,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
 					}
 
-					return LogRecord.Prepare(logPos,
+					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
@@ -226,7 +227,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
 					}
 
-					return LogRecord.Prepare(logPos,
+					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
@@ -251,7 +252,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
 					}
 
-					return LogRecord.Prepare(logPos,
+					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
@@ -325,10 +326,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 	public class DbResult {
 		public readonly TFChunkDb Db;
-		public readonly LogRecord[][] Recs;
+		public readonly ILogRecord[][] Recs;
 		public readonly Dictionary<string, StreamInfo> Streams;
 
-		public DbResult(TFChunkDb db, LogRecord[][] recs, Dictionary<string, StreamInfo> streams) {
+		public DbResult(TFChunkDb db, ILogRecord[][] recs, Dictionary<string, StreamInfo> streams) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(recs, "recs");
 			Ensure.NotNull(streams, "streams");

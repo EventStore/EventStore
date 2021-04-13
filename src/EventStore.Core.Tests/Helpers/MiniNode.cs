@@ -20,6 +20,7 @@ using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -143,7 +144,7 @@ namespace EventStore.Core.Tests.Helpers {
 				"TCP ENDPOINT:", TcpEndPoint,
 				"HTTP ENDPOINT:", HttpEndPoint);
 
-			Node = new ClusterVNode(options,
+			Node = new ClusterVNode<string>(options, LogFormatAbstractor.V2,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			Db = Node.Db;

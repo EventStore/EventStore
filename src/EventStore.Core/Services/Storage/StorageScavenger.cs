@@ -6,39 +6,48 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Index;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Services.Storage {
-	public class StorageScavenger :
+	public abstract class StorageScavenger {
+	}
+
+	public class StorageScavenger<TStreamId> :
+		StorageScavenger,
 		IHandle<ClientMessage.ScavengeDatabase>,
 		IHandle<ClientMessage.StopDatabaseScavenge>,
 		IHandle<SystemMessage.StateChangeMessage> {
 		private readonly TFChunkDb _db;
-		private readonly ITableIndex _tableIndex;
-		private readonly IReadIndex _readIndex;
+		private readonly ITableIndex<TStreamId> _tableIndex;
+		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly bool _alwaysKeepScavenged;
 		private readonly bool _mergeChunks;
 		private readonly bool _unsafeIgnoreHardDeletes;
 		private readonly ITFChunkScavengerLogManager _logManager;
 		private readonly object _lock = new object();
 
-		private TFChunkScavenger _currentScavenge;
+		private TFChunkScavenger<TStreamId> _currentScavenge;
 		private CancellationTokenSource _cancellationTokenSource;
 
-		public StorageScavenger(TFChunkDb db, ITableIndex tableIndex, IReadIndex readIndex,
+		public StorageScavenger(TFChunkDb db, ITableIndex<TStreamId> tableIndex, IReadIndex<TStreamId> readIndex,
+			ISystemStreamLookup<TStreamId> systemStreams,
 			ITFChunkScavengerLogManager logManager, bool alwaysKeepScavenged, bool mergeChunks,
 			bool unsafeIgnoreHardDeletes) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(logManager, "logManager");
 			Ensure.NotNull(tableIndex, "tableIndex");
 			Ensure.NotNull(readIndex, "readIndex");
+			Ensure.NotNull(systemStreams, nameof(systemStreams));
 
 			_db = db;
 			_tableIndex = tableIndex;
 			_readIndex = readIndex;
+			_systemStreams = systemStreams;
 			_alwaysKeepScavenged = alwaysKeepScavenged;
 			_mergeChunks = mergeChunks;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
@@ -62,8 +71,8 @@ namespace EventStore.Core.Services.Storage {
 						var tfChunkScavengerLog = _logManager.CreateLog();
 
 						_cancellationTokenSource = new CancellationTokenSource();
-						var newScavenge = _currentScavenge = new TFChunkScavenger(_db, tfChunkScavengerLog, _tableIndex,
-							_readIndex, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads);
+						var newScavenge = _currentScavenge = new TFChunkScavenger<TStreamId>(_db, tfChunkScavengerLog, _tableIndex,
+							_readIndex, _systemStreams, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads);
 						var newScavengeTask = _currentScavenge.Scavenge(_alwaysKeepScavenged, _mergeChunks,
 							message.StartFromChunk, _cancellationTokenSource.Token);
 
@@ -95,7 +104,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private async void HandleCleanupWhenFinished(Task newScavengeTask, TFChunkScavenger newScavenge) {
+		private async void HandleCleanupWhenFinished(Task newScavengeTask, TFChunkScavenger<TStreamId> newScavenge) {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
 			await newScavengeTask.ConfigureAwait(false);
 

@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using NUnit.Framework;
 
@@ -104,7 +105,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				.WithInternalSecureTcpOn(internalSecTcp)
 				.WithExternalSecureTcpOn(externalSecTcp);
 			try {
-				_ = new ClusterVNode(_options);
+				_ = new ClusterVNode<string>(_options, LogFormatAbstractor.V2);
 			} catch (Exception ex) {
 				_caughtException = ex;
 			}

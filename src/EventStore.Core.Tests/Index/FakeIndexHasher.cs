@@ -2,7 +2,7 @@
 using System;
 
 namespace EventStore.Core.Tests.Index {
-	public class FakeIndexHasher : IHasher {
+	public class FakeIndexHasher : IHasher<string> {
 		public uint Hash(byte[] data) {
 			return (uint)data.Length;
 		}

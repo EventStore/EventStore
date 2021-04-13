@@ -6,18 +6,18 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture]
 	public class when_having_commit_spanning_multiple_chunks : ReadIndexTestScenario {
-		private List<LogRecord> _survivors;
-		private List<LogRecord> _scavenged;
+		private List<ILogRecord> _survivors;
+		private List<ILogRecord> _scavenged;
 
 		protected override void WriteTestScenario() {
-			_survivors = new List<LogRecord>();
-			_scavenged = new List<LogRecord>();
+			_survivors = new List<ILogRecord>();
+			_scavenged = new List<ILogRecord>();
 
 			var transPos = WriterCheckpoint.ReadNonFlushed();
 
 			for (int i = 0; i < 10; ++i) {
 				long tmp;
-				var r = LogRecord.Prepare(WriterCheckpoint.ReadNonFlushed(),
+				var r = LogRecord.Prepare(_recordFactory, WriterCheckpoint.ReadNonFlushed(),
 					Guid.NewGuid(),
 					Guid.NewGuid(),
 					transPos,

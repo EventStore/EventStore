@@ -13,7 +13,7 @@ using EventStore.Core.Exceptions;
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture]
 	public class table_index_with_corrupt_index_entries_should : SpecificationWithDirectoryPerTestFixture {
-		private TableIndex _tableIndex;
+		private TableIndex<string> _tableIndex;
 		private IndexMap _indexMap;
 		public const string StreamName = "stream";
 		public const int NumIndexEntries = 512;
@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var highHasher = new Murmur3AUnsafe();
 			var fakeReader = new TFReaderLease(new FakeIndexReader());
 
-			_tableIndex = new TableIndex(PathName, lowHasher, highHasher,
+			_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher, "",
 				() => new HashListMemTable(version, maxSize: NumIndexEntries),
 				() => fakeReader,
 				version,
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			}
 
 			//load table index again
-			_tableIndex = new TableIndex(PathName, lowHasher, highHasher,
+			_tableIndex = new TableIndex<string>(PathName, lowHasher, highHasher, "",
 				() => new HashListMemTable(version, maxSize: NumIndexEntries),
 				() => fakeReader,
 				version,

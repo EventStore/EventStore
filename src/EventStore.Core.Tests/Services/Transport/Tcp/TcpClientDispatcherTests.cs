@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Text;
 using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.LogV2;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services;
@@ -489,11 +490,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 		private EventRecord CreateDeletedEventRecord() {
 			return new EventRecord(long.MaxValue,
-				LogRecord.DeleteTombstone(0, Guid.NewGuid(), Guid.NewGuid(), "test-stream", long.MaxValue));
+				LogRecord.DeleteTombstone(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), "test-stream", long.MaxValue));
 		}
 
 		private EventRecord CreateLinkEventRecord() {
-			return new EventRecord(0, LogRecord.Prepare(100, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+			return new EventRecord(0, LogRecord.Prepare(new LogV2RecordFactory(), 100, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				"link-stream", -1, PrepareFlags.SingleWrite | PrepareFlags.Data, SystemEventTypes.LinkTo,
 				Encoding.UTF8.GetBytes(string.Format("{0}@test-stream", long.MaxValue)), new byte[0]));
 		}

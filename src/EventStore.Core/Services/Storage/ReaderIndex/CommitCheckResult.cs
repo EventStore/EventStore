@@ -1,7 +1,7 @@
 namespace EventStore.Core.Services.Storage.ReaderIndex {
-	public struct CommitCheckResult {
+	public struct CommitCheckResult<TStreamId> {
 		public readonly CommitDecision Decision;
-		public readonly string EventStreamId;
+		public readonly TStreamId EventStreamId;
 		public readonly long CurrentVersion;
 		public readonly long StartEventNumber;
 		public readonly long EndEventNumber;
@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public readonly long IdempotentLogPosition;
 
 		public CommitCheckResult(CommitDecision decision,
-			string eventStreamId,
+			TStreamId eventStreamId,
 			long currentVersion,
 			long startEventNumber,
 			long endEventNumber,

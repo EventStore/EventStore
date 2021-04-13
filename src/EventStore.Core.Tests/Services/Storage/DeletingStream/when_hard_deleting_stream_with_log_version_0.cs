@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		[Test]
 		public void should_change_expected_version_to_deleted_event_number_when_reading() {
 			var chunk = Db.Manager.GetChunk(0);
-			var chunkRecords = new List<LogRecord>();
+			var chunkRecords = new List<ILogRecord>();
 			RecordReadResult result = chunk.TryReadFirst();
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);

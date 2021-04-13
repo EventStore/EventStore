@@ -24,7 +24,7 @@ namespace EventStore.Core.Data {
 		public readonly ReadOnlyMemory<byte> Data;
 		public readonly ReadOnlyMemory<byte> Metadata;
 
-		public EventRecord(long eventNumber, PrepareLogRecord prepare) {
+		public EventRecord(long eventNumber, IPrepareLogRecord prepare, string eventStreamName) {
 			Ensure.Nonnegative(eventNumber, "eventNumber");
 
 			EventNumber = eventNumber;
@@ -33,7 +33,7 @@ namespace EventStore.Core.Data {
 			EventId = prepare.EventId;
 			TransactionPosition = prepare.TransactionPosition;
 			TransactionOffset = prepare.TransactionOffset;
-			EventStreamId = prepare.EventStreamId;
+			EventStreamId = eventStreamName;
 			ExpectedVersion = prepare.ExpectedVersion;
 			TimeStamp = prepare.TimeStamp;
 
@@ -43,6 +43,11 @@ namespace EventStore.Core.Data {
 			Metadata = prepare.Metadata;
 		}
 
+		// called from tests only
+		public EventRecord(long eventNumber, IPrepareLogRecord<string> prepare) : this(eventNumber, prepare, prepare.EventStreamId) {
+		}
+
+		// called from tests only
 		public EventRecord(long eventNumber,
 			long logPosition,
 			Guid correlationId,

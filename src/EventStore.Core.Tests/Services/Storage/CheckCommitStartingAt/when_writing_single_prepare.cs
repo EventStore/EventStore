@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 	[TestFixture]
 	public class when_writing_single_prepare : ReadIndexTestScenario {
-		private PrepareLogRecord _prepare;
+		private IPrepareLogRecord _prepare;
 
 		protected override void WriteTestScenario() {
 			_prepare = WritePrepare("ES", -1);

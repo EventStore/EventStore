@@ -13,7 +13,13 @@ using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
-	public abstract class TruncateAndReOpenDbScenario : TruncateScenario {
+	public abstract class TruncateAndReOpenDbScenario : TruncateAndReOpenDbScenario<string> {
+		protected TruncateAndReOpenDbScenario(int maxEntriesInMemTable = 100, int metastreamMaxCount = 1)
+			: base(maxEntriesInMemTable, metastreamMaxCount) {
+		}
+	}
+
+	public abstract class TruncateAndReOpenDbScenario<TStreamId> : TruncateScenario<TStreamId> {
 		protected TruncateAndReOpenDbScenario(int maxEntriesInMemTable = 100, int metastreamMaxCount = 1)
 			: base(maxEntriesInMemTable, metastreamMaxCount) {
 		}
@@ -31,18 +37,25 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 				() => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
-			var lowHasher = new XXHashUnsafe();
-			var highHasher = new Murmur3AUnsafe();
-			TableIndex = new TableIndex(Path.Combine(PathName, "index"), lowHasher, highHasher,
+			var lowHasher = _logFormat.LowHasher;
+			var highHasher = _logFormat.HighHasher;
+			var emptyStreamId = _logFormat.EmptyStreamId;
+			TableIndex = new TableIndex<TStreamId>(Path.Combine(PathName, "index"), lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV3,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
-			ReadIndex = new ReadIndex(new NoopPublisher(),
+			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				TableIndex,
+				_logFormat.StreamIds,
+				_logFormat.StreamNamesFactory,
+				_logFormat.SystemStreams,
+				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamIdSizer,
 				0,
 				additionalCommitChecks: true,
 				metastreamMaxCount: MetastreamMaxCount,
@@ -50,7 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint);
-			((ReadIndex)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
+			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(ChaserCheckpoint.Read());
 		}
 	}
 }

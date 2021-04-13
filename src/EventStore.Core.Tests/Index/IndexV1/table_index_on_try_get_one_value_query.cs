@@ -16,9 +16,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV4, false)]
 	[TestFixture(PTableVersions.IndexV4, true)]
 	public class table_index_on_try_get_one_value_query : SpecificationWithDirectoryPerTestFixture {
-		private TableIndex _tableIndex;
-		private IHasher _lowHasher;
-		private IHasher _highHasher;
+		private TableIndex<string> _tableIndex;
+		private IHasher<string> _lowHasher;
+		private IHasher<string> _highHasher;
 		private string _indexDir;
 		protected byte _ptableVersion = PTableVersions.IndexV1;
 		private bool _skipIndexVerify;
@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var fakeReader = new TFReaderLease(new FakeTfReader());
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(_ptableVersion, maxSize: 10),
 				() => fakeReader,
 				_ptableVersion,

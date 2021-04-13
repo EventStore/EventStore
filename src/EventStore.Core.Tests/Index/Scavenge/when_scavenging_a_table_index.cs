@@ -13,9 +13,9 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 	[TestFixture(false)]
 	[TestFixture(true)]
 	class when_scavenging_a_table_index : SpecificationWithDirectoryPerTestFixture {
-		private TableIndex _tableIndex;
-		private IHasher _lowHasher;
-		private IHasher _highHasher;
+		private TableIndex<string> _tableIndex;
+		private IHasher<string> _lowHasher;
+		private IHasher<string> _highHasher;
 		private string _indexDir;
 		private FakeTFScavengerLog _log;
 		private static readonly long[] Deleted = { 200, 300, 500 };
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 				() => fakeReader,
 				PTableVersions.IndexV4,
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			// Check it's loadable.
 			_tableIndex.Close(false);
 
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV4, maxSize: 5),
 				() => fakeReader,
 				PTableVersions.IndexV4,

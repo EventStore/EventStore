@@ -13,7 +13,7 @@ using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -62,31 +62,53 @@ using MidFunc = System.Func<
 >;
 
 namespace EventStore.Core {
-	public class ClusterVNode :
+	public abstract class ClusterVNode {
+		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
+
+		abstract public TFChunkDb Db { get; }
+		abstract public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
+		abstract public IQueuedHandler MainQueue { get; }
+		abstract public ISubscriber MainBus { get; }
+		abstract public IReadIndex ReadIndex { get; }
+		abstract public QueueStatsManager QueueStatsManager { get; }
+		abstract public IStartup Startup { get; }
+		abstract public IAuthenticationProvider AuthenticationProvider { get; }
+		abstract public AuthorizationGateway AuthorizationGateway { get; }
+		abstract public IHttpService HttpService { get; }
+		abstract public VNodeInfo NodeInfo { get; }
+		abstract public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator { get; }
+		abstract public Func<X509Certificate2> CertificateSelector { get; }
+		abstract public bool DisableHttps { get; }
+		abstract public void Start();
+		abstract public Task<ClusterVNode> StartAsync(bool waitUntilRead);
+		abstract public Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
+	}
+
+	public class ClusterVNode<TStreamId> :
+		ClusterVNode,
 		IHandle<SystemMessage.StateChangeMessage>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<ClientMessage.ReloadConfig>{
 		private readonly ClusterVNodeOptions _options;
-		public TFChunkDb Db { get; }
-		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
+		public override TFChunkDb Db { get; }
 
-		public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
+		public override GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 
-		public IQueuedHandler MainQueue {
+		public override IQueuedHandler MainQueue {
 			get { return _mainQueue; }
 		}
 
-		public ISubscriber MainBus {
+		public override ISubscriber MainBus {
 			get { return _mainBus; }
 		}
 
-		public IHttpService HttpService {
+		public override IHttpService HttpService {
 			get { return _httpService; }
 		}
 
-		public IReadIndex ReadIndex => _readIndex;
+		public override IReadIndex ReadIndex => _readIndex;
 
 		public TimerService TimerService {
 			get { return _timerService; }
@@ -96,28 +118,28 @@ namespace EventStore.Core {
 			get { return _workersHandler; }
 		}
 
-		public QueueStatsManager QueueStatsManager => _queueStatsManager;
+		public override QueueStatsManager QueueStatsManager => _queueStatsManager;
 
-		public IStartup Startup => _startup;
+		public override IStartup Startup => _startup;
 		
-		public IAuthenticationProvider AuthenticationProvider {
+		public override IAuthenticationProvider AuthenticationProvider {
 			get { return _authenticationProvider; }
 		}
 
-		public AuthorizationGateway AuthorizationGateway { get; }
+		public override AuthorizationGateway AuthorizationGateway { get; }
 
 		internal MultiQueuedHandler WorkersHandler {
 			get { return _workersHandler; }
 		}
 
-		public VNodeInfo NodeInfo { get; }
+		public override VNodeInfo NodeInfo { get; }
 
 		public IEnumerable<ISubsystem> Subsystems => _subsystems;
 
 		private readonly IQueuedHandler _mainQueue;
 		private readonly ISubscriber _mainBus;
 
-		private readonly ClusterVNodeController _controller;
+		private readonly ClusterVNodeController<TStreamId> _controller;
 		private readonly TimerService _timerService;
 		private readonly KestrelHttpService _httpService;
 		private readonly ITimeProvider _timeProvider;
@@ -125,7 +147,7 @@ namespace EventStore.Core {
 		private readonly TaskCompletionSource<bool> _shutdownSource = new TaskCompletionSource<bool>();
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
-		private readonly IReadIndex _readIndex;
+		private readonly IReadIndex<TStreamId> _readIndex;
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
@@ -142,7 +164,7 @@ namespace EventStore.Core {
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalServerCertificateValidator;
 
-		private readonly ClusterVNodeStartup _startup;
+		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
 
@@ -153,9 +175,9 @@ namespace EventStore.Core {
 			get { return _tasks; }
 		}
 
-		public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
-		public Func<X509Certificate2> CertificateSelector => _certificateSelector;
-		public bool DisableHttps => _disableHttps;
+		public override Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
+		public override Func<X509Certificate2> CertificateSelector => _certificateSelector;
+		public override bool DisableHttps => _disableHttps;
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
@@ -169,6 +191,7 @@ namespace EventStore.Core {
 		}
 
 		public ClusterVNode(ClusterVNodeOptions options,
+			LogFormatAbstractor<TStreamId> logFormat,
 			AuthenticationProviderFactory authenticationProviderFactory = null,
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
@@ -452,7 +475,7 @@ namespace EventStore.Core {
 			_subsystems = options.Subsystems.ToArray();
 
 			_controller =
-				new ClusterVNodeController((IPublisher)_mainBus, NodeInfo, Db, options, this, forwardingProxy);
+				new ClusterVNodeController<TStreamId>((IPublisher)_mainBus, NodeInfo, Db, options, this, forwardingProxy);
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
@@ -526,9 +549,10 @@ namespace EventStore.Core {
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
 
-			var tableIndex = new TableIndex(indexPath,
-				new XXHashUnsafe(),
-				new Murmur3AUnsafe(),
+			var tableIndex = new TableIndex<TStreamId>(indexPath,
+				logFormat.LowHasher,
+				logFormat.HighHasher,
+				logFormat.EmptyStreamId,
 				() => new HashListMemTable(options.IndexBitnessVersion,
 					maxSize: options.Database.MaxMemTableSize * 2),
 				() => new TFReaderLease(readerPool),
@@ -542,9 +566,15 @@ namespace EventStore.Core {
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
 				pTableMaxReaderCount: options.Database.GetPTableMaxReaderCount());
-			var readIndex = new ReadIndex(_mainQueue,
+			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
 				tableIndex,
+				logFormat.StreamIds,
+				logFormat.StreamNamesFactory,
+				logFormat.SystemStreams,
+				logFormat.EmptyStreamId,
+				logFormat.StreamIdValidator,
+				logFormat.StreamIdSizer,
 				options.Cluster.StreamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
@@ -564,17 +594,22 @@ namespace EventStore.Core {
 					Db,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+				logFormat.RecordFactory,
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
-			var storageWriter = new ClusterStorageWriterService(_mainQueue, _mainBus,
+			var storageWriter = new ClusterStorageWriterService<TStreamId>(_mainQueue, _mainBus,
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
+				logFormat.RecordFactory,
+				logFormat.StreamNameIndex,
+				logFormat.SystemStreams,
 				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
-			var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex,
+			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
+				logFormat.SystemStreams,
 				options.Database.ReaderThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
@@ -598,7 +633,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ReplicationTrackingMessage.LeaderReplicatedTo>(replicationTracker);
 			_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(replicationTracker);
 
-			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
+			var indexCommitterService = new IndexCommitterService<TStreamId>(readIndex.IndexCommitter, _mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
 				options.Cluster.CommitAckCount, tableIndex, _queueStatsManager);
@@ -616,7 +651,7 @@ namespace EventStore.Core {
 				Db.Config.ChaserCheckpoint,
 				Db.Config.OptimizeReadSideCache);
 
-			var storageChaser = new StorageChaser(
+			var storageChaser = new StorageChaser<TStreamId>(
 				_mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				chaser,
@@ -938,7 +973,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
 
-			var subscription = new SubscriptionsService(_mainQueue, subscrQueue, readIndex);
+			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, readIndex);
 			subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
 			subscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(subscription);
 			subscrBus.Subscribe<TcpMessage.ConnectionClosed>(subscription);
@@ -984,7 +1019,7 @@ namespace EventStore.Core {
 			//TODO CC can have multiple threads working on subscription if partition
 			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
 				additionalPersistentSubscriptionConsumerStrategyFactories);
-			var persistentSubscription = new PersistentSubscriptionService(perSubscrQueue, readIndex, ioDispatcher,
+			var persistentSubscription = new PersistentSubscriptionService<TStreamId>(perSubscrQueue, readIndex, ioDispatcher,
 				_mainQueue, consumerStrategyRegistry);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
@@ -1010,9 +1045,10 @@ namespace EventStore.Core {
 			// STORAGE SCAVENGER
 			var scavengerLogManager = new TFChunkScavengerLogManager(NodeInfo.HttpEndPoint.ToString(),
 				TimeSpan.FromDays(options.Database.ScavengeHistoryMaxAge), ioDispatcher);
-			var storageScavenger = new StorageScavenger(Db,
+			var storageScavenger = new StorageScavenger<TStreamId>(Db,
 				tableIndex,
 				readIndex,
+				logFormat.SystemStreams,
 				scavengerLogManager,
 				options.Database.AlwaysKeepScavenged,
 				!options.Database.DisableScavengeMerging,
@@ -1157,7 +1193,7 @@ namespace EventStore.Core {
 				}
 			}
 
-			_startup = new ClusterVNodeStartup(_subsystems, _mainQueue, _mainBus, _workersHandler,
+			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				options.Application.MaxAppendSize, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
@@ -1170,11 +1206,11 @@ namespace EventStore.Core {
 			}
 		}
 
-		public void Start() {
+		public override void Start() {
 			_mainQueue.Publish(new SystemMessage.SystemInit());
 		}
 
-		public async Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) {
+		public override async Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default) {
 			if (Interlocked.Exchange(ref _stopCalled, 1) == 1) {
 				Log.Warning("Stop was already called.");
 				return;
@@ -1255,7 +1291,7 @@ namespace EventStore.Core {
 #endif
 		}
 
-		public async Task<ClusterVNode> StartAsync(bool waitUntilReady) {
+		public override async Task<ClusterVNode> StartAsync(bool waitUntilReady) {
 			var tcs = new TaskCompletionSource<ClusterVNode>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			if (waitUntilReady) {

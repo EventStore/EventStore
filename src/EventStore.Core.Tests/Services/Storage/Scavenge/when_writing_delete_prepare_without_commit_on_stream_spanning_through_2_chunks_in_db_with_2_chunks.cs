@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		protected override void WriteTestScenario() {
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
 
-			var prepare = LogRecord.DeleteTombstone(WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(),
+			var prepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(),
 				"ES", 2);
 			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));

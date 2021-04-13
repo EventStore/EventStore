@@ -5,11 +5,11 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 	[TestFixture]
 	public class when_writing_prepares_in_wrong_order_and_committing_in_right_order : ReadIndexTestScenario {
-		private PrepareLogRecord _prepare0;
-		private PrepareLogRecord _prepare1;
-		private PrepareLogRecord _prepare2;
-		private PrepareLogRecord _prepare3;
-		private PrepareLogRecord _prepare4;
+		private IPrepareLogRecord _prepare0;
+		private IPrepareLogRecord _prepare1;
+		private IPrepareLogRecord _prepare2;
+		private IPrepareLogRecord _prepare3;
+		private IPrepareLogRecord _prepare4;
 
 		protected override void WriteTestScenario() {
 			_prepare0 = WritePrepare("ES", expectedVersion: -1);

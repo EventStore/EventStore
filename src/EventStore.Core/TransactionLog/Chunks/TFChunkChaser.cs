@@ -25,7 +25,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			// NOOP
 		}
 
-		public bool TryReadNext(out LogRecord record) {
+		public bool TryReadNext(out ILogRecord record) {
 			var res = TryReadNext();
 			record = res.LogRecord;
 			return res.Success;

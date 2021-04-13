@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 				.CreateDb();
 		}
 
-		protected override LogRecord[][] KeptRecords(DbResult dbResult) {
+		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
 			return dbResult.Recs;
 		}
 

@@ -15,7 +15,12 @@ using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.PersistentSubscription {
-	public class PersistentSubscriptionService :
+	public abstract class PersistentSubscriptionService {
+		protected static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionService>();
+	}
+
+	public class PersistentSubscriptionService<TStreamId> :
+		PersistentSubscriptionService,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<TcpMessage.ConnectionClosed>,
 		IHandle<SystemMessage.BecomeLeader>,
@@ -36,13 +41,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetStreamPersistentSubscriptionStats> {
-		private static readonly ILogger Log = Serilog.Log.ForContext<PersistentSubscriptionService>();
 
 		private Dictionary<string, List<PersistentSubscription>> _subscriptionTopics;
 		private Dictionary<string, PersistentSubscription> _subscriptionsById;
 
 		private readonly IQueuedHandler _queuedHandler;
-		private readonly IReadIndex _readIndex;
+		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly IPublisher _bus;
 		private readonly PersistentSubscriptionConsumerStrategyRegistry _consumerStrategyRegistry;
@@ -54,7 +58,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private Guid _timerTickCorrelationId;
 		private bool _handleTick;
 
-		internal PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex readIndex,
+		internal PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex<TStreamId> readIndex,
 			IODispatcher ioDispatcher, IPublisher bus,
 			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry) {
 			Ensure.NotNull(queuedHandler, "queuedHandler");
@@ -421,7 +425,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			Log.Debug("New connection to persistent subscription {subscriptionKey} by {connectionId}", key,
 				message.ConnectionId);
-			var lastEventNumber = _readIndex.GetStreamLastEventNumber(message.EventStreamId);
+			var streamId = _readIndex.GetStreamId(message.EventStreamId);
+			var lastEventNumber = _readIndex.GetStreamLastEventNumber(streamId);
 			var lastCommitPos = _readIndex.LastIndexedPosition;
 			var subscribedMessage =
 				new ClientMessage.PersistentSubscriptionConfirmation(key, message.CorrelationId, lastCommitPos,
@@ -459,9 +464,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				try {
 					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split('@');
 					long eventNumber = long.Parse(parts[0]);
-					string streamId = parts[1];
-
-					var res = _readIndex.ReadEvent(streamId, eventNumber);
+					string streamName = parts[1];
+					var streamId = _readIndex.GetStreamId(streamName);
+					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber);
 					if (res.Result == ReadEventResult.Success)
 						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);
 

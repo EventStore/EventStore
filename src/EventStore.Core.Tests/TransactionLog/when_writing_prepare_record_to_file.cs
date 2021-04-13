@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			//TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE
 			using (var reader = new TFChunkChaser(_db, _writerCheckpoint, _db.Config.ChaserCheckpoint, false)) {
 				reader.Open();
-				LogRecord r;
+				ILogRecord r;
 				Assert.IsTrue(reader.TryReadNext(out r));
 
 				Assert.True(r is PrepareLogRecord);

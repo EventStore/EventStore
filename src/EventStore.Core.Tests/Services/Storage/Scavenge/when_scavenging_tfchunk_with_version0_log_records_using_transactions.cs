@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public void the_log_records_are_still_version_0_in_first_chunk() {
 			var chunk = Db.Manager.GetChunk(0);
 
-			var chunkRecords = new List<LogRecord>();
+			var chunkRecords = new List<ILogRecord>();
 			RecordReadResult result = chunk.TryReadFirst();
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public void the_log_records_are_unchanged_in_second_chunk() {
 			var chunk = Db.Manager.GetChunk(1);
 
-			var chunkRecords = new List<LogRecord>();
+			var chunkRecords = new List<ILogRecord>();
 			RecordReadResult result = chunk.TryReadFirst();
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);

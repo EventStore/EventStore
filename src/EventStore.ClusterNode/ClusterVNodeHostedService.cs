@@ -21,6 +21,7 @@ using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using EventStore.Core.LogAbstraction;
 
 namespace EventStore.ClusterNode {
 	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
@@ -67,7 +68,8 @@ namespace EventStore.ClusterNode {
 
 			var plugInContainer = FindPlugins();
 
-			Node = new ClusterVNode(_options, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
+			var logFormat = LogFormatAbstractor.V2;
+			Node = new ClusterVNode<string>(_options, logFormat, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
 				GetPersistentSubscriptionConsumerStrategyFactories());
 
 			var runProjections = _options.Projections.RunProjections;

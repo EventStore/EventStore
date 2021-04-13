@@ -10,9 +10,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.Tests.Index.IndexV3 {
 	[TestFixture, Category("LongRunning")]
 	public class when_upgrading_index_to_64bit_stream_version : SpecificationWithDirectoryPerTestFixture {
-		private TableIndex _tableIndex;
-		private IHasher _lowHasher;
-		private IHasher _highHasher;
+		private TableIndex<string> _tableIndex;
+		private IHasher<string> _lowHasher;
+		private IHasher<string> _highHasher;
 		private string _indexDir;
 		protected byte _ptableVersion;
 
@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 			var fakeReader = new TFReaderLease(new FakeIndexReader());
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV2, maxSize: 5),
 				() => fakeReader,
 				PTableVersions.IndexV2,
@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 
 			_tableIndex.Close(false);
 
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(_ptableVersion, maxSize: 5),
 				() => fakeReader,
 				_ptableVersion,

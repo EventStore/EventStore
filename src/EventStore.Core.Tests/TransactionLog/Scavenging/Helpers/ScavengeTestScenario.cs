@@ -14,9 +14,14 @@ using NUnit.Framework;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
+	public abstract class ScavengeTestScenario : ScavengeTestScenario<string> {
+		protected ScavengeTestScenario(int metastreamMaxCount = 1) : base(metastreamMaxCount) {
+		}
+	}
+
 	[TestFixture]
-	public abstract class ScavengeTestScenario : SpecificationWithDirectoryPerTestFixture {
-		protected IReadIndex ReadIndex;
+	public abstract class ScavengeTestScenario<TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		protected IReadIndex<TStreamId> ReadIndex;
 
 		protected TFChunkDb Db {
 			get { return _dbResult.Db; }
@@ -24,7 +29,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 		private readonly int _metastreamMaxCount;
 		private DbResult _dbResult;
-		private LogRecord[][] _keptRecords;
+		private ILogRecord[][] _keptRecords;
 		private bool _checked;
 
 		protected virtual bool UnsafeIgnoreHardDelete() {
@@ -47,25 +52,35 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			_dbResult.Db.Config.ChaserCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());
 			_dbResult.Db.Config.ChaserCheckpoint.Flush();
 
+			var logFormat = LogFormatHelper<TStreamId>.LogFormat;
 			var indexPath = Path.Combine(PathName, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool", Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				() => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
-			var lowHasher = new XXHashUnsafe();
-			var highHasher = new Murmur3AUnsafe();
-			var tableIndex = new TableIndex(indexPath, lowHasher, highHasher,
+			var lowHasher = logFormat.LowHasher;
+			var highHasher = logFormat.HighHasher;
+			var emptyStreamId = logFormat.EmptyStreamId;
+			var tableIndex = new TableIndex<TStreamId>(indexPath, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
 				() => new TFReaderLease(readerPool),
 				PTableVersions.IndexV3,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 100,
 				maxTablesPerLevel: 2);
-			ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount,
+			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(), readerPool, tableIndex,
+				logFormat.StreamIds,
+				logFormat.StreamNamesFactory,
+				logFormat.SystemStreams,
+				logFormat.EmptyStreamId,
+				logFormat.StreamIdValidator,
+				logFormat.StreamIdSizer,
+				100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
-			((ReadIndex)ReadIndex).IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
+			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
-			var scavenger = new TFChunkScavenger(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
+			var scavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
+				logFormat.SystemStreams,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 		}
@@ -82,7 +97,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 		protected abstract DbResult CreateDb(TFChunkDbCreationHelper dbCreator);
 
-		protected abstract LogRecord[][] KeptRecords(DbResult dbResult);
+		protected abstract ILogRecord[][] KeptRecords(DbResult dbResult);
 
 		protected void CheckRecords() {
 			_checked = true;
@@ -91,7 +106,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			for (int i = 0; i < _keptRecords.Length; ++i) {
 				var chunk = _dbResult.Db.Manager.GetChunk(i);
 
-				var chunkRecords = new List<LogRecord>();
+				var chunkRecords = new List<ILogRecord>();
 				RecordReadResult result = chunk.TryReadFirst();
 				while (result.Success) {
 					chunkRecords.Add(result.LogRecord);

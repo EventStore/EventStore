@@ -14,9 +14,9 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 	public class
 		table_index_when_merging_upgrading_to_64bit_if_single_stream_entry_doesnt_exist_drops_entry_and_carries_on :
 			SpecificationWithDirectoryPerTestFixture {
-		private TableIndex _tableIndex;
-		private IHasher _lowHasher;
-		private IHasher _highHasher;
+		private TableIndex<string> _tableIndex;
+		private IHasher<string> _lowHasher;
+		private IHasher<string> _highHasher;
 		private string _indexDir;
 		protected byte _ptableVersion;
 
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			var fakeReader = new TFReaderLease(new FakeIndexReader2());
 			_lowHasher = new ByLengthHasher();
 			_highHasher = new ByLengthHasher();
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 3),
 				() => fakeReader,
 				PTableVersions.IndexV1,
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 			_tableIndex.Close(false);
 
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(_ptableVersion, maxSize: 3),
 				() => fakeReader,
 				_ptableVersion,

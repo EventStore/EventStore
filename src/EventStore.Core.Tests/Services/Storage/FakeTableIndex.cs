@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Index;
 
 namespace EventStore.Core.Tests.Services.Storage {
-	public class FakeTableIndex : ITableIndex {
+	public class FakeTableIndex<TStreamId> : ITableIndex<TStreamId> {
 		internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
 		public int ScavengeCount { get; private set; }
 
@@ -23,30 +23,30 @@ namespace EventStore.Core.Tests.Services.Storage {
 		public void Close(bool removeFiles = true) {
 		}
 
-		public void Add(long commitPos, string streamId, long version, long position) {
+		public void Add(long commitPos, TStreamId streamId, long version, long position) {
 			throw new NotImplementedException();
 		}
 
-		public void AddEntries(long commitPos, IList<IndexKey> entries) {
+		public void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries) {
 			throw new NotImplementedException();
 		}
 
-		public bool TryGetOneValue(string streamId, long version, out long position) {
+		public bool TryGetOneValue(TStreamId streamId, long version, out long position) {
 			position = -1;
 			return false;
 		}
 
-		public bool TryGetLatestEntry(string streamId, out IndexEntry entry) {
+		public bool TryGetLatestEntry(TStreamId streamId, out IndexEntry entry) {
 			entry = InvalidIndexEntry;
 			return false;
 		}
 
-		public bool TryGetOldestEntry(string streamId, out IndexEntry entry) {
+		public bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry) {
 			entry = InvalidIndexEntry;
 			return false;
 		}
 
-		public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion,
+		public IEnumerable<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
 			int? limit = null) {
 			yield break;
 		}

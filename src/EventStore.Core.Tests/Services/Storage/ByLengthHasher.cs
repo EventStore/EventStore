@@ -2,7 +2,7 @@ using System;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Services.Storage {
-	public class ByLengthHasher : IHasher {
+	public class ByLengthHasher : IHasher<string> {
 		public uint Hash(string s) {
 			return (uint)s.Length;
 		}

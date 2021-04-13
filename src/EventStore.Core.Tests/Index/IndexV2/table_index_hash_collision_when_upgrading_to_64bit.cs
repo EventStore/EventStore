@@ -14,9 +14,9 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 	[TestFixture(0, 10)]
 	[TestFixture(10, 10)]
 	public class table_index_hash_collision_when_upgrading_to_64bit : SpecificationWithDirectoryPerTestFixture {
-		private TableIndex _tableIndex;
-		private IHasher _lowHasher;
-		private IHasher _highHasher;
+		private TableIndex<string> _tableIndex;
+		private IHasher<string> _lowHasher;
+		private IHasher<string> _highHasher;
 		private string _indexDir;
 		protected byte _ptableVersion;
 		private int _extraStreamHashesAtBeginning;
@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			var fakeReader = new TFReaderLease(new FakeIndexReader());
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 5),
 				() => fakeReader,
 				PTableVersions.IndexV1,
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 			_tableIndex.Close(false);
 
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(_ptableVersion, maxSize: 5),
 				() => fakeReader,
 				_ptableVersion,

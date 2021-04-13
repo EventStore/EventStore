@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.DataStructures;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -18,6 +19,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private readonly ICheckpoint _checkpoint;
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ITransactionFileWriter _writer;
+		private readonly IRecordFactory _recordFactory;
 		private readonly Guid _instanceId;
 
 		private readonly object _locker = new object();
@@ -37,6 +39,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			int initialReaderCount,
 			int maxReaderCount,
 			Func<ITransactionFileReader> readerFactory,
+			IRecordFactory recordFactory,
 			Guid instanceId) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
@@ -55,6 +58,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			_readers = new ObjectPool<ITransactionFileReader>("EpochManager readers pool", initialReaderCount,
 				maxReaderCount, readerFactory);
 			_writer = writer;
+			_recordFactory = recordFactory;
 			_instanceId = instanceId;
 		}
 
@@ -77,7 +81,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 						while ((result = reader.TryReadPrev()).Success) {
 							var rec = result.LogRecord;
 							if (rec.RecordType != LogRecordType.System ||
-								((SystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
+								((ISystemLogRecord)rec).SystemRecordType != SystemRecordType.Epoch)
 								continue;
 							epochPos = rec.LogPosition;
 							break;
@@ -108,7 +112,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			if (result.LogRecord.RecordType != LogRecordType.System)
 				throw new Exception($"LogRecord is not SystemLogRecord: {result.LogRecord}.");
 
-			var sysRec = (SystemLogRecord)result.LogRecord;
+			var sysRec = (ISystemLogRecord)result.LogRecord;
 			if (sysRec.SystemRecordType != SystemRecordType.Epoch)
 				throw new Exception($"SystemLogRecord is not of Epoch sub-type: {result.LogRecord}.");
 
@@ -163,7 +167,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 						if (result.LogRecord.RecordType != LogRecordType.System)
 							throw new Exception($"LogRecord is not SystemLogRecord: {result.LogRecord}.");
 
-						var sysRec = (SystemLogRecord)result.LogRecord;
+						var sysRec = (ISystemLogRecord)result.LogRecord;
 						if (sysRec.SystemRecordType != SystemRecordType.Epoch)
 							throw new Exception($"SystemLogRecord is not of Epoch sub-type: {result.LogRecord}.");
 
@@ -210,7 +214,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				var res = reader.TryReadAt(epochPosition);
 				if (!res.Success || res.LogRecord.RecordType != LogRecordType.System)
 					return false;
-				var sysRec = (SystemLogRecord)res.LogRecord;
+				var sysRec = (ISystemLogRecord)res.LogRecord;
 				if (sysRec.SystemRecordType != SystemRecordType.Epoch)
 					return false;
 
@@ -247,15 +251,15 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			Guid instanceId) {
 			long pos = _writer.Checkpoint.ReadNonFlushed();
 			var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
-			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
-				SystemRecordSerialization.Json, epoch.AsSerialized());
+			var rec = _recordFactory.CreateEpoch(epoch);
+
 			Log.Debug(
 							"=== Writing E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}). L={leaderId:B}.",
 							epochNumber, epoch.EpochPosition, epochId, lastEpochPosition, epoch.LeaderInstanceId);
 			if (!_writer.Write(rec, out pos)) {
 				epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
-				rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
-					SystemRecordSerialization.Json, epoch.AsSerialized());
+				rec = _recordFactory.CreateEpoch(epoch);
+
 				if (!_writer.Write(rec, out pos))
 					throw new Exception($"Second write try failed at {epoch.EpochPosition}.");
 			}

@@ -6,14 +6,8 @@ using EventStore.Core.Util;
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IReadIndex {
 		long LastIndexedPosition { get; }
-		
-		IIndexWriter IndexWriter { get; }		
-				
-		ReadIndexStats GetStatistics();
 
-		IndexReadEventResult ReadEvent(string streamId, long eventNumber);
-		IndexReadStreamResult ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount);
-		IndexReadStreamResult ReadStreamEventsForward(string streamId, long fromEventNumber, int maxCount);
+		ReadIndexStats GetStatistics();
 
 		/// <summary>
 		/// Returns event records in the sequence they were committed into TF.
@@ -41,13 +35,26 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		IndexReadAllResult ReadAllEventsBackwardFiltered(TFPos pos, int maxCount, int maxSearchWindow,
 			IEventFilter eventFilter);
 
-		bool IsStreamDeleted(string streamId);
-		long GetStreamLastEventNumber(string streamId);
-		StreamMetadata GetStreamMetadata(string streamId);
-		StorageMessage.EffectiveAcl GetEffectiveAcl(string streamId);
-		string GetEventStreamIdByTransactionId(long transactionId);
-
 		void Close();
 		void Dispose();
+	}
+
+	public interface IReadIndex<TStreamId> : IReadIndex {
+		IIndexWriter<TStreamId> IndexWriter { get; }
+
+		// streamId drives the read, streamName is only for populating on the result.
+		// this was less messy than safely adding the streamName to the EventRecord at some point after construction
+		IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber);
+		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
+		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
+
+		bool IsStreamDeleted(TStreamId streamId);
+		long GetStreamLastEventNumber(TStreamId streamId);
+		StreamMetadata GetStreamMetadata(TStreamId streamId);
+		StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId);
+		TStreamId GetEventStreamIdByTransactionId(long transactionId);
+
+		TStreamId GetStreamId(string streamName);
+		string GetStreamName(TStreamId streamId);
 	}
 }

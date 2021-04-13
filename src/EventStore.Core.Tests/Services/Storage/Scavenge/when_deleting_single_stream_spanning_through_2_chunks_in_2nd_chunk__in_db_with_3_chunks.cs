@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	public class
 		when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk_in_db_with_3_chunks : ReadIndexTestScenario {
 		private EventRecord _event7;
-		private PrepareLogRecord _event7prepare;
+		private IPrepareLogRecord<string> _event7prepare;
 		private CommitLogRecord _event7commit;
 
 		private EventRecord _event9;

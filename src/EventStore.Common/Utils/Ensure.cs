@@ -1,6 +1,10 @@
 ﻿using System;
 
 namespace EventStore.Common.Utils {
+	public interface IValidator<T> {
+		void Validate(T t);
+	}
+
 	public static class Ensure {
 		public static void NotNull<T>(T argument, string argumentName) where T : class {
 			if (argument == null)
@@ -53,6 +57,10 @@ namespace EventStore.Common.Utils {
 			if (expected != actual)
 				throw new ArgumentException(string.Format("{0} expected value: {1}, actual value: {2}", argumentName,
 					expected, actual));
+		}
+
+		public static void Valid<T>(T t, IValidator<T> validator) {
+			validator?.Validate(t);
 		}
 	}
 }

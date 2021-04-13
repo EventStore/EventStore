@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void should_have_updated_deleted_stream_event_number() {
 			var chunk = Db.Manager.GetChunk(0);
-			var chunkRecords = new List<LogRecord>();
+			var chunkRecords = new List<ILogRecord>();
 			RecordReadResult result = chunk.TryReadFirst();
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		[Test]
 		public void the_log_records_are_still_version_0() {
 			var chunk = Db.Manager.GetChunk(0);
-			var chunkRecords = new List<LogRecord>();
+			var chunkRecords = new List<ILogRecord>();
 			RecordReadResult result = chunk.TryReadFirst();
 			while (result.Success) {
 				chunkRecords.Add(result.LogRecord);

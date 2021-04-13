@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		private readonly List<PTable> _tables = new List<PTable>();
 		private PTable _newtable;
 		protected byte _ptableVersion = PTableVersions.IndexV1;
-		private IHasher hasher;
+		private IHasher<string> hasher;
 
 		private bool _skipIndexVerify;
 

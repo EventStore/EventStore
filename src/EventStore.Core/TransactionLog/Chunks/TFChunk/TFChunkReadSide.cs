@@ -50,7 +50,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						return RecordReadResult.Failure;
 					}
 
-					LogRecord record;
+					ILogRecord record;
 					int length;
 					var result = TryReadForwardInternal(workItem, logicalPosition, out length, out record);
 					return new RecordReadResult(result, -1, record, length);
@@ -70,7 +70,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						return RecordReadResult.Failure;
 
 					int length;
-					LogRecord record;
+					ILogRecord record;
 					if (!TryReadForwardInternal(workItem, logicalPosition, out length, out record))
 						return RecordReadResult.Failure;
 
@@ -93,7 +93,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						return RecordReadResult.Failure;
 
 					int length;
-					LogRecord record;
+					ILogRecord record;
 					if (!TryReadBackwardInternal(workItem, logicalPosition, out length, out record))
 						return RecordReadResult.Failure;
 
@@ -275,7 +275,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						return RecordReadResult.Failure;
 					}
 
-					LogRecord record;
+					ILogRecord record;
 					int length;
 					var result = TryReadForwardInternal(workItem, actualPosition, out length, out record);
 					return new RecordReadResult(result, -1, record, length);
@@ -333,7 +333,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						return RecordReadResult.Failure;
 
 					int length;
-					LogRecord record;
+					ILogRecord record;
 					if (!TryReadForwardInternal(workItem, actualPosition, out length, out record))
 						return RecordReadResult.Failure;
 
@@ -361,7 +361,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						return RecordReadResult.Failure;
 
 					int length;
-					LogRecord record;
+					ILogRecord record;
 					if (!TryReadBackwardInternal(workItem, actualPosition, out length, out record))
 						return RecordReadResult.Failure;
 
@@ -467,7 +467,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			protected bool TryReadForwardInternal(ReaderWorkItem workItem, long actualPosition, out int length,
-				out LogRecord record) {
+				out ILogRecord record) {
 				length = -1;
 				record = null;
 
@@ -517,7 +517,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			protected bool TryReadBackwardInternal(ReaderWorkItem workItem, long actualPosition, out int length,
-				out LogRecord record) {
+				out ILogRecord record) {
 				length = -1;
 				record = null;
 
