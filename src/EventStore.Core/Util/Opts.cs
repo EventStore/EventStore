@@ -8,9 +8,7 @@ namespace EventStore.Core.Util {
 		public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
 		
 		public const int ConnectionQueueSizeThresholdDefault = 50000;
-
-		public const int StreamInfoCacheCapacityDefault = 0;
-
+		
 		public const int HashCollisionReadLimitDefault = 100;
 
 		public const int ChunkInitialReaderCountDefault = 5;

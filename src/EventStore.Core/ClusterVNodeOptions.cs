@@ -236,7 +236,7 @@ namespace EventStore.Core {
 		[Description("Cluster Options")]
 		public record ClusterOptions {
 			[Description("The maximum number of entries to keep in the stream info cache.")]
-			public int StreamInfoCacheCapacity { get; init; } = 100_000;
+			public int StreamInfoCacheCapacity { get; init; } = 0;
 
 			[Description("The number of nodes in the cluster.")]
 			public int ClusterSize { get; init; } = 1;
