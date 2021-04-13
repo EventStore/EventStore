@@ -7,17 +7,26 @@
 				<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
 				<Platforms>x64</Platforms>
 		</PropertyGroup>
-		<ItemGroup>
-			  <PackageReference Include="EventStore.Client" Version="21.2.0" />
-				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1"/>
+		<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+		  <NoWarn>1701;1702;1591</NoWarn>
+		</PropertyGroup>
+	<ItemGroup>
+			<PackageReference Include="EventStore.Plugins" Version="21.2.0" />
+			<PackageReference Include="EventStore.Client" Version="21.2.0" />
+				<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
 				<PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.20574.7" />
+			  <PackageReference Include="Google.Protobuf" Version="3.15.8" />
+			  <PackageReference Include="Grpc.Net.Client" Version="2.36.0" />
+			  <PackageReference Include="Grpc.Tools" Version="2.37.0">
+				  <PrivateAssets>all</PrivateAssets>
+				  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			  </PackageReference>
 		</ItemGroup>
 		<ItemGroup>
-				<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj"/>
-				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj"/>
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj"/>
-				<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj"/>
-				<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj"/>
+				<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
+				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+				<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
+				<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 		</ItemGroup>
 		<ItemGroup>
 				<None Include="..\EventStore.Common\Log\logconfig.json">
@@ -25,4 +34,20 @@
 						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 				</None>
 		</ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/projections.proto;../Protos/Grpc/cluster.proto" GrpcServices="Client" LinkBase="Clients/Grpc" ProtoRoot="../Protos/Grpc" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="..\EventStore.Core\Services\SystemUsers.cs" Link="Core\SystemUsers.cs" />
+		<Compile Include="..\EventStore.Core\Services\Transport\Tcp\UnableToAcquireStreamException.cs" Link="Core\UnableToAcquireStreamException.cs" />
+		<Compile Include="..\EventStore.Core\Data\Event.cs" Link="Core\Event.cs" />
+	  <Compile Include="..\EventStore.Core\Data\ExpectedVersion.cs" Link="Core\ExpectedVersion.cs" />
+	  <Compile Include="..\EventStore.Core\Messages\TcpClientMessageDto.cs" Link="Core\TcpClientMessageDto.cs" />
+	  <Compile Include="..\EventStore.Core\Services\Transport\Tcp\TcpCommand.cs" Link="Core\TcpCommand.cs" />
+	  <Compile Include="..\EventStore.Core\Services\Transport\Tcp\TcpPackage.cs" Link="Core\TcpPackage.cs" />
+	  <Compile Include="..\EventStore.Core\Services\Transport\Tcp\ProtobufExtensions.cs" Link="Core\ProtobufExtensions.cs" />
+	  <Compile Include="..\EventStore.Core\TransactionLog\Chunks\TFConsts.cs" Link="Core\TFConsts.cs" />
+	</ItemGroup>
 </Project>
