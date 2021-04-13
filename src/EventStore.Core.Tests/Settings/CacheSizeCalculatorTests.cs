@@ -5,36 +5,34 @@ namespace EventStore.Core.Tests.Settings {
 	[TestFixture]
 	public class CacheSizeCalculatorTests {
 		const ulong Gibibyte = CacheSizeCalculator.Gibibyte;
+		const ulong ESMem = 800 * 1000 * 1000;
 
 		[TestCase]
 		public void configured_takes_precedence() => Test(configuredCapacity: 1, mem: Gibibyte, expected: 1);
 
 		[TestCase]
-		public void enforces_minimum() => Test(configuredCapacity: 0, mem: Gibibyte, expected: 100_000);
+		public void enforces_minimum() => Test(configuredCapacity: 0, mem: 200, expected: 100_000);
 
 		[TestCase]
-		public void just_before_threshold() => Test(configuredCapacity: 0, mem: 2 * Gibibyte, expected: 100_000);
+		public void at_001gib() => Test(configuredCapacity: 0, mem: 1 * Gibibyte - ESMem, expected: 100_000);
 
 		[TestCase]
-		public void onek_above_threshold() => Test(configuredCapacity: 0, mem: 2 * Gibibyte + 1024, expected: 100_001);
+		public void at_004gib() => Test(configuredCapacity: 0, mem: 4 * Gibibyte - ESMem, expected: 2_000_000);
 
 		[TestCase]
-		public void at_01gib() => Test(configuredCapacity: 0, mem: 1 * Gibibyte, expected: 100_000);
+		public void at_008gib() => Test(configuredCapacity: 0, mem: 8 * Gibibyte - ESMem, expected: 6_000_000);
 
 		[TestCase]
-		public void at_02gib() => Test(configuredCapacity: 0, mem: 2 * Gibibyte, expected: 100_000);
+		public void at_016gib() => Test(configuredCapacity: 0, mem: 16 * Gibibyte - ESMem, expected: 12_000_000);
 
 		[TestCase]
-		public void at_04gib() => Test(configuredCapacity: 0, mem: 4 * Gibibyte, expected: 2_197_152);
+		public void at_032gib() => Test(configuredCapacity: 0, mem: 32 * Gibibyte - ESMem, expected: 24_000_000);
 
 		[TestCase]
-		public void at_08gib() => Test(configuredCapacity: 0, mem: 8 * Gibibyte, expected: 6_391_456);
+		public void at_064gib() => Test(configuredCapacity: 0, mem: 64 * Gibibyte - ESMem, expected: 48_000_000);
 
 		[TestCase]
-		public void at_16gib() => Test(configuredCapacity: 0, mem: 16 * Gibibyte, expected: 14_780_064);
-
-		[TestCase]
-		public void at_32gib() => Test(configuredCapacity: 0, mem: 32 * Gibibyte, expected: 31_557_280);
+		public void at_128gib() => Test(configuredCapacity: 0, mem: 128 * Gibibyte - ESMem, expected: 96_000_000);
 
 		public static void Test(int configuredCapacity, ulong mem, int expected) =>
 			Assert.AreEqual(expected, CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, mem));
