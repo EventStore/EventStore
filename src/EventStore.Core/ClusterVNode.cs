@@ -196,13 +196,44 @@ namespace EventStore.Core {
 				HistogramService.StartJitterMonitor();
 			}
 
+			// Calculate automatic configuration changes
+			var statsCollectionPeriod = vNodeSettings.StatsPeriod > TimeSpan.Zero
+				? (long)vNodeSettings.StatsPeriod.TotalMilliseconds
+				: Timeout.Infinite;
+			var statsHelper = new SystemStatsHelper(Log, db.Config.WriterCheckpoint, db.Config.Path, statsCollectionPeriod);
+			var availableMem = statsHelper.GetFreeMem();
+
+			var readerThreadsCount =
+				ThreadCountCalculator.CalculateReaderThreadCount(vNodeSettings.ReaderThreadsCount, availableMem);
+			Log.Information(
+				"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
+				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCount:N0}",
+				readerThreadsCount,
+				availableMem, vNodeSettings.ReaderThreadsCount);
+
+			var workerThreadsCount =
+				ThreadCountCalculator.CalculateWorkerThreadCount(vNodeSettings.WorkerThreads, readerThreadsCount);
+			Log.Information(
+				"WorkerThreads set to {workerThreadsCount:N0}. " +
+				"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
+				workerThreadsCount,
+				readerThreadsCount, vNodeSettings.WorkerThreads);
+
+			var configuredCapacity = vNodeSettings.StreamInfoCacheCapacity;
+			var streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
+			Log.Information(
+				"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
+				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
+				streamInfoCacheCapacity,
+				availableMem, configuredCapacity);
+
 			// MISC WORKERS
-			_workerBuses = Enumerable.Range(0, vNodeSettings.WorkerThreads).Select(queueNum =>
+			_workerBuses = Enumerable.Range(0, workerThreadsCount).Select(queueNum =>
 				new InMemoryBus(string.Format("Worker #{0} Bus", queueNum + 1),
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200))).ToArray();
 			_workersHandler = new MultiQueuedHandler(
-				vNodeSettings.WorkerThreads,
+				workerThreadsCount,
 				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
 					string.Format("Worker #{0}", queueNum + 1),
 					_queueStatsManager,
@@ -239,10 +270,6 @@ namespace EventStore.Core {
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
-			var statsCollectionPeriod = vNodeSettings.StatsPeriod > TimeSpan.Zero
-				? (long)vNodeSettings.StatsPeriod.TotalMilliseconds
-				: Timeout.Infinite;
-			var statsHelper = new SystemStatsHelper(Log, db.Config.WriterCheckpoint, db.Config.Path, statsCollectionPeriod);
 
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
@@ -288,15 +315,6 @@ namespace EventStore.Core {
 				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, vNodeSettings.PTableMaxReaderCount,
 				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
-
-			var configuredCapacity = vNodeSettings.StreamInfoCacheCapacity;
-			var availableMem = statsHelper.GetFreeMem();
-			var streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
-			Log.Information(
-				"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
-				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
-				streamInfoCacheCapacity,
-				availableMem, configuredCapacity);
 
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
@@ -345,7 +363,7 @@ namespace EventStore.Core {
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
 			var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex,
-				vNodeSettings.ReaderThreadsCount, db.Config.WriterCheckpoint, _queueStatsManager);
+				readerThreadsCount, db.Config.WriterCheckpoint, _queueStatsManager);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);

@@ -75,7 +75,7 @@ namespace EventStore.Core.Util {
 		public const int ConnectionQueueSizeThresholdDefault = 50000;
 
 		public const string StreamInfoCacheCapacityDescr =
-			"The maximum number of entries to keep in the stream info cache.";
+			"The maximum number of entries to keep in the stream info cache. Set to '0' to scale automatically (Default)";
 
 		public const int StreamInfoCacheCapacityDefault = 0;
 
@@ -142,8 +142,8 @@ namespace EventStore.Core.Util {
 
 		public const bool UnbufferedDefault = false;
 
-		public const string ReaderThreadsCountDescr = "The number of reader threads to use for processing reads.";
-		public const int ReaderThreadsCountDefault = 4;
+		public const string ReaderThreadsCountDescr = "The number of reader threads to use for processing reads. Set to '0' to scale automatically (Default)";
+		public const int ReaderThreadsCountDefault = 0;
 
 		public const string RunProjectionsDescr =
 			"Enables the running of projections. System runs built-in projections, All runs user projections.";
@@ -161,8 +161,8 @@ namespace EventStore.Core.Util {
 		public const string ProjectionsQueryExpiryDescr = "The number of minutes a query can be idle before it expires";
 		public const int ProjectionsQueryExpiryDefault = 5;
 
-		public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services.";
-		public const int WorkerThreadsDefault = 5;
+		public const string WorkerThreadsDescr = "The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)";
+		public const int WorkerThreadsDefault = 0;
 
 		public const string UnsafeIgnoreHardDeleteDescr = "Disables Hard Deletes (UNSAFE: use to remove hard deletes)";
 		public static readonly bool UnsafeIgnoreHardDeleteDefault = false;
