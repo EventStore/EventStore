@@ -419,25 +419,25 @@ namespace EventStore.Core {
 
 			internal StatsStorage StatsStorage { get; init; } = StatsStorage.File;
 
-			public int GetPTableMaxReaderCount() {
+			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
 				                           + 1 /* StorageChaser */
 				                           + 1 /* Projections */
 				                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
 				                           + 1 /* Subscription LinkTos resolving */
-				                           + ReaderThreadsCount
+				                           + readerThreadsCount
 				                           + 5 /* just in case reserve :) */;
 				return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 			}
 
 
-			internal int GetTFChunkMaxReaderCount() {
+			internal static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
 				var tfChunkMaxReaderCount =
-					GetPTableMaxReaderCount() +
+					GetPTableMaxReaderCount(readerThreadsCount) +
 					2 + /* for caching/uncaching, populating midpoints */
 					1 + /* for epoch manager usage of elections/replica service */
 					1 /* for epoch manager usage of leader replication service */;
-				return Math.Max(tfChunkMaxReaderCount, ChunkInitialReaderCount);
+				return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
 			}
 
 

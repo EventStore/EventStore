@@ -314,9 +314,18 @@ namespace EventStore.Core {
 			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
 				httpEndPoint, options.Cluster.ReadOnlyReplica);
 
-			Db = new TFChunkDb(CreateDbConfig());
+			Db = new TFChunkDb(CreateDbConfig(
+				out var statsHelper,
+				out var readerThreadsCount,
+				out var workerThreadsCount,
+				out var streamInfoCacheCapacity));
 
-			TFChunkDbConfig CreateDbConfig() {
+			TFChunkDbConfig CreateDbConfig(
+				out SystemStatsHelper statsHelper,
+				out int readerThreadsCount,
+				out int workerThreadsCount,
+				out int streamInfoCacheCapacity) {
+
 				ICheckpoint writerChk;
 				ICheckpoint chaserChk;
 				ICheckpoint epochChk;
@@ -372,6 +381,35 @@ namespace EventStore.Core {
 					? options.Database.CachedChunks * (long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
 					: options.Database.ChunksCacheSize;
 
+				// Calculate automatic configuration changes
+				var statsCollectionPeriod = options.Application.StatsPeriodSec > 0
+					? (long)options.Application.StatsPeriodSec * 1000
+					: Timeout.Infinite;
+				statsHelper = new SystemStatsHelper(Log, writerChk.AsReadOnly(), dbPath, statsCollectionPeriod);
+				var availableMem = statsHelper.GetFreeMem();
+
+				readerThreadsCount = ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, availableMem);
+				Log.Information(
+					"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
+					"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCount:N0}",
+					readerThreadsCount,
+					availableMem, options.Database.ReaderThreadsCount);
+
+				workerThreadsCount = ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads, readerThreadsCount);
+				Log.Information(
+					"WorkerThreads set to {workerThreadsCount:N0}. " +
+					"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
+					workerThreadsCount,
+					readerThreadsCount, options.Application.WorkerThreads);
+
+				var configuredCapacity = options.Cluster.StreamInfoCacheCapacity;
+				streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
+				Log.Information(
+					"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
+					"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
+					streamInfoCacheCapacity,
+					availableMem, configuredCapacity);
+
 				return new TFChunkDbConfig(dbPath,
 					new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
 					options.Database.ChunkSize,
@@ -384,7 +422,9 @@ namespace EventStore.Core {
 					replicationChk,
 					indexChk,
 					options.Database.ChunkInitialReaderCount,
-					options.Database.GetTFChunkMaxReaderCount(),
+					ClusterVNodeOptions.DatabaseOptions.GetTFChunkMaxReaderCount(
+						readerThreadsCount: readerThreadsCount,
+						chunkInitialReaderCount: options.Database.ChunkInitialReaderCount),
 					options.Database.MemDb,
 					options.Database.Unbuffered,
 					options.Database.WriteThrough,
@@ -428,37 +468,6 @@ namespace EventStore.Core {
 				//start watching jitter
 				HistogramService.StartJitterMonitor();
 			}
-
-			// Calculate automatic configuration changes
-			var statsCollectionPeriod = options.Application.StatsPeriodSec > 0
-				? (long)options.Application.StatsPeriodSec * 1000
-				: Timeout.Infinite;
-			var statsHelper = new SystemStatsHelper(Log, Db.Config.WriterCheckpoint.AsReadOnly(), Db.Config.Path, statsCollectionPeriod);
-			var availableMem = statsHelper.GetFreeMem();
-
-			var readerThreadsCount =
-				ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, availableMem);
-			Log.Information(
-				"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
-				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCount:N0}",
-				readerThreadsCount,
-				availableMem, options.Database.ReaderThreadsCount);
-
-			var workerThreadsCount =
-				ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads, readerThreadsCount);
-			Log.Information(
-				"WorkerThreads set to {workerThreadsCount:N0}. " +
-				"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
-				workerThreadsCount,
-				readerThreadsCount, options.Application.WorkerThreads);
-
-			var configuredCapacity = options.Cluster.StreamInfoCacheCapacity;
-			var streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
-			Log.Information(
-				"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
-				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
-				streamInfoCacheCapacity,
-				availableMem, configuredCapacity);
 
 			// MISC WORKERS
 			_workerBuses = Enumerable.Range(0, workerThreadsCount).Select(queueNum =>
@@ -544,10 +553,11 @@ namespace EventStore.Core {
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, "index");
 
+			var pTableMaxReaderCount = ClusterVNodeOptions.DatabaseOptions.GetPTableMaxReaderCount(readerThreadsCount);
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool",
 				ESConsts.PTableInitialReaderCount,
-				options.Database.GetPTableMaxReaderCount(),
+				pTableMaxReaderCount,
 				() => new TFChunkReader(
 					Db,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
@@ -568,7 +578,7 @@ namespace EventStore.Core {
 				initializationThreads: options.Database.InitializationThreads,
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
-				pTableMaxReaderCount: options.Database.GetPTableMaxReaderCount());
+				pTableMaxReaderCount: pTableMaxReaderCount);
 			var readIndex = new ReadIndex(_mainQueue,
 				readerPool,
 				tableIndex,
