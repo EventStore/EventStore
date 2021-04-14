@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -1398,6 +1399,42 @@ namespace EventStore.Core {
 			return builder.Build();
 		}
 
+		public void AutoConfigure() {
+			// Calculate automatic configuration changes
+			var statsCollectionPeriod = _statsPeriod > TimeSpan.Zero
+				? (long)_statsPeriod.TotalMilliseconds
+				: Timeout.Infinite;
+			using var statsHelper = new SystemStatsHelper(_log, new InMemoryCheckpoint(), "", statsCollectionPeriod);
+			var availableMem = statsHelper.GetFreeMem();
+
+			var newReaderThreadsCount =
+				ThreadCountCalculator.CalculateReaderThreadCount(_readerThreadsCount, availableMem);
+			_log.Information(
+				"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
+				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCount:N0}",
+				newReaderThreadsCount,
+				availableMem, _readerThreadsCount);
+			_readerThreadsCount = newReaderThreadsCount;
+
+			var newWorkerThreadsCount =
+				ThreadCountCalculator.CalculateWorkerThreadCount(_workerThreads, newReaderThreadsCount);
+			_log.Information(
+				"WorkerThreads set to {workerThreadsCount:N0}. " +
+				"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
+				newWorkerThreadsCount,
+				newReaderThreadsCount, _workerThreads);
+			_workerThreads = newWorkerThreadsCount;
+
+			var configuredCapacity = _streamInfoCacheCapacity;
+			var newStreamInfoCacheCapacity =
+				CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
+			_log.Information(
+				"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
+				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
+				newStreamInfoCacheCapacity,
+				availableMem, configuredCapacity);
+			_streamInfoCacheCapacity = newStreamInfoCacheCapacity;
+		}
 		/// <summary>
 		/// Converts an <see cref="VNodeBuilder"/> to a <see cref="ClusterVNode"/>.
 		/// </summary>
@@ -1408,6 +1445,8 @@ namespace EventStore.Core {
 			IPersistentSubscriptionConsumerStrategyFactory[] consumerStrategies = null) {
 			SetUpProjectionsIfNeeded();
 			_gossipAdvertiseInfo = EnsureGossipAdvertiseInfo();
+
+			AutoConfigure();
 
 			_dbConfig = CreateDbConfig(_chunkSize,
 				_cachedChunks,
@@ -1534,7 +1573,7 @@ namespace EventStore.Core {
 			return new ClusterVNode(_db, _vNodeSettings, GetGossipSource(), infoControllerBuilder, _subsystems.ToArray());
 		}
 
-		private int ComputePTableMaxReaderCount(int ptableInitialReaderCount, int readerThreadsCount) {
+		internal int ComputePTableMaxReaderCount(int ptableInitialReaderCount, int readerThreadsCount) {
 			var ptableMaxReaderCount = 1 /* StorageWriter */
 			                           + 1 /* StorageChaser */
 			                           + 1 /* Projections */
