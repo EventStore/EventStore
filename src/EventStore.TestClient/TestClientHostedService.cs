@@ -4,7 +4,7 @@ using EventStore.Common.Utils;
 using EventStore.Core;
 
 namespace EventStore.TestClient {
-	public class TestClientHostedService : EventStoreHostedService<ClientOptions> {
+	internal class TestClientHostedService : EventStoreHostedService<ClientOptions> {
 		private Client _client;
 
 		private CancellationTokenSource _stopped;

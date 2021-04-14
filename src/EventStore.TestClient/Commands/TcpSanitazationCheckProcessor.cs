@@ -10,7 +10,7 @@ using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands {
-	public class TcpSanitazationCheckProcessor : ICmdProcessor {
+	internal class TcpSanitazationCheckProcessor : ICmdProcessor {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TcpSanitazationCheckProcessor>();
 
 		public string Keyword {

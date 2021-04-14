@@ -9,7 +9,7 @@ using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
-	public class Client {
+	internal class Client {
 		private static readonly ILogger Log = Serilog.Log.ForContext<Client>();
 
 		public readonly bool InteractiveMode;

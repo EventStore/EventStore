@@ -11,7 +11,7 @@ using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands.DvuBasic {
-	public class DvuBasicProcessor : ICmdProcessor {
+	internal class DvuBasicProcessor : ICmdProcessor {
 		public string Keyword {
 			get { return "verify"; }
 		}

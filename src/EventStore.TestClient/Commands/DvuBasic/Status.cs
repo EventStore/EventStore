@@ -2,7 +2,7 @@ using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands.DvuBasic {
-	public class Status {
+	internal class Status {
 		private readonly Serilog.ILogger _log;
 
 		public int ThreadId { get; private set; }
