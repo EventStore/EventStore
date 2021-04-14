@@ -51,7 +51,8 @@ namespace EventStore.TestClient.ClientApiTcpCommands {
 			}
 
 			var monitor = new RequestMonitor();
-			WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamPrefix, monitor).GetAwaiter().GetResult();
+			WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamPrefix, monitor)
+				.GetAwaiter().GetResult();
 			return true;
 		}
 
@@ -61,7 +62,6 @@ namespace EventStore.TestClient.ClientApiTcpCommands {
 
 			var doneEvent = new ManualResetEventSlim(false);
 			var clients = new List<IEventStoreConnection>();
-			var threads = new List<Thread>();
 
 			long succ = 0;
 			long last = 0;
@@ -73,95 +73,115 @@ namespace EventStore.TestClient.ClientApiTcpCommands {
 			long streamDeleted = 0;
 			long all = 0;
 
-			var streams = Enumerable.Range(0, streamsCnt).Select(x => 
+			var streams = Enumerable.Range(0, streamsCnt).Select(x =>
 				string.IsNullOrWhiteSpace(streamPrefix)
-				? Guid.NewGuid().ToString()
-				: $"{streamPrefix}-{x}").ToArray();
+					? Guid.NewGuid().ToString()
+					: $"{streamPrefix}-{x}").ToArray();
 
 			context.Log.Information("Writing streams randomly between {first} and {last}",
 				streams.FirstOrDefault(),
 				streams.LastOrDefault());
 
+			var start = new TaskCompletionSource();
 			var sw2 = new Stopwatch();
+			var capacity = 2000 / clientsCnt;
+			var clientTasks = new List<Task>();
 			for (int i = 0; i < clientsCnt; i++) {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-				var rnd = new Random();
 
 				var client = context._clientApiTestClient.CreateConnection();
 				await client.ConnectAsync();
-				clients.Add(client);
+				clientTasks.Add(RunClient(client, count));
+			}
 
-				threads.Add(new Thread(() => {
-					
-					for (int j = 0; j < count; ++j) {
-						var events = new EventData[batchSize];
-						for (int q = 0; q < batchSize; q++) {
-							events[q] = new EventData(Guid.NewGuid(),
-								"TakeSomeSpaceEvent", false,
-								Common.Utils.Helper.UTF8NoBom.GetBytes(
-									"{ \"DATA\" : \"" + new string('*', size) + "\"}"),
-								Common.Utils.Helper.UTF8NoBom.GetBytes(
-									"{ \"METADATA\" : \"" + new string('$', 100) + "\"}"));
-						}
+			async Task RunClient(IEventStoreConnection client, long count) {
+				var rnd = new Random();
+				List<Task> pending = new List<Task>(capacity);
+				await start.Task;
 
-						var corrid = Guid.NewGuid();
-						monitor.StartOperation(corrid);
-						client.AppendToStreamAsync(streams[rnd.Next(streamsCnt)], ExpectedVersion.Any, events)
-							.ContinueWith(t => {
-								monitor.EndOperation(corrid);
-
-								if (t.IsCompletedSuccessfully) Interlocked.Add(ref succ, batchSize);
-								else {
-									if (Interlocked.Increment(ref fail) % 1000 == 0) {
-										Console.Write("#");
-									}
-
-									if (t.Exception != null) {
-										var exception = t.Exception.Flatten();
-										switch (exception.InnerException) {
-											case WrongExpectedVersionException _:
-												Interlocked.Increment(ref wrongExpVersion);
-												break;
-											case StreamDeletedException _:
-												Interlocked.Increment(ref streamDeleted);
-												break;
-											case OperationTimedOutException _:
-												Interlocked.Increment(ref commitTimeout);
-												break;
-										}
-									}
-								}
-								Interlocked.Add(ref succ, batchSize);
-								if (succ - last > 1000) {
-									last = succ;
-									Console.Write(".");
-								}
-
-								var localAll = Interlocked.Add(ref all, batchSize);
-								if (localAll % 100000 == 0) {
-									var elapsed = sw2.Elapsed;
-									sw2.Restart();
-									context.Log.Debug(
-										"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
-										localAll, elapsed, 1000.0 * 100000 / elapsed.TotalMilliseconds,
-										succ, fail,
-										wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
-								}
-								
-								if (localAll >= requestsCnt) {
-									context.Success();
-									doneEvent.Set();
-								}
-							});
+				for (int j = 0; j < count; ++j) {
+					var events = new EventData[batchSize];
+					for (int q = 0; q < batchSize; q++) {
+						events[q] = new EventData(Guid.NewGuid(),
+							"TakeSomeSpaceEvent", false,
+							Common.Utils.Helper.UTF8NoBom.GetBytes(
+								"{ \"DATA\" : \"" + new string('*', size) + "\"}"),
+							Common.Utils.Helper.UTF8NoBom.GetBytes(
+								"{ \"METADATA\" : \"" + new string('$', 100) + "\"}"));
 					}
-				}) {IsBackground = true});
+
+					var corrid = Guid.NewGuid();
+					monitor.StartOperation(corrid);
+
+					pending.Add(client.AppendToStreamAsync(streams[rnd.Next(streamsCnt)], ExpectedVersion.Any, events)
+						.ContinueWith(t => {
+							monitor.EndOperation(corrid);
+							if (t.IsCompletedSuccessfully) Interlocked.Add(ref succ, batchSize);
+							else {
+								if (Interlocked.Increment(ref fail) % 1000 == 0) {
+									Console.Write("#");
+								}
+
+								if (t.Exception != null) {
+									var exception = t.Exception.Flatten();
+									switch (exception.InnerException) {
+										case WrongExpectedVersionException _:
+											Interlocked.Increment(ref wrongExpVersion);
+											break;
+										case StreamDeletedException _:
+											Interlocked.Increment(ref streamDeleted);
+											break;
+										case OperationTimedOutException _:
+											Interlocked.Increment(ref commitTimeout);
+											break;
+									}
+								}
+							}
+
+							Interlocked.Add(ref succ, batchSize);
+							if (succ - last > 1000) {
+								last = succ;
+								Console.Write(".");
+							}
+
+							var localAll = Interlocked.Add(ref all, batchSize);
+							if (localAll % 100000 == 0) {
+								var elapsed = sw2.Elapsed;
+								sw2.Restart();
+								context.Log.Debug(
+									"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
+									localAll, elapsed, 1000.0 * 100000 / elapsed.TotalMilliseconds,
+									succ, fail,
+									wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
+							}
+
+							if (localAll >= requestsCnt) {
+								context.Success();
+								doneEvent.Set();
+							}
+						}));
+					if (pending.Count == capacity) {
+						await Task.WhenAny(pending).ConfigureAwait(false);
+
+						while (pending.Count > 0 && Task.WhenAny(pending).IsCompleted) {
+							pending.RemoveAll(x => x.IsCompleted);
+							if (succ - last > 1000) {
+								Console.Write(".");
+								last = succ;
+							}
+						}
+					}
+				}
+
+				if (pending.Count > 0) await Task.WhenAll(pending);
 			}
 
 			var sw = Stopwatch.StartNew();
 			sw2.Start();
-			threads.ForEach(thread => thread.Start());
-			doneEvent.Wait();
+			start.SetResult();
+			await Task.WhenAll(clientTasks);
 			sw.Stop();
+
 			clients.ForEach(client => client.Close());
 
 			context.Log.Information(
@@ -186,7 +206,8 @@ namespace EventStore.TestClient.ClientApiTcpCommands {
 			PerfUtils.LogTeamCityGraphData(
 				string.Format("{0}-{1}-{2}-failureSuccessRate", Keyword, clientsCnt, requestsCnt), failuresRate);
 			PerfUtils.LogTeamCityGraphData(
-				string.Format("{0}-c{1}-r{2}-st{3}-s{4}-reqPerSec", Keyword, clientsCnt, requestsCnt, streamsCnt, size),
+				string.Format("{0}-c{1}-r{2}-st{3}-s{4}-reqPerSec", Keyword, clientsCnt, requestsCnt, streamsCnt,
+					size),
 				(int)reqPerSec);
 			PerfUtils.LogTeamCityGraphData(
 				string.Format("{0}-c{1}-r{2}-st{3}-s{4}-failureSuccessRate", Keyword, clientsCnt, requestsCnt,
