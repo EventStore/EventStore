@@ -13,8 +13,6 @@ namespace EventStore.Core.Util {
 
 		public const int ChunkInitialReaderCountDefault = 5;
 
-		public const int ReaderThreadsCountDefault = 4;
-
 		public const bool FaultOutOfOrderProjectionsDefault = false;
 
 		public const int ProjectionsQueryExpiryDefault = 5;

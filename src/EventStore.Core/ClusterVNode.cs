@@ -207,12 +207,6 @@ namespace EventStore.Core {
 				}
 			}
 
-			if (options.Application.WorkerThreads <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Application.WorkerThreads),
-					options.Application.WorkerThreads,
-					$"{nameof(options.Application.WorkerThreads)} must be greater than 0.");
-			}
-
 			if (options.Cluster.ClusterDns == null) {
 				throw new ArgumentNullException(nameof(options.Cluster.ClusterDns));
 			}
@@ -435,13 +429,44 @@ namespace EventStore.Core {
 				HistogramService.StartJitterMonitor();
 			}
 
+			// Calculate automatic configuration changes
+			var statsCollectionPeriod = options.Application.StatsPeriodSec > 0
+				? (long)options.Application.StatsPeriodSec * 1000
+				: Timeout.Infinite;
+			var statsHelper = new SystemStatsHelper(Log, Db.Config.WriterCheckpoint.AsReadOnly(), Db.Config.Path, statsCollectionPeriod);
+			var availableMem = statsHelper.GetFreeMem();
+
+			var readerThreadsCount =
+				ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, availableMem);
+			Log.Information(
+				"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
+				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCount:N0}",
+				readerThreadsCount,
+				availableMem, options.Database.ReaderThreadsCount);
+
+			var workerThreadsCount =
+				ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads, readerThreadsCount);
+			Log.Information(
+				"WorkerThreads set to {workerThreadsCount:N0}. " +
+				"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
+				workerThreadsCount,
+				readerThreadsCount, options.Application.WorkerThreads);
+
+			var configuredCapacity = options.Cluster.StreamInfoCacheCapacity;
+			var streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
+			Log.Information(
+				"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
+				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
+				streamInfoCacheCapacity,
+				availableMem, configuredCapacity);
+
 			// MISC WORKERS
-			_workerBuses = Enumerable.Range(0, options.Application.WorkerThreads).Select(queueNum =>
+			_workerBuses = Enumerable.Range(0, workerThreadsCount).Select(queueNum =>
 				new InMemoryBus($"Worker #{queueNum + 1} Bus",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200))).ToArray();
 			_workersHandler = new MultiQueuedHandler(
-				options.Application.WorkerThreads,
+				workerThreadsCount,
 				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
 					$"Worker #{queueNum + 1}",
 					_queueStatsManager,
@@ -479,10 +504,6 @@ namespace EventStore.Core {
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
-			var statsCollectionPeriod = options.Application.StatsPeriodSec > 0
-				? (long)options.Application.StatsPeriodSec * 1000
-				: Timeout.Infinite;
-			var statsHelper = new SystemStatsHelper(Log, Db.Config.WriterCheckpoint.AsReadOnly(), Db.Config.Path, statsCollectionPeriod);
 
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
@@ -531,15 +552,6 @@ namespace EventStore.Core {
 					Db,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
-
-			var configuredCapacity = options.Cluster.StreamInfoCacheCapacity;
-			var availableMem = statsHelper.GetFreeMem();
-			var streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
-			Log.Information(
-				"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
-				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
-				streamInfoCacheCapacity,
-				availableMem, configuredCapacity);
 
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
@@ -590,7 +602,7 @@ namespace EventStore.Core {
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
 			var storageReader = new StorageReaderService(_mainQueue, _mainBus, readIndex,
-				options.Database.ReaderThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
+				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
