@@ -8,6 +8,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
+using EventStore.Common.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using NUnit.Framework;
@@ -158,6 +159,8 @@ namespace EventStore.Core.Tests {
 
 				Assert.AreEqual(yamlConfiguration.FullName, options.Application.Config);
 				Assert.IsTrue(options.Database.MemDb);
+				Assert.AreEqual("127.0.0.1:1113,127.0.0.1:2113",
+					string.Join(",", options.Cluster.GossipSeed.Select(x => $"{x.GetHost()}:{x.GetPort()}")));
 			} finally {
 				yamlConfiguration.Delete();
 			}
@@ -168,6 +171,7 @@ namespace EventStore.Core.Tests {
 				await writer.WriteAsync(new StringBuilder()
 					.AppendLine("---")
 					.AppendLine("MemDb: true")
+					.AppendLine("GossipSeed: ['127.0.0.1:1113', '127.0.0.1:2113']")
 					.AppendLine("SECTION:")
 					.AppendLine("  Something: Value")
 				);
