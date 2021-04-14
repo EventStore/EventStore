@@ -1,7 +1,7 @@
 using System;
 
 namespace EventStore.Core.Index.Hashes {
-	public class XXHashUnsafe : IHasher<string> {
+	public class XXHashUnsafe : IHasher, IHasher<string> {
 		private const uint Seed = 0xc58f1a7b;
 
 		private const uint PRIME1 = 2654435761U;

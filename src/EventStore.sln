@@ -41,7 +41,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common.Utils", "EventStore.Common.Utils\EventStore.Common.Utils.csproj", "{647867C2-54FA-4C2C-9BCD-7F85A4A8F787}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.NETCore.Compatibility", "EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj", "{066B6514-86A0-41D8-BB6A-D9B05141D026}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.NETCore.Compatibility", "EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj", "{066B6514-86A0-41D8-BB6A-D9B05141D026}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Core.Tests.XUnit", "EventStore.Core.Tests.XUnit\EventStore.Core.Tests.XUnit.csproj", "{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -97,10 +99,6 @@ Global
 		{FDFCE363-84A4-4A6F-B97C-D9F57D8D124F}.Debug|x64.Build.0 = Debug|x64
 		{FDFCE363-84A4-4A6F-B97C-D9F57D8D124F}.Release|x64.ActiveCfg = Release|x64
 		{FDFCE363-84A4-4A6F-B97C-D9F57D8D124F}.Release|x64.Build.0 = Release|x64
-		{C1239448-07E3-4E26-A8B2-AF9687E99E7C}.Debug|x64.ActiveCfg = Debug|x64
-		{C1239448-07E3-4E26-A8B2-AF9687E99E7C}.Debug|x64.Build.0 = Debug|x64
-		{C1239448-07E3-4E26-A8B2-AF9687E99E7C}.Release|x64.ActiveCfg = Release|x64
-		{C1239448-07E3-4E26-A8B2-AF9687E99E7C}.Release|x64.Build.0 = Release|x64
 		{03FA0763-6D41-44C0-911D-662AE2B10084}.Debug|x64.ActiveCfg = Debug|x64
 		{03FA0763-6D41-44C0-911D-662AE2B10084}.Debug|x64.Build.0 = Debug|x64
 		{03FA0763-6D41-44C0-911D-662AE2B10084}.Release|x64.ActiveCfg = Release|x64
@@ -113,6 +111,10 @@ Global
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Debug|x64.Build.0 = Debug|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Release|x64.ActiveCfg = Release|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Release|x64.Build.0 = Release|Any CPU
+		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Debug|x64.ActiveCfg = Debug|x64
+		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Debug|x64.Build.0 = Debug|x64
+		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Release|x64.ActiveCfg = Release|x64
+		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
