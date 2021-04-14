@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	public interface ILogRecord {

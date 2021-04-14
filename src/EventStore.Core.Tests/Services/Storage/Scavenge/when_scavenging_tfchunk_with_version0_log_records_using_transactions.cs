@@ -7,6 +7,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 

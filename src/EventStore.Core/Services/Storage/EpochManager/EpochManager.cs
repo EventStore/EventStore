@@ -10,6 +10,7 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.Services.Storage.EpochManager {
 	public class EpochManager : IEpochManager {

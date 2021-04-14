@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IAllReader {

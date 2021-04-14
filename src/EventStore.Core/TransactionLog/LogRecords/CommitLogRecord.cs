@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Helpers;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	public class CommitLogRecord : LogRecord, IEquatable<CommitLogRecord> {
