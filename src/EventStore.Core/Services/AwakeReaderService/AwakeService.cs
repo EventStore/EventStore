@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.AwakeReaderService {
 	public class AwakeService : IHandle<AwakeServiceMessage.SubscribeAwake>,
@@ -66,8 +67,15 @@ namespace EventStore.Core.Services.AwakeReaderService {
 		public void Handle(StorageMessage.EventCommitted message) {
 			_processedEvents++;
 			_lastPosition = new TFPos(message.CommitPosition, message.Event.LogPosition);
-			NotifyEventInStream("$all", message);
-			NotifyEventInStream(message.Event.EventStreamId, message);
+
+			if (EventFilter.DefaultAllFilter.IsEventAllowed(message.Event)) {
+				NotifyEventInStream("$all", message);
+			}
+
+			if (EventFilter.DefaultStreamFilter.IsEventAllowed(message.Event)) {
+				NotifyEventInStream(message.Event.EventStreamId, message);
+			}
+
 			if (message.TfEof) {
 				EndReplyBatch();
 				BeginReplyBatch();

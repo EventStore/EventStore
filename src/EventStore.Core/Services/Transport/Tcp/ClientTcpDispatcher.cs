@@ -232,7 +232,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.FilteredReadAllEvents>();
 			if (dto == null) return null;
 
-			IEventFilter eventFilter = EventFilter.Get(dto.Filter);
+			IEventFilter eventFilter = EventFilter.Get(true, dto.Filter);
 
 			int maxSearchWindow = dto.MaxCount;
 			if (dto.MaxSearchWindow.HasValue) {
@@ -268,7 +268,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.FilteredReadAllEvents>();
 			if (dto == null) return null;
 
-			IEventFilter eventFilter = EventFilter.Get(dto.Filter);
+			IEventFilter eventFilter = EventFilter.Get(true, dto.Filter);
 
 			int maxSearchWindow = dto.MaxCount;
 			if (dto.MaxSearchWindow.HasValue) {
@@ -307,7 +307,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			var dto = package.Data.Deserialize<TcpClientMessageDto.FilteredSubscribeToStream>();
 			if (dto == null) return null;
 
-			IEventFilter eventFilter = EventFilter.Get(dto.Filter);
+			IEventFilter eventFilter = EventFilter.Get(dto.EventStreamId.IsEmptyString(), dto.Filter);
 
 			return new ClientMessage.FilteredSubscribeToStream(Guid.NewGuid(), package.CorrelationId, envelope,
 				connection.ConnectionId, dto.EventStreamId, dto.ResolveLinkTos, user, eventFilter,

@@ -691,7 +691,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var pos = match.BoundVariables["position"];
 			var cnt = match.BoundVariables["count"];
 
-			var (success, errorMessage) = GetFilterFromQueryString(match, out var filter);
+			var (success, errorMessage) = GetFilterFromQueryString(match, true, out var filter);
 			if (!success) {
 				SendBadRequest(manager, errorMessage);
 				return;
@@ -767,7 +767,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var pos = match.BoundVariables["position"];
 			var cnt = match.BoundVariables["count"];
 
-			var (success, errorMessage) = GetFilterFromQueryString(match, out var filter);
+			var (success, errorMessage) = GetFilterFromQueryString(match, true, out var filter);
 			if (!success) {
 				return SendBadRequest(manager, errorMessage);
 			}
@@ -800,7 +800,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		// HELPERS
-		private (bool Success, string ErrorMessage) GetFilterFromQueryString(UriTemplateMatch match, out IEventFilter filter) {
+		private (bool Success, string ErrorMessage) GetFilterFromQueryString(UriTemplateMatch match, bool isAllStream, out IEventFilter filter) {
 			var context = match.BoundVariables["context"];
 			var type = match.BoundVariables["type"];
 			var data = match.BoundVariables["data"];
@@ -817,7 +817,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					return (false, "exclude-sytem-events should have a value of true.");
 				}
 
-				filter = EventFilter.Get(new TcpClientMessageDto.Filter(
+				filter = EventFilter.Get(isAllStream, new TcpClientMessageDto.Filter(
 					TcpClientMessageDto.Filter.FilterContext.EventType,
 					TcpClientMessageDto.Filter.FilterType.Regex,
 					new[] { @"^[^\$].*" }
@@ -826,7 +826,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				return (true, null);
 			}
 
-			var parsedFilterResult = EventFilter.TryParse(context, type, data, out filter);
+			var parsedFilterResult = EventFilter.TryParse(context, isAllStream, type, data, out filter);
 			if (!parsedFilterResult.Success) {
 				return (false, parsedFilterResult.Reason);
 			}
