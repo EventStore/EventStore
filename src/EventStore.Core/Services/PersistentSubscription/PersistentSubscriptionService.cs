@@ -840,10 +840,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private void ProcessEventCommited(string eventStreamId, long commitPosition, EventRecord evnt) {
 			var subscriptions = new List<PersistentSubscription>();
-			if (_subscriptionTopics.TryGetValue(eventStreamId, out var subscriptionsToStream)) {
+			if (EventFilter.DefaultStreamFilter.IsEventAllowed(evnt)
+				&& _subscriptionTopics.TryGetValue(eventStreamId, out var subscriptionsToStream)) {
 				subscriptions.AddRange(subscriptionsToStream);
 			}
-			if (_subscriptionTopics.TryGetValue(SystemStreams.AllStream, out var subscriptionsToAll)) {
+
+			if (EventFilter.DefaultAllFilter.IsEventAllowed(evnt)
+			    && _subscriptionTopics.TryGetValue(SystemStreams.AllStream, out var subscriptionsToAll)) {
 				subscriptions.AddRange(subscriptionsToAll);
 			}
 

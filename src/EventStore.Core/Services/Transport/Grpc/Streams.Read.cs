@@ -130,7 +130,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						_publisher,
 						request.Options.All.ToSubscriptionPosition(),
 						request.Options.ResolveLinks,
-						ConvertToEventFilter(request.Options.Filter),
+						ConvertToEventFilter(true, request.Options.Filter),
 						user,
 						requiresLeader,
 						_readIndex,
@@ -225,16 +225,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				return readEvent;
 			}
 
-			IEventFilter ConvertToEventFilter(ReadReq.Types.Options.Types.FilterOptions filter) =>
+			IEventFilter ConvertToEventFilter(bool isAllStream, ReadReq.Types.Options.Types.FilterOptions filter) =>
 				filter.FilterCase switch {
 					ReadReq.Types.Options.Types.FilterOptions.FilterOneofCase.EventType => (
 						string.IsNullOrEmpty(filter.EventType.Regex)
-							? EventFilter.EventType.Prefixes(filter.EventType.Prefix.ToArray())
-							: EventFilter.EventType.Regex(filter.EventType.Regex)),
+							? EventFilter.EventType.Prefixes(isAllStream, filter.EventType.Prefix.ToArray())
+							: EventFilter.EventType.Regex(isAllStream, filter.EventType.Regex)),
 					ReadReq.Types.Options.Types.FilterOptions.FilterOneofCase.StreamIdentifier => (
 						string.IsNullOrEmpty(filter.StreamIdentifier.Regex)
-							? EventFilter.StreamName.Prefixes(filter.StreamIdentifier.Prefix.ToArray())
-							: EventFilter.StreamName.Regex(filter.StreamIdentifier.Regex)),
+							? EventFilter.StreamName.Prefixes(isAllStream, filter.StreamIdentifier.Prefix.ToArray())
+							: EventFilter.StreamName.Regex(isAllStream, filter.StreamIdentifier.Regex)),
 					_ => throw new InvalidOperationException()
 				};
 		}

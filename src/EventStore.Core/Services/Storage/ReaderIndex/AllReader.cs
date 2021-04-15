@@ -51,7 +51,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
-			return ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.None);
+			return ReadAllEventsForwardInternal(pos, maxCount, maxCount, EventFilter.DefaultAllFilter);
 		}
 
 		public IndexReadAllResult FilteredReadAllEventsForward(TFPos pos, int maxCount, int maxSearchWindow,
@@ -175,7 +175,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 		
 		public IndexReadAllResult ReadAllEventsBackward(TFPos pos, int maxCount) {
-			return ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.None);
+			return ReadAllEventsBackwardInternal(pos, maxCount, maxCount, EventFilter.DefaultAllFilter);
 		}
 
 		public IndexReadAllResult FilteredReadAllEventsBackward(TFPos pos, int maxCount, int maxSearchWindow,
