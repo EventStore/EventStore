@@ -65,6 +65,25 @@ namespace EventStore.Core {
 	public abstract class ClusterVNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
+		public static ClusterVNode<TStreamId> Create<TStreamId>(
+			ClusterVNodeOptions options,
+			LogFormatAbstractor<TStreamId> logFormat,
+			AuthenticationProviderFactory authenticationProviderFactory = null,
+			AuthorizationProviderFactory authorizationProviderFactory = null,
+			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> factories = null,
+			Guid? instanceId = null,
+			int debugIndex = 0) {
+
+			return new ClusterVNode<TStreamId>(
+				options,
+				logFormat,
+				authenticationProviderFactory,
+				authorizationProviderFactory,
+				factories,
+				instanceId,
+				debugIndex);
+		}
+
 		abstract public TFChunkDb Db { get; }
 		abstract public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 		abstract public IQueuedHandler MainQueue { get; }

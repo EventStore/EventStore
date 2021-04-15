@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
-using EventStore.Core.LogV2;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.TransactionLog;
@@ -19,8 +19,12 @@ using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading;
 
 namespace EventStore.Core.Tests.Services.Storage {
+	public sealed class when_having_an_epoch_manager_and_empty_tf_log_v3 : when_having_an_epoch_manager_and_empty_tf_log {
+		protected override IRecordFactory RecordFactory => LogFormatAbstractor.V3.RecordFactory;
+	}
+
 	[TestFixture]
-	public sealed class when_having_an_epoch_manager_and_empty_tf_log : SpecificationWithDirectoryPerTestFixture, IDisposable {
+	public class when_having_an_epoch_manager_and_empty_tf_log : SpecificationWithDirectoryPerTestFixture, IDisposable {
 		private TFChunkDb _db;
 		private EpochManager _epochManager;
 		private LinkedList<EpochRecord> _cache;
@@ -29,10 +33,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private IBus _mainBus;
 		private readonly Guid _instanceId = Guid.NewGuid();
 		private readonly List<Message> _published = new List<Message>();
-		private static int GetNextEpoch() {
+		protected virtual IRecordFactory RecordFactory => LogFormatAbstractor.V2.RecordFactory;
+		private int GetNextEpoch() {
 			return (int)Interlocked.Increment(ref _currentEpoch);
 		}
-		private static long _currentEpoch = -1;
+		private long _currentEpoch = -1;
 		private EpochManager GetManager() {
 			return new EpochManager(_mainBus,
 				10,
@@ -42,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				new LogV2RecordFactory(),
+				RecordFactory,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager manager) {
