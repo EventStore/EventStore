@@ -77,7 +77,7 @@ Each handler is provided with the current state of the projection as well as the
 
 - `isJson`: true/false
 - `data`: {}
-- `body`: s{}
+- `body`: {}
 - `bodyRaw`: string
 - `sequenceNumber`: integer
 - `metadataRaw`: {}
