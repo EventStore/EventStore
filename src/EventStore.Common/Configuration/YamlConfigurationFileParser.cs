@@ -55,7 +55,14 @@ namespace EventStore.Common.Configuration {
 				throw new FormatException($"Duplicate key '{currentKey}' found.");
 			}
 
-			_data[currentKey] = IsNullValue(yamlValue) ? null : yamlValue.Value;
+			if (currentKey.Contains(":")) {
+				var key = currentKey.Split(":").First();
+				var value = IsNullValue(yamlValue) ? null : yamlValue.Value;
+				_data[key] = _data.ContainsKey(key) ? $"{_data[key]},{value}" : value;
+			} else {
+				_data[currentKey] = IsNullValue(yamlValue) ? null : yamlValue.Value;
+			}
+
 			ExitContext();
 		}
 
