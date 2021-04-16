@@ -158,6 +158,9 @@ jobs:
       shell: powershell
       if: matrix.os == 'windows-2019'
       run: |
+        if (-not(Test-Path $env:APPDATA\NuGet\NuGet.Config -PathType Leaf)) {
+          return;
+        }
         Remove-Item $env:APPDATA\NuGet\NuGet.Config
     - name: Compile
       shell: bash
