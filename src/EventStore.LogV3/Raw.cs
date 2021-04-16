@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using EventStore.LogCommon;
 
 namespace EventStore.LogV3 {
-	// todo: alignment, padding
+	// todo: alignment, padding (of fields and of records)
 	public static class Raw {
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct RecordHeader {
@@ -63,6 +63,28 @@ namespace EventStore.LogV3 {
 			public int EpochNumber {
 				get => _epochNumber;
 				set => _epochNumber = value;
+			}
+		}
+
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct PartitionTypeHeader {
+			[FieldOffset(0)] private Guid _partitionId;
+			public const int Size = 16;
+
+			public Guid PartitionId {
+				get => _partitionId;
+				set => _partitionId = value;
+			}
+		}
+
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct StreamTypeHeader {
+			[FieldOffset(0)] public Guid _partitionId;
+			public const int Size = 16;
+
+			public Guid PartitionId {
+				get => _partitionId;
+				set => _partitionId = value;
 			}
 		}
 	}
