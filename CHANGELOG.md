@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Keep alive timeout check [EventStore#2861](https://github.com/EventStore/EventStore/pull/2861)
 - TestClient not exiting after executing `--command`, which prevents it from being automated in an easy way. [EventStore#2871](https://github.com/EventStore/EventStore/pull/2871)
 - Rdall for TestClient [EventStore#2892](https://github.com/EventStore/EventStore/pull/2892)
+- Parsing of yaml config options specified as an array [EventStore#2906](https://github.com/EventStore/EventStore/pull/2906)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
