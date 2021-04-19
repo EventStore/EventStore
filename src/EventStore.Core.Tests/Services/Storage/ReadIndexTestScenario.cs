@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected readonly LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TStreamId>.LogFormat;
 		protected readonly IRecordFactory<TStreamId> _recordFactory = LogFormatHelper<TStreamId>.LogFormat.RecordFactory;
 		protected readonly ISystemStreamLookup<TStreamId> _systemStreams = LogFormatHelper<TStreamId>.LogFormat.SystemStreams;
-		protected readonly IStreamNameLookup<TStreamId> _streamNames = LogFormatHelper<TStreamId>.LogFormat.StreamNamesFactory.Create();
+		protected readonly IStreamNameLookup<TStreamId> _streamNames = LogFormatHelper<TStreamId>.LogFormat.StreamNames;
 		protected TableIndex<TStreamId> TableIndex;
 		protected IReadIndex<TStreamId> ReadIndex;
 
@@ -100,8 +100,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				readers,
 				TableIndex,
 				logFormat.StreamIds,
-				logFormat.StreamNamesFactory,
-				logFormat.SystemStreams,
+				logFormat.StreamNamesProvider,
 				logFormat.EmptyStreamId,
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,

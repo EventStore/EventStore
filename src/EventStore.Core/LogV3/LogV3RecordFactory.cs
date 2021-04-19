@@ -3,7 +3,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.LogV3 {
-	public class LogV3RecordFactory : IRecordFactory<string> {
+	public class LogV3RecordFactory : IRecordFactory<long> {
 		private readonly IRecordFactory<string> _logV2RecordFactory;
 
 		public LogV3RecordFactory(IRecordFactory<string> logV2RecordFactory) {
@@ -21,14 +21,13 @@ namespace EventStore.Core.LogV3 {
 			return result;
 		}
 
-		// using v2 until v3 prepares are implemented
-		public IPrepareLogRecord<string> CreatePrepare(
+		public IPrepareLogRecord<long> CreatePrepare(
 			long logPosition,
 			Guid correlationId,
 			Guid eventId,
 			long transactionPosition,
 			int transactionOffset,
-			string eventStreamId,
+			long eventStreamId,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
@@ -36,19 +35,7 @@ namespace EventStore.Core.LogV3 {
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata) {
 
-			return _logV2RecordFactory.CreatePrepare(
-				logPosition,
-				correlationId,
-				eventId,
-				transactionPosition,
-				transactionOffset,
-				eventStreamId,
-				expectedVersion,
-				timeStamp,
-				flags,
-				eventType,
-				data,
-				metadata);
+			throw new NotImplementedException();
 		}
 	}
 }

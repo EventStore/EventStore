@@ -38,8 +38,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ObjectPool<ITransactionFileReader> readerPool,
 			ITableIndex<TStreamId> tableIndex,
 			IStreamIdLookup<TStreamId> streamIds,
-			IStreamNameLookupFactory<TStreamId> streamNamesFactory,
-			ISystemStreamLookup<TStreamId> systemStreams,
+			IStreamNamesProvider<TStreamId> streamNamesProvider,
 			TStreamId emptyStreamName,
 			IValidator<TStreamId> streamIdValidator,
 			ISizer<TStreamId> sizer,
@@ -54,8 +53,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.NotNull(readerPool, "readerPool");
 			Ensure.NotNull(tableIndex, "tableIndex");
 			Ensure.NotNull(streamIds, nameof(streamIds));
-			Ensure.NotNull(streamNamesFactory, nameof(streamNamesFactory));
-			Ensure.NotNull(systemStreams, nameof(systemStreams));
+			Ensure.NotNull(streamNamesProvider, nameof(streamNamesProvider));
 			Ensure.NotNull(streamIdValidator, nameof(streamIdValidator));
 			Ensure.NotNull(sizer, nameof(sizer));
 			Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
@@ -67,11 +65,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			var indexBackend = new IndexBackend<TStreamId>(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
 
-			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, systemStreams, streamIdValidator, metastreamMetadata, hashCollisionReadLimit,
+			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator, metastreamMetadata, hashCollisionReadLimit,
 				skipIndexScanOnReads);
 
 			_streamIds = streamIds;
-			_streamNames = streamNamesFactory.Create(_indexReader);
+			_streamNames = streamNamesProvider.StreamNames;
+			var systemStreams = streamNamesProvider.SystemStreams;
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, _streamNames, systemStreams, indexCheckpoint, additionalCommitChecks);
