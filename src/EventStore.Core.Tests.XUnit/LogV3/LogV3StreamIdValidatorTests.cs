@@ -12,10 +12,8 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 		}
 
 		[Fact]
-		public void rejects_zero() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => {
-				_sut.Validate(0);
-			});
+		public void accepts_zero() {
+			_sut.Validate(0);
 		}
 
 		[Fact]

@@ -20,6 +20,7 @@ namespace EventStore.Core.Services {
 		public const string PersistentSubscriptionConfig = "$persistentSubscriptionConfig";
 		public const string AllStream = "$all";
 		public const string StreamsStream = "$streams";
+		public const string StreamsCreatedStream = "$streams-created";
 		public const string SettingsStream = "$settings";
 		public const string StatsStreamPrefix = "$stats";
 		public const string ScavengesStream = "$scavenges";

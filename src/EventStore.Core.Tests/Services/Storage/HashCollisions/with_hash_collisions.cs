@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
 			_indexReader = new IndexReader<string>(_indexBackend, _tableIndex,
-				logFormat.SystemStreams,
+				logFormat.StreamNamesProvider,
 				logFormat.StreamIdValidator,
 				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
@@ -239,7 +239,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_tableIndex.Initialize(long.MaxValue);
 			_indexReader = new IndexReader<string>(
 				_indexBackend, _tableIndex,
-				LogFormatAbstractor.V2.SystemStreams,
+				LogFormatAbstractor.V2.StreamNamesProvider,
 				LogFormatAbstractor.V2.StreamIdValidator,
 				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
