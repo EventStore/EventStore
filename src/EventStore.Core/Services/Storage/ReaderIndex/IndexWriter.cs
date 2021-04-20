@@ -84,6 +84,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_indexBackend = indexBackend;
 			_indexReader = indexReader;
 		}
+		//
 
 		public void Reset() {
 			_notProcessedCommits.Clear();
