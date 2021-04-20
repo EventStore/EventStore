@@ -722,7 +722,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return _readSide.TryReadClosestBackward(logicalPosition);
 		}
 
-		public RecordWriteResult TryAppend(LogRecord record) {
+		public RecordWriteResult TryAppend(ILogRecord record) {
 			if (_isReadOnly)
 				throw new InvalidOperationException("Cannot write to a read-only block.");
 

@@ -11,34 +11,38 @@ using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
-using EventStore.Core.Services;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
-	public class TFChunkScavenger {
-		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkScavenger>();
+	public abstract class TFChunkScavenger {
+		internal const int MaxThreadCount = 4;
+		protected static readonly ILogger Log = Serilog.Log.ForContext<TFChunkScavenger>();
+	}
 
+	public class TFChunkScavenger<TStreamId> : TFChunkScavenger {
 		private readonly TFChunkDb _db;
 		private readonly ITFChunkScavengerLog _scavengerLog;
-		private readonly ITableIndex _tableIndex;
-		private readonly IReadIndex _readIndex;
+		private readonly ITableIndex<TStreamId> _tableIndex;
+		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly long _maxChunkDataSize;
 		private readonly bool _unsafeIgnoreHardDeletes;
 		private readonly int _threads;
 		private const int MaxRetryCount = 5;
-		public const int MaxThreadCount = 4;
 		private const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk
 
-		public TFChunkScavenger(TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex tableIndex,
-			IReadIndex readIndex, long? maxChunkDataSize = null,
+		public TFChunkScavenger(TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex<TStreamId> tableIndex,
+			IReadIndex<TStreamId> readIndex, ISystemStreamLookup<TStreamId> systemStreams, long? maxChunkDataSize = null,
 			bool unsafeIgnoreHardDeletes = false, int threads = 1) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(scavengerLog, "scavengerLog");
 			Ensure.NotNull(tableIndex, "tableIndex");
 			Ensure.NotNull(readIndex, "readIndex");
+			Ensure.NotNull(systemStreams, nameof(systemStreams));
 			Ensure.Positive(threads, "threads");
 
 			if (threads > MaxThreadCount) {
@@ -52,6 +56,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_scavengerLog = scavengerLog;
 			_tableIndex = tableIndex;
 			_readIndex = readIndex;
+			_systemStreams = systemStreams;
 			_maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 			_threads = threads;
@@ -495,7 +500,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			long chunkEndPos) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Prepare:
-					var prepare = (PrepareLogRecord)result.LogRecord;
+					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
 						return true;
 					break;
@@ -521,7 +526,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return commitInfo.KeepCommit != false;
 		}
 
-		private bool ShouldKeepPrepare(PrepareLogRecord prepare, Dictionary<long, CommitInfo> commits, long chunkStart,
+		private bool ShouldKeepPrepare(IPrepareLogRecord<TStreamId> prepare, Dictionary<long, CommitInfo> commits, long chunkStart,
 			long chunkEnd) {
 			CommitInfo commitInfo;
 			bool hasSeenCommit = commits.TryGetValue(prepare.TransactionPosition, out commitInfo);
@@ -618,19 +623,19 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return !canRemove;
 		}
 
-		private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, PrepareLogRecord prepare, long eventNumber) {
-			var result = _readIndex.ReadEvent(prepare.EventStreamId, eventNumber);
+		private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, IPrepareLogRecord<TStreamId> prepare, long eventNumber) {
+			var result = _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber);
 			if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition)
 				return false;
 
 			return true;
 		}
 
-		private bool IsSoftDeletedTempStreamWithinSameChunk(string eventStreamId, long chunkStart, long chunkEnd) {
-			string sh;
-			string msh;
-			if (SystemStreams.IsMetastream(eventStreamId)) {
-				var originalStreamId = SystemStreams.OriginalStreamOf(eventStreamId);
+		private bool IsSoftDeletedTempStreamWithinSameChunk(TStreamId eventStreamId, long chunkStart, long chunkEnd) {
+			TStreamId sh;
+			TStreamId msh;
+			if (_systemStreams.IsMetaStream(eventStreamId)) {
+				var originalStreamId = _systemStreams.OriginalStreamOf(eventStreamId);
 				var meta = _readIndex.GetStreamMetadata(originalStreamId);
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
@@ -641,7 +646,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
 				sh = eventStreamId;
-				msh = SystemStreams.MetastreamOf(eventStreamId);
+				msh = _systemStreams.MetaStreamOf(eventStreamId);
 			}
 
 			IndexEntry e;
@@ -668,7 +673,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		private static PosMap WriteRecord(TFChunk.TFChunk newChunk, LogRecord record) {
+		private static PosMap WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record) {
 			var writeResult = newChunk.TryAppend(record);
 			if (!writeResult.Success) {
 				throw new Exception(string.Format(
@@ -697,10 +702,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		struct CandidateRecord {
-			public readonly LogRecord LogRecord;
+			public readonly ILogRecord LogRecord;
 			public readonly int RecordLength;
 
-			public CandidateRecord(LogRecord logRecord, int recordLength) {
+			public CandidateRecord(ILogRecord logRecord, int recordLength) {
 				LogRecord = logRecord;
 				RecordLength = recordLength;
 			}
@@ -749,12 +754,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 	}
 
 	internal static class CommitInfoExtensions {
-		public static void ForciblyKeep(this TFChunkScavenger.CommitInfo commitInfo) {
+		public static void ForciblyKeep<TStreamId>(this TFChunkScavenger<TStreamId>.CommitInfo commitInfo) {
 			if (commitInfo != null)
 				commitInfo.KeepCommit = true;
 		}
 
-		public static void TryNotToKeep(this TFChunkScavenger.CommitInfo commitInfo) {
+		public static void TryNotToKeep<TStreamId>(this TFChunkScavenger<TStreamId>.CommitInfo commitInfo) {
 			// If someone decided definitely to keep corresponding commit then we shouldn't interfere.
 			// Otherwise we should point that yes, you can remove commit for this prepare.
 			if (commitInfo != null)

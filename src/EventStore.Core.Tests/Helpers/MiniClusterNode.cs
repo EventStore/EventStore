@@ -12,6 +12,7 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Tests.Http;
@@ -167,7 +168,7 @@ namespace EventStore.Core.Tests.Helpers {
 				ExternalTcpEndPoint, "ExHTTP ENDPOINT:",
 				HttpEndPoint);
 
-			Node = new ClusterVNode(options, new AuthenticationProviderFactory(components =>
+			Node = new ClusterVNode<string>(options, LogFormatAbstractor.V2, new AuthenticationProviderFactory(components =>
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),
@@ -185,7 +186,7 @@ namespace EventStore.Core.Tests.Helpers {
 								ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 									var (isValid, error) =
-										ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, () => trustedRootCertificates);
+										ClusterVNode<string>.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, () => trustedRootCertificates);
 									if (!isValid && error != null) {
 										Log.Error("Client certificate validation error: {e}", error);
 									}

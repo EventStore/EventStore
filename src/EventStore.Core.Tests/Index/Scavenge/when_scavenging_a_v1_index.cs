@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 	[TestFixture(PTableVersions.IndexV4, false)]
 	[TestFixture(PTableVersions.IndexV4, true)]
 	public class when_scavenging_a_v1_index : SpecificationWithDirectoryPerTestFixture {
-		private IHasher hasher;
+		private IHasher<string> hasher;
 
 		private PTable _newtable;
 		private readonly byte _newVersion;

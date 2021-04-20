@@ -20,7 +20,14 @@ namespace EventStore.Core.Services {
 		SubscriberMaxCountReached = 4
 	}
 
-	public class SubscriptionsService : IHandle<SystemMessage.SystemStart>,
+	public abstract class SubscriptionsService {
+		public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
+		protected static readonly ILogger Log = Serilog.Log.ForContext<SubscriptionsService>();
+	}
+
+	public class SubscriptionsService<TStreamId> :
+		SubscriptionsService,
+		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<TcpMessage.ConnectionClosed>,
 		IHandle<ClientMessage.SubscribeToStream>,
@@ -29,10 +36,8 @@ namespace EventStore.Core.Services {
 		IHandle<SubscriptionMessage.PollStream>,
 		IHandle<SubscriptionMessage.CheckPollTimeout>,
 		IHandle<StorageMessage.EventCommitted> {
-		public const string AllStreamsSubscriptionId = ""; // empty stream id means subscription to all streams
 		private const int DontReportCheckpointReached = -1;
 
-		private static readonly ILogger Log = Serilog.Log.ForContext<SubscriptionsService>();
 		private static readonly TimeSpan TimeoutPeriod = TimeSpan.FromSeconds(1);
 
 		private readonly Dictionary<string, List<Subscription>> _subscriptionTopics =
@@ -48,10 +53,14 @@ namespace EventStore.Core.Services {
 		private readonly IPublisher _bus;
 		private readonly IEnvelope _busEnvelope;
 		private readonly IQueuedHandler _queuedHandler;
-		private readonly IReadIndex _readIndex;
+		private readonly IReadIndex<TStreamId> _readIndex;
 		private static readonly char[] _linkToSeparator = new[] { '@' };
 
-		public SubscriptionsService(IPublisher bus, IQueuedHandler queuedHandler, IReadIndex readIndex) {
+		public SubscriptionsService(
+			IPublisher bus,
+			IQueuedHandler queuedHandler,
+			IReadIndex<TStreamId> readIndex) {
+
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(queuedHandler, "queuedHandler");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -105,7 +114,7 @@ namespace EventStore.Core.Services {
 		public void Handle(ClientMessage.SubscribeToStream msg) {
 			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 				? (long?)null
-				: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
+				: _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
 			var lastIndexedPos = _readIndex.LastIndexedPosition;
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, EventFilter.None);
@@ -117,7 +126,7 @@ namespace EventStore.Core.Services {
 		public void Handle(ClientMessage.FilteredSubscribeToStream msg) {
 			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 					? (long?)null
-					: _readIndex.GetStreamLastEventNumber(msg.EventStreamId);
+					: _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
 			var lastCommitPos = _readIndex.LastIndexedPosition;
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 				msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter,
@@ -303,9 +312,9 @@ namespace EventStore.Core.Services {
 				try {
 					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split(_linkToSeparator, 2);
 					long eventNumber = long.Parse(parts[0]);
-					string streamId = parts[1];
-
-					var res = _readIndex.ReadEvent(streamId, eventNumber);
+					string streamName = parts[1];
+					var streamId = _readIndex.GetStreamId(streamName);
+					var res = _readIndex.ReadEvent(streamName, streamId, eventNumber);
 
 					if (res.Result == ReadEventResult.Success)
 						return ResolvedEvent.ForResolvedLink(res.Record, eventRecord, commitPosition);

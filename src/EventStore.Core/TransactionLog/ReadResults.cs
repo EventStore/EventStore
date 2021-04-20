@@ -6,10 +6,10 @@ namespace EventStore.Core.TransactionLog {
 
 		public readonly bool Success;
 		public readonly long NextPosition;
-		public readonly LogRecord LogRecord;
+		public readonly ILogRecord LogRecord;
 		public readonly int RecordLength;
 
-		public RecordReadResult(bool success, long nextPosition, LogRecord logRecord, int recordLength) {
+		public RecordReadResult(bool success, long nextPosition, ILogRecord logRecord, int recordLength) {
 			Success = success;
 			LogRecord = logRecord;
 			NextPosition = nextPosition;
@@ -30,14 +30,14 @@ namespace EventStore.Core.TransactionLog {
 
 		public readonly bool Success;
 		public readonly bool Eof;
-		public readonly LogRecord LogRecord;
+		public readonly ILogRecord LogRecord;
 		public readonly int RecordLength;
 		public readonly long RecordPrePosition;
 		public readonly long RecordPostPosition;
 
 		public SeqReadResult(bool success,
 			bool eof,
-			LogRecord logRecord,
+			ILogRecord logRecord,
 			int recordLength,
 			long recordPrePosition,
 			long recordPostPosition) {

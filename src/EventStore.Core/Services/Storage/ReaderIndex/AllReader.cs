@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IAllReader {
@@ -36,15 +35,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IEventFilter eventFilter);
 	}
 
-	public class AllReader : IAllReader {
+	public class AllReader<TStreamId> : IAllReader {
 		private readonly IIndexBackend _backend;
 		private readonly IIndexCommitter _indexCommitter;
+		private readonly IStreamNameLookup<TStreamId> _streamNames;
 
-		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter) {
+		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, IStreamNameLookup<TStreamId> streamNames) {
 			Ensure.NotNull(backend, "backend");
 			Ensure.NotNull(indexCommitter, "indexCommitter");
+			Ensure.NotNull(indexCommitter, nameof(streamNames));
 			_backend = backend;
 			_indexCommitter = indexCommitter;
+			_streamNames = streamNames;
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
@@ -90,7 +92,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare: {
-							var prepare = (PrepareLogRecord)result.LogRecord;
+							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
 								prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
@@ -98,8 +100,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos) {
-								var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */,
-									prepare);
+								var streamName = _streamNames.LookupName(prepare.EventStreamId);
+								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
+									prepare, streamName);
 								consideredEventsCount++;
 								if (eventFilter.IsEventAllowed(eventRecord)) {
 									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
@@ -132,15 +135,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (result.LogRecord.RecordType != LogRecordType.Prepare)
 									continue;
 
-								var prepare = (PrepareLogRecord)result.LogRecord;
+								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 
 								// prepare with useful data or delete tombstone
 								if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 								    && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos) {
+									var streamName = _streamNames.LookupName(prepare.EventStreamId);
 									var eventRecord =
-										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
+										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
+											prepare, streamName);
 									consideredEventsCount++;
 									if (eventFilter.IsEventAllowed(eventRecord)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
@@ -212,7 +217,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare: {
-							var prepare = (PrepareLogRecord)result.LogRecord;
+							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
 								prevPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);
@@ -220,8 +225,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && new TFPos(result.RecordPostPosition, result.RecordPostPosition) <= pos) {
-								var eventRecord = new EventRecord(prepare.ExpectedVersion + 1 /* EventNumber */,
-									prepare);
+								var streamName = _streamNames.LookupName(prepare.EventStreamId);
+								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
+									prepare, streamName);
 								consideredEventsCount++;
 
 								if (eventFilter.IsEventAllowed(eventRecord)) {
@@ -261,15 +267,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (result.LogRecord.RecordType != LogRecordType.Prepare)
 									continue;
 
-								var prepare = (PrepareLogRecord)result.LogRecord;
+								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 
 								// prepare with useful data or delete tombstone
 								if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 								    && new TFPos(commitPostPos, result.RecordPostPosition) <= pos) {
+									var streamName = _streamNames.LookupName(prepare.EventStreamId);
 									var eventRecord =
-										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset, prepare);
+										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
+											prepare, streamName);
 									consideredEventsCount++;
 
 									if (eventFilter.IsEventAllowed(eventRecord)) {
@@ -298,10 +306,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 		}
 
-		private static bool IsCommitAlike(LogRecord rec) {
+		private static bool IsCommitAlike(ILogRecord rec) {
 			return rec.RecordType == LogRecordType.Commit
 			       || (rec.RecordType == LogRecordType.Prepare &&
-			           ((PrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
+			           ((IPrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
 		}
 	}
 }

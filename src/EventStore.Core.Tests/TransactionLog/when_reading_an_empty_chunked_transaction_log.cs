@@ -1,4 +1,5 @@
 ﻿using System;
+using EventStore.Core.LogV2;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -37,7 +38,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			Assert.IsFalse(reader.TryReadNext().Success);
 
-			var rec = LogRecord.SingleWrite(0, Guid.NewGuid(), Guid.NewGuid(), "ES", -1, "ET", new byte[] {7}, null);
+			var rec = LogRecord.SingleWrite(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), "ES", -1, "ET", new byte[] {7}, null);
 			long tmp;
 			Assert.IsTrue(writer.Write(rec, out tmp));
 			writer.Flush();

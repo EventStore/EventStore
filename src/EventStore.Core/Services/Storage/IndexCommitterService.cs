@@ -16,22 +16,25 @@ using ILogger = Serilog.ILogger;
 
 
 namespace EventStore.Core.Services.Storage {
-	public interface IIndexCommitterService {
+	public interface IIndexCommitterService<TStreamId> {
 		void Init(long checkpointPosition);
 		void Stop();
 		long GetCommitLastEventNumber(CommitLogRecord record);
-		void AddPendingPrepare(PrepareLogRecord[] prepares, long postPosition);
+		void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition);
 		void AddPendingCommit(CommitLogRecord commit, long postPosition);
 	}
 
-	public class IndexCommitterService : IIndexCommitterService,
+	public abstract class IndexCommitterService {
+		protected readonly ILogger Log = Serilog.Log.ForContext<IndexCommitterService>();
+	}
+
+	public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCommitterService<TStreamId>,
 		IMonitoredQueue,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitAck>,
 		IHandle<ClientMessage.MergeIndexes> {
-		private readonly ILogger Log = Serilog.Log.ForContext<IndexCommitterService>();
-		private readonly IIndexCommitter _indexCommitter;
+		private readonly IIndexCommitter<TStreamId> _indexCommitter;
 		private readonly IPublisher _publisher;
 		private readonly IReadOnlyCheckpoint _replicationCheckpoint;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
@@ -62,7 +65,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public IndexCommitterService(
-			IIndexCommitter indexCommitter,
+			IIndexCommitter<TStreamId> indexCommitter,
 			IPublisher publisher,
 			IReadOnlyCheckpoint writerCheckpoint,
 			IReadOnlyCheckpoint replicationCheckpoint,
@@ -169,7 +172,7 @@ namespace EventStore.Core.Services.Storage {
 			return _indexCommitter.GetCommitLastEventNumber(commit);
 		}
 
-		public void AddPendingPrepare(PrepareLogRecord[] prepares, long postPosition) {
+		public void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition) {
 			var transactionPosition = prepares[0].TransactionPosition;
 			PendingTransaction transaction;
 			if (_pendingTransactions.TryGetValue(transactionPosition, out transaction)) {
@@ -246,7 +249,7 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		internal class PendingTransaction {
-			public readonly List<PrepareLogRecord> Prepares = new List<PrepareLogRecord>();
+			public readonly List<IPrepareLogRecord<TStreamId>> Prepares = new List<IPrepareLogRecord<TStreamId>>();
 			private CommitLogRecord _commit;
 
 			public CommitLogRecord Commit {
@@ -257,7 +260,7 @@ namespace EventStore.Core.Services.Storage {
 			public readonly long PostPosition;
 
 			public PendingTransaction(long transactionPosition, long postPosition,
-				IEnumerable<PrepareLogRecord> prepares, CommitLogRecord commit = null) {
+				IEnumerable<IPrepareLogRecord<TStreamId>> prepares, CommitLogRecord commit = null) {
 				TransactionPosition = transactionPosition;
 				PostPosition = postPosition;
 				Prepares.AddRange(prepares);
@@ -270,7 +273,7 @@ namespace EventStore.Core.Services.Storage {
 				_commit = commit;
 			}
 
-			public void AddPendingPrepares(IEnumerable<PrepareLogRecord> prepares) {
+			public void AddPendingPrepares(IEnumerable<IPrepareLogRecord<TStreamId>> prepares) {
 				Prepares.AddRange(prepares);
 			}
 

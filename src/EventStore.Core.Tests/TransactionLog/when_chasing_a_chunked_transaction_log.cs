@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chaser = new TFChunkChaser(db, writerchk, new InMemoryCheckpoint(), false);
 			chaser.Open();
 
-			LogRecord record;
+			ILogRecord record;
 			Assert.IsFalse(chaser.TryReadNext(out record));
 
 			chaser.Close();
@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
 			chaser.Open();
 
-			LogRecord record;
+			ILogRecord record;
 			Assert.IsFalse(chaser.TryReadNext(out record));
 			Assert.AreEqual(12, chaserchk.Read());
 
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
 			chaser.Open();
 
-			LogRecord record;
+			ILogRecord record;
 			var recordRead = chaser.TryReadNext(out record);
 			chaser.Close();
 
@@ -129,7 +129,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var reader = new TFChunkChaser(db, writerchk, chaserchk, false);
 			reader.Open();
 
-			LogRecord record;
+			ILogRecord record;
 			var readRecord = reader.TryReadNext(out record);
 			reader.Close();
 
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chaser = new TFChunkChaser(db, writerchk, chaserchk, false);
 			chaser.Open();
 
-			LogRecord record;
+			ILogRecord record;
 			var readRecord = chaser.TryReadNext(out record);
 			chaser.Close();
 

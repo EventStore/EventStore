@@ -10,7 +10,7 @@ using Google.Protobuf;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Streams {
+	partial class Streams<TStreamId> {
 		public override async Task<AppendResp> Append(
 			IAsyncStreamReader<AppendReq> requestStream,
 			ServerCallContext context) {

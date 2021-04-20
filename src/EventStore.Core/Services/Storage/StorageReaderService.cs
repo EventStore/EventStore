@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -9,11 +10,14 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
-	public class StorageReaderService : IHandle<SystemMessage.SystemInit>,
+	public abstract class StorageReaderService {
+		protected static readonly ILogger Log = Serilog.Log.ForContext<StorageReaderService>();
+	}
+
+	public class StorageReaderService<TStreamId> : StorageReaderService, IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
-		private static readonly ILogger Log = Serilog.Log.ForContext<StorageReaderService>();
 
 		private readonly IPublisher _bus;
 		private readonly IReadIndex _readIndex;
@@ -23,23 +27,25 @@ namespace EventStore.Core.Services.Storage {
 		public StorageReaderService(
 			IPublisher bus, 
 			ISubscriber subscriber, 
-			IReadIndex readIndex, 
+			IReadIndex<TStreamId> readIndex,
+			ISystemStreamLookup<TStreamId> systemStreams,
 			int threadCount,
 			IReadOnlyCheckpoint writerCheckpoint, 
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");
 			Ensure.NotNull(readIndex, "readIndex");
+			Ensure.NotNull(systemStreams, nameof(systemStreams));
 			Ensure.Positive(threadCount, "threadCount");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 
 			_bus = bus;
 			_readIndex = readIndex;
 			_threadCount = threadCount;
-			StorageReaderWorker[] readerWorkers = new StorageReaderWorker[threadCount];
+			StorageReaderWorker<TStreamId>[] readerWorkers = new StorageReaderWorker<TStreamId>[threadCount];
 			InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 			for (var i = 0; i < threadCount; i++) {
-				readerWorkers[i] = new StorageReaderWorker(bus, readIndex, writerCheckpoint,i);
+				readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, i);
 				storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);

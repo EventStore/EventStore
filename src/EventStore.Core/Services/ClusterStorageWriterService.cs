@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.Storage;
@@ -16,7 +17,10 @@ using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
-	public class ClusterStorageWriterService : StorageWriterService,
+	public class ClusterStorageWriterService {
+	}
+
+	public class ClusterStorageWriterService<TStreamId> : StorageWriterService<TStreamId>,
 		IHandle<ReplicationMessage.ReplicaSubscribed>,
 		IHandle<ReplicationMessage.CreateChunk>,
 		IHandle<ReplicationMessage.RawChunkBulk>,
@@ -36,11 +40,14 @@ namespace EventStore.Core.Services {
 			TimeSpan minFlushDelay,
 			TFChunkDb db,
 			TFChunkWriter writer,
-			IIndexWriter indexWriter,
+			IIndexWriter<TStreamId> indexWriter,
+			IRecordFactory<TStreamId> recordFactory,
+			IStreamNameIndex<TStreamId> streamNameIndex,
+			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
 			Func<long> getLastIndexedPosition)
-			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, epochManager, queueStatsManager) {
+			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex, systemStreams, epochManager, queueStatsManager) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;

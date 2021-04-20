@@ -17,11 +17,14 @@ using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
-	public class StorageChaser : IMonitoredQueue,
+	public abstract class StorageChaser {
+		protected static readonly ILogger Log = Serilog.Log.ForContext<StorageChaser>();
+	}
+
+	public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
 		IHandle<SystemMessage.SystemInit>,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.BecomeShuttingDown> {
-		private static readonly ILogger Log = Serilog.Log.ForContext<StorageChaser>();
 
 		private static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
 		private static readonly int MinFlushDelay = 2 * TicksPerMs;
@@ -33,7 +36,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IPublisher _leaderBus;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
 		private readonly ITransactionFileChaser _chaser;
-		private readonly IIndexCommitterService _indexCommitterService;
+		private readonly IIndexCommitterService<TStreamId> _indexCommitterService;
 		private readonly IEpochManager _epochManager;
 		private Thread _thread;
 		private volatile bool _stop;
@@ -45,7 +48,7 @@ namespace EventStore.Core.Services.Storage {
 		private long _flushDelay;
 		private long _lastFlush;
 
-		private readonly List<PrepareLogRecord> _transaction = new List<PrepareLogRecord>();
+		private readonly List<IPrepareLogRecord<TStreamId>> _transaction = new List<IPrepareLogRecord<TStreamId>>();
 		private bool _commitsAfterEof;
 		private const string ChaserWaitHistogram = "chaser-wait";
 		private const string ChaserFlushHistogram = "chaser-flush";
@@ -59,7 +62,7 @@ namespace EventStore.Core.Services.Storage {
 		public StorageChaser(IPublisher leaderBus,
 			IReadOnlyCheckpoint writerCheckpoint,
 			ITransactionFileChaser chaser,
-			IIndexCommitterService indexCommitterService,
+			IIndexCommitterService<TStreamId> indexCommitterService,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(leaderBus, "leaderBus");
@@ -176,7 +179,7 @@ namespace EventStore.Core.Services.Storage {
 		private void ProcessLogRecord(SeqReadResult result) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Prepare: {
-					var record = (PrepareLogRecord)result.LogRecord;
+					var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					ProcessPrepareRecord(record, result.RecordPostPosition);
 					break;
 				}
@@ -187,7 +190,7 @@ namespace EventStore.Core.Services.Storage {
 					break;
 				}
 				case LogRecordType.System: {
-					var record = (SystemLogRecord)result.LogRecord;
+					var record = (ISystemLogRecord)result.LogRecord;
 					ProcessSystemRecord(record);
 					break;
 				}
@@ -201,7 +204,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private void ProcessPrepareRecord(PrepareLogRecord record, long postPosition) {
+		private void ProcessPrepareRecord(IPrepareLogRecord<TStreamId> record, long postPosition) {
 			if (_transaction.Count > 0 && _transaction[0].TransactionPosition != record.TransactionPosition)
 				CommitPendingTransaction(_transaction, postPosition);
 
@@ -246,7 +249,7 @@ namespace EventStore.Core.Services.Storage {
 				record.TransactionPosition, firstEventNumber, lastEventNumber));
 		}
 
-		private void ProcessSystemRecord(SystemLogRecord record) {
+		private void ProcessSystemRecord(ISystemLogRecord record) {
 			CommitPendingTransaction(_transaction, record.LogPosition);
 
 			if (record.SystemRecordType == SystemRecordType.Epoch) {
@@ -259,7 +262,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private void CommitPendingTransaction(List<PrepareLogRecord> transaction, long postPosition) {
+		private void CommitPendingTransaction(List<IPrepareLogRecord<TStreamId>> transaction, long postPosition) {
 			if (transaction.Count > 0) {
 				_indexCommitterService.AddPendingPrepare(transaction.ToArray(), postPosition);
 				_transaction.Clear();

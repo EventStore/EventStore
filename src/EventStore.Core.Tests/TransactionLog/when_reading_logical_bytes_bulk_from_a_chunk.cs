@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.LogV2;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -69,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
 
-			var rec = LogRecord.Prepare(0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "ES", -1, PrepareFlags.None, "ET",
+			var rec = LogRecord.Prepare(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "ES", -1, PrepareFlags.None, "ET",
 				new byte[2000], null);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
 

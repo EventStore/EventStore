@@ -92,8 +92,8 @@ namespace EventStore.Core.Index {
 			return new PTable(filename, table.Id, initialReaders, maxReaders, cacheDepth, skipIndexVerify);
 		}
 
-		public static PTable MergeTo(IList<PTable> tables, string outputFile, Func<string, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord, byte version,
+		public static PTable MergeTo<TStreamId>(IList<PTable> tables, string outputFile, Func<TStreamId, ulong, ulong> upgradeHash,
+			Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<TStreamId, bool>> readRecord, byte version,
 			int initialReaders, int maxReaders,
 			int cacheDepth = 16, bool skipIndexVerify = false) {
 			Ensure.NotNull(tables, "tables");
@@ -115,7 +115,7 @@ namespace EventStore.Core.Index {
 			var watch = Stopwatch.StartNew();
 
 			var enumerators = tables
-				.Select(table => new EnumerableTable(version, table, upgradeHash, existsAt, readRecord)).ToList();
+				.Select(table => new EnumerableTable<TStreamId>(version, table, upgradeHash, existsAt, readRecord)).ToList();
 			try {
 				for (int i = 0; i < enumerators.Count; i++) {
 					if (!enumerators[i].MoveNext()) {
@@ -218,10 +218,10 @@ namespace EventStore.Core.Index {
 			return PTable.IndexEntryV4Size;
 		}
 
-		private static PTable MergeTo2(IList<PTable> tables, long numIndexEntries, int indexEntrySize,
+		private static PTable MergeTo2<TStreamId>(IList<PTable> tables, long numIndexEntries, int indexEntrySize,
 			string outputFile,
-			Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<string, bool>> readRecord,
+			Func<TStreamId, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt,
+			Func<IndexEntry, Tuple<TStreamId, bool>> readRecord,
 			byte version, int initialReaders, int maxReaders,
 			int cacheDepth, bool skipIndexVerify) {
 			Log.Debug("PTables merge started (specialized for <= 2 tables).");
@@ -229,7 +229,7 @@ namespace EventStore.Core.Index {
 
 			var fileSizeUpToIndexEntries = GetFileSizeUpToIndexEntries(numIndexEntries, version);
 			var enumerators = tables
-				.Select(table => new EnumerableTable(version, table, upgradeHash, existsAt, readRecord)).ToList();
+				.Select(table => new EnumerableTable<TStreamId>(version, table, upgradeHash, existsAt, readRecord)).ToList();
 			try {
 				long dumpedEntryCount = 0;
 				using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
@@ -318,8 +318,8 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		public static PTable Scavenged(PTable table, string outputFile, Func<string, ulong, ulong> upgradeHash,
-			Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord, byte version,
+		public static PTable Scavenged<TStreamId>(PTable table, string outputFile, Func<TStreamId, ulong, ulong> upgradeHash,
+			Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<TStreamId, bool>> readRecord, byte version,
 			out long spaceSaved,
 			int initialReaders, int maxReaders,
 			int cacheDepth = 16, bool skipIndexVerify = false,
@@ -354,7 +354,7 @@ namespace EventStore.Core.Index {
 						// WRITE SCAVENGED INDEX ENTRIES
 						var buffer = new byte[indexEntrySize];
 						using (var enumerator =
-							new EnumerableTable(version, table, upgradeHash, existsAt, readRecord)) {
+							new EnumerableTable<TStreamId>(version, table, upgradeHash, existsAt, readRecord)) {
 							while (enumerator.MoveNext()) {
 								ct.ThrowIfCancellationRequested();
 								if (existsAt(enumerator.Current)) {
@@ -433,7 +433,7 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private static int GetMaxOf(List<EnumerableTable> enumerators) {
+		private static int GetMaxOf<TStreamId>(List<EnumerableTable<TStreamId>> enumerators) {
 			var max = new IndexEntry(ulong.MinValue, 0, long.MinValue);
 			int idx = 0;
 			for (int i = 0; i < enumerators.Count; i++) {
@@ -560,7 +560,7 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		internal class EnumerableTable : IEnumerator<IndexEntry> {
+		internal class EnumerableTable<TStreamId> : IEnumerator<IndexEntry> {
 			private ISearchTable _ptable;
 			private List<IndexEntry> _list;
 			private IEnumerator<IndexEntry> _enumerator;
@@ -568,9 +568,9 @@ namespace EventStore.Core.Index {
 			private bool _firstIteration = true;
 			private bool _lastIteration = false;
 
-			readonly Func<string, ulong, ulong> _upgradeHash;
+			readonly Func<TStreamId, ulong, ulong> _upgradeHash;
 			readonly Func<IndexEntry, bool> _existsAt;
-			readonly Func<IndexEntry, Tuple<string, bool>> _readRecord;
+			readonly Func<IndexEntry, Tuple<TStreamId, bool>> _readRecord;
 			readonly byte _mergedPTableVersion;
 			static readonly IComparer<IndexEntry> EntryComparer = new IndexEntryComparer();
 
@@ -586,8 +586,8 @@ namespace EventStore.Core.Index {
 				get { return _enumerator.Current; }
 			}
 
-			public EnumerableTable(byte mergedPTableVersion, ISearchTable table, Func<string, ulong, ulong> upgradeHash,
-				Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<string, bool>> readRecord) {
+			public EnumerableTable(byte mergedPTableVersion, ISearchTable table, Func<TStreamId, ulong, ulong> upgradeHash,
+				Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<TStreamId, bool>> readRecord) {
 				_mergedPTableVersion = mergedPTableVersion;
 				_ptable = table;
 
@@ -625,8 +625,8 @@ namespace EventStore.Core.Index {
 			}
 
 			private List<IndexEntry> ReadUntilDifferentHash(byte version, IEnumerator<IndexEntry> ptableEnumerator,
-				Func<string, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt,
-				Func<IndexEntry, Tuple<string, bool>> readRecord) {
+				Func<TStreamId, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt,
+				Func<IndexEntry, Tuple<TStreamId, bool>> readRecord) {
 				var list = new List<IndexEntry>();
 
 				if (_lastIteration)

@@ -5,6 +5,7 @@ using EventStore.Core.Tests;
 using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -14,11 +15,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	public class HashCollisionTestFixture : SpecificationWithDirectoryPerTestFixture {
 		protected int _hashCollisionReadLimit = 5;
 		protected int _maxMemTableSize = 5;
-		protected TableIndex _tableIndex;
-		protected IIndexReader _indexReader;
-		protected IIndexBackend _indexBackend;
-		protected IHasher _lowHasher;
-		protected IHasher _highHasher;
+		protected TableIndex<string> _tableIndex;
+		protected IIndexReader<string> _indexReader;
+		protected IIndexBackend<string> _indexBackend;
+		protected IHasher<string> _lowHasher;
+		protected IHasher<string> _highHasher;
 		protected string _indexDir;
 		protected TFReaderLease _fakeReader;
 
@@ -33,10 +34,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			given();
 			_indexDir = PathName;
 			_fakeReader = new TFReaderLease(new FakeReader());
-			_indexBackend = new FakeIndexBackend(_fakeReader);
-			_lowHasher = new XXHashUnsafe();
-			_highHasher = new Murmur3AUnsafe();
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_indexBackend = new FakeIndexBackend<string>(_fakeReader);
+			var logFormat = LogFormatAbstractor.V2;
+			_lowHasher = logFormat.LowHasher;
+			_highHasher = logFormat.HighHasher;
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, logFormat.EmptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
 				() => _fakeReader,
 				PTableVersions.IndexV1,
@@ -44,7 +46,10 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				maxSizeForMemory: _maxMemTableSize,
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
-			_indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(),
+			_indexReader = new IndexReader<string>(_indexBackend, _tableIndex,
+				logFormat.SystemStreams,
+				logFormat.StreamIdValidator,
+				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 
 			when();
@@ -224,7 +229,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_tableIndex.Add(1, streamId, 2, 6);
 			System.Threading.Thread.Sleep(500);
 			_tableIndex.Close(false);
-			_tableIndex = new TableIndex(_indexDir, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(PTableVersions.IndexV2, maxSize: _maxMemTableSize),
 				() => _fakeReader,
 				PTableVersions.IndexV2,
@@ -232,7 +237,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				maxSizeForMemory: _maxMemTableSize,
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
-			_indexReader = new IndexReader(_indexBackend, _tableIndex, new EventStore.Core.Data.StreamMetadata(),
+			_indexReader = new IndexReader<string>(
+				_indexBackend, _tableIndex,
+				LogFormatAbstractor.V2.SystemStreams,
+				LogFormatAbstractor.V2.StreamIdValidator,
+				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 			//memtable with 64bit indexes
 			_tableIndex.Add(1, streamId, 0, 8);
@@ -290,7 +299,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		}
 	}
 
-	public class FakeIndexBackend : IIndexBackend {
+	public class FakeIndexBackend<TStreamId> : IIndexBackend<TStreamId> {
 		private TFReaderLease _readerLease;
 
 		public FakeIndexBackend(TFReaderLease readerLease) {
@@ -301,28 +310,28 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			return _readerLease;
 		}
 
-		public IndexBackend.EventNumberCached TryGetStreamLastEventNumber(string streamId) {
-			return new IndexBackend.EventNumberCached(-1, null); //always return uncached
+		public IndexBackend<TStreamId>.EventNumberCached TryGetStreamLastEventNumber(TStreamId streamId) {
+			return new IndexBackend<TStreamId>.EventNumberCached(-1, null); //always return uncached
 		}
 
-		public IndexBackend.MetadataCached TryGetStreamMetadata(string streamId) {
-			return new IndexBackend.MetadataCached();
+		public IndexBackend<TStreamId>.MetadataCached TryGetStreamMetadata(TStreamId streamId) {
+			return new IndexBackend<TStreamId>.MetadataCached();
 		}
 
-		public long? UpdateStreamLastEventNumber(int cacheVersion, string streamId, long? lastEventNumber) {
+		public long? UpdateStreamLastEventNumber(int cacheVersion, TStreamId streamId, long? lastEventNumber) {
 			return null;
 		}
 
-		public EventStore.Core.Data.StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId,
+		public EventStore.Core.Data.StreamMetadata UpdateStreamMetadata(int cacheVersion, TStreamId streamId,
 			EventStore.Core.Data.StreamMetadata metadata) {
 			return null;
 		}
 
-		public long? SetStreamLastEventNumber(string streamId, long lastEventNumber) {
+		public long? SetStreamLastEventNumber(TStreamId streamId, long lastEventNumber) {
 			return null;
 		}
 
-		public EventStore.Core.Data.StreamMetadata SetStreamMetadata(string streamId,
+		public EventStore.Core.Data.StreamMetadata SetStreamMetadata(TStreamId streamId,
 			EventStore.Core.Data.StreamMetadata metadata) {
 			return null;
 		}

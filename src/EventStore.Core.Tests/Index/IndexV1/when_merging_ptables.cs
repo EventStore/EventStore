@@ -215,7 +215,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			SpecificationWithDirectoryPerTestFixture {
 		private readonly List<string> _files = new List<string>();
 		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher hasher;
+		private IHasher<string> hasher;
 
 		private PTable _newtable;
 		private bool _skipIndexVerify;
@@ -290,7 +290,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			SpecificationWithDirectoryPerTestFixture {
 		private readonly List<string> _files = new List<string>();
 		private readonly List<PTable> _tables = new List<PTable>();
-		private IHasher hasher;
+		private IHasher<string> hasher;
 
 		private PTable _newtable;
 		private bool _skipIndexVerify;

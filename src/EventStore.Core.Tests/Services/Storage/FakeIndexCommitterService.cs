@@ -7,9 +7,9 @@ using EventStore.Core.Services.Storage;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Services.Storage {
-	public class FakeIndexCommitterService : IIndexCommitterService {
+	public class FakeIndexCommitterService<TStreamId> : IIndexCommitterService<TStreamId> {
 		public Dictionary<Guid, Transaction> Transactions = new Dictionary<Guid, Transaction>();
-		public List<LogRecord> Records = new List<LogRecord>();
+		public List<ILogRecord> Records = new List<ILogRecord>();
 		public long PostPosition;
 		public void AddPendingCommit(CommitLogRecord commit, long postPosition) {
 			if (commit == null)
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			PostPosition = postPosition;
 		}
 
-		public void AddPendingPrepare(PrepareLogRecord[] prepares, long postPosition) {
+		public void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition) {
 			if (prepares == null)
 				throw new InvalidOperationException("Cannot commit a null transaction");
 			if (prepares.Length <= 0)
@@ -53,17 +53,17 @@ namespace EventStore.Core.Tests.Services.Storage {
 			public Guid Id { get; }
 			public bool IsCommitted => Commit != null;
 			public CommitLogRecord Commit { get; private set; }
-			public ReadOnlyCollection<PrepareLogRecord> Prepares => _prepares.AsReadOnly();
-			private List<PrepareLogRecord> _prepares = new List<PrepareLogRecord>();
+			public ReadOnlyCollection<IPrepareLogRecord<TStreamId>> Prepares => _prepares.AsReadOnly();
+			private List<IPrepareLogRecord<TStreamId>> _prepares = new List<IPrepareLogRecord<TStreamId>>();
 
-			public Transaction(Guid id, ICollection<PrepareLogRecord> prepares = null) {
+			public Transaction(Guid id, ICollection<IPrepareLogRecord<TStreamId>> prepares = null) {
 				Id = id;
 				if (prepares != null) { AddPrepares(prepares); }
 			}
 			public void CommitTransaction(CommitLogRecord commit) {
 				Commit = commit;
 			}
-			public void AddPrepares(ICollection<PrepareLogRecord> prepares) {
+			public void AddPrepares(ICollection<IPrepareLogRecord<TStreamId>> prepares) {
 				if (IsCommitted) { throw new InvalidOperationException("Cannot add data to a committed transation"); }
 				_prepares.AddRange(prepares);
 			}

@@ -5,7 +5,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	public class FakeInMemoryTfReader : ITransactionFileReader {
-		private Dictionary<long, LogRecord> _records = new Dictionary<long, LogRecord>();
+		private Dictionary<long, ILogRecord> _records = new Dictionary<long, ILogRecord>();
 		private long _curPosition = 0;
 		private int _recordOffset;
 
@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_recordOffset = recordOffset;
 		}
 
-		public void AddRecord(LogRecord record, long position){
+		public void AddRecord(ILogRecord record, long position){
 			_records.Add(position, record);
 		}
 

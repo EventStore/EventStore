@@ -12,7 +12,10 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Chaser {
-	public abstract class with_storage_chaser_service : SpecificationWithDirectoryPerTestFixture {
+	public abstract class with_storage_chaser_service : with_storage_chaser_service<string> {
+	}
+
+	public abstract class with_storage_chaser_service<TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		readonly ICheckpoint _writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 		readonly ICheckpoint _chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 		readonly ICheckpoint _epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
@@ -22,8 +25,8 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		readonly ICheckpoint _indexCheckpoint = new InMemoryCheckpoint(-1);
 
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
-		protected StorageChaser Service;
-		protected FakeIndexCommitterService IndexCommitter;
+		protected StorageChaser<TStreamId> Service;
+		protected FakeIndexCommitterService<TStreamId> IndexCommitter;
 		protected IEpochManager EpochManager;
 		protected TFChunkDb Db;
 		protected TFChunkChaser Chaser;
@@ -42,10 +45,10 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			Writer = new TFChunkWriter(Db);
 			Writer.Open();
 
-			IndexCommitter = new FakeIndexCommitterService();
+			IndexCommitter = new FakeIndexCommitterService<TStreamId>();
 			EpochManager = new FakeEpochManager();
 
-			Service = new StorageChaser(
+			Service = new StorageChaser<TStreamId>(
 				Publisher,
 				_writerChk,
 				Chaser,

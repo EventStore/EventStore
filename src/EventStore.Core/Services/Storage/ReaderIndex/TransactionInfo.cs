@@ -1,9 +1,9 @@
 namespace EventStore.Core.Services.Storage.ReaderIndex {
-	public struct TransactionInfo {
+	public struct TransactionInfo<TStreamId> {
 		public readonly int TransactionOffset;
-		public readonly string EventStreamId;
+		public readonly TStreamId EventStreamId;
 
-		public TransactionInfo(int transactionOffset, string eventStreamId) {
+		public TransactionInfo(int transactionOffset, TStreamId eventStreamId) {
 			TransactionOffset = transactionOffset;
 			EventStreamId = eventStreamId;
 		}

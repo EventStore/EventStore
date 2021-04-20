@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 				.CreateDb();
 		}
 
-		protected override LogRecord[][] KeptRecords(DbResult dbResult) {
+		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
 			return new[] {
 				new[] {dbResult.Recs[0][2]}, // first prepare in commit that is in different chunk
 				dbResult.Recs[1].Where((x, i) => i >= 3).ToArray(),

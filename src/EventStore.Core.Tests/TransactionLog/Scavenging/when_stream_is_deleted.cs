@@ -14,9 +14,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 				.CreateDb();
 		}
 
-		protected override LogRecord[][] KeptRecords(DbResult dbResult) {
+		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
 			return new[] {
-				new LogRecord[0],
+				new ILogRecord[0],
 				dbResult.Recs[1]
 			};
 		}
@@ -41,10 +41,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 				.CreateDb();
 		}
 
-		protected override LogRecord[][] KeptRecords(DbResult dbResult) {
+		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
 			return new[] {
-				new LogRecord[0],
-				new LogRecord[0]
+				new ILogRecord[0],
+				new ILogRecord[0]
 			};
 		}
 

@@ -397,10 +397,10 @@ namespace EventStore.Core.Index {
 			return new AddResult(indexMap, canMergeAny);
 		}
 
-		public MergeResult TryMergeOneLevel(
-			Func<string, ulong, ulong> upgradeHash,
+		public MergeResult TryMergeOneLevel<TStreamId>(
+			Func<TStreamId, ulong, ulong> upgradeHash,
 			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
+			Func<IndexEntry, Tuple<TStreamId, bool>> recordExistsAt,
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -436,10 +436,10 @@ namespace EventStore.Core.Index {
 			return new MergeResult(indexMap, toDelete, hasMergedAny, canMergeAny);
 		}
 
-		public MergeResult TryManualMerge(
-			Func<string, ulong, ulong> upgradeHash,
+		public MergeResult TryManualMerge<TStreamId>(
+			Func<TStreamId, ulong, ulong> upgradeHash,
 			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
+			Func<IndexEntry, Tuple<TStreamId, bool>> recordExistsAt,
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
@@ -474,10 +474,10 @@ namespace EventStore.Core.Index {
 			return new MergeResult(indexMap, toDelete, true, false);
 		}
 
-		public ScavengeResult Scavenge(Guid toScavenge, CancellationToken ct,
-			Func<string, ulong, ulong> upgradeHash,
+		public ScavengeResult Scavenge<TStreamId>(Guid toScavenge, CancellationToken ct,
+			Func<TStreamId, ulong, ulong> upgradeHash,
 			Func<IndexEntry, bool> existsAt,
-			Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
+			Func<IndexEntry, Tuple<TStreamId, bool>> recordExistsAt,
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,

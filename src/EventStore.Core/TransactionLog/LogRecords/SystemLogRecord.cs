@@ -15,11 +15,11 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		Bson = 3
 	}
 
-	public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord> {
+	public class SystemLogRecord : LogRecord, IEquatable<SystemLogRecord>, ISystemLogRecord {
 		public const byte SystemRecordVersion = 0;
 
 		public readonly DateTime TimeStamp;
-		public readonly SystemRecordType SystemRecordType;
+		public SystemRecordType SystemRecordType { get; }
 		public readonly SystemRecordSerialization SystemRecordSerialization;
 		public readonly long Reserved;
 		public readonly ReadOnlyMemory<byte> Data;

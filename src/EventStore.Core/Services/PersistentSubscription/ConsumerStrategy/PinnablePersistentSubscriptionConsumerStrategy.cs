@@ -6,12 +6,12 @@
 	using PinnedState;
 
 	internal abstract class PinnablePersistentSubscriptionConsumerStrategy : IPersistentSubscriptionConsumerStrategy {
-		private IHasher _hash;
+		private IHasher<string> _hash;
 		protected static readonly char LinkToSeparator = '@';
 		private readonly PinnedConsumerState _state = new PinnedConsumerState();
 		private readonly object _stateLock = new object();
 
-		public PinnablePersistentSubscriptionConsumerStrategy(IHasher streamHasher) {
+		public PinnablePersistentSubscriptionConsumerStrategy(IHasher<string> streamHasher) {
 			_hash = streamHasher;
 		}
 

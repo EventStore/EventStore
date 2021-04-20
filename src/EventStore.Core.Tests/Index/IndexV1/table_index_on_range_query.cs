@@ -15,9 +15,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV4, false)]
 	[TestFixture(PTableVersions.IndexV4, true)]
 	public class table_index_on_range_query : SpecificationWithDirectoryPerTestFixture {
-		private TableIndex _tableIndex;
-		private IHasher _lowHasher;
-		private IHasher _highHasher;
+		private TableIndex<string> _tableIndex;
+		private IHasher<string> _lowHasher;
+		private IHasher<string> _highHasher;
 		protected byte _ptableVersion = PTableVersions.IndexV1;
 		private bool _skipIndexVerify;
 
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 
 			_lowHasher = new XXHashUnsafe();
 			_highHasher = new Murmur3AUnsafe();
-			_tableIndex = new TableIndex(PathName, _lowHasher, _highHasher,
+			_tableIndex = new TableIndex<string>(PathName, _lowHasher, _highHasher, "",
 				() => new HashListMemTable(version: _ptableVersion, maxSize: 40),
 				() => { throw new InvalidOperationException(); },
 				_ptableVersion,

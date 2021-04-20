@@ -3,7 +3,7 @@ using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 	class PinnedPersistentSubscriptionConsumerStrategy : PinnablePersistentSubscriptionConsumerStrategy {
-		public PinnedPersistentSubscriptionConsumerStrategy(IHasher streamHasher) : base(streamHasher) {
+		public PinnedPersistentSubscriptionConsumerStrategy(IHasher<string> streamHasher) : base(streamHasher) {
 		}
 
 		public override string Name {

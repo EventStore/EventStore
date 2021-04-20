@@ -6,9 +6,9 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 	[TestFixture]
 	public class
 		when_writing_few_prepares_with_same_expected_version_and_committing_one_of_them : ReadIndexTestScenario {
-		private PrepareLogRecord _prepare0;
-		private PrepareLogRecord _prepare1;
-		private PrepareLogRecord _prepare2;
+		private IPrepareLogRecord _prepare0;
+		private IPrepareLogRecord _prepare1;
+		private IPrepareLogRecord _prepare2;
 
 		protected override void WriteTestScenario() {
 			_prepare0 = WritePrepare("ES", expectedVersion: -1);

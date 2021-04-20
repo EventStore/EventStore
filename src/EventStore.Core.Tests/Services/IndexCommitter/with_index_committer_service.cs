@@ -14,8 +14,11 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
-	public abstract class with_index_committer_service {
-		protected string EventStreamId = "test_stream";
+	public abstract class with_index_committer_service : with_index_committer_service<string> {
+	}
+
+	public abstract class with_index_committer_service<TStreamId> {
+		protected TStreamId EventStreamId = LogFormatHelper<TStreamId>.WhenV2<TStreamId>("test_stream");
 		protected int CommitCount = 2;
 		protected ITableIndex TableIndex;
 
@@ -25,18 +28,18 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 		protected ConcurrentQueue<StorageMessage.CommitIndexed> CommitReplicatedMgs = new ConcurrentQueue<StorageMessage.CommitIndexed>();
 		protected ConcurrentQueue<ReplicationTrackingMessage.IndexedTo> IndexWrittenMgs = new ConcurrentQueue<ReplicationTrackingMessage.IndexedTo>();
 
-		protected IndexCommitterService Service;
-		protected FakeIndexCommitter IndexCommitter;
+		protected IndexCommitterService<TStreamId> Service;
+		protected FakeIndexCommitter<TStreamId> IndexCommitter;
 		protected ITFChunkScavengerLogManager TfChunkScavengerLogManager;
 		
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
-			IndexCommitter = new FakeIndexCommitter();
+			IndexCommitter = new FakeIndexCommitter<TStreamId>();
 			ReplicationCheckpoint = new InMemoryCheckpoint();
 			WriterCheckpoint = new InMemoryCheckpoint(0);
-			TableIndex = new FakeTableIndex();
+			TableIndex = new FakeTableIndex<TStreamId>();
 			TfChunkScavengerLogManager = new FakeTfChunkLogManager();
-			Service = new IndexCommitterService(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
+			Service = new IndexCommitterService<TStreamId>(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
 			Service.Init(0);
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => CommitReplicatedMgs.Enqueue(m)));
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.IndexedTo>(m => IndexWrittenMgs.Enqueue(m)));
@@ -60,7 +63,7 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 		}
 
 		protected void AddPendingPrepares(long transactionPosition, long[] logPositions) {
-			var prepares = new List<PrepareLogRecord>();
+			var prepares = new List<IPrepareLogRecord<TStreamId>>();
 			foreach (var pos in logPositions) {
 				prepares.Add(CreatePrepare(transactionPosition, pos));
 			}
@@ -68,8 +71,9 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 			Service.AddPendingPrepare(prepares.ToArray(), logPositions[^1]);
 		}
 
-		private PrepareLogRecord CreatePrepare(long transactionPosition, long logPosition) {
-			return LogRecord.Prepare(logPosition, Guid.NewGuid(), Guid.NewGuid(), transactionPosition, 0,
+		private IPrepareLogRecord<TStreamId> CreatePrepare(long transactionPosition, long logPosition) {
+			var recordFactory = LogFormatHelper<TStreamId>.LogFormat.RecordFactory;
+			return LogRecord.Prepare(recordFactory, logPosition, Guid.NewGuid(), Guid.NewGuid(), transactionPosition, 0,
 				EventStreamId, -1, PrepareFlags.None, "testEvent",
 				new byte[10], new byte[0]);
 		}
@@ -82,8 +86,8 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 		}
 	}
 
-	public class FakeIndexCommitter : IIndexCommitter {
-		public ConcurrentQueue<PrepareLogRecord> CommittedPrepares = new ConcurrentQueue<PrepareLogRecord>();
+	public class FakeIndexCommitter<TStreamId> : IIndexCommitter<TStreamId> {
+		public ConcurrentQueue<IPrepareLogRecord<TStreamId>> CommittedPrepares = new ConcurrentQueue<IPrepareLogRecord<TStreamId>>();
 		public ConcurrentQueue<CommitLogRecord> CommittedCommits = new ConcurrentQueue<CommitLogRecord>();
 
 		public long LastIndexedPosition { get; set; }
@@ -99,7 +103,7 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 			return 0;
 		}
 
-		public long Commit(IList<PrepareLogRecord> committedPrepares, bool isTfEof, bool cacheLastEventNumber) {
+		public long Commit(IList<IPrepareLogRecord<TStreamId>> committedPrepares, bool isTfEof, bool cacheLastEventNumber) {
 			foreach (var prepare in committedPrepares) {
 				CommittedPrepares.Enqueue(prepare);	
 			}

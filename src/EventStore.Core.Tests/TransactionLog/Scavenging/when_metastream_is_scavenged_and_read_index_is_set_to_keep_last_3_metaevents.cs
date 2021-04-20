@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 				.CreateDb();
 		}
 
-		protected override LogRecord[][] KeptRecords(DbResult dbResult) {
+		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
 			return new[] {
 				dbResult.Recs[0].Where((x, i) => i >= 2).ToArray()
 			};

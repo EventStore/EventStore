@@ -38,21 +38,21 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 	}
 
-	public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord> {
+	public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string> {
 		public const byte PrepareRecordVersion = 1;
 
-		public readonly PrepareFlags Flags;
-		public readonly long TransactionPosition;
-		public readonly int TransactionOffset;
-		public readonly long ExpectedVersion; // if IsCommitted is set, this is final EventNumber
-		public readonly string EventStreamId;
+		public PrepareFlags Flags { get; }
+		public long TransactionPosition { get; }
+		public int TransactionOffset { get; }
+		public long ExpectedVersion { get; } // if IsCommitted is set, this is final EventNumber
+		public string EventStreamId { get; }
 
-		public readonly Guid EventId;
-		public readonly Guid CorrelationId;
-		public readonly DateTime TimeStamp;
-		public readonly string EventType;
-		public readonly ReadOnlyMemory<byte> Data;
-		public readonly ReadOnlyMemory<byte> Metadata;
+		public Guid EventId { get; }
+		public Guid CorrelationId { get; }
+		public DateTime TimeStamp { get; }
+		public string EventType { get; }
+		public ReadOnlyMemory<byte> Data { get; }
+		public ReadOnlyMemory<byte> Metadata { get; }
 
 		public long InMemorySize {
 			get {
