@@ -76,6 +76,7 @@ namespace EventStore.TestClient {
 			
 			// gRPC
 			_commands.Register(new GrpcCommands.WriteFloodProcessor());
+			_commands.Register(new GrpcCommands.ReadAllProcessor());
 
 			// TCP Client API
 			_commands.Register(new ClientApiTcpCommands.WriteFloodProcessor());
