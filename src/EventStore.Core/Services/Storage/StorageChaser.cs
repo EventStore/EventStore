@@ -179,6 +179,15 @@ namespace EventStore.Core.Services.Storage {
 
 		private void ProcessLogRecord(SeqReadResult result) {
 			switch (result.LogRecord.RecordType) {
+				case LogRecordType.LogV3StreamWrite: {
+					var record = (IPrepareList<TStreamId>)result.LogRecord;
+					//qq some possibility that we could pass the whole back through storage/commiterservice into indexcommiter in one go without
+					// splitting it up, but perhaps better to follow up with this later
+					foreach (var prepare in record.Prepares) {
+						ProcessPrepareRecord(prepare, result.RecordPostPosition); //qq look carefully at what postPosition is used for, but i think this is ok
+					}
+					break;
+				}
 				case LogRecordType.Stream:
 				case LogRecordType.Prepare: {
 					var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;

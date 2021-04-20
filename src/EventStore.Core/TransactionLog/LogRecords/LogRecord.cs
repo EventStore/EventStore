@@ -23,10 +23,11 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 
 		public static ILogRecord ReadFrom(BinaryReader reader) {
-			return ReadFrom(reader, 0);
+			return ReadFrom(reader, 0, 0, out _);
 		}
 
-		public static ILogRecord ReadFrom(BinaryReader reader, int length) {
+		public static ILogRecord ReadFrom(BinaryReader reader, int length, int subrecordOffset, out int lengthOut) {
+			lengthOut = 0;
 			var recordType = (LogRecordType)reader.ReadByte();
 			var version = reader.ReadByte();
 
@@ -48,7 +49,10 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 					return new SystemLogRecord(reader, version, ReadPosition(reader));
 
 				case LogRecordType.LogV3StreamWrite:
-					return new LogV3StreamWriteRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+					var record = new LogV3StreamWriteRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+					if (subrecordOffset == 0)
+						return record;
+					return record.GetPrepare(subrecordOffset, out lengthOut);
 
 				case LogRecordType.Stream:
 					return new LogV3StreamRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
@@ -69,6 +73,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition,
 			long eventNumber) {
+			//qq maybe we should detect somwhere if we end up trying to write a v2 record in a v3 database?
 			return new CommitLogRecord(logPosition, correlationId, startPosition, DateTime.UtcNow, eventNumber);
 		}
 

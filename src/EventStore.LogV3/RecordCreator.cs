@@ -162,6 +162,7 @@ namespace EventStore.LogV3 {
 			header.RecordId = recordId;
 			header.LogPosition = logPosition;
 
+			//qq for single event only
 			subHeader.Count = 1;
 			subHeader.StreamNumber = streamNumber;
 			subHeader.StartingEventNumber = startingEventNumber;
@@ -171,7 +172,13 @@ namespace EventStore.LogV3 {
 			var slicer = record.Payload.Slicer();
 			recordMetadata.CopyTo(slicer.Slice(subHeader.MetadataSize).Span);
 
+			//qq for single event only
+			var eventLength = MeasureForEventSubRecord(ReadOnlySpan<byte>.Empty, eventData, eventMetadata);
+			var offset = eventLength - record.Bytes.Length;
+
 			PopulateEventSubRecord(
+				prevOffset: 0, //qq single evnet only
+				offset: offset,
 				eventId: eventId,
 				flags: eventFlags,
 				systemMetadata: eventSystemMetadata,
@@ -208,7 +215,11 @@ namespace EventStore.LogV3 {
 					metadata.Length;
 			}
 
+			//qq will need some test to make sure the events are measured and written
+			// correctly, without accidentally leaving a big gap between them etc.
 			static void PopulateEventSubRecord(
+				int prevOffset,
+				int offset,
 				Guid eventId,
 				PrepareFlags flags,
 				ReadOnlySpan<byte> systemMetadata,
@@ -218,6 +229,8 @@ namespace EventStore.LogV3 {
 
 				var slicer = target.Slicer();
 				ref var header = ref slicer.SliceAs<Raw.EventHeader>();
+				header.NegativeOffsetPrev = prevOffset;
+				header.NegativeOffset = offset;
 				header.EventTypeNumber = default;
 				header.Flags = flags;
 				header.EventSize = MeasureForEventSubRecord(systemMetadata, data, metadata);

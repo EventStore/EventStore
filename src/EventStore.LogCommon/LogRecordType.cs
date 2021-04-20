@@ -7,5 +7,6 @@
 		StreamType = 4,
 		LogV3StreamWrite = 5,
 		Stream = 6,
+		LogV3EventType = 7, //qq rename to EventType
 	}
 }

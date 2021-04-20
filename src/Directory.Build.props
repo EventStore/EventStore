@@ -14,11 +14,11 @@
 		<IsPackable>false</IsPackable>
 		<MinVerTagPrefix>oss-v</MinVerTagPrefix>
 	</PropertyGroup>
-	<Target Name="UpdateAssemblyVersion" AfterTargets="MinVer">
+	<!--<Target Name="UpdateAssemblyVersion" AfterTargets="MinVer">
   		<PropertyGroup>
     		<AssemblyVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</AssemblyVersion>
   		</PropertyGroup>
-	</Target>
+	</Target>-->
 	<ItemGroup>
 		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\"/>
 		<None Include="..\..\ouro.png" Pack="true" PackagePath="\"/>

@@ -365,7 +365,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					if (!TryReadBackwardInternal(workItem, actualPosition, out length, out record))
 						return RecordReadResult.Failure;
 
-					long nextLogicalPos = Chunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
+					long nextLogicalPos = Chunk.ChunkHeader.GetLocalLogPosition(record.LogPosition); //qq ?????
 					return new RecordReadResult(true, nextLogicalPos, record, length);
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
@@ -466,6 +466,18 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				Chunk = chunk;
 			}
 
+			//qq tentative plan: if the actual position is the beginning of a log record, we read that whole
+			// record and return it as normal. length is the length of the record excluding the framing (as normal)
+			//
+			// note the length is what gets passed to the GetNextLogPosition method to determine where to look up next
+			//
+			// if position is a subrecord (e.g. an event in a write record) (which we will know because the
+			// int at that position is negative) then we will return that subrecord, implementing ILogRecord.
+			// length in this case is a little bit fiddly.. is it the offset to the next location that we want to read
+			// or is it the more natural length of the current record. the two a different because there is further to jump
+			// to the next record if this is the last subrecord, than if there is another subrecord after this one.
+			// remember also that we want to be able to read backwards.
+
 			protected bool TryReadForwardInternal(ReaderWorkItem workItem, long actualPosition, out int length,
 				out ILogRecord record) {
 				length = -1;
@@ -481,11 +493,41 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return false;
 				}
 
+				//qq maybe we should threadstatic cache the log record here so that if the actual position (or raw position or whatever) lies within
+				// the record we just read, then we can avoid having to reposition the reader at all.
+				// i think we want this anyway because the index does a series of stabbing reads. and if we have made that efficient then maybe its fine for the all reader to work the same way.
+				// (btw do we need to cache the last two (instead of one)? if we are skipping resolving links? or perhaps not, because linke resolution comes later.
+
 				length = workItem.Reader.ReadInt32();
+				int subRecordOffset = 0;
 				if (length <= 0) {
-					throw new InvalidReadException(
-						string.Format("Log record at actual pos {0} has non-positive length: {1}. "
-									  + " in chunk {2}.", actualPosition, length, Chunk));
+					var followNegativeOffset = true; //qq
+					if (length < 0 && followNegativeOffset) {
+						// we found a negative number, treat it as an offset to the beginning of the record data
+						subRecordOffset = -length;
+
+						// first int to skip over the other offset
+						// second int to skip over the length framing of the main record
+						var totalOffset = sizeof(int) + subRecordOffset + sizeof(int);
+						//qq requires the beginning of the record be in the same chunk, but thats pretty much required in tf chunk reading a single record anyway
+						// consider whether we want to set actualpositoin here so the subsequent checks and messages are for the whole record
+						actualPosition -= totalOffset;
+						// and moving the stream position an additional 4 because of the size (int) we just read
+						workItem.Stream.Position -= totalOffset + sizeof(int);
+						length = workItem.Reader.ReadInt32();
+
+						//qq maybe change this to be a recursive call actually. ^
+
+						//qqqqqqqqqqqq should length be set to the length of the whole record, or the length from the original actualposition to the end of the record?
+						//qqqqq maybe subtracting the 8 bytes also.
+					}
+
+					//qq the error message should be adjusted if we just followed an offset
+					if (length <= 0) {
+						throw new InvalidReadException(
+							string.Format("Log record at actual pos {0} has non-positive length: {1}. "
+										  + " in chunk {2}.", actualPosition, length, Chunk));
+					}
 				}
 
 				if (length > TFConsts.MaxLogRecordSize) {
@@ -502,7 +544,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 							length, actualPosition, Chunk));
 				}
 
-				record = LogRecord.ReadFrom(workItem.Reader, length);
+				//qq mybe instead of passing in subrecordoffset here we should make it a recursive call above and then get the subrecord through the ilogrecord interface
+				record = LogRecord.ReadFrom(workItem.Reader, length, subRecordOffset, out var lengthOut);
+				//qqqq gotta adjust the length here so that the next read will hit the next event, or the next record if this is the last event. 
+				// finding the next record is easy, in fact thats what length has already measured.
+				// what about finding the next event.... maybe an out parameter in the ReadFrom method, or add something to the ILogRecord interface
+				// but leaning the former to avoid having to carry the information around in the log record.
 
 				// verify suffix length == prefix length
 				int suffixLength = workItem.Reader.ReadInt32();
@@ -513,9 +560,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 							length, suffixLength, actualPosition, Chunk));
 				}
 
+				length = lengthOut;
+
 				return true;
 			}
 
+			// actualPosition is the PostPosition of the record we want to read.
 			protected bool TryReadBackwardInternal(ReaderWorkItem workItem, long actualPosition, out int length,
 				out ILogRecord record) {
 				length = -1;
@@ -534,6 +584,35 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				length = workItem.Reader.ReadInt32();
 				if (length <= 0) {
+					var followNegativeOffset = true; //qq
+					if (length <= 0 && followNegativeOffset) {
+						// we found a non-positive reading backwards. it is the negative index of the subrecord
+						// at this pre-position.
+						var prevOffset = -length;
+						//qq add integrity checks probably.
+						var subRecordOffset = -workItem.Reader.ReadInt32();
+
+						if (prevOffset == 0) {
+							// this is the first subrecord in the record, read the previous record backward
+							var totalOffset = sizeof(int) + subRecordOffset + sizeof(int);
+							var recordActualPosition = actualPosition - totalOffset;
+							return TryReadBackwardInternal(workItem, recordActualPosition, out length, out record);
+						} else {
+							// this is not the first subrecord in the record. read this record and
+							// get the subrecord to the left of here.
+							var subRecordActualPosition = actualPosition - subRecordOffset + prevOffset;
+
+							// the record that we want to read is to the left of where we are now
+							//   we can read the main record that we are in and then get the previous subrecord
+							//   BUT if we are the first subrecord then we need to jump to a previous record
+							// and how do we even know if we are the first?
+							// we need to set length and position such that
+							// we can reposition leaving us at the start of the write record.
+							//qq looks like there is not sensible way to proceed from here
+							return TryReadForwardInternal(workItem, subRecordActualPosition, out length, out record);
+						}
+					}
+
 					throw new InvalidReadException(
 						string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
 									  + "In chunk {2}.",
@@ -566,7 +645,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 							prefixLength, length, actualPosition, Chunk));
 				}
 
-				record = LogRecord.ReadFrom(workItem.Reader, length);
+				//qqq tbd whether we want events or stream writes when reading backwards, for now leaving it as stream writes
+				//qq no we need to specific eent lookups here because the user might do that with their $all subscription
+				record = LogRecord.ReadFrom(workItem.Reader, length, subrecordOffset: 0, out _);
 
 				return true;
 			}

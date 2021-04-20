@@ -89,6 +89,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					if (!result.Success) // no more records in TF
 						break;
 
+					if (result.LogRecord.RecordType == LogRecordType.LogV3StreamWrite) {
+						//qqqqqqqq think about this carefully, but i think we should be able here to just jump forward to the first event
+						//qqqqqqqq need to check that thsi method will work correctly when reaching the final event in a write
+						var streamWrite = (LogV3StreamWriteRecord)result.LogRecord;
+						reader.Reposition(streamWrite.Prepares[0].LogPosition);
+						result = reader.TryReadNext();
+					}
+
 					nextCommitPos = result.RecordPostPosition;
 
 					switch (result.LogRecord.RecordType) {
@@ -210,6 +218,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						break;
 					}
 
+					// now we have a record to send back to the client.
+					// 
+					if (result.LogRecord.RecordType == LogRecordType.LogV3StreamWrite) {
+						//qqqqqqqq think about this carefully, but i think we should be able here to just jump forward to the last event
+						// the getnext asymmetry is weird, look into exactly how its supposed to work and what the semantics are.
+						var streamWrite = (LogV3StreamWriteRecord)result.LogRecord;
+						var lastEventInWrite = streamWrite.Prepares[streamWrite.Prepares.Count - 1];
+						result = new SeqReadResult(
+							success: result.Success,
+							eof: result.Eof, //qq
+							logRecord: lastEventInWrite,
+							recordLength: (int)lastEventInWrite.InMemorySize,
+							recordPrePosition: lastEventInWrite.LogPosition,
+							recordPostPosition: lastEventInWrite.GetNextLogPosition(lastEventInWrite.LogPosition, (int)lastEventInWrite.InMemorySize));
+					}
+
+					//qqqqq well, here is a problem, we are taking the preposition from the result and assuming that it is a postposition of the record we want to read next.
 					nextCommitPostPos = result.RecordPrePosition;
 
 					if (nextCommitPostPos > _indexCommitter.LastIndexedPosition) {
@@ -217,6 +242,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					switch (result.LogRecord.RecordType) {
+						case LogRecordType.Stream:
 						case LogRecordType.Prepare: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
@@ -267,7 +293,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									break;
 								if (result.LogRecord.RecordType != LogRecordType.Prepare)
 									continue;
-
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
@@ -303,14 +328,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
+				//qq okay, 'next' means next to read, not next in steam.
+				// and 'prev' is probably where we started reading from.
 				return new IndexReadAllResult(records, pos, nextPos, prevPos, reachedEndOfStream, consideredEventsCount);
 			}
 		}
 
 		private static bool IsCommitAlike(ILogRecord rec) {
-			return rec.RecordType == LogRecordType.Commit
-			       || (rec.RecordType == LogRecordType.Prepare &&
-			           ((IPrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
+			return rec.RecordType switch {
+				LogRecordType.Commit => true,
+				LogRecordType.LogV3StreamWrite => true,
+				LogRecordType.Prepare => ((IPrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted),
+				LogRecordType.Stream => false,
+				LogRecordType.System => false,
+				_ => throw new ArgumentOutOfRangeException(nameof(rec.RecordType), rec.RecordType, ""),
+			};
 		}
 	}
 }

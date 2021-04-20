@@ -189,10 +189,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		protected static IPrepareLogRecord<TStreamId> ReadPrepareInternal(TFReaderLease reader, long logPosition) {
+			//qq and here... this is going to be called for each each prepare we want to read in a range
+			// so hopefully we can do better than reading the whole record each time (threadstatic cache of the
+			// last record we read to see if the next read is from the same record?)
 			RecordReadResult result = reader.TryReadAt(logPosition);
 			if (!result.Success)
 				return null;
 
+			//qq probably another type to handle here
 			if (result.LogRecord.RecordType != LogRecordType.Prepare &&
 				result.LogRecord.RecordType != LogRecordType.Stream)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",

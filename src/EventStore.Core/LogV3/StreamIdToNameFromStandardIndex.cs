@@ -11,6 +11,7 @@ namespace EventStore.Core.LogV3 {
 			_indexReader = indexReader;
 		}
 
+		//qq probably wanna put this behind a lru decorator too
 		public string LookupName(long streamId) {
 			if (streamId % 2 == 1)
 				throw new ArgumentOutOfRangeException(nameof(streamId), "streamId must be even");

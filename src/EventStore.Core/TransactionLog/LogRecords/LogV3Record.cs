@@ -5,14 +5,15 @@ using EventStore.LogV3;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	// This is the adapter to plug V3 records into the standard machinery.
+	// the machinery doesn't pass it around by ref, so we make it a class to avoid too much copying.
 	public class LogV3Record<TRecordView> : ILogRecord where TRecordView : IRecordView {
 		public TRecordView Record { get; init; }
 
-		public long GetNextLogPosition(long logicalPosition, int length) {
+		public virtual long GetNextLogPosition(long logicalPosition, int length) {
 			return logicalPosition + length + 2 * sizeof(int);
 		}
 
-		public long GetPrevLogPosition(long logicalPosition, int length) {
+		public virtual long GetPrevLogPosition(long logicalPosition, int length) {
 			return logicalPosition - length - 2 * sizeof(int);
 		}
 

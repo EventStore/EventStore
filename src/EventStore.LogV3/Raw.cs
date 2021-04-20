@@ -71,14 +71,26 @@ namespace EventStore.LogV3 {
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct EventHeader {
-			[FieldOffset(0)] public Guid _eventId;
+			[FieldOffset(0)] public int _negativeOffsetPrev; //qq datatype depends on how much data we can fit into a single write.
+			[FieldOffset(4)] public int _negativeOffset; //qq datatype depends on how much data we can fit into a single write.
+			[FieldOffset(8)] public Guid _eventId;
 			// todo: not used yet
-			[FieldOffset(16)] public int _eventTypeNumber;
-			[FieldOffset(20)] public PrepareFlags _flags;
-			[FieldOffset(24)] public int _eventSize;
-			[FieldOffset(28)] public int _systemMetadataSize;
-			[FieldOffset(32)] public int _dataSize;
-			public const int Size = 36;
+			[FieldOffset(24)] public int _eventTypeNumber;
+			[FieldOffset(28)] public PrepareFlags _flags;
+			[FieldOffset(32)] public int _eventSize;
+			[FieldOffset(36)] public int _systemMetadataSize;
+			[FieldOffset(40)] public int _dataSize;
+			public const int Size = 44;
+
+			public int NegativeOffsetPrev {
+				get => _negativeOffsetPrev;
+				set => _negativeOffsetPrev = value;
+			}
+
+			public int NegativeOffset {
+				get => _negativeOffset;
+				set => _negativeOffset = value;
+			}
 
 			public Guid EventId {
 				get => _eventId;

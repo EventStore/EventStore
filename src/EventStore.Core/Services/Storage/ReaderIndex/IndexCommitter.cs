@@ -98,6 +98,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				long processed = 0;
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
+					//qq for streamwrites we want to index each event.
+					// the recordtype will be streamwrite, the instance will be a StreamWrite (: IPrepareList perhaps)
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Stream:
 						case LogRecordType.Prepare: {

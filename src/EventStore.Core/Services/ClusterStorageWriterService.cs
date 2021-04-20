@@ -288,7 +288,8 @@ namespace EventStore.Core.Services {
 
 			var length = (int)rawLength;
 
-			var record = LogRecord.ReadFrom(reader, length: length);
+			var record = LogRecord.ReadFrom(reader, length: length, subrecordOffset: 0, out _);
+
 			long newPos;
 			if (!Writer.Write(record, out newPos))
 				ReplicationFail(

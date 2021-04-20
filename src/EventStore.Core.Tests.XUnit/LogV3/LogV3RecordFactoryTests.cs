@@ -61,6 +61,8 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 				transactionPosition: _long1,
 				// must be 0 since only one event is supported at the moment
 				transactionOffset: 0,
+				//qq transactionPosition: _long2,
+				//transactionOffset: _int100,
 				eventStreamId: _long3,
 				expectedVersion: _long4,
 				timeStamp: _dateTime1,

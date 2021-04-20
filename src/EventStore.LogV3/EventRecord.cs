@@ -26,4 +26,29 @@ namespace EventStore.LogV3 {
 			_metadata = slicer.Remaining;
 		}
 	}
+
+	//qq need this?
+	public struct MutableEventRecordView {
+		private readonly Memory<byte> _headerMemory;
+		private readonly Memory<byte> _systemMetadata;
+		private readonly Memory<byte> _data;
+		private readonly Memory<byte> _metadata;
+
+		public ref Raw.EventHeader Header => ref MemoryMarshal.AsRef<Raw.EventHeader>(_headerMemory.Span);
+		public Memory<byte> SystemMetadata => _systemMetadata;
+		public Memory<byte> Data => _data;
+		public Memory<byte> Metadata => _metadata;
+
+		// bytes already populated with a event record to read
+		public MutableEventRecordView(Memory<byte> bytes) {
+			var slicer = bytes.Slicer();
+			_headerMemory = slicer.Slice(Raw.EventHeader.Size);
+
+			ref readonly var header = ref MemoryMarshal.AsRef<Raw.EventHeader>(_headerMemory.Span);
+
+			_systemMetadata = slicer.Slice(header.SystemMetadataSize);
+			_data = slicer.Slice(header.DataSize);
+			_metadata = slicer.Remaining;
+		}
+	}
 }

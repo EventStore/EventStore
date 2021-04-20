@@ -58,6 +58,9 @@ namespace EventStore.Core.LogV3 {
 				logPosition: logPosition,
 				correlationId: correlationId,
 				eventId: eventId,
+				//qq
+				//transactionPosition: transactionPosition,
+				//transactionOffset: transactionOffset,
 				eventStreamId: eventStreamId,
 				expectedVersion: expectedVersion,
 				timeStamp: timeStamp,

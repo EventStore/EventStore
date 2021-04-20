@@ -124,11 +124,11 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_long2, record.SubHeader.StreamNumber);
 			Assert.Equal(_long3, record.SubHeader.StartingEventNumber);
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes1), MemoryMarshal.ToEnumerable(record.SystemMetadata));
-			Assert.Equal(_guid2, record.Event.Header.EventId);
-			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes2), MemoryMarshal.ToEnumerable(record.Event.SystemMetadata));
-			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record.Event.Data));
-			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Event.Metadata));
-			Assert.Equal(_prepareflags, record.Event.Header.Flags);
+			Assert.Equal(_guid2, record[0].Header.EventId);
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes2), MemoryMarshal.ToEnumerable(record[0].SystemMetadata));
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record[0].Data));
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record[0].Metadata));
+			Assert.Equal(_prepareflags, record[0].Header.Flags);
 		}
 	}
 }

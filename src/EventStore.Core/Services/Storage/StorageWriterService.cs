@@ -249,6 +249,30 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
+				//qq Consider this approach when writing prepares:
+				// - Try to lookup the stream id
+				// - If it succeeds then great, use it.
+				// - If it fails to find one, we need to create one:
+				//    1. Generate a streamId
+				//    2. Write it to the index
+				//    3. Write a streamrecord to the log before writing the events.
+				//
+				// On restart there are then three possibilities
+				//   1. The stream index contains exactly the streams in the log
+				//         -> nothing to do
+				//   2. The stream index contains less than what is in the log (because it was not persisted)
+				//         -> catch up
+				//   3. The stream index contains more than what is in the log
+				//         (because writer got truncated)
+				//         (OR because we never even wrote the streamrecord)
+				//         -> rebuild the streamname index.
+				//            consider that this is pretty unlikely because the entries wont be persisted to disk immediately
+				//            (can we stop from being persisted if we want?)
+				//
+				//   for this to work we just need to have a checkpoint expressing what data is _persisted_ in the streamindex.
+				//      (maybe index checkpoint, maybe new checkpoint, maybe something build into the faster log/checkpoints)
+				//   bear in mind that when we need to catchup/rebuild we could use the regular index to get us the records quickly.
+				//
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
 				_streamNameIndex.GetOrAddId(
 					recordFactory: _recordFactory,
@@ -268,6 +292,8 @@ namespace EventStore.Core.Services.Storage {
 					return;
 				}
 
+				//qq this is different when we want to write the prepares in one record, and that will likely change the way
+				// we are doing the whole record factory thing.
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 				if (msg.Events.Length > 0) {
 					var transactionPosition = logPosition;
@@ -372,6 +398,7 @@ namespace EventStore.Core.Services.Storage {
 
 				var eventId = Guid.NewGuid();
 
+				//qqqq can you delete a stream that doesn't exist? probably but for now have not implemented because simpler
 				var streamId = _indexWriter.GetStreamId(message.EventStreamId);
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
 					new[] { eventId });
@@ -415,6 +442,7 @@ namespace EventStore.Core.Services.Storage {
 				if (message.LiveUntil < DateTime.UtcNow)
 					return;
 
+				//qqqq can you start a transaction for a stream that doesn't exist? no, because there are no explicit transactions in V3
 				var streamId = _indexWriter.GetStreamId(message.EventStreamId);
 				var record = LogRecord.TransactionBegin(_recordFactory, Writer.Checkpoint.ReadNonFlushed(),
 					message.CorrelationId,
@@ -436,6 +464,7 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<StorageMessage.WriteTransactionData>.Handle(StorageMessage.WriteTransactionData message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
+				//qq somewherwe should make sure we dont try to do things with transactions in v3
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
 				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
 				if (!CheckTransactionInfo(message.TransactionId, transactionInfo))

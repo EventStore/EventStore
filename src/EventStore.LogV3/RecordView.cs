@@ -10,6 +10,7 @@ namespace EventStore.LogV3 {
 
 	// Immutable, generic, view of a record
 	public struct RecordView<TSubHeader> : IRecordView where TSubHeader : unmanaged {
+		const int HeaderOffset = sizeof(int); //qq need?
 		private readonly ReadOnlySlicedRecord _sliced;
 
 		public ReadOnlyMemory<byte> Bytes => _sliced.Bytes;
