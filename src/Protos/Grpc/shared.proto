@@ -1,6 +1,7 @@
 syntax = "proto3";
-package event_store.client.shared;
+package event_store.client;
 option java_package = "com.eventstore.dbclient.proto.shared";
+import "google/protobuf/empty.proto";
 
 message UUID {
 	oneof value {
@@ -18,5 +19,43 @@ message Empty {
 
 message StreamIdentifier {
 	reserved 1 to 2;
-	bytes streamName = 3;
+	bytes stream_name = 3;
+}
+
+message AllStreamPosition {
+	uint64 commit_position = 1;
+	uint64 prepare_position = 2;
+}
+
+message WrongExpectedVersion {
+	oneof current_stream_revision_option {
+		uint64 current_stream_revision = 1;
+		google.protobuf.Empty current_no_stream = 2;
+	}
+	oneof expected_stream_position_option {
+		uint64 expected_stream_position = 3;
+		google.protobuf.Empty expected_any = 4;
+		google.protobuf.Empty expected_stream_exists = 5;
+		google.protobuf.Empty expected_no_stream = 6;
+	}
+}
+
+message AccessDenied {}
+
+message StreamDeleted {
+	StreamIdentifier stream_identifier = 1;
+}
+
+message Timeout {}
+
+message Unknown {}
+
+message InvalidTransaction {}
+
+message MaximumAppendSizeExceeded {
+	uint32 maxAppendSize = 1;
+}
+
+message BadRequest {
+	string message = 1;
 }

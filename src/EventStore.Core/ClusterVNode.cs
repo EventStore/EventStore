@@ -1232,7 +1232,8 @@ namespace EventStore.Core {
 
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
-				options.Application.MaxAppendSize, _httpService);
+				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
+				_httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}

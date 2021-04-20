@@ -9,7 +9,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
-using EventStore.Client.Shared;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -19,7 +18,7 @@ using Google.Protobuf;
 using Grpc.Core;
 using Serilog;
 using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
-using UUID = EventStore.Client.Shared.UUID;
+using UUID = EventStore.Client.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal partial class PersistentSubscriptions {
