@@ -11,12 +11,12 @@ Once a scavenge has run, you cannot recover any deleted events.
 After processing the chunks, the operation updates the chunk indexes using a merge sort algorithm, skipping events whose data is no longer available.
 
 ::: warning Active chunk
-The active (last) chunk won't be affected by teh scavenge operation as scavenging requires creating a new empty chunk file and copy all the relevant events to it. As the last chunk is the one were events are being actively appended, scavenging of the currently active chunk is not possible. It also means that all the events from truncated and deleted streams won't be removed from the current chunk.
+The active (last) chunk won't be affected by the scavenge operation as scavenging requires creating a new empty chunk file and copy all the relevant events to it. As the last chunk is the one were events are being actively appended, scavenging of the currently active chunk is not possible. It also means that all the events from truncated and deleted streams won't be removed from the current chunk.
 :::
 
 ## Starting a scavenge
 
-EventStoreDB doesn't run Scavenges automatically. We recommendation that you set up a scheduled task, for example using cron or Windows Scheduler, to trigger a scavenge as often as you need.
+EventStoreDB doesn't run Scavenges automatically. We recommend that you set up a scheduled task, for example using cron or Windows Scheduler, to trigger a scavenge as often as you need.
 
 You start a scavenge by issuing an empty `POST` request to the HTTP API with the credentials of an `admin` or `ops` user:
 
