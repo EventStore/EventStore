@@ -2,8 +2,8 @@
 using Google.Protobuf;
 
 // ReSharper disable once CheckNamespace
-namespace EventStore.Client.Shared  {
-	public partial class StreamIdentifier {
+namespace EventStore.Client  {
+	partial class StreamIdentifier {
 		private string _cached;
 		public static implicit operator string(StreamIdentifier source) {
 			if (source._cached != null || source.StreamName.IsEmpty) return source._cached;
@@ -14,6 +14,6 @@ namespace EventStore.Client.Shared  {
 		}
 
 		public static implicit operator StreamIdentifier(string source) =>
-			new StreamIdentifier {StreamName = ByteString.CopyFromUtf8(source)};
+			new() {StreamName = ByteString.CopyFromUtf8(source)};
 	}
 }

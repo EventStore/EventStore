@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
-using EventStore.Client.Shared;
+using EventStore.Client;
 using EventStore.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Common.Utils;
-using Empty = EventStore.Client.Shared.Empty;
+using Empty = EventStore.Client.Empty;
 using ILogger = Serilog.ILogger;
 using EndPoint = System.Net.EndPoint;
 using GossipEndPoint = EventStore.Cluster.EndPoint;

@@ -18,8 +18,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		private static Exception NoLeaderInfo() =>
 			new RpcException(new Status(StatusCode.Unknown, "No leader info available in response"));
-		
-		private static Exception LeaderInfo(string host, int port) =>
+
+		public static Exception LeaderInfo(string host, int port) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Leader info available"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.NotLeader},
 				{Constants.Exceptions.LeaderEndpointHost, host},

@@ -41,6 +41,7 @@ namespace EventStore.Core {
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
 		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly int _maxAppendSize;
+		private readonly TimeSpan _writeTimeout;
 		private readonly KestrelHttpService _httpService;
 		private readonly StatusCheck _statusCheck;
 
@@ -48,8 +49,7 @@ namespace EventStore.Core {
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly MultiQueuedHandler _httpMessageHandler;
 
-		public ClusterVNodeStartup(
-			ISubsystem[] subsystems,
+		public ClusterVNodeStartup(ISubsystem[] subsystems,
 			IPublisher mainQueue,
 			IPublisher monitoringQueue,
 			ISubscriber mainBus,
@@ -59,6 +59,7 @@ namespace EventStore.Core {
 			IAuthorizationProvider authorizationProvider,
 			IReadIndex<TStreamId> readIndex,
 			int maxAppendSize,
+			TimeSpan writeTimeout,
 			KestrelHttpService httpService) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
@@ -102,6 +103,7 @@ namespace EventStore.Core {
 			_authorizationProvider = authorizationProvider;
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;
+			_writeTimeout = writeTimeout;
 			_httpService = httpService;
 
 			_statusCheck = new StatusCheck(this);
@@ -152,7 +154,8 @@ namespace EventStore.Core {
 						.AddSingleton<AuthorizationMiddleware>()
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
-						.AddSingleton(new Streams<TStreamId>(_mainQueue, _readIndex, _maxAppendSize, _authorizationProvider))
+						.AddSingleton(new Streams<TStreamId>(_mainQueue, _readIndex, _maxAppendSize,
+							_writeTimeout, _authorizationProvider))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
