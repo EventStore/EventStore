@@ -16,16 +16,19 @@ jobs:
   vulnerability-scan:
     runs-on: ubuntu-latest
     name: ci/github/scan-vulnerabilities
-    container: mcr.microsoft.com/dotnet/core/sdk:3.1-bionic
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Install net5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
     - name: Scan for Vulnerabilities
       run: |
-        dotnet tool restore
         cd src
         dotnet restore
-        dotnet tool run dotnet-retire
+        dotnet list package --vulnerable --include-transitive | tee vulnerabilities.txt
+        ! cat vulnerabilities.txt | grep -q "has the following vulnerable packages"
   protolock:
     runs-on: ubuntu-latest
     name: ci/github/protolock
