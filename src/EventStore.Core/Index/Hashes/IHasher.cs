@@ -4,7 +4,7 @@ namespace EventStore.Core.Index.Hashes {
 		uint Hash(byte[] data, int offset, uint len, uint seed);
 	}
 
-	public interface IHasher<TStreamId> : IHasher {
+	public interface IHasher<TStreamId> {
 		uint Hash(TStreamId s);
 	}
 }

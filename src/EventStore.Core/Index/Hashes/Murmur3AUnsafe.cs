@@ -1,7 +1,7 @@
 using System;
 
 namespace EventStore.Core.Index.Hashes {
-	public class Murmur3AUnsafe : IHasher<string> {
+	public class Murmur3AUnsafe : IHasher, IHasher<string> {
 		private const uint Seed = 0xc58f1a7b;
 
 		private const UInt32 c1 = 0xcc9e2d51;
