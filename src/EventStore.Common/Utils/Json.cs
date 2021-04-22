@@ -81,6 +81,7 @@ namespace EventStore.Common.Utils {
 		}
 
 		public static bool IsValidJson(this ReadOnlyMemory<byte> value) {
+			if (value.IsEmpty) return false;  //Don't bother letting an Exception getting thrown.
 			try {
 				JToken.Parse(Helper.UTF8NoBom.GetString(value.Span));
 			} catch {

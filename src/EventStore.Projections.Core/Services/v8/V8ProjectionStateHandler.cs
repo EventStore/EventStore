@@ -156,9 +156,15 @@ namespace EventStore.Projections.Core.Services.v8 {
 				newStates = _query.Push(
 					data,
 					new[] {
-						@event.IsJson ? "1" : "", @event.EventStreamId, @event.EventType, category ?? "",
-						@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
-						@event.PositionMetadata ?? "", partition, ""
+						@event.IsJson ? "1" : "", 
+						@event.EventStreamId, 
+						@event.EventType, 
+						category ?? "",
+						@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), 
+						@event.Metadata ?? "",
+						@event.PositionMetadata ?? "", 
+						partition,
+						@event.EventId.ToString()
 					});
 			}
 
