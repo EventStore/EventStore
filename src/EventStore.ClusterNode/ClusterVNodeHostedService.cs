@@ -37,7 +37,7 @@ namespace EventStore.ClusterNode {
 			if (options == null) throw new ArgumentNullException(nameof(options));
 			_options = options.Projections.RunProjections >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(options.Projections.ProjectionThreads,
-					options.Projections.RunProjections, false,
+					options.Projections.RunProjections, options.Application.StartStandardProjections,
 					TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
 					options.Projections.FaultOutOfOrderProjections))
 				: options;
