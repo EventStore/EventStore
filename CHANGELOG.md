@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Introduce compatibility mode. [EventStore#2796](https://github.com/EventStore/EventStore/pull/2796)
 - Add LegacyGossipDiscovery. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
+- LogV3 abstraction points [EventStore#2907](https://github.com/EventStore/EventStore/pull/2907)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
