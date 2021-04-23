@@ -5,5 +5,6 @@
 		System = 2,
 		PartitionType = 3,
 		StreamType = 4,
+		LogV3StreamWrite = 5,
 	}
 }

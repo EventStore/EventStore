@@ -502,7 +502,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 							length, actualPosition, Chunk));
 				}
 
-				record = LogRecord.ReadFrom(workItem.Reader);
+				record = LogRecord.ReadFrom(workItem.Reader, length);
 
 				// verify suffix length == prefix length
 				int suffixLength = workItem.Reader.ReadInt32();
@@ -566,7 +566,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 							prefixLength, length, actualPosition, Chunk));
 				}
 
-				record = LogRecord.ReadFrom(workItem.Reader);
+				record = LogRecord.ReadFrom(workItem.Reader, length);
 
 				return true;
 			}

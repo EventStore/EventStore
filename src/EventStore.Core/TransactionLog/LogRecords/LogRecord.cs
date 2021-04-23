@@ -23,6 +23,10 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 
 		public static ILogRecord ReadFrom(BinaryReader reader) {
+			return ReadFrom(reader, 0);
+		}
+
+		public static ILogRecord ReadFrom(BinaryReader reader, int length) {
 			var recordType = (LogRecordType)reader.ReadByte();
 			var version = reader.ReadByte();
 
@@ -39,9 +43,13 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 					return new CommitLogRecord(reader, version, ReadPosition(reader));
 				case LogRecordType.System:
 					if (version > SystemLogRecord.SystemRecordVersion)
-						return LogV3Reader.ReadEpoch(recordType, version, reader);
+						return new LogV3EpochLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
 
 					return new SystemLogRecord(reader, version, ReadPosition(reader));
+
+				case LogRecordType.LogV3StreamWrite:
+					return new LogV3StreamWriteRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+
 				default:
 					throw new ArgumentOutOfRangeException("recordType");
 			}

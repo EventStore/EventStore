@@ -38,7 +38,7 @@ namespace EventStore.Core.LogAbstraction {
 				streamIdValidator: new LogV3StreamIdValidator(),
 				emptyStreamId: 0,
 				streamIdSizer: new LogV3Sizer(),
-				recordFactory: new LogV3RecordFactory(V2.RecordFactory));
+				recordFactory: new LogV3RecordFactory());
 		}
 	}
 

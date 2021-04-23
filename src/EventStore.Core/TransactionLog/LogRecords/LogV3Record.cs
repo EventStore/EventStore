@@ -5,8 +5,8 @@ using EventStore.LogV3;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	// This is the adapter to plug V3 records into the standard machinery.
-	public class LogV3Record<T> : ILogRecord where T : unmanaged {
-		public RecordView<T> Record { get; init; }
+	public class LogV3Record<TRecordView> : ILogRecord where TRecordView : IRecordView {
+		public TRecordView Record { get; init; }
 
 		public long GetNextLogPosition(long logicalPosition, int length) {
 			return logicalPosition + length + 2 * sizeof(int);
@@ -16,7 +16,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			return logicalPosition - length - 2 * sizeof(int);
 		}
 
-		public LogRecordType RecordType => Record.Header.Type;
+		// probably only needs to be virtual temporarily
+		public virtual LogRecordType RecordType => Record.Header.Type;
 
 		public byte Version => Record.Header.Version;
 
@@ -25,10 +26,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public DateTime TimeStamp => Record.Header.TimeStamp;
 
 		public LogV3Record() {
-		}
-
-		public LogV3Record(ReadOnlyMemory<byte> populatedBytes) {
-			Record = new RecordView<T>(populatedBytes);
 		}
 
 		public void WriteTo(BinaryWriter writer) {

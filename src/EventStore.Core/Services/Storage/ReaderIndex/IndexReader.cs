@@ -437,7 +437,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private bool OriginalStreamExists(TFReaderLease reader, TStreamId metaStreamId) {
-			if (_systemStreams.IsSystemStream(metaStreamId)) {
+			if (_systemStreams.IsMetaStream(metaStreamId)) {
 				var originalStreamId = _systemStreams.OriginalStreamOf(metaStreamId);
 				var lastEventNumber = GetStreamLastEventNumberCached(reader, originalStreamId);
 				if (lastEventNumber == ExpectedVersion.NoStream || lastEventNumber == EventNumber.DeletedStream)

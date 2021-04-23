@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 
 namespace EventStore.LogV3 {
 	// todo: alignment, padding (of fields and of records)
+	// bear in mind that any record with variable length payload need not have padding
+	// in its fixed size header.
 	public static class Raw {
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct RecordHeader {
@@ -67,6 +70,48 @@ namespace EventStore.LogV3 {
 		}
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct EventHeader {
+			[FieldOffset(0)] public Guid _eventId;
+			// todo: not used yet
+			[FieldOffset(16)] public int _eventTypeNumber;
+			[FieldOffset(20)] public PrepareFlags _flags;
+			[FieldOffset(24)] public int _eventSize;
+			[FieldOffset(28)] public int _systemMetadataSize;
+			[FieldOffset(32)] public int _dataSize;
+			public const int Size = 36;
+
+			public Guid EventId {
+				get => _eventId;
+				set => _eventId = value;
+			}
+
+			public int EventTypeNumber {
+				get => _eventTypeNumber;
+				set => _eventTypeNumber = value;
+			}
+
+			public PrepareFlags Flags {
+				get => _flags;
+				set => _flags = value;
+			}
+
+			public int EventSize {
+				get => _eventSize;
+				set => _eventSize = value;
+			}
+
+			public int SystemMetadataSize {
+				get => _systemMetadataSize;
+				set => _systemMetadataSize = value;
+			}
+
+			public int DataSize {
+				get => _dataSize;
+				set => _dataSize = value;
+			}
+		}
+
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct PartitionTypeHeader {
 			[FieldOffset(0)] private Guid _partitionId;
 			public const int Size = 16;
@@ -85,6 +130,41 @@ namespace EventStore.LogV3 {
 			public Guid PartitionId {
 				get => _partitionId;
 				set => _partitionId = value;
+			}
+		}
+
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct StreamWriteHeader {
+			[FieldOffset(0)] public long _streamNumber;
+			[FieldOffset(8)] public long _startingEventNumber;
+			[FieldOffset(16)] public short _flags;
+			[FieldOffset(18)] public short _count;
+			[FieldOffset(20)] public int _metadataSize;
+			public const int Size = 24;
+
+			public long StreamNumber {
+				get => _streamNumber;
+				set => _streamNumber = value;
+			}
+
+			public long StartingEventNumber {
+				get => _startingEventNumber;
+				set => _startingEventNumber = value;
+			}
+
+			public short Flags {
+				get => _flags;
+				set => _flags = value;
+			}
+
+			public short Count {
+				get => _count;
+				set => _count = value;
+			}
+
+			public int MetadataSize {
+				get => _metadataSize;
+				set => _metadataSize = value;
 			}
 		}
 	}

@@ -2,8 +2,13 @@
 using System.Runtime.InteropServices;
 
 namespace EventStore.LogV3 {
-	// Immutable view of a record
-	public struct RecordView<TSubHeader> where TSubHeader : unmanaged {
+	public interface IRecordView {
+		ReadOnlyMemory<byte> Bytes { get; }
+		ref readonly Raw.RecordHeader Header { get; }
+	}
+
+	// Immutable, generic, view of a record
+	public struct RecordView<TSubHeader> : IRecordView where TSubHeader : unmanaged {
 		private readonly ReadOnlySlicedRecord _sliced;
 
 		public ReadOnlyMemory<byte> Bytes => _sliced.Bytes;

@@ -1,5 +1,5 @@
 ﻿using System;
-using EventStore.Core.LogAbstraction;
+using System.Runtime.InteropServices;
 using EventStore.Core.LogV3;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
@@ -14,14 +14,14 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 		readonly DateTime _dateTime1 = new DateTime(2020, 01, 01, 01, 01, 01);
 		readonly long _long1 = 1;
 		readonly long _long2 = 2;
-		//readonly long _long3 = 3;
-		//readonly int _int100 = 100;
-		//readonly string _string1 = "one";
+		readonly long _long3 = 3;
+		readonly long _long4 = 4;
+		readonly string _string1 = "one";
 		//readonly string _string2 = "two";
-		readonly LogV3RecordFactory _sut = new(LogFormatAbstractor.V2.RecordFactory);
-		//readonly PrepareFlags _prepareflags = PrepareFlags.SingleWrite;
-		readonly ReadOnlyMemory<byte> _bytes1 = new byte[10];
-		readonly ReadOnlyMemory<byte> _bytes2 = new byte[10];
+		readonly LogV3RecordFactory _sut = new();
+		readonly PrepareFlags _prepareflags = PrepareFlags.SingleWrite;
+		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 }; 
+		readonly ReadOnlyMemory<byte> _bytes2 = new byte[] { 0x20, 0x01 };
 
 		[Fact]
 		public void can_create_epoch() {
@@ -49,6 +49,38 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 			Assert.Equal(epochIn.EpochNumber, epochOut.EpochNumber);
 			Assert.Equal(epochIn.PrevEpochPosition, epochOut.PrevEpochPosition);
 			Assert.Equal(epochIn.LeaderInstanceId, epochOut.LeaderInstanceId);
+		}
+
+		[Fact]
+		public void can_create_prepare() {
+			var prepare = _sut.CreatePrepare(
+				logPosition: _long1,
+				correlationId: _guid1,
+				eventId: _guid2,
+				// must be same as logPosition
+				transactionPosition: _long1,
+				// must be 0 since only one event is supported at the moment
+				transactionOffset: 0,
+				eventStreamId: _long3,
+				expectedVersion: _long4,
+				timeStamp: _dateTime1,
+				flags: _prepareflags,
+				eventType: _string1,
+				data: _bytes1,
+				metadata: _bytes2);
+
+			Assert.Equal(_long1, prepare.LogPosition);
+			Assert.Equal(_guid1, prepare.CorrelationId);
+			Assert.Equal(_guid2, prepare.EventId);
+			Assert.Equal(_long1, prepare.TransactionPosition);
+			Assert.Equal(0, prepare.TransactionOffset);
+			Assert.Equal(_long3, prepare.EventStreamId);
+			Assert.Equal(_long4, prepare.ExpectedVersion);
+			Assert.Equal(_dateTime1, prepare.TimeStamp);
+			Assert.Equal(_prepareflags, prepare.Flags);
+			Assert.Equal(_string1, prepare.EventType);
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes1), MemoryMarshal.ToEnumerable(prepare.Data));
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes2), MemoryMarshal.ToEnumerable(prepare.Metadata));
 		}
 	}
 }
