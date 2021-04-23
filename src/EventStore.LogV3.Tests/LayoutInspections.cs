@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using ObjectLayoutInspector;
 using Xunit;
 using Xunit.Abstractions;
@@ -15,9 +15,11 @@ namespace EventStore.LogV3.Tests {
 		[Theory]
 		[InlineData(typeof(Raw.RecordHeader))]
 		[InlineData(typeof(Raw.EpochHeader))]
+		[InlineData(typeof(Raw.EventHeader))]
 		[InlineData(typeof(Raw.PartitionHeader))]
 		[InlineData(typeof(Raw.PartitionTypeHeader))]
 		[InlineData(typeof(Raw.StreamTypeHeader))]
+		[InlineData(typeof(Raw.StreamWriteHeader))]
 		[InlineData(typeof(Raw.EventTypeHeader))]
 		[InlineData(typeof(Raw.ContentTypeHeader))]
 		public void InspectLayout(Type t) {

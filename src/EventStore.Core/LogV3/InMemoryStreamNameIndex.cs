@@ -47,8 +47,8 @@ namespace EventStore.Core.LogV3 {
 		// todo: will be able to read from the index once we have stream records
 		// (even in mem), at which point we can drop implementation of IStreamNameLookup here.
 		public string LookupName(long streamNumber) {
-			var name = _rev[streamNumber];
-			return name;
+			_rev.TryGetValue(streamNumber, out var name);
+			return name ?? "";
 		}
 	}
 }

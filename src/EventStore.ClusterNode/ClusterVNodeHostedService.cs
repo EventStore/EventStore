@@ -68,8 +68,8 @@ namespace EventStore.ClusterNode {
 
 			var plugInContainer = FindPlugins();
 
-			//var logFormat = LogFormatAbstractor.V3;
-			var logFormat = LogFormatAbstractor.V2;
+			var logFormat = LogFormatAbstractor.V3;
+			//qq var logFormat = LogFormatAbstractor.V2;
 			Node = ClusterVNode.Create(_options, logFormat, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
 				GetPersistentSubscriptionConsumerStrategyFactories());
 
