@@ -36,6 +36,12 @@ All notable changes to this project will be documented in this file.
 ### Removed the job check from cherry-pick-pr-for-label action. It was moved to the action itself
 - https://github.com/EventStore/Automations/pull/30. [EventStore#2903](https://github.com/EventStore/EventStore/pull/2903)
 
+### Dotnet-retire is [being deprecated](https
+- //github.com/RetireNet/dotnet-retire/issues/75). The suggestion is now to use `dotnet list packages --vulnerable`. [EventStore#2927](https://github.com/EventStore/EventStore/pull/2927)
+
+### There's also an [issue in dotnet-retire](https
+- //github.com/RetireNet/dotnet-retire/issues/24#issuecomment-747430688) that causes the vulnerability check on the new LogV3 tests to fail. [EventStore#2927](https://github.com/EventStore/EventStore/pull/2927)
+
 ## [21.2.0] Server - 2021-02-26
 
 ### Added
