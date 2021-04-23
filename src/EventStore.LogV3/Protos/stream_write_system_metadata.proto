@@ -1,0 +1,10 @@
+syntax = "proto3";
+package EventStore.LogV3;
+
+import "Protos/proto_guid.proto";
+
+message StreamWriteSystemMetadata {
+	int64 transaction_position = 1;
+	int32 transaction_offset = 2;
+	ProtoGuid correlation_id = 3;
+}

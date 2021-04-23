@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 				var reader = new BinaryReader(filestream);
 				reader.ReadInt32();
-				var read = LogRecord.ReadFrom(reader);
+				var read = LogRecord.ReadFrom(reader, (int)reader.BaseStream.Length);
 				Assert.AreEqual(record, read);
 			}
 		}

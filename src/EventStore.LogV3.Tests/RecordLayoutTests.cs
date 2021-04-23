@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ObjectLayoutInspector;
 using Xunit;
@@ -31,9 +31,11 @@ namespace EventStore.LogV3.Tests {
 
 		[Fact] public void RecordHeaderLayout() => AssertSize<Raw.RecordHeader>(Raw.RecordHeader.Size);
 		[Fact] public void EpochRecordHeaderLayout() => AssertSize<Raw.EpochHeader>(Raw.EpochHeader.Size);
+		[Fact] public void EventHeaderLayout() => AssertSize<Raw.EventHeader>(Raw.EventHeader.Size);
 		[Fact] public void PartitionHeaderLayout() => AssertSize<Raw.PartitionHeader>(Raw.PartitionHeader.Size);
 		[Fact] public void PartitionTypeHeaderLayout() => AssertSize<Raw.PartitionTypeHeader>(Raw.PartitionTypeHeader.Size);
 		[Fact] public void StreamTypeHeaderLayout() => AssertSize<Raw.StreamTypeHeader>(Raw.StreamTypeHeader.Size);
+		[Fact] public void StreamWriteHeaderLayout() => AssertSize<Raw.StreamWriteHeader>(Raw.StreamWriteHeader.Size);
 		[Fact] public void EventTypeHeaderLayout() => AssertSize<Raw.EventTypeHeader>(Raw.EventTypeHeader.Size);
 		[Fact] public void ContentTypeHeaderLayout() => AssertSize<Raw.ContentTypeHeader>(Raw.ContentTypeHeader.Size);
 	}

@@ -362,7 +362,7 @@ namespace EventStore.Core.Services.Storage {
 
 				var eventId = Guid.NewGuid();
 
-				var streamId = _indexWriter.GetStreamId(message.EventStreamId);
+				_streamNameIndex.GetOrAddId(message.EventStreamId, out var streamId, out _, out _);
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
 					new[] { eventId });
 				if (commitCheck.Decision != CommitDecision.Ok) {

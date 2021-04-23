@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read)) {
 				filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);
 				var reader = new BinaryReader(filestream);
-				var read = LogRecord.ReadFrom(reader);
+				var read = LogRecord.ReadFrom(reader, (int)reader.BaseStream.Length);
 				Assert.AreEqual(record, read);
 			}
 		}

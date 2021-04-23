@@ -1,4 +1,5 @@
-﻿using EventStore.Core.LogAbstraction;
+using EventStore.Core.LogAbstraction;
+using EventStore.Core.LogV3;
 using Xunit;
 
 namespace EventStore.Core.Tests.XUnit.LogAbstraction {
@@ -120,9 +121,9 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		}
 
 		[Theory]
-		[InlineData(2, "$all")]
-		[InlineData(4, "$streams-created")]
-		[InlineData(6, "$settings")]
+		[InlineData(4, "$all")]
+		[InlineData(6, "$streams-created")]
+		[InlineData(8, "$settings")]
 		public void can_find_virtual_stream(long expectedId, string name) {
 			Assert.True(_sut.StreamNameIndex.GetOrAddId(name, out var streamId, out _, out _));
 			Assert.Equal(expectedId, streamId);
@@ -135,11 +136,22 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		[Fact]
 		public void can_find_virtual_meta_stream() {
 			Assert.True(_sut.StreamNameIndex.GetOrAddId("$$$all", out var streamId, out _, out _));
-			Assert.Equal(3, streamId);
-			Assert.Equal(3, _sut.StreamIds.LookupId("$$$all"));
-			Assert.Equal("$$$all", _sut.StreamNames.LookupName(3));
+			Assert.Equal(5, streamId);
+			Assert.Equal(5, _sut.StreamIds.LookupId("$$$all"));
+			Assert.Equal("$$$all", _sut.StreamNames.LookupName(5));
 			Assert.True(_sut.SystemStreams.IsMetaStream(streamId));
 			Assert.True(_sut.SystemStreams.IsSystemStream(streamId));
+		}
+
+		[Theory]
+		[InlineData(LogV3SystemStreams.NoUserStream, false, false, "new-user-stream")]
+		[InlineData(LogV3SystemStreams.NoUserMetastream, true, true, "$$new-user-stream")]
+		[InlineData(LogV3SystemStreams.NoSystemStream, false, true, "$new-system-stream")]
+		[InlineData(LogV3SystemStreams.NoSystemMetastream, true, true, "$$$new-system-stream")]
+		public void can_foo(long expectedId, bool expectedIsMeta, bool expectedIsSystem, string name) {
+			Assert.Equal(expectedId, _sut.StreamIds.LookupId(name));
+			Assert.Equal(expectedIsMeta, _sut.SystemStreams.IsMetaStream(expectedId));
+			Assert.Equal(expectedIsSystem, _sut.SystemStreams.IsSystemStream(expectedId));
 		}
 	}
 }
