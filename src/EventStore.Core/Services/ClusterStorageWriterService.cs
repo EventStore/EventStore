@@ -279,7 +279,16 @@ namespace EventStore.Core.Services {
 		}
 
 		private void OnLogRecordUnframed(BinaryReader reader) {
-			var record = LogRecord.ReadFrom(reader);
+			var rawLength = reader.BaseStream.Length;
+
+			if (rawLength >= int.MaxValue)
+				throw new ArgumentOutOfRangeException(
+					nameof(reader),
+					$"Length of stream was {rawLength}");
+
+			var length = (int)rawLength;
+
+			var record = LogRecord.ReadFrom(reader, length: length);
 			long newPos;
 			if (!Writer.Write(record, out newPos))
 				ReplicationFail(
