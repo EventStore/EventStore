@@ -15,6 +15,7 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Util;
 using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.Services.Storage {
 	public abstract class StorageChaser {

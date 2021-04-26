@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Helpers;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	[Flags]

@@ -4,19 +4,9 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
-	public enum LogRecordType {
-		Prepare = 0,
-		Commit = 1,
-		System = 2,
-	}
-
-	public class LogRecordVersion {
-		public const byte LogRecordV0 = 0;
-		public const byte LogRecordV1 = 1;
-	}
-
 	public abstract class LogRecord : ILogRecord {
 		public static readonly ReadOnlyMemory<byte> NoData = Empty.ByteArray;
 
