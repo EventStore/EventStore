@@ -9,6 +9,7 @@ namespace EventStore.LogV3.Tests {
 		readonly DateTime _dateTime1 = new DateTime(2020, 01, 01, 01, 01, 01);
 		readonly long _long1 = 1;
 		readonly long _long2 = 2;
+		readonly string _string1 = "one";
 
 		[Fact]
 		public void can_create_epoch() {
@@ -31,6 +32,42 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(epochNumber, record.SubHeader.EpochNumber);
 			Assert.Equal(_guid2, record.SubHeader.LeaderInstanceId);
 			Assert.Equal(_long2, record.SubHeader.PrevEpochPosition);
+		}
+
+		[Fact]
+		public void can_create_partition_type_record() {
+			var record = RecordCreator.CreatePartitionTypeRecord(
+				timeStamp: _dateTime1,
+				logPosition: _long1,
+				partitionTypeId: _guid1,
+				partitionId: _guid2,
+				name: _string1);
+
+			Assert.Equal(LogRecordType.PartitionType, record.Header.Type);
+			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
+			Assert.Equal(_dateTime1, record.Header.TimeStamp);
+			Assert.Equal(_guid1, record.Header.RecordId);
+			Assert.Equal(_long1, record.Header.LogPosition);
+			Assert.Equal(_guid2, record.SubHeader.PartitionId);
+			Assert.Equal(_string1, record.StringPayload);
+		}
+
+		[Fact]
+		public void can_create_stream_type_record() {
+			var record = RecordCreator.CreateStreamTypeRecord(
+				timeStamp: _dateTime1,
+				logPosition: _long1,
+				streamTypeId: _guid1,
+				partitionId: _guid2,
+				name: _string1);
+
+			Assert.Equal(LogRecordType.StreamType, record.Header.Type);
+			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
+			Assert.Equal(_dateTime1, record.Header.TimeStamp);
+			Assert.Equal(_guid1, record.Header.RecordId);
+			Assert.Equal(_long1, record.Header.LogPosition);
+			Assert.Equal(_guid2, record.SubHeader.PartitionId);
+			Assert.Equal(_string1, record.StringPayload);
 		}
 	}
 }
