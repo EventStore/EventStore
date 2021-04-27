@@ -4,12 +4,13 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
-	[TestFixture]
-	public class when_stream_is_deleted : ScavengeTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_stream_is_deleted<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator
-				.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"), Rec.Commit(0, "bla"))
-				.Chunk(Rec.Delete(1, "bla"), Rec.Commit(1, "bla"))
+				.Chunk(Rec.Prepare("bla"), Rec.Prepare("bla"))
+				.Chunk(Rec.Delete("bla"))
 				.CompleteLastChunk()
 				.CreateDb();
 		}
@@ -27,16 +28,17 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 	}
 
-	[TestFixture]
-	public class when_stream_is_deleted_with_ignore_hard_deletes : ScavengeTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_stream_is_deleted_with_ignore_hard_deletes<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override bool UnsafeIgnoreHardDelete() {
 			return true;
 		}
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator
-				.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"), Rec.Commit(0, "bla"))
-				.Chunk(Rec.Delete(1, "bla"), Rec.Commit(1, "bla"))
+				.Chunk(Rec.Prepare("bla"), Rec.Prepare("bla"))
+				.Chunk(Rec.Delete("bla"))
 				.CompleteLastChunk()
 				.CreateDb();
 		}

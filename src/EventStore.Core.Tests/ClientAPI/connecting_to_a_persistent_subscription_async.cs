@@ -9,8 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("LongRunning"), Category("ClientAPI")]
-	public class connect_to_non_existing_persistent_subscription_with_permissions_async : SpecificationWithMiniNode {
+	[Category("LongRunning"), Category("ClientAPI")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class connect_to_non_existing_persistent_subscription_with_permissions_async<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private Exception _innerEx;
 
 		protected override async Task When() {
@@ -30,8 +32,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class connect_to_existing_persistent_subscription_with_permissions_async : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class connect_to_existing_persistent_subscription_with_permissions_async<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private EventStorePersistentSubscriptionBase _sub;
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -57,8 +61,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class connect_to_existing_persistent_subscription_without_permissions_async : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class connect_to_existing_persistent_subscription_without_permissions_async<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -86,8 +92,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class connect_to_existing_persistent_subscription_with_max_one_client_async : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class connect_to_existing_persistent_subscription_with_max_one_client_async<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -141,10 +149,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		connect_to_existing_persistent_subscription_with_start_from_beginning_and_no_stream_async :
-			SpecificationWithMiniNode {
+		connect_to_existing_persistent_subscription_with_start_from_beginning_and_no_stream_async<TLogFormat, TStreamId> :
+			SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -192,10 +202,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		connect_to_existing_persistent_subscription_with_start_from_two_and_no_stream_async :
-			SpecificationWithMiniNode {
+		connect_to_existing_persistent_subscription_with_start_from_two_and_no_stream_async<TLogFormat, TStreamId> :
+			SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -246,10 +258,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		connect_to_existing_persistent_subscription_with_start_from_beginning_and_events_in_it_async :
-			SpecificationWithMiniNode {
+		connect_to_existing_persistent_subscription_with_start_from_beginning_and_events_in_it_async<TLogFormat, TStreamId> :
+			SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -304,10 +318,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		connect_to_existing_persistent_subscription_with_start_from_beginning_not_set_and_events_in_it_async :
-			SpecificationWithMiniNode {
+		connect_to_existing_persistent_subscription_with_start_from_beginning_not_set_and_events_in_it_async<TLogFormat, TStreamId> :
+			SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = "$" + Guid.NewGuid();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()

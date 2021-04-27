@@ -33,7 +33,7 @@ namespace EventStore.Core.LogV3 {
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata) {
 
-			Ensure.Equal(logPosition, transactionPosition, nameof(transactionPosition));
+			Ensure.NotNull(eventType, nameof(eventType));
 
 			var result = new LogV3StreamWriteRecord(
 				logPosition: logPosition,

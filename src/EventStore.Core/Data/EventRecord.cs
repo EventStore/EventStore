@@ -44,10 +44,6 @@ namespace EventStore.Core.Data {
 		}
 
 		// called from tests only
-		public EventRecord(long eventNumber, IPrepareLogRecord<string> prepare) : this(eventNumber, prepare, prepare.EventStreamId) {
-		}
-
-		// called from tests only
 		public EventRecord(long eventNumber,
 			long logPosition,
 			Guid correlationId,

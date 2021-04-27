@@ -5,14 +5,14 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Metastreams {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_having_deleted_stream_and_no_metastream_metastream_is_declared_deleted_as_well : SimpleDbTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
-			return dbCreator.Chunk(Rec.Prepare(0, "test"),
-					Rec.Commit(0, "test"),
-					Rec.Delete(2, "test"),
-					Rec.Commit(2, "test"))
+		when_having_deleted_stream_and_no_metastream_metastream_is_declared_deleted_as_well<TLogFormat, TStreamId>
+		: SimpleDbTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			return dbCreator.Chunk(Rec.Prepare("test"),
+					Rec.Delete("test"))
 				.CreateDb();
 		}
 

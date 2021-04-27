@@ -3,9 +3,11 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class
-		when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present : RepeatableDbTestScenario {
+		when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present<TLogFormat, TStreamId>
+		: RepeatableDbTestScenario<TLogFormat, TStreamId> {
 		[Test]
 		public void should_be_able_to_read_the_transactional_writes_when_the_commit_is_present() {
 			/*
@@ -13,12 +15,12 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			 * in the following case the read will return the event for the single non-transactional write
 			 * performing a read from the next position returned will fail as the prepares are all less than what we have asked for.
 			 */
-			CreateDb(Rec.TransSt(0, "transaction_stream_id"),
-				Rec.Prepare(0, "transaction_stream_id"),
+			CreateDb(Rec.TransStart(0, "transaction_stream_id"),
+				Rec.TransPrepare(0, "transaction_stream_id"),
 				Rec.TransEnd(0, "transaction_stream_id"),
-				Rec.Prepare(1, "single_write_stream_id_1", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(2, "single_write_stream_id_2", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted));
+				Rec.Prepare("single_write_stream_id_1"),
+				Rec.Prepare("single_write_stream_id_2"),
+				Rec.Prepare("single_write_stream_id_3"));
 
 			var firstRead = ReadIndex.ReadAllEventsForward(new Data.TFPos(0, 0), 10);
 
@@ -28,13 +30,13 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 			Assert.AreEqual("single_write_stream_id_3", firstRead.Records[2].Event.EventStreamId);
 
 			//create the exact same db as above but now with the transaction's commit
-			CreateDb(Rec.TransSt(0, "transaction_stream_id"),
-				Rec.Prepare(0, "transaction_stream_id"),
+			CreateDb(Rec.TransStart(0, "transaction_stream_id"),
+				Rec.TransPrepare(0, "transaction_stream_id"),
 				Rec.TransEnd(0, "transaction_stream_id"),
-				Rec.Prepare(1, "single_write_stream_id_1", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(2, "single_write_stream_id_2", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Commit(0, "transaction_stream_id"));
+				Rec.Prepare("single_write_stream_id_1"),
+				Rec.Prepare("single_write_stream_id_2"),
+				Rec.Prepare("single_write_stream_id_3"),
+				Rec.TransCommit(0, "transaction_stream_id"));
 
 			var transactionRead = ReadIndex.ReadAllEventsForward(firstRead.NextPos, 10);
 

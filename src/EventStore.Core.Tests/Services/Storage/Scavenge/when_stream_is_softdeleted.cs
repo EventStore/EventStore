@@ -7,21 +7,15 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_stream_is_softdeleted_with_log_record_version_0 : ScavengeTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_stream_is_soft_deleted<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator.Chunk(
-					Rec.Prepare(0, "$$test", metadata: new StreamMetadata(tempStream: true),
-						version: LogRecordVersion.LogRecordV0),
-					Rec.Commit(0, "$$test", version: LogRecordVersion.LogRecordV0),
-					Rec.Prepare(1, "test", version: LogRecordVersion.LogRecordV0),
-					Rec.Commit(1, "test", version: LogRecordVersion.LogRecordV0),
-					Rec.Prepare(2, "test", version: LogRecordVersion.LogRecordV0),
-					Rec.Commit(2, "test", version: LogRecordVersion.LogRecordV0),
-					Rec.Prepare(3, "$$test",
-						metadata: new StreamMetadata(truncateBefore: int.MaxValue, tempStream: true),
-						version: LogRecordVersion.LogRecordV0),
-					Rec.Commit(3, "$$test", version: LogRecordVersion.LogRecordV0))
+					Rec.Prepare( "$$test", streamMetadata: new StreamMetadata(tempStream: true)),
+					Rec.Prepare("test"),
+					Rec.Prepare("test"),
+					Rec.Prepare("$$test", streamMetadata: new StreamMetadata(truncateBefore: EventNumber.DeletedStream, tempStream: true)))
 				.CompleteLastChunk()
 				.CreateDb();
 		}

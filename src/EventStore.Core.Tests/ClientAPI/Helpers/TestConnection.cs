@@ -7,7 +7,7 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.Helpers;
 
 namespace EventStore.Core.Tests.ClientAPI.Helpers {
-	public static class TestConnection {
+	public static class TestConnection<TLogFormat, TStreamId> {
 		private static int _nextConnId = -1;
 
 		public static IEventStoreConnection Create(IPEndPoint endPoint, TcpType tcpType = TcpType.Ssl,
@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 				$"ESC-{Interlocked.Increment(ref _nextConnId)}");
 		}
 
-		public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType,
+		public static IEventStoreConnection To(MiniNode<TLogFormat, TStreamId> miniNode, TcpType tcpType,
 			UserCredentials userCredentials = null) {
 			return EventStoreConnection.Create(Settings(tcpType, userCredentials),
 				miniNode.TcpEndPoint.ToESTcpUri(),

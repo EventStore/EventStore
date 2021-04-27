@@ -6,9 +6,11 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 	[TestFixture]
-	public class when_writing_a_second_batch_of_events_after_the_first_batch_has_been_replicated : WriteEventsToIndexScenario{
+	public class when_writing_a_second_batch_of_events_after_the_first_batch_has_been_replicated<TLogFormat,TStreamId> : WriteEventsToIndexScenario<TLogFormat,TStreamId>{
 		private const int _numEvents = 10;
 		private List<Guid> _eventIds = new List<Guid>();
+		private TStreamId _streamId;
+
         public override void WriteEvents()
         {
 			var expectedEventNumber = -1;
@@ -20,6 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 				eventTypes.Add("type");
 			}
 
+			_logFormat.StreamNameIndex.GetOrAddId("stream", out _streamId);
 			var prepares = CreatePrepareLogRecords("stream", expectedEventNumber, eventTypes, _eventIds, transactionPosition);
 			var commit = CreateCommitLogRecord(transactionPosition + 1000 * _numEvents, transactionPosition, expectedEventNumber + _numEvents);
 			
@@ -37,26 +40,26 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 		[Test]
 		public void check_commit_with_same_expectedversion_should_return_idempotent_decision() {
 			/*Second, idempotent write*/
-			var commitCheckResult = _indexWriter.CheckCommit("stream", -1, _eventIds);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, _eventIds);
 			Assert.AreEqual(CommitDecision.Idempotent, commitCheckResult.Decision);
 		}
 
 		[Test]
 		public void check_commit_with_expectedversion_any_should_return_idempotent_decision() {
 			/*Second, idempotent write*/
-			var commitCheckResult = _indexWriter.CheckCommit("stream", ExpectedVersion.Any, _eventIds);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, ExpectedVersion.Any, _eventIds);
 			Assert.AreEqual(CommitDecision.Idempotent, commitCheckResult.Decision);
 		}
 
 		[Test]
 		public void check_commit_with_next_expectedversion_should_return_ok_decision() {
-			var commitCheckResult = _indexWriter.CheckCommit("stream", _numEvents-1, _eventIds);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, _numEvents-1, _eventIds);
 			Assert.AreEqual(CommitDecision.Ok, commitCheckResult.Decision);
 		}
 
 		[Test]
 		public void check_commit_with_incorrect_expectedversion_should_return_wrongexpectedversion_decision() {
-			var commitCheckResult = _indexWriter.CheckCommit("stream", _numEvents, _eventIds);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, _numEvents, _eventIds);
 			Assert.AreEqual(CommitDecision.WrongExpectedVersion, commitCheckResult.Decision);
 		}
 
@@ -69,7 +72,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 			
 			ids[ids.Count-2] = Guid.NewGuid();
 
-			var commitCheckResult = _indexWriter.CheckCommit("stream", -1, ids);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, ids);
 			Assert.AreEqual(CommitDecision.CorruptedIdempotency, commitCheckResult.Decision);
 		}
 
@@ -82,7 +85,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 			
 			ids[0] = Guid.NewGuid();
 
-			var commitCheckResult = _indexWriter.CheckCommit("stream", -1, ids);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, ids);
 			Assert.AreEqual(CommitDecision.WrongExpectedVersion, commitCheckResult.Decision);
 		}
     }

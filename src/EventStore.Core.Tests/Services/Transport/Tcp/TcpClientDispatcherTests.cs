@@ -490,13 +490,14 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 		private EventRecord CreateDeletedEventRecord() {
 			return new EventRecord(long.MaxValue,
-				LogRecord.DeleteTombstone(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), "test-stream", long.MaxValue));
+				LogRecord.DeleteTombstone(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), "test-stream", long.MaxValue),
+				"test-stream");
 		}
 
 		private EventRecord CreateLinkEventRecord() {
 			return new EventRecord(0, LogRecord.Prepare(new LogV2RecordFactory(), 100, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				"link-stream", -1, PrepareFlags.SingleWrite | PrepareFlags.Data, SystemEventTypes.LinkTo,
-				Encoding.UTF8.GetBytes(string.Format("{0}@test-stream", long.MaxValue)), new byte[0]));
+				Encoding.UTF8.GetBytes(string.Format("{0}@test-stream", long.MaxValue)), new byte[0]), "link-stream");
 		}
 	}
 }

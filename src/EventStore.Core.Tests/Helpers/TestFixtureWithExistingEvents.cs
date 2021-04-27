@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Helpers {
 					_timeProvider.UtcNow,
 					PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
 					eventType, eventData is null ? null : Helper.UTF8NoBom.GetBytes(eventData),
-					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)));
+					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)), streamId);
 			list.Add(eventRecord);
 			var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
 			_all.Add(eventPosition, eventRecord);

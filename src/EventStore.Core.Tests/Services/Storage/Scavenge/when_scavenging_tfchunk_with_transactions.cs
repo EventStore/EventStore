@@ -12,94 +12,49 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_scavenging_tfchunk_with_version0_log_records_using_transactions : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	public class when_scavenging_tfchunk_with_transactions<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private const string _streamIdOne = "ES-1";
 		private const string _streamIdTwo = "ES-2";
-		private PrepareLogRecord _p1, _p2, _p3, _p4, _p5, _random1;
+		private EventRecord _p1, _p2, _p3, _p4, _p5, _random1;
 		private long _t2CommitPos, _t1CommitPos, _postCommitPos;
 
 		protected override void WriteTestScenario() {
-			var t1 = WriteTransactionBeginV0(Guid.NewGuid(), WriterCheckpoint.ReadNonFlushed(), _streamIdOne,
-				ExpectedVersion.NoStream);
-			var t2 = WriteTransactionBeginV0(Guid.NewGuid(), WriterCheckpoint.ReadNonFlushed(), _streamIdTwo,
-				ExpectedVersion.NoStream);
+			var t1 = WriteTransactionBegin(_streamIdOne, ExpectedVersion.NoStream);
+			var t2 = WriteTransactionBegin(_streamIdTwo, ExpectedVersion.NoStream);
 
-			_p1 = WriteTransactionEventV0(t1.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t1.LogPosition, 0,
-				t1.EventStreamId, 0, "es1", PrepareFlags.Data);
-			_p2 = WriteTransactionEventV0(t2.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t2.LogPosition, 0,
-				t2.EventStreamId, 0, "abc1", PrepareFlags.Data);
-			_p3 = WriteTransactionEventV0(t1.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t1.LogPosition, 1,
-				t1.EventStreamId, 1, "es1", PrepareFlags.Data);
-			_p4 = WriteTransactionEventV0(t2.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t2.LogPosition, 1,
-				t2.EventStreamId, 1, "abc1", PrepareFlags.Data);
-			_p5 = WriteTransactionEventV0(t1.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t1.LogPosition, 2,
-				t1.EventStreamId, 2, "es1", PrepareFlags.Data);
+			_p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0,
+				_streamIdOne, 0, "es1", PrepareFlags.Data);
+			_p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0,
+				_streamIdTwo, 0, "abc1", PrepareFlags.Data);
+			_p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1,
+				_streamIdOne, 1, "es1", PrepareFlags.Data);
+			_p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1,
+				_streamIdTwo, 1, "abc1", PrepareFlags.Data);
+			_p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2,
+				_streamIdOne, 2, "es1", PrepareFlags.Data);
 
-			WriteTransactionEndV0(t2.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t2.TransactionPosition,
-				t2.EventStreamId);
-			WriteTransactionEndV0(t1.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t1.TransactionPosition,
-				t1.EventStreamId);
+			WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, _streamIdTwo);
+			WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, _streamIdOne);
 
-			_t2CommitPos = WriteCommitV0(t2.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t2.TransactionPosition,
-				t2.EventStreamId, 0, out _postCommitPos);
-			_t1CommitPos = WriteCommitV0(t1.CorrelationId, WriterCheckpoint.ReadNonFlushed(), t1.TransactionPosition,
-				t1.EventStreamId, 0, out _postCommitPos);
+			var t2Commit = WriteCommit(t2.TransactionPosition, _streamIdTwo, 0);
+			_t2CommitPos = t2Commit.LogPosition;
+			var t1Commit = WriteCommit(t1.TransactionPosition, _streamIdOne, 0);
+			_t1CommitPos = t1Commit.LogPosition;
+			_postCommitPos =
+				t1Commit.GetNextLogPosition(t1Commit.LogPosition, t1Commit.GetSizeWithLengthPrefixAndSuffix() - 2 * sizeof(int));
 
 			Writer.CompleteChunk();
 
 			// Need to have a second chunk as otherwise the checkpoints will be off
-			_random1 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), "random-stream",
-				WriterCheckpoint.ReadNonFlushed(), 0);
+			_random1 = WriteSingleEvent("random-stream", 0, "bla");
 
 			Scavenge(completeLast: false, mergeChunks: true);
 		}
 
-		private PrepareLogRecord WriteTransactionBeginV0(Guid id, long logPosition, string eventStreamId,
-			long expectedVersion) {
-			var prepare = new PrepareLogRecord(logPosition, id, Guid.NewGuid(), logPosition, -1, eventStreamId,
-				expectedVersion,
-				DateTime.UtcNow, PrepareFlags.TransactionBegin, null, new byte[0], new byte[0],
-				LogRecordVersion.LogRecordV0);
-			long pos;
-			Assert.IsTrue(Writer.Write(prepare, out pos));
-			return prepare;
-		}
-
-		private PrepareLogRecord WriteTransactionEventV0(Guid correlationId, long logPosition, long transactionPosition,
-			int transactionOffset, string eventStreamId, long eventNumber, string eventData, PrepareFlags flags) {
-			var prepare = new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPosition,
-				transactionOffset,
-				eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, flags,
-				"testEventType", Encoding.UTF8.GetBytes(eventData), new byte[0],
-				LogRecordVersion.LogRecordV0);
-			long pos;
-			Writer.Write(prepare, out pos);
-			return prepare;
-		}
-
-		private void WriteTransactionEndV0(Guid correlationId, long logPosition, long transactionId,
-			string eventStreamId) {
-			var prepare = new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionId, -1,
-				eventStreamId, ExpectedVersion.Any,
-				DateTime.UtcNow, PrepareFlags.TransactionEnd, null, new byte[0], new byte[0],
-				LogRecordVersion.LogRecordV0);
-			long pos;
-			Writer.Write(prepare, out pos);
-		}
-
-		private long WriteCommitV0(Guid correlationId, long logPosition, long transactionPosition, string eventStreamId,
-			long eventNumber, out long pos) {
-			var commit = new CommitLogRecord(logPosition, correlationId, transactionPosition, DateTime.UtcNow,
-				eventNumber,
-				LogRecordVersion.LogRecordV0);
-
-			Writer.Write(commit, out pos);
-			return commit.LogPosition;
-		}
-
 		[Test]
-		public void the_log_records_are_still_version_0_in_first_chunk() {
+		public void the_log_records_are_in_first_chunk() {
 			var chunk = Db.Manager.GetChunk(0);
 
 			var chunkRecords = new List<ILogRecord>();
@@ -109,7 +64,6 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				result = chunk.TryReadClosestForward(result.NextPosition);
 			}
 
-			Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));
 			Assert.AreEqual(7, chunkRecords.Count);
 		}
 
@@ -124,7 +78,6 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				result = chunk.TryReadClosestForward(result.NextPosition);
 			}
 
-			Assert.IsTrue(chunkRecords.All(x => x.Version == LogRecordVersion.LogRecordV0));
 			Assert.AreEqual(2, chunkRecords.Count);
 		}
 

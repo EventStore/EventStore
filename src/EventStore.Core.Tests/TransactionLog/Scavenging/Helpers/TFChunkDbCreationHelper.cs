@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV2;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
@@ -9,13 +11,15 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
-	public class TFChunkDbCreationHelper {
+	public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 		private readonly TFChunkDbConfig _dbConfig;
 		private readonly TFChunkDb _db;
 
 		private readonly List<Rec[]> _chunkRecs = new List<Rec[]>();
 
 		private bool _completeLast;
+
+		private static LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		public TFChunkDbCreationHelper(TFChunkDbConfig dbConfig) {
 			Ensure.NotNull(dbConfig, "dbConfig");
@@ -28,12 +32,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				throw new Exception("The DB already contains some data.");
 		}
 
-		public TFChunkDbCreationHelper Chunk(params Rec[] records) {
+		public TFChunkDbCreationHelper<TLogFormat, TStreamId> Chunk(params Rec[] records) {
 			_chunkRecs.Add(records);
 			return this;
 		}
 
-		public TFChunkDbCreationHelper CompleteLastChunk() {
+		public TFChunkDbCreationHelper<TLogFormat, TStreamId> CompleteLastChunk() {
 			_completeLast = true;
 			return this;
 		}
@@ -52,16 +56,22 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				for (int j = 0; j < _chunkRecs[i].Length; ++j) {
 					var rec = _chunkRecs[i][j];
 
-					TransactionInfo transInfo;
-					bool transCreate = transactions.TryGetValue(rec.Transaction, out transInfo);
-					if (!transCreate) {
-						if (rec.Type == Rec.RecType.Commit)
-							throw new Exception("Commit for non-existing transaction.");
-
-						transactions[rec.Transaction] = transInfo = new TransactionInfo(rec.StreamId, rec.Id, rec.Id);
-
+					if (!streams.ContainsKey(rec.StreamId)) {
 						streams[rec.StreamId] = new StreamInfo(-1);
 						streamUncommitedVersion[rec.StreamId] = -1;
+					}
+
+					if (!rec.Transaction.HasValue) {
+						continue;
+					}
+
+					TransactionInfo transInfo;
+					bool transCreate = transactions.TryGetValue(rec.Transaction.Value, out transInfo);
+					if (!transCreate) {
+						if (rec.Type == Rec.RecType.TransCommit)
+							throw new Exception("Commit for non-existing transaction.");
+
+						transactions[rec.Transaction.Value] = transInfo = new TransactionInfo(rec.StreamId, rec.Id, rec.Id);
 					} else {
 						if (rec.Type == Rec.RecType.TransStart)
 							throw new Exception(string.Format("Unexpected record type: {0}.", rec.Type));
@@ -74,12 +84,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							rec.StreamId));
 					}
 
-					if (rec.Type != Rec.RecType.Commit && transInfo.IsDelete)
-						throw new Exception("Transaction with records after delete record.");
-
-					if (rec.Type == Rec.RecType.Delete)
-						transInfo.IsDelete = true;
-
 					transInfo.LastPrepareId = rec.Id;
 				}
 			}
@@ -90,18 +94,20 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 				for (int j = 0; j < _chunkRecs[i].Length; ++j) {
 					var rec = _chunkRecs[i][j];
-					var transInfo = transactions[rec.Transaction];
+					var transInfo = rec.Transaction.HasValue ? transactions[rec.Transaction.Value] :
+							new TransactionInfo(rec.StreamId, rec.Id, rec.Id);
 					var logPos = _db.Config.WriterCheckpoint.ReadNonFlushed();
 
 					long streamVersion = streamUncommitedVersion[rec.StreamId];
 					if (streamVersion == -1
 					    && rec.Type != Rec.RecType.TransStart
+					    && rec.Type != Rec.RecType.TransPrepare
 					    && rec.Type != Rec.RecType.Prepare
 					    && rec.Type != Rec.RecType.Delete) {
 						throw new Exception(string.Format("Stream {0} is empty.", rec.StreamId));
 					}
 
-					if (streamVersion == EventNumber.DeletedStream && rec.Type != Rec.RecType.Commit)
+					if (streamVersion == EventNumber.DeletedStream && rec.Type != Rec.RecType.TransCommit)
 						throw new Exception(string.Format(
 							"Stream {0} was deleted, but we need to write some more prepares.", rec.StreamId));
 
@@ -119,27 +125,43 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 
 							if (SystemStreams.IsMetastream(rec.StreamId))
-								transInfo.StreamMetadata = rec.Metadata;
+								transInfo.StreamMetadata = rec.StreamMetadata;
+
+							streamUncommitedVersion[rec.StreamId] += 1;
+
+							if (transInfo.StreamMetadata != null) {
+								var streamId = SystemStreams.OriginalStreamOf(rec.StreamId);
+								if (!streams.ContainsKey(streamId))
+									streams.Add(streamId, new StreamInfo(-1));
+								streams[streamId].StreamMetadata = transInfo.StreamMetadata;
+							}
+
+							streams[rec.StreamId].StreamVersion =
+								transInfo.TransactionEventNumber + transInfo.TransactionOffset - 1;
+
+							break;
+						}
+						case Rec.RecType.Delete: {
+							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
+							streamUncommitedVersion[rec.StreamId] = EventNumber.DeletedStream;
+							streams[rec.StreamId].StreamVersion = EventNumber.DeletedStream;
+							break;
+						}
+						case Rec.RecType.TransPrepare: {
+							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
+
+							if (SystemStreams.IsMetastream(rec.StreamId))
+								transInfo.StreamMetadata = rec.StreamMetadata;
 
 							streamUncommitedVersion[rec.StreamId] += 1;
 							break;
 						}
-
-						case Rec.RecType.Delete: {
-							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
-
-							streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV0
-								? int.MaxValue
-								: EventNumber.DeletedStream;
-							break;
-						}
-
 						case Rec.RecType.TransStart:
 						case Rec.RecType.TransEnd: {
 							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 							break;
 						}
-						case Rec.RecType.Commit: {
+						case Rec.RecType.TransCommit: {
 							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 
 							if (transInfo.StreamMetadata != null) {
@@ -149,11 +171,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 								streams[streamId].StreamMetadata = transInfo.StreamMetadata;
 							}
 
-							if (transInfo.IsDelete)
-								streams[rec.StreamId].StreamVersion = EventNumber.DeletedStream;
-							else
-								streams[rec.StreamId].StreamVersion =
-									transInfo.TransactionEventNumber + transInfo.TransactionOffset - 1;
+							streams[rec.StreamId].StreamVersion =
+								transInfo.TransactionEventNumber + transInfo.TransactionOffset - 1;
 							break;
 						}
 						default:
@@ -177,10 +196,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			return new DbResult(_db, records, streams);
 		}
 
-		private byte[] FormatRecordMetadata(Rec rec) {
-			if (rec.Metadata == null) return null;
+		private byte[] FormatStreamMetadata(Rec rec) {
+			if (rec.StreamMetadata == null) return null;
 
-			var meta = rec.Metadata;
+			var meta = rec.StreamMetadata;
 			return meta.ToJsonBytes();
 		}
 
@@ -190,112 +209,102 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					int transOffset = transInfo.TransactionOffset;
 					transInfo.TransactionOffset += 1;
 
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
-							rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
-							PrepareFlags.Data
-							| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
-							| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
+
+					var flags = rec.PrepareFlags;
+					byte[] data;
+					if (SystemStreams.IsMetastream(rec.StreamId) && rec.StreamMetadata != null) {
+						data = FormatStreamMetadata(rec);
+						flags |= PrepareFlags.IsJson;
+					} else {
+						data = rec.Id.ToByteArray();
 					}
 
-					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
+					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
 						transOffset,
-						rec.StreamId,
+						streamId,
 						expectedVersion,
-						rec.PrepareFlags
-						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
-						| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
+						flags | PrepareFlags.SingleWrite | PrepareFlags.IsCommitted,
 						rec.EventType,
-						rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
+						data,
 						null,
 						rec.TimeStamp);
 				}
-
 				case Rec.RecType.Delete: {
 					int transOffset = transInfo.TransactionOffset;
 					transInfo.TransactionOffset += 1;
 
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
-							LogRecord.NoData,
-							PrepareFlags.StreamDelete
-							| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
-					}
-
-					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
+					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
 						transOffset,
-						rec.StreamId,
-						expectedVersion,
-						PrepareFlags.StreamDelete
-						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
-						rec.EventType,
+						streamId,
+						EventNumber.DeletedStream - 1,
+						rec.PrepareFlags | PrepareFlags.DeleteTombstone | PrepareFlags.IsCommitted,
+						SystemEventTypes.StreamDeleted,
 						LogRecord.NoData,
 						null,
 						rec.TimeStamp);
 				}
+				case Rec.RecType.TransPrepare: {
+					int transOffset = transInfo.TransactionOffset;
+					transInfo.TransactionOffset += 1;
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
 
-				case Rec.RecType.TransStart:
-				case Rec.RecType.TransEnd: {
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return CreateLogRecordV0(rec, transInfo, -1, logPos, expectedVersion,
-							LogRecord.NoData,
-							(transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
+					var flags = rec.PrepareFlags;
+					byte[] data;
+					if (SystemStreams.IsMetastream(rec.StreamId) && rec.StreamMetadata != null) {
+						data = FormatStreamMetadata(rec);
+						flags |= PrepareFlags.IsJson;
+					} else {
+						data = rec.Id.ToByteArray();
 					}
 
-					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
+					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
+						Guid.NewGuid(),
+						rec.Id,
+						transInfo.TransactionPosition,
+						transOffset,
+						streamId,
+						expectedVersion,
+						flags
+						| PrepareFlags.Data
+						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
+						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
+						rec.EventType,
+						data,
+						null,
+						rec.TimeStamp);
+				}
+				case Rec.RecType.TransStart:
+				case Rec.RecType.TransEnd: {
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
+					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
 						-1,
-						rec.StreamId,
+						streamId,
 						expectedVersion,
 						(transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
 						rec.EventType,
 						LogRecord.NoData,
-						null,
+						LogRecord.NoData,
 						rec.TimeStamp);
 				}
-				case Rec.RecType.Commit: {
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return new CommitLogRecord(logPos, Guid.NewGuid(), transInfo.TransactionPosition,
-							DateTime.UtcNow, transInfo.TransactionEventNumber, LogRecordVersion.LogRecordV0);
-					}
-
+				case Rec.RecType.TransCommit: {
 					return LogRecord.Commit(logPos, Guid.NewGuid(), transInfo.TransactionPosition,
 						transInfo.TransactionEventNumber);
 				}
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
-		}
-
-		private LogRecord CreateLogRecordV0(Rec rec, TransactionInfo transInfo, int transOffset, long logPos,
-			long expectedVersion, ReadOnlyMemory<byte> data, PrepareFlags flags) {
-			return new PrepareLogRecord(logPos,
-				Guid.NewGuid(),
-				rec.Id,
-				transInfo.TransactionPosition,
-				transOffset,
-				rec.StreamId,
-				expectedVersion,
-				rec.TimeStamp,
-				flags,
-				rec.EventType,
-				data,
-				null,
-				LogRecordVersion.LogRecordV0);
 		}
 	}
 
@@ -306,7 +315,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public long TransactionPosition = -1;
 		public int TransactionOffset = 0;
 		public long TransactionEventNumber = -1;
-		public bool IsDelete = false;
 		public StreamMetadata StreamMetadata;
 
 		public TransactionInfo(string streamId, Guid firstPrepareId, Guid lastPrepareId) {
@@ -346,24 +354,26 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			Prepare,
 			Delete,
 			TransStart,
+			TransPrepare,
 			TransEnd,
-			Commit
+			TransCommit
 		}
 
 		public readonly RecType Type;
 		public readonly Guid Id;
-		public readonly int Transaction;
+		public readonly int? Transaction;
 		public readonly string StreamId;
 		public readonly string EventType;
 		public readonly DateTime TimeStamp;
-		public readonly StreamMetadata Metadata;
+		public readonly StreamMetadata StreamMetadata;
 		public readonly PrepareFlags PrepareFlags;
-		public readonly byte Version;
 
-		public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version,
-			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data) {
+		public Rec(RecType type, int? transaction, string streamId, string eventType, DateTime? timestamp,
+			StreamMetadata streamMetadata = null, PrepareFlags prepareFlags = PrepareFlags.None) {
 			Ensure.NotNullOrEmpty(streamId, "streamId");
-			Ensure.Nonnegative(transaction, "transaction");
+			if (transaction.HasValue) {
+				Ensure.Nonnegative(transaction.Value, "transaction");
+			}
 
 			Type = type;
 			Id = Guid.NewGuid();
@@ -371,35 +381,34 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			StreamId = streamId;
 			EventType = eventType ?? string.Empty;
 			TimeStamp = timestamp ?? DateTime.UtcNow;
-			Version = version;
-			Metadata = metadata;
+			StreamMetadata = streamMetadata;
 			PrepareFlags = prepareFlags;
 		}
 
-		public static Rec Delete(int transaction, string stream, DateTime? timestamp = null,
-			byte version = PrepareLogRecord.PrepareRecordVersion) {
-			return new Rec(RecType.Delete, transaction, stream, SystemEventTypes.StreamDeleted, timestamp, version);
+		public static Rec Prepare(string stream, string eventType = null, DateTime? timestamp = null,
+			StreamMetadata streamMetadata = null) {
+			return new(RecType.Prepare, null, stream, eventType, timestamp, streamMetadata);
 		}
 
-		public static Rec TransSt(int transaction, string stream, DateTime? timestamp = null,
-			byte version = PrepareLogRecord.PrepareRecordVersion) {
-			return new Rec(RecType.TransStart, transaction, stream, null, timestamp, version);
+		public static Rec Delete(string stream, DateTime? timestamp = null) {
+			return new(RecType.Delete, null, stream, null, timestamp);
 		}
 
-		public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null,
-			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data,
-			byte version = PrepareLogRecord.PrepareRecordVersion) {
-			return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, metadata, prepareFlags);
+		public static Rec TransStart(int transaction, string stream, DateTime? timestamp = null) {
+			return new(RecType.TransStart, transaction, stream, null, timestamp);
 		}
 
-		public static Rec TransEnd(int transaction, string stream, DateTime? timestamp = null,
-			byte version = PrepareLogRecord.PrepareRecordVersion) {
-			return new Rec(RecType.TransEnd, transaction, stream, null, timestamp, version);
+		public static Rec TransPrepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null,
+			StreamMetadata streamMetadata = null) {
+			return new(RecType.TransPrepare, transaction, stream, eventType, timestamp, streamMetadata);
 		}
 
-		public static Rec Commit(int transaction, string stream, DateTime? timestamp = null,
-			byte version = CommitLogRecord.CommitRecordVersion) {
-			return new Rec(RecType.Commit, transaction, stream, null, timestamp, version);
+		public static Rec TransEnd(int transaction, string stream, DateTime? timestamp = null) {
+			return new(RecType.TransEnd, transaction, stream, null, timestamp);
+		}
+
+		public static Rec TransCommit(int transaction, string stream, DateTime? timestamp = null) {
+			return new(RecType.TransCommit, transaction, stream, null, timestamp);
 		}
 	}
 }

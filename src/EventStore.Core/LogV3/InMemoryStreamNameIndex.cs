@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
+using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 
@@ -19,6 +20,7 @@ namespace EventStore.Core.LogV3 {
 		readonly ConcurrentDictionary<long, string> _rev = new ConcurrentDictionary<long, string>();
 
 		public bool GetOrAddId(string name, out long streamNumber, out long createdId, out string createdName) {
+			Ensure.NotNullOrEmpty(name, "name");
 			if (SystemStreams.IsMetastream(name))
 				throw new ArgumentException(nameof(name));
 

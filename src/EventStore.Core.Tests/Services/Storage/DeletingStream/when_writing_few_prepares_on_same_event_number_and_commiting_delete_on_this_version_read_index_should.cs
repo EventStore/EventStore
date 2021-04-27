@@ -7,19 +7,22 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_writing_few_prepares_with_same_event_number_and_commiting_delete_on_this_version_read_index_should :
-			ReadIndexTestScenario {
+		when_writing_few_prepares_with_same_event_number_and_commiting_delete_on_this_version_read_index_should<TLogFormat, TStreamId> :
+			ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _deleteTombstone;
 
 		protected override void WriteTestScenario() {
 			long pos;
+			string stream = "ES";
+			_streamNameIndex.GetOrAddId(stream, out var streamId);
 
 			var prepare1 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare1
 				Guid.NewGuid(),
 				Guid.NewGuid(),
-				"ES",
+				streamId,
 				-1,
 				"some-type",
 				LogRecord.NoData,
@@ -30,7 +33,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			var prepare2 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare2
 				Guid.NewGuid(),
 				Guid.NewGuid(),
-				"ES",
+				streamId,
 				-1,
 				"some-type",
 				LogRecord.NoData,
@@ -40,14 +43,14 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 
 			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // delete prepare
-				Guid.NewGuid(), Guid.NewGuid(), "ES", -1);
-			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare);
+				Guid.NewGuid(), Guid.NewGuid(), streamId, -1);
+			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare, stream);
 			Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 
 			var prepare3 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare3
 				Guid.NewGuid(),
 				Guid.NewGuid(),
-				"ES",
+				streamId,
 				-1,
 				"some-type",
 				LogRecord.NoData,

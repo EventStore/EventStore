@@ -9,8 +9,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_reading_an_empty_chunked_transaction_log : SpecificationWithDirectory {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_an_empty_chunked_transaction_log<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		[Test]
 		public void try_read_returns_false_when_writer_checksum_is_zero() {
 			var writerchk = new InMemoryCheckpoint(0);
@@ -38,7 +39,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			Assert.IsFalse(reader.TryReadNext().Success);
 
-			var rec = LogRecord.SingleWrite(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), "ES", -1, "ET", new byte[] {7}, null);
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("ES", out var streamId);
+			var rec = LogRecord.SingleWrite(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, -1, "ET", new byte[] {7}, null);
 			long tmp;
 			Assert.IsTrue(writer.Write(rec, out tmp));
 			writer.Flush();

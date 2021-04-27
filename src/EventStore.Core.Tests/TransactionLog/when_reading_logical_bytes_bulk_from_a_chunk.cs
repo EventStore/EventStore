@@ -1,12 +1,20 @@
 using System;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV2;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_reading_logical_bytes_bulk_from_a_chunk : SpecificationWithDirectory {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId> : SpecificationWithDirectory {
+		private LogFormatAbstractor<TStreamId> _logFormat;
+
+		public when_reading_logical_bytes_bulk_from_a_chunk() {
+			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+		}
+
 		[Test]
 		public void the_file_will_not_be_deleted_until_reader_released() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 2000);
@@ -69,8 +77,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
-
-			var rec = LogRecord.Prepare(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "ES", -1, PrepareFlags.None, "ET",
+			_logFormat.StreamNameIndex.GetOrAddId("ES", out var streamId);
+			var rec = LogRecord.Prepare(_logFormat.RecordFactory, 0, Guid.NewGuid(),
+				Guid.NewGuid(), 0, 0, streamId, -1, PrepareFlags.None, "ET",
 				new byte[2000], null);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
 

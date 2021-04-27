@@ -24,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			.Select(i => new EventData(Guid.NewGuid(), i.ToString(), false, Array.Empty<byte>(), null));
 
 		[TestFixtureSource(nameof(TestCases))]
-		public class when_subscribing_to_all_with_a_filter : SpecificationWithMiniNode {
+		public class when_subscribing_to_all_with_a_filter<TLogFormat, TStreamId>
+			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private const string _streamName = "test";
 
 			private int CheckpointCount => _positions.Count;

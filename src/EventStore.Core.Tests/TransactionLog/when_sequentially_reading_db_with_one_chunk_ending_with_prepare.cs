@@ -11,8 +11,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_sequentially_reading_db_with_one_chunk_ending_with_prepare :
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_sequentially_reading_db_with_one_chunk_ending_with_prepare<TLogFormat, TStreamId> :
 		SpecificationWithDirectoryPerTestFixture {
 		private const int RecordsCount = 3;
 
@@ -31,14 +32,16 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			_records = new ILogRecord[RecordsCount];
 			_results = new RecordWriteResult[RecordsCount];
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("es1", out var streamId);
 
 			for (int i = 0; i < _records.Length - 1; ++i) {
 				_records[i] = LogRecord.SingleWrite(
-					new LogV2RecordFactory(),
+					logFormat.RecordFactory,
 					i == 0 ? 0 : _results[i - 1].NewPosition,
 					Guid.NewGuid(),
 					Guid.NewGuid(),
-					"es1",
+					streamId,
 					ExpectedVersion.Any,
 					"et1",
 					new byte[] { 0, 1, 2 },
@@ -47,13 +50,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 			}
 
 			_records[_records.Length - 1] = LogRecord.Prepare(
-				new LogV2RecordFactory(),
+				logFormat.RecordFactory,
 				_results[_records.Length - 1 - 1].NewPosition,
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				_results[_records.Length - 1 - 1].NewPosition,
 				0,
-				"es1",
+				streamId,
 				ExpectedVersion.Any,
 				PrepareFlags.Data,
 				"et1",

@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.AwakeService {
 				10,
 				new PrepareLogRecord(
 					500, Guid.NewGuid(), Guid.NewGuid(), 500, 0, "Stream", 99, DateTime.UtcNow, PrepareFlags.Data,
-					"event", new byte[0], null));
+					"event", new byte[0], null), "Stream");
 			_eventCommitted = new StorageMessage.EventCommitted(1000, _eventRecord, isTfEof: true);
 		}
 

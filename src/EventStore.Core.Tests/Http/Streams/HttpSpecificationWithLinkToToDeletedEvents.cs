@@ -7,7 +7,8 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 
 namespace EventStore.Core.Tests.Http.Streams {
-	public abstract class HttpSpecificationWithLinkToToDeletedEvents : HttpBehaviorSpecification {
+	public abstract class HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId>
+		: HttpBehaviorSpecification<TLogFormat, TStreamId> {
 		protected string LinkedStreamName;
 		protected string DeletedStreamName;
 
@@ -15,7 +16,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var creds = DefaultData.AdminCredentials;
 			LinkedStreamName = Guid.NewGuid().ToString();
 			DeletedStreamName = Guid.NewGuid().ToString();
-			using (var conn = TestConnection.Create(_node.TcpEndPoint)) {
+			using (var conn = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint)) {
 				await conn.ConnectAsync();
 				await conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,
 						new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),

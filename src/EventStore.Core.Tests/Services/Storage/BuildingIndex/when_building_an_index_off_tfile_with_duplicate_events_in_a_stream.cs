@@ -22,7 +22,8 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture]
-	public class when_building_an_index_off_tfile_with_duplicate_events_in_a_stream : DuplicateReadIndexTestScenario {
+	public class when_building_an_index_off_tfile_with_duplicate_events_in_a_stream<TLogFormat, TStreamId>
+		: DuplicateReadIndexTestScenario<TLogFormat, TStreamId> {
 		private Guid _id1;
 		private Guid _id2;
 		private Guid _id3;
@@ -75,20 +76,13 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		}
 	}
 
-	public abstract class DuplicateReadIndexTestScenario : DuplicateReadIndexTestScenario<string> {
-		protected DuplicateReadIndexTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1,
-			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = false) 
-			: base(maxEntriesInMemTable, metastreamMaxCount, indexBitnessVersion, performAdditionalChecks) {
-		}
-	}
-
-	public abstract class DuplicateReadIndexTestScenario<TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	public abstract class DuplicateReadIndexTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected readonly int MaxEntriesInMemTable;
 		protected readonly int MetastreamMaxCount;
 		protected readonly bool PerformAdditionalCommitChecks;
 		protected readonly byte IndexBitnessVersion;
 		protected TFChunkWriter Writer;
-		protected IReadIndex<TStreamId> ReadIndex;
+		protected ITestReadIndex<TStreamId> ReadIndex;
 
 		private TFChunkDb _db;
 		private TableIndex<TStreamId> _tableIndex;
@@ -125,7 +119,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			chaserCheckpoint.Write(writerCheckpoint.Read());
 			chaserCheckpoint.Flush();
 
-			var logFormat = LogFormatHelper<TStreamId>.LogFormat;
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 				() => new TFChunkReader(_db, _db.Config.WriterCheckpoint));
 			var lowHasher = logFormat.LowHasher;
@@ -139,7 +133,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
-			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
+			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				_tableIndex,
 				logFormat.StreamIds,
@@ -156,7 +150,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				indexCheckpoint: _db.Config.IndexCheckpoint);
 
 
-			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
+			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
+			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
 
 			_tableIndex.Close(false);
 
@@ -178,7 +173,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
-			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
+			readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				_tableIndex,
 				logFormat.StreamIds,
@@ -194,7 +189,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				replicationCheckpoint: _db.Config.ReplicationCheckpoint,
 				indexCheckpoint: _db.Config.IndexCheckpoint);
 
-			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
+			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
+			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
 		}
 
 		public override Task TestFixtureTearDown() {

@@ -4,13 +4,7 @@ using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
-	public abstract class TruncateScenario : TruncateScenario<string> {
-		protected TruncateScenario(int maxEntriesInMemTable = 100, int metastreamMaxCount = 1)
-			: base(maxEntriesInMemTable, metastreamMaxCount) {
-		}
-	}
-
-	public abstract class TruncateScenario<TStreamId> : ReadIndexTestScenario<TStreamId> {
+	public abstract class TruncateScenario<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		protected TFChunkDbTruncator Truncator;
 		protected long TruncateCheckpoint = long.MinValue;
 

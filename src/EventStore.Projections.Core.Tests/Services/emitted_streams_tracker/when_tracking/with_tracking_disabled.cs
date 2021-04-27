@@ -4,9 +4,12 @@ using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_tracker.when_tracking {
-	public class with_tracking_disabled : SpecificationWithEmittedStreamsTrackerAndDeleter {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_tracking_disabled<TLogFormat, TStreamId> : SpecificationWithEmittedStreamsTrackerAndDeleter<TLogFormat, TStreamId> {
 		private CountdownEvent _eventAppeared = new CountdownEvent(1);
 		private UserCredentials _credentials = new UserCredentials("admin", "changeit");
 

@@ -1,27 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Helpers;
-using EventStore.Core.LogAbstraction;
-using EventStore.Core.LogV2;
-using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.Storage;
-using EventStore.Core.Tests.Fakes;
-using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_having_scavenged_tfchunk_with_all_records_removed : SpecificationWithDirectoryPerTestFixture {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_having_scavenged_tfchunk_with_all_records_removed<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private TFChunkDb _db;
 		private TFChunk _scavengedChunk;
 		private int _originalFileSize;
@@ -37,24 +29,26 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Open();
 
 			var chunk = _db.Manager.GetChunkFor(0);
-
-			_p1 = LogRecord.SingleWrite(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			var streamName = "es-to-scavenge";
+			logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId);
+			_p1 = LogRecord.SingleWrite(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
 				new byte[2048], new byte[] { 5, 7 });
 			_res1 = chunk.TryAppend(_p1);
 
 			_c1 = LogRecord.Commit(_res1.NewPosition, Guid.NewGuid(), _p1.LogPosition, 0);
 			_cres1 = chunk.TryAppend(_c1);
 
-			_p2 = LogRecord.SingleWrite(new LogV2RecordFactory(), _cres1.NewPosition,
-				Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
+			_p2 = LogRecord.SingleWrite(logFormat.RecordFactory, _cres1.NewPosition,
+				Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
 				new byte[2048], new byte[] { 5, 7 });
 			_res2 = chunk.TryAppend(_p2);
 
 			_c2 = LogRecord.Commit(_res2.NewPosition, Guid.NewGuid(), _p2.LogPosition, 1);
 			_cres2 = chunk.TryAppend(_c2);
 
-			_p3 = LogRecord.SingleWrite(new LogV2RecordFactory(), _cres2.NewPosition,
-				Guid.NewGuid(), Guid.NewGuid(), "es-to-scavenge", ExpectedVersion.Any, "et1",
+			_p3 = LogRecord.SingleWrite(logFormat.RecordFactory, _cres2.NewPosition,
+				Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
 				new byte[2048], new byte[] { 5, 7 });
 			_res3 = chunk.TryAppend(_p3);
 
@@ -69,9 +63,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Config.ChaserCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
 			_db.Config.ChaserCheckpoint.Flush();
 
-			var scavenger = new TFChunkScavenger<string>(_db, new FakeTFScavengerLog(), new FakeTableIndex<string>(),
-				new FakeReadIndex<string>(x => x == "es-to-scavenge"),
-				LogFormatAbstractor.V2.SystemStreams);
+			var scavenger = new TFChunkScavenger<TStreamId>(_db, new FakeTFScavengerLog(), new FakeTableIndex<TStreamId>(),
+				new FakeReadIndex<TLogFormat, TStreamId>(x => EqualityComparer<TStreamId>.Default.Equals(x, streamId)),
+				logFormat.SystemStreams);
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 
 			_scavengedChunk = _db.Manager.GetChunk(0);

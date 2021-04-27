@@ -10,8 +10,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_reading_a_single_record : SpecificationWithDirectoryPerTestFixture {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_a_single_record<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private const int RecordsCount = 8;
 
 		private TFChunkDb _db;
@@ -24,10 +25,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Open();
 
 			var chunk = _db.Manager.GetChunk(0);
-
 			_records = new ILogRecord[RecordsCount];
 			_results = new RecordWriteResult[RecordsCount];
 
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			var streamName = "es1";
+			logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId);
 			var pos = 0;
 			for (int i = 0; i < RecordsCount; ++i) {
 				if (i > 0 && i % 3 == 0) {
@@ -36,8 +39,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 					chunk = _db.Manager.AddNewChunk();
 				}
 
-				_records[i] = LogRecord.SingleWrite(new LogV2RecordFactory(), pos,
-					Guid.NewGuid(), Guid.NewGuid(), "es1", ExpectedVersion.Any, "et1",
+				_records[i] = LogRecord.SingleWrite(logFormat.RecordFactory, pos,
+					Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
 					new byte[1200], new byte[] { 5, 7 });
 				_results[i] = chunk.TryAppend(_records[i]);
 

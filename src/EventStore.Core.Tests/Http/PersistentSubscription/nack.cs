@@ -16,7 +16,9 @@ using EventStore.Transport.Http;
 // ReSharper disable InconsistentNaming
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
-	class when_nacking_a_message : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_nacking_a_message<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 		private string _nackLink;
 
@@ -41,7 +43,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_nacking_messages : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_nacking_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 		private string _nackAllLink;
 

@@ -7,7 +7,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services {
-	public abstract class SpecificationWithEmittedStreamsTrackerAndDeleter : SpecificationWithMiniNode {
+	public abstract class SpecificationWithEmittedStreamsTrackerAndDeleter<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		protected IEmittedStreamsTracker _emittedStreamsTracker;
 		protected IEmittedStreamsDeleter _emittedStreamsDeleter;
 		protected ProjectionNamesBuilder _projectionNamesBuilder;

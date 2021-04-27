@@ -85,7 +85,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			long expectedVersion) {
 			return factory.CreatePrepare(logPos, correlationId, Guid.NewGuid(), logPos, -1, eventStreamId,
 				expectedVersion,
-				DateTime.UtcNow, PrepareFlags.TransactionBegin, null, NoData, NoData);
+				DateTime.UtcNow, PrepareFlags.TransactionBegin, string.Empty, NoData, NoData);
 		}
 
 		public static IPrepareLogRecord<TStreamId> TransactionWrite<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId,
@@ -101,7 +101,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			long transactionPos, TStreamId eventStreamId) {
 			return factory.CreatePrepare(logPos, correlationId, eventId, transactionPos, -1, eventStreamId,
 				ExpectedVersion.Any,
-				DateTime.UtcNow, PrepareFlags.TransactionEnd, null, NoData, NoData);
+				DateTime.UtcNow, PrepareFlags.TransactionEnd, string.Empty, NoData, NoData);
 		}
 
 		public static IPrepareLogRecord<TStreamId> DeleteTombstone<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId,

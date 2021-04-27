@@ -3,8 +3,9 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
-	[TestFixture]
-	public class when_index_committer_service_receives_multiple_acks_for_different_positions : with_index_committer_service {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_index_committer_service_receives_multiple_acks_for_different_positions<TLogFormat, TStreamId> : with_index_committer_service<TLogFormat, TStreamId> {
 
 		private readonly long _logPositionP1 = 1000;
 		private readonly long _logPositionP2 = 2000;

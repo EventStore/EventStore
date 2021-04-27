@@ -288,7 +288,7 @@ namespace EventStore.Core.Services.Storage {
 						LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, Guid.NewGuid(), logPosition, -1,
 							streamId, commitCheck.CurrentVersion,
 							PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
-							null, Empty.ByteArray, Empty.ByteArray));
+							string.Empty, Empty.ByteArray, Empty.ByteArray));
 				}
 
 				bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)

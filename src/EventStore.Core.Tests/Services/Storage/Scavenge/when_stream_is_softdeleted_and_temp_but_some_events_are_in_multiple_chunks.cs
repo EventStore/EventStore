@@ -6,16 +6,16 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_stream_is_softdeleted_and_temp_but_some_events_are_in_multiple_chunks : ScavengeTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
-			return dbCreator.Chunk(Rec.Prepare(0, "test"),
-					Rec.Commit(0, "test"))
-				.Chunk(Rec.Prepare(1, "test"),
-					Rec.Commit(1, "test"),
-					Rec.Prepare(2, "$$test",
-						metadata: new StreamMetadata(null, null, EventNumber.DeletedStream, true, null, null)),
-					Rec.Commit(2, "$$test"))
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_stream_is_softdeleted_and_temp_but_some_events_are_in_multiple_chunks_2<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			return dbCreator.Chunk(
+					Rec.Prepare("test"))
+				.Chunk(
+					Rec.Prepare("test"),
+					Rec.Prepare("$$test",
+						streamMetadata: new StreamMetadata(null, null, EventNumber.DeletedStream, true, null, null)))
 				.CompleteLastChunk()
 				.CreateDb();
 		}
@@ -25,9 +25,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				new ILogRecord[0],
 				new[] {
 					dbResult.Recs[1][0],
-					dbResult.Recs[1][1],
-					dbResult.Recs[1][2],
-					dbResult.Recs[1][3]
+					dbResult.Recs[1][1]
 				}
 			};
 		}

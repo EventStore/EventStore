@@ -14,11 +14,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
-	public abstract class with_index_committer_service : with_index_committer_service<string> {
-	}
-
-	public abstract class with_index_committer_service<TStreamId> {
-		protected TStreamId EventStreamId = LogFormatHelper<TStreamId>.WhenV2<TStreamId>("test_stream");
+	public abstract class with_index_committer_service<TLogFormat, TStreamId> {
 		protected int CommitCount = 2;
 		protected ITableIndex TableIndex;
 
@@ -72,9 +68,11 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 		}
 
 		private IPrepareLogRecord<TStreamId> CreatePrepare(long transactionPosition, long logPosition) {
-			var recordFactory = LogFormatHelper<TStreamId>.LogFormat.RecordFactory;
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormat.RecordFactory;
+			LogFormatHelper<TLogFormat, TStreamId>.LogFormat.StreamNameIndex.GetOrAddId("test-stream",
+				out var eventStreamId);
 			return LogRecord.Prepare(recordFactory, logPosition, Guid.NewGuid(), Guid.NewGuid(), transactionPosition, 0,
-				EventStreamId, -1, PrepareFlags.None, "testEvent",
+				eventStreamId, -1, PrepareFlags.None, "testEvent",
 				new byte[10], new byte[0]);
 		}
 

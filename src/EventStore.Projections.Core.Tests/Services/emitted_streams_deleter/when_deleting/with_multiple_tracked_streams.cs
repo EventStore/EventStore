@@ -5,10 +5,12 @@ using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.when_deleting {
-	[TestFixture]
-	public class with_multiple_tracked_streams : SpecificationWithEmittedStreamsTrackerAndDeleter {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_multiple_tracked_streams<TLogFormat, TStreamId> : SpecificationWithEmittedStreamsTrackerAndDeleter<TLogFormat, TStreamId> {
 		protected Action _onDeleteStreamCompleted;
 		protected ManualResetEvent _resetEvent = new ManualResetEvent(false);
 		protected CountdownEvent _eventAppeared;
