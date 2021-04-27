@@ -18,7 +18,7 @@ namespace EventStore.Core.LogV3 {
 		readonly ConcurrentDictionary<string, long> _dict = new ConcurrentDictionary<string, long>();
 		readonly ConcurrentDictionary<long, string> _rev = new ConcurrentDictionary<long, string>();
 
-		public bool GetOrAddId(string name, out long streamNumber) {
+		public bool GetOrAddId(string name, out long streamNumber, out long createdId, out string createdName) {
 			if (SystemStreams.IsMetastream(name))
 				throw new ArgumentException(nameof(name));
 
@@ -32,6 +32,8 @@ namespace EventStore.Core.LogV3 {
 			});
 
 			// return true if we found an existing entry. i.e. did not have to allocate from _next
+			createdId = streamNumber;
+			createdName = name;
 			return oldNext == _next;
 		}
 
