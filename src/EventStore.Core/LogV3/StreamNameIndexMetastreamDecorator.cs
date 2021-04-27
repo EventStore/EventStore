@@ -15,18 +15,21 @@ namespace EventStore.Core.LogV3 {
 			_metastreams = metastreams;
 		}
 
-		public bool GetOrAddId(string streamName, out long streamId) {
+		public bool GetOrAddId(string streamName, out long streamId, out long createdId, out string createdName) {
 			if (SystemStreams.IsMetastream(streamName)) {
 				streamName = SystemStreams.OriginalStreamOf(streamName);
-				var ret = GetOrAddId(streamName, out streamId);
+				var ret = GetOrAddId(streamName, out streamId, out createdId, out createdName);
 				streamId = _metastreams.MetaStreamOf(streamId);
 				return ret;
 			}
 
-			if (LogV3SystemStreams.TryGetVirtualStreamId(streamName, out streamId))
+			if (LogV3SystemStreams.TryGetVirtualStreamId(streamName, out streamId)) {
+				createdId = default;
+				createdName = default;
 				return true;
+			}
 
-			return _wrapped.GetOrAddId(streamName, out streamId);
+			return _wrapped.GetOrAddId(streamName, out streamId, out createdId, out createdName);
 		}
 	}
 }
