@@ -9,23 +9,25 @@ using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class when_working_with_stream_metadata_as_byte_array : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_working_with_stream_metadata_as_byte_array<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private MiniNode<TLogFormat, TStreamId> _node;
 		private IEventStoreConnection _connection;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
 			_connection = BuildConnection(_node);
 			await _connection.ConnectAsync();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
 		}
 
 		[OneTimeTearDown]

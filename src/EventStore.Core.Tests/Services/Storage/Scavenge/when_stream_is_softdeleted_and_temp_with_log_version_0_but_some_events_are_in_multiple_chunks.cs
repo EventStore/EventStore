@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -8,11 +8,12 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "No such thing as a V0 prepare in LogV3")]
 	public class
-		when_stream_is_softdeleted_and_temp_with_log_version_0_but_some_events_are_in_multiple_chunks :
-			ScavengeTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+		when_stream_is_softdeleted_and_temp_with_log_version_0_but_some_events_are_in_multiple_chunks<TLogFormat, TStreamId> :
+			ScavengeTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			var version = LogRecordVersion.LogRecordV0;
 			return dbCreator.Chunk(Rec.Prepare(0, "test", version: version),
 					Rec.Commit(0, "test", version: version))

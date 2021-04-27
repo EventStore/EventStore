@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +12,10 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_scavenging_tfchunk_with_version0_log_records_using_transactions : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "No such thing as a V0 prepare in LogV3")]
+	public class when_scavenging_tfchunk_with_version0_log_records_using_transactions<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
+
 		private const string _streamIdOne = "ES-1";
 		private const string _streamIdTwo = "ES-2";
 		private PrepareLogRecord _p1, _p2, _p3, _p4, _p5, _random1;

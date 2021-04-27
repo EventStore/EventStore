@@ -5,7 +5,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
-	public class TestFixtureWithCoreProjectionCheckpointManager : TestFixtureWithExistingEvents {
+	public abstract class TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected DefaultCheckpointManager _manager;
 		protected FakeCoreProjection _projection;
 		protected ProjectionConfig _config;

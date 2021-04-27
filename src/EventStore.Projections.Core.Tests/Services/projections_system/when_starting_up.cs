@@ -8,11 +8,13 @@ using System;
 using System.Net;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system {
 	namespace startup {
-		[TestFixture]
-		public class when_starting_with_empty_db : with_projections_subsystem {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_starting_with_empty_db<TLogFormat, TStreamId> : with_projections_subsystem<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new ProjectionManagementMessage.Command.GetStatistics(Envelope, ProjectionMode.AllNonTransient,
@@ -44,8 +46,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system {
 			}
 		}
 
-		[TestFixture]
-		public class when_starting_as_follower : with_projections_subsystem {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_starting_as_follower<TLogFormat, TStreamId> : with_projections_subsystem<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> PreWhen() {
 				yield return (new SystemMessage.BecomeFollower(Guid.NewGuid(),
 					MemberInfo.Initial(Guid.NewGuid(), DateTime.UtcNow, VNodeState.Unknown, true,

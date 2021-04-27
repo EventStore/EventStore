@@ -5,9 +5,11 @@ using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	[Category("ClientAPI"), Category("LongRunning")]
-	public class append_to_stream_with_event_numbers_greater_than_2_billion : MiniNodeWithExistingRecords {
+	public class append_to_stream_with_event_numbers_greater_than_2_billion<TLogFormat, TStreamId>
+		: MiniNodeWithExistingRecords<TLogFormat, TStreamId> {
 		private const string StreamName = "append_to_stream_with_event_numbers_greater_than_2_billion";
 		private const long intMaxValue = (long)int.MaxValue;
 

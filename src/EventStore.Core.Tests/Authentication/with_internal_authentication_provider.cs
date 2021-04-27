@@ -7,7 +7,7 @@ using EventStore.Core.Tests.Helpers;
 using EventStore.Plugins.Authentication;
 
 namespace EventStore.Core.Tests.Authentication {
-	public class with_internal_authentication_provider : TestFixtureWithExistingEvents {
+	public abstract class with_internal_authentication_provider<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected new IODispatcher _ioDispatcher;
 		protected InternalAuthenticationProvider _internalAuthenticationProvider;
 

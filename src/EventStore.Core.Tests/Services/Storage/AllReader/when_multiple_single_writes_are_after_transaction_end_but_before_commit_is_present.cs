@@ -3,9 +3,11 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class
-		when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present : RepeatableDbTestScenario {
+		when_multiple_single_writes_are_after_transaction_end_but_before_commit_is_present<TLogFormat, TStreamId>
+		: RepeatableDbTestScenario<TLogFormat, TStreamId> {
 		[Test]
 		public void should_be_able_to_read_the_transactional_writes_when_the_commit_is_present() {
 			/*

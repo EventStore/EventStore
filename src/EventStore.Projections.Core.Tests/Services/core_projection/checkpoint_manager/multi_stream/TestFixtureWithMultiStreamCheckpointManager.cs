@@ -1,7 +1,7 @@
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
-	public class TestFixtureWithMultiStreamCheckpointManager : TestFixtureWithCoreProjectionCheckpointManager {
+	public abstract class TestFixtureWithMultiStreamCheckpointManager<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> {
 		protected new string[] _streams;
 
 		protected override void Given() {

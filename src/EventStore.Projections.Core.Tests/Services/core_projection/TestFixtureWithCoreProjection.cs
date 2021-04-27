@@ -11,7 +11,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	public abstract class TestFixtureWithCoreProjection : TestFixtureWithExistingEvents {
+	public abstract class TestFixtureWithCoreProjection<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected CoreProjection _coreProjection;
 		protected TestHandler<ReaderSubscriptionManagement.Subscribe> _subscribeProjectionHandler;
 		protected TestHandler<ClientMessage.WriteEvents> _writeEventHandler;

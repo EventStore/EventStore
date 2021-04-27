@@ -20,12 +20,9 @@ using System.IO;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
-	public abstract class MiniNodeWithExistingRecords : MiniNodeWithExistingRecords<string> {
-	}
-
-	public abstract class MiniNodeWithExistingRecords<TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	public abstract class MiniNodeWithExistingRecords<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType = TcpType.Ssl;
-		protected MiniNode Node;
+		protected MiniNode<TLogFormat, TStreamId> Node;
 
 		protected readonly int MaxEntriesInMemTable = 20;
 		protected readonly long MetastreamMaxCount = 1;
@@ -43,8 +40,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 		protected IEventStoreConnection _store;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.To(node, _tcpType);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.To(node, _tcpType);
 		}
 
 		[OneTimeSetUp]
@@ -80,7 +77,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Db.Close();
 
 			// start node with our created DB
-			Node = new MiniNode(PathName, inMemDb: false, dbPath: dbPath);
+			Node = new MiniNode<TLogFormat, TStreamId>(PathName, inMemDb: false, dbPath: dbPath);
 			await Node.Start();
 
 			try {
@@ -101,14 +98,14 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		public abstract void WriteTestScenario();
 		public abstract Task Given();
 
-		protected EventRecord WriteSingleEvent(TStreamId eventStreamId,
+		protected EventRecord WriteSingleEvent(string eventStreamName,
 			long eventNumber,
 			string data,
 			DateTime? timestamp = null,
 			Guid eventId = default(Guid),
 			string eventType = "some-type") {
-
-			var logFormat = LogFormatHelper<TStreamId>.LogFormat;
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId(eventStreamName, out var eventStreamId, out _, out _);
 			var prepare = LogRecord.SingleWrite(
 				logFormat.RecordFactory,
 				WriterCheckpoint.ReadNonFlushed(),
@@ -125,9 +122,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
 			Assert.IsTrue(Writer.Write(commit, out pos));
+			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			var streamName = logFormat.StreamNames.LookupName(prepare.EventStreamId);
-			var eventRecord = new EventRecord(eventNumber, prepare, streamName);
+			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName);
 			return eventRecord;
 		}
 	}

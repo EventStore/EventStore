@@ -5,14 +5,15 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Metastreams {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_last_2 : SimpleDbTestScenario {
+		when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_last_2<TLogFormat, TStreamId> : SimpleDbTestScenario<TLogFormat, TStreamId> {
 		public when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_last_2()
 			: base(metastreamMaxCount: 2) {
 		}
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator.Chunk(
 					Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(10, null, null, null, null)),
 					Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(9, null, null, null, null)),

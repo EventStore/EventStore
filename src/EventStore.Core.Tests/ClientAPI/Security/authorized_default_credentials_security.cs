@@ -4,8 +4,10 @@ using EventStore.ClientAPI.SystemData;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
-	public class authorized_default_credentials_security : AuthenticationTestBase {
+	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class authorized_default_credentials_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		public authorized_default_credentials_security() : base(new UserCredentials("user1", "pa$$1")) {
 		}
 
@@ -19,11 +21,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("read-stream", null, null);
 
 			await WriteStream("write-stream", null, null);
-			await ExpectNoException(async () => {
-				var trans = await TransStart("write-stream", null, null);
-				await trans.WriteAsync();
-				await trans.CommitAsync();
-			});
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await ExpectNoException(async () => {
+					var trans = await TransStart("write-stream", null, null);
+					await trans.WriteAsync();
+					await trans.CommitAsync();
+				});
+			}
 
 			await ReadMeta("metaread-stream", null, null);
 			await WriteMeta("metawrite-stream", null, null, "user1");
@@ -44,10 +49,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => WriteStream("write-stream", "badlogin", "badpass"));
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => TransStart("write-stream", "badlogin", "badpass"));
 
-			var transId = (await TransStart("write-stream", null, null)).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
-			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.WriteAsync());
-			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.CommitAsync());
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("write-stream", null, null)).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("badlogin", "badpass"));
+				await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.WriteAsync());
+				await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => trans.CommitAsync());
+			}
 
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => ReadMeta("metaread-stream", "badlogin", "badpass"));
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass", "user1"));
@@ -68,10 +75,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("write-stream", "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("write-stream", "user2", "pa$$2"));
 
-			var transId = (await TransStart("write-stream", null, null)).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("write-stream", null, null)).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			}
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("metaread-stream", "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("metawrite-stream", "user2", "pa$$2", "user1"));

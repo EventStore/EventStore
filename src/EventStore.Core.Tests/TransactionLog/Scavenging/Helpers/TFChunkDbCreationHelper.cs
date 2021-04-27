@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV2;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
@@ -9,13 +10,15 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
-	public class TFChunkDbCreationHelper {
+	public class TFChunkDbCreationHelper<TLogFormat, TStreamId> {
 		private readonly TFChunkDbConfig _dbConfig;
 		private readonly TFChunkDb _db;
 
 		private readonly List<Rec[]> _chunkRecs = new List<Rec[]>();
 
 		private bool _completeLast;
+
+		private static LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		public TFChunkDbCreationHelper(TFChunkDbConfig dbConfig) {
 			Ensure.NotNull(dbConfig, "dbConfig");
@@ -28,12 +31,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				throw new Exception("The DB already contains some data.");
 		}
 
-		public TFChunkDbCreationHelper Chunk(params Rec[] records) {
+		public TFChunkDbCreationHelper<TLogFormat, TStreamId> Chunk(params Rec[] records) {
 			_chunkRecs.Add(records);
 			return this;
 		}
 
-		public TFChunkDbCreationHelper CompleteLastChunk() {
+		public TFChunkDbCreationHelper<TLogFormat, TStreamId> CompleteLastChunk() {
 			_completeLast = true;
 			return this;
 		}
@@ -199,12 +202,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
 					}
 
-					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
+					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
 						transOffset,
-						rec.StreamId,
+						streamId,
 						expectedVersion,
 						rec.PrepareFlags
 						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
@@ -228,12 +232,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
 					}
 
-					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
+					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
 						transOffset,
-						rec.StreamId,
+						streamId,
 						expectedVersion,
 						PrepareFlags.StreamDelete
 						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
@@ -253,12 +258,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
 					}
 
-					return LogRecord.Prepare(new LogV2RecordFactory(), logPos,
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
+					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,
 						transInfo.TransactionPosition,
 						-1,
-						rec.StreamId,
+						streamId,
 						expectedVersion,
 						(transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
@@ -283,6 +289,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 		private LogRecord CreateLogRecordV0(Rec rec, TransactionInfo transInfo, int transOffset, long logPos,
 			long expectedVersion, ReadOnlyMemory<byte> data, PrepareFlags flags) {
+
+			LogFormatHelper<TLogFormat, TStreamId>.EnsureV0PrepareSupported();
+
 			return new PrepareLogRecord(logPos,
 				Guid.NewGuid(),
 				rec.Id,

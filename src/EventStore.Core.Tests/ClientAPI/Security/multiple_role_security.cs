@@ -7,8 +7,10 @@ using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
-	public class multiple_role_security : AuthenticationTestBase {
+	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class multiple_role_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();

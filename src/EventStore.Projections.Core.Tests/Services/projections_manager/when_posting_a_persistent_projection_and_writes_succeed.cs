@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_posting_a_persistent_projection_and_writes_succeed : TestFixtureWithProjectionCoreAndManagementServices {
+		when_posting_a_persistent_projection_and_writes_succeed<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		protected override void Given() {
 			NoStream("$projections-test-projection-order");
 			AllWritesToSucceed("$projections-test-projection-order");

@@ -16,8 +16,10 @@ using EventStore.ClientAPI.Common;
 // ReSharper disable InconsistentNaming
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
-	[TestFixture, Category("LongRunning")]
-	class with_subscription_having_events : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class with_subscription_having_events<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected List<object> Events;
 		protected string SubscriptionPath;
 		protected string GroupName;
@@ -72,8 +74,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_messages_without_permission : with_subscription_having_events {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override async Task Given() {
 			await base.Given();
 			await SecureStream();
@@ -92,8 +96,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_messages_from_an_empty_subscription : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_an_empty_subscription<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _response;
 		protected List<object> Events;
 		protected string SubscriptionPath;
@@ -147,7 +153,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_n_messages : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_n_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
 		protected override async Task When() {
@@ -164,7 +172,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_more_than_n_messages : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_more_than_n_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
 		protected override async Task When() {
@@ -181,7 +191,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_less_than_n_messags : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_less_than_n_messags<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
 		protected override async Task When() {
@@ -198,7 +210,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_unspecified_count : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_unspecified_count<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
 		protected override async Task When() {
@@ -215,7 +229,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_a_negative_count : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_a_negative_count<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override Task When() {
 			return Get(SubscriptionPath + "/-1",
 				"",
@@ -229,7 +245,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_a_count_of_0 : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_a_count_of_0<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override async Task When() {
 			await Get(SubscriptionPath + "/0",
 				"",
@@ -243,7 +261,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_count_more_than_100 : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_count_more_than_100<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override async Task When() {
 			await Get(SubscriptionPath + "/101",
 				"",
@@ -257,7 +277,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_count_not_an_integer : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_count_not_an_integer<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override Task When() {
 			return Get(SubscriptionPath + "/10.1",
 				"",
@@ -271,7 +293,9 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	class when_getting_messages_from_a_subscription_with_count_not_a_number : with_subscription_having_events {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_messages_from_a_subscription_with_count_not_a_number<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override Task When() {
 			return Get(SubscriptionPath + "/one",
 				"",

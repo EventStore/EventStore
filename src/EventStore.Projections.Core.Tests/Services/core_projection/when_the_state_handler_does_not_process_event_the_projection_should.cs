@@ -1,14 +1,16 @@
 using System;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	[TestFixture]
-	public class when_the_state_handler_does_not_process_event_the_projection_should :
-		TestFixtureWithCoreProjectionStarted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_the_state_handler_does_not_process_event_the_projection_should<TLogFormat, TStreamId> :
+		TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		protected override void Given() {
 			ExistingEvent(
 				"$projections-projection-result", "Result", @"{""c"": 100, ""p"": 50}", "{}");

@@ -10,9 +10,10 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk : SpecificationWithDirectory {
+		when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();
 		private InMemoryCheckpoint _checkpoint;
@@ -33,13 +34,18 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var tf = new TFChunkWriter(db);
 			long pos;
 
-			var record1 = new PrepareLogRecord(logPosition: 0,
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var record1 = LogRecord.Prepare(
+				factory: logFormat.RecordFactory,
+				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
 				expectedVersion: 1234,
-				transactionPosition: 0,
+				transactionPos: 0,
 				transactionOffset: 0,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
 				eventType: "type",
@@ -47,13 +53,15 @@ namespace EventStore.Core.Tests.TransactionLog {
 				metadata: new byte[8000]);
 			Assert.IsTrue(tf.Write(record1, out pos)); // almost fill up first chunk
 
-			var record2 = new PrepareLogRecord(logPosition: pos,
+			var record2 = LogRecord.Prepare(
+				factory: logFormat.RecordFactory,
+				logPosition: pos,
 				correlationId: _correlationId,
 				eventId: _eventId,
 				expectedVersion: 1234,
-				transactionPosition: pos,
+				transactionPos: pos,
 				transactionOffset: 0,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
 				eventType: "type",
@@ -61,13 +69,15 @@ namespace EventStore.Core.Tests.TransactionLog {
 				metadata: new byte[8000]);
 			Assert.IsFalse(tf.Write(record2, out pos)); // chunk has too small space
 
-			var record3 = new PrepareLogRecord(logPosition: pos,
+			var record3 = LogRecord.Prepare(
+				factory: logFormat.RecordFactory,
+				logPosition: pos,
 				correlationId: _correlationId,
 				eventId: _eventId,
 				expectedVersion: 1234,
-				transactionPosition: pos,
+				transactionPos: pos,
 				transactionOffset: 0,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
 				eventType: "type",

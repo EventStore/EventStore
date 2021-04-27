@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader {
-	[TestFixture]
-	public class when_creating : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_creating<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private string[] _abStreams;
 		private Dictionary<string, long> _ab12Tag;
 		private new RealTimeProvider _timeProvider;

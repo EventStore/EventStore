@@ -20,7 +20,7 @@ using EventStore.ClientAPI.Projections;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
-	public class specification_with_standard_projections_runnning : SpecificationWithDirectoryPerTestFixture {
+	public abstract class specification_with_standard_projections_runnning<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected IEventStoreConnection _conn;
 		protected UserCredentials _admin = DefaultData.AdminCredentials;
 		protected ProjectionsManager _manager;
@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 #if DEBUG
 		private Task _projectionsCreated;
 		private ProjectionsSubsystem _projections;
-		private MiniNode _node;
+		private MiniNode<TLogFormat, TStreamId> _node;
 #endif
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
@@ -41,7 +41,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				startStandardProjections: false,
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
-			_node = new MiniNode(
+			_node = new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
 				subsystems: new ISubsystem[] {_projections});
 			_projectionsCreated = SystemProjections.Created(_projections.LeaderMainBus);

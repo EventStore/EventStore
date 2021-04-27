@@ -8,7 +8,7 @@ using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientOperations {
-	public abstract class specification_with_request_manager_integration : specification_with_bare_vnode {
+	public abstract class specification_with_request_manager_integration<TLogFormat, TStreamId> : specification_with_bare_vnode<TLogFormat, TStreamId> {
 		
 		protected long CompletionMessageCount;
 		protected StorageMessage.RequestCompleted CompletionMessage;

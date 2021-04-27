@@ -10,8 +10,11 @@ using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class read_all_events_filtered_paging_should : SpecificationWithMiniNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class read_all_events_filtered_paging_should<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private List<EventData> _testEvents = new List<EventData>();
 
 		private List<EventData> _testEventsA;

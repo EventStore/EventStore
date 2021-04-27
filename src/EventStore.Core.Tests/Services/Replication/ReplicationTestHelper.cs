@@ -13,7 +13,8 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 	public static class ReplicationTestHelper {
 		private static TimeSpan _timeout = TimeSpan.FromSeconds(8);
 
-		public static ClientMessage.WriteEventsCompleted WriteEvent(MiniClusterNode node, Event[] events,
+		public static ClientMessage.WriteEventsCompleted WriteEvent<TLogFormat, TStreamId>(
+			MiniClusterNode<TLogFormat, TStreamId> node, Event[] events,
 			string streamId) {
 			var resetEvent = new ManualResetEventSlim();
 			ClientMessage.WriteEventsCompleted writeResult = null;
@@ -34,7 +35,8 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			return writeResult;
 		}
 
-		public static ClientMessage.ReadAllEventsForwardCompleted ReadAllEventsForward(MiniClusterNode node,
+		public static ClientMessage.ReadAllEventsForwardCompleted ReadAllEventsForward<TLogFormat, TStreamId>(
+			MiniClusterNode<TLogFormat, TStreamId> node,
 			long position) {
 			ClientMessage.ReadAllEventsForwardCompleted readResult = null;
 			var readEvent = new ManualResetEventSlim();
@@ -65,7 +67,8 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			return readResult;
 		}
 
-		public static ClientMessage.ReadAllEventsBackwardCompleted ReadAllEventsBackward(MiniClusterNode node,
+		public static ClientMessage.ReadAllEventsBackwardCompleted ReadAllEventsBackward<TLogFormat, TStreamId>(
+			MiniClusterNode<TLogFormat, TStreamId> node,
 			long position) {
 			ClientMessage.ReadAllEventsBackwardCompleted readResult = null;
 			var resetEvent = new ManualResetEventSlim();
@@ -96,7 +99,8 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			return readResult;
 		}
 
-		public static ClientMessage.ReadStreamEventsForwardCompleted ReadStreamEventsForward(MiniClusterNode node,
+		public static ClientMessage.ReadStreamEventsForwardCompleted ReadStreamEventsForward<TLogFormat, TStreamId>(
+			MiniClusterNode<TLogFormat, TStreamId> node,
 			string streamId) {
 			ClientMessage.ReadStreamEventsForwardCompleted readResult = null;
 			var resetEvent = new ManualResetEventSlim();
@@ -116,7 +120,8 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			return readResult;
 		}
 
-		public static ClientMessage.ReadStreamEventsBackwardCompleted ReadStreamEventsBackward(MiniClusterNode node,
+		public static ClientMessage.ReadStreamEventsBackwardCompleted ReadStreamEventsBackward<TLogFormat, TStreamId>(
+			MiniClusterNode<TLogFormat, TStreamId> node,
 			string streamId) {
 			ClientMessage.ReadStreamEventsBackwardCompleted readResult = null;
 			var resetEvent = new ManualResetEventSlim();
@@ -136,7 +141,8 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			return readResult;
 		}
 
-		public static ClientMessage.ReadEventCompleted ReadEvent(MiniClusterNode node, string streamId,
+		public static ClientMessage.ReadEventCompleted ReadEvent<TLogFormat, TStreamId>(
+			MiniClusterNode<TLogFormat, TStreamId> node, string streamId,
 			long eventNumber) {
 			ClientMessage.ReadEventCompleted readResult = null;
 			var resetEvent = new ManualResetEventSlim();

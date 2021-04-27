@@ -1,12 +1,14 @@
 ﻿using System;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {
-	[TestFixture]
-	public class when_creating_stream_event_reader : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_creating_stream_event_reader<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		[Test]
 		public void it_can_be_created() {
 			new StreamEventReader(_bus, Guid.NewGuid(), null, "stream", 0, new RealTimeProvider(), false,

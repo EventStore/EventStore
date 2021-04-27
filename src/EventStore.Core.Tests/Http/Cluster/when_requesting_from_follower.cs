@@ -10,9 +10,10 @@ using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Http.Cluster {
-	[TestFixture]
 	[Category("LongRunning")]
-	public class when_requesting_from_follower : specification_with_cluster {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_requesting_from_follower<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private const string TestStream = "test-stream";
 		private IPEndPoint _followerEndPoint;
 		private IPEndPoint _leaderEndPoint;

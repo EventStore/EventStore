@@ -7,8 +7,11 @@ using EventStore.ClientAPI.Common;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class happy_case_writing_and_subscribing_to_normal_events_manual_ack : SpecificationWithMiniNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class happy_case_writing_and_subscribing_to_normal_events_manual_ack<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 		private const int BufferCount = 10;
@@ -55,8 +58,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class happy_case_writing_and_subscribing_to_normal_events_auto_ack : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class happy_case_writing_and_subscribing_to_normal_events_auto_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 		private const int BufferCount = 10;
@@ -101,8 +106,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class happy_case_catching_up_to_normal_events_auto_ack : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class happy_case_catching_up_to_normal_events_auto_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 		private const int BufferCount = 10;
@@ -149,8 +156,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class happy_case_catching_up_to_normal_events_manual_ack : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class happy_case_catching_up_to_normal_events_manual_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 		private const int BufferCount = 10;
@@ -197,8 +206,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class happy_case_catching_up_to_link_to_events_manual_ack : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class happy_case_catching_up_to_link_to_events_manual_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 		private const int BufferCount = 10;
@@ -249,8 +260,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class happy_case_catching_up_to_link_to_events_auto_ack : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class happy_case_catching_up_to_link_to_events_auto_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 		private const int BufferCount = 10;
@@ -299,8 +312,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class when_writing_and_subscribing_to_normal_events_manual_nack : SpecificationWithMiniNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_writing_and_subscribing_to_normal_events_manual_nack<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 		private const int BufferCount = 10;
@@ -346,8 +362,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class when_connection_drops_messages_that_have_run_out_of_retries_are_not_retried : SpecificationWithMiniNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_connection_drops_messages_that_have_run_out_of_retries_are_not_retried<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string StreamName = Guid.NewGuid().ToString();
 		private readonly string GroupName = Guid.NewGuid().ToString();
 

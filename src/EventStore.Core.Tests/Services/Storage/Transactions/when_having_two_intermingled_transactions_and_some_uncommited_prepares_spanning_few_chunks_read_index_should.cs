@@ -5,10 +5,11 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class
-		when_having_two_intermingled_transactions_and_some_uncommited_prepares_spanning_few_chunks_read_index_should :
-			ReadIndexTestScenario {
+		when_having_two_intermingled_transactions_and_some_uncommited_prepares_spanning_few_chunks_read_index_should<TLogFormat, TStreamId> :
+			ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _p1;
 		private EventRecord _p2;
 		private EventRecord _p3;
@@ -21,34 +22,38 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		private long _t2CommitPos;
 
 		protected override void WriteTestScenario() {
-			var t1 = WriteTransactionBegin("ES", ExpectedVersion.NoStream);
-			var t2 = WriteTransactionBegin("ABC", ExpectedVersion.NoStream);
+			const string streamId1 = "ES";
+			const string streamId2 = "ABC";
 
-			_p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, t1.EventStreamId, 0,
+			var t1 = WriteTransactionBegin(streamId1, ExpectedVersion.NoStream);
+			var t2 = WriteTransactionBegin(streamId2, ExpectedVersion.NoStream);
+
+			_p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, streamId1, 0,
 				"es1" + new string('.', 3000), PrepareFlags.Data);
-			_p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, t2.EventStreamId, 0,
+			_p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, streamId2, 0,
 				"abc1" + new string('.', 3000), PrepareFlags.Data);
-			_p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, t1.EventStreamId, 1,
+			_p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, streamId1, 1,
 				"es1" + new string('.', 3000), PrepareFlags.Data);
-			_p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, t2.EventStreamId, 1,
+			_p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, streamId2, 1,
 				"abc1" + new string('.', 3000), PrepareFlags.Data, retryOnFail: true);
-			_p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, t1.EventStreamId, 2,
+			_p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, streamId1, 2,
 				"es1" + new string('.', 3000), PrepareFlags.Data);
 
-			WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId);
-			WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId);
+			WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, streamId2);
+			WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, streamId1);
 
-			_t2CommitPos = WriteCommit(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId, _p2.EventNumber);
-			_t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId, _p1.EventNumber);
+			_t2CommitPos = WriteCommit(t2.CorrelationId, t2.TransactionPosition, streamId2, _p2.EventNumber);
+			_t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, streamId1, _p1.EventNumber);
 
 			_pos6 = Db.Config.WriterCheckpoint.ReadNonFlushed();
-			var r6 = LogRecord.Prepare(_recordFactory, _pos6, Guid.NewGuid(), Guid.NewGuid(), _pos6, 0, "t1", -1,
+			_streamNameIndex.GetOrAddId("t1", out var t1StreamId, out _, out _);
+			var r6 = LogRecord.Prepare(_recordFactory, _pos6, Guid.NewGuid(), Guid.NewGuid(), _pos6, 0, t1StreamId, -1,
 				PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
 			Writer.Write(r6, out _pos7);
-			var r7 = LogRecord.Prepare(_recordFactory, _pos7, Guid.NewGuid(), Guid.NewGuid(), _pos7, 0, "t1", -1,
+			var r7 = LogRecord.Prepare(_recordFactory, _pos7, Guid.NewGuid(), Guid.NewGuid(), _pos7, 0, t1StreamId, -1,
 				PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
 			Writer.Write(r7, out _pos8);
-			var r8 = LogRecord.Prepare(_recordFactory, _pos8, Guid.NewGuid(), Guid.NewGuid(), _pos8, 0, "t1", -1,
+			var r8 = LogRecord.Prepare(_recordFactory, _pos8, Guid.NewGuid(), Guid.NewGuid(), _pos8, 0, t1StreamId, -1,
 				PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
 			long pos9;
 			Writer.Write(r8, out pos9);

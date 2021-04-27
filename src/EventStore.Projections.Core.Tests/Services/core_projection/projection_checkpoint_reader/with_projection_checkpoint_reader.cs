@@ -10,7 +10,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint_reader {
-	public abstract class with_projection_checkpoint_reader : IHandle<ClientMessage.ReadStreamEventsBackward> {
+	public abstract class with_projection_checkpoint_reader<TLogFormat, TStreamId> : IHandle<ClientMessage.ReadStreamEventsBackward> {
 		protected readonly string _projectionCheckpointStreamId = "projection-checkpoint-stream";
 		protected readonly Guid _projectionId = Guid.NewGuid();
 
@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 		public abstract void When();
 
 		public virtual void Handle(ClientMessage.ReadStreamEventsBackward message) {
-			var evnts = IODispatcherTestHelpers.CreateResolvedEvent(message.EventStreamId,
+			var evnts = IODispatcherTestHelpers.CreateResolvedEvent<TLogFormat, TStreamId>(message.EventStreamId,
 				ProjectionEventTypes.ProjectionCheckpoint, "[]",
 				@"{
                     ""$v"": ""1:-1:3:3"",

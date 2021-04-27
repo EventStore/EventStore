@@ -3,8 +3,9 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
-	[TestFixture]
-	public class  when_index_committer_service_receives_duplicate_commit_acks : with_index_committer_service {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class  when_index_committer_service_receives_duplicate_commit_acks<TLogFormat, TStreamId> : with_index_committer_service<TLogFormat, TStreamId> {
 		private readonly long _logPosition = 4000;
 		private readonly Guid _correlationId = Guid.NewGuid();
 		public override void Given() { }

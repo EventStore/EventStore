@@ -1,13 +1,15 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
-	[TestFixture]
-	public class when_the_stream_is_started_with_already_emitted_events : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_the_stream_is_started_with_already_emitted_events<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private EmittedStream _stream;
 		private TestCheckpointManagerMessageHandler _readyHandler;
 

@@ -10,9 +10,10 @@ using EventStore.Core.Tests.Replication.ReadStream;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
-	[TestFixture]
 	[Category("LongRunning")]
-	public class when_reading_an_event_committed_on_leader_and_on_followers : specification_with_cluster {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_an_event_committed_on_leader_and_on_followers<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 
 		private string _streamId =

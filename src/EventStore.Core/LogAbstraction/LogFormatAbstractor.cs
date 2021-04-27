@@ -19,7 +19,8 @@ namespace EventStore.Core.LogAbstraction {
 				new LogV2StreamIdValidator(),
 				emptyStreamId: string.Empty,
 				new LogV2Sizer(),
-				new LogV2RecordFactory());
+				new LogV2RecordFactory(),
+				supportsExplicitTransactions: true);
 
 			var logV3StreamNameIndex = new InMemoryStreamNameIndex();
 			var metastreams = new LogV3Metastreams();
@@ -38,7 +39,8 @@ namespace EventStore.Core.LogAbstraction {
 				streamIdValidator: new LogV3StreamIdValidator(),
 				emptyStreamId: 0,
 				streamIdSizer: new LogV3Sizer(),
-				recordFactory: new LogV3RecordFactory());
+				recordFactory: new LogV3RecordFactory(),
+				supportsExplicitTransactions: false);
 		}
 	}
 
@@ -52,7 +54,8 @@ namespace EventStore.Core.LogAbstraction {
 			IValidator<TStreamId> streamIdValidator,
 			TStreamId emptyStreamId,
 			ISizer<TStreamId> streamIdSizer,
-			IRecordFactory<TStreamId> recordFactory) {
+			IRecordFactory<TStreamId> recordFactory,
+			bool supportsExplicitTransactions) {
 
 			LowHasher = lowHasher;
 			HighHasher = highHasher;
@@ -63,6 +66,7 @@ namespace EventStore.Core.LogAbstraction {
 			EmptyStreamId = emptyStreamId;
 			StreamIdSizer = streamIdSizer;
 			RecordFactory = recordFactory;
+			SupportsExplicitTransactions = supportsExplicitTransactions;
 		}
 
 		public IHasher<TStreamId> LowHasher { get; }
@@ -77,5 +81,6 @@ namespace EventStore.Core.LogAbstraction {
 
 		public IStreamNameLookup<TStreamId> StreamNames => StreamNamesProvider.StreamNames;
 		public ISystemStreamLookup<TStreamId> SystemStreams => StreamNamesProvider.SystemStreams;
+		public bool SupportsExplicitTransactions { get; }
 	}
 }

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Messages;
@@ -11,8 +12,9 @@ using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_event_reader {
-	[TestFixture]
-	public class when_tf_based_read_completes_before_timeout : EventByTypeIndexEventReaderTestFixture {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_tf_based_read_completes_before_timeout<TLogFormat, TStreamId> : EventByTypeIndexEventReaderTestFixture<TLogFormat, TStreamId> {
 		private EventByTypeIndexEventReader _eventReader;
 		private Guid _distributionCorrelationId;
 

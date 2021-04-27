@@ -4,8 +4,10 @@ using EventStore.ClientAPI;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class read_all_events_forward_with_linkto_passed_max_count : SpecificationWithLinkToToMaxCountDeletedEvents {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class read_all_events_forward_with_linkto_passed_max_count<TLogFormat, TStreamId> : SpecificationWithLinkToToMaxCountDeletedEvents<TLogFormat, TStreamId> {
 		private StreamEventsSlice _read;
 
 		protected override async Task When() {

@@ -1,11 +1,14 @@
 ﻿using System.Threading.Tasks;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_category_foreach_projection.
 	recovery {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	// ReSharper disable once InconsistentNaming
-	public class when_running_and_events_are_indexed : specification_with_standard_projections_runnning {
+	public class when_running_and_events_are_indexed<TLogFormat, TStreamId>
+		: specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 		protected override bool GivenStandardProjectionsRunning() {
 			return false;
 		}

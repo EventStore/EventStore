@@ -22,8 +22,8 @@ using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 	[Category("ClientAPI")]
-	public class specification_with_standard_projections_runnning : SpecificationWithDirectoryPerTestFixture {
-		protected MiniClusterNode[] _nodes = new MiniClusterNode[3];
+	public abstract class specification_with_standard_projections_runnning<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		protected MiniClusterNode<TLogFormat, TStreamId>[] _nodes = new MiniClusterNode<TLogFormat, TStreamId>[3];
 		protected Endpoints[] _nodeEndpoints = new Endpoints[3];
 		protected IEventStoreConnection _conn;
 		private readonly ProjectionsSubsystem[] _projections = new ProjectionsSubsystem[3];
@@ -115,12 +115,12 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 #endif
 		}
 
-		private MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds) {
+		private MiniClusterNode<TLogFormat, TStreamId> CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds) {
 			_projections[index] = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
 				startStandardProjections: false,
 				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
-			var node = new MiniClusterNode(
+			var node = new MiniClusterNode<TLogFormat, TStreamId>(
 				PathName, index, endpoints.InternalTcp,
 				endpoints.ExternalTcp, endpoints.HttpEndPoint,
 				subsystems: new ISubsystem[] { _projections[index] }, gossipSeeds: gossipSeeds);
@@ -296,8 +296,10 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 	}
 
-	[TestFixture, Explicit]
-	public class vnode_cluster_specification : specification_with_standard_projections_runnning {
+	[Explicit]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class vnode_cluster_specification<TLogFormat, TStreamId> : specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 		[Test, Explicit]
 		public async Task vnode_cluster_starts() {
 			await PostProjection(@"fromStream('$user-admin').outputState()");

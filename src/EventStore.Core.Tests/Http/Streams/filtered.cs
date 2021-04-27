@@ -10,7 +10,7 @@ using EventStore.Transport.Http;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	public class filtered {
-		public abstract class SpecificationWithLongFeed : with_admin_user {
+		public abstract class SpecificationWithLongFeed<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected int NumberOfEvents;
 
 			protected override async Task Given() {
@@ -49,8 +49,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			protected string AllFilteredStreamForward => "/streams/$all/filtered/00000000000000000000000000000000/forward/14";
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_with_invalid_context : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_with_invalid_context<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStream,
 					ContentType.AtomJson,
@@ -62,8 +64,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(HttpStatusCode.BadRequest, _lastResponse.StatusCode);
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_with_invalid_type : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_with_invalid_type<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStream,
 					ContentType.AtomJson,
@@ -75,8 +79,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(HttpStatusCode.BadRequest, _lastResponse.StatusCode);
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_with_invalid_data : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_with_invalid_data<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStream,
 					ContentType.AtomJson,
@@ -88,8 +94,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(HttpStatusCode.BadRequest, _lastResponse.StatusCode);
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_feed_head : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
 			protected override async Task When() =>
@@ -136,8 +144,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_feed_events_by_event_type_and_prefix : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_feed_events_by_event_type_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -157,8 +167,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_feed_events_by_event_type_and_regex : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_feed_events_by_event_type_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -177,8 +189,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_feed_events_by_stream_id_and_prefix : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_feed_events_by_stream_id_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -197,8 +211,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_feed_events_by_stream_id_and_regex : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_feed_events_by_stream_id_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -217,8 +233,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_backward_feed_events_filtering_system_events : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_backward_feed_events_filtering_system_events<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -237,8 +255,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_with_invalid_context : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_with_invalid_context<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStreamForward,
 					ContentType.AtomJson,
@@ -251,8 +271,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(HttpStatusCode.BadRequest, _lastResponse.StatusCode);
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_with_invalid_type : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_with_invalid_type<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStreamForward,
 					ContentType.AtomJson,
@@ -264,8 +286,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(HttpStatusCode.BadRequest, _lastResponse.StatusCode);
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_with_invalid_data : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_with_invalid_data<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStreamForward,
 					ContentType.AtomJson,
@@ -277,8 +301,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 				Assert.AreEqual(HttpStatusCode.BadRequest, _lastResponse.StatusCode);
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_feed_head : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
 			protected override async Task When() =>
@@ -317,8 +343,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_feed_events_by_event_type_and_prefix : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_feed_events_by_event_type_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -338,8 +366,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_feed_events_by_event_type_and_regex : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_feed_events_by_event_type_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -358,8 +388,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_feed_events_by_stream_id_and_prefix : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_feed_events_by_stream_id_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -378,8 +410,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_feed_events_by_stream_id_and_regex : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_feed_events_by_stream_id_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {
@@ -398,8 +432,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_forward_feed_events_filtering_system_events : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_forward_feed_events_filtering_system_events<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
 			protected override async Task When() {

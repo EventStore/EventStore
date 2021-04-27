@@ -7,11 +7,9 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using TestFixtureWithExistingEvents =
-	EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader {
-	public class TestFixtureWithEventReaderService : TestFixtureWithExistingEvents {
+	public class TestFixtureWithEventReaderService<TLogFormat, TStreamId> : core_projection.TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected EventReaderCoreService _readerService;
 
 		protected override void Given1() {

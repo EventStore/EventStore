@@ -3,8 +3,10 @@ using EventStore.ClientAPI;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class read_all_events_forward_with_linkto_to_deleted_event : SpecificationWithLinkToToDeletedEvents {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class read_all_events_forward_with_linkto_to_deleted_event<TLogFormat, TStreamId> : SpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
 		private StreamEventsSlice _read;
 
 		protected override async Task When() {

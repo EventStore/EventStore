@@ -18,13 +18,15 @@ using Position = EventStore.ClientAPI.Position;
 using StatusCode = Grpc.Core.StatusCode;
 
 namespace EventStore.Core.Tests.Integration {
-	public abstract class authenticated_requests_made_from_a_follower : specification_with_cluster {
+	public abstract class authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private const string ProtectedStream = "$foo";
 
 		private static readonly string AuthorizationHeaderValue =
 			$"Basic {Convert.ToBase64String(Encoding.ASCII.GetBytes("admin:changeit"))}";
 
-		public class via_http_should : authenticated_requests_made_from_a_follower {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class via_http_should : authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> {
 			private HttpStatusCode _statusCode;
 
 			protected override async Task Given() {
@@ -64,7 +66,9 @@ namespace EventStore.Core.Tests.Integration {
 			public void work() => Assert.AreEqual(HttpStatusCode.Created, _statusCode);
 		}
 
-		public class via_grpc_should : authenticated_requests_made_from_a_follower {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class via_grpc_should : authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> {
 			private Status _status;
 
 			protected override async Task Given() {
@@ -123,7 +127,9 @@ namespace EventStore.Core.Tests.Integration {
 			public void work() => Assert.AreEqual(StatusCode.OK, _status.StatusCode);
 		}
 
-		public class via_tcp_should : authenticated_requests_made_from_a_follower {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class via_tcp_should : authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> {
 			private Exception _caughtException;
 
 			protected override async Task Given() {

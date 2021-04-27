@@ -9,7 +9,7 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Http.Users {
 	namespace users {
-		public abstract class with_admin_user : HttpBehaviorSpecification {
+		public abstract class with_admin_user<TLogFormat, TStreamId> : HttpBehaviorSpecification<TLogFormat, TStreamId> {
 			protected readonly NetworkCredential _admin = DefaultData.AdminNetworkCredentials;
 
 			protected override bool GivenSkipInitializeStandardUsersCheck() {
@@ -21,8 +21,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_creating_a_user : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_creating_a_user<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() => Task.CompletedTask;
@@ -45,8 +47,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_retrieving_a_user_details : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_retrieving_a_user_details<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private JObject _response;
 
 			protected override Task Given() {
@@ -111,8 +115,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_retrieving_a_disabled_user_details : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_retrieving_a_disabled_user_details<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private JObject _response;
 
 			protected override async Task Given() {
@@ -174,8 +180,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_creating_an_already_existing_user_account : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_creating_an_already_existing_user_account<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override async Task Given() {
@@ -195,8 +203,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_creating_an_already_existing_user_account_with_a_different_password : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_creating_an_already_existing_user_account_with_a_different_password<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override async Task Given() {
@@ -217,8 +227,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_disabling_an_enabled_user_account : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_disabling_an_enabled_user_account<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected override Task Given() {
 				return MakeJsonPost(
 					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
@@ -242,8 +254,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_enabling_a_disabled_user_account : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_enabling_a_disabled_user_account<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override async Task Given() {
@@ -270,8 +284,10 @@ namespace EventStore.Core.Tests.Http.Users {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_updating_user_details : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_updating_user_details<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {
@@ -297,8 +313,10 @@ namespace EventStore.Core.Tests.Http.Users {
 		}
 
 
-		[TestFixture, Category("LongRunning")]
-		class when_resetting_a_password : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_resetting_a_password<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {
@@ -327,8 +345,10 @@ namespace EventStore.Core.Tests.Http.Users {
 		}
 
 
-		[TestFixture, Category("LongRunning")]
-		class when_deleting_a_user_account : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_deleting_a_user_account<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {

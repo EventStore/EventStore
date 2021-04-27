@@ -1,5 +1,4 @@
 using System;
-using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.LogRecords;
 
@@ -32,8 +31,6 @@ namespace EventStore.Core.LogV3 {
 			string eventType,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata) {
-
-			Ensure.Equal(logPosition, transactionPosition, nameof(transactionPosition));
 
 			var result = new LogV3StreamWriteRecord(
 				logPosition: logPosition,

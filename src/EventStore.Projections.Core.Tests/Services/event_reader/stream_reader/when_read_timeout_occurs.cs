@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -12,8 +13,9 @@ using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {
-	[TestFixture]
-	public class when_read_timeout_occurs : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_read_timeout_occurs<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private StreamEventReader _eventReader;
 		private Guid _distributionCorrelationId;
 		private FakeTimeProvider _fakeTimeProvider;

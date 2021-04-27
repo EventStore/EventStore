@@ -2,15 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture]
-	public class when_updating_a_faulted_projection_query_text_invalid_defintion :
-		TestFixtureWithProjectionCoreAndManagementServices {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_updating_a_faulted_projection_query_text_invalid_defintion<TLogFormat, TStreamId> :
+		TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		protected override void Given() {
 			NoStream("$projections-test-projection");
 			NoStream("$projections-test-projection-result");

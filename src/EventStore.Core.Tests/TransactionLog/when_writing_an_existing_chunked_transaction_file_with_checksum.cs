@@ -9,8 +9,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_writing_an_existing_chunked_transaction_file_with_checksum : SpecificationWithDirectory {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_writing_an_existing_chunked_transaction_file_with_checksum<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();
 		private InMemoryCheckpoint _checkpoint;
@@ -27,14 +28,20 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_checkpoint = new InMemoryCheckpoint(137);
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, _checkpoint, new InMemoryCheckpoint()));
 			db.Open();
+
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
 			var tf = new TFChunkWriter(db);
-			var record = new PrepareLogRecord(logPosition: _checkpoint.Read(),
+			var record = LogRecord.Prepare(
+				factory: logFormat.RecordFactory,
+				logPosition: _checkpoint.Read(),
 				correlationId: _correlationId,
 				eventId: _eventId,
 				expectedVersion: 1234,
-				transactionPosition: 0,
+				transactionPos: 0,
 				transactionOffset: 0,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
 				eventType: "type",

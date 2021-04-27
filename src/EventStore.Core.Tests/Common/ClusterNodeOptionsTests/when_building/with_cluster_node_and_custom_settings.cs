@@ -5,8 +5,9 @@ using EventStore.Core.LogAbstraction;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
-	[TestFixture]
-	public class with_cluster_dns_name : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_cluster_dns_name<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options with {
 				Cluster = options.Cluster with {
@@ -25,8 +26,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_dns_discovery_disabled_and_no_gossip_seeds {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_dns_discovery_disabled_and_no_gossip_seeds<TLogFormat, TStreamId> {
 		private Exception _caughtException;
 		protected ClusterVNodeOptions _options;
 
@@ -38,7 +40,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				}
 			}.RunInMemory();
 			try {
-				_ = new ClusterVNode<string>(_options, LogFormatAbstractor.V2);
+				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormat);
 			} catch (Exception e) {
 				_caughtException = e;
 			}
@@ -50,8 +52,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_dns_discovery_disabled_and_gossip_seeds_defined : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_dns_discovery_disabled_and_gossip_seeds_defined<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		private EndPoint[] _gossipSeeds = {
 			new DnsEndPoint("127.0.1.10", 1111),
 			new DnsEndPoint("127.0.1.10", 1112),
@@ -71,8 +74,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_prepare_ack_count_set_higher_than_the_quorum : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_prepare_ack_count_set_higher_than_the_quorum<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options with {
 				Cluster = options.Cluster with {
@@ -86,8 +90,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_commit_ack_count_set_higher_than_the_quorum : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_commit_ack_count_set_higher_than_the_quorum<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options with {
 				Cluster = options.Cluster with {
@@ -101,8 +106,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_prepare_ack_count_set_lower_than_the_quorum : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_prepare_ack_count_set_lower_than_the_quorum<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options with {
 				Cluster = options.Cluster with {
@@ -116,8 +122,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_commit_ack_count_set_lower_than_the_quorum : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_commit_ack_count_set_lower_than_the_quorum<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options with {
 				Cluster = options.Cluster with {
@@ -132,8 +139,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	}
 
 
-	[TestFixture]
-	public class with_custom_gossip_seeds : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_custom_gossip_seeds<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		private readonly DnsEndPoint[] _gossipSeeds = {new("127.0.1.15", 2112), new("127.0.1.15", 3112)};
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
@@ -150,8 +158,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_custom_external_ip_address_as_advertise_info : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_custom_external_ip_address_as_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options
 				.Insecure()
@@ -174,8 +183,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_0_0_0_0_as_external_ip_address_and_custom_advertise_info : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_0_0_0_0_as_external_ip_address_and_custom_advertise_info<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options
 				.Insecure()
@@ -198,8 +208,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_0_0_0_0_as_external_ip_address_with_no_explicit_advertise_info_set<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options
 				.Insecure()
@@ -221,9 +232,10 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external : ClusterMemberScenario {
+		with_0_0_0_0_for_internal_and_external_ips_with_advertise_info_set_for_external<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options
 				.Insecure()

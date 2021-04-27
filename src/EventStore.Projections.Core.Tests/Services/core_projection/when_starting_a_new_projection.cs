@@ -2,10 +2,12 @@ using System;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	[TestFixture]
-	public class when_starting_a_new_projection : TestFixtureWithCoreProjectionStarted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_starting_a_new_projection<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		protected override void Given() {
 			NoStream("$projections-projection-result");
 			NoStream("$projections-projection-order");

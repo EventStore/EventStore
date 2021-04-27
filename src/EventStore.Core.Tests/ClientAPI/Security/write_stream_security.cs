@@ -3,8 +3,10 @@ using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
-	public class write_stream_security : AuthenticationTestBase {
+	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class write_stream_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		[Test]
 		public async Task writing_to_all_is_never_allowed() {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("$all", null, null));

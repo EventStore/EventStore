@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
 using EventStore.Core.Services;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.system_projections {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_changing_categorization_projection_configurations_to_first : specification_with_a_v8_query_posted {
+		when_changing_categorization_projection_configurations_to_first<TLogFormat, TStreamId> : specification_with_a_v8_query_posted<TLogFormat, TStreamId> {
 		protected override void GivenEvents() {
 			ExistingEvent("account-000-01", "test", "", "{\"a\":1}", isJson: true);
 			ExistingEvent("account-000-01", "test", "", "{\"a\":2}", isJson: true);

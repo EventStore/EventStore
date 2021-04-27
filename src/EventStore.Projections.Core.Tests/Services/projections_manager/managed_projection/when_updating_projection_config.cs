@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
@@ -12,8 +13,9 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
-	[TestFixture]
-	public class when_getting_config : projection_config_test_base {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_getting_config<TLogFormat, TStreamId> : projection_config_test_base<TLogFormat, TStreamId> {
 		private ManagedProjection _mp;
 		private Guid _projectionId = Guid.NewGuid();
 		private ProjectionManagementMessage.ProjectionConfig _config;
@@ -73,8 +75,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		}
 	}
 
-	[TestFixture]
-	public class when_updating_projection_config_of_faulted_projection : projection_config_test_base {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_updating_projection_config_of_faulted_projection<TLogFormat, TStreamId> : projection_config_test_base<TLogFormat, TStreamId> {
 		private ManagedProjection _mp;
 		private Guid _projectionId = Guid.NewGuid();
 		private Exception _thrownException;
@@ -146,8 +149,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		}
 	}
 
-	[TestFixture]
-	public class when_updating_projection_config_of_running_projection : projection_config_test_base {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_updating_projection_config_of_running_projection<TLogFormat, TStreamId> : projection_config_test_base<TLogFormat, TStreamId> {
 		private ManagedProjection _mp;
 		private Guid _projectionId = Guid.NewGuid();
 
@@ -222,7 +226,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		}
 	}
 
-	public class projection_config_test_base : TestFixtureWithExistingEvents {
+	public abstract class projection_config_test_base<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected ManagedProjection CreateManagedProjection() {
 			return new ManagedProjection(
 				Guid.NewGuid(),

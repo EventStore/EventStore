@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -10,7 +11,7 @@ using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_reader.catching_up {
 	namespace index_checkpoint {
-		abstract class with_some_indexed_events : TestFixtureWithEventReaderService {
+		abstract class with_some_indexed_events<TLogFormat, TStreamId> : TestFixtureWithEventReaderService<TLogFormat, TStreamId> {
 			protected Guid _subscriptionId;
 			private QuerySourcesDefinition _sourceDefinition;
 			protected IReaderStrategy _readerStrategy;
@@ -73,8 +74,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 			}
 		}
 
-		[TestFixture]
-		class when_index_checkpoint_is_written_while_idle : with_some_indexed_events {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_index_checkpoint_is_written_while_idle<TLogFormat, TStreamId> : with_some_indexed_events<TLogFormat, TStreamId> {
 			protected override void GivenInitialIndexState() {
 				ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
 
@@ -125,8 +127,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 			}
 		}
 
-		[TestFixture]
-		class when_the_index_checkpoint_is_read_last : with_some_indexed_events {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_the_index_checkpoint_is_read_last<TLogFormat, TStreamId> : with_some_indexed_events<TLogFormat, TStreamId> {
 			protected override void GivenInitialIndexState() {
 				ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
 				ExistingEvent("$et-type2", "$>", TFPosToMetadata(_tfPos2), "1@test-stream");

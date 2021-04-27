@@ -7,7 +7,9 @@ using EventStore.Core.Util;
 using static EventStore.Core.Messages.TcpClientMessageDto.Filter;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
-	public class when_reading_all_with_filtering : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_all_with_filtering<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		TFPos _forwardReadPos;
 		TFPos _backwardReadPos;
 

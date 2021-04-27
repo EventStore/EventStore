@@ -9,9 +9,10 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer :
+		when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer<TLogFormat, TStreamId> :
 			SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();
@@ -35,12 +36,18 @@ namespace EventStore.Core.Tests.TransactionLog {
 				bytes = new byte[3994]; // this gives exactly 4097 size of record, with 3993 (rec size 4096) everything works fine!
 			new Random().NextBytes(bytes);
 			var writer = new TFChunkWriter(db);
-			var record = new PrepareLogRecord(logPosition: 137,
+			
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var record = LogRecord.Prepare(
+				factory: logFormat.RecordFactory,
+				logPosition: 137,
 				correlationId: _correlationId,
 				eventId: _eventId,
-				transactionPosition: 789,
+				transactionPos: 789,
 				transactionOffset: 543,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.SingleWrite,

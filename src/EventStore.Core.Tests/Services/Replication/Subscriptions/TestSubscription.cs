@@ -8,14 +8,14 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
-	public class TestSubscription {
-		public MiniClusterNode Node;
+	public class TestSubscription<TLogFormat, TStreamId> {
+		public MiniClusterNode<TLogFormat, TStreamId> Node;
 		public CountdownEvent SubscriptionsConfirmed;
 		public CountdownEvent EventAppeared;
 		public List<ClientMessage.StreamEventAppeared> StreamEvents;
 		public string StreamId;
 
-		public TestSubscription(MiniClusterNode node, int expectedEvents, string streamId,
+		public TestSubscription(MiniClusterNode<TLogFormat, TStreamId> node, int expectedEvents, string streamId,
 			CountdownEvent subscriptionsConfirmed) {
 			Node = node;
 			SubscriptionsConfirmed = subscriptionsConfirmed;

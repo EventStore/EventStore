@@ -3,10 +3,11 @@ using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db :
-			TruncateAndReOpenDbScenario {
+		when_truncating_single_uncompleted_chunk_with_index_in_memory_and_then_reopening_db<TLogFormat, TStreamId> :
+			TruncateAndReOpenDbScenario<TLogFormat, TStreamId> {
 		private EventRecord _event1;
 		private EventRecord _event2;
 		private EventRecord _event3;

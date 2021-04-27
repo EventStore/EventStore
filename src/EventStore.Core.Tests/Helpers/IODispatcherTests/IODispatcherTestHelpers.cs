@@ -9,12 +9,13 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests {
 	public static class IODispatcherTestHelpers {
-		public static ResolvedEvent[] CreateResolvedEvent(string streamId, string eventType, string data,
+		public static ResolvedEvent[] CreateResolvedEvent<TLogFormat, TStreamId>(string stream, string eventType, string data,
 			string metadata = "", long eventNumber = 0) {
-			var recordFactory = LogFormatAbstractor.V2.RecordFactory;
-			var record = new EventRecord(eventNumber, LogRecord.Prepare(recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
+			var record = new EventRecord(eventNumber, LogRecord.Prepare<TStreamId>(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				streamId, eventNumber, PrepareFlags.None, eventType, Encoding.UTF8.GetBytes(data),
-				Encoding.UTF8.GetBytes(metadata)));
+				Encoding.UTF8.GetBytes(metadata)), stream);
 			return new ResolvedEvent[] {
 				ResolvedEvent.ForUnresolvedEvent(record, 0)
 			};

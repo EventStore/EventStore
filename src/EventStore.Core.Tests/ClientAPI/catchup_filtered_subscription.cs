@@ -13,10 +13,11 @@ using System.Threading.Tasks;
 using EventStore.Core.Services;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture]
 	[Category("LongRunning"), Category("ClientAPI")]
-	public class catchup_filtered_subscription : SpecificationWithDirectory {
-		private MiniNode _node;
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class catchup_filtered_subscription<TLogFormat, TStreamId> : SpecificationWithDirectory {
+		private MiniNode<TLogFormat, TStreamId> _node;
 		private IEventStoreConnection _conn;
 		private List<EventData> _testEvents;
 		private List<EventData> _testEventsAfter;
@@ -25,7 +26,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[SetUp]
 		public override async Task SetUp() {
 			await base.SetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
 			_conn = BuildConnection(_node);
@@ -58,8 +59,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _conn.AppendToStreamAsync("stream-b", ExpectedVersion.NoStream, _testEvents.OddEvents());
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
 		}
 
 		[Test]

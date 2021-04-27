@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
@@ -11,8 +12,9 @@ using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.transaction_file_reader {
-	[TestFixture]
-	public class when_onetime_reader_handles_eof : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_onetime_reader_handles_eof<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private TransactionFileEventReader _edp;
 		private Guid _distibutionPointCorrelationId;
 		private Guid _firstEventId;

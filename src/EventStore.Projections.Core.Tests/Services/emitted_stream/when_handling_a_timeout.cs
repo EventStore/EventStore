@@ -5,10 +5,12 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using System.Collections.Generic;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoch {
-	[TestFixture]
-	public class when_handling_a_timeout : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_handling_a_timeout<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private EmittedStream _stream;
 		private TestCheckpointManagerMessageHandler _readyHandler;
 

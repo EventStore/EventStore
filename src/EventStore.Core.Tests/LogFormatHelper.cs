@@ -2,17 +2,38 @@
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests {
-	// thing that can choose between a V2 or V3 implementation according to the
-	// TStreamId type parameter. Handy for tests; don't write anything like this in the main code.
-	internal static class LogFormatHelper<TStreamId> {
-		public static T WhenV2<T>(object v2) =>
-			typeof(TStreamId) == typeof(string) ? (T)v2 : throw new NotImplementedException();
+	public class LogFormat {
+		public class V2{}
+		public class V3{}
+	}
 
-		public static T Choose<T>(object v2, object v3) =>
-			typeof(TStreamId) == typeof(string) ? (T)v2 : (T)v3;
+	internal static class LogFormatHelper<TLogFormat, TStreamId> {
+		public static T Choose<T>(object v2, object v3) {
+			if (typeof(TLogFormat) == typeof(LogFormat.V2)) {
+				if (typeof(TStreamId) != typeof(string)) throw new InvalidOperationException();
+				return (T)v2;
+			}
+			if(typeof(TLogFormat) == typeof(LogFormat.V3)) {
+				if (typeof(TStreamId) != typeof(long)) throw new InvalidOperationException($"TStreamId was {typeof(TStreamId)} but expected long");
+				return (T)v3;
+			}
+			throw new InvalidOperationException();
+		}
 
 		public static LogFormatAbstractor<TStreamId> LogFormat { get; } =
-			WhenV2<LogFormatAbstractor<TStreamId>>(LogFormatAbstractor.V2);
+			Choose<LogFormatAbstractor<TStreamId>>(LogFormatAbstractor.V2, LogFormatAbstractor.V3);
+
+		public static void CheckIfExplicitTransactionsSupported() {
+			if (typeof(TLogFormat) == typeof(LogFormat.V3)) {
+				throw new InvalidOperationException("Explicit transactions are not supported yet by Log V3");
+			}
+		}
+
+		public static void EnsureV0PrepareSupported() {
+			if (typeof(TLogFormat) == typeof(LogFormat.V3)) {
+				throw new InvalidOperationException("No such thing as a V0 prepare in LogV3");
+			}
+		}
 	}
 }
 		

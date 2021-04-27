@@ -7,12 +7,14 @@ using EventStore.Core.Services.UserManagement;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Integration.Idempotency {
-	public class when_soft_deleted_stream_is_written_to_idempotently : specification_with_a_single_node {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_soft_deleted_stream_is_written_to_idempotently<TLogFormat, TStreamId> : specification_with_a_single_node<TLogFormat, TStreamId> {
 		private readonly string _streamId;
 		private readonly Event[] _events;
 
 		public when_soft_deleted_stream_is_written_to_idempotently() {
-			_streamId = $"{nameof(when_soft_deleted_stream_is_written_to_idempotently)}-{Guid.NewGuid()}";
+			_streamId = $"{nameof(when_soft_deleted_stream_is_written_to_idempotently<TLogFormat, TStreamId>)}-{Guid.NewGuid()}";
 			_events = new[] {new Event(Guid.NewGuid(), "event-type", false, new byte[] { }, new byte[] { })};
 		}
 

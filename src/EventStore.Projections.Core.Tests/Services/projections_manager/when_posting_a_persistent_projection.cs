@@ -4,14 +4,16 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture]
-	public class when_posting_a_persistent_projection : TestFixtureWithProjectionCoreAndManagementServices {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_posting_a_persistent_projection<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		private string _projectionName;
 
 		protected override void Given() {

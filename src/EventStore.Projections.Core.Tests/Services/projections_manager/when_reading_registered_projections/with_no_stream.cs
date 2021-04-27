@@ -4,12 +4,14 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
 using System.Collections.Generic;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_reading_registered_projections {
-	[TestFixture]
-	public class with_no_stream : TestFixtureWithProjectionCoreAndManagementServices {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_no_stream<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		protected override void Given() {
 			AllWritesSucceed();
 			NoStream(ProjectionNamesBuilder.ProjectionsRegistrationStream);

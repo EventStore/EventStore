@@ -7,9 +7,11 @@ using NUnit.Framework;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	[Category("ClientAPI"), Category("LongRunning")]
-	public class read_stream_with_event_numbers_greater_than_2_billion : MiniNodeWithExistingRecords {
+	public class read_stream_with_event_numbers_greater_than_2_billion<TLogFormat, TStreamId>
+		: MiniNodeWithExistingRecords<TLogFormat, TStreamId> {
 		private const string StreamName = "read_stream_with_event_numbers_greater_than_2_billion";
 		private const long intMaxValue = (long)int.MaxValue;
 

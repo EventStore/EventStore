@@ -6,6 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -13,7 +14,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_state {
 	public static class a_new_posted_projection {
-		public abstract class Base : TestFixtureWithProjectionCoreAndManagementServices {
+		public abstract class Base<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			protected string _projectionName;
 			protected string _projectionSource;
 			protected Type _fakeProjectionType;
@@ -48,8 +49,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
 			}
 		}
 
-		[TestFixture]
-		public class when_get_state : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_get_state<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return (
@@ -68,8 +70,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
 			}
 		}
 
-		[TestFixture]
-		public class when_stopping : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_stopping<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			private Guid _reader;
 
 			protected override IEnumerable<WhenStep> When() {

@@ -5,13 +5,11 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk_in_db_with_3_chunks : ReadIndexTestScenario {
+		when_deleting_single_stream_spanning_through_2_chunks_in_2nd_chunk_in_db_with_3_chunks<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _event7;
-		private IPrepareLogRecord<string> _event7prepare;
-		private CommitLogRecord _event7commit;
-
 		private EventRecord _event9;
 
 		protected override void WriteTestScenario() {
@@ -22,10 +20,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			WriteSingleEvent("ES", 3, new string('.', 3000), retryOnFail: true); // chunk 2
 			WriteSingleEvent("ES", 4, new string('.', 3000));
 
-			_event7prepare = WriteDeletePrepare("ES");
-			_event7commit = WriteDeleteCommit(_event7prepare);
-			_event7 = new EventRecord(EventNumber.DeletedStream, _event7prepare);
-
+			_event7 = WriteDelete("ES");
 			_event9 = WriteSingleEvent("ES2", 0, new string('.', 5000), retryOnFail: true); //chunk 3
 
 			Scavenge(completeLast: false, mergeChunks: false);
@@ -88,17 +83,10 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			// cannot use readIndex here as it doesn't return deleteTombstone
 
 			var chunk = Db.Manager.GetChunk(1);
-			var chunkPos = (int)(_event7prepare.LogPosition % Db.Config.ChunkSize);
+			var chunkPos = (int)(_event7.LogPosition % Db.Config.ChunkSize);
 			var res = chunk.TryReadAt(chunkPos);
 
 			Assert.IsTrue(res.Success);
-			Assert.AreEqual(_event7prepare, res.LogRecord);
-
-			chunkPos = (int)(_event7commit.LogPosition % Db.Config.ChunkSize);
-			res = chunk.TryReadAt(chunkPos);
-
-			Assert.IsTrue(res.Success);
-			Assert.AreEqual(_event7commit, res.LogRecord);
 		}
 	}
 }

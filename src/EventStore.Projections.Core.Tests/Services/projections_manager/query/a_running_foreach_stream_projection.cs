@@ -5,6 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -12,7 +13,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 	public class a_running_foreach_stream_projection {
-		public abstract class Base : a_new_posted_projection.Base {
+		public abstract class Base<TLogFormat, TStreamId> : a_new_posted_projection.Base<TLogFormat, TStreamId> {
 			protected Guid _reader;
 
 			protected override void Given() {
@@ -60,8 +61,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_receiving_eof : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_receiving_eof<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 

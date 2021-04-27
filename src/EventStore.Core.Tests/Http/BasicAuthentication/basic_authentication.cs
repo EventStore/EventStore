@@ -8,9 +8,10 @@ using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.BasicAuthentication {
 	namespace basic_authentication {
-
-		[TestFixture, Category("LongRunning")]
-		class when_requesting_an_unprotected_resource : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_requesting_an_unprotected_resource<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected override Task Given() => Task.CompletedTask;
 			protected override async Task When() {
 				SetDefaultCredentials(null);
@@ -28,8 +29,10 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_requesting_a_protected_resource : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_requesting_a_protected_resource<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected override Task Given() => Task.CompletedTask;
 
 			protected override async Task When() {
@@ -48,8 +51,10 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_requesting_a_protected_resource_with_credentials_provided : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_requesting_a_protected_resource_with_credentials_provided<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected override async Task Given() {
 				var response = await MakeJsonPost(
 					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
@@ -66,8 +71,10 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_requesting_a_protected_resource_with_invalid_credentials_provided : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_requesting_a_protected_resource_with_invalid_credentials_provided<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected override async Task Given() {
 				var response = await MakeJsonPost(
 					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
@@ -84,8 +91,10 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_requesting_a_protected_resource_with_credentials_of_disabled_user_account : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_requesting_a_protected_resource_with_credentials_of_disabled_user_account<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected override async Task Given() {
 				var response = await MakeJsonPost(
 					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);
@@ -104,8 +113,10 @@ namespace EventStore.Core.Tests.Http.BasicAuthentication {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		class when_requesting_a_protected_resource_with_credentials_of_deleted_user_account : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_requesting_a_protected_resource_with_credentials_of_deleted_user_account<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected override async Task Given() {
 				var response = await MakeRawJsonPost(
 					"/users/", new { LoginName = "test1", FullName = "User Full Name", Password = "Pa55w0rd!" }, _admin);

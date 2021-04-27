@@ -2,7 +2,7 @@ using EventStore.Projections.Core.EventReaders.Feeds;
 using EventStore.Projections.Core.Tests.Services.event_reader;
 
 namespace EventStore.Projections.Core.Tests.Services.feed_reader {
-	public abstract class TestFixtureWithFeedReaderService : TestFixtureWithEventReaderService {
+	public abstract class TestFixtureWithFeedReaderService<TLogFormat, TStreamId> : TestFixtureWithEventReaderService<TLogFormat, TStreamId> {
 		protected FeedReaderService _feedReaderService;
 
 		protected override void Given1() {
