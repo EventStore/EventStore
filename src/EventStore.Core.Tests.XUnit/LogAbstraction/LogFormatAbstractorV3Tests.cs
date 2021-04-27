@@ -1,40 +1,71 @@
+using System;
+using System.Collections.Generic;
+using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV3;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 
 namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 	// check that lookups of the various combinations of virtual/normal/meta
 	// work in both directions and in the stream index.
-	// todo: ideally check that no unexpected (i.e. meta or virtual) streams have been
-	// added to the underlying index after each test.
 	public class LogFormatAbstractorV3Tests {
-		readonly LogFormatAbstractor<long> _sut = LogFormatAbstractor.V3;
+		readonly LogFormatAbstractor<long> _sut = LogFormatAbstractor.CreateV3();
 		readonly string _stream = "account-abc";
 		readonly string _systemStream = "$something-parked";
 		readonly long _streamId;
 		readonly long _systemStreamId;
+		readonly MockIndexReader _mockIndexReader = new();
+		readonly int _numStreams;
 
 		public LogFormatAbstractorV3Tests() {
-			_sut.StreamNamesProvider.SetReader(null);
-			_sut.StreamNameIndex.GetOrAddId(_stream, out _streamId, out _, out _);
-			_sut.StreamNameIndex.GetOrAddId(_systemStream, out _systemStreamId, out _, out _);
+			_sut.StreamNamesProvider.SetReader(_mockIndexReader);
+			GetOrAddId(_stream, out _streamId, out _, out _);
+			GetOrAddId(_systemStream, out _systemStreamId, out _, out _);
+			_numStreams = 2;
+		}
+
+		// it is up to the user of the V3 abstractor to index created streams, simulate that here.
+		// this is because we are currently using the normal event index to look up the stream names
+		bool GetOrAddId(string streamName, out long streamId, out long createdId, out string createdName) {
+			_sut.StreamNameIndex.GetOrAddId(
+				recordFactory: _sut.RecordFactory,
+				streamName: streamName,
+				logPosition: 123,
+				streamId: out streamId,
+				streamRecord: out var record);
+
+			if (record is LogV3StreamRecord streamRecord) {
+				createdId = streamRecord.Record.SubHeader.ReferenceId;
+				createdName = streamRecord.StreamName;
+				_mockIndexReader.Add(streamRecord.ExpectedVersion + 1, streamRecord);
+				return false;
+			} else {
+				createdId = default;
+				createdName = default;
+				return true;
+			}
 		}
 
 		[Fact]
 		public void can_add_another_stream() {
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("new-stream-1", out var newStreamId1, out var createdId1, out var createdName1));
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("new-stream-2", out var newStreamId2, out var createdId2, out var createdName2));
+			Assert.False(GetOrAddId("new-stream-1", out var newStreamId1, out var createdId1, out var createdName1));
+			Assert.False(GetOrAddId("new-stream-2", out var newStreamId2, out var createdId2, out var createdName2));
 			Assert.Equal(newStreamId1 + 2, newStreamId2);
 			Assert.Equal(newStreamId1, createdId1);
 			Assert.Equal(newStreamId2, createdId2);
 			Assert.Equal("new-stream-1", createdName1);
 			Assert.Equal("new-stream-2", createdName2);
+			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
 		}
 
 		[Fact]
 		public void can_add_another_meta_stream() {
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("$$new-stream-3", out var newStreamId1, out var createdId1, out var createdName1));
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("$$new-stream-4", out var newStreamId2, out var createdId2, out var createdName2));
+			Assert.False(GetOrAddId("$$new-stream-3", out var newStreamId1, out var createdId1, out var createdName1));
+			Assert.False(GetOrAddId("$$new-stream-4", out var newStreamId2, out var createdId2, out var createdName2));
+			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
 
 			// ids should be 2 apart to leave room for meta
 			Assert.Equal(newStreamId1 + 2, newStreamId2);
@@ -48,8 +79,9 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 
 		[Fact]
 		public void can_add_another_system_stream() {
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("$new-stream-5", out var newStreamId1, out var createdId1, out var createdName1));
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("$new-stream-6", out var newStreamId2, out var createdId2, out var createdName2));
+			Assert.False(GetOrAddId("$new-stream-5", out var newStreamId1, out var createdId1, out var createdName1));
+			Assert.False(GetOrAddId("$new-stream-6", out var newStreamId2, out var createdId2, out var createdName2));
+			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
 
 			// ids should be 2 apart to leave room for meta
 			Assert.Equal(newStreamId1 + 2, newStreamId2);
@@ -63,8 +95,9 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 
 		[Fact]
 		public void can_add_another_system_meta_stream() {
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("$$$new-stream-7", out var newStreamId1, out var createdId1, out var createdName1));
-			Assert.False(_sut.StreamNameIndex.GetOrAddId("$$$new-stream-8", out var newStreamId2, out var createdId2, out var createdName2));
+			Assert.False(GetOrAddId("$$$new-stream-7", out var newStreamId1, out var createdId1, out var createdName1));
+			Assert.False(GetOrAddId("$$$new-stream-8", out var newStreamId2, out var createdId2, out var createdName2));
+			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
 
 			// ids should be 2 apart to leave room for meta
 			Assert.Equal(newStreamId1 + 2, newStreamId2);
@@ -78,7 +111,8 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 
 		[Fact]
 		public void can_find_existing_stream() {
-			Assert.True(_sut.StreamNameIndex.GetOrAddId(_stream, out var streamId, out _, out _));
+			Assert.True(GetOrAddId(_stream, out var streamId, out _, out _));
+			Assert.Equal(_numStreams, _mockIndexReader.Count);
 			Assert.Equal(_streamId, streamId);
 			Assert.Equal(_streamId, _sut.StreamIds.LookupId(_stream));
 			Assert.Equal(_stream, _sut.StreamNames.LookupName(_streamId));
@@ -90,7 +124,8 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		public void can_find_existing_meta_stream() {
 			var metaStreamName = "$$" + _stream;
 			var expectedMetaStreamId = _streamId + 1;
-			Assert.True(_sut.StreamNameIndex.GetOrAddId(metaStreamName, out var streamId, out _, out _));
+			Assert.True(GetOrAddId(metaStreamName, out var streamId, out _, out _));
+			Assert.Equal(_numStreams, _mockIndexReader.Count);
 			Assert.Equal(expectedMetaStreamId, streamId);
 			Assert.Equal(expectedMetaStreamId, _sut.StreamIds.LookupId(metaStreamName));
 			Assert.Equal(metaStreamName, _sut.StreamNames.LookupName(expectedMetaStreamId));
@@ -100,7 +135,8 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 
 		[Fact]
 		public void can_find_existing_system_stream() {
-			Assert.True(_sut.StreamNameIndex.GetOrAddId(_systemStream, out var streamId, out _, out _));
+			Assert.True(GetOrAddId(_systemStream, out var streamId, out _, out _));
+			Assert.Equal(_numStreams, _mockIndexReader.Count);
 			Assert.Equal(_systemStreamId, streamId);
 			Assert.Equal(_systemStreamId, _sut.StreamIds.LookupId(_systemStream));
 			Assert.Equal(_systemStream, _sut.StreamNames.LookupName(_systemStreamId));
@@ -112,7 +148,8 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		public void can_find_existing_system_meta_stream() {
 			var metaStreamName = "$$" + _systemStream;
 			var expectedMetaStreamId = _systemStreamId + 1;
-			Assert.True(_sut.StreamNameIndex.GetOrAddId(metaStreamName, out var streamId, out _, out _));
+			Assert.True(GetOrAddId(metaStreamName, out var streamId, out _, out _));
+			Assert.Equal(_numStreams, _mockIndexReader.Count);
 			Assert.Equal(expectedMetaStreamId, streamId);
 			Assert.Equal(expectedMetaStreamId, _sut.StreamIds.LookupId(metaStreamName));
 			Assert.Equal(metaStreamName, _sut.StreamNames.LookupName(expectedMetaStreamId));
@@ -125,7 +162,8 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		[InlineData(6, "$streams-created")]
 		[InlineData(8, "$settings")]
 		public void can_find_virtual_stream(long expectedId, string name) {
-			Assert.True(_sut.StreamNameIndex.GetOrAddId(name, out var streamId, out _, out _));
+			Assert.True(GetOrAddId(name, out var streamId, out _, out _));
+			Assert.Equal(_numStreams, _mockIndexReader.Count);
 			Assert.Equal(expectedId, streamId);
 			Assert.Equal(expectedId, _sut.StreamIds.LookupId(name));
 			Assert.Equal(name, _sut.StreamNames.LookupName(expectedId));
@@ -135,7 +173,8 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 
 		[Fact]
 		public void can_find_virtual_meta_stream() {
-			Assert.True(_sut.StreamNameIndex.GetOrAddId("$$$all", out var streamId, out _, out _));
+			Assert.True(GetOrAddId("$$$all", out var streamId, out _, out _));
+			Assert.Equal(_numStreams, _mockIndexReader.Count);
 			Assert.Equal(5, streamId);
 			Assert.Equal(5, _sut.StreamIds.LookupId("$$$all"));
 			Assert.Equal("$$$all", _sut.StreamNames.LookupName(5));
@@ -148,10 +187,50 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		[InlineData(LogV3SystemStreams.NoUserMetastream, true, true, "$$new-user-stream")]
 		[InlineData(LogV3SystemStreams.NoSystemStream, false, true, "$new-system-stream")]
 		[InlineData(LogV3SystemStreams.NoSystemMetastream, true, true, "$$$new-system-stream")]
-		public void can_foo(long expectedId, bool expectedIsMeta, bool expectedIsSystem, string name) {
+		public void can_attempt_to_lookup_non_existent_streams(long expectedId, bool expectedIsMeta, bool expectedIsSystem, string name) {
 			Assert.Equal(expectedId, _sut.StreamIds.LookupId(name));
 			Assert.Equal(expectedIsMeta, _sut.SystemStreams.IsMetaStream(expectedId));
 			Assert.Equal(expectedIsSystem, _sut.SystemStreams.IsSystemStream(expectedId));
+		}
+
+		class MockIndexReader : IIndexReader<long> {
+			private readonly Dictionary<long, IPrepareLogRecord<long>> _streamsStream = new();
+
+			public void Add(long streamId, IPrepareLogRecord<long> streamRecord) => _streamsStream.Add(streamId, streamRecord);
+
+			public int Count => _streamsStream.Count;
+
+			public IPrepareLogRecord<long> ReadPrepare(long streamId, long eventNumber) {
+				// simulates what would be in the index.
+				return _streamsStream[eventNumber];
+			}
+
+			public long CachedStreamInfo => throw new NotImplementedException();
+
+			public long NotCachedStreamInfo => throw new NotImplementedException();
+
+			public long HashCollisions => throw new NotImplementedException();
+
+			public StorageMessage.EffectiveAcl GetEffectiveAcl(long streamId) =>
+				throw new NotImplementedException();
+
+			public long GetEventStreamIdByTransactionId(long transactionId) =>
+				throw new NotImplementedException();
+
+			public long GetStreamLastEventNumber(long streamId) =>
+				throw new NotImplementedException();
+
+			public StreamMetadata GetStreamMetadata(long streamId) =>
+				throw new NotImplementedException();
+
+			public IndexReadEventResult ReadEvent(string streamName, long streamId, long eventNumber) =>
+				throw new NotImplementedException();
+
+			public IndexReadStreamResult ReadStreamEventsBackward(string streamName, long streamId, long fromEventNumber, int maxCount) =>
+				throw new NotImplementedException();
+
+			public IndexReadStreamResult ReadStreamEventsForward(string streamName, long streamId, long fromEventNumber, int maxCount) =>
+				throw new NotImplementedException();
 		}
 	}
 }

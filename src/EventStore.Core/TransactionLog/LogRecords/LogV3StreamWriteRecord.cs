@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Common.Utils;
 using EventStore.LogCommon;
 using EventStore.LogV3;
@@ -68,6 +68,23 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public string EventType => Record.Event.SystemMetadata.EventType;
 		public ReadOnlyMemory<byte> Data => Record.Event.Data;
 		public ReadOnlyMemory<byte> Metadata => Record.Event.Metadata;
+
+		//qq is this covered by tests
+		public IPrepareLogRecord<long> CopyForRetry(long logPosition, long transactionPosition) {
+			return new LogV3StreamWriteRecord(
+				logPosition: logPosition,
+				transactionPosition: transactionPosition,
+				transactionOffset: TransactionOffset,
+				correlationId: CorrelationId,
+				eventId: EventId,
+				eventStreamId: EventStreamId,
+				expectedVersion: ExpectedVersion,
+				timeStamp: TimeStamp,
+				flags: Flags,
+				eventType: EventType,
+				data: Data.Span,
+				metadata: Metadata.Span);
+		}
 
 		public bool Equals(LogV3StreamWriteRecord other) {
 			if (ReferenceEquals(null, other)) return false;

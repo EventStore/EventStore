@@ -9,5 +9,6 @@ namespace EventStore.LogCommon {
 		ContentType = 6,
 		Partition = 7,
 		StreamWrite = 8,
+		Stream = 9,
 	}
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
 
@@ -13,6 +13,7 @@ namespace EventStore.LogV3 {
 		public ref readonly Raw.RecordHeader Header => ref Record.Header;
 		public ref readonly Raw.StreamWriteId WriteId => ref Record.RecordId<Raw.StreamWriteId>();
 		public ref readonly Raw.StreamWriteHeader SubHeader => ref Record.SubHeader;
+		public ReadOnlyMemory<byte> Payload => Record.Payload;
 		public StreamWriteSystemMetadata SystemMetadata { get; }
 
 		public StreamWriteRecord(RecordView<Raw.StreamWriteHeader> record) {

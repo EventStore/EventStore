@@ -99,6 +99,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
 					switch (result.LogRecord.RecordType) {
+						case LogRecordType.Stream:
 						case LogRecordType.Prepare: {
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {

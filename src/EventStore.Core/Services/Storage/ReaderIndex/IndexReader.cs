@@ -193,7 +193,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (!result.Success)
 				return null;
 
-			if (result.LogRecord.RecordType != LogRecordType.Prepare)
+			if (result.LogRecord.RecordType != LogRecordType.Prepare &&
+				result.LogRecord.RecordType != LogRecordType.Stream)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
 			return (IPrepareLogRecord<TStreamId>)result.LogRecord;

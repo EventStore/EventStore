@@ -89,6 +89,9 @@ namespace EventStore.Core.LogV3 {
 				streamId == NoSystemStream)
 				return true;
 
+			if (streamId == NoUserStream)
+				return false;
+
 			var streamName = _streamNames.LookupName(streamId);
 			return SystemStreams.IsSystemStream(streamName);
 		}

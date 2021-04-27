@@ -7,6 +7,15 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public interface IRecordFactory<TStreamId> : IRecordFactory {
+		bool ExplicitStreamCreation { get; }
+
+		IPrepareLogRecord<TStreamId> CreateStreamRecord(
+			Guid streamId,
+			long logPosition,
+			DateTime timeStamp,
+			TStreamId streamNumber,
+			string streamName);
+
 		IPrepareLogRecord<TStreamId> CreatePrepare(
 			long logPosition,
 			Guid correlationId,
@@ -20,26 +29,5 @@ namespace EventStore.Core.LogAbstraction {
 			string eventType,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata);
-
-		IPrepareLogRecord<TStreamId> CopyForRetry(
-			IPrepareLogRecord<TStreamId> prepare,
-			long logPosition,
-			long transactionPosition) {
-
-			var result = CreatePrepare(
-				logPosition: logPosition,
-				correlationId: prepare.CorrelationId,
-				eventId: prepare.EventId,
-				transactionPosition: transactionPosition,
-				transactionOffset: prepare.TransactionOffset,
-				eventStreamId: prepare.EventStreamId,
-				expectedVersion: prepare.ExpectedVersion,
-				timeStamp: prepare.TimeStamp,
-				flags: prepare.Flags,
-				eventType: prepare.EventType,
-				data: prepare.Data,
-				metadata: prepare.Metadata);
-			return result;
-		}
 	}
 }

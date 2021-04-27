@@ -249,7 +249,18 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
-				_streamNameIndex.GetOrAddId(msg.EventStreamId, out var streamId, out _, out _);
+				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				_streamNameIndex.GetOrAddId(
+					recordFactory: _recordFactory,
+					streamName: msg.EventStreamId,
+					logPosition: logPosition,
+					streamId: out var streamId,
+					streamRecord: out var streamRecord);
+				if (streamRecord != null) {
+					var res = WritePrepareWithRetry(streamRecord);
+					logPosition = res.NewPos;
+				}
+
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
 					msg.Events.Select(x => x.EventId));
 				if (commitCheck.Decision != CommitDecision.Ok) {
@@ -258,7 +269,6 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
 				if (msg.Events.Length > 0) {
 					var transactionPosition = logPosition;
 					for (int i = 0; i < msg.Events.Length; ++i) {
@@ -362,7 +372,18 @@ namespace EventStore.Core.Services.Storage {
 
 				var eventId = Guid.NewGuid();
 
-				_streamNameIndex.GetOrAddId(message.EventStreamId, out var streamId, out _, out _);
+				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				_streamNameIndex.GetOrAddId(
+					recordFactory: _recordFactory,
+					streamName: message.EventStreamId,
+					logPosition: logPosition,
+					streamId: out var streamId,
+					streamRecord: out var streamRecord);
+				if (streamRecord != null) {
+					var res = WritePrepareWithRetry(streamRecord);
+					logPosition = res.NewPos;
+				}
+
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
 					new[] { eventId });
 				if (commitCheck.Decision != CommitDecision.Ok) {
@@ -373,7 +394,7 @@ namespace EventStore.Core.Services.Storage {
 				if (message.HardDelete) {
 					// HARD DELETE
 					const long expectedVersion = EventNumber.DeletedStream - 1;
-					var record = LogRecord.DeleteTombstone(_recordFactory, Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
+					var record = LogRecord.DeleteTombstone(_recordFactory, logPosition, message.CorrelationId,
 						eventId, streamId, expectedVersion, PrepareFlags.IsCommitted);
 					var res = WritePrepareWithRetry(record);
 					_indexWriter.PreCommit(new[] { res.Prepare });
@@ -381,7 +402,6 @@ namespace EventStore.Core.Services.Storage {
 					// SOFT DELETE
 					var metastreamId = _systemStreams.MetaStreamOf(streamId);
 					var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
-					var logPosition = Writer.Checkpoint.ReadNonFlushed();
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
 											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
@@ -581,8 +601,7 @@ namespace EventStore.Core.Services.Storage {
 					? newPos
 					: prepare.TransactionPosition;
 
-				record = _recordFactory.CopyForRetry(
-					prepare,
+				record = prepare.CopyForRetry(
 					logPosition: newPos,
 					transactionPosition: transactionPos);
 
