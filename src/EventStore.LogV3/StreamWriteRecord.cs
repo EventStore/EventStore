@@ -10,6 +10,7 @@ namespace EventStore.LogV3 {
 		public RecordView<Raw.StreamWriteHeader> Record { get; }
 		public ref readonly Raw.RecordHeader Header => ref Record.Header;
 		public ref readonly Raw.StreamWriteHeader SubHeader => ref Record.SubHeader;
+		public ReadOnlyMemory<byte> Payload => Record.Payload;
 		public ReadOnlyMemory<byte> SystemMetadata { get; }
 
 		public StreamWriteRecord(RecordView<Raw.StreamWriteHeader> record) {

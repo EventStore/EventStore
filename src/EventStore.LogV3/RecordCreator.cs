@@ -10,11 +10,13 @@ namespace EventStore.LogV3 {
 		// these exist to make the code more obviously correct
 		private static byte CurrentVersion(this ref Raw.EpochHeader _) => LogRecordVersion.LogRecordV1;
 		private static byte CurrentVersion(this ref Raw.PartitionTypeHeader _) => LogRecordVersion.LogRecordV0;
+		private static byte CurrentVersion(this ref Raw.StreamHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.StreamTypeHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.StreamWriteHeader _) => LogRecordVersion.LogRecordV0;
 
 		private static LogRecordType Type(this ref Raw.EpochHeader _) => LogRecordType.System;
 		private static LogRecordType Type(this ref Raw.PartitionTypeHeader _) => LogRecordType.PartitionType;
+		private static LogRecordType Type(this ref Raw.StreamHeader _) => LogRecordType.Stream;
 		private static LogRecordType Type(this ref Raw.StreamTypeHeader _) => LogRecordType.StreamType;
 		private static LogRecordType Type(this ref Raw.StreamWriteHeader _) => LogRecordType.LogV3StreamWrite;
 
@@ -78,6 +80,35 @@ namespace EventStore.LogV3 {
 
 			subHeader.PartitionId = partitionId;
 			PopulateString(name, record.Payload.Span);
+
+			return StringPayloadRecord.Create(record);
+		}
+
+		public static StringPayloadRecord<Raw.StreamHeader> CreateStreamRecord(
+			Guid streamId,
+			DateTime timeStamp,
+			long logPosition,
+			long streamNumber,
+			string streamName,
+			Guid partitionId,
+			Guid streamTypeId) {
+
+			var payloadLength = _utf8NoBom.GetByteCount(streamName);
+			var record = MutableRecordView<Raw.StreamHeader>.Create(payloadLength);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+
+			header.RecordId = streamId;
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.LogPosition = logPosition;
+
+			subHeader.PartitionId = partitionId;
+			subHeader.StreamTypeId = streamTypeId;
+			subHeader.ReferenceId = streamNumber;
+
+			PopulateString(streamName, record.Payload.Span);
 
 			return StringPayloadRecord.Create(record);
 		}

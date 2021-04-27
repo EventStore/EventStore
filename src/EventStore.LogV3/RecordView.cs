@@ -5,6 +5,7 @@ namespace EventStore.LogV3 {
 	public interface IRecordView {
 		ReadOnlyMemory<byte> Bytes { get; }
 		ref readonly Raw.RecordHeader Header { get; }
+		ReadOnlyMemory<byte> Payload { get; }
 	}
 
 	// Immutable, generic, view of a record

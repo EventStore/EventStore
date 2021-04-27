@@ -19,6 +19,7 @@ namespace EventStore.LogV3 {
 
 		public ref readonly Raw.RecordHeader Header => ref Record.Header;
 		public ref readonly TSubHeader SubHeader => ref Record.SubHeader;
+		public ReadOnlyMemory<byte> Payload => Record.Payload;
 		public string StringPayload => Encoding.UTF8.GetString(Record.Payload.Span);
 
 		public StringPayloadRecord(RecordView<TSubHeader> record) {

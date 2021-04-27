@@ -17,6 +17,7 @@ namespace EventStore.LogV3.Tests {
 		[InlineData(typeof(Raw.EpochHeader))]
 		[InlineData(typeof(Raw.EventHeader))]
 		[InlineData(typeof(Raw.PartitionTypeHeader))]
+		[InlineData(typeof(Raw.StreamHeader))]
 		[InlineData(typeof(Raw.StreamTypeHeader))]
 		[InlineData(typeof(Raw.StreamWriteHeader))]
 		public void InspectLayout(Type t) {

@@ -123,6 +123,29 @@ namespace EventStore.LogV3 {
 		}
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct StreamHeader {
+			[FieldOffset(0)] public Guid _partitionId;
+			[FieldOffset(16)] public Guid _streamTypeId;
+			[FieldOffset(32)] public long _referenceId;
+			public const int Size = 40;
+
+			public Guid PartitionId {
+				get => _partitionId;
+				set => _partitionId = value;
+			}
+
+			public Guid StreamTypeId {
+				get => _streamTypeId;
+				set => _streamTypeId = value;
+			}
+
+			public long ReferenceId {
+				get => _referenceId;
+				set => _referenceId = value;
+			}
+		}
+
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct StreamTypeHeader {
 			[FieldOffset(0)] public Guid _partitionId;
 			public const int Size = 16;

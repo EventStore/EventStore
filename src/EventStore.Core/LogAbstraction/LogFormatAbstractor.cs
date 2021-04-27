@@ -5,12 +5,12 @@ using EventStore.Core.LogV3;
 
 namespace EventStore.Core.LogAbstraction {
 	public class LogFormatAbstractor {
-		public static LogFormatAbstractor<string> V2 { get; }
-		public static LogFormatAbstractor<long> V3 { get; }
+		public static LogFormatAbstractor<string> V2 { get; } = CreateV2();
+		public static LogFormatAbstractor<long> V3 { get; } = CreateV3();
 
-		static LogFormatAbstractor() {
+		public static LogFormatAbstractor<string> CreateV2() {
 			var streamNameIndex = new LogV2StreamNameIndex();
-			V2 = new LogFormatAbstractor<string>(
+			return new LogFormatAbstractor<string>(
 				new XXHashUnsafe(),
 				new Murmur3AUnsafe(),
 				streamNameIndex,
@@ -20,17 +20,18 @@ namespace EventStore.Core.LogAbstraction {
 				emptyStreamId: string.Empty,
 				new LogV2Sizer(),
 				new LogV2RecordFactory());
+		}
 
+		public static LogFormatAbstractor<long> CreateV3() {
 			var logV3StreamNameIndex = new InMemoryStreamNameIndex();
 			var metastreams = new LogV3Metastreams();
-			V3 = new LogFormatAbstractor<long>(
+			return new LogFormatAbstractor<long>(
 				lowHasher: new IdentityLowHasher(),
 				highHasher: new IdentityHighHasher(),
 				streamNameIndex: new StreamNameIndexMetastreamDecorator(logV3StreamNameIndex, metastreams),
 				streamIds: new StreamIdLookupMetastreamDecorator(logV3StreamNameIndex, metastreams),
 				streamNamesProvider: new AdHocStreamNamesProvider<long>(indexReader => {
-					// todo: IStreamNameLookup<long> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
-					IStreamNameLookup<long> streamNames = logV3StreamNameIndex;
+					IStreamNameLookup<long> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
 					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
 					streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
 					return (systemStreams, streamNames);

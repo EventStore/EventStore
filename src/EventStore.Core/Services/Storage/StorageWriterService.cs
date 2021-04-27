@@ -249,7 +249,18 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
-				_streamNameIndex.GetOrAddId(msg.EventStreamId, out var streamId, out _, out _);
+				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				_streamNameIndex.GetOrAddId(
+					recordFactory: _recordFactory,
+					streamName: msg.EventStreamId,
+					logPosition: logPosition,
+					streamId: out var streamId,
+					streamRecord: out var streamRecord);
+				if (streamRecord != null) {
+					var res = WritePrepareWithRetry(streamRecord);
+					logPosition = res.NewPos;
+				}
+
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
 					msg.Events.Select(x => x.EventId));
 				if (commitCheck.Decision != CommitDecision.Ok) {
@@ -258,7 +269,6 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
 				if (msg.Events.Length > 0) {
 					var transactionPosition = logPosition;
 					for (int i = 0; i < msg.Events.Length; ++i) {
@@ -581,8 +591,7 @@ namespace EventStore.Core.Services.Storage {
 					? newPos
 					: prepare.TransactionPosition;
 
-				record = _recordFactory.CopyForRetry(
-					prepare,
+				record = prepare.CopyForRetry(
 					logPosition: newPos,
 					transactionPosition: transactionPos);
 

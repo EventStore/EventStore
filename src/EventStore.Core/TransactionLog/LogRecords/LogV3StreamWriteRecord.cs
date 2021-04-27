@@ -55,5 +55,20 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public string EventType => Encoding.UTF8.GetString(Record.Event.SystemMetadata.Span);
 		public ReadOnlyMemory<byte> Data => Record.Event.Data;
 		public ReadOnlyMemory<byte> Metadata => Record.Event.Metadata;
+
+		//qq is this covered by tests
+		public IPrepareLogRecord<long> CopyForRetry(long logPosition, long transactionPosition) {
+			return new LogV3StreamWriteRecord(
+				logPosition: logPosition,
+				correlationId: CorrelationId,
+				eventId: EventId,
+				eventStreamId: EventStreamId,
+				expectedVersion: ExpectedVersion,
+				timeStamp: TimeStamp,
+				flags: Flags,
+				eventType: EventType,
+				data: Data.Span,
+				metadata: Metadata.Span);
+		}
 	}
 }

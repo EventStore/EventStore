@@ -8,6 +8,7 @@ namespace EventStore.LogV3.Tests {
 	public class RecordCreatorTests {
 		readonly Guid _guid1 = Guid.Parse("00000000-0000-0000-0000-000000000001");
 		readonly Guid _guid2 = Guid.Parse("00000000-0000-0000-0000-000000000002");
+		readonly Guid _guid3 = Guid.Parse("00000000-0000-0000-0000-000000000003");
 		readonly DateTime _dateTime1 = new DateTime(2020, 01, 01, 01, 01, 01);
 		readonly long _long1 = 1;
 		readonly long _long2 = 2;
@@ -57,6 +58,28 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_guid1, record.Header.RecordId);
 			Assert.Equal(_long1, record.Header.LogPosition);
 			Assert.Equal(_guid2, record.SubHeader.PartitionId);
+			Assert.Equal(_string1, record.StringPayload);
+		}
+
+		[Fact]
+		public void can_create_stream_record() {
+			var record = RecordCreator.CreateStreamRecord(
+				streamId: _guid1,
+				timeStamp: _dateTime1,
+				logPosition: _long1,
+				streamNumber: _long2,
+				streamName: _string1,
+				partitionId: _guid2,
+				streamTypeId: _guid3);
+
+			Assert.Equal(LogRecordType.Stream, record.Header.Type);
+			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
+			Assert.Equal(_guid1, record.Header.RecordId);
+			Assert.Equal(_dateTime1, record.Header.TimeStamp);
+			Assert.Equal(_long1, record.Header.LogPosition);
+			Assert.Equal(_guid2, record.SubHeader.PartitionId);
+			Assert.Equal(_long2, record.SubHeader.ReferenceId);
+			Assert.Equal(_guid3, record.SubHeader.StreamTypeId);
 			Assert.Equal(_string1, record.StringPayload);
 		}
 

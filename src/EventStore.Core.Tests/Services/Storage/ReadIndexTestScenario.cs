@@ -262,8 +262,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 					var tPos = prepare.TransactionPosition == prepare.LogPosition
 						? newPos
 						: prepare.TransactionPosition;
-					prepare = _recordFactory.CopyForRetry(
-						prepare: prepare,
+					prepare = prepare.CopyForRetry(
 						logPosition: newPos,
 						transactionPosition: tPos);
 					if (!Writer.Write(prepare, out newPos))
