@@ -18,7 +18,7 @@ namespace EventStore.LogV3 {
 		static void PopulateString(string str, Memory<byte> target) {
 			Utf8.FromUtf16(str, target.Span, out _, out var bytesWritten, true, true);
 			if (bytesWritten > MaxStringBytes)
-				throw new ArgumentException($"Name \"{str}\" is longer than 100 bytes");
+				throw new ArgumentException($"Name \"{str}\" is longer than {MaxStringBytes} bytes");
 		}
 
 		private static readonly Encoding _utf8NoBom = new UTF8Encoding(
