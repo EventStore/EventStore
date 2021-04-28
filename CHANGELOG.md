@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 - Add LegacyGossipDiscovery. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
 - LogV3 abstraction points [EventStore#2907](https://github.com/EventStore/EventStore/pull/2907)
 - V3 Epoch Raw Record [EventStore#2908](https://github.com/EventStore/EventStore/pull/2908)
+- PartitionType and StreamType structs and creation methods [EventStore#2918](https://github.com/EventStore/EventStore/pull/2918)
+- V3 Epoch integration [EventStore#2911](https://github.com/EventStore/EventStore/pull/2911)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
