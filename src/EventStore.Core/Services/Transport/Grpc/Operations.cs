@@ -3,7 +3,7 @@ using EventStore.Core.Bus;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Operations
+	internal partial class Operations
 		: EventStore.Client.Operations.Operations.OperationsBase {
 		private readonly IPublisher _publisher;
 		private readonly IAuthorizationProvider _authorizationProvider;

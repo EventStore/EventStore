@@ -6,17 +6,22 @@
 		<Platforms>x64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
+	  <Compile Remove="Services\checkpoint_strategy\**" />
+	  <EmbeddedResource Remove="Services\checkpoint_strategy\**" />
+	  <None Remove="Services\checkpoint_strategy\**" />
+	</ItemGroup>
+	<ItemGroup>
 		<Compile Remove="Playground\Launchpad.cs" />
 		<Compile Remove="Playground\Launchpad2.cs" />
 		<Compile Remove="Playground\Launchpad3.cs" />
 		<Compile Remove="Playground\LaunchpadBase.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="EventStore.Client" Version="21.2.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+		<PackageReference Include="Serilog.Sinks.TextWriter" Version="2.1.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
@@ -28,9 +33,6 @@
 		<Content Include="Queries\1Query.js">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
-	</ItemGroup>
-	<ItemGroup>
-		<Folder Include="Services\checkpoint_strategy\" />
 	</ItemGroup>
 	<!-- TODO(jen20): Decide what is correct here -->
 	<PropertyGroup>

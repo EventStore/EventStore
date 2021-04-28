@@ -1,0 +1,26 @@
+{
+	"events": [
+		{
+			"eventType": "",
+			"data": {},
+			"metadata": {}
+		},
+		{
+			"eventType": "t1",
+			"data": {},
+			"metadata": {}
+		},
+		{
+			"eventType": "t2",
+			"data": {},
+			"metadata": {}
+		},
+		{
+			"eventType": "t3",
+			"data": {},
+			"metadata": {}
+		}
+	]
+
+
+}

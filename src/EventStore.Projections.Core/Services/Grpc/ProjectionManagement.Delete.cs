@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation DeleteOperation = new Operation(Operations.Projections.Delete);
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
 			var deletedSource = new TaskCompletionSource<bool>();

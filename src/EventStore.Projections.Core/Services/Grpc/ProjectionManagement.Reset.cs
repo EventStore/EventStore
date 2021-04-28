@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation ResetOperation = new Operation(Operations.Projections.Create);
 		public override async Task<ResetResp> Reset(ResetReq request, ServerCallContext context) {
 			var resetSource = new TaskCompletionSource<bool>();

@@ -36,10 +36,16 @@ namespace EventStore.ClusterNode {
 		public ClusterVNodeHostedService(ClusterVNodeOptions options) {
 			if (options == null) throw new ArgumentNullException(nameof(options));
 			_options = options.Projections.RunProjections >= ProjectionType.System
-				? options.WithSubsystem(new ProjectionsSubsystem(options.Projections.ProjectionThreads,
-					options.Projections.RunProjections, options.Application.StartStandardProjections,
-					TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
-					options.Projections.FaultOutOfOrderProjections))
+				? options.WithSubsystem(new ProjectionsSubsystem(
+					new ProjectionSubsystemOptions(
+						options.Projections.ProjectionThreads, 
+						options.Projections.RunProjections, 
+						options.Application.StartStandardProjections, 
+						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
+						options.Projections.FaultOutOfOrderProjections,
+						options.Projections.ProjectionRuntime,
+						options.Projections.ProjectionCompilationTimeout,
+						options.Projections.ProjectionExecutionTimeout)))
 				: options;
 
 			if (!_options.Database.MemDb) {
