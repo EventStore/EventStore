@@ -93,7 +93,8 @@ var $projections = {
 				sequenceNumber,
 				metadata,
 				linkMetadata,
-				partition) {
+				partition,
+				eventId) {
 				processEvent(event,
 					isJson,
 					streamId,
@@ -102,7 +103,8 @@ var $projections = {
 					sequenceNumber,
 					metadata,
 					linkMetadata,
-					partition);
+					partition,
+					eventId);
 				var stateJson;
 				var finalResult;
 				if (!sources.options.biState) {
@@ -272,7 +274,8 @@ var $projections = {
 			sequenceNumber,
 			metadataRaw,
 			linkMetadataRaw,
-			partition) {
+			partition,
+			eventId) {
 			this.isJson = false;
 			this.data = body;
 			this.body = body;
@@ -284,6 +287,7 @@ var $projections = {
 			this.linkMetadataRaw = linkMetadataRaw;
 			this.partition = partition;
 			this.metadata_ = null;
+			this.eventId = eventId;
 		}
 
 		Object.defineProperty(envelope.prototype,
@@ -360,7 +364,8 @@ var $projections = {
 			sequenceNumber,
 			metadataRaw,
 			linkMetadataRaw,
-			partition) {
+			partition,
+			eventId) {
 
 			var eventName = eventType;
 
@@ -376,7 +381,8 @@ var $projections = {
 				sequenceNumber,
 				metadataRaw,
 				linkMetadataRaw,
-				partition);
+				partition,
+				eventId);
 			// debug only
 			for (index = 0; index < rawEventHandlers.length; index++) {
 				eventHandler = rawEventHandlers[index];
