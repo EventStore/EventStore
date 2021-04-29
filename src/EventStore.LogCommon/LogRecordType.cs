@@ -5,5 +5,8 @@
 		System = 2,
 		PartitionType = 3,
 		StreamType = 4,
+		EventType = 5,
+		ContentType = 6,
+		Partition = 7,
 	}
 }

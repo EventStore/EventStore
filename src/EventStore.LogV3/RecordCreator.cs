@@ -8,12 +8,18 @@ namespace EventStore.LogV3 {
 	public static class RecordCreator {
 		// these exist to make the code more obviously correct
 		private static byte CurrentVersion(this ref Raw.EpochHeader _) => LogRecordVersion.LogRecordV1;
+		private static byte CurrentVersion(this ref Raw.PartitionHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.PartitionTypeHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.StreamTypeHeader _) => LogRecordVersion.LogRecordV0;
+		private static byte CurrentVersion(this ref Raw.EventTypeHeader _) => LogRecordVersion.LogRecordV0;
+		private static byte CurrentVersion(this ref Raw.ContentTypeHeader _) => LogRecordVersion.LogRecordV0;
 
 		private static LogRecordType Type(this ref Raw.EpochHeader _) => LogRecordType.System;
+		private static LogRecordType Type(this ref Raw.PartitionHeader _) => LogRecordType.Partition;
 		private static LogRecordType Type(this ref Raw.PartitionTypeHeader _) => LogRecordType.PartitionType;
 		private static LogRecordType Type(this ref Raw.StreamTypeHeader _) => LogRecordType.StreamType;
+		private static LogRecordType Type(this ref Raw.EventTypeHeader _) => LogRecordType.EventType;
+		private static LogRecordType Type(this ref Raw.ContentTypeHeader _) => LogRecordType.ContentType;
 		const int MaxStringBytes = 100;
 		static void PopulateString(string str, Memory<byte> target) {
 			Utf8.FromUtf16(str, target.Span, out _, out var bytesWritten, true, true);
@@ -50,6 +56,34 @@ namespace EventStore.LogV3 {
 			return record;
 		}
 
+		public static StringPayloadRecord<Raw.PartitionHeader> CreatePartitionRecord(
+			DateTime timeStamp,
+			long logPosition,
+			Guid partitionId,
+			Guid partitionTypeId,
+			Guid parentPartitionId,
+			byte flags,
+			string name) {
+
+			var payloadLength = _utf8NoBom.GetByteCount(name);
+			var record = MutableRecordView<Raw.PartitionHeader>.Create(payloadLength);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.RecordId = partitionId;
+			header.LogPosition = logPosition;
+
+			subHeader.PartitionTypeId = partitionTypeId;
+			subHeader.ParentPartitionId = parentPartitionId;
+			subHeader.Flags = flags;
+			PopulateString(name, record.Payload);
+
+			return StringPayloadRecord.Create(record);
+		}
+		
 		public static StringPayloadRecord<Raw.PartitionTypeHeader> CreatePartitionTypeRecord(
 			DateTime timeStamp,
 			long logPosition,
@@ -93,6 +127,60 @@ namespace EventStore.LogV3 {
 			header.LogPosition = logPosition;
 
 			subHeader.PartitionId = partitionId;
+			PopulateString(name, record.Payload);
+
+			return StringPayloadRecord.Create(record);
+		}
+		
+		public static StringPayloadRecord<Raw.EventTypeHeader> CreateEventTypeRecord(
+			DateTime timeStamp,
+			long logPosition,
+			Guid eventTypeId,
+			Guid partitionId,
+			uint referenceNumber,
+			ushort version,
+			string name) {
+
+			var payloadLength = _utf8NoBom.GetByteCount(name);
+			var record = MutableRecordView<Raw.EventTypeHeader>.Create(payloadLength);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.RecordId = eventTypeId;
+			header.LogPosition = logPosition;
+
+			subHeader.PartitionId = partitionId;
+			subHeader.ReferenceNumber = referenceNumber;
+			subHeader.Version = version;
+			PopulateString(name, record.Payload);
+
+			return StringPayloadRecord.Create(record);
+		}
+		
+		public static StringPayloadRecord<Raw.ContentTypeHeader> CreateContentTypeRecord(
+			DateTime timeStamp,
+			long logPosition,
+			Guid contentTypeId,
+			Guid partitionId,
+			ushort referenceNumber,
+			string name) {
+
+			var payloadLength = _utf8NoBom.GetByteCount(name);
+			var record = MutableRecordView<Raw.ContentTypeHeader>.Create(payloadLength);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.RecordId = contentTypeId;
+			header.LogPosition = logPosition;
+
+			subHeader.PartitionId = partitionId;
+			subHeader.ReferenceNumber = referenceNumber;
 			PopulateString(name, record.Payload);
 
 			return StringPayloadRecord.Create(record);
