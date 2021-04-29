@@ -9,8 +9,10 @@ namespace EventStore.Core.LogV2 {
 		public LogV2StreamNameIndex() {
 		}
 
-		public bool GetOrAddId(string streamName, out string streamId) {
+		public bool GetOrAddId(string streamName, out string streamId, out string createdId, out string createdName) {
 			streamId = streamName;
+			createdId = default;
+			createdName = default;
 			return true;
 		}
 

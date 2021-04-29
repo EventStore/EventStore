@@ -249,7 +249,7 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
-				_streamNameIndex.GetOrAddId(msg.EventStreamId, out var streamId);
+				_streamNameIndex.GetOrAddId(msg.EventStreamId, out var streamId, out _, out _);
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
 					msg.Events.Select(x => x.EventId));
 				if (commitCheck.Decision != CommitDecision.Ok) {
