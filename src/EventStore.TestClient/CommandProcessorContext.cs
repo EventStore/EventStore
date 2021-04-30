@@ -7,7 +7,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.TestClient {
 	/// <summary>
 	/// This context is passed to the instances of <see cref="ICmdProcessor"/>
-	/// when they are executed. It can also be used for async syncrhonization
+	/// when they are executed. It can also be used for async synchronization
 	/// </summary>
 	public class CommandProcessorContext {
 		public int ExitCode;
@@ -17,17 +17,36 @@ namespace EventStore.TestClient {
 		/// <summary>
 		/// Current logger of the test client
 		/// </summary>
-		public readonly Serilog.ILogger Log;
+		public readonly ILogger Log;
 
-		public readonly Client Client;
+		/// <summary>
+		/// Stats logger for the test client
+		/// </summary>
+		public readonly ILogger StatsLogger;
+
+		/// <summary>
+		/// Whether stats should be CSV or Json
+		/// </summary>
+		public bool OutputCsv = false;
+
+		public readonly TcpTestClient _tcpTestClient;
+		public readonly GrpcTestClient _grpcTestClient;
+		public readonly ClientApiTcpTestClient _clientApiTestClient;
 
 		private readonly ManualResetEventSlim _doneEvent;
 		private int _completed;
+		private int _timeout;
 
-		public CommandProcessorContext(Client client, ILogger log, ManualResetEventSlim doneEvent) {
-			Client = client;
+		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient, ClientApiTcpTestClient clientApiTestClient,
+			int timeout, ILogger log, ILogger statsLogger, bool outputCsv, ManualResetEventSlim doneEvent) {
+			_tcpTestClient = tcpTestClient;
+			_grpcTestClient = grpcTestClient;
+			_clientApiTestClient = clientApiTestClient;
 			Log = log;
+			StatsLogger = statsLogger;
 			_doneEvent = doneEvent;
+			_timeout = timeout;
+			OutputCsv = outputCsv;
 		}
 
 		public void Completed(int exitCode = (int)Common.Utils.ExitCode.Success, Exception error = null,
@@ -55,10 +74,10 @@ namespace EventStore.TestClient {
 		}
 
 		public void WaitForCompletion() {
-			if (Client.Options.Timeout < 0)
+			if (_timeout < 0)
 				_doneEvent.Wait();
 			else {
-				if (!_doneEvent.Wait(Client.Options.Timeout * 1000))
+				if (!_doneEvent.Wait(_timeout * 1000))
 					throw new TimeoutException("Command didn't finished within timeout.");
 			}
 		}

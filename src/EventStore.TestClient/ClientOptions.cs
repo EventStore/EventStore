@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using Serilog;
 
 #pragma warning disable 1591
 
@@ -26,6 +27,10 @@ namespace EventStore.TestClient {
 		public bool UseTls { get; init; }
 		public bool TlsValidateServer { get; init; }
 
+		public string ConnectionString { get; set; }
+		public bool OutputCsv { get; set; }
+		public ILogger StatsLog { get; set; }
+
 		public ClientOptions() {
 			Command = Array.Empty<string>();
 			Host = IPAddress.Loopback.ToString();
@@ -38,6 +43,8 @@ namespace EventStore.TestClient {
 			Reconnect = true;
 			UseTls = false;
 			TlsValidateServer = false;
+			ConnectionString = string.Empty;
+			OutputCsv = true;
 		}
 
 		public override string ToString() {

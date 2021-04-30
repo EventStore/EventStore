@@ -248,13 +248,13 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			Action<TcpTypedConnection<byte[]>> established = _ => { };
 			Action<TcpTypedConnection<byte[]>, SocketError> closed = null;
 			closed = (_, __) => {
-				if (!context.Client.Options.Reconnect) return;
+				if (!context._tcpTestClient.Options.Reconnect) return;
 				Thread.Sleep(TimeSpan.FromSeconds(1));
 				connection =
-					context.Client.CreateTcpConnection(context, packageHandler, cn => iteration.Set(), closed, false);
+					context._tcpTestClient.CreateTcpConnection(context, packageHandler, cn => iteration.Set(), closed, false);
 			};
 
-			connection = context.Client.CreateTcpConnection(context, packageHandler, established, closed, false);
+			connection = context._tcpTestClient.CreateTcpConnection(context, packageHandler, established, closed, false);
 
 			for (var i = 0; i < requests; ++i) {
 				streamIdx = NextStreamForWriting(rnd, writerIdx);
@@ -280,7 +280,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
 				wrongExpectedVersion, streamsDeleted, failed, requests);
 			status.FinilizeStatus(writerIdx, failed != sent);
-			context.Client.Options.Reconnect = false;
+			context._tcpTestClient.Options.Reconnect = false;
 			connection.Close();
 			finish.Set();
 		}
@@ -329,13 +329,13 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			Action<TcpTypedConnection<byte[]>> established = _ => { };
 			Action<TcpTypedConnection<byte[]>, SocketError> closed = null;
 			closed = (_, __) => {
-				if (!context.Client.Options.Reconnect) return;
+				if (!context._tcpTestClient.Options.Reconnect) return;
 				Thread.Sleep(TimeSpan.FromSeconds(1));
 				connection =
-					context.Client.CreateTcpConnection(context, packageReceived, cn => iteration.Set(), closed, false);
+					context._tcpTestClient.CreateTcpConnection(context, packageReceived, cn => iteration.Set(), closed, false);
 			};
 
-			connection = context.Client.CreateTcpConnection(context, packageReceived, established, closed, false);
+			connection = context._tcpTestClient.CreateTcpConnection(context, packageReceived, established, closed, false);
 
 			while (!_stopReading) {
 				streamIdx = NextStreamForReading(rnd, readerIdx);
@@ -359,7 +359,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 
 			status.ReportReadsProgress(readerIdx, successes, fails);
 			status.FinilizeStatus(readerIdx, fails == 0);
-			context.Client.Options.Reconnect = false;
+			context._tcpTestClient.Options.Reconnect = false;
 			connection.Close();
 			finishedEvent.Set();
 		}
