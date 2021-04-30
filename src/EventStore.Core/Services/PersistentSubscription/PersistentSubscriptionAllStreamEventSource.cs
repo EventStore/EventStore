@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using EventStore.Core.Data;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionAllStreamEventSource : IPersistentSubscriptionEventSource {
@@ -8,6 +9,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public string EventStreamId => throw new InvalidOperationException();
 		public bool FromAll => true;
 		public override string ToString() => SystemStreams.AllStream;
+		public IEventFilter EventFilter { get; }
+
+		public PersistentSubscriptionAllStreamEventSource(IEventFilter eventFilter) {
+			EventFilter = eventFilter;
+		}
+
+		public PersistentSubscriptionAllStreamEventSource() {
+			EventFilter = null;
+		}
+
 		public IPersistentSubscriptionStreamPosition StreamStartPosition  => new PersistentSubscriptionAllStreamPosition(0L, 0L);
 		public IPersistentSubscriptionStreamPosition GetStreamPositionFor(ResolvedEvent @event) {
 			if (@event.OriginalPosition.HasValue) {

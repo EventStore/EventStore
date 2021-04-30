@@ -1,6 +1,6 @@
 using System;
-using EventStore.Common.Utils;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	/// <summary>
@@ -10,12 +10,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		/// <summary>
 		/// Creates a new <see cref="PersistentSubscriptionParamsBuilder"></see> object
 		/// </summary>
-		/// <param name="streamName">The name of the stream for the subscription</param>
 		/// <param name="groupName">The name of the group of the subscription</param>
+		/// <param name="filter">The optional filter for the subscription</param>
 		/// <returns>a new <see cref="PersistentSubscriptionParamsBuilder"></see> object</returns>
-		public static PersistentSubscriptionParamsBuilder CreateFor(string groupName) {
+		public static PersistentSubscriptionParamsBuilder CreateFor(string groupName, IEventFilter filter = null) {
 			return new PersistentSubscriptionToAllParamsBuilder()
-				.FromAll()
+				.FromAll(filter)
 				.StartFrom(0L, 0L)
 				.SetGroup(groupName)
 				.SetSubscriptionId("$all" + ":" + groupName)
@@ -32,8 +32,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				.WithNamedConsumerStrategy(new RoundRobinPersistentSubscriptionConsumerStrategy());
 		}
 
-		public PersistentSubscriptionToAllParamsBuilder FromAll() {
-			WithEventSource(new PersistentSubscriptionAllStreamEventSource());
+		public PersistentSubscriptionToAllParamsBuilder FromAll(IEventFilter filter = null) {
+			WithEventSource(new PersistentSubscriptionAllStreamEventSource(filter));
 			return this;
 		}
 

@@ -80,6 +80,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			if (persistentSubscriptionParams.ReadBatchSize >= persistentSubscriptionParams.BufferSize) {
 				throw new ArgumentOutOfRangeException($"{nameof(persistentSubscriptionParams.ReadBatchSize)} may not be greater than or equal to {nameof(persistentSubscriptionParams.BufferSize)}");
 			}
+
 			_totalTimeWatch = new Stopwatch();
 			_settings = persistentSubscriptionParams;
 			_nextEventToPullFrom = _settings.EventSource.StreamStartPosition;
@@ -243,6 +244,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent) {
 			lock (_lock) {
 				if (_settings.EventSource.GetStreamPositionFor(resolvedEvent).CompareTo(_settings.StartFrom) < 0) {
+					return;
+				}
+
+				if (_settings.EventSource.EventFilter != null && !_settings.EventSource.EventFilter.IsEventAllowed(resolvedEvent.Event)) {
 					return;
 				}
 

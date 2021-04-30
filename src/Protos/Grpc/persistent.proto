@@ -117,6 +117,26 @@ message CreateReq {
 			event_store.client.shared.Empty start = 2;
 			event_store.client.shared.Empty end = 3;
 		}
+		oneof filter_option {
+			FilterOptions filter = 4;
+			event_store.client.shared.Empty no_filter = 5;
+		}
+		message FilterOptions {
+			oneof filter {
+				Expression stream_identifier = 1;
+				Expression event_type = 2;
+			}
+			oneof window {
+				uint32 max = 3;
+				event_store.client.shared.Empty count = 4;
+			}
+			uint32 checkpointIntervalMultiplier = 5;
+
+			message Expression {
+				string regex = 1;
+				repeated string prefix = 2;
+			}
+		}
 	}
 
 	message Position {
