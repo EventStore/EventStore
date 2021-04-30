@@ -26,6 +26,9 @@ namespace EventStore.TestClient {
 		public bool UseTls { get; init; }
 		public bool TlsValidateServer { get; init; }
 
+		//[ArgDescription("A connection string to connect to a node/cluster. Used by gRPC only.")]
+		public string ConnectionString { get; set; }
+
 		public ClientOptions() {
 			Command = Array.Empty<string>();
 			Host = IPAddress.Loopback.ToString();
@@ -38,6 +41,7 @@ namespace EventStore.TestClient {
 			Reconnect = true;
 			UseTls = false;
 			TlsValidateServer = false;
+			ConnectionString = string.Empty;
 		}
 
 		public override string ToString() {
