@@ -249,12 +249,6 @@ namespace EventStore.Core {
 				}
 			}
 
-			if (options.Application.WorkerThreads <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Application.WorkerThreads),
-					options.Application.WorkerThreads,
-					$"{nameof(options.Application.WorkerThreads)} must be greater than 0.");
-			}
-
 			if (options.Cluster.ClusterDns == null) {
 				throw new ArgumentNullException(nameof(options.Cluster.ClusterDns));
 			}
@@ -362,9 +356,18 @@ namespace EventStore.Core {
 			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
 				httpEndPoint, options.Cluster.ReadOnlyReplica);
 
-			Db = new TFChunkDb(CreateDbConfig());
+			Db = new TFChunkDb(CreateDbConfig(
+				out var statsHelper,
+				out var readerThreadsCount,
+				out var workerThreadsCount,
+				out var streamInfoCacheCapacity));
 
-			TFChunkDbConfig CreateDbConfig() {
+			TFChunkDbConfig CreateDbConfig(
+				out SystemStatsHelper statsHelper,
+				out int readerThreadsCount,
+				out int workerThreadsCount,
+				out int streamInfoCacheCapacity) {
+
 				ICheckpoint writerChk;
 				ICheckpoint chaserChk;
 				ICheckpoint epochChk;
@@ -420,6 +423,36 @@ namespace EventStore.Core {
 					? options.Database.CachedChunks * (long)(TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
 					: options.Database.ChunksCacheSize;
 
+				// Calculate automatic configuration changes
+				var statsCollectionPeriod = options.Application.StatsPeriodSec > 0
+					? (long)options.Application.StatsPeriodSec * 1000
+					: Timeout.Infinite;
+				statsHelper = new SystemStatsHelper(Log, writerChk.AsReadOnly(), dbPath, statsCollectionPeriod);
+				var availableMem = statsHelper.GetFreeMem();
+
+				var processorCount = Environment.ProcessorCount;
+				readerThreadsCount = ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, processorCount);
+				Log.Information(
+					"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
+					"Calculated based on processor count of {processorCount:N0} and configured value of {configuredCount:N0}",
+					readerThreadsCount,
+					processorCount, options.Database.ReaderThreadsCount);
+
+				workerThreadsCount = ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads, readerThreadsCount);
+				Log.Information(
+					"WorkerThreads set to {workerThreadsCount:N0}. " +
+					"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
+					workerThreadsCount,
+					readerThreadsCount, options.Application.WorkerThreads);
+
+				var configuredCapacity = options.Cluster.StreamInfoCacheCapacity;
+				streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
+				Log.Information(
+					"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
+					"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
+					streamInfoCacheCapacity,
+					availableMem, configuredCapacity);
+
 				return new TFChunkDbConfig(dbPath,
 					new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
 					options.Database.ChunkSize,
@@ -432,7 +465,9 @@ namespace EventStore.Core {
 					replicationChk,
 					indexChk,
 					options.Database.ChunkInitialReaderCount,
-					options.Database.GetTFChunkMaxReaderCount(),
+					ClusterVNodeOptions.DatabaseOptions.GetTFChunkMaxReaderCount(
+						readerThreadsCount: readerThreadsCount,
+						chunkInitialReaderCount: options.Database.ChunkInitialReaderCount),
 					options.Database.MemDb,
 					options.Database.Unbuffered,
 					options.Database.WriteThrough,
@@ -478,12 +513,12 @@ namespace EventStore.Core {
 			}
 
 			// MISC WORKERS
-			_workerBuses = Enumerable.Range(0, options.Application.WorkerThreads).Select(queueNum =>
+			_workerBuses = Enumerable.Range(0, workerThreadsCount).Select(queueNum =>
 				new InMemoryBus($"Worker #{queueNum + 1} Bus",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200))).ToArray();
 			_workersHandler = new MultiQueuedHandler(
-				options.Application.WorkerThreads,
+				workerThreadsCount,
 				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
 					$"Worker #{queueNum + 1}",
 					_queueStatsManager,
@@ -521,6 +556,7 @@ namespace EventStore.Core {
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
+
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
@@ -530,7 +566,8 @@ namespace EventStore.Core {
 				NodeInfo.HttpEndPoint,
 				options.Database.StatsStorage,
 				NodeInfo.ExternalTcp,
-				NodeInfo.ExternalSecureTcp);
+				NodeInfo.ExternalSecureTcp,
+				statsHelper);
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.SystemInit, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(monitoringQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
@@ -559,10 +596,11 @@ namespace EventStore.Core {
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, "index");
 
+			var pTableMaxReaderCount = ClusterVNodeOptions.DatabaseOptions.GetPTableMaxReaderCount(readerThreadsCount);
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool",
 				ESConsts.PTableInitialReaderCount,
-				options.Database.GetPTableMaxReaderCount(),
+				pTableMaxReaderCount,
 				() => new TFChunkReader(
 					Db,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
@@ -572,7 +610,7 @@ namespace EventStore.Core {
 				InMemory = options.Database.MemDb,
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
-				MaxReaderCount = options.Database.GetPTableMaxReaderCount(),
+				MaxReaderCount = pTableMaxReaderCount
 			});
 
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
@@ -591,7 +629,7 @@ namespace EventStore.Core {
 				initializationThreads: options.Database.InitializationThreads,
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
-				pTableMaxReaderCount: options.Database.GetPTableMaxReaderCount());
+				pTableMaxReaderCount: pTableMaxReaderCount);
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
 				tableIndex,
@@ -602,7 +640,7 @@ namespace EventStore.Core {
 				logFormat.StreamIdConverter,
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,
-				options.Cluster.StreamInfoCacheCapacity,
+				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
 				options.Database.HashCollisionReadLimit,
@@ -637,7 +675,7 @@ namespace EventStore.Core {
 
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
-				options.Database.ReaderThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
+				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
