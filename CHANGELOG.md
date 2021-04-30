@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - PartitionType and StreamType structs and creation methods [EventStore#2918](https://github.com/EventStore/EventStore/pull/2918)
 - V3 Epoch integration [EventStore#2911](https://github.com/EventStore/EventStore/pull/2911)
 - EventId is now passed into projections [EventStore#2928](https://github.com/EventStore/EventStore/pull/2928)
+- ISystemStreamLookup abstraction point for LogV3 [EventStore#2923](https://github.com/EventStore/EventStore/pull/2923)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
