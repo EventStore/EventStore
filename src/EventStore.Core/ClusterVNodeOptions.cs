@@ -103,8 +103,8 @@ namespace EventStore.Core {
 			[Description("The number of seconds between statistics gathers.")]
 			public int StatsPeriodSec { get; init; } = 30;
 
-			[Description("The number of threads to use for pool of worker services.")]
-			public int WorkerThreads { get; init; } = 5;
+			[Description("The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)")]
+			public int WorkerThreads { get; init; } = 0;
 
 			[Description("Enables the tracking of various histograms in the backend, " +
 			             "typically only used for debugging, etc.")]
@@ -235,8 +235,8 @@ namespace EventStore.Core {
 
 		[Description("Cluster Options")]
 		public record ClusterOptions {
-			[Description("The maximum number of entries to keep in the stream info cache.")]
-			public int StreamInfoCacheCapacity { get; init; } = 100_000;
+			[Description("The maximum number of entries to keep in the stream info cache. Set to '0' to scale automatically (Default)")]
+			public int StreamInfoCacheCapacity { get; init; } = 0;
 
 			[Description("The number of nodes in the cluster.")]
 			public int ClusterSize { get; init; } = 1;
@@ -395,8 +395,8 @@ namespace EventStore.Core {
 			             "Will be capped at host processor count.")]
 			public int InitializationThreads { get; init; } = 1;
 
-			[Description("The number of reader threads to use for processing reads.")]
-			public int ReaderThreadsCount { get; init; } = 4;
+			[Description("The number of reader threads to use for processing reads. Set to '0' to scale automatically (Default)")]
+			public int ReaderThreadsCount { get; init; } = 0;
 
 			[Description("During large Index Merge operations, writes may be slowed down. Set this to the maximum " +
 			             "index file level for which automatic merges should happen. Merging indexes above this level " +
@@ -419,25 +419,25 @@ namespace EventStore.Core {
 
 			internal StatsStorage StatsStorage { get; init; } = StatsStorage.File;
 
-			public int GetPTableMaxReaderCount() {
+			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
 				                           + 1 /* StorageChaser */
 				                           + 1 /* Projections */
 				                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
 				                           + 1 /* Subscription LinkTos resolving */
-				                           + ReaderThreadsCount
+				                           + readerThreadsCount
 				                           + 5 /* just in case reserve :) */;
 				return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 			}
 
 
-			internal int GetTFChunkMaxReaderCount() {
+			internal static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
 				var tfChunkMaxReaderCount =
-					GetPTableMaxReaderCount() +
+					GetPTableMaxReaderCount(readerThreadsCount) +
 					2 + /* for caching/uncaching, populating midpoints */
 					1 + /* for epoch manager usage of elections/replica service */
 					1 /* for epoch manager usage of leader replication service */;
-				return Math.Max(tfChunkMaxReaderCount, ChunkInitialReaderCount);
+				return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
 			}
 
 

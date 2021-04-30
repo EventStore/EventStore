@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly BoundedCache<Guid, EventInfo> _committedEvents;
 
 		private readonly IStickyLRUCache<TStreamId, long> _streamVersions =
-			new StickyLRUCache<TStreamId, long>(ESConsts.StreamInfoCacheCapacity);
+			new StickyLRUCache<TStreamId, long>(ESConsts.IndexWriterCacheCapacity);
 
 		private readonly IStickyLRUCache<TStreamId, StreamMeta>
 			_streamRawMetas =
