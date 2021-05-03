@@ -23,6 +23,7 @@ Read more in the [gRPC clients documentation](../../../../clients/grpc/getting-s
 ### Community developed clients
 
 - [Ruby](https://github.com/yousty/event_store_client)
+- [Elixir](https://github.com/NFIBrokerage/spear)
 
 ## TCP protocol
 
