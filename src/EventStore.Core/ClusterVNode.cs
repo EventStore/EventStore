@@ -430,12 +430,13 @@ namespace EventStore.Core {
 				statsHelper = new SystemStatsHelper(Log, writerChk.AsReadOnly(), dbPath, statsCollectionPeriod);
 				var availableMem = statsHelper.GetFreeMem();
 
-				readerThreadsCount = ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, availableMem);
+				var processorCount = Environment.ProcessorCount;
+				readerThreadsCount = ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, processorCount);
 				Log.Information(
 					"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
-					"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCount:N0}",
+					"Calculated based on processor count of {processorCount:N0} and configured value of {configuredCount:N0}",
 					readerThreadsCount,
-					availableMem, options.Database.ReaderThreadsCount);
+					processorCount, options.Database.ReaderThreadsCount);
 
 				workerThreadsCount = ThreadCountCalculator.CalculateWorkerThreadCount(options.Application.WorkerThreads, readerThreadsCount);
 				Log.Information(

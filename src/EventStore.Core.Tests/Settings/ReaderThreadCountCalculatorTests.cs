@@ -4,27 +4,25 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Settings {
 	[TestFixture]
 	public class ReaderThreadCountCalculatorTests {
-		const ulong GigaByte = CacheSizeCalculator.Gigabyte;
+		[TestCase]
+		public void configured_takes_precedence() => Test(configuredCount: 1, processorCount: 4, expected: 1);
 
 		[TestCase]
-		public void configured_takes_precedence() => Test(configuredCount: 1, mem: GigaByte, expected: 1);
+		public void enforces_minimum() => Test(configuredCount: 0, processorCount: 1, expected: 4);
 
 		[TestCase]
-		public void enforces_minimum() => Test(configuredCount: 0, mem: 200, expected: 4);
+		public void enforces_maximum() => Test(configuredCount: 0, processorCount: 20, expected: 16);
 
 		[TestCase]
-		public void enforces_maximum() => Test(configuredCount: 0, mem: 128 * GigaByte, expected: 16);
+		public void at_3_cores() => Test(configuredCount: 0, processorCount: 3, expected: 6);
 
 		[TestCase]
-		public void at_001gib() => Test(configuredCount: 0, mem: 1 * GigaByte, expected: 4);
+		public void at_4_cores() => Test(configuredCount: 0, processorCount: 4, expected: 8);
 
 		[TestCase]
-		public void at_004gib() => Test(configuredCount: 0, mem: 4 * GigaByte, expected: 8);
+		public void at_6_cores() => Test(configuredCount: 0, processorCount: 6, expected: 12);
 
-		[TestCase]
-		public void at_008gib() => Test(configuredCount: 0, mem: 8 * GigaByte, expected: 16);
-
-		public static void Test(int configuredCount, ulong mem, int expected) =>
-			Assert.AreEqual(expected, ThreadCountCalculator.CalculateReaderThreadCount(configuredCount, mem));
+		public static void Test(int configuredCount, int processorCount, int expected) =>
+			Assert.AreEqual(expected, ThreadCountCalculator.CalculateReaderThreadCount(configuredCount, processorCount));
 	}
 }
