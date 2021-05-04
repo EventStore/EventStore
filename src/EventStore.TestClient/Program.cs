@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
+using EventStore.TestClient.Statistics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,6 +12,10 @@ using Serilog;
 
 #nullable enable
 namespace EventStore.TestClient {
+	internal enum StatsFormat {
+		Csv,
+		Json
+	}
 	internal static class Program {
 		/// <summary>
 		///
@@ -30,16 +35,21 @@ namespace EventStore.TestClient {
 		/// <param name="useTls"></param>
 		/// <param name="tlsValidateServer"></param>
 		/// <param name="connectionString">The connection string to use when connecting to the server. Not used by the raw TCP client</param>
+		/// <param name="statsFormat">The format for the stats log.</param>
 		/// <returns></returns>
 		public static async Task<int> Main(bool version = false, FileInfo? log = null, bool whatIf = false,
 			string[]? command = null, string host = "localhost", int tcpPort = 1113, int httpPort = 2113,
 			int timeout = Timeout.Infinite, int readWindow = 2000, int writeWindow = 2000, int pingWindow = 2000,
-			bool reconnect = true, bool useTls = false, bool tlsValidateServer = false, string connectionString = "") {
+			bool reconnect = true, bool useTls = false, bool tlsValidateServer = false, string connectionString = "",
+			StatsFormat statsFormat = StatsFormat.Csv) {
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 
 			try {
 				var logsDirectory = log?.FullName ?? Locations.DefaultTestClientLogDirectory;
 				EventStoreLoggerConfiguration.Initialize(logsDirectory, "client");
+				var statsLog = statsFormat == StatsFormat.Csv
+					? TestClientCsvLoggerConfiguration.Initialize(logsDirectory, "client")
+					: Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "REGULAR-STATS-LOGGER");
 
 				var options = new ClientOptions {
 					Timeout = timeout,
@@ -53,7 +63,9 @@ namespace EventStore.TestClient {
 					UseTls = useTls,
 					TlsValidateServer = tlsValidateServer,
 					ConnectionString = connectionString,
-					Command = command ?? Array.Empty<string>()
+					Command = command ?? Array.Empty<string>(),
+					OutputCsv = statsFormat == StatsFormat.Csv,
+					StatsLog = statsLog
 				};
 
 				var hostedService = new TestClientHostedService(options);

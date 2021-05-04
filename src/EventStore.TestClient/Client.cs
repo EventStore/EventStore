@@ -5,6 +5,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.TestClient.Commands;
 using EventStore.TestClient.Commands.DvuBasic;
+using EventStore.TestClient.Statistics;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
 #pragma warning disable 1591
@@ -33,6 +34,7 @@ namespace EventStore.TestClient {
 			_tcpTestClient = new TcpTestClient(options, interactiveMode, Log);
 			_grpcTestClient = new GrpcTestClient(options, Log);
 			_clientApiTestClient = new ClientApiTcpTestClient(options, Log);
+
 			RegisterProcessors(cancellationTokenSource);
 		}
 
@@ -126,7 +128,8 @@ namespace EventStore.TestClient {
 		private int Execute(string[] args) {
 			Log.Information("Processing command: {command}.", string.Join(" ", args));
 
-			var context = new CommandProcessorContext(_tcpTestClient, _grpcTestClient, _clientApiTestClient, Options.Timeout, Log, new ManualResetEventSlim(true));
+			var context = new CommandProcessorContext(_tcpTestClient, _grpcTestClient, _clientApiTestClient, Options.Timeout,
+				Log, Options.StatsLog, Options.OutputCsv, new ManualResetEventSlim(true));
 
 			int exitCode;
 			if (_commands.TryProcess(context, args, out exitCode)) {

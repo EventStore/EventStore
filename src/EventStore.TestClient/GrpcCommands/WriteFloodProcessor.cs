@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.TestClient.Commands;
+using EventStore.TestClient.Statistics;
 
 namespace EventStore.TestClient.GrpcCommands {
 	internal class WriteFloodProcessor : ICmdProcessor {
@@ -52,9 +53,11 @@ namespace EventStore.TestClient.GrpcCommands {
 			    }
 			}
 
+			long interval = 100000;
+			var stats = new WriteFloodStats(Keyword, context.OutputCsv, args);
 			var monitor = new RequestMonitor();
 			try {
-				var task = WriteFlood(context, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamNamePrefix, monitor);
+				var task = WriteFlood(context, stats, interval, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamNamePrefix, monitor);
 				task.Wait();
 			} catch (Exception ex) {
 				context.Fail(ex);
@@ -63,20 +66,11 @@ namespace EventStore.TestClient.GrpcCommands {
 			return true;
 		}
 
-		private async Task WriteFlood(CommandProcessorContext context, int clientsCnt, long requestsCnt, int streamsCnt,
+		private async Task WriteFlood(CommandProcessorContext context, WriteFloodStats stats, long interval, int clientsCnt, long requestsCnt, int streamsCnt,
 			int size, int batchSize, string streamNamePrefix, RequestMonitor monitor) {
 			context.IsAsync();
 
-			long succ = 0;
 			long last = 0;
-			long fail = 0;
-			long prepTimeout = 0;
-			long commitTimeout = 0;
-			long forwardTimeout = 0;
-			long wrongExpVersion = 0;
-			long streamDeleted = 0;
-			long all = 0;
-			long interval = 100000;
 			long currentInterval = 0;
 
 			string[] streams = Enumerable.Range(0, streamsCnt).Select(x =>
@@ -90,6 +84,7 @@ namespace EventStore.TestClient.GrpcCommands {
 				streams.LastOrDefault());
 
 			var start = new TaskCompletionSource();
+			stats.StartTime = DateTime.UtcNow;
 			var sw2 = new Stopwatch();
 			var capacity = 2000 / clientsCnt;
 			var clientTasks = new List<Task>();
@@ -121,21 +116,23 @@ namespace EventStore.TestClient.GrpcCommands {
 
 					pending.Add(client.AppendToStreamAsync(streams[rnd.Next(streamsCnt)], StreamState.Any, events)
 						.ContinueWith(t => {
-							if (t.IsCompletedSuccessfully) Interlocked.Increment(ref succ);
+							if (t.IsCompletedSuccessfully) Interlocked.Increment(ref stats.Succ);
 							else {
-								if (Interlocked.Increment(ref fail) % 1000 == 0)
+								if (Interlocked.Increment(ref stats.Fail) % 1000 == 0)
 									Console.Write('#');
 							}
-							var localAll = Interlocked.Add(ref all, batchSize);
+							var localAll = Interlocked.Add(ref stats.All, batchSize);
 							if (localAll - currentInterval > interval) {
 								var localInterval = Interlocked.Exchange(ref currentInterval, localAll);
-								var elapsed = sw2.Elapsed;
+								stats.Elapsed = sw2.Elapsed;
+								stats.Rate = 1000.0 * (localAll - localInterval) / stats.Elapsed.TotalMilliseconds;
 								sw2.Restart();
 								context.Log.Information(
-									"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
-									localAll, elapsed, 1000.0 * (localAll - localInterval) / elapsed.TotalMilliseconds,
-									succ, fail,
-									wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
+									"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, " +
+									"P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
+									localAll, stats.Elapsed, stats.Rate, stats.Succ, stats.Fail,
+									stats.WrongExpVersion, stats.PrepTimeout, stats.CommitTimeout, stats.ForwardTimeout, stats.StreamDeleted);
+								stats.WriteStatsToFile(context.StatsLogger);
 							}
 
 							monitor.EndOperation(corrid);
@@ -145,9 +142,9 @@ namespace EventStore.TestClient.GrpcCommands {
 
 						while (pending.Count > 0 && Task.WhenAny(pending).IsCompleted) {
 							pending.RemoveAll(x => x.IsCompleted);
-							if (succ - last > 1000) {
+							if (stats.Succ - last > 1000) {
 								Console.Write(".");
-								last = succ;
+								last = stats.Succ;
 							}
 						}
 					}
@@ -164,11 +161,12 @@ namespace EventStore.TestClient.GrpcCommands {
 
 			context.Log.Information(
 				"Completed. Successes: {success}, failures: {failures} (WRONG VERSION: {wrongExpectedVersion}, P: {prepareTimeout}, C: {commitTimeout}, F: {forwardTimeout}, D: {streamDeleted})",
-				succ, fail,
-				wrongExpVersion, prepTimeout, commitTimeout, forwardTimeout, streamDeleted);
+				stats.Succ, stats.Fail,
+				stats.WrongExpVersion, stats.PrepTimeout, stats.CommitTimeout, stats.ForwardTimeout, stats.StreamDeleted);
+			stats.WriteStatsToFile(context.StatsLogger);
 
-			var reqPerSec = (all + 0.0) / sw.ElapsedMilliseconds * 1000;
-			context.Log.Information("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", all,
+			var reqPerSec = (stats.All + 0.0) / sw.ElapsedMilliseconds * 1000;
+			context.Log.Information("{requests} requests completed in {elapsed}ms ({rate:0.00} reqs per sec).", stats.All,
 				sw.ElapsedMilliseconds, reqPerSec);
 
 			PerfUtils.LogData(
@@ -176,9 +174,9 @@ namespace EventStore.TestClient.GrpcCommands {
 				PerfUtils.Row(PerfUtils.Col("clientsCnt", clientsCnt),
 					PerfUtils.Col("requestsCnt", requestsCnt),
 					PerfUtils.Col("ElapsedMilliseconds", sw.ElapsedMilliseconds)),
-				PerfUtils.Row(PerfUtils.Col("successes", succ), PerfUtils.Col("failures", fail)));
+				PerfUtils.Row(PerfUtils.Col("successes", stats.Succ), PerfUtils.Col("failures", stats.Fail)));
 
-			var failuresRate = (int)(100 * fail / (fail + succ));
+			var failuresRate = (int)(100 * stats.Fail / (stats.Fail + stats.Succ));
 			PerfUtils.LogTeamCityGraphData(string.Format("{0}-{1}-{2}-reqPerSec", Keyword, clientsCnt, requestsCnt),
 				(int)reqPerSec);
 			PerfUtils.LogTeamCityGraphData(
@@ -190,7 +188,7 @@ namespace EventStore.TestClient.GrpcCommands {
 				string.Format("{0}-c{1}-r{2}-st{3}-s{4}-failureSuccessRate", Keyword, clientsCnt, requestsCnt,
 					streamsCnt, size), failuresRate);
 			monitor.GetMeasurementDetails();
-			if (Interlocked.Read(ref succ) != requestsCnt)
+			if (Interlocked.Read(ref stats.Succ) != requestsCnt)
 				context.Fail(reason: "There were errors or not all requests completed.");
 			else
 				context.Success();

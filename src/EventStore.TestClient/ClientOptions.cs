@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using Serilog;
 
 #pragma warning disable 1591
 
@@ -26,8 +27,9 @@ namespace EventStore.TestClient {
 		public bool UseTls { get; init; }
 		public bool TlsValidateServer { get; init; }
 
-		//[ArgDescription("A connection string to connect to a node/cluster. Used by gRPC only.")]
 		public string ConnectionString { get; set; }
+		public bool OutputCsv { get; set; }
+		public ILogger StatsLog { get; set; }
 
 		public ClientOptions() {
 			Command = Array.Empty<string>();
@@ -42,6 +44,7 @@ namespace EventStore.TestClient {
 			UseTls = false;
 			TlsValidateServer = false;
 			ConnectionString = string.Empty;
+			OutputCsv = true;
 		}
 
 		public override string ToString() {

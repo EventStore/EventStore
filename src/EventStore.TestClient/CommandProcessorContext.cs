@@ -7,7 +7,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.TestClient {
 	/// <summary>
 	/// This context is passed to the instances of <see cref="ICmdProcessor"/>
-	/// when they are executed. It can also be used for async syncrhonization
+	/// when they are executed. It can also be used for async synchronization
 	/// </summary>
 	public class CommandProcessorContext {
 		public int ExitCode;
@@ -17,7 +17,17 @@ namespace EventStore.TestClient {
 		/// <summary>
 		/// Current logger of the test client
 		/// </summary>
-		public readonly Serilog.ILogger Log;
+		public readonly ILogger Log;
+
+		/// <summary>
+		/// Stats logger for the test client
+		/// </summary>
+		public readonly ILogger StatsLogger;
+
+		/// <summary>
+		/// Whether stats should be CSV or Json
+		/// </summary>
+		public bool OutputCsv = false;
 
 		public readonly TcpTestClient _tcpTestClient;
 		public readonly GrpcTestClient _grpcTestClient;
@@ -27,13 +37,16 @@ namespace EventStore.TestClient {
 		private int _completed;
 		private int _timeout;
 
-		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient, ClientApiTcpTestClient clientApiTestClient, int timeout, ILogger log, ManualResetEventSlim doneEvent) {
+		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient, ClientApiTcpTestClient clientApiTestClient,
+			int timeout, ILogger log, ILogger statsLogger, bool outputCsv, ManualResetEventSlim doneEvent) {
 			_tcpTestClient = tcpTestClient;
 			_grpcTestClient = grpcTestClient;
 			_clientApiTestClient = clientApiTestClient;
 			Log = log;
+			StatsLogger = statsLogger;
 			_doneEvent = doneEvent;
 			_timeout = timeout;
+			OutputCsv = outputCsv;
 		}
 
 		public void Completed(int exitCode = (int)Common.Utils.ExitCode.Success, Exception error = null,
