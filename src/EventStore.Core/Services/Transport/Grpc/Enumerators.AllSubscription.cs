@@ -12,7 +12,7 @@ using Grpc.Core;
 using Serilog;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Enumerators {
+	public partial class Enumerators {
 		public class AllSubscription : ISubscriptionEnumerator {
 			private static readonly ILogger Log = Serilog.Log.ForContext<AllSubscription>();
 

@@ -18,7 +18,7 @@ using ReadDirection = EventStore.Client.Streams.ReadReq.Types.Options.Types.Read
 using StreamOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.StreamOptionOneofCase;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Streams<TStreamId> {
+	internal partial class Streams<TStreamId> {
 		public override async Task Read(
 			ReadReq request,
 			IServerStreamWriter<ReadResp> responseStream,

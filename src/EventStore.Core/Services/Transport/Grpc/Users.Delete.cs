@@ -6,7 +6,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Users {
+	internal partial class Users {
 		private static readonly Operation DeleteOperation = new Operation(Plugins.Authorization.Operations.Users.Delete);
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
 			var options = request.Options;

@@ -8,7 +8,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class PersistentSubscriptions {
+	internal partial class PersistentSubscriptions {
 		private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.Update);
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var updatePersistentSubscriptionSource = new TaskCompletionSource<UpdateResp>();

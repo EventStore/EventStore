@@ -6,7 +6,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class Users {
+	internal partial class Users {
 		private static readonly Operation ChangePasswordOperation = new Operation(Plugins.Authorization.Operations.Users.ChangePassword);
 		public override async Task<ChangePasswordResp> ChangePassword(ChangePasswordReq request,
 			ServerCallContext context) {

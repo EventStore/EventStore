@@ -7,8 +7,9 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Users {
+	internal partial class Users {
 		private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Users.Update);
+		
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var options = request.Options;
 

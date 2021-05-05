@@ -8,7 +8,7 @@ using Grpc.Core;
 using static EventStore.Core.Messages.ClientMessage.DeletePersistentSubscriptionCompleted;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class PersistentSubscriptions {
+	internal partial class PersistentSubscriptions {
 		private static readonly Operation DeleteOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.Delete);
 		public override async Task<DeleteResp> Delete(DeleteReq request, ServerCallContext context) {
 			

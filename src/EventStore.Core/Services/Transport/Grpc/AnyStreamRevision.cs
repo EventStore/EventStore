@@ -13,9 +13,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public const int StreamExists = 4;
 		}
 
-		internal static AnyStreamRevision FromInt64(long value) => new AnyStreamRevision(-Convert.ToInt32(value));
+		public static AnyStreamRevision FromInt64(long value) => new AnyStreamRevision(-Convert.ToInt32(value));
 
-		internal AnyStreamRevision(int value) {
+		public AnyStreamRevision(int value) {
 			switch (value) {
 				case Constants.NoStream:
 				case Constants.Any:
@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override readonly int GetHashCode() => HashCode.Hash.Combine(_value);
 		public static bool operator ==(AnyStreamRevision left, AnyStreamRevision right) => left.Equals(right);
 		public static bool operator !=(AnyStreamRevision left, AnyStreamRevision right) => !left.Equals(right);
-		internal readonly long ToInt64() => -Convert.ToInt64(_value);
+		public readonly long ToInt64() => -Convert.ToInt64(_value);
 		public static implicit operator int(AnyStreamRevision streamRevision) => streamRevision._value;
 
 		public override string ToString() => _value switch {

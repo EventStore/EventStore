@@ -6,7 +6,7 @@ using EventStore.Plugins.Authorization;
 using static EventStore.Core.Messages.UserManagementMessage;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class Users : EventStore.Client.Users.Users.UsersBase {
+	internal partial class Users : EventStore.Client.Users.Users.UsersBase {
 		private readonly IPublisher _publisher;
 		private IAuthorizationProvider _authorizationProvider;
 

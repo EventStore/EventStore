@@ -1,5 +1,5 @@
 namespace EventStore.Core.Services.Transport.Grpc {
-	internal static class Constants {
+	public static class Constants {
 		public static class Exceptions {
 			public const string ExceptionKey = "exception";
 

@@ -7,7 +7,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class Users {
+	internal partial class Users {
 		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Users.Read);
 		public override async Task Details(DetailsReq request, IServerStreamWriter<DetailsResp> responseStream,
 			ServerCallContext context) {

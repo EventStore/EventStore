@@ -11,7 +11,7 @@ using EventStore.Core.Messaging;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	internal static partial class Enumerators {
+	public static partial class Enumerators {
 		public class ReadStreamBackwards : IAsyncEnumerator<ResolvedEvent> {
 			private readonly IPublisher _bus;
 			private readonly string _streamName;

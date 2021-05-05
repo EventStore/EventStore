@@ -7,7 +7,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Users {
+	internal partial class Users {
 		private static readonly Operation CreateOperation = new Operation(Plugins.Authorization.Operations.Users.Create);
 		public override async Task<CreateResp> Create(CreateReq request, ServerCallContext context) {
 			var options = request.Options;

@@ -22,7 +22,9 @@
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />   
   </ItemGroup>
 	<ItemGroup>
-		<Protobuf Include="../Protos/Grpc/projections.proto" GrpcServices="Server" LinkBase="Services/Grpc" />
+		<Protobuf Include="../Protos/Grpc/projections.proto" GrpcServices="Server" LinkBase="Services/Grpc">
+		  <Link>Services\Grpc\Protos\projections.proto</Link>
+		</Protobuf>
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="Prelude\Modules\" />

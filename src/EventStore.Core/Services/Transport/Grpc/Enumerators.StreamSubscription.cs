@@ -13,7 +13,7 @@ using Serilog;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	internal static partial class Enumerators {
+	public static partial class Enumerators {
 		public abstract class StreamSubscription {
 			protected static readonly ILogger Log = Serilog.Log.ForContext<StreamSubscription>();
 		}

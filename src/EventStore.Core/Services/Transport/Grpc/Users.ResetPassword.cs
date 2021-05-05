@@ -6,7 +6,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class Users {
+	internal partial class Users {
 		private static readonly Operation ResetOperation = new Operation(Plugins.Authorization.Operations.Users.ResetPassword);
 		public override async Task<ResetPasswordResp> ResetPassword(ResetPasswordReq request,
 			ServerCallContext context) {

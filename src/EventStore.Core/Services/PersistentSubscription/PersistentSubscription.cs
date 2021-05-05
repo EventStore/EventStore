@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private readonly PersistentSubscriptionStats _statistics;
 		private readonly Stopwatch _totalTimeWatch;
 		private readonly OutstandingMessageCache _outstandingMessages;
-		internal StreamBuffer StreamBuffer => _streamBufferSource.Task.Result;
+		public StreamBuffer StreamBuffer => _streamBufferSource.Task.Result;
 		private readonly TaskCompletionSource<StreamBuffer> _streamBufferSource;
 		private PersistentSubscriptionState _state = PersistentSubscriptionState.NotReady;
 		private long _nextEventToPullFrom;

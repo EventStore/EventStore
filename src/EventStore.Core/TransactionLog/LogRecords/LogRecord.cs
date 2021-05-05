@@ -125,7 +125,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			}
 		}
 
-		internal void WriteWithLengthPrefixAndSuffixTo(BinaryWriter writer) {
+		public void WriteWithLengthPrefixAndSuffixTo(BinaryWriter writer) {
 			using (var memoryStream = new MemoryStream()) {
 				WriteTo(new BinaryWriter(memoryStream));
 				var length = (int)memoryStream.Length;

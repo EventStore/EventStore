@@ -56,13 +56,25 @@ namespace EventStore.Core.Tests {
 
 		[Test]
 		public void all_keys_are_read_from_configuration() {
+			string[] excluded = new[] {
+				nameof(ClusterVNodeOptions.Subsystems), 
+				nameof(ClusterVNodeOptions.ServerCertificate), 
+				nameof(ClusterVNodeOptions.TrustedRootCertificates), 
+				nameof(ClusterVNodeOptions.IndexBitnessVersion), 
+				nameof(ClusterVNodeOptions.Cluster.QuorumSize),
+				nameof(ClusterVNodeOptions.Cluster.CommitAckCount),
+				nameof(ClusterVNodeOptions.Cluster.PrepareAckCount),
+				nameof(ClusterVNodeOptions.Database.ChunkSize),
+				nameof(ClusterVNodeOptions.Database.StatsStorage),
+			};
 			var actual = new List<string>();
 			ClusterVNodeOptions.FromConfiguration(new FakeConfigurationRoot(
 				new ConfigurationBuilder().Add(new DefaultSource(ClusterVNodeOptions.DefaultValues)).Build(),
 				actual.Add));
 
-			var expected = typeof(ClusterVNodeOptions).GetProperties()
-				.SelectMany(property => property.PropertyType.GetProperties())
+			var expected = typeof(ClusterVNodeOptions).GetProperties().Where(x => !excluded.Contains(x.Name))
+				.SelectMany(property => property.PropertyType.GetProperties().Where(x => !excluded.Contains(x.Name)))
+				.Where(x=> !excluded.Contains(x.Name))
 				.Select(property => property.Name);
 
 			CollectionAssert.AreEquivalent(expected, actual);
