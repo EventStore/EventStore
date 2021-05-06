@@ -12,7 +12,7 @@ using EventStore.Client;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	internal static partial class Enumerators {
+	public static partial class Enumerators {
 		public class ReadAllBackwards : IAsyncEnumerator<ResolvedEvent> {
 			private readonly IPublisher _bus;
 			private readonly ulong _maxCount;

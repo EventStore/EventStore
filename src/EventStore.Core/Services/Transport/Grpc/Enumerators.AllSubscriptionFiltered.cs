@@ -12,7 +12,7 @@ using Serilog;
 using IReadIndex = EventStore.Core.Services.Storage.ReaderIndex.IReadIndex;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	internal static partial class Enumerators {
+	public static partial class Enumerators {
 		public class AllSubscriptionFiltered : ISubscriptionEnumerator {
 			private static readonly ILogger Log = Serilog.Log.ForContext<AllSubscriptionFiltered>();
 

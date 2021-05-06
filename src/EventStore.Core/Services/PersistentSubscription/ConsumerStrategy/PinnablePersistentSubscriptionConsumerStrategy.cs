@@ -5,7 +5,7 @@
 	using Index.Hashes;
 	using PinnedState;
 
-	internal abstract class PinnablePersistentSubscriptionConsumerStrategy : IPersistentSubscriptionConsumerStrategy {
+	public abstract class PinnablePersistentSubscriptionConsumerStrategy : IPersistentSubscriptionConsumerStrategy {
 		private IHasher<string> _hash;
 		protected static readonly char LinkToSeparator = '@';
 		private readonly PinnedConsumerState _state = new PinnedConsumerState();

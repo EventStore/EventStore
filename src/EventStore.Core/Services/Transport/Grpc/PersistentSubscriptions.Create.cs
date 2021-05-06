@@ -13,7 +13,7 @@ using RevisionOptionOneofCase = EventStore.Client.PersistentSubscriptions.Create
 using AllOptionOneofCase = EventStore.Client.PersistentSubscriptions.CreateReq.Types.AllOptions.AllOptionOneofCase;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class PersistentSubscriptions {
+	internal partial class PersistentSubscriptions {
 		private static readonly Operation CreateOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.Create);
 
 		public override async Task<CreateResp> Create(CreateReq request, ServerCallContext context) {

@@ -12,7 +12,7 @@ using RevisionOptionOneofCase = EventStore.Client.PersistentSubscriptions.Update
 using AllOptionOneofCase = EventStore.Client.PersistentSubscriptions.UpdateReq.Types.AllOptions.AllOptionOneofCase;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class PersistentSubscriptions {
+	internal partial class PersistentSubscriptions {
 		private static readonly Operation UpdateOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.Update);
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var updatePersistentSubscriptionSource = new TaskCompletionSource<UpdateResp>();

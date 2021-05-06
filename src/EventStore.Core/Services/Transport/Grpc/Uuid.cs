@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_lsb = lsb;
 		}
 
-		internal readonly Client.Shared.UUID ToDto() =>
+		public readonly Client.Shared.UUID ToDto() =>
 			new Client.Shared.UUID {
 				Structured = new Client.Shared.UUID.Types.Structured {
 					LeastSignificantBits = _lsb,

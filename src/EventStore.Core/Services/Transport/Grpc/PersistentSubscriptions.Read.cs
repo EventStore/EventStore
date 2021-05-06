@@ -22,7 +22,7 @@ using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEv
 using UUID = EventStore.Client.Shared.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class PersistentSubscriptions {
+	internal partial class PersistentSubscriptions {
 		private static readonly Operation ProcessMessagesOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.ProcessMessages);
 		public override async Task Read(IAsyncStreamReader<ReadReq> requestStream,
 			IServerStreamWriter<ReadResp> responseStream, ServerCallContext context) {

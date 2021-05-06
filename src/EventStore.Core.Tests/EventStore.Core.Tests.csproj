@@ -14,6 +14,12 @@
 		<PackageReference Include="NUnit" Version="3.12.0" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
 		<PackageReference Include="CompareNETObjects" Version="4.65.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.34.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
+
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.ClusterNode\EventStore.ClusterNode.csproj" />
@@ -38,6 +44,11 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
+		<Protobuf Include="..\Protos\Grpc\gossip.proto" Link="Protos\gossip.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\operations.proto" Link="Protos\operations.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\persistent.proto" Link="Protos\persistent.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\streams.proto" Link="Protos\streams.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\users.proto" Link="Protos\users.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<None Include="Resources\es-tile.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

@@ -20,28 +20,28 @@ namespace EventStore.Core {
 		public static readonly ClusterVNodeOptions Default = new();
 
 		internal IConfigurationRoot? ConfigurationRoot { get; init; }
-		public ApplicationOptions Application { get; init; } = new();
-		public AuthOptions Auth { get; init; } = new();
-		public CertificateOptions Certificate { get; init; } = new();
-		public CertificateFileOptions CertificateFile { get; init; } = new();
-		public CertificateStoreOptions CertificateStore { get; init; } = new();
-		public ClusterOptions Cluster { get; init; } = new();
-		public DatabaseOptions Database { get; init; } = new();
-		public GrpcOptions Grpc { get; init; } = new();
-		public InterfaceOptions Interface { get; init; } = new();
-		public ProjectionOptions Projections { get; init; } = new();
+		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
+		[OptionGroup] public AuthOptions Auth { get; init; } = new();
+		[OptionGroup] public CertificateOptions Certificate { get; init; } = new();
+		[OptionGroup] public CertificateFileOptions CertificateFile { get; init; } = new();
+		[OptionGroup] public CertificateStoreOptions CertificateStore { get; init; } = new();
+		[OptionGroup] public ClusterOptions Cluster { get; init; } = new();
+		[OptionGroup] public DatabaseOptions Database { get; init; } = new();
+		[OptionGroup] public GrpcOptions Grpc { get; init; } = new();
+		[OptionGroup] public InterfaceOptions Interface { get; init; } = new();
+		[OptionGroup] public ProjectionOptions Projections { get; init; } = new();
 
-		internal byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
+		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
-		internal IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
+		public IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
 
 		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
 			Subsystems = new List<ISubsystem>(Subsystems) {subsystem}
 		};
 
-		internal X509Certificate2? ServerCertificate { get; init; }
+		public X509Certificate2? ServerCertificate { get; init; }
 
-		internal X509Certificate2Collection? TrustedRootCertificates { get; init; }
+		public X509Certificate2Collection? TrustedRootCertificates { get; init; }
 
 		internal string? DebugView => ConfigurationRoot?.GetDebugView();
 
@@ -282,9 +282,9 @@ namespace EventStore.Core {
 			[Description("The number of seconds a dead node will remain in the gossip before being pruned.")]
 			public int DeadMemberRemovalPeriodSec { get; init; } = 1_800;
 
-			internal int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
-			internal int PrepareAckCount => PrepareCount > QuorumSize ? PrepareCount : QuorumSize;
-			internal int CommitAckCount => CommitCount > QuorumSize ? CommitCount : QuorumSize;
+			public int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
+			public int PrepareAckCount => PrepareCount > QuorumSize ? PrepareCount : QuorumSize;
+			public int CommitAckCount => CommitCount > QuorumSize ? CommitCount : QuorumSize;
 
 			internal static ClusterOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				GossipSeed = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)),
@@ -415,9 +415,9 @@ namespace EventStore.Core {
 			             "standard cluster recovery operations. -1 is no max.")]
 			public long MaxTruncation { get; init; } = 256 * 1_024 * 1_024;
 
-			internal int ChunkSize { get; init; } = TFConsts.ChunkSize;
+			public int ChunkSize { get; init; } = TFConsts.ChunkSize;
 
-			internal StatsStorage StatsStorage { get; init; } = StatsStorage.File;
+			public StatsStorage StatsStorage { get; init; } = StatsStorage.File;
 
 			public int GetPTableMaxReaderCount() {
 				var ptableMaxReaderCount = 1 /* StorageWriter */

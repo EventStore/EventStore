@@ -17,7 +17,7 @@ namespace EventStore.Core.Cluster {
 		
 		private readonly GrpcChannel _channel;
 		private readonly IPublisher _bus;
-		internal bool Disposed { get; private set; }
+		public bool Disposed { get; private set; }
 
 		public EventStoreClusterClient(Uri address, IPublisher bus, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
 			HttpMessageHandler httpMessageHandler = null;

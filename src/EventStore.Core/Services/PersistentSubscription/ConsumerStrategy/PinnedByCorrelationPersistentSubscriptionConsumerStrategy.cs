@@ -6,7 +6,7 @@
 	using Index.Hashes;
 	using Newtonsoft.Json;
 
-	class PinnedByCorrelationPersistentSubscriptionConsumerStrategy : PinnedPersistentSubscriptionConsumerStrategy {
+	public class PinnedByCorrelationPersistentSubscriptionConsumerStrategy : PinnedPersistentSubscriptionConsumerStrategy {
 		
 		public PinnedByCorrelationPersistentSubscriptionConsumerStrategy(IHasher<string> streamHasher) : base(streamHasher) {
 		}
