@@ -67,6 +67,29 @@ namespace EventStore.LogV3 {
 		}
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct PartitionHeader {
+			[FieldOffset(0)] private Guid _partitionTypeId;
+			[FieldOffset(16)] private Guid _parentPartitionId;
+			[FieldOffset(32)] private byte _flags;
+			public const int Size = 33;
+
+			public Guid PartitionTypeId {
+				get => _partitionTypeId;
+				set => _partitionTypeId = value;
+			}
+			
+			public Guid ParentPartitionId {
+				get => _parentPartitionId;
+				set => _parentPartitionId = value;
+			}
+			
+			public byte Flags {
+				get => _flags;
+				set => _flags = value;
+			}
+		}
+		
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct PartitionTypeHeader {
 			[FieldOffset(0)] private Guid _partitionId;
 			public const int Size = 16;
@@ -85,6 +108,48 @@ namespace EventStore.LogV3 {
 			public Guid PartitionId {
 				get => _partitionId;
 				set => _partitionId = value;
+			}
+		}
+		
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct EventTypeHeader {
+			[FieldOffset(0)] private Guid _partitionId;
+			[FieldOffset(16)] private uint _referenceNumber;
+			[FieldOffset(20)] private ushort _version;
+			
+			public const int Size = 22;
+
+			public Guid PartitionId {
+				get => _partitionId;
+				set => _partitionId = value;
+			}
+			
+			public uint ReferenceNumber {
+				get => _referenceNumber;
+				set => _referenceNumber = value;
+			}
+
+			public ushort Version {
+				get => _version;
+				set => _version = value;
+			}
+		}
+		
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct ContentTypeHeader {
+			[FieldOffset(0)] private Guid _partitionId;
+			[FieldOffset(16)] private ushort _referenceNumber;
+			
+			public const int Size = 18;
+
+			public Guid PartitionId {
+				get => _partitionId;
+				set => _partitionId = value;
+			}
+			
+			public ushort ReferenceNumber {
+				get => _referenceNumber;
+				set => _referenceNumber = value;
 			}
 		}
 	}
