@@ -130,7 +130,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			CheckDisposed();
 			if (@event == null) throw new ArgumentNullException("event");
 
-			var eventData = GetEventData(@event);
+			string eventData = GetEventData(@event);
 
 			if (string.IsNullOrEmpty(eventData)) {
 				//Nothing to actually process
