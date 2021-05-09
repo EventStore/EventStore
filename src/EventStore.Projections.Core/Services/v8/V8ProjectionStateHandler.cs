@@ -10,6 +10,9 @@ using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.v8 {
+	using System.Threading;
+	using Client.PersistentSubscriptions;
+
 	public class V8ProjectionStateHandler : IProjectionStateHandler {
 		private readonly PreludeScript _prelude;
 		private readonly QueryScript _query;
@@ -61,7 +64,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 		private string GetEventData(ResolvedEvent evnt) {
 			if (_enableContentTypeValidation) {
-				return (evnt.IsJson ? evnt.Data : evnt.Data ?? string.Empty)?.Trim();
+				return (evnt.IsJson ? evnt.Data : evnt.Data ?? null)?.Trim(); //Callers all expect null for no data.
 			}
 			return evnt.Data?.Trim();
 		}
@@ -126,17 +129,24 @@ namespace EventStore.Projections.Core.Services.v8 {
 			CheckpointTag eventPosition, string category, ResolvedEvent @event) {
 			CheckDisposed();
 			if (@event == null) throw new ArgumentNullException("event");
-			var partition = _query.GetPartition(
-				GetEventData(@event),
-				new string[] {
-					@event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
-					@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
-					@event.PositionMetadata ?? ""
-				});
+
+			var eventData = GetEventData(@event);
+
+			if (string.IsNullOrEmpty(eventData)) {
+				//Nothing to actually process
+				return null;
+			}
+
+			var partition = _query.GetPartition(eventData,
+			                                    new string[] {
+				                                                 @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
+				                                                 @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+				                                                 @event.PositionMetadata ?? ""
+			                                                 });
 			if (partition == "")
 				return null;
-			else
-				return partition;
+			
+			return partition;
 		}
 
 		public bool ProcessEvent(
