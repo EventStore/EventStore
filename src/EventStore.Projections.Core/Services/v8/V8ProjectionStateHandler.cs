@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 		private string GetEventData(ResolvedEvent evnt) {
 			if (_enableContentTypeValidation) {
-				return (evnt.IsJson ? evnt.Data : evnt.Data ?? null)?.Trim(); //Callers all expect null for no data.
+				return (evnt.IsJson ? evnt.Data : evnt.Data ?? string.Empty)?.Trim();
 			}
 			return evnt.Data?.Trim();
 		}
@@ -158,7 +158,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			Tuple<string, string> newStates = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) {
+			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
 				newStates = _query.Push(
 					"",
 					new string[] { });
@@ -201,7 +201,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			_emittedEvents = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) {
+			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
 				emittedEvents = null;
 				return true;
 			}
