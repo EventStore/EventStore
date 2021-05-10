@@ -20,7 +20,7 @@ namespace EventStore.Core.LogAbstraction {
 				emptyStreamId: string.Empty,
 				new LogV2Sizer(),
 				new LogV2RecordFactory(),
-				true);
+				supportsExplicitTransactions: true);
 
 			var logV3StreamNameIndex = new InMemoryStreamNameIndex();
 			var metastreams = new LogV3Metastreams();

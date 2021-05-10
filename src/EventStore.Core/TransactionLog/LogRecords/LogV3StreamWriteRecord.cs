@@ -56,6 +56,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public string EventType => Record.Event.SystemMetadata.EventType;
 		public ReadOnlyMemory<byte> Data => Record.Event.Data;
 		public ReadOnlyMemory<byte> Metadata => Record.Event.Metadata;
+
 		public bool Equals(LogV3StreamWriteRecord other) {
 			if (ReferenceEquals(null, other)) return false;
 			if (ReferenceEquals(this, other)) return true;
@@ -75,13 +76,13 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			        && other.Metadata.Span.SequenceEqual(Metadata.Span);
 		}
 
-		public override bool Equals(object obj)
-		{
+		public override bool Equals(object obj) {
 			if (ReferenceEquals(null, obj)) return false;
 			if (ReferenceEquals(this, obj)) return true;
 			if (obj.GetType() != this.GetType()) return false;
 			return Equals((LogV3StreamWriteRecord) obj);
 		}
+
 		public override int GetHashCode() {
 			unchecked {
 				var result = Version.GetHashCode();
