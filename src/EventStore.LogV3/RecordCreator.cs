@@ -32,10 +32,6 @@ namespace EventStore.LogV3 {
 				throw new ArgumentException($"Name \"{str}\" is longer than {MaxStringBytes} bytes");
 		}
 
-		public static int MeasureString(string str) {
-			return _utf8NoBom.GetByteCount(str);
-		}
-
 		private static readonly Encoding _utf8NoBom = new UTF8Encoding(
 			encoderShouldEmitUTF8Identifier: false,
 			throwOnInvalidBytes: true);
@@ -88,7 +84,7 @@ namespace EventStore.LogV3 {
 			subHeader.PartitionTypeId = partitionTypeId;
 			subHeader.ParentPartitionId = parentPartitionId;
 			subHeader.Flags = flags;
-			PopulateString(name, record.Payload);
+			PopulateString(name, record.Payload.Span);
 
 			return StringPayloadRecord.Create(record);
 		}
@@ -164,7 +160,7 @@ namespace EventStore.LogV3 {
 			subHeader.PartitionId = partitionId;
 			subHeader.ReferenceNumber = referenceNumber;
 			subHeader.Version = version;
-			PopulateString(name, record.Payload);
+			PopulateString(name, record.Payload.Span);
 
 			return StringPayloadRecord.Create(record);
 		}
@@ -190,6 +186,7 @@ namespace EventStore.LogV3 {
 
 			subHeader.PartitionId = partitionId;
 			subHeader.ReferenceNumber = referenceNumber;
+			PopulateString(name, record.Payload.Span);
 
 			return StringPayloadRecord.Create(record);
 		}
