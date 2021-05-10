@@ -53,10 +53,7 @@ namespace EventStore.Common.Log {
 					"The given log path starts with a '~'. Event Store does not expand '~'.");
 			}
 
-			var potentialLogConfigurationDirectories = new[] {
-				Locations.ApplicationDirectory,
-				Locations.DefaultConfigurationDirectory
-			}.Distinct();
+			var potentialLogConfigurationDirectories = Locations.GetPotentialConfigurationDirectories();
 			var logConfigurationDirectory =
 				potentialLogConfigurationDirectories.FirstOrDefault(directory =>
 					File.Exists(Path.Combine(directory, logConfig)));
