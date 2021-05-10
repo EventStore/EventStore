@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.1</TargetFrameworks>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<ENABLE_SPAN_T>true</ENABLE_SPAN_T>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(UNSAFE_BYTEBUFFER)' == 'true'">
+		<DefineConstants>$(DefineConstants);UNSAFE_BYTEBUFFER</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(BYTEBUFFER_NO_BOUNDS_CHECK)' == 'true'">
+		<DefineConstants>$(DefineConstants);BYTEBUFFER_NO_BOUNDS_CHECK</DefineConstants>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(ENABLE_SPAN_T)' == 'true'">
+		<DefineConstants>$(DefineConstants);ENABLE_SPAN_T</DefineConstants>
+	</PropertyGroup>
+
+</Project>

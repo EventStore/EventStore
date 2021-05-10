@@ -1,0 +1,8 @@
+﻿namespace EventStore.LogV3;
+
+table EventSystemMetadata {
+  event_type:string;
+  event_id:[ubyte];
+}
+
+root_type EventSystemMetadata;

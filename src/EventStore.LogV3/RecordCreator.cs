@@ -1,9 +1,8 @@
 using System;
-using System.IO;
 using System.Text;
 using System.Text.Unicode;
 using EventStore.LogCommon;
-using Google.Protobuf;
+using FlatBuffers;
 
 namespace EventStore.LogV3 {
 	// Nice-to-use wrappers for creating and populating the raw structures.
@@ -204,6 +203,24 @@ namespace EventStore.LogV3 {
 			ReadOnlySpan<byte> eventData,
 			ReadOnlySpan<byte> eventMetadata,
 			Raw.EventFlags eventFlags) {
+
+			var builder = new FlatBufferBuilder(1024);
+			//qqbuilder.Add()
+			EventSystemMetadata.StartEventSystemMetadata(builder);
+			EventSystemMetadata.AddEventId(builder, EventSystemMetadata.CreateEventIdVector(builder, eventId.ToByteArray()));
+			EventSystemMetadata.AddEventType(builder, builder.CreateString(eventType));
+			var x = EventSystemMetadata.EndEventSystemMetadata(builder);
+			EventSystemMetadata.FinishEventSystemMetadataBuffer(builder, x);
+
+			var buf = builder.DataBuffer;
+			var size = buf.Length - buf.Position;
+
+			buf.PutStringUTF8()
+			//qq next steps:
+			// finish tapping these things in, see if it works.
+			// utf8?
+
+			//builder.DataBuffer.ToSpan
 
 			var writeSystemMetadata = new StreamWriteSystemMetadata {
 				CorrelationId = correlationId,

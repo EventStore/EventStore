@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
+using FlatBuffers;
+using MyGame.Sample; // The `flatc` generated files. (Monster, Vec3, etc.)
 
 namespace EventStore.LogV3 {
 	// View of an event in a stream write record
