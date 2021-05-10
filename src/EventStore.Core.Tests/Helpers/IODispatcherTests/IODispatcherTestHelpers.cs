@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests {
 		public static ResolvedEvent[] CreateResolvedEvent<TLogFormat,TStreamId>(string stream, string eventType, string data,
 			string metadata = "", long eventNumber = 0) {
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId);
+			logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
 			var record = new EventRecord(eventNumber, LogRecord.Prepare<TStreamId>(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				streamId, eventNumber, PrepareFlags.None, eventType, Encoding.UTF8.GetBytes(data),
 				Encoding.UTF8.GetBytes(metadata)), stream);

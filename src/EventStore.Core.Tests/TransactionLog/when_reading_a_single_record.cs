@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var streamName = "es1";
-			logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId);
+			logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId, out _, out _);
 			var pos = 0;
 			for (int i = 0; i < RecordsCount; ++i) {
 				if (i > 0 && i % 3 == 0) {

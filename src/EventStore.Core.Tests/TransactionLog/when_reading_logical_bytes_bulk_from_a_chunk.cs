@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
-			_logFormat.StreamNameIndex.GetOrAddId("ES", out var streamId);
+			_logFormat.StreamNameIndex.GetOrAddId("ES", out var streamId, out _, out _);
 			var rec = LogRecord.Prepare(_logFormat.RecordFactory, 0, Guid.NewGuid(),
 				Guid.NewGuid(), 0, 0, streamId, -1, PrepareFlags.None, "ET",
 				new byte[2000], null);

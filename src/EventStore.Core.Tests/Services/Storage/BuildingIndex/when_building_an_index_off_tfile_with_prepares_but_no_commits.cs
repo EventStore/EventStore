@@ -9,9 +9,9 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class when_building_an_index_off_tfile_with_prepares_but_no_commits<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		protected override void WriteTestScenario() {
-			_streamNameIndex.GetOrAddId("test1", out var streamId1);
-			_streamNameIndex.GetOrAddId("test2", out var streamId2);
-			_streamNameIndex.GetOrAddId("test3", out var streamId3);
+			_streamNameIndex.GetOrAddId("test1", out var streamId1, out _, out _);
+			_streamNameIndex.GetOrAddId("test2", out var streamId2, out _, out _);
+			_streamNameIndex.GetOrAddId("test3", out var streamId3, out _, out _);
 
 			long p1;
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, streamId1, -1,

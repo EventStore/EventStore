@@ -105,7 +105,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Guid eventId = default(Guid),
 			string eventType = "some-type") {
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId(eventStreamName, out var eventStreamId);
+			logFormat.StreamNameIndex.GetOrAddId(eventStreamName, out var eventStreamId, out _, out _);
 			var prepare = LogRecord.SingleWrite(
 				logFormat.RecordFactory,
 				WriterCheckpoint.ReadNonFlushed(),

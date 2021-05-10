@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected const int RecordOffset = 1000;
 		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecord(string stream, int expectedVersion, string eventType, Guid eventId, long transactionPosition){
-			_logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId);
+			_logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
 			return new[]{
 				PrepareLogRecord.SingleWrite (
 					_logFormat.RecordFactory,
@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
-			logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId);
+			logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
 			for(var i=0;i<numEvents;i++){
 				PrepareFlags flags = PrepareFlags.Data | PrepareFlags.IsCommitted;
 				if(i==0) flags |= PrepareFlags.TransactionBegin;

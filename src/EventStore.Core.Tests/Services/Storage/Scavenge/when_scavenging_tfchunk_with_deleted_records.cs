@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				result = chunk.TryReadClosestForward(result.NextPosition);
 			}
 
-			_streamNameIndex.GetOrAddId(_deletedEventStreamId, out var id);
+			_streamNameIndex.GetOrAddId(_deletedEventStreamId, out var id, out _, out _);
 			var deletedRecord = (IPrepareLogRecord<TStreamId>)chunkRecords.First(
 				x => x.RecordType == LogRecordType.Prepare
 				     && EqualityComparer<TStreamId>.Default.Equals(((IPrepareLogRecord<TStreamId>)x).EventStreamId, id));

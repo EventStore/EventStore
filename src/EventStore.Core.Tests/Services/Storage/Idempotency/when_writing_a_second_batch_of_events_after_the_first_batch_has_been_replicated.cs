@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 				eventTypes.Add("type");
 			}
 
-			_logFormat.StreamNameIndex.GetOrAddId("stream", out _streamId);
+			_logFormat.StreamNameIndex.GetOrAddId("stream", out _streamId, out _, out _);
 			var prepares = CreatePrepareLogRecords("stream", expectedEventNumber, eventTypes, _eventIds, transactionPosition);
 			var commit = CreateCommitLogRecord(transactionPosition + 1000 * _numEvents, transactionPosition, expectedEventNumber + _numEvents);
 			

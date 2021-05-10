@@ -52,11 +52,11 @@ namespace EventStore.Core.Tests.Services {
 			_readIndex.GetEventStreamIdByTransactionId(transactionId);
 		public TStreamId GetStreamId(string streamName) => _readIndex.GetStreamId(streamName);
 		public string GetStreamName(TStreamId streamId) => _readIndex.GetStreamName(streamId);
-		public bool GetOrAddId(string streamName, out TStreamId streamId) =>
-			_streamNameIndex.GetOrAddId(streamName, out streamId);
+		public bool GetOrAddId(string streamName, out TStreamId streamId, out TStreamId createdId, out string createdName) =>
+			_streamNameIndex.GetOrAddId(streamName, out streamId, out createdId, out createdName);
 
 		private TStreamId GetOrAddStreamId(string streamName) {
-			_streamNameIndex.GetOrAddId(streamName, out var streamId);
+			_streamNameIndex.GetOrAddId(streamName, out var streamId, out _, out _);
 			return streamId;
 		}
 		public IndexReadEventResult ReadEvent(string streamName, long eventNumber) =>

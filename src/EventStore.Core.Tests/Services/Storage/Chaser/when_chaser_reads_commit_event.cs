@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			_transactionId = Guid.NewGuid();
 
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId);
+			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
 
 			var record = LogRecord.Prepare(
 				factory: logFormat.RecordFactory,

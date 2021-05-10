@@ -209,7 +209,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					int transOffset = transInfo.TransactionOffset;
 					transInfo.TransactionOffset += 1;
 
-					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
 
 					var flags = rec.PrepareFlags;
 					byte[] data;
@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					int transOffset = transInfo.TransactionOffset;
 					transInfo.TransactionOffset += 1;
 
-					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
 					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,
@@ -254,7 +254,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				case Rec.RecType.TransPrepare: {
 					int transOffset = transInfo.TransactionOffset;
 					transInfo.TransactionOffset += 1;
-					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
 
 					var flags = rec.PrepareFlags;
 					byte[] data;
@@ -283,7 +283,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				}
 				case Rec.RecType.TransStart:
 				case Rec.RecType.TransEnd: {
-					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId);
+					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
 					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
 						rec.Id,

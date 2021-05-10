@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 			var transPos = WriterCheckpoint.ReadNonFlushed();
 
-			_streamNameIndex.GetOrAddId("s1", out var s1StreamId);
+			_streamNameIndex.GetOrAddId("s1", out var s1StreamId, out _, out _);
 			for (int i = 0; i < 10; ++i) {
 				long tmp;
 				var r = LogRecord.Prepare(_recordFactory, WriterCheckpoint.ReadNonFlushed(),

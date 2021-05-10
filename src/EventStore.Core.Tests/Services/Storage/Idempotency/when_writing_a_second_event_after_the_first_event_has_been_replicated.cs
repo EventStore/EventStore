@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 			var prepares = CreatePrepareLogRecord("stream", expectedEventNumber, "type", _eventId, transactionPosition);
 			var commit = CreateCommitLogRecord(transactionPosition + RecordOffset, transactionPosition, expectedEventNumber + 1);
 
-			_logFormat.StreamNameIndex.GetOrAddId("stream", out _streamId);
+			_logFormat.StreamNameIndex.GetOrAddId("stream", out _streamId, out _, out _);
 
 			/*First write: committed to db and index*/
 			WriteToDB(prepares);

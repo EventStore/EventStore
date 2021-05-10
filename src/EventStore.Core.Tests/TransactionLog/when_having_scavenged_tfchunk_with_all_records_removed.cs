@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chunk = _db.Manager.GetChunkFor(0);
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var streamName = "es-to-scavenge";
-			logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId);
+			logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId, out _, out _);
 			_p1 = LogRecord.SingleWrite(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
 				new byte[2048], new byte[] { 5, 7 });
 			_res1 = chunk.TryAppend(_p1);

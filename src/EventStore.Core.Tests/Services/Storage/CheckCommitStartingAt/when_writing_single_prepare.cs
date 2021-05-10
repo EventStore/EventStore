@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 		public void check_commmit_should_return_ok_decision() {
 			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare.LogPosition,
 				WriterCheckpoint.ReadNonFlushed());
-			_streamNameIndex.GetOrAddId("ES", out var streamId);
+			_streamNameIndex.GetOrAddId("ES", out var streamId, out _, out _);
 
 			Assert.AreEqual(CommitDecision.Ok, res.Decision);
 			Assert.AreEqual(streamId, res.EventStreamId);

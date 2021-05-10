@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_records = new ILogRecord[RecordsCount];
 			_results = new RecordWriteResult[RecordsCount];
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("es1", out var streamId);
+			logFormat.StreamNameIndex.GetOrAddId("es1", out var streamId, out _, out _);
 
 			for (int i = 0; i < _records.Length - 1; ++i) {
 				_records[i] = LogRecord.SingleWrite(

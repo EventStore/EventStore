@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 		protected override void WriteTestScenario() {
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
-			_streamNameIndex.GetOrAddId("ES", out var esStreamId);
+			_streamNameIndex.GetOrAddId("ES", out var esStreamId, out _, out _);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(),
 				esStreamId, 1);
 			long pos;

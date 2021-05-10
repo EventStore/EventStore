@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id2 = Guid.NewGuid();
 
 			long pos1, pos2, pos3, pos4;
-			_streamNameIndex.GetOrAddId("test1", out var streamId1);
+			_streamNameIndex.GetOrAddId("test1", out var streamId1, out _, out _);
 			_prepare1 = LogRecord.SingleWrite(_recordFactory, 0, _id1, _id1, streamId1, ExpectedVersion.NoStream, "type", new byte[0], new byte[0]);
 			Writer.Write(_prepare1, out pos1);
 			_prepare2 = LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId1, 0, "type", new byte[0], new byte[0]);

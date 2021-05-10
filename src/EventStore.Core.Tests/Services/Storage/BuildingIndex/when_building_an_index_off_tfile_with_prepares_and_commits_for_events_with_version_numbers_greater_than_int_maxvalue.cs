@@ -25,8 +25,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id3 = Guid.NewGuid();
 			long pos1, pos2, pos3, pos4, pos5, pos6;
 
-			_streamNameIndex.GetOrAddId("test1", out var test1StreamId);
-			_streamNameIndex.GetOrAddId("test2", out var test2StreamId);
+			_streamNameIndex.GetOrAddId("test1", out var test1StreamId, out _, out _);
+			_streamNameIndex.GetOrAddId("test2", out var test2StreamId, out _, out _);
 
 			Writer.Write(LogRecord.SingleWrite(_recordFactory, 0, _id1, _id1, test1StreamId, firstEventNumber, "type", new byte[0],
 					new byte[0], DateTime.UtcNow), out pos1);
