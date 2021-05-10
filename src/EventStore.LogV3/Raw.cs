@@ -107,11 +107,11 @@ namespace EventStore.LogV3 {
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct EventHeader {
 			// todo: not used yet
-			[FieldOffset(0)] public int _eventTypeNumber;
-			[FieldOffset(4)] public EventFlags _flags;
-			[FieldOffset(8)] public int _eventSize;
-			[FieldOffset(16)] public int _systemMetadataSize;
-			[FieldOffset(20)] public int _dataSize;
+			[FieldOffset(0)] private int _eventTypeNumber;
+			[FieldOffset(4)] private EventFlags _flags;
+			[FieldOffset(8)] private int _eventSize;
+			[FieldOffset(16)] private int _systemMetadataSize;
+			[FieldOffset(20)] private int _dataSize;
 			public const int Size = 24;
 
 			public int EventTypeNumber {
@@ -209,15 +209,33 @@ namespace EventStore.LogV3 {
 			}
 		}
 
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct ContentTypeHeader {
+			[FieldOffset(0)] private Guid _partitionId;
+			[FieldOffset(16)] private ushort _referenceNumber;
+
+			public const int Size = 18;
+
+			public Guid PartitionId {
+				get => _partitionId;
+				set => _partitionId = value;
+			}
+
+			public ushort ReferenceNumber {
+				get => _referenceNumber;
+				set => _referenceNumber = value;
+			}
+		}
+
 		[Flags]
 		public enum StreamWriteFlags : ushort {
 		}
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct StreamWriteHeader {
-			[FieldOffset(0)] public StreamWriteFlags _flags;
-			[FieldOffset(2)] public short _count;
-			[FieldOffset(4)] public int _metadataSize;
+			[FieldOffset(0)] private StreamWriteFlags _flags;
+			[FieldOffset(2)] private short _count;
+			[FieldOffset(4)] private int _metadataSize;
 			public const int Size = 8;
 
 			public StreamWriteFlags Flags {
@@ -233,24 +251,6 @@ namespace EventStore.LogV3 {
 			public int MetadataSize {
 				get => _metadataSize;
 				set => _metadataSize = value;
-			}
-		}
-
-		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
-		public struct ContentTypeHeader {
-			[FieldOffset(0)] private Guid _partitionId;
-			[FieldOffset(16)] private ushort _referenceNumber;
-			
-			public const int Size = 18;
-
-			public Guid PartitionId {
-				get => _partitionId;
-				set => _partitionId = value;
-			}
-			
-			public ushort ReferenceNumber {
-				get => _referenceNumber;
-				set => _referenceNumber = value;
 			}
 		}
 	}

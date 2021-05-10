@@ -163,7 +163,7 @@ namespace EventStore.LogV3.Tests {
 				eventMetadata: _bytes4.Span,
 				eventFlags: _prepareflags);
 
-			Assert.Equal(LogRecordType.LogV3StreamWrite, record.Header.Type);
+			Assert.Equal(LogRecordType.StreamWrite, record.Header.Type);
 			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
 			Assert.Equal(_dateTime1, record.Header.TimeStamp);
 			Assert.Equal(_long1, record.Header.LogPosition);

@@ -22,10 +22,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			return logicalPosition - length - 2 * sizeof(int);
 		}
 
-		public static ILogRecord ReadFrom(BinaryReader reader) {
-			return ReadFrom(reader, 0);
-		}
-
 		public static ILogRecord ReadFrom(BinaryReader reader, int length) {
 			var recordType = (LogRecordType)reader.ReadByte();
 			var version = reader.ReadByte();
@@ -47,7 +43,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 					return new SystemLogRecord(reader, version, ReadPosition(reader));
 
-				case LogRecordType.LogV3StreamWrite:
+				case LogRecordType.StreamWrite:
 					return new LogV3StreamWriteRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
 
 				default:

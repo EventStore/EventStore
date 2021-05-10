@@ -21,7 +21,7 @@ namespace EventStore.LogV3 {
 		private static LogRecordType Type(this ref Raw.PartitionHeader _) => LogRecordType.Partition;
 		private static LogRecordType Type(this ref Raw.PartitionTypeHeader _) => LogRecordType.PartitionType;
 		private static LogRecordType Type(this ref Raw.StreamTypeHeader _) => LogRecordType.StreamType;
-		private static LogRecordType Type(this ref Raw.StreamWriteHeader _) => LogRecordType.LogV3StreamWrite;
+		private static LogRecordType Type(this ref Raw.StreamWriteHeader _) => LogRecordType.StreamWrite;
 		private static LogRecordType Type(this ref Raw.EventTypeHeader _) => LogRecordType.EventType;
 		private static LogRecordType Type(this ref Raw.ContentTypeHeader _) => LogRecordType.ContentType;
 		
