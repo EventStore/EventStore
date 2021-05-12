@@ -130,12 +130,13 @@ namespace EventStore.Projections.Core.Services.v8 {
 			CheckDisposed();
 			if (@event == null) throw new ArgumentNullException("event");
 
-			string eventData = GetEventData(@event);
-
-			if (string.IsNullOrEmpty(eventData)) {
+			if (string.IsNullOrEmpty(@event.EventType)) {
 				//Nothing to actually process
 				return null;
 			}
+
+			//Only get the event data if our previous checks passed.
+			string eventData = GetEventData(@event);
 
 			var partition = _query.GetPartition(eventData,
 			                                    new string[] {
