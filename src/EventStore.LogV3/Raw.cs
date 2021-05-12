@@ -253,5 +253,51 @@ namespace EventStore.LogV3 {
 				set => _metadataSize = value;
 			}
 		}
+		
+		public enum TransactionStatus : byte {
+			Prepare = 0,
+			Committed = 1,
+			Failed = 2,
+			Removed = 3
+		}
+		
+		public enum TransactionType : byte {
+			StandardWrite = 0,
+			MultipartTransaction = 1
+		}
+		
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct TransactionStartHeader {
+			[FieldOffset(0)] private uint _recordCount;
+			[FieldOffset(4)] private TransactionStatus _status;
+			[FieldOffset(5)] private TransactionType _type;
+			public const int Size = 6;
+
+			public TransactionStatus Status {
+				get => _status;
+				set => _status = value;
+			}
+
+			public TransactionType Type {
+				get => _type;
+				set => _type = value;
+			}
+
+			public uint RecordCount {
+				get => _recordCount;
+				set => _recordCount = value;
+			}
+		}
+		
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct TransactionEndHeader {
+			[FieldOffset(0)] private uint _recordCount;
+			public const int Size = 4;
+			
+			public uint RecordCount {
+				get => _recordCount;
+				set => _recordCount = value;
+			}
+		}
 	}
 }

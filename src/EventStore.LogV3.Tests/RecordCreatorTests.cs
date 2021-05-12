@@ -180,5 +180,41 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Event.Metadata));
 			Assert.Equal(_prepareflags, record.Event.Header.Flags);
 		}
+		
+		[Fact]
+		public void can_create_transaction_start() {
+			var record = RecordCreator.CreateTransactionStartRecord(
+				timeStamp: _dateTime1,
+				logPosition: _long1,
+				transactionId: _guid1,
+				status: Raw.TransactionStatus.Failed,
+				type: Raw.TransactionType.MultipartTransaction,
+				recordCount: _uint1);
+
+			Assert.Equal(LogRecordType.TransactionStart, record.Header.Type);
+			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
+			Assert.Equal(_dateTime1, record.Header.TimeStamp);
+			Assert.Equal(_guid1, record.Header.RecordId);
+			Assert.Equal(_long1, record.Header.LogPosition);
+			Assert.Equal(Raw.TransactionStatus.Failed, record.SubHeader.Status);
+			Assert.Equal(Raw.TransactionType.MultipartTransaction, record.SubHeader.Type);
+			Assert.Equal(_uint1, record.SubHeader.RecordCount);
+		}
+		
+		[Fact]
+		public void can_create_transaction_end() {
+			var record = RecordCreator.CreateTransactionEndRecord(
+				timeStamp: _dateTime1,
+				logPosition: _long1,
+				transactionId: _guid1,
+				recordCount: _uint1);
+
+			Assert.Equal(LogRecordType.TransactionEnd, record.Header.Type);
+			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
+			Assert.Equal(_dateTime1, record.Header.TimeStamp);
+			Assert.Equal(_guid1, record.Header.RecordId);
+			Assert.Equal(_long1, record.Header.LogPosition);
+			Assert.Equal(_uint1, record.SubHeader.RecordCount);
+		}
 	}
 }
