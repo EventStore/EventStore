@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 					ILogRecord record;
 
-					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.Any;
+					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.NoStream;
 					switch (rec.Type) {
 						case Rec.RecType.Prepare: {
 							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);

@@ -3,23 +3,21 @@ using System.Runtime.InteropServices;
 using EventStore.LogCommon;
 
 namespace EventStore.LogV3 {
-	// todo: alignment, padding (of fields and of records)
-	// bear in mind that any record with variable length payload need not have padding
-	// in its fixed size header.
 	public static class Raw {
+		public const long SixMostSignificantBytes = unchecked((long)0xFF_FF_FF_FF_FF_FF_00_00);
+		public const long SixLeastSignificantBytes = unchecked((long)0x00_00_FF_FF_FF_FF_FF_FF);
+
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct RecordHeader {
 			[FieldOffset(0)] private LogRecordType _type;
 			[FieldOffset(1)] private byte _version;
-			// todo: too much padding for somethng that will occur every record
-			// could reduce the resolution of the timestamp and fit it in 6 bytes?
-			[FieldOffset(8)] private long _ticks;
+			[FieldOffset(0)] private long _ticks;
 			[FieldOffset(RecordIdOffset)] private Guid _recordId;
 
 			// todo: remove this if possible
 			[FieldOffset(RecordIdOffset + RecordIdSize)] private long _logPosition;
-			public const int Size = 40;
-			public const int RecordIdOffset = 16;
+			public const int Size = 32;
+			public const int RecordIdOffset = 8;
 			public const int RecordIdSize = 16;
 
 			public LogRecordType Type {
@@ -33,8 +31,9 @@ namespace EventStore.LogV3 {
 			}
 
 			public DateTime TimeStamp {
-				get => new DateTime(_ticks);
-				set => _ticks = value.Ticks;
+				// little-endian. blank out the 2 LEAST significant bytes
+				get => new(_ticks & SixMostSignificantBytes);
+				set => _ticks |= value.Ticks & SixMostSignificantBytes;
 			}
 
 			public Guid RecordId {
@@ -50,11 +49,20 @@ namespace EventStore.LogV3 {
 
 		[StructLayout(LayoutKind.Explicit, Size = RecordHeader.RecordIdSize, Pack = 1)]
 		public struct StreamWriteId {
+			// ~300 trillion
+			public const long MaxStartingEventNumber = SixLeastSignificantBytes - 1;
+			public const long EventNumberDeletedStream = long.MaxValue;
+
 			[FieldOffset(0)] private ushort _topicNumber;
 			[FieldOffset(2)] private ushort _categoryNumber;
 			[FieldOffset(4)] private uint _streamNumber;
-			// todo [FieldOffset(8)] private ushort _parentTopicNumber;
 			[FieldOffset(8)] private long _startingEventNumber;
+			[FieldOffset(14)] private ushort _parentTopicNumber;
+
+			public ushort ParentTopicNumber {
+				get => _parentTopicNumber;
+				set => _parentTopicNumber = value;
+			}
 
 			public ushort TopicNumber {
 				get => _topicNumber;
@@ -72,8 +80,21 @@ namespace EventStore.LogV3 {
 			}
 
 			public long StartingEventNumber {
-				get => _startingEventNumber;
-				set => _startingEventNumber = value;
+				// little-endian. must not write the 2 MOST significant bytes
+				get {
+					var x = _startingEventNumber & SixLeastSignificantBytes;
+					return x == SixLeastSignificantBytes ? EventNumberDeletedStream : x;
+				}
+				set {
+					if (value == EventNumberDeletedStream) {
+						_startingEventNumber |= SixLeastSignificantBytes;
+						return;
+					}
+
+					if ((value | SixLeastSignificantBytes) != SixLeastSignificantBytes)
+						throw new ArgumentOutOfRangeException(nameof(value), value, null);
+					_startingEventNumber |= value;
+				}
 			}
 		}
 
@@ -106,15 +127,14 @@ namespace EventStore.LogV3 {
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct EventHeader {
-			// todo: not used yet
-			[FieldOffset(0)] private int _eventTypeNumber;
-			[FieldOffset(4)] private EventFlags _flags;
-			[FieldOffset(8)] private int _eventSize;
-			[FieldOffset(16)] private int _systemMetadataSize;
-			[FieldOffset(20)] private int _dataSize;
-			public const int Size = 24;
+			[FieldOffset(0)] private uint _eventTypeNumber;
+			[FieldOffset(4)] private int _eventSize;
+			[FieldOffset(8)] private int _systemMetadataSize;
+			[FieldOffset(12)] private int _dataSize;
+			[FieldOffset(16)] private EventFlags _flags;
+			public const int Size = 18;
 
-			public int EventTypeNumber {
+			public uint EventTypeNumber {
 				get => _eventTypeNumber;
 				set => _eventTypeNumber = value;
 			}
@@ -140,12 +160,17 @@ namespace EventStore.LogV3 {
 			}
 		}
 
+		[Flags]
+		public enum PartitionFlags : ushort {
+		}
+
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct PartitionHeader {
 			[FieldOffset(0)] private Guid _partitionTypeId;
 			[FieldOffset(16)] private Guid _parentPartitionId;
-			[FieldOffset(32)] private byte _flags;
-			public const int Size = 33;
+			[FieldOffset(32)] private PartitionFlags _flags;
+			[FieldOffset(34)] private ushort _referenceNumber;
+			public const int Size = 36;
 
 			public Guid PartitionTypeId {
 				get => _partitionTypeId;
@@ -157,9 +182,14 @@ namespace EventStore.LogV3 {
 				set => _parentPartitionId = value;
 			}
 			
-			public byte Flags {
+			public PartitionFlags Flags {
 				get => _flags;
 				set => _flags = value;
+			}
+
+			public ushort ReferenceNumber {
+				get => _referenceNumber;
+				set => _referenceNumber = value;
 			}
 		}
 		
@@ -176,7 +206,7 @@ namespace EventStore.LogV3 {
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct StreamTypeHeader {
-			[FieldOffset(0)] public Guid _partitionId;
+			[FieldOffset(0)] private Guid _partitionId;
 			public const int Size = 16;
 
 			public Guid PartitionId {
@@ -187,11 +217,17 @@ namespace EventStore.LogV3 {
 		
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct EventTypeHeader {
-			[FieldOffset(0)] private Guid _partitionId;
-			[FieldOffset(16)] private uint _referenceNumber;
-			[FieldOffset(20)] private ushort _version;
+			[FieldOffset(0)] private Guid _parentEventTypeId;
+			[FieldOffset(16)] private Guid _partitionId;
+			[FieldOffset(32)] private uint _referenceNumber;
+			[FieldOffset(36)] private ushort _version;
 			
-			public const int Size = 22;
+			public const int Size = 38;
+
+			public Guid ParentEventTypeId {
+				get => _parentEventTypeId;
+				set => _parentEventTypeId = value;
+			}
 
 			public Guid PartitionId {
 				get => _partitionId;

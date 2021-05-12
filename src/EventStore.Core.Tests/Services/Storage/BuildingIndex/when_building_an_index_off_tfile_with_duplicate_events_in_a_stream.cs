@@ -44,19 +44,20 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id3 = Guid.NewGuid();
 
 			_logFormat.StreamNameIndex.GetOrAddId("duplicate_stream", out var streamId, out _, out _);
+			var expectedVersion = ExpectedVersion.NoStream;
 
 			//stream id: duplicate_stream at version: 0
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, _id1, _id1, 0, 0, streamId, ExpectedVersion.Any,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, _id1, _id1, 0, 0, streamId, expectedVersion++,
 				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos1);
 			Writer.Write(new CommitLogRecord(pos1, _id1, 0, DateTime.UtcNow, 0), out pos2);
 
 			//stream id: duplicate_stream at version: 1
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, ExpectedVersion.Any,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, expectedVersion++,
 				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id2, pos2, DateTime.UtcNow, 1), out pos4);
 
 			//stream id: duplicate_stream at version: 2
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id3, _id3, pos4, 0, streamId, ExpectedVersion.Any,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id3, _id3, pos4, 0, streamId, expectedVersion++,
 				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos5);
 			Writer.Write(new CommitLogRecord(pos5, _id3, pos4, DateTime.UtcNow, 2), out pos6);
 		}
@@ -68,7 +69,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_logFormat.StreamNameIndex.GetOrAddId("duplicate_stream", out var streamId, out _, out _);
 
 			//stream id: duplicate_stream at version: 0 (duplicate event/index entry)
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.Any,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.NoStream,
 				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos7);
 			Writer.Write(new CommitLogRecord(pos7, _id4, pos6, DateTime.UtcNow, 0), out pos8);
 		}

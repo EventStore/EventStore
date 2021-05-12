@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				Assert.AreEqual(p.EventId, _eventId);
 				Assert.AreEqual(p.EventStreamId, streamId);
 				Assert.AreEqual(p.ExpectedVersion, 1234);
-				Assert.AreEqual(p.TimeStamp, new DateTime(2012, 12, 21));
+				Assert.That(p.TimeStamp, Is.EqualTo(new DateTime(2012, 12, 21)).Within(20).Milliseconds);
 				Assert.AreEqual(p.Flags, PrepareFlags.SingleWrite);
 				Assert.AreEqual(p.EventType, "type");
 				Assert.AreEqual(p.Data.Length, 5);

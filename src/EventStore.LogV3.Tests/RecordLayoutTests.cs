@@ -5,7 +5,7 @@ using Xunit;
 
 namespace EventStore.LogV3.Tests {
 	public class RecordLayoutTests {
-		void AssertSize<T>(int expectedSize) {
+		void AssertSize<T>(int expectedSize, bool allowOverlap = false) {
 			Assert.Equal(expectedSize, Unsafe.SizeOf<T>());
 			Assert.Equal(expectedSize, Marshal.SizeOf<T>());
 
@@ -13,12 +13,21 @@ namespace EventStore.LogV3.Tests {
 
 			// check that fields are aligned
 			foreach (var field in layout.Fields) {
-				if ($"{field}".Contains("padding"))
+				var str = $"{field}";
+				if (str.Contains("padding"))
 					continue;
-				Assert.True(field.Offset % field.Size == 0, $"Field {field} is not aligned");
+
+				var fieldAlignment = field.Size;
+				if (str.Contains("Guid"))
+					fieldAlignment = 4;
+
+				Assert.True(field.Offset % fieldAlignment == 0, $"Field {field} is not aligned");
 			}
 
 			// check that fields don't overlap
+			if (allowOverlap)
+				return;
+
 			var minOffset = 0;
 			foreach (var field in layout.Fields) {
 				Assert.True(field.Offset >= minOffset, $"Field {field.Offset} overlaps");
@@ -29,7 +38,7 @@ namespace EventStore.LogV3.Tests {
 			// also not currently checking if the whole struct is correctly aligned, only the fields within.
 		}
 
-		[Fact] public void RecordHeaderLayout() => AssertSize<Raw.RecordHeader>(Raw.RecordHeader.Size);
+		[Fact] public void RecordHeaderLayout() => AssertSize<Raw.RecordHeader>(Raw.RecordHeader.Size, allowOverlap: true);
 		[Fact] public void EpochRecordHeaderLayout() => AssertSize<Raw.EpochHeader>(Raw.EpochHeader.Size);
 		[Fact] public void EventHeaderLayout() => AssertSize<Raw.EventHeader>(Raw.EventHeader.Size);
 		[Fact] public void PartitionHeaderLayout() => AssertSize<Raw.PartitionHeader>(Raw.PartitionHeader.Size);

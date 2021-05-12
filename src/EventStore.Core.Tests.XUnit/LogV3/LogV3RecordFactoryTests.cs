@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 	public class LogV3RecordFactoryTests {
 		readonly Guid _guid1 = Guid.Parse("00000000-0000-0000-0000-000000000001");
 		readonly Guid _guid2 = Guid.Parse("00000000-0000-0000-0000-000000000002");
-		readonly DateTime _dateTime1 = new DateTime(2020, 01, 01, 01, 01, 01);
+		readonly DateTime _dateTime1 = new(0x08_D9_15_80_C3_A1_00_00);
 		readonly long _long1 = 1;
 		readonly long _long2 = 2;
 		readonly long _long3 = 3;

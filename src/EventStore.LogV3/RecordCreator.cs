@@ -67,7 +67,8 @@ namespace EventStore.LogV3 {
 			Guid partitionId,
 			Guid partitionTypeId,
 			Guid parentPartitionId,
-			byte flags,
+			Raw.PartitionFlags flags,
+			ushort referenceNumber,
 			string name) {
 
 			var payloadLength = _utf8NoBom.GetByteCount(name);
@@ -84,6 +85,7 @@ namespace EventStore.LogV3 {
 			subHeader.PartitionTypeId = partitionTypeId;
 			subHeader.ParentPartitionId = parentPartitionId;
 			subHeader.Flags = flags;
+			subHeader.ReferenceNumber = referenceNumber;
 			PopulateString(name, record.Payload.Span);
 
 			return StringPayloadRecord.Create(record);
@@ -141,6 +143,7 @@ namespace EventStore.LogV3 {
 			DateTime timeStamp,
 			long logPosition,
 			Guid eventTypeId,
+			Guid parentEventTypeId,
 			Guid partitionId,
 			uint referenceNumber,
 			ushort version,
@@ -157,6 +160,7 @@ namespace EventStore.LogV3 {
 			header.RecordId = eventTypeId;
 			header.LogPosition = logPosition;
 
+			subHeader.ParentEventTypeId = parentEventTypeId;
 			subHeader.PartitionId = partitionId;
 			subHeader.ReferenceNumber = referenceNumber;
 			subHeader.Version = version;
@@ -209,6 +213,8 @@ namespace EventStore.LogV3 {
 				CorrelationId = correlationId,
 				TransactionPosition = transactionPosition,
 				TransactionOffset = transactionOffset,
+				StartingEventNumberRoot = 0,
+				StartingEventNumberCategory = 0,
 			};
 
 			var eventSystemMetadata = new EventSystemMetadata {
@@ -235,7 +241,7 @@ namespace EventStore.LogV3 {
 			header.TimeStamp = timeStamp;
 			header.LogPosition = logPosition;
 
-			// todo recordId.ParentTopicNumber = 0;
+			recordId.ParentTopicNumber = 0;
 			recordId.TopicNumber = 0;
 			recordId.CategoryNumber = 0;
 			recordId.StreamNumber = (uint)streamNumber; // todo: remove cast
