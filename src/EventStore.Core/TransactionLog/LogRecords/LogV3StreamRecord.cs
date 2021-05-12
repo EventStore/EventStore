@@ -18,7 +18,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public int TransactionOffset => 0;
 		// since we are storing only even ids, divide by 2 so that they are contiguous
 		// then we can do a stream read of $streams-created if we want
-		public long ExpectedVersion => Record.SubHeader.ReferenceId / 2 - 1;
+		public long ExpectedVersion => Record.SubHeader.ReferenceNumber / 2 - 1;
 		public Guid EventId => Record.Header.RecordId;
 		//qq hmm
 		public Guid CorrelationId { get; } = Guid.NewGuid();
@@ -33,7 +33,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			Guid streamId,
 			long logPosition,
 			DateTime timeStamp,
-			long streamNumber,
+			uint streamNumber,
 			string streamName) : base() {
 
 			Record = RecordCreator.CreateStreamRecord(
@@ -56,7 +56,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				streamId: Record.Header.RecordId,
 				timeStamp: Record.Header.TimeStamp,
 				logPosition: logPosition,
-				streamNumber: Record.SubHeader.ReferenceId,
+				streamNumber: Record.SubHeader.ReferenceNumber,
 				streamName: Record.StringPayload);
 		}
 	}

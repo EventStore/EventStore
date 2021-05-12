@@ -20,7 +20,7 @@ namespace EventStore.Core.LogV3 {
 				streamId: streamId,
 				logPosition: logPosition,
 				timeStamp: timeStamp,
-				streamNumber: streamNumber,
+				streamNumber: (uint)streamNumber, // todo: switch to uint
 				streamName: streamName);
 
 			return result;

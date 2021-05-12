@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 				streamRecord: out var record);
 
 			if (record is LogV3StreamRecord streamRecord) {
-				createdId = streamRecord.Record.SubHeader.ReferenceId;
+				createdId = streamRecord.Record.SubHeader.ReferenceNumber;
 				createdName = streamRecord.StreamName;
 				_mockIndexReader.Add(streamRecord.ExpectedVersion + 1, streamRecord);
 				return false;

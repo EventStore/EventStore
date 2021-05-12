@@ -93,7 +93,7 @@ namespace EventStore.LogV3.Tests {
 				streamId: _guid1,
 				timeStamp: _dateTime1,
 				logPosition: _long1,
-				streamNumber: _long2,
+				streamNumber: _uint1,
 				streamName: _string1,
 				partitionId: _guid2,
 				streamTypeId: _guid3);
@@ -104,7 +104,7 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_dateTime1, record.Header.TimeStamp);
 			Assert.Equal(_long1, record.Header.LogPosition);
 			Assert.Equal(_guid2, record.SubHeader.PartitionId);
-			Assert.Equal(_long2, record.SubHeader.ReferenceId);
+			Assert.Equal(_uint1, record.SubHeader.ReferenceNumber);
 			Assert.Equal(_guid3, record.SubHeader.StreamTypeId);
 			Assert.Equal(_string1, record.StringPayload);
 		}

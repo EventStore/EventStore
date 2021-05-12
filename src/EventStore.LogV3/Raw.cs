@@ -176,10 +176,10 @@ namespace EventStore.LogV3 {
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct StreamHeader {
-			[FieldOffset(0)] public Guid _partitionId;
-			[FieldOffset(16)] public Guid _streamTypeId;
-			[FieldOffset(32)] public long _referenceId;
-			public const int Size = 40;
+			[FieldOffset(0)] private Guid _partitionId;
+			[FieldOffset(16)] private Guid _streamTypeId;
+			[FieldOffset(32)] private uint _referenceNumber;
+			public const int Size = 36;
 
 			public Guid PartitionId {
 				get => _partitionId;
@@ -191,9 +191,9 @@ namespace EventStore.LogV3 {
 				set => _streamTypeId = value;
 			}
 
-			public long ReferenceId {
-				get => _referenceId;
-				set => _referenceId = value;
+			public uint ReferenceNumber {
+				get => _referenceNumber;
+				set => _referenceNumber = value;
 			}
 		}
 

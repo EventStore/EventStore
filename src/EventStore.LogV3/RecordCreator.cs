@@ -119,7 +119,7 @@ namespace EventStore.LogV3 {
 			Guid streamId,
 			DateTime timeStamp,
 			long logPosition,
-			long streamNumber,
+			uint streamNumber,
 			string streamName,
 			Guid partitionId,
 			Guid streamTypeId) {
@@ -137,7 +137,7 @@ namespace EventStore.LogV3 {
 
 			subHeader.PartitionId = partitionId;
 			subHeader.StreamTypeId = streamTypeId;
-			subHeader.ReferenceId = streamNumber;
+			subHeader.ReferenceNumber = streamNumber;
 
 			PopulateString(streamName, record.Payload.Span);
 
