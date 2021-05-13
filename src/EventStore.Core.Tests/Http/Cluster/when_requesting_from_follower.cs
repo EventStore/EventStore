@@ -69,8 +69,14 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
+		static int _attempts = 0;
 		[Test]
+		[Retry(10)]
 		public async Task read_from_stream_backward_should_succeed_when_leader_not_required() {
+			_attempts++;
+			if (_attempts == 1)
+				Assert.IsTrue(false, "throw on first attempt to ensure retry is working");
+
 			var path = $"streams/{TestStream}";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: false);
 

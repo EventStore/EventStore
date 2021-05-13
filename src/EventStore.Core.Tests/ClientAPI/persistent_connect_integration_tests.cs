@@ -377,8 +377,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
+		static int _attempts = 0;
 		[Test]
-		public async Task Test() {
+		[Retry(10)]
+		public void Test() => Assert.DoesNotThrowAsync(async () => {
+			_attempts++;
+			if (_attempts == 1)
+				throw new Exception("throw on first attempt to ensure retry is working");
+
 			var settings = PersistentSubscriptionSettings
 				.Create()
 				.StartFromCurrent()
@@ -419,6 +425,6 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			await _eventReceived.Task.WithTimeout();
 			Assert.AreEqual(newEventData.EventId, _receivedEvent.Event.EventId);
-		}
+		});
 	}
 }

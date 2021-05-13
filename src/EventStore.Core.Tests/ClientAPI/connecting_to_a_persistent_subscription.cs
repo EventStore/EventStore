@@ -544,6 +544,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_subscription_gets_dropped() {
 			Assert.IsTrue(_resetEvent.WaitOne(TimeSpan.FromSeconds(5)));
 			Assert.AreEqual(SubscriptionDropReason.EventHandlerException, _reason);
