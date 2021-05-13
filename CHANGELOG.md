@@ -55,6 +55,9 @@ All notable changes to this project will be documented in this file.
 ### Updated
 - Visibility and gRPC generation changes to better support testing without needing clients to be referenced [EventStore#2942](https://github.com/EventStore/EventStore/pull/2942)
 
+### hello!
+- wave: [EventStore#2939](https://github.com/EventStore/EventStore/pull/2939)
+
 ## [21.2.0] Server - 2021-02-26
 
 ### Added
