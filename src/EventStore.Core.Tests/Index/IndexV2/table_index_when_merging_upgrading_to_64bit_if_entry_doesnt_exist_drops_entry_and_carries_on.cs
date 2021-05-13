@@ -1,33 +1,55 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV2 {
-	[TestFixture, Category("LongRunning")]
+	public class TestCases : IEnumerable {
+		public IEnumerator GetEnumerator() {
+			yield return new object[] {typeof(LogFormat.V2), typeof(string), new ByLengthHasher(), new ByLengthHasher(), "hhh", "hh", "h"};
+			yield return new object[] {typeof(LogFormat.V3), typeof(long), new IdentityLowHasher(), new IdentityHighHasher(), 3L, 2L, 1L};
+		}
+	}
+
+	[Category("LongRunning")]
+	[TestFixture, TestFixtureSource(typeof(TestCases))]
 	public class
-		table_index_when_merging_upgrading_to_64bit_if_single_stream_entry_doesnt_exist_drops_entry_and_carries_on :
+		table_index_when_merging_upgrading_to_64bit_if_single_stream_entry_doesnt_exist_drops_entry_and_carries_on<TLogFormat, TStreamId> :
 			SpecificationWithDirectoryPerTestFixture {
-		private TableIndex<string> _tableIndex;
-		private IHasher<string> _lowHasher;
-		private IHasher<string> _highHasher;
+		private TableIndex<TStreamId> _tableIndex;
+		private IHasher<TStreamId> _lowHasher;
+		private IHasher<TStreamId> _highHasher;
 		private string _indexDir;
 		protected byte _ptableVersion;
 
 		// Note hash is by length so stream ids are set to order them specifically in the index.
-		private const string Stream1 = "hhh";
-		private const string Stream2 = "hh";
-		private const string Stream3 = "h";
+		private static TStreamId _streamId1;
+		private static TStreamId _streamId2;
+		private static TStreamId _streamId3;
+		private readonly LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		public
-			table_index_when_merging_upgrading_to_64bit_if_single_stream_entry_doesnt_exist_drops_entry_and_carries_on() {
+			table_index_when_merging_upgrading_to_64bit_if_single_stream_entry_doesnt_exist_drops_entry_and_carries_on(
+				IHasher<TStreamId> lowHasher,
+				IHasher<TStreamId> highHasher,
+				TStreamId streamId1,
+				TStreamId streamId2,
+				TStreamId streamId3) {
 			_ptableVersion = PTableVersions.IndexV2;
+			_lowHasher = lowHasher;
+			_highHasher = highHasher;
+			_streamId1 = streamId1;
+			_streamId2 = streamId2;
+			_streamId3 = streamId3;
 		}
 
 		[OneTimeSetUp]
@@ -36,9 +58,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 			_indexDir = PathName;
 			var fakeReader = new TFReaderLease(new FakeIndexReader2());
-			_lowHasher = new ByLengthHasher();
-			_highHasher = new ByLengthHasher();
-			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
+			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 3),
 				() => fakeReader,
 				PTableVersions.IndexV1,
@@ -47,13 +67,13 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
 
-			_tableIndex.Add(1, Stream1, 0, 1);
-			_tableIndex.Add(1, Stream2, 0, 2);
-			_tableIndex.Add(1, Stream3, 0, 3);
+			_tableIndex.Add(1, _streamId1, 0, 1);
+			_tableIndex.Add(1, _streamId2, 0, 2);
+			_tableIndex.Add(1, _streamId3, 0, 3);
 
 			_tableIndex.Close(false);
 
-			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, "",
+			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
 				() => new HashListMemTable(_ptableVersion, maxSize: 3),
 				() => fakeReader,
 				_ptableVersion,
@@ -62,9 +82,9 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 				maxTablesPerLevel: 2);
 			_tableIndex.Initialize(long.MaxValue);
 
-			_tableIndex.Add(1, Stream3, 1, 4);
-			_tableIndex.Add(1, Stream2, 1, 5);
-			_tableIndex.Add(1, Stream1, 1, 6);
+			_tableIndex.Add(1, _streamId3, 1, 4);
+			_tableIndex.Add(1, _streamId2, 1, 5);
+			_tableIndex.Add(1, _streamId1, 1, 6);
 
 			await Task.Delay(500);
 		}
@@ -78,7 +98,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 		[Test]
 		public void should_have_all_entries_except_scavenged() {
-			var streamId = Stream1;
+			var streamId = _streamId1;
 			var result = _tableIndex.GetRange(streamId, 0, 1).ToArray();
 			var hash = (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
 
@@ -88,7 +108,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			Assert.That(result[0].Version, Is.EqualTo(1));
 			Assert.That(result[0].Position, Is.EqualTo(6));
 
-			streamId = Stream2;
+			streamId = _streamId2;
 			result = _tableIndex.GetRange(streamId, 0, 1).ToArray();
 			hash = (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
 
@@ -98,7 +118,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			Assert.That(result[0].Version, Is.EqualTo(1));
 			Assert.That(result[0].Position, Is.EqualTo(5));
 
-			streamId = Stream3;
+			streamId = _streamId3;
 			result = _tableIndex.GetRange(streamId, 0, 1).ToArray();
 			hash = (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
 
@@ -127,23 +147,24 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			}
 
 			public RecordReadResult TryReadAt(long position) {
-				string eventStreamId;
+				TStreamId streamId = default;
 				switch (position) {
 					case 1:
-						eventStreamId = Stream1;
+						streamId = _streamId1;
 						break;
 					case 2:
-						eventStreamId = Stream2;
+						streamId = _streamId2;
 						break;
 					case 3:
-						eventStreamId = Stream3;
+						streamId = _streamId3;
 						break;
 					default:
 						throw new ArgumentOutOfRangeException("Unexpected position look up.");
 				}
 
-				var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
-					eventStreamId, -1, DateTime.UtcNow, PrepareFlags.None, "type", new byte[0], null);
+				var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+				var record = LogRecord.Prepare(logFormat.RecordFactory, position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+					streamId, -1, PrepareFlags.None, "type", new byte[0], null, DateTime.UtcNow);
 				return new RecordReadResult(true, position + 1, record, 1);
 			}
 

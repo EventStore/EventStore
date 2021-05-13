@@ -23,8 +23,33 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		private static IEnumerable<EventData> CreateEvents(int count) => Enumerable.Range(0, count)
 			.Select(i => new EventData(Guid.NewGuid(), i.ToString(), false, Array.Empty<byte>(), null));
 
-		[TestFixtureSource(nameof(TestCases))]
-		public class when_subscribing_to_all_with_a_filter : SpecificationWithMiniNode {
+		public static IEnumerable<object[]> TestCases() {
+			var checkpointIntervalMultipliers = new uint[] { 2, 4, 8 };
+
+			var maxSearchWindows = new uint[] { 1, 32, 64 };
+
+			var filteredEventCount = checkpointIntervalMultipliers.Max() * maxSearchWindows.Max();
+
+			var logFormats = new[] {
+					(typeof(LogFormat.V2), typeof(string)),
+					(typeof(LogFormat.V3), typeof(long)),
+				};
+
+			return from checkpointInterval in checkpointIntervalMultipliers
+				   from maxSearchWindow in maxSearchWindows
+				   from logFormat in logFormats
+				   select new object[] {
+						logFormat.Item1,
+						logFormat.Item2,
+						checkpointInterval,
+						maxSearchWindow,
+						(int)filteredEventCount
+					};
+		}
+
+		[TestFixtureSource(typeof(SubscribeToAllFilteredTests), nameof(TestCases))]
+		public class when_subscribing_to_all_with_a_filter<TLogFormat, TStreamId>
+			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private const string _streamName = "test";
 
 			private int CheckpointCount => _positions.Count;
@@ -38,22 +63,6 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			private Position _position;
 			private long _expected;
-
-			public static IEnumerable<object[]> TestCases() {
-				var checkpointIntervalMultipliers = new uint[] {2, 4, 8};
-
-				var maxSearchWindows = new uint[] {1, 32, 64};
-
-				var filteredEventCount = checkpointIntervalMultipliers.Max() * maxSearchWindows.Max();
-
-				return from checkpointInterval in checkpointIntervalMultipliers
-					from maxSearchWindow in maxSearchWindows
-					select new object[] {
-						checkpointInterval,
-						maxSearchWindow,
-						(int)filteredEventCount
-					};
-			}
 
 			public when_subscribing_to_all_with_a_filter(uint checkpointIntervalMultiplier, uint maxSearchWindow,
 				int filteredEventCount) {

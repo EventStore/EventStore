@@ -7,10 +7,11 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader {
 	namespace reordering {
-		abstract class with_multi_stream_reader : TestFixtureWithEventReaderService {
+		abstract class with_multi_stream_reader<TLogFormat, TStreamId> : TestFixtureWithEventReaderService<TLogFormat, TStreamId> {
 			protected Guid _subscriptionId;
 			private QuerySourcesDefinition _sourceDefinition;
 			protected IReaderStrategy _readerStrategy;
@@ -77,8 +78,9 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 			}
 		}
 
-		[TestFixture]
-		class when_event_commit_is_delayed : with_multi_stream_reader {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_event_commit_is_delayed<TLogFormat, TStreamId> : with_multi_stream_reader<TLogFormat, TStreamId> {
 			protected override void GivenOtherEvents() {
 			}
 

@@ -1,8 +1,9 @@
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
-	[TestFixture]
-	public class when_deleting_stream_with_2_hash_collisions_and_mixed_order_read_index_should : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_deleting_stream_with_2_hash_collisions_and_mixed_order_read_index_should<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		protected override void WriteTestScenario() {
 			WriteSingleEvent("S1", 0, "bla1");
 			WriteSingleEvent("S1", 1, "bla1");

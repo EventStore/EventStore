@@ -1,13 +1,15 @@
 ﻿using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.link_metadata {
-	[TestFixture]
-	public class when_running_a_query_using_link_metadata : specification_with_a_v8_query_posted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_running_a_query_using_link_metadata<TLogFormat, TStreamId> : specification_with_a_v8_query_posted<TLogFormat, TStreamId> {
 		protected override void GivenEvents() {
 			ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":1}", "0@account-01");
 			ExistingEvent("stream", SystemEventTypes.LinkTo, "{\"a\":2}", "1@account-01");

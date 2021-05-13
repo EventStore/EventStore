@@ -6,10 +6,14 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture(TcpType.Normal), TestFixture(TcpType.Ssl), Category("ClientAPI"), Category("LongRunning")]
-	public class event_store_connection_should : SpecificationWithDirectoryPerTestFixture {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Normal)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Normal)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Ssl)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Ssl)]
+	public class event_store_connection_should<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType;
-		private MiniNode _node;
+		private MiniNode<TLogFormat, TStreamId> _node;
 
 		public event_store_connection_should(TcpType tcpType) {
 			_tcpType = tcpType;
@@ -18,7 +22,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 		}
 
@@ -31,14 +35,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		[Category("Network")]
 		public void not_throw_on_close_if_connect_was_not_called() {
-			var connection = TestConnection.To(_node, _tcpType);
+			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
 			Assert.DoesNotThrow(connection.Close);
 		}
 
 		[Test]
 		[Category("Network")]
 		public async Task not_throw_on_close_if_called_multiple_times() {
-			var connection = TestConnection.To(_node, _tcpType);
+			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
 			await connection.ConnectAsync();
 			connection.Close();
 			Assert.DoesNotThrow(connection.Close);
@@ -72,7 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		[Category("Network")]
 		public async Task throw_invalid_operation_on_every_api_call_if_connect_was_not_called() {
-			var connection = TestConnection.To(_node, _tcpType);
+			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
 
 			const string s = "stream";
 			var events = new[] { TestEvent.NewTestEvent() };

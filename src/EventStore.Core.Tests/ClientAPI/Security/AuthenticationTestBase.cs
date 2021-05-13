@@ -12,9 +12,9 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	public abstract class AuthenticationTestBase : SpecificationWithDirectoryPerTestFixture {
+	public abstract class AuthenticationTestBase<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly UserCredentials _userCredentials;
-		private MiniNode _node;
+		private MiniNode<TLogFormat, TStreamId> _node;
 		protected IEventStoreConnection Connection;
 
 		protected AuthenticationTestBase(UserCredentials userCredentials = null) {
@@ -22,14 +22,14 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		}
 
 
-		public virtual IEventStoreConnection SetupConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl, _userCredentials);
+		public virtual IEventStoreConnection SetupConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint, TcpType.Ssl, _userCredentials);
 		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName, enableTrustedAuth: true);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName, enableTrustedAuth: true);
 			await _node.Start();
 
 			var userCreateEvent1 = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -11,9 +11,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	internal class FakeReadIndex<TStreamId> : IReadIndex<TStreamId> {
+	internal class FakeReadIndex<TLogFormat, TStreamId> : IReadIndex<TStreamId> {
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams =
-			LogFormatHelper<TStreamId>.LogFormat.SystemStreams;
+			LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SystemStreams;
 
 		public long LastIndexedPosition {
 			get { throw new NotImplementedException(); }

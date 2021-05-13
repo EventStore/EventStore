@@ -1,23 +1,17 @@
 using System;
 using NUnit.Framework;
 using EventStore.Core.Data;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
-	[TestFixture]
-	public class when_reading_all
-		: ReadIndexTestScenario {
-		long _commitPosition;
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_all<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 
 		protected override void WriteTestScenario() {
-			var res = WritePrepare("ES1", 0, Guid.NewGuid(), "event-type", new string('.', 3000));
-			WriteCommit(res.LogPosition, "ES1", 0);
-
-			res = WritePrepare("ES2", 0, Guid.NewGuid(), "event-type", new string('.', 3000));
-			var commit = WriteCommit(res.LogPosition, "ES2", 0);
-			_commitPosition = commit.LogPosition;
-
-			res = WritePrepare("ES2", 1, Guid.NewGuid(), "event-type", new string('.', 3000));
-			WriteCommit(res.LogPosition, "ES2", 1);
+			WritePrepare("ES1", 0, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted);
+			WritePrepare("ES2", 0, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted);
+			WritePrepare("ES2", 1, Guid.NewGuid(), "event-type", new string('.', 3000), PrepareFlags.IsCommitted);
 		}
 
 		[Test]

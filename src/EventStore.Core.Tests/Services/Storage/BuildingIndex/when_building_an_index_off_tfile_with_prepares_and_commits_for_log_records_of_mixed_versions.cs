@@ -7,10 +7,11 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Not applicable")]
 	public class
-		when_building_an_index_off_tfile_with_prepares_and_commits_for_log_records_of_mixed_versions :
-			ReadIndexTestScenario {
+		when_building_an_index_off_tfile_with_prepares_and_commits_for_log_records_of_mixed_versions<TLogFormat, TStreamId> :
+			ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private Guid _id1;
 		private Guid _id2;
 		private Guid _id3;

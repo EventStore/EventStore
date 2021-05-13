@@ -4,11 +4,12 @@ using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db :
-			TruncateAndReOpenDbScenario {
-		// actually this case is not fully handled by EventStore. When some records have been scavenged, but truncated in a middle of chunk, 
+		when_truncating_into_the_middle_of_scavenged_chunk_with_index_in_memory_and_then_reopening_db<TLogFormat, TStreamId> :
+			TruncateAndReOpenDbScenario<TLogFormat, TStreamId> {
+		// actually this case is not fully handled by EventStore. When some records have been scavenged, but truncated in a middle of chunk,
 		// we lose the delete record, so we don't consider this stream as deleted, but still we have scavenged a lot of records, that are not scavenged in other replicas.
 		// nonetheless this scenario is very very unlikely to happen, that's why it is not handled. if it still does happen - a whole db on truncated node should be deleted
 

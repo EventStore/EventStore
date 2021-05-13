@@ -37,11 +37,13 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
 		private readonly CommitSource _commitSource;
+		private readonly bool _explicitTransactionsSupported;
 		private VNodeState _nodeState;		
 
 		public RequestManagementService(IPublisher bus,
 			TimeSpan prepareTimeout,
-			TimeSpan commitTimeout) {
+			TimeSpan commitTimeout,
+			bool explicitTransactionsSupported) {
 			Ensure.NotNull(bus, "bus");
 			_bus = bus;
 			_tickRequestMessage = TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(1000),
@@ -51,6 +53,7 @@ namespace EventStore.Core.Services.RequestManager {
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
 			_commitSource = new CommitSource();
+			_explicitTransactionsSupported = explicitTransactionsSupported;
 		}
 		
 		public void Handle(ClientMessage.WriteEvents message) {
@@ -88,6 +91,16 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(ClientMessage.TransactionStart message) {
+			if (!_explicitTransactionsSupported) {
+				var reply = new ClientMessage.TransactionStartCompleted(
+					message.CorrelationId,
+					default,
+					OperationResult.InvalidTransaction,
+					"Explicit transactions are not supported");
+				message.Envelope.ReplyWith(reply);
+				return;
+			}
+
 			var manager = new TransactionStart(
 								_bus,
 								_prepareTimeout,
@@ -103,6 +116,16 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(ClientMessage.TransactionWrite message) {
+			if (!_explicitTransactionsSupported) {
+				var reply = new ClientMessage.TransactionWriteCompleted(
+					message.CorrelationId,
+					default,
+					OperationResult.InvalidTransaction,
+					"Explicit transactions are not supported");
+				message.Envelope.ReplyWith(reply);
+				return;
+			}
+
 			var manager = new TransactionWrite(
 								_bus,
 								_prepareTimeout,
@@ -118,6 +141,16 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 
 		public void Handle(ClientMessage.TransactionCommit message) {
+			if (!_explicitTransactionsSupported) {
+				var reply = new ClientMessage.TransactionCommitCompleted(
+					message.CorrelationId,
+					default,
+					OperationResult.InvalidTransaction,
+					"Explicit transactions are not supported");
+				message.Envelope.ReplyWith(reply);
+				return;
+			}
+
 			var manager = new TransactionCommit(
 								_bus,
 								_prepareTimeout,

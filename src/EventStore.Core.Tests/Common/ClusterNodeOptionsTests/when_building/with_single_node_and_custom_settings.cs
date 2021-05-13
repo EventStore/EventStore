@@ -5,8 +5,9 @@ using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
-	[TestFixture]
-	public class with_run_on_disk : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_run_on_disk<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"Test-{Guid.NewGuid()}");
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options.RunOnDisk(_dbPath);
@@ -22,8 +23,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_run_in_memory : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_run_in_memory<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options.RunInMemory();
 
@@ -33,8 +35,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_custom_ip_endpoints : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_custom_ip_endpoints<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly IPEndPoint _httpEndPoint = new(IPAddress.Parse("127.0.1.15"), 1113);
 		private readonly IPEndPoint _internalTcp = new(IPAddress.Parse("127.0.1.15"), 1114);
 		private readonly IPEndPoint _externalTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
@@ -60,8 +63,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_custom_chunk_size : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_custom_chunk_size<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly int _chunkSize = 268435712;
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options with {
@@ -76,8 +80,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_custom_chunk_cache_size : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_custom_chunk_cache_size<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly long _chunkCacheSize = 268435712;
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options with {
@@ -92,8 +97,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_custom_number_of_cached_chunks : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_custom_number_of_cached_chunks<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly int _cachedChunks = 10;
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options with {
@@ -109,8 +115,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_custom_advertise_as : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_custom_advertise_as<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly IPEndPoint _intTcpEndpoint = new(IPAddress.Parse(InternalIp), 1111);
 		private readonly IPEndPoint _extTcpEndpoint = new(IPAddress.Parse(ExternalIp), 1113);
 		private readonly IPEndPoint _httpEndpoint = new(IPAddress.Parse(ExternalIp), 1116);

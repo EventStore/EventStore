@@ -1,12 +1,14 @@
 ﻿using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
-	[TestFixture]
-	public class when_starting_with_prerecorded_events_before_the_last_checkpoint :
-		TestFixtureWithMultiStreamCheckpointManager {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_starting_with_prerecorded_events_before_the_last_checkpoint<TLogFormat, TStreamId> :
+		TestFixtureWithMultiStreamCheckpointManager<TLogFormat, TStreamId> {
 		protected override void Given() {
 			base.Given();
 			ExistingEvent(

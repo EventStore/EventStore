@@ -9,12 +9,12 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
-	public class specification_with_cluster : SpecificationWithDirectoryPerTestFixture {
-		protected readonly MiniClusterNode[] _nodes = new MiniClusterNode[3];
+	public abstract class specification_with_cluster<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		protected readonly MiniClusterNode<TLogFormat, TStreamId>[] _nodes = new MiniClusterNode<TLogFormat, TStreamId>[3];
 		protected readonly Endpoints[] _nodeEndpoints = new Endpoints[3];
 		protected IEventStoreConnection _conn;
 
-		private readonly Dictionary<int, Func<bool, MiniClusterNode>> _nodeCreationFactory = new();
+		private readonly Dictionary<int, Func<bool, MiniClusterNode<TLogFormat, TStreamId>>> _nodeCreationFactory = new();
 
 		protected class Endpoints {
 			public readonly IPEndPoint InternalTcp;
@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected Task ShutdownNode(int nodeNum) => _nodes[nodeNum].Shutdown(keepDb: true);
 
-		protected virtual MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
+		protected virtual MiniClusterNode<TLogFormat, TStreamId> CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
 			bool wait = true) => new(
 			PathName, index, endpoints.InternalTcp,
 			endpoints.ExternalTcp, endpoints.HttpEndPoint,
@@ -140,8 +140,8 @@ namespace EventStore.Core.Tests.Integration {
 		protected static void WaitIdle() {
 		}
 
-		protected MiniClusterNode GetLeader() => _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
+		protected MiniClusterNode<TLogFormat, TStreamId> GetLeader() => _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
 
-		protected MiniClusterNode[] GetFollowers() => _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
+		protected MiniClusterNode<TLogFormat, TStreamId>[] GetFollowers() => _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
 	}
 }

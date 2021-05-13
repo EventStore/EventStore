@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using TestFixtureWithExistingEvents =
-	EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
-	[TestFixture]
-	public class when_handling_an_emit_with_extra_metadata : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_handling_an_emit_with_extra_metadata<TLogFormat, TStreamId> : core_projection.TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private EmittedStream _stream;
 		private TestCheckpointManagerMessageHandler _readyHandler;
 

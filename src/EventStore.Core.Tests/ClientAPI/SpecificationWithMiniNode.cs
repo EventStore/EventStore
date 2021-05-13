@@ -7,8 +7,8 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	public abstract class SpecificationWithMiniNode : SpecificationWithDirectoryPerTestFixture {
-		protected MiniNode _node;
+	public abstract class SpecificationWithMiniNode<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		protected MiniNode<TLogFormat, TStreamId> _node;
 		protected IEventStoreConnection _conn;
 		protected IPEndPoint _HttpEndPoint;
 		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromSeconds(10);
@@ -17,14 +17,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected abstract Task When();
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint, TcpType.Ssl);
 		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 			_HttpEndPoint = _node.HttpEndPoint;
 			_conn = BuildConnection(_node);

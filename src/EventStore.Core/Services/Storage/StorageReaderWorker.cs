@@ -276,8 +276,9 @@ namespace EventStore.Core.Services.Storage {
 						return NoData(msg, ReadEventResult.AccessDenied);
 					if ((result.Result == ReadEventResult.NoStream ||
 						 result.Result == ReadEventResult.NotFound) &&
-						result.OriginalStreamExists &&
-						_systemStreams.IsSystemStream(streamId)) {
+						_systemStreams.IsMetaStream(streamId) &&
+						result.OriginalStreamExists.HasValue &&
+						result.OriginalStreamExists.Value) {
 						return NoData(msg, ReadEventResult.Success);
 					}
 

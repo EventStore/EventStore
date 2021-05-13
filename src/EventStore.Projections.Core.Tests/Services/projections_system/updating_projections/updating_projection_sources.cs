@@ -7,11 +7,12 @@ using System.Linq;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system.updating_projections {
 	namespace updating_projection_sources {
-		public abstract class with_updated_projection : with_projection_config {
+		public abstract class with_updated_projection<TLogFormat, TStreamId> : with_projection_config<TLogFormat, TStreamId> {
 			private ProjectionManagementMessage.Statistics _allStatistics;
 			protected ProjectionManagementMessage.ProjectionState _state;
 			private ProjectionManagementMessage.ProjectionQuery _query;
@@ -87,8 +88,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 			}
 		}
 
-		[TestFixture]
-		public class when_adding_an_event_type : with_updated_projection {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_adding_an_event_type<TLogFormat, TStreamId> : with_updated_projection<TLogFormat, TStreamId> {
 			protected override string GivenOriginalSource() {
 				return @"
                     function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
@@ -124,8 +126,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 			}
 		}
 
-		[TestFixture]
-		public class when_replacing_an_event_type : with_updated_projection {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_replacing_an_event_type<TLogFormat, TStreamId> : with_updated_projection<TLogFormat, TStreamId> {
 			protected override string GivenOriginalSource() {
 				return @"
                     function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
@@ -162,8 +165,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 			}
 		}
 
-		[TestFixture]
-		public class when_replacing_any_with_an_event_type : with_updated_projection {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_replacing_any_with_an_event_type<TLogFormat, TStreamId> : with_updated_projection<TLogFormat, TStreamId> {
 			protected override string GivenOriginalSource() {
 				return @"
                     function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
@@ -198,8 +202,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 			}
 		}
 
-		[TestFixture]
-		public class when_replacing_specific_event_types_with_any : with_updated_projection {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_replacing_specific_event_types_with_any<TLogFormat, TStreamId> : with_updated_projection<TLogFormat, TStreamId> {
 			protected override string GivenOriginalSource() {
 				return @"
                     function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
@@ -234,8 +239,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 			}
 		}
 
-		[TestFixture]
-		public class when_replacing_stream_with_multiple_streams : with_updated_projection {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_replacing_stream_with_multiple_streams<TLogFormat, TStreamId> : with_updated_projection<TLogFormat, TStreamId> {
 			protected override string GivenOriginalSource() {
 				return @"
                     function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
@@ -269,8 +275,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 			}
 		}
 
-		[TestFixture]
-		public class when_replacing_multiple_streams_with_one_of_them : with_updated_projection {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_replacing_multiple_streams_with_one_of_them<TLogFormat, TStreamId> : with_updated_projection<TLogFormat, TStreamId> {
 			protected override string GivenOriginalSource() {
 				return @"
                     function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }
@@ -302,8 +309,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 			}
 		}
 
-		[TestFixture]
-		public class when_replacing_a_stream_in_multiple_streams : with_updated_projection {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_replacing_a_stream_in_multiple_streams<TLogFormat, TStreamId> : with_updated_projection<TLogFormat, TStreamId> {
 			protected override string GivenOriginalSource() {
 				return @"
                     function handle(s, e) { if (e.data && e.data.Data) s.d.push(e.data.Data); return s; }

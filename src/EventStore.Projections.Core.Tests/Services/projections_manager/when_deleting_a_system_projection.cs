@@ -7,23 +7,27 @@ using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using EventStore.ClientAPI.Common.Utils;
 using System.Collections;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 	public class SystemProjectionNames : IEnumerable {
 		public IEnumerator GetEnumerator() {
-			return typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
+			foreach (var projection in typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
 					System.Reflection.BindingFlags.Public |
 					System.Reflection.BindingFlags.Static |
 					System.Reflection.BindingFlags.FlattenHierarchy)
 				.Where(x => x.IsLiteral && !x.IsInitOnly)
-				.Select(x => x.GetRawConstantValue()).GetEnumerator();
+				.Select(x => x.GetRawConstantValue())) {
+				yield return new[] {typeof(LogFormat.V2), typeof(string), projection};
+				yield return new[] {typeof(LogFormat.V3), typeof(long), projection};
+			}
 		}
 	}
 
 	[TestFixture, TestFixtureSource(typeof(SystemProjectionNames))]
-	public class when_deleting_a_system_projection : TestFixtureWithProjectionCoreAndManagementServices {
+	public class when_deleting_a_system_projection<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		private string _systemProjectionName;
 
 		public when_deleting_a_system_projection(string projectionName) {

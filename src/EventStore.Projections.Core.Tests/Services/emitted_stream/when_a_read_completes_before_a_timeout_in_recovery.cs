@@ -6,10 +6,12 @@ using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
-	[TestFixture]
-	public class when_a_read_completes_before_a_timeout_in_recovery : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_a_read_completes_before_a_timeout_in_recovery<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private const string TestStreamId = "test_stream";
 		private EmittedStream _stream;
 		private TestCheckpointManagerMessageHandler _readyHandler;

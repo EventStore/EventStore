@@ -6,9 +6,10 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
-	[TestFixture]
-	public class when_deleted_stream_with_metadata_is_scavenged : ScavengeTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_deleted_stream_with_metadata_is_scavenged<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator
 				.Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null, null, null, null)),
 					Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null, null, null, null)),

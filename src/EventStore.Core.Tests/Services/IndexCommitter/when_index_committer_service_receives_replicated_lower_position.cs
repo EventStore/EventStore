@@ -4,9 +4,11 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_index_committer_service_receives_replicated_lower_position : with_index_committer_service {
+		when_index_committer_service_receives_replicated_lower_position<TLogFormat, TStreamId>
+		: with_index_committer_service<TLogFormat, TStreamId> {
 		private readonly Guid _correlationId = Guid.NewGuid();
 		private readonly long _logPosition = 2000;
 

@@ -6,6 +6,7 @@ using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -15,7 +16,7 @@ using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helpers {
-	public abstract class TestFixtureWithExistingEvents : TestFixtureWithReadWriteDispatchers,
+	public abstract class TestFixtureWithExistingEvents<TLogFormat,TStreamId> : TestFixtureWithReadWriteDispatchers,
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsForward>,
@@ -40,7 +41,7 @@ namespace EventStore.Core.Tests.Helpers {
 				}
 			}
 
-			public void Commit(ClientMessage.TransactionCommit message, TestFixtureWithExistingEvents fixture) {
+			public void Commit(ClientMessage.TransactionCommit message, TestFixtureWithExistingEvents<TLogFormat,TStreamId> fixture) {
 				var commitPosition = fixture._fakePosition;
 				fixture._fakePosition += 50;
 				fixture.ProcessWrite(
@@ -77,6 +78,7 @@ namespace EventStore.Core.Tests.Helpers {
 		private bool _readAllEnabled;
 		private bool _noOtherStreams;
 		private bool _readsTimeOut;
+		private LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat,TStreamId>.LogFormat;
 
 		protected readonly HashSet<string> _readsToTimeOutOnce = new HashSet<string>();
 
@@ -86,22 +88,24 @@ namespace EventStore.Core.Tests.Helpers {
 			return ExistingEvent("$$" + streamId, SystemEventTypes.StreamMetadata, "", metadata, isJson: true);
 		}
 
-		protected TFPos ExistingEvent(string streamId, string eventType, string eventMetadata, string eventData,
+		protected TFPos ExistingEvent(string streamName, string eventType, string eventMetadata, string eventData,
 			bool isJson = false) {
 			List<EventRecord> list;
-			if (!_streams.TryGetValue(streamId, out list) || list == null) {
+			if (!_streams.TryGetValue(streamName, out list) || list == null) {
 				list = new List<EventRecord>();
-				_streams[streamId] = list;
+				_streams[streamName] = list;
 			}
 
+			_logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId, out _, out _);
 			var eventRecord = new EventRecord(
 				list.Count,
-				new PrepareLogRecord(
+				LogRecord.Prepare(
+					_logFormat.RecordFactory,
 					_fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
-					_timeProvider.UtcNow,
 					PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
 					eventType, eventData is null ? null : Helper.UTF8NoBom.GetBytes(eventData),
-					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata)));
+					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata),
+					_timeProvider.UtcNow), streamName);
 			list.Add(eventRecord);
 			var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
 			_all.Add(eventPosition, eventRecord);

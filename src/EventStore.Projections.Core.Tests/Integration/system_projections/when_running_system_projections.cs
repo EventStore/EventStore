@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using EventStore.Core.Services;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.system_projections {
-	[TestFixture]
-	public class when_running_system_projections : specification_with_a_v8_query_posted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_running_system_projections<TLogFormat, TStreamId> : specification_with_a_v8_query_posted<TLogFormat, TStreamId> {
 		protected override void GivenEvents() {
 			ExistingEvent("account-01", "test", "", "{\"a\":1}", isJson: true);
 			ExistingEvent("account-01", "test", "", "{\"a\":2}", isJson: true);

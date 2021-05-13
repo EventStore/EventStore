@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
+using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 
@@ -19,6 +20,7 @@ namespace EventStore.Core.LogV3 {
 		readonly ConcurrentDictionary<long, string> _rev = new ConcurrentDictionary<long, string>();
 
 		public bool GetOrAddId(string name, out long streamNumber, out long createdId, out string createdName) {
+			Ensure.NotNullOrEmpty(name, "name");
 			if (SystemStreams.IsMetastream(name))
 				throw new ArgumentException(nameof(name));
 
@@ -47,8 +49,8 @@ namespace EventStore.Core.LogV3 {
 		// todo: will be able to read from the index once we have stream records
 		// (even in mem), at which point we can drop implementation of IStreamNameLookup here.
 		public string LookupName(long streamNumber) {
-			var name = _rev[streamNumber];
-			return name;
+			_rev.TryGetValue(streamNumber, out var name);
+			return name ?? "";
 		}
 	}
 }

@@ -2,15 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture]
-	public class when_requesting_partition_state_from_a_stopped_foreach_projection :
-		TestFixtureWithProjectionCoreAndManagementServices {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_requesting_partition_state_from_a_stopped_foreach_projection<TLogFormat, TStreamId> :
+		TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		protected override void Given() {
 			NoStream("$projections-test-projection-order");
 			ExistingEvent(ProjectionNamesBuilder.ProjectionsRegistrationStream, ProjectionEventTypes.ProjectionCreated,

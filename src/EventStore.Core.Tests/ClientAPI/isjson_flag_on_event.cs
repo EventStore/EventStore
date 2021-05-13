@@ -12,14 +12,16 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class isjson_flag_on_event : SpecificationWithDirectory {
-		private MiniNode _node;
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class isjson_flag_on_event<TLogFormat, TStreamId> : SpecificationWithDirectory {
+		private MiniNode<TLogFormat, TStreamId> _node;
 
 		[SetUp]
 		public override async Task SetUp() {
 			await base.SetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 		}
 
@@ -29,8 +31,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.To(node, TcpType.Ssl);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.To(node, TcpType.Ssl);
 		}
 
 		[Test, Category("LongRunning"), Category("Network")]
@@ -49,17 +51,21 @@ namespace EventStore.Core.Tests.ClientAPI {
 						new EventData(Guid.NewGuid(), "some-type", true,
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
+				var expectedEvents = 3;
 
-				using (var transaction = await connection.StartTransactionAsync(stream, ExpectedVersion.Any)) {
-					await transaction.WriteAsync(
-						new EventData(Guid.NewGuid(), "some-type", true,
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
-						new EventData(Guid.NewGuid(), "some-type", true, null,
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
-						new EventData(Guid.NewGuid(), "some-type", true,
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
-							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
-					await transaction.CommitAsync();
+				if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+					using (var transaction = await connection.StartTransactionAsync(stream, ExpectedVersion.Any)) {
+						await transaction.WriteAsync(
+							new EventData(Guid.NewGuid(), "some-type", true,
+								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"), null),
+							new EventData(Guid.NewGuid(), "some-type", true, null,
+								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")),
+							new EventData(Guid.NewGuid(), "some-type", true,
+								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}"),
+								Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
+						await transaction.CommitAsync();
+						expectedEvents += 3;
+					}
 				}
 
 				var done = new ManualResetEventSlim();
@@ -68,7 +74,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						Assert.IsInstanceOf<ClientMessage.ReadStreamEventsForwardCompleted>(message);
 						var msg = (ClientMessage.ReadStreamEventsForwardCompleted)message;
 						Assert.AreEqual(Data.ReadStreamResult.Success, msg.Result);
-						Assert.AreEqual(6, msg.Events.Length);
+						Assert.AreEqual(expectedEvents, msg.Events.Length);
 						Assert.IsTrue(msg.Events.All(x => (x.OriginalEvent.Flags & PrepareFlags.IsJson) != 0));
 
 						done.Set();

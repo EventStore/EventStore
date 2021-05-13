@@ -5,9 +5,10 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		with_two_collisioned_streams_one_event_each_first_stream_deleted_read_index_should : ReadIndexTestScenario {
+		with_two_collisioned_streams_one_event_each_first_stream_deleted_read_index_should<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _prepare1;
 		private EventRecord _delete1;
 		private EventRecord _prepare2;

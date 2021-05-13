@@ -953,7 +953,8 @@ namespace EventStore.Core {
 			var requestManagement = new RequestManagementService(
 				_mainQueue,
 				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
-				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs));
+				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs),
+				logFormat.SupportsExplicitTransactions);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);

@@ -7,8 +7,10 @@ using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class update_existing_persistent_subscription : SpecificationWithMiniNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class update_existing_persistent_subscription<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -29,8 +31,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class update_existing_persistent_subscription_with_subscribers : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class update_existing_persistent_subscription_with_subscribers<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -77,8 +81,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class update_non_existing_persistent_subscription : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class update_non_existing_persistent_subscription<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -95,8 +101,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class update_existing_persistent_subscription_without_permissions : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class update_existing_persistent_subscription_without_permissions<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()

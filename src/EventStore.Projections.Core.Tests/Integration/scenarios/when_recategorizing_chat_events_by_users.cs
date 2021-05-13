@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.scenarios {
-	[TestFixture]
-	public class when_recategorizing_chat_events_by_users : specification_with_a_v8_query_posted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_recategorizing_chat_events_by_users<TLogFormat, TStreamId> : specification_with_a_v8_query_posted<TLogFormat, TStreamId> {
 		protected override void GivenEvents() {
 		}
 

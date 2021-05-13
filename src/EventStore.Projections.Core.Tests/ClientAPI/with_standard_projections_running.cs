@@ -3,13 +3,15 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Bus;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	namespace with_standard_projections_running {
-		public abstract class when_deleting_stream_base : specification_with_standard_projections_runnning {
+		public abstract class when_deleting_stream_base<TLogFormat, TStreamId>
+			: specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 			[Test, Category("Network")]
 			public async Task streams_stream_exists() {
 				Assert.AreEqual(
@@ -65,22 +67,25 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			protected abstract bool GivenDeleteHardDeleteStreamMode();
 		}
 
-		[TestFixture]
-		public class when_hard_deleting_stream : when_deleting_stream_base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_hard_deleting_stream<TLogFormat, TStreamId> : when_deleting_stream_base<TLogFormat, TStreamId> {
 			protected override bool GivenDeleteHardDeleteStreamMode() {
 				return true;
 			}
 		}
 
-		[TestFixture]
-		public class when_soft_deleting_stream : when_deleting_stream_base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_soft_deleting_stream<TLogFormat, TStreamId> : when_deleting_stream_base<TLogFormat, TStreamId> {
 			protected override bool GivenDeleteHardDeleteStreamMode() {
 				return false;
 			}
 		}
 
-		[TestFixture]
-		public class when_hard_deleting_stream_and_starting_standard_projections : when_deleting_stream_base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_hard_deleting_stream_and_starting_standard_projections<TLogFormat, TStreamId> : when_deleting_stream_base<TLogFormat, TStreamId> {
 			protected override bool GivenDeleteHardDeleteStreamMode() {
 				return true;
 			}
@@ -90,8 +95,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			}
 		}
 
-		[TestFixture]
-		public class when_soft_deleting_stream_and_starting_standard_projections : when_deleting_stream_base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_soft_deleting_stream_and_starting_standard_projections<TLogFormat, TStreamId> : when_deleting_stream_base<TLogFormat, TStreamId> {
 			protected override bool GivenDeleteHardDeleteStreamMode() {
 				return false;
 			}

@@ -1,11 +1,13 @@
 ﻿using System.Linq;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase {
-	[TestFixture]
-	class when_starting_phase2_without_a_reader_strategy : specification_with_multi_phase_core_projection {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_starting_phase2_without_a_reader_strategy<TLogFormat, TStreamId> : specification_with_multi_phase_core_projection<TLogFormat, TStreamId> {
 		protected override FakeReaderStrategy GivenPhase2ReaderStrategy() {
 			return null;
 		}

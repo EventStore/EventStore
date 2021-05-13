@@ -3,8 +3,9 @@ using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_deleting_single_stream_spanning_through_2_chunks_in_db_with_3_chunks<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _event8;
 		private EventRecord _delete;
 

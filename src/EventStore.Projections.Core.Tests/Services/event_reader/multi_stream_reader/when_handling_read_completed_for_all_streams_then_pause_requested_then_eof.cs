@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
@@ -14,9 +15,10 @@ using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader {
-	[TestFixture]
-	public class when_handling_read_completed_for_all_streams_then_pause_requested_then_eof :
-		TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_handling_read_completed_for_all_streams_then_pause_requested_then_eof<TLogFormat, TStreamId> :
+		TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private MultiStreamEventReader _edp;
 		private Guid _distibutionPointCorrelationId;
 		private Guid _firstEventId;

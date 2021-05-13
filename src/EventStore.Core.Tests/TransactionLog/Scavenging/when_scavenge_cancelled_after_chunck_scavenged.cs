@@ -5,8 +5,9 @@ using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
-	[TestFixture]
-	class when_scavenge_cancelled_after_chunck_scavenged : ScavengeLifeCycleScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_scavenge_cancelled_after_chunck_scavenged<TLogFormat, TStreamId> : ScavengeLifeCycleScenario<TLogFormat, TStreamId> {
 		protected override async Task When() {
 			var cancellationTokenSource = new CancellationTokenSource();
 

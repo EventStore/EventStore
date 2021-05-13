@@ -7,8 +7,8 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.Services.UserManagementService {
 	namespace password_change_notification_reader {
-		public abstract class with_password_change_notification_reader :
-			user_management_service.TestFixtureWithUserManagementService {
+		public abstract class with_password_change_notification_reader<TLogFormat, TStreamId> :
+			user_management_service.TestFixtureWithUserManagementService<TLogFormat, TStreamId> {
 			protected PasswordChangeNotificationReader _passwordChangeNotificationReader;
 
 			protected override void Given() {
@@ -31,8 +31,9 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 			}
 		}
 
-		[TestFixture]
-		public class when_notification_has_been_written : with_password_change_notification_reader {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_notification_has_been_written<TLogFormat, TStreamId> : with_password_change_notification_reader<TLogFormat, TStreamId> {
 			protected override void Given() {
 				base.Given();
 				NoOtherStreams();

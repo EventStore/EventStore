@@ -8,13 +8,14 @@ using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Replication.ReadOnlyReplica {
-	[TestFixture]
 	[Category("LongRunning")]
-	public class connecting_to_read_only_replica : specification_with_cluster {
-		protected override MiniClusterNode CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class connecting_to_read_only_replica<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
+		protected override MiniClusterNode<TLogFormat, TStreamId> CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds,
 			bool wait = true) {
 			var isReadOnly = index == 2;
-			var node = new MiniClusterNode(
+			var node = new MiniClusterNode<TLogFormat, TStreamId>(
 				PathName, index, endpoints.InternalTcp,
 				endpoints.ExternalTcp, endpoints.HttpEndPoint, gossipSeeds, inMemDb: false,
 				readOnlyReplica: isReadOnly);

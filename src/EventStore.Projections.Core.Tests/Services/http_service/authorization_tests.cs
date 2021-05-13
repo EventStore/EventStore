@@ -5,11 +5,14 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Tests.ClientAPI.Cluster;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
-	public class Authorization : specification_with_standard_projections_runnning {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class Authorization<TLogFormat, TStreamId> : specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 		private Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
 		private TimeSpan _timeout = TimeSpan.FromSeconds(10);
 		private int _leaderId;

@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.when_deleting {
-	[TestFixture]
-	public class when_delete_stream_succeeds : with_emitted_stream_deleter {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_delete_stream_succeeds<TLogFormat, TStreamId> : with_emitted_stream_deleter<TLogFormat, TStreamId> {
 		protected Action _onDeleteStreamCompleted;
 		private readonly ManualResetEventSlim _mre = new ManualResetEventSlim();
 		private readonly List<ClientMessage.DeleteStream> _deleteMessages = new List<ClientMessage.DeleteStream>();

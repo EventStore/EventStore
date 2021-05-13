@@ -13,11 +13,13 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), NonParallelizable]
-	public class subscribe_to_all_filtered_should : SpecificationWithDirectory {
+	[Category("ClientAPI"), Category("LongRunning"), NonParallelizable]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class subscribe_to_all_filtered_should<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private const int Timeout = 10000;
 
-		private MiniNode _node;
+		private MiniNode<TLogFormat, TStreamId> _node;
 		private IEventStoreConnection _conn;
 		private List<EventData> _testEvents;
 		private List<EventData> _fakeSystemEvents;
@@ -25,7 +27,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[SetUp]
 		public override async Task SetUp() {
 			await base.SetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
 			_conn = BuildConnection(_node);
@@ -236,8 +238,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
 		}
 	}
 }

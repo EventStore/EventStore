@@ -6,11 +6,14 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 	namespace when_posting_a_persistent_projection {
-		[TestFixture, Ignore("Persistent projections are admin only")]
-		public class authenticated : TestFixtureWithProjectionCoreAndManagementServices {
+		[Ignore("Persistent projections are admin only")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class authenticated<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			private string _projectionName;
 			private ClaimsPrincipal _testUserPrincipal;
 
@@ -65,8 +68,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 			}
 		}
 
-		[TestFixture]
-		public class anonymous : TestFixtureWithProjectionCoreAndManagementServices {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class anonymous<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			private string _projectionName;
 
 			private string _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";
@@ -96,7 +100,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 	}
 
 	namespace when_setting_new_runas_account {
-		public abstract class with_runas_projection : TestFixtureWithProjectionCoreAndManagementServices {
+		public abstract class with_runas_projection<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			protected string _projectionName;
 			protected ClaimsPrincipal _testUserPrincipal;
 			protected ClaimsPrincipal _testUserPrincipal2;
@@ -135,8 +139,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 			}
 		}
 
-		[TestFixture, Ignore("Persistent projections are admin only")]
-		public class as_another_user : with_runas_projection {
+		[Ignore("Persistent projections are admin only")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class as_another_user<TLogFormat, TStreamId> : with_runas_projection<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				yield return
 					new ProjectionManagementMessage.Command.SetRunAs(

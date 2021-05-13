@@ -2,13 +2,14 @@ using System;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	public abstract class specification_with_query_without_when : TestFixtureWithCoreProjectionStarted {
+	public abstract class specification_with_query_without_when<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		protected Guid _eventId;
 
 		protected override bool GivenCheckpointsEnabled() {
@@ -45,8 +46,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		}
 	}
 
-	[TestFixture]
-	public class when_receiving_committed_events_the_projection_without_when : specification_with_query_without_when {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_receiving_committed_events_the_projection_without_when<TLogFormat, TStreamId> : specification_with_query_without_when<TLogFormat, TStreamId> {
 		protected override void When() {
 			//projection subscribes here
 			_eventId = Guid.NewGuid();
@@ -76,9 +78,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	}
 
 
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_handling_event_does_not_change_state_the_projection_without_when : specification_with_query_without_when {
+		when_handling_event_does_not_change_state_the_projection_without_when<TLogFormat, TStreamId> : specification_with_query_without_when<TLogFormat, TStreamId> {
 		protected override void When() {
 			//projection subscribes here
 			_eventId = Guid.NewGuid();

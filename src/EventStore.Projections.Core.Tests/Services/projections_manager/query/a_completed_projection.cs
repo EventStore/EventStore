@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Management;
 using NUnit.Framework;
@@ -10,7 +11,7 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 	namespace a_completed_projection {
-		public abstract class Base : a_new_posted_projection.Base {
+		public abstract class Base<TLogFormat, TStreamId> : a_new_posted_projection.Base<TLogFormat, TStreamId> {
 			protected Guid _reader;
 
 			protected override void Given() {
@@ -38,8 +39,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_stopping : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_stopping<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 
@@ -81,8 +83,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_starting : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_starting<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return

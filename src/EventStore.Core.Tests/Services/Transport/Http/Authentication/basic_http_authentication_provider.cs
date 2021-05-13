@@ -17,7 +17,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	namespace basic_http_authentication_provider {
-		public class TestFixtureWithBasicHttpAuthenticationProvider : with_internal_authentication_provider {
+		public abstract class TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> : with_internal_authentication_provider<TLogFormat, TStreamId> {
 			protected BasicHttpAuthenticationProvider _provider;
 
 			protected new void SetUpProvider() {
@@ -33,9 +33,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 			}
 		}
 
-		[TestFixture]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_handling_a_request_without_an_authorization_header : TestFixtureWithBasicHttpAuthenticationProvider {
+			when_handling_a_request_without_an_authorization_header<TLogFormat, TStreamId> : TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
 			private bool _authenticateResult;
 
 			[SetUp]
@@ -51,10 +52,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 			}
 		}
 
-		[TestFixture]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_handling_a_request_with_correct_user_name_and_password :
-				TestFixtureWithBasicHttpAuthenticationProvider {
+			when_handling_a_request_with_correct_user_name_and_password<TLogFormat, TStreamId> :
+				TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
 			private bool _authenticateResult;
 			private HttpAuthenticationRequest _request;
 			private HttpContext _context;
@@ -85,10 +87,11 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 			}
 		}
 
-		[TestFixture]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_handling_a_request_with_incorrect_user_name_and_password :
-				TestFixtureWithBasicHttpAuthenticationProvider {
+			when_handling_a_request_with_incorrect_user_name_and_password<TLogFormat, TStreamId> :
+				TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
 			private bool _authenticateResult;
 			private HttpAuthenticationRequest _request;
 			private HttpContext _context;

@@ -5,13 +5,15 @@ using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
-	[TestFixture]
-	public class when_starting_and_enqueue_prerecorded_events_read_times_out : with_multi_stream_checkpoint_manager,
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_starting_and_enqueue_prerecorded_events_read_times_out<TLogFormat, TStreamId> : with_multi_stream_checkpoint_manager<TLogFormat, TStreamId>,
 		IHandle<TimerMessage.Schedule>,
 		IHandle<CoreProjectionProcessingMessage.PrerecordedEventsLoaded> {
 		private bool _hasTimedOut;

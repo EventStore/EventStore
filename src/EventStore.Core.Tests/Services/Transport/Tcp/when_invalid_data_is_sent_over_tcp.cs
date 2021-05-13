@@ -10,9 +10,9 @@ using EventStore.Transport.Tcp;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
-
-	[TestFixture]
-	public class when_invalid_data_is_sent_over_tcp : specification_with_cluster {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_invalid_data_is_sent_over_tcp<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 
 		[Timeout(5000)]
 		[TestCase("InternalTcpEndPoint", false)]

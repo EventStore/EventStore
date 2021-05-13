@@ -6,12 +6,13 @@ using EventStore.Projections.Core.Services.Processing;
 using System.Collections.Generic;
 using System.Collections;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_reading_registered_projections {
 	[TestFixture, TestFixtureSource(typeof(SystemProjectionNames))]
-	public class with_no_stream_and_intialize_system_projections : TestFixtureWithProjectionCoreAndManagementServices {
+	public class with_no_stream_and_intialize_system_projections<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		private string _systemProjectionName;
 
 		public with_no_stream_and_intialize_system_projections(string projectionName) {
@@ -50,12 +51,15 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_re
 
 	public class SystemProjectionNames : IEnumerable {
 		public IEnumerator GetEnumerator() {
-			return typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
+			foreach (var projection in typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
 					System.Reflection.BindingFlags.Public |
 					System.Reflection.BindingFlags.Static |
 					System.Reflection.BindingFlags.FlattenHierarchy)
 				.Where(x => x.IsLiteral && !x.IsInitOnly)
-				.Select(x => x.GetRawConstantValue()).GetEnumerator();
+				.Select(x => x.GetRawConstantValue())) {
+				yield return new[] { typeof(LogFormat.V2), typeof(string), projection };
+				yield return new[] { typeof(LogFormat.V3), typeof(long), projection };
+			}
 		}
 	}
 }

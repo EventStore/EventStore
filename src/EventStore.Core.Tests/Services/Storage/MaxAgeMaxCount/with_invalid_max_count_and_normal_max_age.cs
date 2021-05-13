@@ -6,7 +6,9 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 	[TestFixture, Ignore("Metadata must be valid.")]
-	public class with_invalid_max_count_and_normal_max_age : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_invalid_max_count_and_normal_max_age<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _r1;
 		private EventRecord _r2;
 		private EventRecord _r3;

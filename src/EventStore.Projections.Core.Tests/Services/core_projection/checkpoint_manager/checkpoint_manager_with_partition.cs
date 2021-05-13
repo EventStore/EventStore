@@ -1,10 +1,12 @@
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
-	[TestFixture]
-	public class checkpoint_manager_with_partition :
-		TestFixtureWithCoreProjectionCheckpointManager {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class checkpoint_manager_with_partition<TLogFormat, TStreamId> :
+		TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> {
 		[Test]
 		public void when_loading_partition_state_for_a_partition() {
 			var checkpointMetadata = @"{

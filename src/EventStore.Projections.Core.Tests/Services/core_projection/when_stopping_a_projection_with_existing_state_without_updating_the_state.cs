@@ -8,12 +8,14 @@ using EventStore.Core.Data;
 using EventStore.Projections.Core.Services.Processing;
 using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_stopping_a_projection_with_existing_state_without_updating_the_state :
-			TestFixtureWithCoreProjectionStarted {
+		when_stopping_a_projection_with_existing_state_without_updating_the_state<TLogFormat, TStreamId> :
+			TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		private string _testProjectionState = @"{""test"":1}";
 
 		protected override void Given() {

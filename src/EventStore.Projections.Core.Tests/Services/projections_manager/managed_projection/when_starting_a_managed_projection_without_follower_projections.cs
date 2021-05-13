@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Projections.Core.Messages;
@@ -11,12 +12,11 @@ using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Core.Util;
 using NUnit.Framework;
-using TestFixtureWithExistingEvents =
-	EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
-	[TestFixture]
-	public class when_starting_a_managed_projection_without_follower_projections : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_starting_a_managed_projection_without_follower_projections<TLogFormat, TStreamId> : core_projection.TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private new ITimeProvider _timeProvider;
 
 		private ManagedProjection _mp;

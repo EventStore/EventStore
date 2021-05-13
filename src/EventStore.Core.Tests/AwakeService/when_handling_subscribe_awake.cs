@@ -2,7 +2,6 @@
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
-using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.AwakeService {
@@ -29,7 +28,7 @@ namespace EventStore.Core.Tests.AwakeService {
 			try {
 				_it.Handle(
 					new AwakeServiceMessage.SubscribeAwake(
-						_envelope, Guid.NewGuid(), "Stream", new TFPos(1000, 500), new TestMessage()));
+						_envelope, Guid.NewGuid(), "Stream", new TFPos(1000, 500), new Bus.Helpers.TestMessage()));
 			} catch (Exception ex) {
 				_exception = ex;
 			}
