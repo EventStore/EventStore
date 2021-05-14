@@ -385,6 +385,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 			if (_attempts == 1)
 				throw new Exception("throw on first attempt to ensure retry is working");
 
+			_conn.Close();
+			_conn = BuildConnection(_node);
+			await _conn.ConnectAsync();
+
 			var settings = PersistentSubscriptionSettings
 				.Create()
 				.StartFromCurrent()
