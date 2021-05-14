@@ -93,6 +93,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void should_be_able_to_read_event_from_all_forward_on_followers() {
 			var followers = GetFollowers();
 			var quorum = (followers.Count() + 1) / 2 + 1;
@@ -107,6 +108,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void should_be_able_to_read_event_from_all_backward_on_followers() {
 			var followers = GetFollowers();
 			var quorum = (followers.Count() + 1) / 2 + 1;
@@ -121,6 +123,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void should_be_able_to_read_event_from_stream_forward_on_followers() {
 			var followers = GetFollowers();
 			var quorum = (followers.Count() + 1) / 2 + 1;
@@ -136,6 +139,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void should_be_able_to_read_event_from_stream_backward_on_followers() {
 			var followers = GetFollowers();
 			var quorum = (followers.Count() + 1) / 2 + 1;
@@ -150,6 +154,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void should_be_able_to_read_event_on_followers() {
 			var followers = GetFollowers();
 			var quorum = (followers.Count() + 1) / 2 + 1;
