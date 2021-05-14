@@ -12,18 +12,18 @@ EventStoreDB supports two protocols: gRPC and TCP, described below.
  
 ### EventStoreDB supported clients
 
-- [.NET](https://github.com/EventStore/EventStore-Client-Dotnet)
-- [Java](https://github.com/EventStore/EventStoreDB-Client-Java)
-- [Node.js](https://github.com/EventStore/EventStore-Client-NodeJS)
-- [Go](https://github.com/EventStore/EventStore-Client-Go)
-- [Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
+- [.NET (EventStore/EventStore-Client-Dotnet)](https://github.com/EventStore/EventStore-Client-Dotnet)
+- [Java (EventStore/EventStoreDB-Client-Java)](https://github.com/EventStore/EventStoreDB-Client-Java)
+- [Node.js (EventStore/EventStore-Client-NodeJS)](https://github.com/EventStore/EventStore-Client-NodeJS)
+- [Go (EventStore/EventStore-Client-Go)](https://github.com/EventStore/EventStore-Client-Go)
+- [Rust (EventStore/EventStoreDB-Client-Rust)](https://github.com/EventStore/EventStoreDB-Client-Rust)
 
 Read more in the [gRPC clients documentation](../../../../clients/grpc/getting-started/README.md).
 
 ### Community developed clients
 
-- [Ruby](https://github.com/yousty/event_store_client)
-- [Elixir](https://github.com/NFIBrokerage/spear)
+- [Ruby (yousty/event_store_client)](https://github.com/yousty/event_store_client)
+- [Elixir (NFIBrokerage/spear)](https://github.com/NFIBrokerage/spear)
 
 ## TCP protocol
 
@@ -38,21 +38,18 @@ Find out more about configuring the TCP protocol on the [TCP configuration](../n
 ### EventStoreDB supported clients
 
 - [.NET Framework and .NET Core](http://www.nuget.org/packages/EventStore.Client)
-- [JVM Client](https://github.com/EventStore/EventStore.JVM)
-- [Haskell](https://github.com/EventStore/EventStoreDB-Client-Haskell)
+- [JVM Client (EventStore/EventStore.JVM)](https://github.com/EventStore/EventStore.JVM)
+- [Haskell (EventStore/EventStoreDB-Client-Haskell)](https://github.com/EventStore/EventStoreDB-Client-Haskell)
 
 ### Community developed clients
 
-- [Node.js](https://www.npmjs.com/package/event-store-client)
-- [Node.js](https://www.npmjs.com/package/ges-client)
-- [Node.js](https://github.com/nicdex/eventstore-node)
-- [Erlang](https://bitbucket.org/anakryiko/erles)
-- [F#](https://github.com/haf/EventStore.Client.FSharp)
-- [Elixir](https://github.com/exponentially/extreme)
-- [Java 8](https://github.com/msemys/esjc)
-- [Maven plugin](https://github.com/fuinorg/event-store-maven-plugin)
-- [Go](https://github.com/jdextraze/go-gesclient)
-- [PHP](https://github.com/prooph/event-store-client/)
+- [Node.js (x-cubed/event-store-client)](https://github.com/x-cubed/event-store-client)
+- [Node.js (nicdex/node-eventstore-client)](https://gitork.org/nicdex/node-eventstore-client)
+- [Elixir (exponentially/extreme)](https://github.com/exponentially/extreme)
+- [Java 8 (msemys/esjc)](https://github.com/msemys/esjc)
+- [Maven plugin (fuinorg/event-store-maven-plugin)](https://github.com/fuinorg/event-store-maven-plugin)
+- [Go (jdextraze/go-gesclient)](https://github.com/jdextraze/go-gesclient)
+- [PHP (prooph/event-store-client)](https://github.com/prooph/event-store-client/)
 
 ## HTTP
 
@@ -62,12 +59,8 @@ Find out more about configuring the HTTP protocol on the [HTTP configuration](..
 
 ### Community developed clients
 
-- [PHP](https://github.com/dbellettini/php-eventstore-client)
-- [PHP](https://github.com/prooph/event-store-http-client/)
-- [Python](https://github.com/madedotcom/atomicpuppy)
-- [Ruby](https://github.com/arkency/http_eventstore)
-- [Go](https://github.com/jetbasrawi/go.geteventstore)
-
-### Community developed clients
-
-- [Ruby](https://github.com/yousty/event_store_client)
+- [PHP (prooph/event-store-http-client)](https://github.com/prooph/event-store-http-client/)
+- [Python (madedotcom/atomicpuppy)](https://github.com/madedotcom/atomicpuppy)
+- [Ruby (arkency/http_eventstore)](https://github.com/arkency/http_eventstore)
+- [Go (jetbasrawi/go.geteventstore)](https://github.com/jetbasrawi/go.geteventstore)
+- [Ruby (yousty/event_store_client)](https://github.com/yousty/event_store_client)
