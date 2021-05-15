@@ -114,7 +114,7 @@ namespace EventStore.Core.DataStructures {
 			HeapNode tail = null;
 			HeapNode cur = node;
 
-			while (cur != null && cur.Next != null) {
+			while (cur?.Next != null) {
 				var n1 = cur;
 				var n2 = cur.Next;
 				cur = cur.Next.Next;
