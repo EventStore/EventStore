@@ -314,7 +314,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public TFChunk.TFChunk GetChunkForOrDefault(string path) {
-			return _chunks != null ? _chunks.FirstOrDefault(c => c?.FileName == path) : null;
+			return _chunks != null ? _chunks.FirstOrDefault(c => c != null && c.FileName == path) : null;
 		}
 
 		public void Dispose() {

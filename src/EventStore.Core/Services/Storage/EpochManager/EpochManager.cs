@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 
 			var firstEpoch = _firstCachedEpoch?.Value;
-			if (firstEpoch?.PrevEpochPosition != -1) {
+			if (firstEpoch != null && firstEpoch.PrevEpochPosition != -1) {
 				var reader = _readers.Get();
 				try {
 					epoch = firstEpoch;

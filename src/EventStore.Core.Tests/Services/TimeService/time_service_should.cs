@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Services.TimeService {
 			_startTimeout(0, id);
 			_scheduler.TriggerProcessing();
 
-			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>(msg => msg?.Id == id));
+			Assert.That(_timerMessages.ContainsSingle<TestResponseMessage>(msg => msg != null && msg.Id == id));
 		}
 
 		[Test]

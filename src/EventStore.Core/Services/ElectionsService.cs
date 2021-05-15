@@ -547,7 +547,7 @@ namespace EventStore.Core.Services {
 			var leader = servers.FirstOrDefault(x =>
 				x.IsAlive && x.InstanceId == lastElectedLeader && x.State == VNodeState.Leader);
 
-			if (leader?.InstanceId != resigningLeader) {
+			if (leader != null && leader.InstanceId != resigningLeader) {
 				if (candidate.InstanceId == leader.InstanceId
 					|| candidate.EpochNumber > leader.EpochNumber
 					|| (candidate.EpochNumber == leader.EpochNumber && candidate.EpochId != leader.EpochId))

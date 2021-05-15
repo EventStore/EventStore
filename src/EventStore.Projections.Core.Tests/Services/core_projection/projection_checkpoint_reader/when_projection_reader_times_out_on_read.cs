@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 
 		public void Handle(TimerMessage.Schedule message) {
 			var delay = message.ReplyMessage as IODispatcherDelayedMessage;
-			if (delay?.MessageCorrelationId == _timeoutCorrelationId) {
+			if (delay != null && delay.MessageCorrelationId == _timeoutCorrelationId) {
 				message.Reply();
 			}
 		}
