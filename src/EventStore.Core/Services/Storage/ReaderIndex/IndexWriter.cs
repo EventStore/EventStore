@@ -225,7 +225,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						continue;
 
 					var res = _indexReader.ReadPrepare(streamId, eventNumber);
-					if (res != null && res.EventId == eventId)
+					if (res?.EventId == eventId)
 						continue;
 
 					var first = eventNumber == expectedVersion + 1;

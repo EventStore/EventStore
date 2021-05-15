@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					}
 				} else {
 					var taskEntry = _byOrderedStageLast[stageIndex];
-					if (taskEntry != null && taskEntry.ReadForStage == stageIndex && !taskEntry.Busy
+					if (taskEntry?.ReadForStage == stageIndex && !taskEntry.Busy
 					    && !taskEntry.Completed && taskEntry.PreviousByCorrelation == null)
 						task = taskEntry;
 				}
