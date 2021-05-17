@@ -156,7 +156,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			var data = GetEventData(@event);
 
-			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
+			if (@event == null || data == null) {
 				newStates = _query.Push(
 					"",
 					new string[] { });

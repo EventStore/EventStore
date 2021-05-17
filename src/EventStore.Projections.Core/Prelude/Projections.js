@@ -34,8 +34,7 @@ var $projections = {
 				$includeLinks: false,
 				reorderEvents: false,
 				processingLag: 0,
-				biState: false,
-				metadata : null
+				biState: false
 			},
 			version: 4
 		};
