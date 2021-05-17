@@ -1,13 +1,15 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
-	[TestFixture]
-	public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop :
-		TestFixtureWithCoreProjectionCheckpointManager {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_a_checkpoint_has_been_completed_and_requesting_checkpoint_to_stop<TLogFormat, TStreamId> :
+		TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> {
 		private Exception _exception;
 
 		protected override void Given() {

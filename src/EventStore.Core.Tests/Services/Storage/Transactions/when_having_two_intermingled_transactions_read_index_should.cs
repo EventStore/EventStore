@@ -5,8 +5,9 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions {
-	[TestFixture]
-	public class when_having_two_intermingled_transactions_read_index_should : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	public class when_having_two_intermingled_transactions_read_index_should<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _p1;
 		private EventRecord _p2;
 		private EventRecord _p3;
@@ -17,25 +18,28 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 		private long _t2CommitPos;
 
 		protected override void WriteTestScenario() {
-			var t1 = WriteTransactionBegin("ES", ExpectedVersion.NoStream);
-			var t2 = WriteTransactionBegin("ABC", ExpectedVersion.NoStream);
+			const string streamId1 = "ES";
+			const string streamId2 = "ABC";
 
-			_p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, t1.EventStreamId, 0, "es1",
+			var t1 = WriteTransactionBegin(streamId1, ExpectedVersion.NoStream);
+			var t2 = WriteTransactionBegin(streamId2, ExpectedVersion.NoStream);
+
+			_p1 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 0, streamId1, 0, "es1",
 				PrepareFlags.Data);
-			_p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, t2.EventStreamId, 0, "abc1",
+			_p2 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 0, streamId2, 0, "abc1",
 				PrepareFlags.Data);
-			_p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, t1.EventStreamId, 1, "es1",
+			_p3 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 1, streamId1, 1, "es1",
 				PrepareFlags.Data);
-			_p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, t2.EventStreamId, 1, "abc1",
+			_p4 = WriteTransactionEvent(t2.CorrelationId, t2.LogPosition, 1, streamId2, 1, "abc1",
 				PrepareFlags.Data);
-			_p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, t1.EventStreamId, 2, "es1",
+			_p5 = WriteTransactionEvent(t1.CorrelationId, t1.LogPosition, 2, streamId1, 2, "es1",
 				PrepareFlags.Data);
 
-			WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId);
-			WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId);
+			WriteTransactionEnd(t2.CorrelationId, t2.TransactionPosition, streamId2);
+			WriteTransactionEnd(t1.CorrelationId, t1.TransactionPosition, streamId1);
 
-			_t2CommitPos = WriteCommit(t2.CorrelationId, t2.TransactionPosition, t2.EventStreamId, _p2.EventNumber);
-			_t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, t1.EventStreamId, _p1.EventNumber);
+			_t2CommitPos = WriteCommit(t2.CorrelationId, t2.TransactionPosition, streamId2, _p2.EventNumber);
+			_t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, streamId1, _p1.EventNumber);
 		}
 
 		[Test]

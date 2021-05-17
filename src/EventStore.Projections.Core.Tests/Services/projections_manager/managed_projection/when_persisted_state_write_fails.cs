@@ -13,18 +13,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
-	public class FailureConditions : IEnumerable {
-		public IEnumerator GetEnumerator() {
-			yield return OperationResult.CommitTimeout;
-			yield return OperationResult.ForwardTimeout;
-			yield return OperationResult.PrepareTimeout;
-		}
-	}
-
-	[TestFixture, TestFixtureSource(typeof(FailureConditions))]
-	public class when_persisted_state_write_fails : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.CommitTimeout)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), OperationResult.CommitTimeout)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.ForwardTimeout)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), OperationResult.ForwardTimeout)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.PrepareTimeout)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), OperationResult.PrepareTimeout)]
+	public class when_persisted_state_write_fails<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private new ITimeProvider _timeProvider;
 		private ManagedProjection _managedProjection;
 		private Guid _coreProjectionId;

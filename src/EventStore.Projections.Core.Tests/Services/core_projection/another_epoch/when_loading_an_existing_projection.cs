@@ -1,10 +1,12 @@
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.another_epoch {
-	[TestFixture]
-	public class when_starting_an_existing_projection : TestFixtureWithCoreProjectionStarted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_starting_an_existing_projection<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		private string _testProjectionState = @"{""test"":1}";
 
 		protected override void Given() {

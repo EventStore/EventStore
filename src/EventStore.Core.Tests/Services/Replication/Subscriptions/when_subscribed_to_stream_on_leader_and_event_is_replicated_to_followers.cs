@@ -10,13 +10,15 @@ using EventStore.Core.Messages;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
-	[TestFixture, Category("LongRunning")]
-	public class when_subscribed_to_stream_on_leader_and_event_is_replicated_to_followers : specification_with_cluster {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_subscribed_to_stream_on_leader_and_event_is_replicated_to_followers<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private const string _streamId = "test-stream";
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 		private CountdownEvent _subscriptionsConfirmed;
-		private TestSubscription _leaderSubscription;
-		private List<TestSubscription> _followerSubscriptions;
+		private TestSubscription<TLogFormat, TStreamId> _leaderSubscription;
+		private List<TestSubscription<TLogFormat, TStreamId>> _followerSubscriptions;
 
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
@@ -48,13 +50,13 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			leader.Db.Config.ReplicationCheckpoint.Write(0);
 
 			_subscriptionsConfirmed = new CountdownEvent(3);
-			_leaderSubscription = new TestSubscription(leader, 1, _streamId, _subscriptionsConfirmed);
+			_leaderSubscription = new TestSubscription<TLogFormat, TStreamId>(leader, 1, _streamId, _subscriptionsConfirmed);
 			_leaderSubscription.CreateSubscription();
 
-			_followerSubscriptions = new List<TestSubscription>();
+			_followerSubscriptions = new List<TestSubscription<TLogFormat, TStreamId>>();
 			var followers = GetFollowers();
 			foreach (var s in followers) {
-				var followerSubscription = new TestSubscription(s, 1, _streamId, _subscriptionsConfirmed);
+				var followerSubscription = new TestSubscription<TLogFormat, TStreamId>(s, 1, _streamId, _subscriptionsConfirmed);
 				_followerSubscriptions.Add(followerSubscription);
 				followerSubscription.CreateSubscription();
 			}

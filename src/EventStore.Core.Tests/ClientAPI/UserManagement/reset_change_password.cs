@@ -6,7 +6,9 @@ using EventStore.ClientAPI.Transport.Http;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement {
-	public class reset_password : TestWithUser {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class reset_password<TLogFormat, TStreamId> : TestWithUser<TLogFormat, TStreamId> {
 		[Test]
 		public async Task null_user_name_throws() {
 			await AssertEx.ThrowsAsync<ArgumentNullException>(() =>
@@ -43,7 +45,9 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 		}
 	}
 
-	public class change_password : TestWithUser {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class change_password<TLogFormat, TStreamId> : TestWithUser<TLogFormat, TStreamId> {
 		[Test]
 		public async Task null_username_throws() {
 			await AssertEx.ThrowsAsync<ArgumentNullException>(() =>

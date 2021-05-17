@@ -5,6 +5,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.AwakeReaderService;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -13,9 +14,10 @@ using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero : TestFixtureWithExistingEvents {
+		when_handling_streams_with_deleted_events_and_reader_starting_at_event_zero<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private MultiStreamEventReader _edp;
 		private int _fromSequenceNumber;
 		private string[] _streamNames;

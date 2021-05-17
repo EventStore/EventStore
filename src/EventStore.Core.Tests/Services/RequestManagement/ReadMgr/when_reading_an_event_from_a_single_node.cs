@@ -11,14 +11,15 @@ using EventStore.Core.Tests.Replication.ReadStream;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.ReadMgr {
-	[TestFixture]
 	[Category("LongRunning")]
-	public class when_reading_an_event_from_a_single_node : specification_with_cluster {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_an_event_from_a_single_node<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private CountdownEvent _expectedNumberOfRoleAssignments;
 		private string _streamId = "test-stream";
 		private long _commitPosition;
 
-		private MiniClusterNode _liveNode;
+		private MiniClusterNode<TLogFormat, TStreamId> _liveNode;
 
 		protected override void BeforeNodesStart() {
 			_nodes.ToList().ForEach(x =>

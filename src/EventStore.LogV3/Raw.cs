@@ -1,21 +1,26 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using EventStore.LogCommon;
 
 namespace EventStore.LogV3 {
 	// todo: alignment, padding (of fields and of records)
+	// bear in mind that any record with variable length payload need not have padding
+	// in its fixed size header.
 	public static class Raw {
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct RecordHeader {
 			[FieldOffset(0)] private LogRecordType _type;
 			[FieldOffset(1)] private byte _version;
 			// todo: too much padding for somethng that will occur every record
+			// could reduce the resolution of the timestamp and fit it in 6 bytes?
 			[FieldOffset(8)] private long _ticks;
-			[FieldOffset(16)] private Guid _recordId;
+			[FieldOffset(RecordIdOffset)] private Guid _recordId;
 
 			// todo: remove this if possible
-			[FieldOffset(48)] private long _logPosition;
-			public const int Size = 56;
+			[FieldOffset(RecordIdOffset + RecordIdSize)] private long _logPosition;
+			public const int Size = 40;
+			public const int RecordIdOffset = 16;
+			public const int RecordIdSize = 16;
 
 			public LogRecordType Type {
 				get => _type;
@@ -43,6 +48,35 @@ namespace EventStore.LogV3 {
 			}
 		}
 
+		[StructLayout(LayoutKind.Explicit, Size = RecordHeader.RecordIdSize, Pack = 1)]
+		public struct StreamWriteId {
+			[FieldOffset(0)] private ushort _topicNumber;
+			[FieldOffset(2)] private ushort _categoryNumber;
+			[FieldOffset(4)] private uint _streamNumber;
+			// todo [FieldOffset(8)] private ushort _parentTopicNumber;
+			[FieldOffset(8)] private long _startingEventNumber;
+
+			public ushort TopicNumber {
+				get => _topicNumber;
+				set => _topicNumber = value;
+			}
+
+			public ushort CategoryNumber {
+				get => _categoryNumber;
+				set => _categoryNumber = value;
+			}
+
+			public uint StreamNumber {
+				get => _streamNumber;
+				set => _streamNumber = value;
+			}
+
+			public long StartingEventNumber {
+				get => _startingEventNumber;
+				set => _startingEventNumber = value;
+			}
+		}
+
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct EpochHeader {
 			[FieldOffset(0)] private Guid _leaderInstanceId;
@@ -63,6 +97,46 @@ namespace EventStore.LogV3 {
 			public int EpochNumber {
 				get => _epochNumber;
 				set => _epochNumber = value;
+			}
+		}
+
+		[Flags]
+		public enum EventFlags : ushort {
+		}
+
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct EventHeader {
+			// todo: not used yet
+			[FieldOffset(0)] private int _eventTypeNumber;
+			[FieldOffset(4)] private EventFlags _flags;
+			[FieldOffset(8)] private int _eventSize;
+			[FieldOffset(16)] private int _systemMetadataSize;
+			[FieldOffset(20)] private int _dataSize;
+			public const int Size = 24;
+
+			public int EventTypeNumber {
+				get => _eventTypeNumber;
+				set => _eventTypeNumber = value;
+			}
+
+			public EventFlags Flags {
+				get => _flags;
+				set => _flags = value;
+			}
+
+			public int EventSize {
+				get => _eventSize;
+				set => _eventSize = value;
+			}
+
+			public int SystemMetadataSize {
+				get => _systemMetadataSize;
+				set => _systemMetadataSize = value;
+			}
+
+			public int DataSize {
+				get => _dataSize;
+				set => _dataSize = value;
 			}
 		}
 
@@ -134,22 +208,49 @@ namespace EventStore.LogV3 {
 				set => _version = value;
 			}
 		}
-		
+
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct ContentTypeHeader {
 			[FieldOffset(0)] private Guid _partitionId;
 			[FieldOffset(16)] private ushort _referenceNumber;
-			
+
 			public const int Size = 18;
 
 			public Guid PartitionId {
 				get => _partitionId;
 				set => _partitionId = value;
 			}
-			
+
 			public ushort ReferenceNumber {
 				get => _referenceNumber;
 				set => _referenceNumber = value;
+			}
+		}
+
+		[Flags]
+		public enum StreamWriteFlags : ushort {
+		}
+
+		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
+		public struct StreamWriteHeader {
+			[FieldOffset(0)] private StreamWriteFlags _flags;
+			[FieldOffset(2)] private short _count;
+			[FieldOffset(4)] private int _metadataSize;
+			public const int Size = 8;
+
+			public StreamWriteFlags Flags {
+				get => _flags;
+				set => _flags = value;
+			}
+
+			public short Count {
+				get => _count;
+				set => _count = value;
+			}
+
+			public int MetadataSize {
+				get => _metadataSize;
+				set => _metadataSize = value;
 			}
 		}
 	}

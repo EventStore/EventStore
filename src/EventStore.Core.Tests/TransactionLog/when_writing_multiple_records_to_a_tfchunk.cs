@@ -4,8 +4,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_writing_multiple_records_to_a_tfchunk : SpecificationWithFilePerTestFixture {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_writing_multiple_records_to_a_tfchunk<TLogFormat, TStreamId> : SpecificationWithFilePerTestFixture {
 		private TFChunk _chunk;
 		private readonly Guid _corrId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();
@@ -14,23 +15,26 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private bool _written1;
 		private bool _written2;
 
-		private PrepareLogRecord _prepare1;
-		private PrepareLogRecord _prepare2;
+		private IPrepareLogRecord<TStreamId> _prepare1;
+		private IPrepareLogRecord<TStreamId> _prepare2;
 
 		[OneTimeSetUp]
 		public override void TestFixtureSetUp() {
 			base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 
-			_prepare1 = new PrepareLogRecord(0, _corrId, _eventId, 0, 0, "test", 1, new DateTime(2000, 1, 1, 12, 0, 0),
-				PrepareFlags.None, "Foo", new byte[12], new byte[15]);
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("test", out var streamId1, out _, out _);
+			logFormat.StreamNameIndex.GetOrAddId("test2", out var streamId2, out _, out _);
+
+			_prepare1 = LogRecord.Prepare(logFormat.RecordFactory, 0, _corrId, _eventId, 0, 0, streamId1, 1,
+				PrepareFlags.None, "Foo", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			var r1 = _chunk.TryAppend(_prepare1);
 			_written1 = r1.Success;
 			_position1 = r1.OldPosition;
 
-			_prepare2 = new PrepareLogRecord(r1.NewPosition, _corrId, _eventId, 0, 0, "test2", 2,
-				new DateTime(2000, 1, 1, 12, 0, 0),
-				PrepareFlags.None, "Foo2", new byte[12], new byte[15]);
+			_prepare2 = LogRecord.Prepare(logFormat.RecordFactory, r1.NewPosition, _corrId, _eventId, 0, 0, streamId2, 2,
+				PrepareFlags.None, "Foo2", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			var r2 = _chunk.TryAppend(_prepare2);
 			_written2 = r2.Success;
 			_position2 = r2.OldPosition;
@@ -62,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void the_first_record_can_be_read_at_position() {
 			var res = _chunk.TryReadAt((int)_position1);
 			Assert.IsTrue(res.Success);
-			Assert.IsTrue(res.LogRecord is PrepareLogRecord);
+			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);
 			Assert.AreEqual(_prepare1, res.LogRecord);
 		}
 
@@ -70,7 +74,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void the_second_record_can_be_read_at_position() {
 			var res = _chunk.TryReadAt((int)_position2);
 			Assert.IsTrue(res.Success);
-			Assert.IsTrue(res.LogRecord is PrepareLogRecord);
+			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);
 			Assert.AreEqual(_prepare2, res.LogRecord);
 		}
 
@@ -79,7 +83,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var res = _chunk.TryReadFirst();
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_prepare1.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
-			Assert.IsTrue(res.LogRecord is PrepareLogRecord);
+			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);
 			Assert.AreEqual(_prepare1, res.LogRecord);
 		}
 
@@ -89,7 +93,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_prepare1.GetSizeWithLengthPrefixAndSuffix()
 			                + _prepare2.GetSizeWithLengthPrefixAndSuffix(), res.NextPosition);
-			Assert.IsTrue(res.LogRecord is PrepareLogRecord);
+			Assert.IsTrue(res.LogRecord is IPrepareLogRecord<TStreamId>);
 			Assert.AreEqual(_prepare2, res.LogRecord);
 		}
 

@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
@@ -16,9 +17,10 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture]
-	public class when_starting_the_projection_manager_with_existing_partially_created_projection :
-		TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_starting_the_projection_manager_with_existing_partially_created_projection<TLogFormat, TStreamId> :
+		TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private ProjectionManager _manager;
 		private new ITimeProvider _timeProvider;
 		private Guid _workerId;

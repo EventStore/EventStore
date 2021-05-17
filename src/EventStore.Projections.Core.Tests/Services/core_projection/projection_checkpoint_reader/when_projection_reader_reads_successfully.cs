@@ -1,10 +1,12 @@
 using System.Threading;
 using EventStore.Core.Bus;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint_reader {
-	[TestFixture]
-	public class when_projection_reader_reads_successfully : with_projection_checkpoint_reader,
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_projection_reader_reads_successfully<TLogFormat, TStreamId> : with_projection_checkpoint_reader<TLogFormat, TStreamId>,
 		IHandle<CoreProjectionProcessingMessage.CheckpointLoaded> {
 		private ManualResetEventSlim _mre = new ManualResetEventSlim();
 		private CoreProjectionProcessingMessage.CheckpointLoaded _checkpointLoaded;

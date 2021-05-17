@@ -2,14 +2,16 @@ using System;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	[TestFixture]
-	public class when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should :
-		TestFixtureWithCoreProjectionStarted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_the_state_handler_with_configured_state_stream_does_process_an_event_the_projection_should<TLogFormat, TStreamId> :
+		TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		protected override void Given() {
 			_configureBuilderByQuerySource = source => {
 				source.FromAll();

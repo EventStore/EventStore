@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -10,7 +11,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 	public static class a_new_posted_projection {
-		public abstract class Base : TestFixtureWithProjectionCoreAndManagementServices {
+		public abstract class Base<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			protected string _projectionName;
 			protected string _projectionSource;
 			protected Type _fakeProjectionType;
@@ -43,8 +44,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_get_query : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_get_query<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return
@@ -63,8 +65,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_get_state : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_get_state<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 				yield return (
@@ -83,8 +86,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_failing : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_failing<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
 				var readerAssignedMessage =

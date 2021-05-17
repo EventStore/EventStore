@@ -10,9 +10,10 @@ using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Http.Cluster {
-	[TestFixture]
 	[Category("LongRunning")]
-	public class when_requesting_from_follower : specification_with_cluster {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_requesting_from_follower<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private const string TestStream = "test-stream";
 		private IPEndPoint _followerEndPoint;
 		private IPEndPoint _leaderEndPoint;
@@ -68,8 +69,14 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
+		static int _attempts = 0;
 		[Test]
+		[Retry(10)]
 		public async Task read_from_stream_backward_should_succeed_when_leader_not_required() {
+			_attempts++;
+			if (_attempts == 1)
+				Assert.IsTrue(false, "throw on first attempt to ensure retry is working");
+
 			var path = $"streams/{TestStream}";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: false);
 

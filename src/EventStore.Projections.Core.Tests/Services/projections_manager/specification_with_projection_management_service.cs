@@ -15,7 +15,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	public abstract class specification_with_projection_management_service : TestFixtureWithExistingEvents {
+	public abstract class specification_with_projection_management_service<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected ProjectionManager _manager;
 		protected ProjectionManagerMessageDispatcher _managerMessageDispatcher;
 		private bool _initializeSystemProjections;

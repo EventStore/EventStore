@@ -3,8 +3,10 @@ using EventStore.ClientAPI.SystemData;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class get_current_user : TestWithNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class get_current_user<TLogFormat, TStreamId> : TestWithNode<TLogFormat, TStreamId> {
 		[Test]
 		public async Task returns_the_current_user() {
 			var x = await _manager.GetCurrentUserAsync(new UserCredentials("admin", "changeit"));

@@ -1,14 +1,16 @@
 using System;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_emitting_events_in_backward_order_to_the_same_stream_the_projection_checkpoint :
-			TestFixtureWithExistingEvents {
+		when_emitting_events_in_backward_order_to_the_same_stream_the_projection_checkpoint<TLogFormat, TStreamId> :
+			TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private ProjectionCheckpoint _checkpoint;
 		private Exception _lastException;
 		private TestCheckpointManagerMessageHandler _readyHandler;

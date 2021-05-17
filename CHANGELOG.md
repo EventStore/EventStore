@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - ISystemStreamLookup abstraction point for LogV3 [EventStore#2923](https://github.com/EventStore/EventStore/pull/2923)
 - Persistent subscriptions to $all for gRPC clients [EventStore#2869](https://github.com/EventStore/EventStore/pull/2869)
 - EventType, ContentType & Partition structs and creation methods [EventStore#2931](https://github.com/EventStore/EventStore/pull/2931)
+- Simple stream writes for LogV3 [EventStore#2930](https://github.com/EventStore/EventStore/pull/2930)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
@@ -25,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - Parsing of yaml config options specified as an array [EventStore#2906](https://github.com/EventStore/EventStore/pull/2906)
 - Start projections when requested [EventStore#2929](https://github.com/EventStore/EventStore/pull/2929)
 - Handle missing case for UpdatePersistentSubscriptionTo{Stream,All}Result.DoesNotExist [EventStore#2941](https://github.com/EventStore/EventStore/pull/2941)
+- In gRPC projection management, disable a projection when writing a checkpoint, and abort it if not writing a checkpoint. [EventStore#2944](https://github.com/EventStore/EventStore/pull/2944)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
@@ -53,6 +55,9 @@ All notable changes to this project will be documented in this file.
 
 ### Updated
 - Visibility and gRPC generation changes to better support testing without needing clients to be referenced [EventStore#2942](https://github.com/EventStore/EventStore/pull/2942)
+
+### hello!
+- wave: [EventStore#2939](https://github.com/EventStore/EventStore/pull/2939)
 
 ## [21.2.0] Server - 2021-02-26
 

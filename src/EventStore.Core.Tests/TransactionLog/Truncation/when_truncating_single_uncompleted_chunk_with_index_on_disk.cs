@@ -2,8 +2,9 @@
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
-	[TestFixture]
-	public class when_truncating_single_uncompleted_chunk_with_index_on_disk : TruncateScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_truncating_single_uncompleted_chunk_with_index_on_disk<TLogFormat, TStreamId> : TruncateScenario<TLogFormat, TStreamId> {
 		private EventRecord _event2;
 
 		public when_truncating_single_uncompleted_chunk_with_index_on_disk()

@@ -436,8 +436,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return latestVersion == long.MinValue ? ExpectedVersion.NoStream : latestVersion;
 		}
 
-		private bool OriginalStreamExists(TFReaderLease reader, TStreamId metaStreamId) {
-			if (_systemStreams.IsSystemStream(metaStreamId)) {
+		private bool? OriginalStreamExists(TFReaderLease reader, TStreamId metaStreamId) {
+			if (_systemStreams.IsMetaStream(metaStreamId)) {
 				var originalStreamId = _systemStreams.OriginalStreamOf(metaStreamId);
 				var lastEventNumber = GetStreamLastEventNumberCached(reader, originalStreamId);
 				if (lastEventNumber == ExpectedVersion.NoStream || lastEventNumber == EventNumber.DeletedStream)
@@ -445,7 +445,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return true;
 			}
 
-			return false;
+			return null;
 		}
 
 		private StreamMetadata GetStreamMetadataCached(TFReaderLease reader, TStreamId streamId) {

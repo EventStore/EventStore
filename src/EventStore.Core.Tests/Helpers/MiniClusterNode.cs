@@ -27,7 +27,7 @@ using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Helpers {
-	public class MiniClusterNode {
+	public class MiniClusterNode<TLogFormat, TStreamId> {
 		public static int RunCount = 0;
 		public static readonly Stopwatch RunningTime = new Stopwatch();
 		public static readonly Stopwatch StartingTime = new Stopwatch();
@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public const int ChunkSize = 1024 * 1024;
 		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
 
-		private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode>();
+		private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode<TLogFormat, TStreamId>>();
 
 		public IPEndPoint InternalTcpEndPoint { get; }
 		public IPEndPoint ExternalTcpEndPoint { get; }
@@ -168,7 +168,8 @@ namespace EventStore.Core.Tests.Helpers {
 				ExternalTcpEndPoint, "ExHTTP ENDPOINT:",
 				HttpEndPoint);
 
-			Node = new ClusterVNode<string>(options, LogFormatAbstractor.V2, new AuthenticationProviderFactory(components =>
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			Node = new ClusterVNode<TStreamId>(options, logFormat, new AuthenticationProviderFactory(components =>
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),

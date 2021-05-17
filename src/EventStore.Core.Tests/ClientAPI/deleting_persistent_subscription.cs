@@ -7,8 +7,11 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class deleting_existing_persistent_subscription_group_with_permissions : SpecificationWithMiniNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class deleting_existing_persistent_subscription_group_with_permissions<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
@@ -25,8 +28,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class deleting_existing_persistent_subscription_with_subscriber : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class deleting_existing_persistent_subscription_with_subscriber<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
@@ -54,8 +59,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class deleting_persistent_subscription_group_that_doesnt_exist : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class deleting_persistent_subscription_group_that_doesnt_exist<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		protected override Task When() => Task.CompletedTask;
@@ -70,8 +77,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 	}
 
 
-	[TestFixture, Category("LongRunning")]
-	public class deleting_persistent_subscription_group_without_permissions : SpecificationWithMiniNode {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class deleting_persistent_subscription_group_without_permissions<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
 		protected override Task When() => Task.CompletedTask;

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -8,10 +9,24 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_chasing_a_chunked_transaction_log : SpecificationWithDirectory {
+	public static class LogRecordExtensions {
+		public static void WriteWithLengthPrefixAndSuffixTo(this ILogRecord record, BinaryWriter writer) {
+			using (var memoryStream = new MemoryStream()) {
+				record.WriteTo(new BinaryWriter(memoryStream));
+				var length = (int)memoryStream.Length;
+				writer.Write(length);
+				writer.Write(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
+				writer.Write(length);
+			}
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();
+		private readonly LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		[Test]
 		public void try_read_returns_false_when_writer_checkpoint_is_zero() {
@@ -54,12 +69,16 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void try_read_returns_record_when_writerchecksum_ahead() {
-			var recordToWrite = new PrepareLogRecord(logPosition: 0,
+			_logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var recordToWrite = LogRecord.Prepare(
+				factory: _logFormat.RecordFactory,
+				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
-				transactionPosition: 0,
+				transactionPos: 0,
 				transactionOffset: 0,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
@@ -78,7 +97,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				fs.Close();
 			}
 
-			var writerchk = new InMemoryCheckpoint(128);
+			var writerchk = new InMemoryCheckpoint(recordToWrite.GetSizeWithLengthPrefixAndSuffix() + 16);
 			var chaserchk = new InMemoryCheckpoint(Checkpoint.Chaser, 0);
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 			db.Open();
@@ -106,12 +125,16 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 			db.Open();
 
-			var recordToWrite = new PrepareLogRecord(logPosition: 0,
+			_logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var recordToWrite = LogRecord.Prepare(
+				factory: _logFormat.RecordFactory,
+				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
-				transactionPosition: 0,
+				transactionPos: 0,
 				transactionOffset: 0,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
@@ -147,12 +170,16 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 			db.Open();
 
-			var recordToWrite = new PrepareLogRecord(logPosition: 0,
+			_logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var recordToWrite = LogRecord.Prepare(
+				factory: _logFormat.RecordFactory,
+				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
-				transactionPosition: 0,
+				transactionPos: 0,
 				transactionOffset: 0,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
@@ -187,7 +214,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		       var writerchk = new InMemoryCheckpoint(50);
 		       var readerchk = new InMemoryCheckpoint("reader", 0);
 		       var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk, new[] { readerchk });
-		       var recordToWrite = new PrepareLogRecord(logPosition: 0,
+		       var recordToWrite = LogRecord.Prepare(logPosition: 0,
 		                                                correlationId: _correlationId,
 		                                                eventId: _eventId,
 		                                                transactionPosition: 0,
@@ -222,7 +249,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		       var readerchk = new InMemoryCheckpoint("reader", 0);
 		       var config = new TransactionFileDatabaseConfig(PathName, "prefix.tf", 10000, writerchk,
 		                                                      new List<ICheckpoint> { readerchk });
-		       var recordToWrite = new PrepareLogRecord(logPosition: 0,
+		       var recordToWrite = LogRecord.Prepare(logPosition: 0,
 		                                                correlationId: _correlationId,
 		                                                eventId: _eventId,
 		                                                transactionPosition: 0,
@@ -265,7 +292,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		       LogRecord record;
 		       Assert.IsFalse(reader.TryReadNext(out record));
    
-		       var recordToWrite = new PrepareLogRecord(logPosition: 0,
+		       var recordToWrite = LogRecord.Prepare(logPosition: 0,
 		                                                correlationId: _correlationId,
 		                                                eventId: _eventId,
 		                                                transactionPosition: 0,
@@ -290,7 +317,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		       Assert.IsTrue(reader.TryReadNext(out record));
 		       Assert.AreEqual(record, recordToWrite);
    
-		       var recordToWrite2 = new PrepareLogRecord(logPosition: 0,
+		       var recordToWrite2 = LogRecord.Prepare(logPosition: 0,
 		                                                 correlationId: _correlationId,
 		                                                 eventId: _eventId,
 		                                                 transactionPosition: 0,

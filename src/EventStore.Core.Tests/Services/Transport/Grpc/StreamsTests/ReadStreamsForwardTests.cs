@@ -28,7 +28,10 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			return events;
 		}
 
-		public class when_reading_forward_from_stream_that_has_been_truncated : SpecificationWithMiniNode {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_forward_from_stream_that_has_been_truncated<TLogFormat, TStreamId>
+			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();
 			private readonly List<Data.ResolvedEvent> _responses = new List<Data.ResolvedEvent>();
 			private const ulong _maxCount = 10;
@@ -69,7 +72,10 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 		}
 
-		public class when_reading_forward_from_the_start_of_the_stream : SpecificationWithMiniNode {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_forward_from_the_start_of_the_stream<TLogFormat, TStreamId>
+			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();
 			private readonly List<Data.ResolvedEvent> _responses = new List<Data.ResolvedEvent>();
 			private const ulong _maxCount = 50;
@@ -108,7 +114,10 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 		}
 
-		public class when_reading_forward_from_stream_with_no_events_after_position : SpecificationWithMiniNode {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_forward_from_stream_with_no_events_after_position<TLogFormat, TStreamId>
+			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();
 			private readonly List<Data.ResolvedEvent> _responses = new List<Data.ResolvedEvent>();
 			private const ulong _maxCount = 50;

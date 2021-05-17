@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
-	[TestFixture]
-	public class when_starting_with_prerecorded_events_after_the_last_checkpoint :
-		TestFixtureWithMultiStreamCheckpointManager {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_starting_with_prerecorded_events_after_the_last_checkpoint<TLogFormat, TStreamId> :
+		TestFixtureWithMultiStreamCheckpointManager<TLogFormat, TStreamId> {
 		private readonly CheckpointTag _tag1 =
 			CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"a", 0}, {"b", 0}, {"c", 1}});
 

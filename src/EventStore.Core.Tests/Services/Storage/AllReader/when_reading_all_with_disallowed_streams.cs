@@ -8,9 +8,11 @@ using EventStore.Core.Util;
 using static EventStore.Core.Messages.TcpClientMessageDto.Filter;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
-	[TestFixture("$persistentsubscription-$all::group-checkpoint")]
-	[TestFixture("$persistentsubscription-$all::group-parked")]
-	public class when_reading_all_with_disallowed_streams : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string), "$persistentsubscription-$all::group-checkpoint")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), "$persistentsubscription-$all::group-parked")]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), "$persistentsubscription-$all::group-checkpoint")]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), "$persistentsubscription-$all::group-parked")]
+	public class when_reading_all_with_disallowed_streams<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		TFPos _forwardReadPos;
 		TFPos _backwardReadPos;
 		private string _disallowedStream;

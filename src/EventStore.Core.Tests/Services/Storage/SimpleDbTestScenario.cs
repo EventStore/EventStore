@@ -15,21 +15,15 @@ using EventStore.Core.Util;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage {
-	public abstract class SimpleDbTestScenario : SimpleDbTestScenario<string> {
-		protected SimpleDbTestScenario(int maxEntriesInMemTable = 20, long metastreamMaxCount = 1) 
-			: base(maxEntriesInMemTable, metastreamMaxCount) {
-		}
-	}
-
 	[TestFixture]
-	public abstract class SimpleDbTestScenario<TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	public abstract class SimpleDbTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected readonly int MaxEntriesInMemTable;
 		protected TableIndex<TStreamId> TableIndex;
-		protected IReadIndex<TStreamId> ReadIndex;
+		protected ITestReadIndex<TStreamId> ReadIndex;
 
 		protected DbResult DbRes;
 
-		protected abstract DbResult CreateDb(TFChunkDbCreationHelper dbCreator);
+		protected abstract DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator);
 
 		private readonly long _metastreamMaxCount;
 
@@ -43,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			await base.TestFixtureSetUp();
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
+			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig);
 
 			DbRes = CreateDb(dbCreationHelper);
 
@@ -51,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			DbRes.Db.Config.ChaserCheckpoint.Write(DbRes.Db.Config.WriterCheckpoint.Read());
 			DbRes.Db.Config.ChaserCheckpoint.Flush();
 
-			var logFormat = LogFormatHelper<TStreamId>.LogFormat;
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var readers = new ObjectPool<ITransactionFileReader>(
 				"Readers", 2, 2, () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint));
 
@@ -66,7 +60,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
-			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
+			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				TableIndex,
 				logFormat.StreamIds,
@@ -82,7 +76,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint);
 
-			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
+			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
+			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
 		}
 
 		public override Task TestFixtureTearDown() {

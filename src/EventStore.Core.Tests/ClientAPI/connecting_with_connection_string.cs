@@ -6,14 +6,16 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class when_connecting_with_connection_string : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_connecting_with_connection_string<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private MiniNode<TLogFormat, TStreamId> _node;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 		}
 

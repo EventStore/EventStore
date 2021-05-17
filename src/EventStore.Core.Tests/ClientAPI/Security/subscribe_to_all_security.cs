@@ -3,8 +3,10 @@ using EventStore.ClientAPI.Exceptions;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
-	public class subscribe_to_all_security : AuthenticationTestBase {
+	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class subscribe_to_all_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		[Test]
 		public async Task subscribing_to_all_with_not_existing_credentials_is_not_authenticated() {
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => SubscribeToAll("badlogin", "badpass"));

@@ -6,8 +6,9 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
-	[TestFixture]
-	public class when_building_an_index_off_tfile_with_prepares_and_commits : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_building_an_index_off_tfile_with_prepares_and_commits<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private Guid _id1;
 		private Guid _id2;
 		private Guid _id3;
@@ -17,14 +18,16 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
 			long pos1, pos2, pos3, pos4, pos5, pos6;
-			Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "test1", ExpectedVersion.Any, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+			_streamNameIndex.GetOrAddId("test1", out var streamId1, out _, out _);
+			_streamNameIndex.GetOrAddId("test2", out var streamId2, out _, out _);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, _id1, _id1, 0, 0, streamId1, ExpectedVersion.Any,
+					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
 				out pos1);
-			Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "test2", ExpectedVersion.Any, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos1, _id2, _id2, pos1, 0, streamId2, ExpectedVersion.Any,
+					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
 				out pos2);
-			Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "test2", ExpectedVersion.Any, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id3, _id3, pos2, 0, streamId2, ExpectedVersion.Any,
+					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
 				out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, 0), out pos4);
 			Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, 0), out pos5);

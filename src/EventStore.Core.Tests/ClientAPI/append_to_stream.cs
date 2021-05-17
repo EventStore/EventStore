@@ -8,19 +8,21 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class append_to_stream : SpecificationWithDirectoryPerTestFixture {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class append_to_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType = TcpType.Ssl;
-		private MiniNode _node;
+		private MiniNode<TLogFormat, TStreamId> _node;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.To(node, _tcpType);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.To(node, _tcpType);
 		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 		}
 
@@ -379,20 +381,22 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 	}
 
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class ssl_append_to_stream : SpecificationWithDirectoryPerTestFixture {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class ssl_append_to_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType = TcpType.Ssl;
-		protected MiniNode _node;
+		protected MiniNode<TLogFormat, TStreamId> _node;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.To(node, _tcpType);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.To(node, _tcpType);
 		}
 
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 		}
 

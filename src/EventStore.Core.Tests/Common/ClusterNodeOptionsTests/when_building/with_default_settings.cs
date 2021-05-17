@@ -8,8 +8,9 @@ using EventStore.Core.Util;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
-	[TestFixture]
-	public class with_default_node_as_single_node : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_default_node_as_single_node<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options;
 
 		[Test]
@@ -77,8 +78,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_default_node_as_node_in_a_cluster : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_default_node_as_node_in_a_cluster<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		[Test]
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);
@@ -118,8 +120,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options;
 	}
 
-	[TestFixture]
-	public class with_default_node_as_node_in_an_insecure_cluster : ClusterMemberScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_default_node_as_node_in_an_insecure_cluster<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
 		[Test]
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);

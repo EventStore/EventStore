@@ -2,8 +2,10 @@
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class list_users : TestWithNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class list_users<TLogFormat, TStreamId> : TestWithNode<TLogFormat, TStreamId> {
 		[Test]
 		public async System.Threading.Tasks.Task list_all_users_worksAsync() {
 			await _manager.CreateUserAsync("ouro", "ourofull", new[] { "foo", "bar" }, "ouro",

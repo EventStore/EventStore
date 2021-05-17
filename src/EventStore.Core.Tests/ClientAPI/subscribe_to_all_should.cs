@@ -9,16 +9,18 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class subscribe_to_all_should : SpecificationWithDirectory {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class subscribe_to_all_should<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private const int Timeout = 10000;
 
-		private MiniNode _node;
+		private MiniNode<TLogFormat, TStreamId> _node;
 
 		[SetUp]
 		public override async Task SetUp() {
 			await base.SetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
 			using (var connection = BuildConnection(_node)) {
@@ -35,8 +37,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
 		}
 
 		[Test, Category("LongRunning")]

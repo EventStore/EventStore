@@ -6,11 +6,13 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 	namespace when_posting_a_transient_projection {
-		[TestFixture]
-		public class authenticated : TestFixtureWithProjectionCoreAndManagementServices {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class authenticated<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			private string _projectionName;
 			private ClaimsPrincipal _testUserPrincipal;
 
@@ -65,8 +67,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.runas {
 			}
 		}
 
-		[TestFixture]
-		public class anonymous : TestFixtureWithProjectionCoreAndManagementServices {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class anonymous<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 			private string _projectionName;
 
 			private string _projectionBody = @"fromAll().when({$any:function(s,e){return s;}});";

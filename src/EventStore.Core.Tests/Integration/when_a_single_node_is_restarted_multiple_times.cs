@@ -8,8 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
-	[TestFixture, Category("LongRunning")]
-	public class when_a_single_node_is_restarted_multiple_times : specification_with_a_single_node {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_a_single_node_is_restarted_multiple_times<TLogFormat, TStreamId> : specification_with_a_single_node<TLogFormat, TStreamId> {
 		private List<Guid> _epochIds = new List<Guid>();
 		private const int _numberOfNodeStarts = 5;
 		private readonly AutoResetEvent _waitForStart = new AutoResetEvent(false);

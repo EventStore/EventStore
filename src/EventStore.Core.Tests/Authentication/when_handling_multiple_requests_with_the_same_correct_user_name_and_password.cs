@@ -4,9 +4,10 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Authentication {
-	[TestFixture]
-	public class when_handling_multiple_requests_with_the_same_correct_user_name_and_password :
-		with_internal_authentication_provider {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_handling_multiple_requests_with_the_same_correct_user_name_and_password<TLogFormat, TStreamId> :
+		with_internal_authentication_provider<TLogFormat, TStreamId> {
 		private bool _unauthorized;
 		private ClaimsPrincipal _authenticatedAs;
 		private bool _error;

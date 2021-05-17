@@ -15,20 +15,25 @@ using EventStore.Core.Index.Hashes;
 using System;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
-	[TestFixture]
-	public class when_building_an_index_off_tfile_with_duplicate_events_in_a_stream : DuplicateReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_building_an_index_off_tfile_with_duplicate_events_in_a_stream<TLogFormat, TStreamId>
+		: DuplicateReadIndexTestScenario<TLogFormat, TStreamId> {
 		private Guid _id1;
 		private Guid _id2;
 		private Guid _id3;
 		private Guid _id4;
 
 		private long pos1, pos2, pos3, pos4, pos5, pos6, pos7;
+
+		private LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		public when_building_an_index_off_tfile_with_duplicate_events_in_a_stream() : base(maxEntriesInMemTable: 3) {
 		}
@@ -38,22 +43,21 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
 
+			_logFormat.StreamNameIndex.GetOrAddId("duplicate_stream", out var streamId, out _, out _);
+
 			//stream id: duplicate_stream at version: 0
-			Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "duplicate_stream", ExpectedVersion.Any,
-				DateTime.UtcNow,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]), out pos1);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, _id1, _id1, 0, 0, streamId, ExpectedVersion.Any,
+				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos1);
 			Writer.Write(new CommitLogRecord(pos1, _id1, 0, DateTime.UtcNow, 0), out pos2);
 
 			//stream id: duplicate_stream at version: 1
-			Writer.Write(new PrepareLogRecord(pos2, _id2, _id2, pos2, 0, "duplicate_stream", ExpectedVersion.Any,
-				DateTime.UtcNow,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]), out pos3);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, ExpectedVersion.Any,
+				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id2, pos2, DateTime.UtcNow, 1), out pos4);
 
 			//stream id: duplicate_stream at version: 2
-			Writer.Write(new PrepareLogRecord(pos4, _id3, _id3, pos4, 0, "duplicate_stream", ExpectedVersion.Any,
-				DateTime.UtcNow,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]), out pos5);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id3, _id3, pos4, 0, streamId, ExpectedVersion.Any,
+				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos5);
 			Writer.Write(new CommitLogRecord(pos5, _id3, pos4, DateTime.UtcNow, 2), out pos6);
 		}
 
@@ -61,10 +65,11 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id4 = Guid.NewGuid();
 			long pos8;
 
+			_logFormat.StreamNameIndex.GetOrAddId("duplicate_stream", out var streamId, out _, out _);
+
 			//stream id: duplicate_stream at version: 0 (duplicate event/index entry)
-			Writer.Write(new PrepareLogRecord(pos6, _id4, _id4, pos6, 0, "duplicate_stream", ExpectedVersion.Any,
-				DateTime.UtcNow,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]), out pos7);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.Any,
+				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos7);
 			Writer.Write(new CommitLogRecord(pos7, _id4, pos6, DateTime.UtcNow, 0), out pos8);
 		}
 
@@ -75,20 +80,13 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		}
 	}
 
-	public abstract class DuplicateReadIndexTestScenario : DuplicateReadIndexTestScenario<string> {
-		protected DuplicateReadIndexTestScenario(int maxEntriesInMemTable = 20, int metastreamMaxCount = 1,
-			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = false) 
-			: base(maxEntriesInMemTable, metastreamMaxCount, indexBitnessVersion, performAdditionalChecks) {
-		}
-	}
-
-	public abstract class DuplicateReadIndexTestScenario<TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	public abstract class DuplicateReadIndexTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected readonly int MaxEntriesInMemTable;
 		protected readonly int MetastreamMaxCount;
 		protected readonly bool PerformAdditionalCommitChecks;
 		protected readonly byte IndexBitnessVersion;
 		protected TFChunkWriter Writer;
-		protected IReadIndex<TStreamId> ReadIndex;
+		protected ITestReadIndex<TStreamId> ReadIndex;
 
 		private TFChunkDb _db;
 		private TableIndex<TStreamId> _tableIndex;
@@ -125,7 +123,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			chaserCheckpoint.Write(writerCheckpoint.Read());
 			chaserCheckpoint.Flush();
 
-			var logFormat = LogFormatHelper<TStreamId>.LogFormat;
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 				() => new TFChunkReader(_db, _db.Config.WriterCheckpoint));
 			var lowHasher = logFormat.LowHasher;
@@ -139,7 +137,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
-			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
+			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				_tableIndex,
 				logFormat.StreamIds,
@@ -156,7 +154,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				indexCheckpoint: _db.Config.IndexCheckpoint);
 
 
-			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
+			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
+			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
 
 			_tableIndex.Close(false);
 
@@ -178,7 +177,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
 
-			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
+			readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				_tableIndex,
 				logFormat.StreamIds,
@@ -194,7 +193,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				replicationCheckpoint: _db.Config.ReplicationCheckpoint,
 				indexCheckpoint: _db.Config.IndexCheckpoint);
 
-			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(chaserCheckpoint.Read());
+			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
+			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
 		}
 
 		public override Task TestFixtureTearDown() {

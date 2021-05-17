@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_a_core_projection_checkpoint_manager_has_been_created : TestFixtureWithCoreProjectionCheckpointManager {
+		when_a_core_projection_checkpoint_manager_has_been_created<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> {
 		[Test]
 		public void stopping_throws_invalid_operation_exception() {
 			Assert.Throws<InvalidOperationException>(() => { _manager.Stopping(); });

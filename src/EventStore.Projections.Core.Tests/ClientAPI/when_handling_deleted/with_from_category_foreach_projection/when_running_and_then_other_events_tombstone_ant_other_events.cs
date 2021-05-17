@@ -1,11 +1,13 @@
 ﻿using System.Threading.Tasks;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_handling_deleted.with_from_category_foreach_projection {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_running_and_then_other_events_tombstone_ant_other_events :
-			specification_with_standard_projections_runnning {
+		when_running_and_then_other_events_tombstone_ant_other_events<TLogFormat, TStreamId> :
+			specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 		protected override bool GivenStandardProjectionsRunning() {
 			return false;
 		}

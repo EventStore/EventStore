@@ -9,12 +9,14 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using EventStore.Common.Utils;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_event_reader {
-	[TestFixture]
-	public class when_index_based_read_completes_before_timeout : EventByTypeIndexEventReaderTestFixture {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_index_based_read_completes_before_timeout<TLogFormat, TStreamId> : EventByTypeIndexEventReaderTestFixture<TLogFormat, TStreamId> {
 		private EventByTypeIndexEventReader _eventReader;
 		private Guid _distributionCorrelationId;
 

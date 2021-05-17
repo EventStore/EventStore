@@ -16,11 +16,9 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
-using TestFixtureWithExistingEvents =
-	EventStore.Projections.Core.Tests.Services.core_projection.TestFixtureWithExistingEvents;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	public abstract class TestFixtureWithProjectionCoreAndManagementServices : TestFixtureWithExistingEvents {
+	public abstract class TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> : core_projection.TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected ProjectionManager _manager;
 		protected ProjectionManagerMessageDispatcher _managerMessageDispatcher;
 		private bool _initializeSystemProjections;

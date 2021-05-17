@@ -4,10 +4,12 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Integration {
-	public class when_a_single_node_is_shutdown : SpecificationWithDirectory {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_a_single_node_is_shutdown<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		[Test]
 		public async Task cancels_after_timeout() {
-			var node = new MiniNode(PathName);
+			var node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			try {
 				await node.Start();
 

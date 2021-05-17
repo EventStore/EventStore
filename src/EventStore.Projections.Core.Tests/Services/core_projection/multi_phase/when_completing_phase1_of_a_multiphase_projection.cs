@@ -1,11 +1,13 @@
 ﻿using System.Linq;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase {
-	[TestFixture]
-	class when_completing_phase1_of_a_multiphase_projection : specification_with_multi_phase_core_projection {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_completing_phase1_of_a_multiphase_projection<TLogFormat, TStreamId> : specification_with_multi_phase_core_projection<TLogFormat, TStreamId> {
 		protected override void When() {
 			_coreProjection.Start();
 			Phase1.Complete();

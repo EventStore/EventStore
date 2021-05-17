@@ -9,14 +9,14 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 	[Category("LongRunning"), Category("ClientAPI")]
-	public class TestWithNode : SpecificationWithDirectoryPerTestFixture {
-		protected MiniNode _node;
+	public abstract class TestWithNode<TLogFormat, TStreamId>  : SpecificationWithDirectoryPerTestFixture {
+		protected MiniNode<TLogFormat, TStreamId> _node;
 		protected UsersManager _manager;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 			_manager = new UsersManager(new NoopLogger(), _node.HttpEndPoint, TimeSpan.FromSeconds(5), httpMessageHandler: _node.HttpMessageHandler);
 		}
@@ -28,8 +28,8 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 		}
 
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
 		}
 	}
 }

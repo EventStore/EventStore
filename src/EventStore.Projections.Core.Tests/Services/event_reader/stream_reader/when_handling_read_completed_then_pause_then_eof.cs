@@ -3,6 +3,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -11,8 +12,9 @@ using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {
-	[TestFixture]
-	public class when_handling_read_completed_then_pause_then_eof : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_handling_read_completed_then_pause_then_eof<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private StreamEventReader _edp;
 		private Guid _distibutionPointCorrelationId;
 		private Guid _firstEventId;

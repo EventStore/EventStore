@@ -12,8 +12,10 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Http.StreamSecurity {
 	namespace stream_access {
-		[TestFixture, Category("LongRunning")]
-		class when_creating_a_secured_stream_by_posting_metadata : SpecificationWithUsers {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_creating_a_secured_stream_by_posting_metadata<TLogFormat, TStreamId> : SpecificationWithUsers<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
 			protected override async Task When() {

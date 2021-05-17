@@ -6,8 +6,9 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
-	[TestFixture]
-	public class when_having_stream_with_maxcount_specified_and_long_transactions_written : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	public class when_having_stream_with_maxcount_specified_and_long_transactions_written<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord[] _records;
 
 		protected override void WriteTestScenario() {

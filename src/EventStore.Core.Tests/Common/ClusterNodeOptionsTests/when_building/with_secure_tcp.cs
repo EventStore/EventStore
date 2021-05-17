@@ -8,9 +8,10 @@ using EventStore.Core.Tests.Services.Transport.Tcp;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
-	[TestFixture]
 	[Category("LongRunning")]
-	public class with_ssl_enabled_and_using_a_security_certificate_from_file : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_ssl_enabled_and_using_a_security_certificate_from_file<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly IPEndPoint _internalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1114);
 		private readonly IPEndPoint _externalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
 
@@ -57,8 +58,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 	}
 
-	[TestFixture]
-	public class with_ssl_enabled_and_using_a_security_certificate : SingleNodeScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_ssl_enabled_and_using_a_security_certificate<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly IPEndPoint _internalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1114);
 		private readonly IPEndPoint _externalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
 		private readonly X509Certificate2 _certificate = ssl_connections.GetServerCertificate();
@@ -91,8 +93,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	}
 
 
-	[TestFixture]
-	public class with_secure_tcp_endpoints_and_no_certificates {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class with_secure_tcp_endpoints_and_no_certificates<TLogFormat, TStreamId> {
 		private ClusterVNodeOptions _options;
 		private Exception _caughtException;
 
@@ -105,7 +108,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				.WithInternalSecureTcpOn(internalSecTcp)
 				.WithExternalSecureTcpOn(externalSecTcp);
 			try {
-				_ = new ClusterVNode<string>(_options, LogFormatAbstractor.V2);
+				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormat);
 			} catch (Exception ex) {
 				_caughtException = ex;
 			}

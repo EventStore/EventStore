@@ -16,7 +16,7 @@ using NUnit.Framework;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.when_deleting {
-	public abstract class with_emitted_stream_deleter : IHandle<ClientMessage.ReadStreamEventsForward>,
+	public abstract class with_emitted_stream_deleter<TLogFormat, TStreamId> : IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.DeleteStream> {
 		protected InMemoryBus _bus = InMemoryBus.CreateTest();
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 		public abstract void When();
 
 		public virtual void Handle(ClientMessage.ReadStreamEventsBackward message) {
-			var events = IODispatcherTestHelpers.CreateResolvedEvent(message.EventStreamId,
+			var events = IODispatcherTestHelpers.CreateResolvedEvent<TLogFormat, TStreamId>(message.EventStreamId,
 				ProjectionEventTypes.ProjectionCheckpoint, "0");
 			var reply = new ClientMessage.ReadStreamEventsBackwardCompleted(message.CorrelationId,
 				message.EventStreamId, message.FromEventNumber, message.MaxCount,
@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.whe
 
 			if (!_hasReadForward) {
 				_hasReadForward = true;
-				var events = IODispatcherTestHelpers.CreateResolvedEvent(message.EventStreamId,
+				var events = IODispatcherTestHelpers.CreateResolvedEvent<TLogFormat, TStreamId>(message.EventStreamId,
 					ProjectionEventTypes.ProjectionCheckpoint, _testStreamName);
 				reply = new ClientMessage.ReadStreamEventsForwardCompleted(message.CorrelationId, message.EventStreamId,
 					message.FromEventNumber, message.MaxCount,

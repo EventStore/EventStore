@@ -5,18 +5,18 @@ using EventStore.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Collections;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Common;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint {
-	public class NumberOfMessagesInFlightSource : IEnumerable {
-		public IEnumerator GetEnumerator() {
-			return Enumerable.Range(1, 3).Select(x => x)
-				.GetEnumerator();
-		}
-	}
 
-	[TestFixture, TestFixtureSource(typeof(NumberOfMessagesInFlightSource))]
-	public class when_emitting_events_with_maximum_allowed_writes_in_flight_set : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string), 1)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), 1)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), 2)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), 2)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), 3)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), 3)]
+	public class when_emitting_events_with_maximum_allowed_writes_in_flight_set<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private ProjectionCheckpoint _checkpoint;
 		private TestCheckpointManagerMessageHandler _readyHandler;
 
@@ -69,8 +69,10 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_
 		}
 	}
 
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_emitting_events_with_maximum_allowed_writes_in_flight_set_to_unlimited : TestFixtureWithExistingEvents {
+		when_emitting_events_with_maximum_allowed_writes_in_flight_set_to_unlimited<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private ProjectionCheckpoint _checkpoint;
 		private TestCheckpointManagerMessageHandler _readyHandler;
 

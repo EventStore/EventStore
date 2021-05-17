@@ -1,4 +1,5 @@
-﻿using EventStore.Core.LogAbstraction;
+using EventStore.Common.Utils;
+using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.LogV2 {
 	public class LogV2StreamNameIndex :
@@ -10,6 +11,7 @@ namespace EventStore.Core.LogV2 {
 		}
 
 		public bool GetOrAddId(string streamName, out string streamId, out string createdId, out string createdName) {
+			Ensure.NotNullOrEmpty(streamName, "streamName");
 			streamId = streamName;
 			createdId = default;
 			createdName = default;

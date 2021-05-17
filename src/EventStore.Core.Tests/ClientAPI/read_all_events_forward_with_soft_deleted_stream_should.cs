@@ -11,8 +11,11 @@ using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class read_all_events_forward_with_soft_deleted_stream_should : SpecificationWithMiniNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class read_all_events_forward_with_soft_deleted_stream_should<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private EventData[] _testEvents;
 
 		protected override async Task When() {

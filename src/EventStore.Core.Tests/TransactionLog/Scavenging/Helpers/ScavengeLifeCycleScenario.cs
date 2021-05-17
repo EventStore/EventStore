@@ -5,11 +5,8 @@ using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
-	abstract class ScavengeLifeCycleScenario : ScavengeLifeCycleScenario<string> {
-	}
-
 	[TestFixture]
-	abstract class ScavengeLifeCycleScenario<TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	abstract public class ScavengeLifeCycleScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected TFChunkDb Db {
 			get { return _dbResult.Db; }
 		}
@@ -23,7 +20,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			await base.TestFixtureSetUp();
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
+			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig);
 
 			_dbResult = dbCreationHelper
 				.Chunk().CompleteLastChunk()
@@ -37,8 +34,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			Log = new FakeTFScavengerLog();
 			FakeTableIndex = new FakeTableIndex<TStreamId>();
-			TfChunkScavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, Log, FakeTableIndex, new FakeReadIndex<TStreamId>(_ => false),
-				LogFormatHelper<TStreamId>.LogFormat.SystemStreams);
+			TfChunkScavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, Log, FakeTableIndex, new FakeReadIndex<TLogFormat, TStreamId>(_ => false),
+				LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SystemStreams);
 
 			try {
 				await When().WithTimeout(TimeSpan.FromMinutes(1));

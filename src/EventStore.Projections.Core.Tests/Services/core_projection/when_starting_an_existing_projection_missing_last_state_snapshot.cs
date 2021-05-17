@@ -2,15 +2,17 @@ using System;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_starting_an_existing_projection_missing_last_state_snapshot : TestFixtureWithCoreProjectionStarted {
+		when_starting_an_existing_projection_missing_last_state_snapshot<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		private readonly Guid _causedByEventId = Guid.NewGuid();
 
 		protected override void Given() {

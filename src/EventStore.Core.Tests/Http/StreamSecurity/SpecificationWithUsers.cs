@@ -9,7 +9,8 @@ using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Http.StreamSecurity {
-	abstract class SpecificationWithUsers : HttpBehaviorSpecification {
+	abstract class SpecificationWithUsers<TLogFormat, TStreamId>
+		: HttpBehaviorSpecification<TLogFormat, TStreamId> {
 		protected override async Task Given() {
 			await PostUser("user1", "User 1", "user1!", "other");
 			await PostUser("user2", "User 2", "user2!", "other");
@@ -22,8 +23,8 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 			return false;
 		}
 
-		protected override MiniNode CreateMiniNode() {
-			return new MiniNode(PathName,
+		protected override MiniNode<TLogFormat, TStreamId> CreateMiniNode() {
+			return new MiniNode<TLogFormat, TStreamId>(PathName,
 				enableTrustedAuth: true);
 		}
 

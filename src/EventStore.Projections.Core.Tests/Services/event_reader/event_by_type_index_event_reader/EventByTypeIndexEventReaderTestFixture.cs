@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
-public class EventByTypeIndexEventReaderTestFixture : TestFixtureWithExistingEvents {
+public abstract class EventByTypeIndexEventReaderTestFixture<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 	public Guid CompleteForwardStreamRead(string streamId, Guid corrId, params ResolvedEvent[] events) {
 		var lastEventNumber = events != null && events.Length > 0 ? events.Last().Event.EventNumber : 0;
 		var message = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsForward>()

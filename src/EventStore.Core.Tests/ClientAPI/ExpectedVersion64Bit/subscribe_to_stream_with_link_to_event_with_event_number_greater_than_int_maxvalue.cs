@@ -8,11 +8,12 @@ using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	[Category("ClientAPI"), Category("LongRunning")]
 	public class
-		subscribe_to_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue :
-			MiniNodeWithExistingRecords {
+		subscribe_to_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue<TLogFormat, TStreamId> :
+			MiniNodeWithExistingRecords<TLogFormat, TStreamId> {
 		private const string StreamName =
 			"subscribe_to_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue";
 

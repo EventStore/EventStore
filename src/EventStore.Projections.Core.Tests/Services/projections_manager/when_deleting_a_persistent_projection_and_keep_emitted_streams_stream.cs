@@ -4,15 +4,17 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_deleting_a_persistent_projection_and_keep_emitted_streams_stream :
-			TestFixtureWithProjectionCoreAndManagementServices {
+		when_deleting_a_persistent_projection_and_keep_emitted_streams_stream<TLogFormat, TStreamId> :
+			TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		private string _projectionName;
 		private const string _projectionEmittedStreamsStream = "$projections-test-projection-emittedstreams";
 

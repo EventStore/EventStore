@@ -5,20 +5,19 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 using EventStore.Projections.Core.Services.Processing;
 using System.Collections;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
-	[TestFixture, TestFixtureSource(typeof(FailureConditions))]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.CommitTimeout)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), OperationResult.CommitTimeout)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.PrepareTimeout)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), OperationResult.PrepareTimeout)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), OperationResult.ForwardTimeout)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), OperationResult.ForwardTimeout)]
 	public class
-		when_writing_the_projections_initialized_event_fails : TestFixtureWithProjectionCoreAndManagementServices {
-		private class FailureConditions : IEnumerable {
-			public IEnumerator GetEnumerator() {
-				yield return OperationResult.CommitTimeout;
-				yield return OperationResult.ForwardTimeout;
-				yield return OperationResult.PrepareTimeout;
-			}
-		}
+		when_writing_the_projections_initialized_event_fails<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 
 		private OperationResult _failureCondition;
 

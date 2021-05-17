@@ -3,8 +3,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
-	[TestFixture]
-	public class when_writing_few_prepares_with_same_expected_version_and_not_committing_them : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_writing_few_prepares_with_same_expected_version_and_not_committing_them<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private IPrepareLogRecord _prepare0;
 		private IPrepareLogRecord _prepare1;
 		private IPrepareLogRecord _prepare2;
@@ -20,8 +21,10 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare0.LogPosition,
 				WriterCheckpoint.ReadNonFlushed());
 
+			_streamNameIndex.GetOrAddId("ES", out var streamId, out _, out _);
+
 			Assert.AreEqual(CommitDecision.Ok, res.Decision);
-			Assert.AreEqual("ES", res.EventStreamId);
+			Assert.AreEqual(streamId, res.EventStreamId);
 			Assert.AreEqual(-1, res.CurrentVersion);
 			Assert.AreEqual(-1, res.StartEventNumber);
 			Assert.AreEqual(-1, res.EndEventNumber);
@@ -29,7 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 			res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare1.LogPosition, WriterCheckpoint.ReadNonFlushed());
 
 			Assert.AreEqual(CommitDecision.Ok, res.Decision);
-			Assert.AreEqual("ES", res.EventStreamId);
+			Assert.AreEqual(streamId, res.EventStreamId);
 			Assert.AreEqual(-1, res.CurrentVersion);
 			Assert.AreEqual(-1, res.StartEventNumber);
 			Assert.AreEqual(-1, res.EndEventNumber);
@@ -37,7 +40,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 			res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare2.LogPosition, WriterCheckpoint.ReadNonFlushed());
 
 			Assert.AreEqual(CommitDecision.Ok, res.Decision);
-			Assert.AreEqual("ES", res.EventStreamId);
+			Assert.AreEqual(streamId, res.EventStreamId);
 			Assert.AreEqual(-1, res.CurrentVersion);
 			Assert.AreEqual(-1, res.StartEventNumber);
 			Assert.AreEqual(-1, res.EndEventNumber);

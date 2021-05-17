@@ -10,10 +10,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Ignore("Very long running")]
+	[Ignore("Very long running")]
 	[Category("LongRunning"), Category("ClientAPI")]
-	public class catchup_subscription_handles_small_batch_sizes : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class catchup_subscription_handles_small_batch_sizes<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private MiniNode<TLogFormat, TStreamId> _node;
 		private string _streamName = "TestStream";
 		private CatchUpSubscriptionSettings _settings;
 		private IEventStoreConnection _conn;
@@ -21,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName, inMemDb: true);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName, inMemDb: true);
 			await _node.Start();
 
 			_conn = BuildConnection(_node);
@@ -51,8 +53,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureTearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
 		}
 
 		[Test]

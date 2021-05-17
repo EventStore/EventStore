@@ -3,6 +3,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Messages;
@@ -13,8 +14,9 @@ using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
-	[TestFixture]
-	public class when_loading_existing_projection_state_with_no_projection_subsystem_version : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_loading_existing_projection_state_with_no_projection_subsystem_version<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private new ITimeProvider _timeProvider;
 		private string _projectionName = Guid.NewGuid().ToString();
 
@@ -69,8 +71,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		}
 	}
 
-	[TestFixture]
-	public class when_loading_existing_projection_state_with_projection_subsystem_version : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_loading_existing_projection_state_with_projection_subsystem_version<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private new ITimeProvider _timeProvider;
 		private string _projectionName = Guid.NewGuid().ToString();
 

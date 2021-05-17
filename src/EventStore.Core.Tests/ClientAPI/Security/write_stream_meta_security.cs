@@ -4,8 +4,10 @@ using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
-	public class write_stream_meta_security : AuthenticationTestBase {
+	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class write_stream_meta_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		[Test]
 		public async Task writing_meta_with_not_existing_credentials_is_not_authenticated() {
 			await AssertEx.ThrowsAsync<NotAuthenticatedException>(() => WriteMeta("metawrite-stream", "badlogin", "badpass", "user1"));

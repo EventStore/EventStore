@@ -1,4 +1,5 @@
-﻿using EventStore.Core.LogAbstraction;
+using EventStore.Common.Utils;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 
 namespace EventStore.Core.LogV3 {
@@ -16,6 +17,7 @@ namespace EventStore.Core.LogV3 {
 		}
 
 		public bool GetOrAddId(string streamName, out long streamId, out long createdId, out string createdName) {
+			Ensure.NotNullOrEmpty(streamName, "streamName");
 			if (SystemStreams.IsMetastream(streamName)) {
 				streamName = SystemStreams.OriginalStreamOf(streamName);
 				var ret = GetOrAddId(streamName, out streamId, out createdId, out createdName);
