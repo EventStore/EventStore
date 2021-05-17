@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 				query = new QueryScript(prelude, querySource, "POST-BODY");
 				query.Emit += QueryOnEmit;
 			} catch {
-				prelude.Dispose(); // clean up unmanaged resources if failed to create
+				prelude.Dispose(); //clean up unmanaged resources if failed to create
 				throw;
 			}
 
