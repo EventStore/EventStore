@@ -15,7 +15,7 @@ var $projections = {
 		};
 
 		var sources = {
-			/* TODO: comment out default falses to reduce message size */
+			/* TODO: comment out default falses to reduce message size  */
 			allStreams: false,
 			allEvents: true,
 			byStreams: false,
