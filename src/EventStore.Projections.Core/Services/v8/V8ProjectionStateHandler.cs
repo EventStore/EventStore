@@ -10,6 +10,9 @@ using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.v8 {
+	using System.Threading;
+	using Client.PersistentSubscriptions;
+
 	public class V8ProjectionStateHandler : IProjectionStateHandler {
 		private readonly PreludeScript _prelude;
 		private readonly QueryScript _query;
@@ -126,17 +129,25 @@ namespace EventStore.Projections.Core.Services.v8 {
 			CheckpointTag eventPosition, string category, ResolvedEvent @event) {
 			CheckDisposed();
 			if (@event == null) throw new ArgumentNullException("event");
-			var partition = _query.GetPartition(
-				GetEventData(@event),
-				new string[] {
-					@event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
-					@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
-					@event.PositionMetadata ?? ""
-				});
+
+			if (string.IsNullOrEmpty(@event.EventType)) {
+				//Nothing to actually process
+				return null;
+			}
+
+			//Only get the event data if our previous checks passed.
+			string eventData = GetEventData(@event);
+
+			var partition = _query.GetPartition(eventData,
+			                                    new string[] {
+				                                                 @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
+				                                                 @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+				                                                 @event.PositionMetadata ?? ""
+			                                                 });
 			if (partition == "")
 				return null;
-			else
-				return partition;
+			
+			return partition;
 		}
 
 		public bool ProcessEvent(
@@ -148,7 +159,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			Tuple<string, string> newStates = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) {
+			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
 				newStates = _query.Push(
 					"",
 					new string[] { });
@@ -197,7 +208,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			_emittedEvents = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) {
+			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
 				emittedEvents = null;
 				return true;
 			}
