@@ -208,7 +208,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			var data = GetEventData(@event);
 
-			if (@event == null || data == null) { 
+			if (@event == null || data == null || string.IsNullOrEmpty(data)) { 
 				emittedEvents = null;
 				return true;
 			}
