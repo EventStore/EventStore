@@ -6,6 +6,7 @@ namespace EventStore.LogV3.Tests {
 		[Fact]
 		public void can_set_time_stamp() {
 			var header = new Raw.RecordHeader {
+				TimeStamp = new DateTime(2000, 03, 21),
 				Type = LogCommon.LogRecordType.EventType,
 				Version = 0x45,
 			};

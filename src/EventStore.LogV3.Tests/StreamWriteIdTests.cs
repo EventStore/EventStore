@@ -23,6 +23,7 @@ namespace EventStore.LogV3.Tests {
 		[InlineData(0)]
 		public void can_set_starting_event_number(long x) {
 			var writeId = new Raw.StreamWriteId {
+				StartingEventNumber = 123,
 				ParentTopicNumber = 15,
 			};
 

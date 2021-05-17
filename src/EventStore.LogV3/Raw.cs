@@ -5,7 +5,9 @@ using EventStore.LogCommon;
 namespace EventStore.LogV3 {
 	public static class Raw {
 		public const long SixMostSignificantBytes = unchecked((long)0xFF_FF_FF_FF_FF_FF_00_00);
-		public const long SixLeastSignificantBytes = unchecked((long)0x00_00_FF_FF_FF_FF_FF_FF);
+		public const long TwoLeastSignificantBytes = unchecked(0x00_00_00_00_00_00_FF_FF);
+		public const long SixLeastSignificantBytes = unchecked(0x00_00_FF_FF_FF_FF_FF_FF);
+		public const long TwoMostSignificantBytes = unchecked((long)0xFF_FF_00_00_00_00_00_00);
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct RecordHeader {
@@ -33,7 +35,9 @@ namespace EventStore.LogV3 {
 			public DateTime TimeStamp {
 				// little-endian. blank out the 2 LEAST significant bytes
 				get => new(_ticks & SixMostSignificantBytes);
-				set => _ticks |= value.Ticks & SixMostSignificantBytes;
+				set => _ticks =
+					(TwoLeastSignificantBytes & _ticks) |
+					(SixMostSignificantBytes & value.Ticks);
 			}
 
 			public Guid RecordId {
@@ -93,7 +97,9 @@ namespace EventStore.LogV3 {
 
 					if ((value | SixLeastSignificantBytes) != SixLeastSignificantBytes)
 						throw new ArgumentOutOfRangeException(nameof(value), value, null);
-					_startingEventNumber |= value;
+					_startingEventNumber =
+						(TwoMostSignificantBytes & _startingEventNumber) |
+						value;
 				}
 			}
 		}
