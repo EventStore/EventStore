@@ -125,6 +125,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			_query.InitializeShared();
 		}
 
+
 		public string GetStatePartition(
 			CheckpointTag eventPosition, string category, ResolvedEvent @event) {
 			CheckDisposed();
