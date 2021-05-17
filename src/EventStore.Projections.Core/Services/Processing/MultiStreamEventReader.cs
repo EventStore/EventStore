@@ -121,7 +121,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					CheckEof();
 					break;
 				case ReadStreamResult.Success:
-					if (message.Events.Length == 0) {
+					if (message.IsEndOfStream) {
 						// the end
 						_eofs[message.EventStreamId] = true;
 						UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));

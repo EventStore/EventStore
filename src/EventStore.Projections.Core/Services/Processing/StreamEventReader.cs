@@ -90,7 +90,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				case ReadStreamResult.Success:
 					var oldFromSequenceNumber = StartFrom(message, _fromSequenceNumber);
 					_fromSequenceNumber = message.NextEventNumber;
-					var eof = message.Events.Length == 0;
+					var eof = message.IsEndOfStream;
 					_eof = eof;
 					var willDispose = eof && _stopOnEof;
 

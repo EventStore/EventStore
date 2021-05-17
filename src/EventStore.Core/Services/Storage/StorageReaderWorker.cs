@@ -308,17 +308,7 @@ namespace EventStore.Core.Services.Storage {
 
 					var result =
 						_readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount);
-
-					// Ref: Github Issue #2954 
-					// We need to go and re-read the stream in the case of being truncated
-					if ((result.NextEventNumber + msg.MaxCount) <= int.MaxValue) {
-						if (result.Metadata != null && result.Metadata.TruncateBefore != null && result.Records != null && result.Records.Length == 0) {
-							if (result.NextEventNumber > -1) {
-								result = _readIndex.ReadStreamEventsForward(streamName, streamId, result.NextEventNumber, msg.MaxCount);
-							}
-						}
-					}
-
+					
 					CheckEventsOrder(msg, result);
 					var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
 					if (resolvedPairs == null)
