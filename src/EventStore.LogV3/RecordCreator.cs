@@ -16,6 +16,8 @@ namespace EventStore.LogV3 {
 		private static byte CurrentVersion(this ref Raw.StreamWriteHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.EventTypeHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.ContentTypeHeader _) => LogRecordVersion.LogRecordV0;
+		private static byte CurrentVersion(this ref Raw.TransactionStartHeader _) => LogRecordVersion.LogRecordV0;
+		private static byte CurrentVersion(this ref Raw.TransactionEndHeader _) => LogRecordVersion.LogRecordV0;
 
 		private static LogRecordType Type(this ref Raw.EpochHeader _) => LogRecordType.System;
 		private static LogRecordType Type(this ref Raw.PartitionHeader _) => LogRecordType.Partition;
@@ -24,6 +26,8 @@ namespace EventStore.LogV3 {
 		private static LogRecordType Type(this ref Raw.StreamWriteHeader _) => LogRecordType.StreamWrite;
 		private static LogRecordType Type(this ref Raw.EventTypeHeader _) => LogRecordType.EventType;
 		private static LogRecordType Type(this ref Raw.ContentTypeHeader _) => LogRecordType.ContentType;
+		private static LogRecordType Type(this ref Raw.TransactionStartHeader _) => LogRecordType.TransactionStart;
+		private static LogRecordType Type(this ref Raw.TransactionEndHeader _) => LogRecordType.TransactionEnd;
 		
 		const int MaxStringBytes = 100;
 		public static void PopulateString(string str, Span<byte> target) {
@@ -305,6 +309,52 @@ namespace EventStore.LogV3 {
 				data.CopyTo(slicer.Slice(header.DataSize).Span);
 				metadata.CopyTo(slicer.Remaining.Span);
 			}
+		}
+
+		public static RecordView<Raw.TransactionStartHeader> CreateTransactionStartRecord(
+			DateTime timeStamp,
+			long logPosition,
+			Guid transactionId,
+			Raw.TransactionStatus status,
+			Raw.TransactionType type,
+			uint recordCount) {
+
+			var record = MutableRecordView<Raw.TransactionStartHeader>.Create(payloadLength: 0);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+			
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.RecordId = transactionId;
+			header.LogPosition = logPosition;
+
+			subHeader.Status = status;
+			subHeader.Type = type;
+			subHeader.RecordCount = recordCount;
+
+			return record;
+		}
+		
+		public static RecordView<Raw.TransactionEndHeader> CreateTransactionEndRecord(
+			DateTime timeStamp,
+			long logPosition,
+			Guid transactionId,
+			uint recordCount) {
+
+			var record = MutableRecordView<Raw.TransactionEndHeader>.Create(payloadLength: 0);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.RecordId = transactionId;
+			header.LogPosition = logPosition;
+			
+			subHeader.RecordCount = recordCount;
+
+			return record;
 		}
 	}
 }

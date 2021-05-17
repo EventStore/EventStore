@@ -38,5 +38,7 @@ namespace EventStore.LogV3.Tests {
 		[Fact] public void StreamWriteHeaderLayout() => AssertSize<Raw.StreamWriteHeader>(Raw.StreamWriteHeader.Size);
 		[Fact] public void EventTypeHeaderLayout() => AssertSize<Raw.EventTypeHeader>(Raw.EventTypeHeader.Size);
 		[Fact] public void ContentTypeHeaderLayout() => AssertSize<Raw.ContentTypeHeader>(Raw.ContentTypeHeader.Size);
+		[Fact] public void TransactionStartHeaderLayout() => AssertSize<Raw.TransactionStartHeader>(Raw.TransactionStartHeader.Size);
+		[Fact] public void TransactionEndHeaderLayout() => AssertSize<Raw.TransactionEndHeader>(Raw.TransactionEndHeader.Size);
 	}
 }

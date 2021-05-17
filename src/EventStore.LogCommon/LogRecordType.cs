@@ -9,5 +9,7 @@ namespace EventStore.LogCommon {
 		ContentType = 6,
 		Partition = 7,
 		StreamWrite = 8,
+		TransactionStart = 9,
+		TransactionEnd = 10
 	}
 }
