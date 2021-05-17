@@ -150,59 +150,56 @@ namespace EventStore.Projections.Core.Services.v8 {
 			return partition;
 		}
 
-		public bool ProcessEvent(
-			string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event, out string newState,
-			out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
+		public bool ProcessEvent(string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event, out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
 			CheckDisposed();
 			_eventPosition = eventPosition;
 			_emittedEvents = null;
 			Tuple<string, string> newStates = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
-				newStates = _query.Push(
-					"",
-					new string[] { });
+
+			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
+				newStates = _query.Push("", new string[] { });
 			} else {
-				newStates = _query.Push(
-					data,
-					new[] {
-						@event.IsJson ? "1" : "", @event.EventStreamId, @event.EventType, category ?? "",
-						@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
-						@event.PositionMetadata ?? "", partition, ""
-					});
+				newStates = _query.Push(data,
+				                        new[] {
+					                              @event.IsJson ? "1" : "", @event.EventStreamId, @event.EventType, category ?? "",
+					                              @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+					                              @event.PositionMetadata ?? "", partition, ""
+				                              });
 			}
 
 			newState = newStates.Item1;
 			newSharedState = newStates.Item2;
-/*            try
-            {
-                if (!string.IsNullOrEmpty(newState))
-                {
-                    var jo = newState.ParseJson<JObject>();
-                }
-
-            }
-            catch (InvalidCastException)
-            {
-                Console.Error.WriteLine(newState);
-            }
-            catch (JsonException)
-            {
-                Console.Error.WriteLine(newState);
-            }*/
+			/*            try
+			            {
+			                if (!string.IsNullOrEmpty(newState))
+			                {
+			                    var jo = newState.ParseJson<JObject>();
+			                }
+			
+			            }
+			            catch (InvalidCastException)
+			            {
+			                Console.Error.WriteLine(newState);
+			            }
+			            catch (JsonException)
+			            {
+			                Console.Error.WriteLine(newState);
+			            }*/
 			emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
 			return true;
 		}
 
 		public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent @event,
-			out EmittedEventEnvelope[] emittedEvents) {
+		                                    out EmittedEventEnvelope[] emittedEvents) {
 			CheckDisposed();
 			_eventPosition = createPosition;
 			_emittedEvents = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
+
+			if (@event == null || data == null || string.IsNullOrEmpty(data)) { 
 				emittedEvents = null;
 				return true;
 			}
