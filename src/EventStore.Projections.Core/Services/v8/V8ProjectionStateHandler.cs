@@ -10,8 +10,6 @@ using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.v8 {
-	using System.Threading;
-	using Client.PersistentSubscriptions;
 
 	public class V8ProjectionStateHandler : IProjectionStateHandler {
 		private readonly PreludeScript _prelude;
@@ -158,7 +156,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			var data = GetEventData(@event);
 
-			if (@event == null || data == null ) {
+			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
 				newStates = _query.Push(
 					"",
 					new string[] { });
@@ -208,7 +206,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			var data = GetEventData(@event);
 
-			if (@event == null || data == null || string.IsNullOrEmpty(data)) { 
+			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) { 
 				emittedEvents = null;
 				return true;
 			}
