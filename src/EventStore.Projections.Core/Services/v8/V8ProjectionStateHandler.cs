@@ -158,10 +158,13 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			var data = GetEventData(@event);
 
-			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
-				newStates = _query.Push("", new string[] { });
+			if (@event == null || data == null || string.IsNullOrEmpty(data)) {
+				newStates = _query.Push(
+				                        "",
+				                        new string[] { });
 			} else {
-				newStates = _query.Push(data,
+				newStates = _query.Push(
+				                        data,
 				                        new[] {
 					                              @event.IsJson ? "1" : "", @event.EventStreamId, @event.EventType, category ?? "",
 					                              @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
