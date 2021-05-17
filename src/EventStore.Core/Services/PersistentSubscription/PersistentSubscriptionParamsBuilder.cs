@@ -6,9 +6,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 	/// <summary>
 	/// Builds a <see cref="PersistentSubscriptionParams"/> object.
 	/// </summary>
-	public class PersistentSubscriptionParamsBuilder {
+	public abstract class PersistentSubscriptionParamsBuilder {
 		private bool _resolveLinkTos;
-		private int _startFrom;
+		private IPersistentSubscriptionStreamPosition _startFrom;
 		private bool _recordStatistics;
 		private TimeSpan _timeout;
 		private int _readBatchSize;
@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private int _liveBufferSize;
 		private int _historyBufferSize;
 		private string _subscriptionId;
-		private string _eventStreamId;
+		private IPersistentSubscriptionEventSource _eventSource;
 		private string _groupName;
 		private IPersistentSubscriptionStreamReader _streamReader;
 		private IPersistentSubscriptionCheckpointReader _checkpointReader;
@@ -29,55 +29,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private IPersistentSubscriptionConsumerStrategy _consumerStrategy;
 
 		/// <summary>
-		/// Creates a new <see cref="PersistentSubscriptionParamsBuilder"></see> object
-		/// </summary>
-		/// <param name="streamName">The name of the stream for the subscription</param>
-		/// <param name="groupName">The name of the group of the subscription</param>
-		/// <returns>a new <see cref="PersistentSubscriptionParamsBuilder"></see> object</returns>
-		public static PersistentSubscriptionParamsBuilder CreateFor(string streamName, string groupName) {
-			return new PersistentSubscriptionParamsBuilder(streamName + ":" + groupName,
-				streamName,
-				groupName,
-				false,
-				0,
-				false,
-				TimeSpan.FromSeconds(30),
-				500,
-				500,
-				10,
-				20,
-				TimeSpan.FromSeconds(1),
-				5,
-				1000,
-				0,
-				new RoundRobinPersistentSubscriptionConsumerStrategy());
-		}
-
-
-		private PersistentSubscriptionParamsBuilder(string subscriptionId, string streamName, string groupName,
-			bool resolveLinkTos, int startFrom, bool recordStatistics, TimeSpan timeout,
-			int historyBufferSize, int liveBufferSize, int maxRetryCount, int readBatchSize, TimeSpan checkPointAfter,
-			int minCheckPointCount, int maxCheckPointCount, int maxSubscriptionCount,
-			IPersistentSubscriptionConsumerStrategy consumerStrategy) {
-			_resolveLinkTos = resolveLinkTos;
-			_startFrom = startFrom;
-			_recordStatistics = recordStatistics;
-			_timeout = timeout;
-			_historyBufferSize = historyBufferSize;
-			_liveBufferSize = liveBufferSize;
-			_maxRetryCount = maxRetryCount;
-			_readBatchSize = readBatchSize;
-			_eventStreamId = streamName;
-			_subscriptionId = subscriptionId;
-			_groupName = groupName;
-			_checkPointAfter = checkPointAfter;
-			_minCheckPointCount = minCheckPointCount;
-			_maxCheckPointCount = maxCheckPointCount;
-			_maxSubscriberCount = maxSubscriptionCount;
-			_consumerStrategy = consumerStrategy;
-		}
-
-		/// <summary>
 		/// Sets the checkpoint reader for the instance
 		/// </summary>
 		/// <param name="reader"></param>
@@ -85,6 +36,36 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public PersistentSubscriptionParamsBuilder
 			WithCheckpointReader(IPersistentSubscriptionCheckpointReader reader) {
 			_checkpointReader = reader;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the group that the subscription belongs to
+		/// </summary>
+		/// <param name="groupName"></param>
+		/// <returns></returns>
+		public PersistentSubscriptionParamsBuilder SetGroup(string groupName) {
+			_groupName = groupName;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the unique subscription id of the subscription
+		/// </summary>
+		/// <param name="subscriptionId"></param>
+		/// <returns></returns>
+		public PersistentSubscriptionParamsBuilder SetSubscriptionId(string subscriptionId) {
+			_subscriptionId = subscriptionId;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the event source of the subscription
+		/// </summary>
+		/// <param name="eventSource"></param>
+		/// <returns></returns>
+		public PersistentSubscriptionParamsBuilder WithEventSource(IPersistentSubscriptionEventSource eventSource) {
+			_eventSource = eventSource;
 			return this;
 		}
 
@@ -179,24 +160,18 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return this;
 		}
 
-
 		/// <summary>
-		/// Sets that the subscription should start from the beginning of the stream.
+		/// Sets that the subscription should start from a specified location.
 		/// </summary>
 		/// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
-		public PersistentSubscriptionParamsBuilder StartFromBeginning() {
-			_startFrom = 0;
+		public PersistentSubscriptionParamsBuilder StartFrom(IPersistentSubscriptionStreamPosition startFrom) {
+			_startFrom = startFrom;
 			return this;
 		}
 
-		/// <summary>
-		/// Sets that the subscription should start from a specified location of the stream.
-		/// </summary>
-		/// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
-		public PersistentSubscriptionParamsBuilder StartFrom(int position) {
-			_startFrom = position;
-			return this;
-		}
+		public abstract PersistentSubscriptionParamsBuilder StartFromBeginning();
+
+		public abstract PersistentSubscriptionParamsBuilder StartFromCurrent();
 
 		/// <summary>
 		/// Sets the timeout timespan to about 30k years.
@@ -231,6 +206,15 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		/// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
 		public PersistentSubscriptionParamsBuilder MaximumToCheckPoint(int count) {
 			_maxCheckPointCount = count;
+			return this;
+		}
+
+		/// <summary>
+		/// Sets the maximum number of subscribers
+		/// </summary>
+		/// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
+		public PersistentSubscriptionParamsBuilder MaximumSubscribers(int count) {
+			_maxSubscriberCount = count;
 			return this;
 		}
 
@@ -302,15 +286,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		/// <summary>
-		/// Sets that the subscription should start from where the stream is when the subscription is first connected.
-		/// </summary>
-		/// <returns>A new <see cref="PersistentSubscriptionParamsBuilder"></see></returns>
-		public PersistentSubscriptionParamsBuilder StartFromCurrent() {
-			_startFrom = -1;
-			return this;
-		}
-
-		/// <summary>
 		/// Builds a <see cref="PersistentSubscriptionParams"/> object from a <see cref="PersistentSubscriptionParamsBuilder"/>.
 		/// </summary>
 		/// <param name="builder"><see cref="PersistentSubscriptionParamsBuilder"/> from which to build a <see cref="PersistentSubscriptionParamsBuilder"/></param>
@@ -318,7 +293,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public static implicit operator PersistentSubscriptionParams(PersistentSubscriptionParamsBuilder builder) {
 			return new PersistentSubscriptionParams(builder._resolveLinkTos,
 				builder._subscriptionId,
-				builder._eventStreamId,
+				builder._eventSource,
 				builder._groupName,
 				builder._startFrom,
 				builder._recordStatistics,

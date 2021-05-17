@@ -5,7 +5,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class PersistentSubscriptions
+	internal partial class PersistentSubscriptions
 		: EventStore.Client.PersistentSubscriptions.PersistentSubscriptions.PersistentSubscriptionsBase {
 		private readonly IPublisher _publisher;
 		private readonly IAuthorizationProvider _authorizationProvider;

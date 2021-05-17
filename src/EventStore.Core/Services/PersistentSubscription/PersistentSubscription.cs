@@ -19,8 +19,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			get { return _settings.SubscriptionId; }
 		}
 
-		public string EventStreamId {
-			get { return _settings.EventStreamId; }
+		public string EventSource {
+			get { return _settings.EventSource.ToString(); }
 		}
 
 		public string GroupName {
@@ -35,15 +35,19 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private readonly PersistentSubscriptionStats _statistics;
 		private readonly Stopwatch _totalTimeWatch;
 		private readonly OutstandingMessageCache _outstandingMessages;
-		internal StreamBuffer StreamBuffer => _streamBufferSource.Task.Result;
+		public StreamBuffer StreamBuffer => _streamBufferSource.Task.Result;
 		private readonly TaskCompletionSource<StreamBuffer> _streamBufferSource;
 		private PersistentSubscriptionState _state = PersistentSubscriptionState.NotReady;
-		private long _nextEventToPullFrom;
-		private long _lastCheckPoint;
+		private IPersistentSubscriptionStreamPosition _nextEventToPullFrom;
+		private bool _skipFirstEvent;
 		private DateTime _lastCheckPointTime = DateTime.MinValue;
 		private readonly PersistentSubscriptionParams _settings;
-		private long _lastKnownMessage = -1;
+		private long _nextSequenceNumber;
+		private long _lastCheckpointedSequenceNumber;
+		private long _lastKnownSequenceNumber;
+		private IPersistentSubscriptionStreamPosition _lastKnownMessage;
 		private readonly object _lock = new object();
+		private bool _faulted;
 
 		public bool HasClients {
 			get { return _pushClients.Count > 0; }
@@ -71,14 +75,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Ensure.NotNull(persistentSubscriptionParams.CheckpointWriter, "checkpointWriter");
 			Ensure.NotNull(persistentSubscriptionParams.MessageParker, "messageParker");
 			Ensure.NotNull(persistentSubscriptionParams.SubscriptionId, "subscriptionId");
-			Ensure.NotNull(persistentSubscriptionParams.EventStreamId, "eventStreamId");
+			Ensure.NotNull(persistentSubscriptionParams.EventSource, "eventSource");
 			Ensure.NotNull(persistentSubscriptionParams.GroupName, "groupName");
 			if (persistentSubscriptionParams.ReadBatchSize >= persistentSubscriptionParams.BufferSize) {
 				throw new ArgumentOutOfRangeException($"{nameof(persistentSubscriptionParams.ReadBatchSize)} may not be greater than or equal to {nameof(persistentSubscriptionParams.BufferSize)}");
 			}
-			_nextEventToPullFrom = 0;
 			_totalTimeWatch = new Stopwatch();
 			_settings = persistentSubscriptionParams;
+			_nextEventToPullFrom = _settings.EventSource.StreamStartPosition;
 			_totalTimeWatch.Start();
 			_statistics = new PersistentSubscriptionStats(this, _settings, _totalTimeWatch);
 			_outstandingMessages = new OutstandingMessageCache();
@@ -88,30 +92,41 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void InitAsNew() {
 			_state = PersistentSubscriptionState.NotReady;
-			_lastCheckPoint = -1;
-			_lastKnownMessage = -1;
-			_statistics.SetLastKnownEventNumber(-1);
+			_nextSequenceNumber = 0L;
+			_lastCheckpointedSequenceNumber = -1L;
+			_lastKnownSequenceNumber = -1L;
+			_lastKnownMessage = null;
+			_statistics.SetLastKnownEventPosition(null);
 			_settings.CheckpointReader.BeginLoadState(SubscriptionId, OnCheckpointLoaded);
 
 			_pushClients = new PersistentSubscriptionClientCollection(_settings.ConsumerStrategy);
 		}
 
-		private void OnCheckpointLoaded(long? checkpoint) {
+		private void OnCheckpointLoaded(string checkpoint) {
 			lock (_lock) {
 				_state = PersistentSubscriptionState.Behind;
-				if (!checkpoint.HasValue) {
+				if (checkpoint == null) {
 					Log.Debug("Subscription {subscriptionId}: no checkpoint found", _settings.SubscriptionId);
 
 					Log.Debug("Start from = " + _settings.StartFrom);
-					_nextEventToPullFrom = _settings.StartFrom >= 0 ? _settings.StartFrom : 0;
-					_streamBufferSource.SetResult(new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1,
-						_settings.StartFrom >= 0));
+
+					_nextEventToPullFrom = _settings.StartFrom.IsLivePosition ? _settings.EventSource.StreamStartPosition : _settings.StartFrom;
+					_streamBufferSource.SetResult(new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, null,
+					!_settings.StartFrom.IsLivePosition));
 					TryReadingNewBatch();
 				} else {
-					_nextEventToPullFrom = checkpoint.Value + 1;
+					_nextEventToPullFrom = _settings.EventSource.GetStreamPositionFor(checkpoint);
+					_skipFirstEvent = true; //skip the checkpointed event
+
+					//initialize values based on the loaded checkpoint
+					_nextSequenceNumber = 1L;
+					_lastCheckpointedSequenceNumber = 0L;
+					_lastKnownSequenceNumber = 0L;
+					_lastKnownMessage = _settings.EventSource.GetStreamPositionFor(checkpoint);
+
 					Log.Debug("Subscription {subscriptionId}: read checkpoint {checkpoint}", _settings.SubscriptionId,
-						checkpoint.Value);
-					_streamBufferSource.SetResult(new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, -1, true));
+						checkpoint);
+					_streamBufferSource.SetResult(new StreamBuffer(_settings.BufferSize, _settings.LiveBufferSize, _nextEventToPullFrom, true));
 					_settings.MessageParker.BeginLoadStats(TryReadingNewBatch);
 				}
 			}
@@ -129,9 +144,22 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				if (!StreamBuffer.CanAccept(_settings.ReadBatchSize))
 					return;
 				_state |= PersistentSubscriptionState.OutstandingPageRequest;
-				_settings.StreamReader.BeginReadEvents(_settings.EventStreamId, _nextEventToPullFrom,
-					Math.Max(_settings.ReadBatchSize, 10), _settings.ReadBatchSize, _settings.ResolveLinkTos,
-					HandleReadCompleted);
+				_settings.StreamReader.BeginReadEvents(_settings.EventSource, _nextEventToPullFrom,
+					Math.Max(_settings.ReadBatchSize, 10), _settings.ReadBatchSize, _settings.ResolveLinkTos, _skipFirstEvent,
+					HandleReadCompleted, HandleReadError);
+				_skipFirstEvent = false;
+			}
+		}
+
+		private void HandleReadError(string error) {
+			lock (_lock) {
+				_faulted = true;
+				Log.Error("A non-recoverable error has occurred in persistent subscription {subscriptionId} : {error}. Dropping all connected clients.",
+					_settings.SubscriptionId, error);
+				var clients = _pushClients.GetAll().ToArray();
+				foreach (var client in clients) {
+					_pushClients.RemoveClientByCorrelationId(client.CorrelationId, true);
+				}
 			}
 		}
 
@@ -148,7 +176,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_state &= ~PersistentSubscriptionState.Live;
 		}
 
-		public void HandleReadCompleted(ResolvedEvent[] events, long newposition, bool isEndOfStream) {
+		public void HandleReadCompleted(ResolvedEvent[] events, IPersistentSubscriptionStreamPosition newPosition, bool isEndOfStream) {
 			lock (_lock) {
 				if ((_state & PersistentSubscriptionState.OutstandingPageRequest) == 0)
 					return;
@@ -156,11 +184,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				if (StreamBuffer.Live)
 					return;
 				foreach (var ev in events) {
-					StreamBuffer.AddReadMessage(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
+					StreamBuffer.AddReadMessage(OutstandingMessage.ForNewEvent(ev, _settings.EventSource.GetStreamPositionFor(ev)));
 				}
 
 				if (events.Length > 0) {
-					_statistics.SetLastKnownEventNumber(events[events.Length - 1].OriginalEventNumber);
+					_statistics.SetLastKnownEventPosition(_settings.EventSource.GetStreamPositionFor(events[^1]));
 				}
 
 				if (StreamBuffer.Live) {
@@ -174,7 +202,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					}
 				}
 
-				_nextEventToPullFrom = newposition;
+				_nextEventToPullFrom = newPosition;
 				TryReadingNewBatch();
 				TryPushingMessagesToClients();
 			}
@@ -186,14 +214,23 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					return;
 
 				foreach (StreamBuffer.OutstandingMessagePointer messagePointer in StreamBuffer.Scan()) {
-					OutstandingMessage message = messagePointer.Message;
+					//optimistically assume that the message will be pushed
+					//if it is, then we will increment the next sequence number if a new one was assigned
+					//if it is not, then we will not increment the next sequence number
+					(OutstandingMessage message, bool newSequenceNumberAssigned) =
+						OutstandingMessage.ForPushedEvent(messagePointer.Message, _nextSequenceNumber, _lastKnownMessage);
 					ConsumerPushResult result =
-						_pushClients.PushMessageToClient(message.ResolvedEvent, message.RetryCount);
+						_pushClients.PushMessageToClient(message);
 					if (result == ConsumerPushResult.Sent) {
 						messagePointer.MarkSent();
+
+						if (newSequenceNumberAssigned) {
+							//the message was pushed and a new sequence number was assigned
+							//so we increment the next sequence number
+							_nextSequenceNumber++;
+						}
+
 						MarkBeginProcessing(message);
-						if (!message.IsReplayedEvent)
-							_lastKnownMessage = Math.Max(_lastKnownMessage, message.ResolvedEvent.OriginalEventNumber);
 					} else if (result == ConsumerPushResult.Skipped) {
 						// The consumer strategy skipped the message so leave it in the buffer and continue.
 					} else if (result == ConsumerPushResult.NoMoreCapacity) {
@@ -205,18 +242,19 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void NotifyLiveSubscriptionMessage(ResolvedEvent resolvedEvent) {
 			lock (_lock) {
-				if (resolvedEvent.OriginalEvent.EventNumber < _settings.StartFrom)
+				if (_settings.EventSource.GetStreamPositionFor(resolvedEvent).CompareTo(_settings.StartFrom) < 0) {
 					return;
+				}
+
 				if (_state == PersistentSubscriptionState.NotReady)
 					return;
-				_statistics.SetLastKnownEventNumber(resolvedEvent.OriginalEventNumber);
+				_statistics.SetLastKnownEventPosition(_settings.EventSource.GetStreamPositionFor(resolvedEvent));
 				var waslive = StreamBuffer.Live; //hacky
-				StreamBuffer.AddLiveMessage(new OutstandingMessage(resolvedEvent.OriginalEvent.EventId, null,
-					resolvedEvent, 0));
+				StreamBuffer.AddLiveMessage(OutstandingMessage.ForNewEvent(resolvedEvent, _settings.EventSource.GetStreamPositionFor(resolvedEvent)));
 				if (!StreamBuffer.Live) {
 					SetBehind();
 					if (waslive)
-						_nextEventToPullFrom = resolvedEvent.OriginalEventNumber;
+						_nextEventToPullFrom = _settings.EventSource.GetStreamPositionFor(resolvedEvent);
 				}
 
 				TryPushingMessagesToClients();
@@ -227,9 +265,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			lock (_lock) {
 				foreach (var messagePointer in StreamBuffer.Scan().Take(count)) {
 					messagePointer.MarkSent();
-					MarkBeginProcessing(messagePointer.Message);
-					if (!messagePointer.Message.IsReplayedEvent)
-						_lastKnownMessage = Math.Max(_lastKnownMessage, messagePointer.Message.ResolvedEvent.OriginalEventNumber);
+					(OutstandingMessage message, bool newSequenceNumberAssigned) =
+						OutstandingMessage.ForPushedEvent(messagePointer.Message, _nextSequenceNumber, _lastKnownMessage);
+					if (newSequenceNumberAssigned) {
+						_nextSequenceNumber++;
+					}
+					MarkBeginProcessing(message); //sequence number will be incremented in this call if a new one has been assigned
 					yield return (messagePointer.Message.ResolvedEvent, messagePointer.Message.RetryCount);
 				}
 			}
@@ -237,6 +278,11 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private void MarkBeginProcessing(OutstandingMessage message) {
 			_statistics.IncrementProcessed();
+			if (message.EventSequenceNumber > _lastKnownSequenceNumber) {
+				_lastKnownSequenceNumber = message.EventSequenceNumber.Value;
+				_lastKnownMessage = _settings.EventSource.GetStreamPositionFor(message.ResolvedEvent);
+			}
+
 			StartMessage(message,
 				_settings.MessageTimeout == TimeSpan.MaxValue
 					? DateTime.MaxValue
@@ -249,6 +295,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				var client = new PersistentSubscriptionClient(correlationId, connectionId, connectionName, envelope, maxInFlight, user,
 					@from, _totalTimeWatch, _settings.ExtraStatistics);
 				_pushClients.AddClient(client);
+
+				if (_faulted) {
+					Log.Error("Dropping client: {clientId} from persistent subscription {subscriptionId} since the subscription has faulted.",
+						client.CorrelationId, _settings.SubscriptionId);
+					_pushClients.RemoveClientByCorrelationId(client.CorrelationId, true);
+					return;
+				}
+
 				TryPushingMessagesToClients();
 			}
 		}
@@ -266,7 +320,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				foreach (var m in lostMessages) {
 					if (ActionTakenForRetriedMessage(m))
 						return;
-					RetryMessage(m.ResolvedEvent, m.RetryCount);
+					RetryMessage(m);
 				}
 
 				TryPushingMessagesToClients();
@@ -278,7 +332,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				var lostMessages = _pushClients.RemoveClientByCorrelationId(correlationId, sendDropNotification)
 					.OrderBy(v => v.ResolvedEvent.OriginalEventNumber);
 				foreach (var m in lostMessages) {
-					RetryMessage(m.ResolvedEvent, m.RetryCount);
+					RetryMessage(m);
 				}
 
 				TryPushingMessagesToClients();
@@ -287,18 +341,47 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void TryMarkCheckpoint(bool isTimeCheck) {
 			lock (_lock) {
-				var lowest = _outstandingMessages.GetLowestPosition() - 1;
-				// Subtract 1 from retry and outstanding as those messages have not been processed yet.
-				var lowestBufferedRetry = StreamBuffer.GetLowestRetry() - 1;
-				lowest = Math.Min(lowest, lowestBufferedRetry);
-				if (lowest == long.MaxValue - 1)
-					lowest = _lastKnownMessage;
-				if (lowest == -1)
+				OutstandingMessage? lowestMessage;
+				long lowestSequenceNumber;
+
+				(lowestMessage, lowestSequenceNumber)  = _outstandingMessages.GetLowestPosition();
+				var (lowestRetryMessage, lowestRetrySequenceNumber) = StreamBuffer.GetLowestRetry();
+
+				if (lowestRetrySequenceNumber < lowestSequenceNumber) {
+					lowestSequenceNumber = lowestRetrySequenceNumber;
+					lowestMessage = lowestRetryMessage;
+				}
+
+				IPersistentSubscriptionStreamPosition lowestPosition;
+
+				if (lowestSequenceNumber != long.MaxValue) {
+					Debug.Assert(lowestMessage.HasValue);
+					// Subtract one from retry and outstanding as those messages have not been acknowledged yet.
+					lowestSequenceNumber--;
+					lowestPosition = lowestMessage.Value.PreviousEventPosition;
+
+					if (lowestPosition == null) {
+						Debug.Assert(lowestSequenceNumber == -1L);
+						//first message has been pushed but not yet acknowledged and we didn't have any previous checkpoint
+						//so we have nothing to checkpoint yet
+						return;
+					}
+					Debug.Assert(lowestPosition != null && lowestSequenceNumber >= 0L);
+				} else {
+					//no outstanding/retry messages. in this case we can say that the last known
+					//event would be our checkpoint place (we have already completed it)
+					lowestSequenceNumber = _lastKnownSequenceNumber;
+					lowestPosition = _lastKnownMessage;
+					Debug.Assert((lowestPosition != null && lowestSequenceNumber >= 0L) ||
+					             (lowestPosition == null && lowestSequenceNumber == -1L));
+				}
+
+				if (lowestSequenceNumber == -1) //we have not even pushed any message yet
 					return;
 
-				//no outstanding messages. in this case we can say that the last known
-				//event would be our checkpoint place (we have already completed it)
-				var difference = lowest - _lastCheckPoint;
+				Debug.Assert(lowestPosition != null);
+
+				var difference = lowestSequenceNumber - _lastCheckpointedSequenceNumber;
 				var now = DateTime.UtcNow;
 				var timedifference = now - _lastCheckPointTime;
 				if (timedifference < _settings.CheckPointAfter && difference < _settings.MaxCheckPointCount)
@@ -306,19 +389,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				if ((difference >= _settings.MinCheckPointCount && isTimeCheck) ||
 					difference >= _settings.MaxCheckPointCount) {
 					_lastCheckPointTime = now;
-					_lastCheckPoint = lowest;
-					_settings.CheckpointWriter.BeginWriteState(lowest);
-					_statistics.SetLastCheckPoint(lowest);
+					_lastCheckpointedSequenceNumber = lowestSequenceNumber;
+					_settings.CheckpointWriter.BeginWriteState(lowestPosition);
+					_statistics.SetLastCheckPoint(lowestPosition);
 				}
-			}
-		}
-
-		public void AddMessageAsProcessing(ResolvedEvent ev, PersistentSubscriptionClient client) {
-			lock (_lock) {
-				StartMessage(new OutstandingMessage(ev.OriginalEvent.EventId, client, ev, 0),
-					_settings.MessageTimeout == TimeSpan.MaxValue
-						? DateTime.MaxValue
-						: DateTime.UtcNow + _settings.MessageTimeout);
 			}
 		}
 
@@ -348,20 +422,20 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		private void HandleNackedMessage(NakAction action, Guid id, string reason) {
-			OutstandingMessage e;
+			OutstandingMessage m;
 			switch (action) {
 				case NakAction.Retry:
 				case NakAction.Unknown:
-					if (_outstandingMessages.GetMessageById(id, out e)) {
-						if (!ActionTakenForRetriedMessage(e)) {
-							RetryMessage(e.ResolvedEvent, e.RetryCount);
+					if (_outstandingMessages.GetMessageById(id, out m)) {
+						if (!ActionTakenForRetriedMessage(m)) {
+							RetryMessage(m);
 						}
 					}
 
 					break;
 				case NakAction.Park:
-					if (_outstandingMessages.GetMessageById(id, out e)) {
-						ParkMessage(e.ResolvedEvent, "Client explicitly NAK'ed message.\n" + reason, 0);
+					if (_outstandingMessages.GetMessageById(id, out m)) {
+						ParkMessage(m.ResolvedEvent, "Client explicitly NAK'ed message.\n" + reason, 0);
 					}
 
 					break;
@@ -415,7 +489,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					}
 
 					var stopRead = stopAt.HasValue ? Math.Min(stopAt.Value, end.Value + 1) : end.Value + 1;
-					TryReadingParkedMessagesFrom(0, stopRead);
+					TryReadingParkedMessagesFrom(0,stopRead);
 				});
 			}
 		}
@@ -427,12 +501,21 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Ensure.Positive(stopAt - position, "count");
 
 			var count = (int)Math.Min(stopAt - position, _settings.ReadBatchSize);
-			_settings.StreamReader.BeginReadEvents(_settings.ParkedMessageStream, position, count,
-				_settings.ReadBatchSize, true,
-				(events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt));
+			_settings.StreamReader.BeginReadEvents(
+				new PersistentSubscriptionSingleStreamEventSource(_settings.ParkedMessageStream),
+				new PersistentSubscriptionSingleStreamPosition(position),
+				count,
+				_settings.ReadBatchSize, true, false,
+				(events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt),
+				HandleParkedReadError);
 		}
 
-		public void HandleParkedReadCompleted(ResolvedEvent[] events, long newposition, bool isEndofStream, long stopAt) {
+		private void HandleParkedReadError(string error) {
+			Log.Error("Error reading parked messages from: {parkedStream} for persistent subscription {subscriptionId} : {error}",
+			_settings.ParkedMessageStream, _settings.SubscriptionId, error);
+		}
+
+		public void HandleParkedReadCompleted(ResolvedEvent[] events, IPersistentSubscriptionStreamPosition newPosition, bool isEndofStream, long stopAt) {
 			lock (_lock) {
 				if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) == 0)
 					return;
@@ -442,20 +525,23 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						break;
 					}
 
-					Log.Debug("Retrying event {eventId} {stream}/{eventNumber} on subscription {subscriptionId}",
+					Log.Debug("Replaying parked message: {eventId} {stream}/{eventNumber} on subscription {subscriptionId}",
 						ev.OriginalEvent.EventId, ev.OriginalStreamId, ev.OriginalEventNumber,
 						_settings.SubscriptionId);
-					StreamBuffer.AddRetry(new OutstandingMessage(ev.OriginalEvent.EventId, null, ev, 0));
+					StreamBuffer.AddRetry(OutstandingMessage.ForParkedEvent(ev));
 				}
 
 				TryPushingMessagesToClients();
 
-				if (isEndofStream || stopAt <= newposition) {
-					var replayedEnd = newposition == -1 ? stopAt : Math.Min(stopAt, newposition);
+				var newStreamPosition = newPosition as PersistentSubscriptionSingleStreamPosition;
+				Ensure.NotNull(newStreamPosition, "newStreamPosition");
+
+				if (isEndofStream || stopAt <= newStreamPosition.StreamEventNumber) {
+					var replayedEnd = newStreamPosition.StreamEventNumber == -1 ? stopAt : Math.Min(stopAt, newStreamPosition.StreamEventNumber);
 					_settings.MessageParker.BeginMarkParkedMessagesReprocessed(replayedEnd);
 					_state ^= PersistentSubscriptionState.ReplayingParkedMessages;
 				} else {
-					TryReadingParkedMessagesFrom(newposition, stopAt);
+					TryReadingParkedMessagesFrom(newStreamPosition.StreamEventNumber, stopAt);
 				}
 			}
 		}
@@ -464,9 +550,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			var result = _outstandingMessages.StartMessage(message, expires);
 
 			if (result == StartMessageResult.SkippedDuplicate) {
-				Log.Warning("Skipping message {stream}/{eventNumber} with duplicate eventId {eventId}",
+				Log.Warning("Skipping message {stream}/{eventNumber} (stream position={streamPosition}) with duplicate eventId {eventId}",
 					message.ResolvedEvent.OriginalStreamId,
 					message.ResolvedEvent.OriginalEventNumber,
+					_settings.EventSource.GetStreamPositionFor(message.ResolvedEvent).ToString(),
 					message.EventId);
 			}
 		}
@@ -493,7 +580,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 				foreach (var message in _outstandingMessages.GetMessagesExpiringBefore(time)) {
 					if (!ActionTakenForRetriedMessage(message)) {
-						RetryMessage(message.ResolvedEvent, message.RetryCount);
+						RetryMessage(message);
 					}
 				}
 
@@ -513,20 +600,30 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return true;
 		}
 
-		private void RetryMessage(ResolvedEvent @event, int count) {
-			Log.Debug("Retrying message {subscriptionId} {stream}/{eventNumber}", SubscriptionId,
-				@event.OriginalStreamId, @event.OriginalEventNumber);
+		private void RetryMessage(OutstandingMessage message) {
+			var @event = message.ResolvedEvent;
+			if (!message.IsReplayedEvent) {
+				Log.Debug("Retrying message {subscriptionId} {stream}/{eventNumber} (stream position={streamPosition})",
+					SubscriptionId,
+					@event.OriginalStreamId, @event.OriginalEventNumber,
+					_settings.EventSource.GetStreamPositionFor(message.ResolvedEvent).ToString());
+			} else {
+				Log.Debug("Retrying parked message: {eventId} {stream}/{eventNumber} on subscription {subscriptionId}",
+					@event.OriginalEvent.EventId, @event.OriginalStreamId, @event.OriginalEventNumber,
+					_settings.SubscriptionId);
+			}
+
 			_outstandingMessages.Remove(@event.OriginalEvent.EventId);
 			_pushClients.RemoveProcessingMessages(@event.OriginalEvent.EventId);
-			StreamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, count + 1));
+			StreamBuffer.AddRetry(OutstandingMessage.ForRetriedEvent(message));
 		}
 
-		public MonitoringMessage.SubscriptionInfo GetStatistics() {
+		public MonitoringMessage.PersistentSubscriptionInfo GetStatistics() {
 			return _statistics.GetStatistics();
 		}
 
-		public void RetrySingleMessage(ResolvedEvent @event) {
-			StreamBuffer.AddRetry(new OutstandingMessage(@event.OriginalEvent.EventId, null, @event, 0));
+		public void RetrySingleParkedMessage(ResolvedEvent @event) {
+			StreamBuffer.AddRetry(OutstandingMessage.ForParkedEvent(@event));
 		}
 
 		public void Delete() {

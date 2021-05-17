@@ -65,6 +65,25 @@ namespace EventStore.Core {
 	public abstract class ClusterVNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
 
+		public static ClusterVNode<TStreamId> Create<TStreamId>(
+			ClusterVNodeOptions options,
+			LogFormatAbstractor<TStreamId> logFormat,
+			AuthenticationProviderFactory authenticationProviderFactory = null,
+			AuthorizationProviderFactory authorizationProviderFactory = null,
+			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> factories = null,
+			Guid? instanceId = null,
+			int debugIndex = 0) {
+
+			return new ClusterVNode<TStreamId>(
+				options,
+				logFormat,
+				authenticationProviderFactory,
+				authorizationProviderFactory,
+				factories,
+				instanceId,
+				debugIndex);
+		}
+
 		abstract public TFChunkDb Db { get; }
 		abstract public GossipAdvertiseInfo GossipAdvertiseInfo { get; }
 		abstract public IQueuedHandler MainQueue { get; }
@@ -570,8 +589,7 @@ namespace EventStore.Core {
 				readerPool,
 				tableIndex,
 				logFormat.StreamIds,
-				logFormat.StreamNamesFactory,
-				logFormat.SystemStreams,
+				logFormat.StreamNamesProvider,
 				logFormat.EmptyStreamId,
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,
@@ -990,16 +1008,21 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
 			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 			_mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
+			_mainBus.Subscribe<ClientMessage.ReadAllEventsForwardCompleted>(ioDispatcher.AllForwardReader);
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
 			_mainBus.Subscribe(ioDispatcher);
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscription, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UpdatePersistentSubscription, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscription, Message>());
-			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscription, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToStream, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UpdatePersistentSubscriptionToStream, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscriptionToStream, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToAll, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UpdatePersistentSubscriptionToAll, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.DeletePersistentSubscriptionToAll, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscriptionToStream, Message>());
+			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ConnectToPersistentSubscriptionToAll, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.UnsubscribeFromStream, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionAckEvents, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.PersistentSubscriptionNackEvents, Message>());
@@ -1025,14 +1048,18 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.StateChangeMessage>(persistentSubscription);
 			perSubscrBus.Subscribe<TcpMessage.ConnectionClosed>(persistentSubscription);
-			perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscription>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToStream>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.ConnectToPersistentSubscriptionToAll>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.UnsubscribeFromStream>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionAckEvents>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.PersistentSubscriptionNackEvents>(persistentSubscription);
 			perSubscrBus.Subscribe<StorageMessage.EventCommitted>(persistentSubscription);
-			perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscription>(persistentSubscription);
-			perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscription>(persistentSubscription);
-			perSubscrBus.Subscribe<ClientMessage.UpdatePersistentSubscription>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscriptionToStream>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.UpdatePersistentSubscriptionToStream>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscriptionToStream>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.CreatePersistentSubscriptionToAll>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.UpdatePersistentSubscriptionToAll>(persistentSubscription);
+			perSubscrBus.Subscribe<ClientMessage.DeletePersistentSubscriptionToAll>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.ReplayParkedMessages>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.ReplayParkedMessage>(persistentSubscription);
 			perSubscrBus.Subscribe<ClientMessage.ReadNextNPersistentMessages>(persistentSubscription);

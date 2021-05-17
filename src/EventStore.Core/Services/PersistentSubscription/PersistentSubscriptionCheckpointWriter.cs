@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_version = version;
 		}
 
-		public void BeginWriteState(long state) {
+		public void BeginWriteState(IPersistentSubscriptionStreamPosition state) {
 			if (_outstandingWrite) {
 				return;
 			}
@@ -40,14 +40,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				x => completed(this));
 		}
 
-		private void PublishCheckpoint(long state) {
+		private void PublishCheckpoint(IPersistentSubscriptionStreamPosition state) {
 			_outstandingWrite = true;
-			var evnt = new Event(Guid.NewGuid(), "SubscriptionCheckpoint", true, state.ToJson(), null);
+			var evnt = new Event(Guid.NewGuid(), "SubscriptionCheckpoint", true, state.ToString().ToJson(), null);
 			_ioDispatcher.WriteEvent(_subscriptionStateStream, _version, evnt, SystemAccounts.System,
 				WriteStateCompleted);
 		}
 
-		private void PublishMetadata(long state) {
+		private void PublishMetadata(IPersistentSubscriptionStreamPosition state) {
 			_outstandingWrite = true;
 			var metaStreamId = SystemStreams.MetastreamOf(_subscriptionStateStream);
 			_ioDispatcher.WriteEvent(

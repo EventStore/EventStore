@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using EventStore.Common.Utils;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	public enum SystemRecordType : byte {

@@ -126,7 +126,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				eventNumber);
 			Assert.IsTrue(Writer.Write(commit, out pos));
 
-			var streamName = logFormat.StreamNamesFactory.Create().LookupName(prepare.EventStreamId);
+			var streamName = logFormat.StreamNames.LookupName(prepare.EventStreamId);
 			var eventRecord = new EventRecord(eventNumber, prepare, streamName);
 			return eventRecord;
 		}

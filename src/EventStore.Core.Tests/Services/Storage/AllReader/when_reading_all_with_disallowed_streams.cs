@@ -1,0 +1,163 @@
+﻿using System;
+using System.Linq;
+using NUnit.Framework;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Util;
+using static EventStore.Core.Messages.TcpClientMessageDto.Filter;
+
+namespace EventStore.Core.Tests.Services.Storage.AllReader {
+	[TestFixture("$persistentsubscription-$all::group-checkpoint")]
+	[TestFixture("$persistentsubscription-$all::group-parked")]
+	public class when_reading_all_with_disallowed_streams : ReadIndexTestScenario {
+		TFPos _forwardReadPos;
+		TFPos _backwardReadPos;
+		private string _disallowedStream;
+		private string _allowedStream1 = "ES1";
+		private string _allowedStream2 = "$persistentsubscription-$all::group-somethingallowed";
+
+		public when_reading_all_with_disallowed_streams(string disallowedStream) {
+			_disallowedStream = disallowedStream;
+		}
+
+		protected override void WriteTestScenario() {
+			var firstEvent = WriteSingleEvent(_allowedStream1, 1, new string('.', 3000), eventId: Guid.NewGuid(),
+				eventType: "event-type-1", retryOnFail: true);
+			WriteSingleEvent(_disallowedStream, 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-2",
+				retryOnFail: true); //disallowed
+			WriteSingleEvent(_allowedStream2, 1, new string('.', 3000), eventId: Guid.NewGuid(), eventType: "event-type-3",
+				retryOnFail: true); //allowed
+
+			_forwardReadPos = new TFPos(firstEvent.LogPosition, firstEvent.LogPosition);
+			_backwardReadPos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_forward() {
+			var result = ReadIndex.ReadAllEventsForward(_forwardReadPos, 10);
+			Assert.AreEqual(2, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_event_type_prefix() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.EventType,
+				FilterType.Prefix, new[] {"event-type"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(2, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_event_type_regex() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.EventType,
+				FilterType.Regex, new[] {@"^.*event-type.*$"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(2, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_stream_id_prefix() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.StreamId,
+				FilterType.Prefix, new[] {"$persistentsubscripti"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(1, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_stream_id_regex() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.StreamId,
+				FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(1, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_backward() {
+			var result = ReadIndex.ReadAllEventsBackward(_backwardReadPos, 10);
+			Assert.AreEqual(2, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_event_type_prefix() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.EventType,
+				FilterType.Prefix, new[] {"event-type"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(2, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_event_type_regex() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.EventType,
+				FilterType.Regex, new[] {@"^.*event-type.*$"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(2, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_stream_id_prefix() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.StreamId,
+				FilterType.Prefix, new[] {"$persistentsubscripti"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(1, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+		[Test]
+		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_stream_id_regex() {
+			var filter = new TcpClientMessageDto.Filter(
+				FilterContext.StreamId,
+				FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
+			var eventFilter = EventFilter.Get(true, filter);
+
+			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
+			Assert.AreEqual(1, result.Records.Count);
+			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+		}
+
+	}
+}

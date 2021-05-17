@@ -79,16 +79,13 @@ namespace EventStore.Core.Tests.Integration {
 							}
 						}, true)
 					});
-
-				var callInvoker = channel.CreateCallInvoker();
-				using var call = callInvoker.AsyncClientStreamingCall(
-					new Method<AppendReq, AppendResp>(MethodType.ClientStreaming, "event_store.client.streams.Streams",
-						"Append", Marshallers.Create(MessageExtensions.ToByteArray, AppendReq.Parser.ParseFrom),
-						Marshallers.Create(MessageExtensions.ToByteArray, AppendResp.Parser.ParseFrom)), default,
-					new CallOptions(credentials: CallCredentials.FromInterceptor((credentials, metadata) => {
+				var streamClient = new Streams.StreamsClient(channel);
+				var call = streamClient.Append(new CallOptions(credentials: CallCredentials.FromInterceptor(
+					(_, metadata) => {
 						metadata.Add("authorization", AuthorizationHeaderValue);
 						return Task.CompletedTask;
 					})));
+				
 
 				await call.RequestStream.WriteAsync(new AppendReq {
 					Options = new AppendReq.Types.Options {

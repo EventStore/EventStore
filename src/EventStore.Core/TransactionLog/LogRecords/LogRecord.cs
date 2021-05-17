@@ -4,19 +4,9 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
-	public enum LogRecordType {
-		Prepare = 0,
-		Commit = 1,
-		System = 2,
-	}
-
-	public class LogRecordVersion {
-		public const byte LogRecordV0 = 0;
-		public const byte LogRecordV1 = 1;
-	}
-
 	public abstract class LogRecord : ILogRecord {
 		public static readonly ReadOnlyMemory<byte> NoData = Empty.ByteArray;
 
@@ -32,20 +22,26 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			return logicalPosition - length - 2 * sizeof(int);
 		}
 
-		public static LogRecord ReadFrom(BinaryReader reader) {
+		public static ILogRecord ReadFrom(BinaryReader reader) {
 			var recordType = (LogRecordType)reader.ReadByte();
 			var version = reader.ReadByte();
-			var logPosition = reader.ReadInt64();
 
-			Ensure.Nonnegative(logPosition, "logPosition");
+			static long ReadPosition(BinaryReader reader) {
+				var logPosition = reader.ReadInt64();
+				Ensure.Nonnegative(logPosition, "logPosition");
+				return logPosition;
+			}
 
 			switch (recordType) {
 				case LogRecordType.Prepare:
-					return new PrepareLogRecord(reader, version, logPosition);
+					return new PrepareLogRecord(reader, version, ReadPosition(reader));
 				case LogRecordType.Commit:
-					return new CommitLogRecord(reader, version, logPosition);
+					return new CommitLogRecord(reader, version, ReadPosition(reader));
 				case LogRecordType.System:
-					return new SystemLogRecord(reader, version, logPosition);
+					if (version > SystemLogRecord.SystemRecordVersion)
+						return LogV3Reader.ReadEpoch(recordType, version, reader);
+
+					return new SystemLogRecord(reader, version, ReadPosition(reader));
 				default:
 					throw new ArgumentOutOfRangeException("recordType");
 			}
@@ -129,7 +125,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			}
 		}
 
-		internal void WriteWithLengthPrefixAndSuffixTo(BinaryWriter writer) {
+		public void WriteWithLengthPrefixAndSuffixTo(BinaryWriter writer) {
 			using (var memoryStream = new MemoryStream()) {
 				WriteTo(new BinaryWriter(memoryStream));
 				var length = (int)memoryStream.Length;

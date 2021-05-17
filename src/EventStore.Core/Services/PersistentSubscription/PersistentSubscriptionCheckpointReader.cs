@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Linq;
 using EventStore.Common.Utils;
@@ -13,7 +14,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_ioDispatcher = ioDispatcher;
 		}
 
-		public void BeginLoadState(string subscriptionId, Action<long?> onStateLoaded) {
+		public void BeginLoadState(string subscriptionId, Action<string?> onStateLoaded) {
 			var subscriptionStateStream = "$persistentsubscription-" + subscriptionId + "-checkpoint";
 			_ioDispatcher.ReadBackward(subscriptionStateStream, -1, 1, false, SystemAccounts.System,
 				new ResponseHandler(onStateLoaded).LoadStateCompleted,
@@ -21,9 +22,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		private class ResponseHandler {
-			private readonly Action<long?> _onStateLoaded;
+			private readonly Action<string?> _onStateLoaded;
 
-			public ResponseHandler(Action<long?> onStateLoaded) {
+			public ResponseHandler(Action<string?> onStateLoaded) {
 				_onStateLoaded = onStateLoaded;
 			}
 
@@ -32,7 +33,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					var checkpoint = msg.Events.Where(v => v.Event.EventType == "SubscriptionCheckpoint")
 						.Select(x => x.Event).FirstOrDefault();
 					if (checkpoint != null) {
-						long lastEvent = checkpoint.Data.ParseJson<long>();
+						string lastEvent = checkpoint.Data.ParseJson<string>();
 						_onStateLoaded(lastEvent);
 						return;
 					}

@@ -4,7 +4,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class Streams<TStreamId> : EventStore.Client.Streams.Streams.StreamsBase {
+	internal partial class Streams<TStreamId> : EventStore.Client.Streams.Streams.StreamsBase {
 		private readonly IPublisher _publisher;
 		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly int _maxAppendSize;

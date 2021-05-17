@@ -37,7 +37,7 @@ namespace EventStore.ClusterNode {
 			if (options == null) throw new ArgumentNullException(nameof(options));
 			_options = options.Projections.RunProjections >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(options.Projections.ProjectionThreads,
-					options.Projections.RunProjections, false,
+					options.Projections.RunProjections, options.Application.StartStandardProjections,
 					TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
 					options.Projections.FaultOutOfOrderProjections))
 				: options;
@@ -68,8 +68,9 @@ namespace EventStore.ClusterNode {
 
 			var plugInContainer = FindPlugins();
 
+			//var logFormat = LogFormatAbstractor.V3;
 			var logFormat = LogFormatAbstractor.V2;
-			Node = new ClusterVNode<string>(_options, logFormat, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
+			Node = ClusterVNode.Create(_options, logFormat, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
 				GetPersistentSubscriptionConsumerStrategyFactories());
 
 			var runProjections = _options.Projections.RunProjections;

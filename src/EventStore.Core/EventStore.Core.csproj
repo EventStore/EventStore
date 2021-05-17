@@ -15,8 +15,8 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="EventStore.Plugins" Version="21.2.0" />
-		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.34.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.34.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
@@ -35,29 +35,33 @@
 		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
 		<ProjectReference Include="..\EventStore.Common.Utils\EventStore.Common.Utils.csproj" />
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.LogV3\EventStore.LogV3.csproj" />
 		<ProjectReference Include="..\EventStore.Native\EventStore.Native.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 		<ProjectReference Include="..\EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-		<Protobuf Include="../Protos/Grpc/*.proto" Exclude="../Protos/Grpc/projections.proto;../Protos/Grpc/cluster.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
-	</ItemGroup>
-	<ItemGroup>
-		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" />
-	</ItemGroup>
-	<ItemGroup>
-		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-			<_Parameter1>EventStore.Core.Tests</_Parameter1>
-		</AssemblyAttribute>
-		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-			<_Parameter1>EventStore.ClientAPI.Tests</_Parameter1>
-		</AssemblyAttribute>
-		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-			<_Parameter1>EventStore.ClientAPI.Embedded.Tests</_Parameter1>
-		</AssemblyAttribute>
-		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-			<_Parameter1>EventStore.ClientAPI.v5.Tests</_Parameter1>
-		</AssemblyAttribute>
+		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
+			<Link>Services\Transport\Grpc\Protos\cluster.proto</Link>
+		</Protobuf>
+		<Protobuf Include="..\Protos\Grpc\gossip.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+	    <Link>Services\Transport\Grpc\Protos\gossip.proto</Link>
+	  </Protobuf>
+	  <Protobuf Include="..\Protos\Grpc\operations.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+	    <Link>Services\Transport\Grpc\Protos\operations.proto</Link>
+	  </Protobuf>
+	  <Protobuf Include="..\Protos\Grpc\persistent.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+	    <Link>Services\Transport\Grpc\Protos\persistent.proto</Link>
+	  </Protobuf>
+	  <Protobuf Include="..\Protos\Grpc\shared.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
+	    <Link>Services\Transport\Grpc\Protos\shared.proto</Link>
+	  </Protobuf>
+	  <Protobuf Include="..\Protos\Grpc\streams.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+	    <Link>Services\Transport\Grpc\Protos\streams.proto</Link>
+	  </Protobuf>
+	  <Protobuf Include="..\Protos\Grpc\users.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+	    <Link>Services\Transport\Grpc\Protos\users.proto</Link>
+	  </Protobuf>
 	</ItemGroup>
 </Project>

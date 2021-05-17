@@ -160,16 +160,22 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			if (@event == null || data == null || string.IsNullOrEmpty(data)) {
 				newStates = _query.Push(
-				                        "",
-				                        new string[] { });
+					"",
+					new string[] { });
 			} else {
 				newStates = _query.Push(
-				                        data,
-				                        new[] {
-					                              @event.IsJson ? "1" : "", @event.EventStreamId, @event.EventType, category ?? "",
-					                              @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
-					                              @event.PositionMetadata ?? "", partition, ""
-				                              });
+					data,
+					new[] {
+						@event.IsJson ? "1" : "", 
+						@event.EventStreamId, 
+						@event.EventType, 
+						category ?? "",
+						@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), 
+						@event.Metadata ?? "",
+						@event.PositionMetadata ?? "", 
+						partition,
+						@event.EventId.ToString()
+					});
 			}
 
 			newState = newStates.Item1;

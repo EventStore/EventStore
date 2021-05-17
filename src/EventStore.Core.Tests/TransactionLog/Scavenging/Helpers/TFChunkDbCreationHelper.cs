@@ -6,6 +6,7 @@ using EventStore.Core.LogV2;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 	public class TFChunkDbCreationHelper {

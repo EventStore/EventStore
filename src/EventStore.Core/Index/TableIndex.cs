@@ -16,6 +16,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.Index {
 	public abstract class TableIndex {
@@ -382,7 +383,7 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		internal void WaitForBackgroundTasks() {
+		public void WaitForBackgroundTasks() {
 			if (!_backgroundRunningEvent.Wait(7000)) {
 				throw new TimeoutException("Waiting for background tasks took too long.");
 			}

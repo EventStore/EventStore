@@ -10,6 +10,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {

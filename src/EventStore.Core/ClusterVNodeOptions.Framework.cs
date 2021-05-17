@@ -20,6 +20,7 @@ namespace EventStore.Core {
 		static ClusterVNodeOptions() {
 			OptionSections = typeof(ClusterVNodeOptions)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+				.Where(p => p.GetCustomAttribute<OptionGroupAttribute>() != null)
 				.Select(p => p.PropertyType);
 			HelpText = GetHelpText();
 		}
@@ -143,5 +144,8 @@ namespace EventStore.Core {
 				}
 			}
 		}
+
+		[AttributeUsage(AttributeTargets.Property)]
+		private class OptionGroupAttribute : Attribute{}
 	}
 }

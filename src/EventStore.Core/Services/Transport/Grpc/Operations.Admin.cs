@@ -8,7 +8,7 @@ using EventStore.Plugins.Authorization;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	partial class Operations {
+	internal partial class Operations {
 		private static readonly Operation ShutdownOperation =
 			new Operation(Plugins.Authorization.Operations.Node.Shutdown);
 

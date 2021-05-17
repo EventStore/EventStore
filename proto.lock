@@ -2507,6 +2507,11 @@
                     "type": "event_store.client.shared.StreamIdentifier"
                   },
                   {
+                    "id": 5,
+                    "name": "all",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
                     "id": 2,
                     "name": "group_name",
                     "type": "string"
@@ -2712,9 +2717,25 @@
                 "name": "Options",
                 "fields": [
                   {
+                    "id": 4,
+                    "name": "stream",
+                    "type": "StreamOptions"
+                  },
+                  {
+                    "id": 5,
+                    "name": "all",
+                    "type": "AllOptions"
+                  },
+                  {
                     "id": 1,
                     "name": "stream_identifier",
-                    "type": "event_store.client.shared.StreamIdentifier"
+                    "type": "event_store.client.shared.StreamIdentifier",
+                    "options": [
+                      {
+                        "name": "deprecated",
+                        "value": "true"
+                      }
+                    ]
                   },
                   {
                     "id": 2,
@@ -2729,6 +2750,66 @@
                 ]
               },
               {
+                "name": "StreamOptions",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "start",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "end",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              },
+              {
+                "name": "AllOptions",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "position",
+                    "type": "Position"
+                  },
+                  {
+                    "id": 2,
+                    "name": "start",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 3,
+                    "name": "end",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              },
+              {
+                "name": "Position",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "prepare_position",
+                    "type": "uint64"
+                  }
+                ]
+              },
+              {
                 "name": "Settings",
                 "fields": [
                   {
@@ -2739,7 +2820,13 @@
                   {
                     "id": 2,
                     "name": "revision",
-                    "type": "uint64"
+                    "type": "uint64",
+                    "options": [
+                      {
+                        "name": "deprecated",
+                        "value": "true"
+                      }
+                    ]
                   },
                   {
                     "id": 3,
@@ -2827,9 +2914,25 @@
                 "name": "Options",
                 "fields": [
                   {
+                    "id": 4,
+                    "name": "stream",
+                    "type": "StreamOptions"
+                  },
+                  {
+                    "id": 5,
+                    "name": "all",
+                    "type": "AllOptions"
+                  },
+                  {
                     "id": 1,
                     "name": "stream_identifier",
-                    "type": "event_store.client.shared.StreamIdentifier"
+                    "type": "event_store.client.shared.StreamIdentifier",
+                    "options": [
+                      {
+                        "name": "deprecated",
+                        "value": "true"
+                      }
+                    ]
                   },
                   {
                     "id": 2,
@@ -2844,6 +2947,66 @@
                 ]
               },
               {
+                "name": "StreamOptions",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "revision",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "start",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "end",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              },
+              {
+                "name": "AllOptions",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "position",
+                    "type": "Position"
+                  },
+                  {
+                    "id": 2,
+                    "name": "start",
+                    "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 3,
+                    "name": "end",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ]
+              },
+              {
+                "name": "Position",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "commit_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "prepare_position",
+                    "type": "uint64"
+                  }
+                ]
+              },
+              {
                 "name": "Settings",
                 "fields": [
                   {
@@ -2854,7 +3017,13 @@
                   {
                     "id": 2,
                     "name": "revision",
-                    "type": "uint64"
+                    "type": "uint64",
+                    "options": [
+                      {
+                        "name": "deprecated",
+                        "value": "true"
+                      }
+                    ]
                   },
                   {
                     "id": 3,
@@ -2945,6 +3114,11 @@
                     "id": 1,
                     "name": "stream_identifier",
                     "type": "event_store.client.shared.StreamIdentifier"
+                  },
+                  {
+                    "id": 3,
+                    "name": "all",
+                    "type": "event_store.client.shared.Empty"
                   },
                   {
                     "id": 2,

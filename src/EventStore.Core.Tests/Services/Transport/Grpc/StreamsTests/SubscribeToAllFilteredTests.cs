@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_expected = skippedEventCount / _checkpointInterval;
 
 				await using var enumerator = new Enumerators.AllSubscriptionFiltered(_node.Node.MainQueue,
-					Position.Start, false, EventFilter.StreamName.Prefixes(_streamName), TestUser, false,
+					Position.Start, false, EventFilter.StreamName.Prefixes(true, _streamName), TestUser, false,
 					_node.Node.ReadIndex, _maxSearchWindow, _checkpointIntervalMultiplier, p => {
 						_positions.Add(p);
 

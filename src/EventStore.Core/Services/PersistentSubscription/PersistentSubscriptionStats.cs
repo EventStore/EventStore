@@ -9,8 +9,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private long _totalItems;
 		private TimeSpan _lastTotalTime;
 		private long _lastTotalItems;
-		private long _lastEventNumber = -1;
-		private long _lastKnownEventNumber = -1;
+		private IPersistentSubscriptionStreamPosition _lastEventPosition;
+		private IPersistentSubscriptionStreamPosition _lastKnownEventPosition;
 		private readonly PersistentSubscription _parent;
 		private readonly Stopwatch _totalTimeWatch;
 		private readonly PersistentSubscriptionParams _settings;
@@ -26,16 +26,18 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Interlocked.Increment(ref _totalItems);
 		}
 
-		public void SetLastCheckPoint(long lastEventNumber) {
-			_lastEventNumber = lastEventNumber;
+		public void SetLastCheckPoint(IPersistentSubscriptionStreamPosition lastEventPosition) {
+			_lastEventPosition = lastEventPosition;
 		}
 
-		public void SetLastKnownEventNumber(long knownEventNumber) {
-			if (knownEventNumber > _lastKnownEventNumber)
-				_lastKnownEventNumber = knownEventNumber;
+		public void SetLastKnownEventPosition(IPersistentSubscriptionStreamPosition knownEventPosition) {
+			if (knownEventPosition == null)
+				return;
+			if (_lastKnownEventPosition == null || _lastKnownEventPosition.CompareTo(knownEventPosition) < 0)
+				_lastKnownEventPosition = knownEventPosition;
 		}
 
-		public MonitoringMessage.SubscriptionInfo GetStatistics() {
+		public MonitoringMessage.PersistentSubscriptionInfo GetStatistics() {
 			var totalTime = _totalTimeWatch.Elapsed;
 			var totalItems = Interlocked.Read(ref _totalItems);
 
@@ -73,14 +75,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			long parkedMessageCount = _settings.MessageParker.ParkedMessageCount;
 
-			return new MonitoringMessage.SubscriptionInfo() {
-				EventStreamId = _parent.EventStreamId,
+			return new MonitoringMessage.PersistentSubscriptionInfo() {
+				EventSource = _parent.EventSource,
 				GroupName = _parent.GroupName,
 				Status = _parent.State.ToString(),
 				Connections = connections,
 				AveragePerSecond = avgItemsPerSecond,
-				LastProcessedEventNumber = _lastEventNumber,
-				LastKnownMessage = _lastKnownEventNumber,
+				LastProcessedEventPosition = _lastEventPosition?.ToString(),
+				LastKnownMessage = _lastKnownEventPosition?.ToString(),
 				TotalItems = totalItems,
 				CountSinceLastMeasurement = lastItems,
 				CheckPointAfterMilliseconds = (int)_settings.CheckPointAfter.TotalMilliseconds,
@@ -92,7 +94,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				MinCheckPointCount = _settings.MinCheckPointCount,
 				ReadBatchSize = _settings.ReadBatchSize,
 				ResolveLinktos = _settings.ResolveLinkTos,
-				StartFrom = _settings.StartFrom,
+				StartFrom = _settings.StartFrom?.ToString(),
 				ReadBufferCount = _parent.StreamBuffer.ReadBufferCount,
 				RetryBufferCount = _parent.StreamBuffer.RetryBufferCount,
 				LiveBufferCount = _parent.StreamBuffer.LiveBufferCount,

@@ -8,6 +8,6 @@ namespace EventStore.Core.Services.PersistentSubscription.ConsumerStrategy {
 
 		void ClientRemoved(PersistentSubscriptionClient client);
 
-		ConsumerPushResult PushMessageToClient(ResolvedEvent ev, int retryCount);
+		ConsumerPushResult PushMessageToClient(OutstandingMessage message);
 	}
 }

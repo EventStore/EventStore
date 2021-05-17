@@ -7,6 +7,13 @@ All notable changes to this project will be documented in this file.
 - Introduce compatibility mode. [EventStore#2796](https://github.com/EventStore/EventStore/pull/2796)
 - Add LegacyGossipDiscovery. [EventStore#2744](https://github.com/EventStore/EventStore/pull/2744)
 - LogV3 abstraction points [EventStore#2907](https://github.com/EventStore/EventStore/pull/2907)
+- V3 Epoch Raw Record [EventStore#2908](https://github.com/EventStore/EventStore/pull/2908)
+- PartitionType and StreamType structs and creation methods [EventStore#2918](https://github.com/EventStore/EventStore/pull/2918)
+- V3 Epoch integration [EventStore#2911](https://github.com/EventStore/EventStore/pull/2911)
+- EventId is now passed into projections [EventStore#2928](https://github.com/EventStore/EventStore/pull/2928)
+- ISystemStreamLookup abstraction point for LogV3 [EventStore#2923](https://github.com/EventStore/EventStore/pull/2923)
+- Persistent subscriptions to $all for gRPC clients [EventStore#2869](https://github.com/EventStore/EventStore/pull/2869)
+- EventType, ContentType & Partition structs and creation methods [EventStore#2931](https://github.com/EventStore/EventStore/pull/2931)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
@@ -16,6 +23,8 @@ All notable changes to this project will be documented in this file.
 - TestClient not exiting after executing `--command`, which prevents it from being automated in an easy way. [EventStore#2871](https://github.com/EventStore/EventStore/pull/2871)
 - Rdall for TestClient [EventStore#2892](https://github.com/EventStore/EventStore/pull/2892)
 - Parsing of yaml config options specified as an array [EventStore#2906](https://github.com/EventStore/EventStore/pull/2906)
+- Start projections when requested [EventStore#2929](https://github.com/EventStore/EventStore/pull/2929)
+- Handle missing case for UpdatePersistentSubscriptionTo{Stream,All}Result.DoesNotExist [EventStore#2941](https://github.com/EventStore/EventStore/pull/2941)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
@@ -35,6 +44,15 @@ All notable changes to this project will be documented in this file.
 
 ### Removed the job check from cherry-pick-pr-for-label action. It was moved to the action itself
 - https://github.com/EventStore/Automations/pull/30. [EventStore#2903](https://github.com/EventStore/EventStore/pull/2903)
+
+### Dotnet-retire is [being deprecated](https
+- //github.com/RetireNet/dotnet-retire/issues/75). The suggestion is now to use `dotnet list packages --vulnerable`. [EventStore#2927](https://github.com/EventStore/EventStore/pull/2927)
+
+### There's also an [issue in dotnet-retire](https
+- //github.com/RetireNet/dotnet-retire/issues/24#issuecomment-747430688) that causes the vulnerability check on the new LogV3 tests to fail. [EventStore#2927](https://github.com/EventStore/EventStore/pull/2927)
+
+### Updated
+- Visibility and gRPC generation changes to better support testing without needing clients to be referenced [EventStore#2942](https://github.com/EventStore/EventStore/pull/2942)
 
 ## [21.2.0] Server - 2021-02-26
 

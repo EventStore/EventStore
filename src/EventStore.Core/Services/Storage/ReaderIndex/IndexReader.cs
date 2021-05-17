@@ -10,6 +10,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
@@ -70,19 +71,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public IndexReader(
 			IIndexBackend<TStreamId> backend,
 			ITableIndex<TStreamId> tableIndex,
-			ISystemStreamLookup<TStreamId> systemStreams,
+			IStreamNamesProvider<TStreamId> streamNamesProvider,
 			IValidator<TStreamId> validator,
 			StreamMetadata metastreamMetadata,
 			int hashCollisionReadLimit, bool skipIndexScanOnRead) {
 			Ensure.NotNull(backend, "backend");
 			Ensure.NotNull(tableIndex, "tableIndex");
-			Ensure.NotNull(systemStreams, nameof(systemStreams));
+			Ensure.NotNull(streamNamesProvider, nameof(streamNamesProvider));
 			Ensure.NotNull(validator, nameof(validator));
 			Ensure.NotNull(metastreamMetadata, "metastreamMetadata");
 
+			streamNamesProvider.SetReader(this);
+
 			_backend = backend;
 			_tableIndex = tableIndex;
-			_systemStreams = systemStreams;
+			_systemStreams = streamNamesProvider.SystemStreams;
 			_validator = validator;
 			_metastreamMetadata = metastreamMetadata;
 			_hashCollisionReadLimit = hashCollisionReadLimit;

@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Monitoring.Stats {
 			return ParseOnUnix(procIoStr, log);
 		}
 
-		internal static DiskIo ParseOnUnix(string procIoStr, Serilog.ILogger log) {
+		public static DiskIo ParseOnUnix(string procIoStr, Serilog.ILogger log) {
 			ulong readBytes, writtenBytes, readOps, writeOps;
 			try {
 				var dict = procIoStr.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries)

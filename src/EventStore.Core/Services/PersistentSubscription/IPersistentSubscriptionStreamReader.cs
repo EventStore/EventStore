@@ -3,7 +3,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public interface IPersistentSubscriptionStreamReader {
-		void BeginReadEvents(string stream, long startEventNumber, int countToLoad, int batchSize, bool resolveLinkTos,
-			Action<ResolvedEvent[], long, bool> onEventsFound);
+		void BeginReadEvents(IPersistentSubscriptionEventSource eventSource, IPersistentSubscriptionStreamPosition startPosition, int countToLoad, int batchSize, bool resolveLinkTos, bool skipFirstEvent,
+			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound, Action<string> onError);
 	}
 }

@@ -30,12 +30,12 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var streamId = Guid.NewGuid().ToString();
 			var group = Guid.NewGuid().ToString();
-			_node.Node.MainQueue.Handle(new ClientMessage.CreatePersistentSubscription(Guid.NewGuid(), Guid.NewGuid(),
+			_node.Node.MainQueue.Handle(new ClientMessage.CreatePersistentSubscriptionToStream(Guid.NewGuid(), Guid.NewGuid(),
 				new FakeEnvelope(), streamId, group, false, 0, 0, false, 0, 20, 20, 10, 1, 1, 10, 1,
 				"RoundRobin",
 				testUser, DateTime.UtcNow));
 
-			_node.Node.MainQueue.Handle(new ClientMessage.ConnectToPersistentSubscription(Guid.NewGuid(),
+			_node.Node.MainQueue.Handle(new ClientMessage.ConnectToPersistentSubscriptionToStream(Guid.NewGuid(),
 				Guid.NewGuid(), new CallbackEnvelope(message => {
 					_subscriptionDropped.Set();
 				}), Guid.NewGuid(), Guid.NewGuid().ToString(), group, streamId, 1, "0",

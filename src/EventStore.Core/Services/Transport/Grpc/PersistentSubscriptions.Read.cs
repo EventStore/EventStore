@@ -22,7 +22,7 @@ using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEv
 using UUID = EventStore.Client.Shared.UUID;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public partial class PersistentSubscriptions {
+	internal partial class PersistentSubscriptions {
 		private static readonly Operation ProcessMessagesOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.ProcessMessages);
 		public override async Task Read(IAsyncStreamReader<ReadReq> requestStream,
 			IServerStreamWriter<ReadResp> responseStream, ServerCallContext context) {
@@ -37,8 +37,20 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var options = requestStream.Current.Options;
 			var user = context.GetHttpContext().User;
 
+			string streamId = null;
+			switch (options.StreamOptionCase) {
+				case ReadReq.Types.Options.StreamOptionOneofCase.StreamIdentifier:
+					streamId = options.StreamIdentifier;
+					break;
+				case ReadReq.Types.Options.StreamOptionOneofCase.All:
+					streamId = SystemStreams.AllStream;
+					break;
+				default:
+					throw new InvalidOperationException();
+			}
+
 			if (!await _authorizationProvider.CheckAccessAsync(user,
-				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(options.StreamIdentifier)), context.CancellationToken).ConfigureAwait(false)) {
+				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(streamId)), context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
 			var connectionName =
@@ -48,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var uuidOptionsCase = options.UuidOption.ContentCase;
 
 			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
-				_publisher, options.StreamIdentifier, options.GroupName, options.BufferSize, user, context.CancellationToken);
+				_publisher, streamId, options.GroupName, options.BufferSize, user, context.CancellationToken);
 
 			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
@@ -200,9 +212,22 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				var semaphore = new SemaphoreSlim(1, 1);
 
-				publisher.Publish(new ClientMessage.ConnectToPersistentSubscription(correlationId, correlationId,
-					new ContinuationEnvelope(OnMessage, semaphore, _cancellationToken), correlationId, connectionName,
-					groupName, streamName, bufferSize, string.Empty, user));
+				switch(streamName) {
+					case SystemStreams.AllStream:
+						publisher.Publish(new ClientMessage.ConnectToPersistentSubscriptionToAll(correlationId,
+							correlationId,
+							new ContinuationEnvelope(OnMessage, semaphore, _cancellationToken), correlationId,
+							connectionName,
+							groupName, bufferSize, string.Empty, user));
+						break;
+					default:
+						publisher.Publish(new ClientMessage.ConnectToPersistentSubscriptionToStream(correlationId,
+							correlationId,
+							new ContinuationEnvelope(OnMessage, semaphore, _cancellationToken), correlationId,
+							connectionName,
+							groupName, streamName, bufferSize, string.Empty, user));
+						break;
+				}
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					switch (message) {

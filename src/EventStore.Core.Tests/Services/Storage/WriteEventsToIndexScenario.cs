@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected IStreamIdLookup<string> _streamIds;
 		protected IStreamNameLookup<string> _streamNames;
 		protected ISystemStreamLookup<string> _systemStreams;
+		protected IStreamNamesProvider<string> _factory;
 		protected IValidator<string> _validator;
 		protected ISizer<string> _sizer;
 		protected IIndexReader<string> _indexReader;
@@ -128,12 +129,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_indexBackend = new IndexBackend<string>(_readerPool, 100000, 100000);
 			var logFormat = LogFormatAbstractor.V2;
 			_streamIds = logFormat.StreamIds;
-			_streamNames = logFormat.StreamNamesFactory.Create();
+			_streamNames = logFormat.StreamNames;
 			_systemStreams = logFormat.SystemStreams;
+			_factory = logFormat.StreamNamesProvider;
 			_validator = logFormat.StreamIdValidator;
 			var emptyStreamId = logFormat.EmptyStreamId;
 			_sizer = logFormat.StreamIdSizer;
-			_indexReader = new IndexReader<string>(_indexBackend, _tableIndex, _systemStreams, _validator, new StreamMetadata(maxCount: 100000), 100, false);
+			_indexReader = new IndexReader<string>(_indexBackend, _tableIndex, _factory, _validator, new StreamMetadata(maxCount: 100000), 100, false);
 			_indexWriter = new IndexWriter<string>(_indexBackend, _indexReader, _streamIds, _streamNames, _systemStreams, emptyStreamId, _sizer);
 			_indexCommitter = new Core.Services.Storage.ReaderIndex.IndexCommitter<string>(_publisher, _indexBackend, _indexReader, _tableIndex, _streamNames, _systemStreams, new InMemoryCheckpoint(-1),  false);
 

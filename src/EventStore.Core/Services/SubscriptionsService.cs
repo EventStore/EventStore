@@ -117,7 +117,8 @@ namespace EventStore.Core.Services {
 				: _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
 			var lastIndexedPos = _readIndex.LastIndexedPosition;
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
-				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber, EventFilter.None);
+				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber,
+				msg.EventStreamId.IsEmptyString() ? EventFilter.DefaultAllFilter : EventFilter.DefaultStreamFilter);
 			var subscribedMessage =
 				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastIndexedPos, lastEventNumber);
 			msg.Envelope.ReplyWith(subscribedMessage);
