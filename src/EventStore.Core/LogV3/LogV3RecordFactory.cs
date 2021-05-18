@@ -5,6 +5,12 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.LogV3 {
 	public class LogV3RecordFactory : IRecordFactory<long> {
 		public LogV3RecordFactory() {
+			if (!BitConverter.IsLittleEndian) {
+				// to support big endian we would need to adjust some of the bit
+				// operatiosn in the raw v3 structs, and adjust the way that the
+				// v3 records are written/read from disk (currently blitted)
+				throw new NotSupportedException();
+			}
 		}
 
 		public ISystemLogRecord CreateEpoch(EpochRecord epoch) {

@@ -34,6 +34,7 @@ namespace EventStore.Core.Tests.Integration {
 				var state = _nodes[i].NodeState;
 				if (state == VNodeState.Leader) leaders++;
 				else if (state == VNodeState.Follower) followers++;
+				else throw new Exception($"node {i} in unexpected state {state}");
 			}
 
 			Assert.AreEqual(1, leaders);

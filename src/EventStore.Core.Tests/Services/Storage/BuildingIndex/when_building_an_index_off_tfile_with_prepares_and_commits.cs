@@ -20,13 +20,16 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			long pos1, pos2, pos3, pos4, pos5, pos6;
 			_streamNameIndex.GetOrAddId("test1", out var streamId1, out _, out _);
 			_streamNameIndex.GetOrAddId("test2", out var streamId2, out _, out _);
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, _id1, _id1, 0, 0, streamId1, ExpectedVersion.Any,
+			var expectedVersion1 = ExpectedVersion.NoStream;
+			var expectedVersion2 = ExpectedVersion.NoStream;
+
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, _id1, _id1, 0, 0, streamId1, expectedVersion1++,
 					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
 				out pos1);
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos1, _id2, _id2, pos1, 0, streamId2, ExpectedVersion.Any,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos1, _id2, _id2, pos1, 0, streamId2, expectedVersion2++,
 					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
 				out pos2);
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id3, _id3, pos2, 0, streamId2, ExpectedVersion.Any,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id3, _id3, pos2, 0, streamId2, expectedVersion2++,
 					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
 				out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, 0), out pos4);
