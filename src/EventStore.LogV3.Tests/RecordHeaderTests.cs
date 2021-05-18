@@ -16,7 +16,7 @@ namespace EventStore.LogV3.Tests {
 
 			Assert.Equal(LogCommon.LogRecordType.EventType, header.Type);
 			Assert.Equal(0x45, header.Version);
-			Assert.Equal(now, header.TimeStamp, TimeSpan.FromMilliseconds(20));
+			Assert.Equal(now, header.TimeStamp, TimeSpan.FromMilliseconds(7));
 		}
 
 		[Fact]
