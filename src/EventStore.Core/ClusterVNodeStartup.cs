@@ -35,6 +35,7 @@ namespace EventStore.Core {
 
 		private readonly ISubsystem[] _subsystems;
 		private readonly IPublisher _mainQueue;
+		private readonly IPublisher _monitoringQueue;
 		private readonly ISubscriber _mainBus;
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IReadOnlyList<IHttpAuthenticationProvider> _httpAuthenticationProviders;
@@ -50,6 +51,7 @@ namespace EventStore.Core {
 		public ClusterVNodeStartup(
 			ISubsystem[] subsystems,
 			IPublisher mainQueue,
+			IPublisher monitoringQueue,
 			ISubscriber mainBus,
 			MultiQueuedHandler httpMessageHandler,
 			IAuthenticationProvider authenticationProvider,
@@ -86,8 +88,13 @@ namespace EventStore.Core {
 			if (mainBus == null) {
 				throw new ArgumentNullException(nameof(mainBus));
 			}
+
+			if (monitoringQueue == null) {
+				throw new ArgumentNullException(nameof(monitoringQueue));
+			}
 			_subsystems = subsystems;
 			_mainQueue = mainQueue;
+			_monitoringQueue = monitoringQueue;
 			_mainBus = mainBus;
 			_httpMessageHandler = httpMessageHandler;
 			_authenticationProvider = authenticationProvider;
@@ -125,7 +132,8 @@ namespace EventStore.Core {
 				.UseEndpoints(ep => ep.MapGrpcService<ClusterGossip>())
 				.UseEndpoints(ep => ep.MapGrpcService<Elections>())
 				.UseEndpoints(ep => ep.MapGrpcService<Operations>())
-				.UseEndpoints(ep => ep.MapGrpcService<ClientGossip>());
+				.UseEndpoints(ep => ep.MapGrpcService<ClientGossip>())
+				.UseEndpoints(ep => ep.MapGrpcService<Monitoring>());
 
 			_subsystems.Aggregate(app, (b, subsystem) => subsystem.Configure(b));
 		}
@@ -151,6 +159,7 @@ namespace EventStore.Core {
 						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
+						.AddSingleton(new Monitoring(_monitoringQueue))
 						.AddGrpc()
 						.AddServiceOptions<Streams<TStreamId>>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
