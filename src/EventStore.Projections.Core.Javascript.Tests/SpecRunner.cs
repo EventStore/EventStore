@@ -245,16 +245,19 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 							var expectedPartition = "";
 							if (expectedDefinition.DefinesFold) {
 								if (@event.ExpectedStates.Any()) {
-									expectedPartition = @event.ExpectedStates.Single(x => string.Empty != x.Key).Key;
-									yield return For(
-										$"{projection} {er.EventNumber}@{sequence.Stream} returns expected partition",
-										() => Assert.Equal(expectedPartition,
-											runner.GetStatePartition(CheckpointTag.Empty, "", e)));
-									foreach (var initializedState in @event.InitializedPartitions) {
+									expectedPartition = @event.ExpectedStates
+										.SingleOrDefault(x => string.Empty != x.Key).Key ?? string.Empty;
+									if (expectedPartition != string.Empty) {
 										yield return For(
-											$"should not have already initialized \"{initializedState}\" at {er.EventNumber}@{sequence.Stream}",
-											() => Assert.DoesNotContain(initializedState,
-												(IReadOnlyDictionary<string, string>)partitionedState));
+											$"{projection} {er.EventNumber}@{sequence.Stream} returns expected partition",
+											() => Assert.Equal(expectedPartition,
+												runner.GetStatePartition(CheckpointTag.Empty, "", e)));
+										foreach (var initializedState in @event.InitializedPartitions) {
+											yield return For(
+												$"should not have already initialized \"{initializedState}\" at {er.EventNumber}@{sequence.Stream}",
+												() => Assert.DoesNotContain(initializedState,
+													(IReadOnlyDictionary<string, string>)partitionedState));
+										}
 									}
 
 									if (expectedDefinition.IsBiState && !sharedStateInitialized) {
@@ -274,7 +277,8 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 												runner.Load(value);
 											});
 									} else {
-										yield return For($"initializes new state at {er.EventNumber}@{sequence.Stream}",
+										yield return For(
+											$"initializes new state at {er.EventNumber}@{sequence.Stream}",
 											() => {
 												var ex = Record.Exception(() => runner.Initialize());
 												Assert.Null(ex);
@@ -291,7 +295,6 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 
 												Assert.True(result);
 											});
-
 									}
 								}
 

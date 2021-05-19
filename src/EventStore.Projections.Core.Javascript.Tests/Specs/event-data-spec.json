@@ -1,0 +1,61 @@
+{
+	"projection": "event-data",
+	"input": [
+		{
+			"streamId": "foo",
+			"events": [
+				{
+					"eventType": "baz",
+					"data": {
+						"something": "one"
+					},
+					"initializedPartitions": [""],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"events": [
+									{
+										"isJson": true,
+										"data": {
+											"something": "one"
+										},
+										"body": {
+											"something": "one"
+										},
+										"bodyRaw": "{\r\n  \"something\": \"one\"\r\n}",
+										"eventType": "baz",
+										"streamId": "foo",
+										"sequenceNumber": "0",
+										"metadataRaw": "{}",
+										"partition": "",
+										"metadata_": null
+									}
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"output": {
+		"config": {
+			"categories": [],
+			"allStreams": true,
+			"events": ["baz"] ,
+			"partitioned": false,
+			"definesStateTransform": true,
+			"handlesDeletedNotifications": false,
+			"producesResults": true,
+			"definesFold": true,
+			"resultStreamName": "",
+			"partitionResultStreamNamePattern": "",
+			"$includeLinks": false,
+			"reorderEvents": false,
+			"processingLag": 0,
+			"biState": false
+		}
+	}
+}
+
