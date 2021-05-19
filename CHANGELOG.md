@@ -56,6 +56,8 @@ All notable changes to this project will be documented in this file.
 
 ### Updated
 - Visibility and gRPC generation changes to better support testing without needing clients to be referenced [EventStore#2942](https://github.com/EventStore/EventStore/pull/2942)
+- Merge sequential checks in && or || expressions [EventStore#2961](https://github.com/EventStore/EventStore/pull/2961)
+- Assorted minor adjustments to V3 schema following discussions [EventStore#2958](https://github.com/EventStore/EventStore/pull/2958)
 
 ### hello!
 - wave: [EventStore#2939](https://github.com/EventStore/EventStore/pull/2939)
