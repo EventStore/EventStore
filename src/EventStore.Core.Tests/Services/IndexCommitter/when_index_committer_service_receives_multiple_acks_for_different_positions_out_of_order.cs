@@ -3,9 +3,11 @@ using EventStore.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_index_committer_service_receives_multiple_acks_for_different_positions_out_of_order : with_index_committer_service {
+		when_index_committer_service_receives_multiple_acks_for_different_positions_out_of_order<TLogFormat, TStreamId>
+		: with_index_committer_service<TLogFormat, TStreamId> {
 
 		private readonly Guid _correlationId1 = Guid.NewGuid();
 		private readonly Guid _correlationId2 = Guid.NewGuid();

@@ -4,10 +4,12 @@ using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system {
-	[TestFixture]
-	class when_requesting_state_from_a_faulted_projection : with_projection_config {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_requesting_state_from_a_faulted_projection<TLogFormat, TStreamId> : with_projection_config<TLogFormat, TStreamId> {
 		private TFPos _message1Position;
 
 		protected override void Given() {

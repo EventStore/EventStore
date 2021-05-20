@@ -6,14 +6,16 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class deleting_stream : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class deleting_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private MiniNode<TLogFormat, TStreamId> _node;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 		}
 
@@ -23,8 +25,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureTearDown();
 		}
 
-		virtual protected IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.Create(node.TcpEndPoint);
+		virtual protected IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
 		}
 
 		[Test]

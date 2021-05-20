@@ -7,8 +7,10 @@ using Newtonsoft.Json.Linq;
 
 namespace EventStore.Core.Tests.Http.ArgumentPassing {
 	namespace matching {
-		[TestFixture, Category("LongRunning")]
-		class when_matching_against_simple_placeholders : HttpBehaviorSpecification {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_matching_against_simple_placeholders<TLogFormat, TStreamId> : HttpBehaviorSpecification<TLogFormat, TStreamId> {
 			private JObject _response;
 
 			protected override Task Given() => Task.CompletedTask;
@@ -36,9 +38,11 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
 		[Ignore("Only demonstrates differences between .NET and Mono")]
-		class when_matching_against_placeholders_with_reserved_characters : HttpBehaviorSpecification {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_matching_against_placeholders_with_reserved_characters<TLogFormat, TStreamId> : HttpBehaviorSpecification<TLogFormat, TStreamId> {
 			private JObject _response;
 
 			protected override Task Given() => Task.CompletedTask;

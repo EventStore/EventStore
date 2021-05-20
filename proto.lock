@@ -2262,6 +2262,63 @@
       }
     },
     {
+      "protopath": "Grpc:/:monitoring.proto",
+      "def": {
+        "messages": [
+          {
+            "name": "StatsReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "use_metadata",
+                "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "refresh_time_period_in_ms",
+                "type": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "StatsResp",
+            "maps": [
+              {
+                "key_type": "string",
+                "field": {
+                  "id": 1,
+                  "name": "stats",
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        ],
+        "services": [
+          {
+            "name": "Monitoring",
+            "rpcs": [
+              {
+                "name": "Stats",
+                "in_type": "StatsReq",
+                "out_type": "StatsResp",
+                "out_streamed": true
+              }
+            ]
+          }
+        ],
+        "package": {
+          "name": "event_store.client.monitoring"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.monitoring"
+          }
+        ]
+      }
+    },
+    {
       "protopath": "Grpc:/:operations.proto",
       "def": {
         "enums": [

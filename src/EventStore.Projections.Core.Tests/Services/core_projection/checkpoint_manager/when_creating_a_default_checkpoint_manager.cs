@@ -1,10 +1,12 @@
 ﻿using System;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
-	[TestFixture]
-	public class when_creating_a_default_checkpoint_manager : TestFixtureWithCoreProjectionCheckpointManager {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_creating_a_default_checkpoint_manager<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> {
 		private CoreProjectionCheckpointWriter _coreProjectionCheckpointWriter;
 
 		protected override void When() {

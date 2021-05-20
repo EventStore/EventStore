@@ -10,7 +10,7 @@ using Serilog;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase {
-	abstract class specification_with_multi_phase_core_projection : TestFixtureWithCoreProjection {
+	abstract class specification_with_multi_phase_core_projection<TLogFormat, TStreamId> : TestFixtureWithCoreProjection<TLogFormat, TStreamId> {
 		private FakeCheckpointManager _phase1checkpointManager;
 		private FakeCheckpointManager _phase2checkpointManager;
 		private IEmittedStreamsTracker _emittedStreamsTracker;
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 
 		internal class FakeProjectionProcessingPhase : IProjectionProcessingPhase {
 			private readonly int _phase;
-			private readonly specification_with_multi_phase_core_projection _specification;
+			private readonly specification_with_multi_phase_core_projection<TLogFormat, TStreamId> _specification;
 			private readonly ICoreProjectionCheckpointManager _checkpointManager;
 			private readonly IEmittedStreamsTracker _emittedStreamsTracker;
 			private readonly IReaderStrategy _readerStrategy;
@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase
 			private int _subscribeInvoked;
 
 			public FakeProjectionProcessingPhase(int phase,
-				specification_with_multi_phase_core_projection specification,
+				specification_with_multi_phase_core_projection<TLogFormat, TStreamId> specification,
 				ICoreProjectionCheckpointManager checkpointManager, IReaderStrategy readerStrategy,
 				IEmittedStreamsTracker emittedStreamsTracker) {
 				_phase = phase;

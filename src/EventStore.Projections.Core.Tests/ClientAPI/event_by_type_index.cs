@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
+using EventStore.Core.Tests;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	namespace event_by_type_index {
-		public class with_existing_events : specification_with_standard_projections_runnning {
+		public abstract class with_existing_events<TLogFormat, TStreamId> : specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 			protected override async Task Given() {
 				await base.Given();
 				await PostEvent("stream1", "type1", "{}");
@@ -16,8 +17,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			}
 		}
 
-		[TestFixture]
-		public class when_creating : with_existing_events {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_creating<TLogFormat, TStreamId> : with_existing_events<TLogFormat, TStreamId> {
 			protected override async Task When() {
 				await base.When();
 				await PostProjection(@"
@@ -41,8 +43,9 @@ function count(s,e) {
 			}
 		}
 
-		[TestFixture]
-		public class when_posting_more_events : with_existing_events {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_posting_more_events<TLogFormat, TStreamId> : with_existing_events<TLogFormat, TStreamId> {
 			protected override async Task When() {
 				await base.When();
 				await PostProjection(@"

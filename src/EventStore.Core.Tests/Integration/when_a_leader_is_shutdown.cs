@@ -8,8 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
-	[TestFixture, Category("LongRunning"), Ignore("Flaky test - e.g. if multiple elections take place")]
-	public class when_a_leader_is_shutdown : specification_with_cluster {
+	[Category("LongRunning"), Ignore("Flaky test - e.g. if multiple elections take place")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_a_leader_is_shutdown<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private List<Guid> _epochIds = new List<Guid>();
 		private List<string> _roleAssignments = new List<string>();
 		private CountdownEvent _expectedNumberOfEvents;

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace EventStore.LogV3 {
 	// Several records have a payload which is a dynamically sized string
@@ -12,7 +13,8 @@ namespace EventStore.LogV3 {
 			new(record);
 	}
 
-	public struct StringPayloadRecord<TSubHeader> where TSubHeader : unmanaged {
+	public struct StringPayloadRecord<TSubHeader> : IRecordView where TSubHeader : unmanaged {
+		public ReadOnlyMemory<byte> Bytes => Record.Bytes;
 		public RecordView<TSubHeader> Record { get; }
 
 		public ref readonly Raw.RecordHeader Header => ref Record.Header;

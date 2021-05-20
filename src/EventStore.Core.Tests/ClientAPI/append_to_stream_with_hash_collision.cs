@@ -8,18 +8,20 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
-	[TestFixture, Category("LongRunning")]
-	public class append_to_stream_with_hash_collision : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Hash collisions cannot occur in Log V3")]
+	public class append_to_stream_with_hash_collision<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private MiniNode<TLogFormat, TStreamId> _node;
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
-			return TestConnection.To(node, TcpType.Ssl);
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
+			return TestConnection<TLogFormat, TStreamId>.To(node, TcpType.Ssl);
 		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName,
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName,
 				inMemDb: false,
 				memTableSize: 20,
 				hashCollisionReadLimit: 1,
@@ -54,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			await _node.Shutdown(keepDb: true);
 
 			//Restart the node to ensure the read index stream info cache is empty
-			_node = new MiniNode(PathName,
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName,
 				tcpPort, httpPort, inMemDb: false,
 				memTableSize: 20,
 				hashCollisionReadLimit: 1,

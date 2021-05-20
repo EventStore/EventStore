@@ -3,7 +3,7 @@ using System.Linq;
 using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	public abstract class TestFixtureWithCoreProjectionStarted : TestFixtureWithCoreProjection {
+	public abstract class TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> : TestFixtureWithCoreProjection<TLogFormat, TStreamId> {
 		protected Guid _subscriptionId;
 
 		protected override void PreWhen() {

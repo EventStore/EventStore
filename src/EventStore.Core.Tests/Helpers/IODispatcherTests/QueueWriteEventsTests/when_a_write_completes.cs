@@ -4,8 +4,9 @@ using NUnit.Framework;
 using System;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests {
-	[TestFixture]
-	public class when_a_write_completes : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_a_write_completes<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private bool _completed = false;
 
 		protected override void Given() {

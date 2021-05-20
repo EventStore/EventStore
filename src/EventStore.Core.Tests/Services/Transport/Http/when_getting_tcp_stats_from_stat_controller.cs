@@ -18,8 +18,10 @@ using HttpMethod = System.Net.Http.HttpMethod;
 using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
-	[TestFixture]
-	public class when_getting_tcp_stats_from_stat_controller : SpecificationWithMiniNode {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_getting_tcp_stats_from_stat_controller<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private PortableServer _portableServer;
 		private IEventStoreConnection _connection;
 		private string _url;

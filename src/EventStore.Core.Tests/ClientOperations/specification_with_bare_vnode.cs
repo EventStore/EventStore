@@ -11,15 +11,15 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 
 namespace EventStore.Core.Tests.ClientOperations {
-	public abstract class specification_with_bare_vnode : IPublisher, ISubscriber, IDisposable {
+	public abstract class specification_with_bare_vnode<TLogFormat, TStreamId> : IPublisher, ISubscriber, IDisposable {
 		private ClusterVNode _node;
 		private readonly List<IDisposable> _disposables = new List<IDisposable>();
 		public void CreateTestNode() {
-			_node = new ClusterVNode<string>(new ClusterVNodeOptions()
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			_node = new ClusterVNode<TStreamId>(new ClusterVNodeOptions()
 					.RunInMemory()
 					.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-						ssl_connections.GetServerCertificate()),
-				LogFormatAbstractor.V2,
+						ssl_connections.GetServerCertificate()), logFormat,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			_node.StartAsync(true).Wait();

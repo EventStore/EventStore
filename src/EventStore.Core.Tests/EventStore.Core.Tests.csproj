@@ -8,11 +8,13 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
+		<PackageReference Include="Grpc.Core" Version="2.34.0" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.34.0" />
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.5" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
-		<PackageReference Include="NUnit" Version="3.12.0" />
-		<PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
+		<PackageReference Include="NUnit" Version="3.13.2" />
+		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="CompareNETObjects" Version="4.65.0" />
 		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
 		<PackageReference Include="Grpc.Tools" Version="2.34.0">
@@ -49,6 +51,7 @@
 		<Protobuf Include="..\Protos\Grpc\persistent.proto" Link="Protos\persistent.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\streams.proto" Link="Protos\streams.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\users.proto" Link="Protos\users.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\monitoring.proto" Link="Protos\monitoring.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<None Include="Resources\es-tile.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

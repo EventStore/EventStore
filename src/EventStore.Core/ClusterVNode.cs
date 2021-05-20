@@ -953,7 +953,8 @@ namespace EventStore.Core {
 			var requestManagement = new RequestManagementService(
 				_mainQueue,
 				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
-				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs));
+				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs),
+				logFormat.SupportsExplicitTransactions);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
@@ -1220,7 +1221,7 @@ namespace EventStore.Core {
 				}
 			}
 
-			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, _mainBus, _workersHandler,
+			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				options.Application.MaxAppendSize, _httpService);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);

@@ -81,12 +81,12 @@ namespace EventStore.Projections.Core.Services.v8 {
 				Log.Warning($"Invalid emitted event was ignored: streamId: [{emittedEvent.streamId}], eventType: [{emittedEvent.eventName}], payload: [{emittedEvent.body}]");
 				return;
 			}
-			
+
 			if (emittedEvent.eventName.Equals(LinkType) && !IsValidLinkEvent(emittedEvent)) {
 				Log.Warning($"Invalid emitted link event was ignored: streamId: [{emittedEvent.streamId}], eventType: [{emittedEvent.eventName}], payload: [{emittedEvent.body}]");
 				return;
 			}
-			
+
 			if (_emittedEvents == null)
 				_emittedEvents = new List<EmittedEventEnvelope>();
 			_emittedEvents.Add(
@@ -129,7 +129,8 @@ namespace EventStore.Projections.Core.Services.v8 {
 		public string GetStatePartition(
 			CheckpointTag eventPosition, string category, ResolvedEvent @event) {
 			CheckDisposed();
-			if (@event == null) throw new ArgumentNullException("event");
+			if (@event == null)
+				throw new ArgumentNullException("event");
 
 			if (string.IsNullOrEmpty(@event.EventType)) {
 				//Nothing to actually process
@@ -140,27 +141,26 @@ namespace EventStore.Projections.Core.Services.v8 {
 			string eventData = GetEventData(@event);
 
 			var partition = _query.GetPartition(eventData,
-			                                    new string[] {
-				                                                 @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
-				                                                 @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
-				                                                 @event.PositionMetadata ?? ""
-			                                                 });
+												new string[] {
+																 @event.EventStreamId, @event.IsJson ? "1" : "", @event.EventType, category ?? "",
+																 @event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), @event.Metadata ?? "",
+																 @event.PositionMetadata ?? ""
+															 });
 			if (partition == "")
 				return null;
-			
+
 			return partition;
 		}
 
-		public bool ProcessEvent(
-			string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event, out string newState,
-			out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
+		public bool ProcessEvent(string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event, out string newState, out string newSharedState, out EmittedEventEnvelope[] emittedEvents) {
 			CheckDisposed();
 			_eventPosition = eventPosition;
 			_emittedEvents = null;
 			Tuple<string, string> newStates = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
+
+			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
 				newStates = _query.Push(
 					"",
 					new string[] { });
@@ -168,13 +168,13 @@ namespace EventStore.Projections.Core.Services.v8 {
 				newStates = _query.Push(
 					data,
 					new[] {
-						@event.IsJson ? "1" : "", 
-						@event.EventStreamId, 
-						@event.EventType, 
+						@event.IsJson ? "1" : "",
+						@event.EventStreamId,
+						@event.EventType,
 						category ?? "",
-						@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture), 
+						@event.EventSequenceNumber.ToString(CultureInfo.InvariantCulture),
 						@event.Metadata ?? "",
-						@event.PositionMetadata ?? "", 
+						@event.PositionMetadata ?? "",
 						partition,
 						@event.EventId.ToString()
 					});
@@ -182,34 +182,20 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			newState = newStates.Item1;
 			newSharedState = newStates.Item2;
-/*            try
-            {
-                if (!string.IsNullOrEmpty(newState))
-                {
-                    var jo = newState.ParseJson<JObject>();
-                }
 
-            }
-            catch (InvalidCastException)
-            {
-                Console.Error.WriteLine(newState);
-            }
-            catch (JsonException)
-            {
-                Console.Error.WriteLine(newState);
-            }*/
 			emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
 			return true;
 		}
 
 		public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent @event,
-			out EmittedEventEnvelope[] emittedEvents) {
+											out EmittedEventEnvelope[] emittedEvents) {
 			CheckDisposed();
 			_eventPosition = createPosition;
 			_emittedEvents = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) { //TODO: change to String.IsNullOrEmpty on data?
+
+			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
 				emittedEvents = null;
 				return true;
 			}
@@ -260,11 +246,11 @@ namespace EventStore.Projections.Core.Services.v8 {
 		public IQuerySources GetSourceDefinition() {
 			return GetQuerySourcesDefinition();
 		}
-		
+
 		private static bool IsValidEvent(EmittedEventJsonContract @event) {
 			return !(@event.eventName.IsEmptyString() || @event.streamId.IsEmptyString() || @event.isJson && @event.body.IsEmptyString());
 		}
-		
+
 		// This function assumes 'IsValidEvent' was called upfront.
 		private static bool IsValidLinkEvent(EmittedEventJsonContract @event) {
 			var parts = @event.body.Split(LinkToSeparator, 2);

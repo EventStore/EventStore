@@ -2,14 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
-	[TestFixture]
-	public class when_multiple_event_processed_received_the_core_projection_checkpoint_manager :
-		TestFixtureWithCoreProjectionCheckpointManager {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_multiple_event_processed_received_the_core_projection_checkpoint_manager<TLogFormat, TStreamId> :
+		TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> {
 		private Exception _exception;
 
 		protected override void Given() {

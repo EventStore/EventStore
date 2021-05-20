@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.all_streams_with_links_event_reader {
 	namespace when_including_links {
-		[TestFixture]
-		public class when_reading : TestFixtureWithEventReaderService {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading<TLogFormat, TStreamId> : TestFixtureWithEventReaderService<TLogFormat, TStreamId> {
 			protected Guid _subscriptionId;
 			private QuerySourcesDefinition _sourceDefinition;
 			protected IReaderStrategy _readerStrategy;

@@ -10,7 +10,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.projections_manager;
 
 namespace EventStore.Projections.Core.Tests.Integration {
-	public abstract class specification_with_a_v8_query_posted : TestFixtureWithProjectionCoreAndManagementServices {
+	public abstract class specification_with_a_v8_query_posted<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		protected string _projectionName;
 		protected string _projectionSource;
 		protected ProjectionMode _projectionMode;

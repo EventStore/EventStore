@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
@@ -12,10 +13,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Chaser {
-	public abstract class with_storage_chaser_service : with_storage_chaser_service<string> {
-	}
-
-	public abstract class with_storage_chaser_service<TStreamId> : SpecificationWithDirectoryPerTestFixture {
+	public abstract class with_storage_chaser_service<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		readonly ICheckpoint _writerChk = new InMemoryCheckpoint(Checkpoint.Writer);
 		readonly ICheckpoint _chaserChk = new InMemoryCheckpoint(Checkpoint.Chaser);
 		readonly ICheckpoint _epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
@@ -34,6 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 		protected ConcurrentQueue<StorageMessage.PrepareAck> PrepareAcks = new ConcurrentQueue<StorageMessage.PrepareAck>();
 		protected ConcurrentQueue<StorageMessage.CommitAck> CommitAcks = new ConcurrentQueue<StorageMessage.CommitAck>();
+		private static LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {

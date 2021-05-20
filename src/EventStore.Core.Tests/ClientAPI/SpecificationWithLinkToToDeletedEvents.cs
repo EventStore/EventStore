@@ -7,7 +7,8 @@ using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Messages;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	public abstract class SpecificationWithLinkToToDeletedEvents : SpecificationWithMiniNode {
+	public abstract class SpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId>
+		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		protected string LinkedStreamName;
 		protected string DeletedStreamName;
 

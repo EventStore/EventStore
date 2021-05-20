@@ -8,13 +8,14 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Http.HealthChecks {
-	[TestFixture]
-	public class when_performing_a_live_check : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_performing_a_live_check<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private MiniNode<TLogFormat, TStreamId> _node;
 
 		[SetUp]
 		public void SetUp() {
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 		}
 
 		[TearDown]

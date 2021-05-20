@@ -26,7 +26,13 @@ namespace EventStore.Core.LogV3 {
 			if (LogV3SystemStreams.TryGetVirtualStreamId(streamName, out streamId))
 				return streamId;
 
-			return _wrapped.LookupId(streamName);
+			var result = _wrapped.LookupId(streamName);
+
+			return result == default
+				? SystemStreams.IsSystemStream(streamName)
+					? LogV3SystemStreams.NoSystemStream
+					: LogV3SystemStreams.NoUserStream
+				: result;
 		}
 	}
 }

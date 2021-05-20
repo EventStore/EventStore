@@ -8,6 +8,8 @@ namespace EventStore.LogV3 {
 
 		public Memory<byte> Bytes => _sliced.Bytes;
 		public ref Raw.RecordHeader Header => ref MemoryMarshal.AsRef<Raw.RecordHeader>(_sliced.HeaderMemory.Span);
+		public ref T RecordId<T>() where T : unmanaged =>
+			ref MemoryMarshal.AsRef<T>(_sliced.HeaderMemory[Raw.RecordHeader.RecordIdOffset..].Span);
 		public ref TSubHeader SubHeader => ref MemoryMarshal.AsRef<TSubHeader>(_sliced.SubHeaderMemory.Span);
 		public Memory<byte> Payload => _sliced.PayloadMemory;
 

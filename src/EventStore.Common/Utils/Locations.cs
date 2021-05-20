@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -78,6 +79,17 @@ namespace EventStore.Common.Utils {
 			var precedenceList = locations.Distinct().ToList();
 			return precedenceList.FirstOrDefault(Directory.Exists) ??
 			       precedenceList.Last();
+		}
+
+		/// <summary>
+		/// Returns the directories that potentially contain any configuration files.
+		/// </summary>
+		/// <returns></returns>
+		public static string[] GetPotentialConfigurationDirectories() {
+			return new [] {
+				ApplicationDirectory,
+				DefaultConfigurationDirectory
+			}.Distinct().ToArray();
 		}
 	}
 }

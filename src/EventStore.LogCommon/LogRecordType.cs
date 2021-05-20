@@ -1,4 +1,4 @@
-﻿namespace EventStore.LogCommon {
+namespace EventStore.LogCommon {
 	public enum LogRecordType : byte {
 		Prepare = 0,
 		Commit = 1,
@@ -8,5 +8,8 @@
 		EventType = 5,
 		ContentType = 6,
 		Partition = 7,
+		StreamWrite = 8,
+		TransactionStart = 9,
+		TransactionEnd = 10
 	}
 }

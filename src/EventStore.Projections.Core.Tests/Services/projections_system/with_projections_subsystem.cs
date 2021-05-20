@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Tests.Services.projections_manager;
 using System.Linq;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_system {
-	public abstract class with_projections_subsystem : TestFixtureWithProjectionCoreAndManagementServices {
+	public abstract class with_projections_subsystem<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		protected bool _startSystemProjections;
 		protected Guid _instanceCorrelation = Guid.NewGuid();
 

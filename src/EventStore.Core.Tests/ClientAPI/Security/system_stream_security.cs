@@ -5,8 +5,10 @@ using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
-	public class system_stream_security : AuthenticationTestBase {
+	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class system_stream_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		[Test]
 		public async Task operations_on_system_stream_with_no_acl_set_fail_for_non_admin() {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadEvent("$system-no-acl", "user1", "pa$$1"));
@@ -16,10 +18,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("$system-no-acl", "user1", "pa$$1"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-no-acl", "user1", "pa$$1"));
 
-			var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			}
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-no-acl", "user1", "pa$$1"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("$system-no-acl", "user1", "pa$$1", null));
@@ -34,12 +38,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("$system-no-acl", "adm", "admpa$$");
 
 			await WriteStream("$system-no-acl", "adm", "admpa$$");
-			await TransStart("$system-no-acl", "adm", "admpa$$");
 
-			var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-			await trans.WriteAsync();
-			await trans.CommitAsync();
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart("$system-no-acl", "adm", "admpa$$");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-no-acl", "adm", "admpa$$")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+				await trans.WriteAsync();
+				await trans.CommitAsync();
+			}
 
 			await ReadMeta("$system-no-acl", "adm", "admpa$$");
 			await WriteMeta("$system-no-acl", "adm", "admpa$$", null);
@@ -56,10 +65,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("$system-acl", "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-acl", "user2", "pa$$2"));
 
-			var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			}
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-acl", "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("$system-acl", "user2", "pa$$2", "user1"));
@@ -74,12 +85,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("$system-acl", "user1", "pa$$1");
 
 			await WriteStream("$system-acl", "user1", "pa$$1");
-			await TransStart("$system-acl", "user1", "pa$$1");
 
-			var transId = (await TransStart("$system-acl", "adm", "admpa$$")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-			await trans.WriteAsync();
-			await trans.CommitAsync();
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart("$system-acl", "user1", "pa$$1");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-acl", "adm", "admpa$$")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+				await trans.WriteAsync();
+				await trans.CommitAsync();
+			}
 
 			await ReadMeta("$system-acl", "user1", "pa$$1");
 			await WriteMeta("$system-acl", "user1", "pa$$1", "user1");
@@ -94,12 +110,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("$system-acl", "adm", "admpa$$");
 
 			await WriteStream("$system-acl", "adm", "admpa$$");
-			await TransStart("$system-acl", "adm", "admpa$$");
 
-			var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-			await trans.WriteAsync();
-			await trans.CommitAsync();
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart("$system-acl", "adm", "admpa$$");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-acl", "user1", "pa$$1")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+				await trans.WriteAsync();
+				await trans.CommitAsync();
+			}
 
 			await ReadMeta("$system-acl", "adm", "admpa$$");
 			await WriteMeta("$system-acl", "adm", "admpa$$", "user1");
@@ -117,10 +138,12 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream("$system-adm", "user1", "pa$$1"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart("$system-adm", "user1", "pa$$1"));
 
-			var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
-			await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
+				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
+			}
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta("$system-adm", "user1", "pa$$1"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta("$system-adm", "user1", "pa$$1", SystemRoles.Admins));
@@ -135,12 +158,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("$system-adm", "adm", "admpa$$");
 
 			await WriteStream("$system-adm", "adm", "admpa$$");
-			await TransStart("$system-adm", "adm", "admpa$$");
 
-			var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-			await trans.WriteAsync();
-			await trans.CommitAsync();
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart("$system-adm", "adm", "admpa$$");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-adm", "adm", "admpa$$")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+				await trans.WriteAsync();
+				await trans.CommitAsync();
+			}
 
 			await ReadMeta("$system-adm", "adm", "admpa$$");
 			await WriteMeta("$system-adm", "adm", "admpa$$", SystemRoles.Admins);
@@ -156,12 +184,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("$system-all", null, null);
 
 			await WriteStream("$system-all", null, null);
-			await TransStart("$system-all", null, null);
 
-			var transId = (await TransStart("$system-all", null, null)).TransactionId;
-			var trans = Connection.ContinueTransaction(transId);
-			await trans.WriteAsync();
-			await trans.CommitAsync();
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart("$system-all", null, null);
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-all", null, null)).TransactionId;
+				var trans = Connection.ContinueTransaction(transId);
+				await trans.WriteAsync();
+				await trans.CommitAsync();
+			}
 
 			await ReadMeta("$system-all", null, null);
 			await WriteMeta("$system-all", null, null, SystemRoles.All);
@@ -176,12 +209,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("$system-all", "user1", "pa$$1");
 
 			await WriteStream("$system-all", "user1", "pa$$1");
-			await TransStart("$system-all", "user1", "pa$$1");
 
-			var transId = (await TransStart("$system-all", "user1", "pa$$1")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
-			await trans.WriteAsync();
-			await trans.CommitAsync();
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart("$system-all", "user1", "pa$$1");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-all", "user1", "pa$$1")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
+				await trans.WriteAsync();
+				await trans.CommitAsync();
+			}
 
 			await ReadMeta("$system-all", "user1", "pa$$1");
 			await WriteMeta("$system-all", "user1", "pa$$1", SystemRoles.All);
@@ -196,12 +234,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward("$system-all", "adm", "admpa$$");
 
 			await WriteStream("$system-all", "adm", "admpa$$");
-			await TransStart("$system-all", "adm", "admpa$$");
 
-			var transId = (await TransStart("$system-all", "adm", "admpa$$")).TransactionId;
-			var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
-			await trans.WriteAsync();
-			await trans.CommitAsync();
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart("$system-all", "adm", "admpa$$");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				var transId = (await TransStart("$system-all", "adm", "admpa$$")).TransactionId;
+				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
+				await trans.WriteAsync();
+				await trans.CommitAsync();
+			}
 
 			await ReadMeta("$system-all", "adm", "admpa$$");
 			await WriteMeta("$system-all", "adm", "admpa$$", SystemRoles.All);

@@ -4,11 +4,17 @@ using EventStore.LogCommon;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_scavenging_tfchunk_with_version0_log_records_and_incomplete_chunk : ScavengeTestScenario {
-		private const byte _version = LogRecordVersion.LogRecordV0;
+	[TestFixture(typeof(LogFormat.V2), typeof(string), LogRecordVersion.LogRecordV0)]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), LogRecordVersion.LogRecordV1)]
+	[TestFixture(typeof(LogFormat.V3), typeof(long), LogRecordVersion.LogRecordV1)]
+	public class when_scavenging_tfchunk_with_incomplete_chunk<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		private readonly byte _version = LogRecordVersion.LogRecordV0;
 
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+		public when_scavenging_tfchunk_with_incomplete_chunk(byte version) {
+			_version = version;
+		}
+
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator.Chunk(Rec.Prepare(0, "ES1", version: _version),
 					Rec.Commit(0, "ES1", version: _version),
 					Rec.Prepare(1, "ES1", version: _version),

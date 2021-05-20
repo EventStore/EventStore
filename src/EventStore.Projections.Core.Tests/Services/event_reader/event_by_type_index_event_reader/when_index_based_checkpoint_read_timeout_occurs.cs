@@ -9,11 +9,14 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Common.Utils;
 using NUnit.Framework;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_index_event_reader {
-	[TestFixture, Category("test")]
-	public class when_index_based_checkpoint_read_timeout_occurs : EventByTypeIndexEventReaderTestFixture {
+	[Category("test")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_index_based_checkpoint_read_timeout_occurs<TLogFormat, TStreamId> : EventByTypeIndexEventReaderTestFixture<TLogFormat, TStreamId> {
 		private EventByTypeIndexEventReader _eventReader;
 		private Guid _distributionCorrelationId;
 		private Guid _checkpointStreamCorrelationId;

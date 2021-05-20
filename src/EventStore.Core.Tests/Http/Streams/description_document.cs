@@ -16,8 +16,10 @@ using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
 
-	[TestFixture, Category("LongRunning")]
-	public class when_getting_a_stream_without_accept_header : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_getting_a_stream_without_accept_header<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
@@ -40,8 +42,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class when_getting_a_stream_with_description_document_media_type : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_getting_a_stream_with_description_document_media_type<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
@@ -64,8 +68,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class when_getting_description_document : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_getting_description_document<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 
@@ -116,8 +122,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class when_getting_description_document_and_subscription_exists_for_stream : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_getting_description_document_and_subscription_exists_for_stream<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
 		private JToken[] _subscriptions;

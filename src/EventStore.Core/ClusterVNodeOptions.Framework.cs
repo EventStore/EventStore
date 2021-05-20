@@ -146,6 +146,6 @@ namespace EventStore.Core {
 		}
 
 		[AttributeUsage(AttributeTargets.Property)]
-		private class OptionGroupAttribute : Attribute{}
+		internal class OptionGroupAttribute : Attribute{}
 	}
 }

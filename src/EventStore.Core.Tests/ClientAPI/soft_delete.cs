@@ -10,15 +10,17 @@ using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class soft_delete : SpecificationWithDirectoryPerTestFixture {
-		private MiniNode _node;
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class soft_delete<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private MiniNode<TLogFormat, TStreamId> _node;
 		private IEventStoreConnection _conn;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
 			_conn = BuildConnection(_node);
@@ -32,7 +34,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await base.TestFixtureTearDown();
 		}
 
-		protected virtual IEventStoreConnection BuildConnection(MiniNode node) {
+		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
 			return EventStoreConnection.Create(
 				ConnectionSettings.Create().DisableServerCertificateValidation().Build(),
 				node.TcpEndPoint.ToESTcpUri());

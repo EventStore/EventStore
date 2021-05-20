@@ -4,8 +4,10 @@ using EventStore.ClientAPI.UserManagement;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning")]
-	public class creating_a_user : TestWithNode {
+	[Category("ClientAPI"), Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class creating_a_user<TLogFormat, TStreamId> : TestWithNode<TLogFormat, TStreamId> {
 		[Test]
 		public void creating_a_user_with_null_username_throws() {
 			Assert.Throws<ArgumentNullException>(() =>

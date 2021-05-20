@@ -24,8 +24,8 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var envelope = new CallbackEnvelope(OnMessage);
 
 			_queue.Publish(options.WriteCheckpoint
-				? (Message)new ProjectionManagementMessage.Command.Abort(envelope, name, runAs)
-				: new ProjectionManagementMessage.Command.Disable(envelope, name, runAs));
+				? new ProjectionManagementMessage.Command.Disable(envelope, name, runAs)
+				: (Message)new ProjectionManagementMessage.Command.Abort(envelope, name, runAs));
 
 			await disableSource.Task.ConfigureAwait(false);
 

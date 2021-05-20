@@ -14,9 +14,11 @@ using EventStore.Core.Messages;
 using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
-	[TestFixture, Category("LongRunning")]
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	class
-		when_getting_statistics_for_new_subscription_for_stream_with_existing_events : with_subscription_having_events {
+		when_getting_statistics_for_new_subscription_for_stream_with_existing_events<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JArray _json;
 
 		protected override async Task When() {
@@ -37,8 +39,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 	
-	[TestFixture, Category("LongRunning")]
-	class when_getting_statistics_for_subscription_with_parked_events : with_subscription_having_events {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_statistics_for_subscription_with_parked_events<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private string _nackLink;
 		private JObject _json;
 		private string _streamName;
@@ -99,8 +103,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_all_statistics_in_json : with_subscription_having_events {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_all_statistics_in_json<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JArray _json;
 
 		protected override async Task When() {
@@ -118,8 +124,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_all_statistics_in_xml : with_subscription_having_events {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_all_statistics_in_xml<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private XDocument _xml;
 
 		protected override async Task When() {
@@ -137,8 +145,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_non_existent_single_statistics : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_non_existent_single_statistics<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
 		protected override Task Given() => Task.CompletedTask;
@@ -154,8 +164,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_non_existent_stream_statistics : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_non_existent_stream_statistics<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
 		protected override Task Given() => Task.CompletedTask;
@@ -171,8 +183,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_subscription_statistics_for_individual : SpecificationWithPersistentSubscriptionAndConnections {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_subscription_statistics_for_individual<TLogFormat, TStreamId> : SpecificationWithPersistentSubscriptionAndConnections<TLogFormat, TStreamId> {
 		private JObject _json;
 
 
@@ -245,8 +259,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_subscription_stats_summary : SpecificationWithPersistentSubscriptionAndConnections {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_subscription_stats_summary<TLogFormat, TStreamId> : SpecificationWithPersistentSubscriptionAndConnections<TLogFormat, TStreamId> {
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
@@ -378,8 +394,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_getting_subscription_statistics_for_stream : SpecificationWithPersistentSubscriptionAndConnections {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_getting_subscription_statistics_for_stream<TLogFormat, TStreamId> : SpecificationWithPersistentSubscriptionAndConnections<TLogFormat, TStreamId> {
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
 			.DoNotResolveLinkTos()
 			.StartFromCurrent();
@@ -493,7 +511,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	public abstract class SpecificationWithPersistentSubscriptionAndConnections : with_admin_user {
+	public abstract class SpecificationWithPersistentSubscriptionAndConnections<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected string _streamName = Guid.NewGuid().ToString();
 		protected string _groupName = Guid.NewGuid().ToString();
 		protected IEventStoreConnection _conn;

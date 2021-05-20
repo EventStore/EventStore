@@ -1,0 +1,9 @@
+syntax = "proto3";
+package EventStore.LogV3;
+
+import "Protos/proto_guid.proto";
+
+message EventSystemMetadata {
+	ProtoGuid event_id = 1;
+	string event_type = 2;
+}

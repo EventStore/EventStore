@@ -13,6 +13,7 @@ using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Tests;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.feed_reader {
@@ -262,8 +263,9 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			}
 		}
 
-		[TestFixture]
-		class when_reading_existing_events : TestFixtureWithFeedReaderService {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_reading_existing_events<TLogFormat, TStreamId> : TestFixtureWithFeedReaderService<TLogFormat, TStreamId> {
 			private QuerySourcesDefinition _querySourcesDefinition;
 			private CheckpointTag _fromPosition;
 			private int _maxEvents;
@@ -300,8 +302,9 @@ namespace EventStore.Projections.Core.Tests.Services.feed_reader {
 			}
 		}
 
-		[TestFixture]
-		class when_reading_existing_events_by_parts : TestFixtureWithFeedReaderService {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		class when_reading_existing_events_by_parts<TLogFormat, TStreamId> : TestFixtureWithFeedReaderService<TLogFormat, TStreamId> {
 			private QuerySourcesDefinition _querySourcesDefinition;
 			private CheckpointTag _fromPosition;
 			private int _maxEvents;

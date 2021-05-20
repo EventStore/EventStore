@@ -7,10 +7,11 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_having_stream_with_both_max_age_and_max_count_with_stricter_max_age_specified : ScavengeTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+		when_having_stream_with_both_max_age_and_max_count_with_stricter_max_age_specified<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator
 				.Chunk(
 					Rec.Prepare(3, "$$bla", metadata: new StreamMetadata(5, TimeSpan.FromMinutes(5), null, null, null)),

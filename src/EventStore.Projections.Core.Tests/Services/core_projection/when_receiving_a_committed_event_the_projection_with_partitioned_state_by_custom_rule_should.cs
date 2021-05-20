@@ -3,14 +3,16 @@ using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	[TestFixture]
-	public class when_receiving_a_committed_event_the_projection_with_partitioned_state_by_custom_rule_should :
-		TestFixtureWithCoreProjectionStarted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_receiving_a_committed_event_the_projection_with_partitioned_state_by_custom_rule_should<TLogFormat, TStreamId> :
+		TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		private Guid _eventId;
 
 		protected override void Given() {

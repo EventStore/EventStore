@@ -1,14 +1,16 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint {
-	[TestFixture]
-	public class when_requesting_checkpoint_after_all_writes_completed : TestFixtureWithExistingEvents {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_requesting_checkpoint_after_all_writes_completed<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private ProjectionCheckpoint _checkpoint;
 		private TestCheckpointManagerMessageHandler _readyHandler;
 

@@ -3,8 +3,9 @@ using EventStore.Core.Data;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_deleting_duplicate_events : ReadIndexTestScenario {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_deleting_duplicate_events<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _event1;
 		private EventRecord _event2;
 		private EventRecord _event3;

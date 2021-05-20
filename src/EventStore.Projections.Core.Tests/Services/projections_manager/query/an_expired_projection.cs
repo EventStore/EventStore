@@ -5,12 +5,13 @@ using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 	public class an_expired_projection {
-		public abstract class Base : a_new_posted_projection.Base {
+		public abstract class Base<TLogFormat, TStreamId> : a_new_posted_projection.Base<TLogFormat, TStreamId> {
 			protected Guid _reader;
 
 			protected override void Given() {
@@ -38,8 +39,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_retrieving_statistics : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_statistics<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var s in base.When()) yield return s;
 				_consumer.HandledMessages.Clear();
@@ -55,8 +57,9 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 			}
 		}
 
-		[TestFixture]
-		public class when_deleted_on_expiry : Base {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_deleted_on_expiry<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var s in base.When()) yield return s;
 				_consumer.HandledMessages.Clear();

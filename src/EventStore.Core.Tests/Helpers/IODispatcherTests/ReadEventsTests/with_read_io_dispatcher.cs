@@ -12,7 +12,7 @@ using EventStore.Core.Tests.Helpers.IODispatcherTests;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
-	public abstract class with_read_io_dispatcher : IHandle<ClientMessage.ReadStreamEventsForward>,
+	public abstract class with_read_io_dispatcher<TLogFormat, TStreamId> : IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<TimerMessage.Schedule> {
 		protected IODispatcher _ioDispatcher;
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 			var lastEventNumber = msg.FromEventNumber + 1;
 			var nextEventNumber = lastEventNumber + 1;
 			var events =
-				IODispatcherTestHelpers.CreateResolvedEvent(msg.EventStreamId, "event_type", "test", eventNumber: 10);
+				IODispatcherTestHelpers.CreateResolvedEvent<TLogFormat, TStreamId>(msg.EventStreamId, "event_type", "test", eventNumber: 10);
 			var res = new ClientMessage.ReadStreamEventsForwardCompleted(msg.CorrelationId, msg.EventStreamId,
 				msg.FromEventNumber,
 				msg.MaxCount, ReadStreamResult.Success, events, null, false, String.Empty, nextEventNumber,
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 			var startEventNumber = msg.FromEventNumber;
 			var nextEventNumber = startEventNumber - 1;
 			var events =
-				IODispatcherTestHelpers.CreateResolvedEvent(msg.EventStreamId, "event_type", "test", eventNumber: 10);
+				IODispatcherTestHelpers.CreateResolvedEvent<TLogFormat, TStreamId>(msg.EventStreamId, "event_type", "test", eventNumber: 10);
 			var res = new ClientMessage.ReadStreamEventsBackwardCompleted(msg.CorrelationId, msg.EventStreamId,
 				msg.FromEventNumber,
 				msg.MaxCount, ReadStreamResult.Success, events, null, false, String.Empty, nextEventNumber,

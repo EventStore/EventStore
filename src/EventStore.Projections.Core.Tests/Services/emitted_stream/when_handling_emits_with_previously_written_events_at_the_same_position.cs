@@ -1,14 +1,16 @@
 using System;
 using System.Linq;
 using EventStore.Core.Messages;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_handling_emits_with_previously_written_events_at_the_same_position : TestFixtureWithExistingEvents {
+		when_handling_emits_with_previously_written_events_at_the_same_position<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private EmittedStream _stream;
 		private TestCheckpointManagerMessageHandler _readyHandler;
 		private long _1;

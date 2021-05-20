@@ -1,8 +1,10 @@
-﻿using NUnit.Framework;
+﻿using EventStore.Core.Tests;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.multi_phase {
-	[TestFixture]
-	class when_creating_a_multi_phase_projection : specification_with_multi_phase_core_projection {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_a_multi_phase_projection<TLogFormat, TStreamId> : specification_with_multi_phase_core_projection<TLogFormat, TStreamId> {
 		protected override void When() {
 		}
 

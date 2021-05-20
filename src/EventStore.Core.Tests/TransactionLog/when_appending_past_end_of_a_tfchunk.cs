@@ -4,8 +4,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
-	[TestFixture]
-	public class when_appending_past_end_of_a_tfchunk : SpecificationWithFile {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_appending_past_end_of_a_tfchunk<TLogFormat, TStreamId> : SpecificationWithFile {
 		private TFChunk _chunk;
 		private readonly Guid _corrId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();
@@ -14,9 +15,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[SetUp]
 		public override void SetUp() {
 			base.SetUp();
-			var record = new PrepareLogRecord(15556, _corrId, _eventId, 15556, 0, "test", 1,
-				new DateTime(2000, 1, 1, 12, 0, 0),
-				PrepareFlags.None, "Foo", new byte[12], new byte[15]);
+
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("test", out var streamId, out _, out _);
+
+			var record = LogRecord.Prepare(logFormat.RecordFactory, 15556, _corrId, _eventId, 15556, 0, streamId, 1,
+				PrepareFlags.None, "Foo", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			_chunk = TFChunkHelper.CreateNewChunk(Filename, 20);
 			_written = _chunk.TryAppend(record).Success;
 		}

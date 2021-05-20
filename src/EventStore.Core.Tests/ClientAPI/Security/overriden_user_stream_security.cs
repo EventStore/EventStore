@@ -7,8 +7,10 @@ using EventStore.Core.Services;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.Security {
-	[TestFixture, Category("ClientAPI"), Category("LongRunning"), Category("Network")]
-	public class overriden_user_stream_security : AuthenticationTestBase {
+	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class overriden_user_stream_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
@@ -26,14 +28,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward(stream, "user1", "pa$$1");
 
 			await WriteStream(stream, "user1", "pa$$1");
-			await TransStart(stream, "user1", "pa$$1");
-			{
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart(stream, "user1", "pa$$1");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
 				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
 				await trans.WriteAsync();
 				await trans.CommitAsync();
 			}
-			;
 
 			await ReadMeta(stream, "user1", "pa$$1");
 			await WriteMeta(stream, "user1", "pa$$1", null);
@@ -52,7 +57,8 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream(stream, "user2", "pa$$2"));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart(stream, "user2", "pa$$2"));
-			{
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
 				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user2", "pa$$2"));
 				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
@@ -76,13 +82,13 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteStream(stream, null, null));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => TransStart(stream, null, null));
-			{
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
 				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 				var trans = Connection.ContinueTransaction(transId);
 				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.WriteAsync());
 				await AssertEx.ThrowsAsync<AccessDeniedException>(() => trans.CommitAsync());
 			}
-			;
 
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => ReadMeta(stream, null, null));
 			await AssertEx.ThrowsAsync<AccessDeniedException>(() => WriteMeta(stream, null, null, null));
@@ -100,14 +106,17 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 			await ReadStreamBackward(stream, "adm", "admpa$$");
 
 			await WriteStream(stream, "adm", "admpa$$");
-			await TransStart(stream, "adm", "admpa$$");
-			{
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				await TransStart(stream, "adm", "admpa$$");
+			}
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
 				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
 				await trans.WriteAsync();
 				await trans.CommitAsync();
 			}
-			;
 
 			await ReadMeta(stream, "adm", "admpa$$");
 			await WriteMeta(stream, "adm", "admpa$$", null);

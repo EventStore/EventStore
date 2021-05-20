@@ -7,6 +7,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
+using EventStore.Core.Tests.Services;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -14,14 +15,9 @@ using NUnit.Framework;
 using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
-	public abstract class ScavengeTestScenario : ScavengeTestScenario<string> {
-		protected ScavengeTestScenario(int metastreamMaxCount = 1) : base(metastreamMaxCount) {
-		}
-	}
-
 	[TestFixture]
-	public abstract class ScavengeTestScenario<TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		protected IReadIndex<TStreamId> ReadIndex;
+	public abstract class ScavengeTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		protected ITestReadIndex<TStreamId> ReadIndex;
 
 		protected TFChunkDb Db {
 			get { return _dbResult.Db; }
@@ -44,7 +40,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			await base.TestFixtureSetUp();
 
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbCreationHelper = new TFChunkDbCreationHelper(dbConfig);
+			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig);
 			_dbResult = CreateDb(dbCreationHelper);
 			_keptRecords = KeptRecords(_dbResult);
 
@@ -52,7 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			_dbResult.Db.Config.ChaserCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());
 			_dbResult.Db.Config.ChaserCheckpoint.Flush();
 
-			var logFormat = LogFormatHelper<TStreamId>.LogFormat;
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var indexPath = Path.Combine(PathName, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool", Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
@@ -67,7 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 100,
 				maxTablesPerLevel: 2);
-			ReadIndex = new ReadIndex<TStreamId>(new NoopPublisher(), readerPool, tableIndex,
+			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(), readerPool, tableIndex,
 				logFormat.StreamIds,
 				logFormat.StreamNamesProvider,
 				logFormat.EmptyStreamId,
@@ -76,7 +72,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
-			((ReadIndex<TStreamId>)ReadIndex).IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
+			readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
+			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
 
 			var scavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 				logFormat.SystemStreams,
@@ -94,7 +91,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				throw new Exception("Records were not checked. Probably you forgot to call CheckRecords() method.");
 		}
 
-		protected abstract DbResult CreateDb(TFChunkDbCreationHelper dbCreator);
+		protected abstract DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator);
 
 		protected abstract ILogRecord[][] KeptRecords(DbResult dbResult);
 

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Text;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -9,8 +10,9 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
-	[TestFixture]
-	public class when_the_projection_with_pending_checkpoint_is_stopped : TestFixtureWithCoreProjectionStarted {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_the_projection_with_pending_checkpoint_is_stopped<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		protected override void Given() {
 			_checkpointHandledThreshold = 2;
 			NoStream("$projections-projection-result");

@@ -9,8 +9,10 @@ using Newtonsoft.Json.Linq;
 using EventStore.Transport.Http;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
-	[TestFixture, Category("LongRunning")]
-	class when_creating_a_subscription : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_a_subscription<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
 		protected override Task Given() => Task.CompletedTask;
@@ -40,8 +42,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_creating_a_subscription_with_query_params : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_a_subscription_with_query_params<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
 		protected override Task Given() => Task.CompletedTask;
@@ -71,8 +75,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_creating_a_subscription_without_permissions : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_a_subscription_without_permissions<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
 		protected override Task Given() => Task.CompletedTask;
@@ -97,8 +103,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_creating_a_duplicate_subscription : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_a_duplicate_subscription<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
 		protected override async Task Given() {
@@ -128,8 +136,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_creating_a_subscription_with_bad_config : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_a_subscription_with_bad_config<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected List<object> Events;
 		protected string SubscriptionPath;
 		protected string GroupName;
@@ -173,8 +183,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_creating_persistent_subscription_with_message_timeout_0 : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_persistent_subscription_with_message_timeout_0<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected string SubscriptionPath;
 		protected string GroupName;
 		protected HttpResponseMessage Response;
@@ -213,8 +225,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	class when_creating_persistent_subscription_without_message_timeout : with_admin_user {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	class when_creating_persistent_subscription_without_message_timeout<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected string SubscriptionPath;
 		protected string GroupName;
 		protected HttpResponseMessage Response;

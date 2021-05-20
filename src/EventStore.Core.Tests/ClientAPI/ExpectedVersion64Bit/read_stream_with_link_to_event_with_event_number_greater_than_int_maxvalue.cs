@@ -6,10 +6,12 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	[Category("ClientAPI"), Category("LongRunning")]
 	public class
-		read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue : MiniNodeWithExistingRecords {
+		read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue<TLogFormat, TStreamId>
+		: MiniNodeWithExistingRecords<TLogFormat, TStreamId> {
 		private const string StreamName = "read_stream_with_link_to_event_with_event_number_greater_than_int_maxvalue";
 		private const long intMaxValue = (long)int.MaxValue;
 

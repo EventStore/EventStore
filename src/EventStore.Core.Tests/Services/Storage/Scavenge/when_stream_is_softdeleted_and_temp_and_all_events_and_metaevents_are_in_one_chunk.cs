@@ -6,10 +6,11 @@ using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class
-		when_stream_is_softdeleted_and_temp_and_all_events_and_metaevents_are_in_one_chunk : ScavengeTestScenario {
-		protected override DbResult CreateDb(TFChunkDbCreationHelper dbCreator) {
+		when_stream_is_softdeleted_and_temp_and_all_events_and_metaevents_are_in_one_chunk<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator.Chunk(Rec.Prepare(0, "$$test", metadata: new StreamMetadata(tempStream: true)),
 					Rec.Commit(0, "$$test"),
 					Rec.Prepare(1, "test"),
@@ -24,7 +25,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
-			return new[] {new ILogRecord[0]};
+			return new[] { new ILogRecord[0] };
 		}
 
 		[Test]

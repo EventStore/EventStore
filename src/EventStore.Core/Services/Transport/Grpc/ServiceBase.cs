@@ -56,6 +56,12 @@ namespace EventStore.Client.Gossip {
 	}
 }
 
+namespace EventStore.Client.Monitoring {
+	partial class Monitoring {
+		partial class MonitoringBase : ServiceBase {
+		}
+	}
+}
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {

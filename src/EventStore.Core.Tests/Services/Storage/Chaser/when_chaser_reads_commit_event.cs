@@ -3,8 +3,9 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Chaser {
-	[TestFixture]
-	public class when_chaser_reads_commit_event : with_storage_chaser_service {
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_chaser_reads_commit_event<TLogFormat, TStreamId> : with_storage_chaser_service<TLogFormat, TStreamId> {
 		private long _logPosition;
 		private Guid _eventId;
 		private Guid _transactionId;
@@ -13,13 +14,17 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			_eventId = Guid.NewGuid();
 			_transactionId = Guid.NewGuid();
 
-			var record = new PrepareLogRecord(
+			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var record = LogRecord.Prepare(
+				factory: logFormat.RecordFactory,
 				logPosition: 0,
 				eventId: _eventId,
 				correlationId: _transactionId,
-				transactionPosition: 0xDEAD,
+				transactionPos: 0xDEAD,
 				transactionOffset: 0xBEEF,
-				eventStreamId: "WorldEnding",
+				eventStreamId: streamId,
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.Data,

@@ -19,7 +19,8 @@ using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace feed {
-		public abstract class SpecificationWithLongFeed : with_admin_user {
+		public abstract class SpecificationWithLongFeed<TLogFormat, TStreamId>
+			: with_admin_user<TLogFormat, TStreamId> {
 			protected int _numberOfEvents;
 
 			protected override async Task Given() {
@@ -46,8 +47,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_posting_multiple_events : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_posting_multiple_events<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() {
 				return GetJson<JObject>(TestStream, ContentType.AtomJson);
 			}
@@ -58,8 +61,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_feed_head : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
 			protected override async Task When() {
@@ -102,8 +107,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_feed_head_with_forwarded_prefix : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_feed_head_with_forwarded_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private string _prefix;
 
@@ -150,8 +157,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_the_previous_link_of_the_feed_head : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_the_previous_link_of_the_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private JObject _head;
 			private string _previous;
@@ -214,8 +223,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 
-		[TestFixture, Category("LongRunning")]
-		public class when_reading_a_stream_forward_with_deleted_linktos : HttpSpecificationWithLinkToToDeletedEvents {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_a_stream_forward_with_deleted_linktos<TLogFormat, TStreamId>
+			: HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -244,8 +256,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_reading_a_stream_forward_with_linkto : HttpSpecificationWithLinkToToEvents {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_a_stream_forward_with_linkto<TLogFormat, TStreamId>
+			: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -289,8 +304,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 
-		[TestFixture, Category("LongRunning")]
-		public class when_reading_a_stream_forward_with_linkto_with_at_sign_in_name : HttpBehaviorSpecification {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_a_stream_forward_with_linkto_with_at_sign_in_name<TLogFormat, TStreamId>
+			: HttpBehaviorSpecification<TLogFormat, TStreamId> {
 			protected string LinkedStreamName;
 			protected string StreamName;
 
@@ -298,7 +316,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 				var creds = DefaultData.AdminCredentials;
 				LinkedStreamName = Guid.NewGuid().ToString();
 				StreamName = Guid.NewGuid() + "@" + Guid.NewGuid() + "@";
-				using (var conn = TestConnection.Create(_node.TcpEndPoint)) {
+				using (var conn = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint)) {
 					await conn.ConnectAsync();
 					await conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, creds,
 							new EventData(Guid.NewGuid(), "testing", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),
@@ -366,10 +384,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_reading_a_stream_forward_with_maxcount_deleted_linktos :
-				SpecificationWithLinkToToMaxCountDeletedEvents {
+			when_reading_a_stream_forward_with_maxcount_deleted_linktos<TLogFormat, TStreamId> :
+				SpecificationWithLinkToToMaxCountDeletedEvents<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -384,11 +404,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		[Explicit("Failing test for Greg demonstrating NullReferenceException in Convert.cs")]
 		public class
-			when_reading_a_stream_forward_with_maxcount_deleted_linktos_with_rich_entry :
-				SpecificationWithLinkToToMaxCountDeletedEvents {
+			when_reading_a_stream_forward_with_maxcount_deleted_linktos_with_rich_entry<TLogFormat, TStreamId> :
+				SpecificationWithLinkToToMaxCountDeletedEvents<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -404,9 +426,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled_as_xml :
-			HttpSpecificationWithLinkToToDeletedEvents {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled_as_xml<TLogFormat, TStreamId> :
+			HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
 			private XDocument _feed;
 			private XElement[] _entries;
 
@@ -433,10 +457,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled :
-				HttpSpecificationWithLinkToToDeletedEvents {
+			when_reading_a_stream_forward_with_deleted_linktos_with_content_enabled<TLogFormat, TStreamId> :
+				HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -466,8 +492,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_reading_a_stream_backward_with_deleted_linktos : HttpSpecificationWithLinkToToDeletedEvents {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_a_stream_backward_with_deleted_linktos<TLogFormat, TStreamId>
+			: HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -496,10 +525,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_reading_a_stream_backward_with_deleted_linktos_and_embed_of_content :
-				HttpSpecificationWithLinkToToDeletedEvents {
+			when_reading_a_stream_backward_with_deleted_linktos_and_embed_of_content<TLogFormat, TStreamId> :
+				HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private List<JToken> _entries;
 
@@ -529,8 +560,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_polling_the_head_forward_and_a_new_event_appears : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_polling_the_head_forward_and_a_new_event_appears<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private JObject _head;
 			private string _previous;
@@ -562,10 +595,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_reading_a_stream_forward_from_beginning_asking_for_less_events_than_in_the_stream :
-				SpecificationWithLongFeed {
+			when_reading_a_stream_forward_from_beginning_asking_for_less_events_than_in_the_stream<TLogFormat, TStreamId>  :
+				SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
 			protected override async Task When() {
@@ -579,10 +614,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_reading_a_stream_forward_from_beginning_asking_for_more_events_than_in_the_stream :
-				SpecificationWithLongFeed {
+			when_reading_a_stream_forward_from_beginning_asking_for_more_events_than_in_the_stream<TLogFormat, TStreamId> :
+				SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
 			protected override async Task When() {
@@ -596,10 +633,12 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_reading_a_stream_forward_from_beginning_asking_for_exactly_the_events_in_the_stream :
-				SpecificationWithLongFeed {
+			when_reading_a_stream_forward_from_beginning_asking_for_exactly_the_events_in_the_stream<TLogFormat, TStreamId> :
+				SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
 			protected override async Task When() {
@@ -612,8 +651,10 @@ namespace EventStore.Core.Tests.Http.Streams {
 			}
 		}
 
-		[TestFixture, Category("LongRunning")]
-		public class when_reading_a_stream_forward_with_etag_in_header : SpecificationWithLongFeed {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_reading_a_stream_forward_with_etag_in_header<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
 			protected override async Task When() {
@@ -630,8 +671,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class when_reading_the_all_stream_backward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to<TLogFormat, TStreamId>
+		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
 		private JObject _feed;
 		private List<JToken> _entries;
 
@@ -661,8 +705,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class when_reading_the_all_stream_backward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_the_all_stream_backward_with_resolve_link_to_disabled<TLogFormat, TStreamId>
+		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
 		private JObject _feed;
 		private List<JToken> _entries;
 
@@ -692,8 +739,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 	}
 		
-	[TestFixture, Category("LongRunning")]
-	public class when_reading_the_all_stream_forward_with_resolve_link_to : HttpSpecificationWithLinkToToEvents {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to<TLogFormat, TStreamId>
+		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
 		private JObject _feed;
 		private List<JToken> _entries;
 
@@ -723,8 +773,11 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
-	public class when_reading_the_all_stream_forward_with_resolve_link_to_disabled : HttpSpecificationWithLinkToToEvents {
+	[Category("LongRunning")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_reading_the_all_stream_forward_with_resolve_link_to_disabled<TLogFormat, TStreamId>
+		: HttpSpecificationWithLinkToToEvents<TLogFormat, TStreamId> {
 		private JObject _feed;
 		private List<JToken> _entries;
 
@@ -758,14 +811,16 @@ namespace EventStore.Core.Tests.Http.Streams {
 // This test needs to be out of the streams namespace to prevent it from inheriting the wrong mini node.
 namespace EventStore.Core.Tests.Http {
 	public class when_running_the_node_advertising_a_different_ip_as {
-		[TestFixture, Category("LongRunning")]
-		public class when_retrieving_feed_head_and_http_advertise_ip_is_set : with_admin_user {
+		[Category("LongRunning")]
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_retrieving_feed_head_and_http_advertise_ip_is_set<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private JObject _feed;
 			private string advertisedAddress = "127.0.10.1";
 			private int advertisedPort = 2116;
 
-			protected override MiniNode CreateMiniNode() {
-				return new MiniNode(PathName,
+			protected override MiniNode<TLogFormat, TStreamId> CreateMiniNode() {
+				return new MiniNode<TLogFormat, TStreamId>(PathName,
 					advertisedExtHostAddress: advertisedAddress, advertisedHttpPort: advertisedPort);
 			}
 

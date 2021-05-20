@@ -11,14 +11,23 @@ namespace EventStore.Core.LogV3 {
 		// Reservations are 2 apart to make room for their metastreams.
 		public static long FirstRealStream { get; } = 1024;
 
+		// Even streams that dont exist can be normal/meta and user/system
+		// e.g. for default ACLs.
+		public const long NoUserStream = 0;
+		public const long NoUserMetastream = 1;
+		public const long NoSystemStream = 2;
+		public const long NoSystemMetastream = 3;
+
+		private const long FirstVirtualStream = 4;
+
 		// virtual stream so that we can write metadata to $$$all
-		private const long AllStreamNumber = 2;
+		private const long AllStreamNumber = 4;
 
 		// virtual stream so that we can index StreamRecords for looking up stream names
-		public const long StreamsCreatedStreamNumber = 4;
+		public const long StreamsCreatedStreamNumber = 6;
 
 		// virtual stream for storing system settings
-		private const long SettingsStreamNumber = 6;
+		private const long SettingsStreamNumber = 8;
 
 		public long AllStream => AllStreamNumber;
 		public long SettingsStream => SettingsStreamNumber;
@@ -76,15 +85,16 @@ namespace EventStore.Core.LogV3 {
 		// we will have already looked up its info in the stream index, so this call will become trivial or unnecessary.
 		public bool IsSystemStream(long streamId) {
 			if (IsVirtualStream(streamId) ||
-				_metastreams.IsMetaStream(streamId))
+				_metastreams.IsMetaStream(streamId) ||
+				streamId == NoSystemStream)
 				return true;
 
 			var streamName = _streamNames.LookupName(streamId);
 			return SystemStreams.IsSystemStream(streamName);
 		}
 
-		public static bool IsVirtualStream(long streamId) =>
-			streamId < FirstRealStream;
+		private static bool IsVirtualStream(long streamId) =>
+			FirstVirtualStream <= streamId && streamId < FirstRealStream;
 
 		public bool IsMetaStream(long streamId) => _metastreams.IsMetaStream(streamId);
 

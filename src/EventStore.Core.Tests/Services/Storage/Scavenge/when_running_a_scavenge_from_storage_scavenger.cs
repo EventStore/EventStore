@@ -14,17 +14,18 @@ using ILogger = Serilog.ILogger;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
-	[TestFixture]
-	public class when_running_scavenge_from_storage_scavenger : SpecificationWithDirectoryPerTestFixture {
-		private static readonly ILogger Log = Serilog.Log.ForContext<when_running_scavenge_from_storage_scavenger>();
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	public class when_running_scavenge_from_storage_scavenger<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private static readonly ILogger Log = Serilog.Log.ForContext<when_running_scavenge_from_storage_scavenger<TLogFormat, TStreamId>>();
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
-		private MiniNode _node;
+		private MiniNode<TLogFormat, TStreamId> _node;
 		private List<ResolvedEvent> _result;
 
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			_node = new MiniNode(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
 			var scavengeMessage =
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		public async Task When() {
-			using (var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Ssl, DefaultData.AdminCredentials)) {
+			using (var conn = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint, TcpType.Ssl, DefaultData.AdminCredentials)) {
 				await conn.ConnectAsync();
 				var countdown = new CountdownEvent(2);
 				_result = new List<ResolvedEvent>();

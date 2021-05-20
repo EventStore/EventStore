@@ -10,15 +10,15 @@ using System.IO;
 using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
-	public class specification_with_a_single_node : SpecificationWithDirectoryPerTestFixture {
-		protected MiniNode _node;
+	public abstract class specification_with_a_single_node<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		protected MiniNode<TLogFormat, TStreamId> _node;
 
 		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromSeconds(3);
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			_node = new MiniNode(PathName, dbPath: Path.Combine(PathName, "db"), inMemDb: false);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName, dbPath: Path.Combine(PathName, "db"), inMemDb: false);
 
 			BeforeNodeStarts();
 
@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected Task StartNode() {
 			if (_node == null)
-				_node = new MiniNode(PathName, dbPath: Path.Combine(PathName, "db"), inMemDb: false);
+				_node = new MiniNode<TLogFormat, TStreamId>(PathName, dbPath: Path.Combine(PathName, "db"), inMemDb: false);
 
 			BeforeNodeStarts();
 

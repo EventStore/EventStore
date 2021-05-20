@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.Tests;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
@@ -9,8 +10,9 @@ using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	public static class checkpoint_suggested {
-		[TestFixture]
-		public class when_the_checkpoint_is_suggested : TestFixtureWithCoreProjectionStarted {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_the_checkpoint_is_suggested<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 			protected override void Given() {
 				_checkpointHandledThreshold = 10;
 				_checkpointUnhandledBytesThreshold = 41;
@@ -45,8 +47,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			}
 		}
 
-		[TestFixture]
-		public class when_the_second_checkpoint_is_suggested : TestFixtureWithCoreProjectionStarted {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_the_second_checkpoint_is_suggested<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 			protected override void Given() {
 				_checkpointHandledThreshold = 10;
 				_checkpointUnhandledBytesThreshold = 41;
@@ -91,8 +94,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			}
 		}
 
-		[TestFixture]
-		public class when_the_second_checkpoint_is_suggested_and_write_succeeds : TestFixtureWithCoreProjectionStarted {
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		public class when_the_second_checkpoint_is_suggested_and_write_succeeds<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 			protected override void Given() {
 				_checkpointHandledThreshold = 10;
 				_checkpointUnhandledBytesThreshold = 41;

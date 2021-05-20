@@ -2,7 +2,7 @@
 using EventStore.LogV3;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
-	public class LogV3EpochLogRecord : LogV3Record<Raw.EpochHeader>, ISystemLogRecord {
+	public class LogV3EpochLogRecord : LogV3Record<RecordView<Raw.EpochHeader>>, ISystemLogRecord {
 		public SystemRecordType SystemRecordType => SystemRecordType.Epoch;
 
 		public LogV3EpochLogRecord(
@@ -22,7 +22,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				leaderInstanceId: leaderInstanceId);
 		}
 
-		public LogV3EpochLogRecord(ReadOnlyMemory<byte> bytes) : base(bytes) {
+		public LogV3EpochLogRecord(ReadOnlyMemory<byte> bytes) : base() {
+			Record = new RecordView<Raw.EpochHeader>(bytes);
 		}
 
 		public EpochRecord GetEpochRecord() => new EpochRecord(
