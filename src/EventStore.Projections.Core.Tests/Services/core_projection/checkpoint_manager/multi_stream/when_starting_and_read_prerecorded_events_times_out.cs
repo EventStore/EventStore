@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_bus.Subscribe<CoreProjectionProcessingMessage.PrerecordedEventsLoaded>(this);
 
 			_checkpointManager.Initialize();
-			var positions = new Dictionary<string, long> {{"a", 1}, {"b", 1}, {"c", 1}};
+			var positions = new Dictionary<string, long> { { "a", 1 }, { "b", 1 }, { "c", 1 } };
 			_checkpointManager.BeginLoadPrerecordedEvents(CheckpointTag.FromStreamPositions(0, positions));
 
 			if (!_mre.Wait(10000)) {

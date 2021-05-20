@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 
 			protected override IProjectionStateHandler CreateStateHandler() {
 				return _stateHandlerFactory.Create(
-					"JS", _projection, 
+					"JS", _projection,
 					enableContentTypeValidation: true, logger: (s, _) => {
 						if (s.StartsWith("P:"))
 							Console.WriteLine(s);
@@ -71,7 +71,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 
 			protected override IProjectionStateHandler CreateStateHandler() {
 				return _stateHandlerFactory.Create(
-					"JS", _projection, 
+					"JS", _projection,
 					enableContentTypeValidation: false, logger: (s, _) => {
 						if (s.StartsWith("P:"))
 							Console.WriteLine(s);

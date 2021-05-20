@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			}) {
 				Timeout = _timeout
 			};
-			
+
 			if (!string.IsNullOrEmpty(username)) {
 				client.DefaultRequestHeaders.Authorization =
 					new AuthenticationHeaderValue(
@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			} else {
 				if (statusCode >= 300 && statusCode < 400) {
 					//Redirects are always allowed because authorization is done on the canonical url
-					Assert.GreaterOrEqual(statusCode,300);
+					Assert.GreaterOrEqual(statusCode, 300);
 					Assert.LessOrEqual(statusCode, 307);
 				} else {
 					if (userAuthorizationLevel == "None") {

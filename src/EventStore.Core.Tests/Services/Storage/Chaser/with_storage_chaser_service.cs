@@ -76,12 +76,12 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		private TFChunkDbConfig CreateDbConfig() {
 
 			var nodeConfig = new TFChunkDbConfig(
-				PathName, 
-				new VersionedPatternFileNamingStrategy(PathName, "chunk-"), 
-				1000, 
-				10000, 
+				PathName,
+				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
+				1000,
+				10000,
 				_writerChk,
-				_chaserChk, 
+				_chaserChk,
 				_epochChk,
 				_proposalChk,
 				_truncateChk,

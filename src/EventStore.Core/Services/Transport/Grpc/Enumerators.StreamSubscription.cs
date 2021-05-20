@@ -91,7 +91,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				ReadLoop:
+ReadLoop:
 
 				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
 					return false;
@@ -133,7 +133,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+						RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 						Fail(ex);
 						return;
 					}
@@ -207,7 +207,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async Task OnSubscriptionMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+						RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 						Fail(ex);
 						return;
 					}
@@ -223,7 +223,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 								if (message is ClientMessage.NotHandled notHandled &&
-								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+									RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 									Fail(ex);
 									return;
 								}
@@ -316,37 +316,38 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									return;
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
-							if (liveMessagesCancelled == 1) {
+								if (liveMessagesCancelled == 1) {
+									return;
+								}
+
+								using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+								try {
+									Log.Verbose(
+										"Live subscription {subscriptionId} to {streamName} received event {streamRevision}.",
+										_subscriptionId, _streamName, appeared.Event.OriginalEventNumber);
+
+									await liveEvents.Writer.WriteAsync(appeared.Event, cts.Token)
+										.ConfigureAwait(false);
+								} catch (Exception e) {
+									if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0)
+										return;
+
+									Log.Verbose(
+										e,
+										"Live subscription {subscriptionId} to {streamName} timed out at {streamRevision}; unsubscribing...",
+										_subscriptionId, _streamName,
+										StreamRevision.FromInt64(appeared.Event.OriginalEventNumber));
+
+									Unsubscribe();
+
+									liveEvents.Writer.Complete();
+
+									CatchUp(StreamRevision.FromInt64(
+										_current.GetValueOrDefault().OriginalEvent.EventNumber));
+								}
+
 								return;
 							}
-
-							using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-							try {
-								Log.Verbose(
-									"Live subscription {subscriptionId} to {streamName} received event {streamRevision}.",
-									_subscriptionId, _streamName, appeared.Event.OriginalEventNumber);
-
-								await liveEvents.Writer.WriteAsync(appeared.Event, cts.Token)
-									.ConfigureAwait(false);
-							} catch (Exception e) {
-								if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0) return;
-
-								Log.Verbose(
-									e,
-									"Live subscription {subscriptionId} to {streamName} timed out at {streamRevision}; unsubscribing...",
-									_subscriptionId, _streamName,
-									StreamRevision.FromInt64(appeared.Event.OriginalEventNumber));
-
-								Unsubscribe();
-
-								liveEvents.Writer.Complete();
-
-								CatchUp(StreamRevision.FromInt64(
-									_current.GetValueOrDefault().OriginalEvent.EventNumber));
-							}
-
-							return;
-						}
 						default:
 							Fail(
 								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
@@ -360,7 +361,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			private void ConfirmSubscription() {
-				if (_subscriptionStarted.Task.IsCompletedSuccessfully) return;
+				if (_subscriptionStarted.Task.IsCompletedSuccessfully)
+					return;
 				_subscriptionStarted.TrySetResult(true);
 			}
 

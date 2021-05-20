@@ -10,18 +10,18 @@ using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
 
 namespace EventStore.Core.Cluster {
-	
+
 	public partial class EventStoreClusterClient : IDisposable {
 		private readonly EventStore.Cluster.Gossip.GossipClient _gossipClient;
 		private readonly EventStore.Cluster.Elections.ElectionsClient _electionsClient;
-		
+
 		private readonly GrpcChannel _channel;
 		private readonly IPublisher _bus;
 		public bool Disposed { get; private set; }
 
 		public EventStoreClusterClient(Uri address, IPublisher bus, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
 			HttpMessageHandler httpMessageHandler = null;
-			if (address.Scheme == Uri.UriSchemeHttps){
+			if (address.Scheme == Uri.UriSchemeHttps) {
 				var socketsHttpHandler = new SocketsHttpHandler {
 					SslOptions = {
 						RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
@@ -58,7 +58,8 @@ namespace EventStore.Core.Cluster {
 		}
 
 		public void Dispose() {
-			if (Disposed) return;
+			if (Disposed)
+				return;
 			_channel.Dispose();
 			Disposed = true;
 		}

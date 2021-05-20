@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				bytes = new byte[3994]; // this gives exactly 4097 size of record, with 3993 (rec size 4096) everything works fine!
 			new Random().NextBytes(bytes);
 			var writer = new TFChunkWriter(db);
-			
+
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
 
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				flags: PrepareFlags.SingleWrite,
 				eventType: "type",
 				data: bytes,
-				metadata: new byte[] {0x07, 0x17});
+				metadata: new byte[] { 0x07, 0x17 });
 
 			long pos;
 			Assert.IsTrue(writer.Write(record, out pos));

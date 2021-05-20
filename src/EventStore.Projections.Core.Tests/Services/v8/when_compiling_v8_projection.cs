@@ -23,9 +23,9 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 				if (_stateHandler != null)
 					_stateHandler.Dispose();
 				_stateHandler = null;
-/*
-                _state = null;
-*/
+				/*
+								_state = null;
+				*/
 				_projection = null;
 				_projection = @"
                 fromAll();
@@ -38,15 +38,17 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 				_stateHandlerFactory = new ProjectionStateHandlerFactory();
 				_stateHandler = _stateHandlerFactory.Create(
 					"JS", _projection, true, logger: (s, _) => {
-						if (!s.StartsWith("P:")) _logged.Add(s);
-						else _logDelegate(s);
+						if (!s.StartsWith("P:"))
+							_logged.Add(s);
+						else
+							_logDelegate(s);
 					}); // skip prelude debug output
-/*
-                if (_state != null)
-                    _stateHandler.Load(_state);
-                else
-                    _stateHandler.Initialize();
-*/
+				/*
+								if (_state != null)
+									_stateHandler.Load(_state);
+								else
+									_stateHandler.Initialize();
+				*/
 				Console.Write(".");
 			}
 		}
@@ -54,8 +56,10 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 		[Test, Category("v8"), Category("Manual"), Explicit]
 		public void can_compile_prelude_million_times() {
 			_logger = (s, _) => {
-				if (!s.StartsWith("P:")) _logged.Add(s);
-				else _logDelegate(s);
+				if (!s.StartsWith("P:"))
+					_logged.Add(s);
+				else
+					_logDelegate(s);
 			};
 			_projection = @"
                 fromAll();

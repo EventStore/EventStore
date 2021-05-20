@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		IHandle<ReaderSubscriptionMessage.EventReaderPartitionDeleted>,
 		IHandle<ReaderSubscriptionMessage.Faulted> {
 		public const string SubComponentName = "EventReaderCoreService";
-		
+
 		private readonly IPublisher _publisher;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly ILogger _logger = Serilog.Log.ForContext<ProjectionCoreService>();
@@ -106,9 +106,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var distributionPointCorrelationId = Guid.NewGuid();
 			var eventReader = projectionSubscription.CreatePausedEventReader(
 				_publisher, _ioDispatcher, distributionPointCorrelationId);
-//            _logger.Trace(
-//                "The '{subscriptionId}' projection subscribed to the '{distributionPointCorrelationId}' distribution point", subscriptionId,
-//                distributionPointCorrelationId);
+			//            _logger.Trace(
+			//                "The '{subscriptionId}' projection subscribed to the '{distributionPointCorrelationId}' distribution point", subscriptionId,
+			//                distributionPointCorrelationId);
 			_eventReaders.Add(distributionPointCorrelationId, eventReader);
 			_subscriptionEventReaders.Add(subscriptionId, distributionPointCorrelationId);
 			_eventReaderSubscriptions.Add(distributionPointCorrelationId, subscriptionId);
@@ -189,8 +189,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return; // unsubscribed
 			_subscriptions[projectionId].Handle(message);
 
-//            _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
-//            Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
+			//            _pausedSubscriptions.Add(projectionId); // it is actually disposed -- workaround
+			//            Handle(new ReaderSubscriptionManagement.Unsubscribe(projectionId));
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionEof message) {
@@ -243,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId, message.Reason));
 		}
 
-		
+
 		private void StartReaders() {
 			//TODO: do we need to clear subscribed projections here?
 			//TODO: do we need to clear subscribed distribution points here?
@@ -269,7 +269,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_eventReaderSubscriptions.Remove(_defaultEventReaderId);
 			}
 			_defaultEventReaderId = Guid.Empty;
-			
+
 			if (_subscriptions.Count > 0) {
 				_logger.Information("_subscriptions is not empty after all the projections have been killed");
 				_subscriptions.Clear();
@@ -297,7 +297,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_publisher.Publish(
 				new ProjectionCoreServiceMessage.SubComponentStopped(SubComponentName, message.QueueId));
 		}
-	
+
 		private bool TrySubscribeHeadingEventReader(
 			ReaderSubscriptionMessage.CommittedEventDistributed message, Guid projectionId) {
 			if (message.SafeTransactionFileReaderJoinPosition == null)

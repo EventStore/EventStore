@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
 		protected override void Given() {
 			base.Given();
-			_streams = new[] {"pa", "pb"};
+			_streams = new[] { "pa", "pb" };
 			ExistingEvent("a", "test1", "{}", "{}");
 			ExistingEvent("b", "test1", "{}", "{}");
 
@@ -47,13 +47,13 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 			_checkpointWriter.StartFrom(checkpointLoaded.CheckpointTag, checkpointLoaded.CheckpointEventNumber);
 			_manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
 
-			_manager.Start(CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"pa", -1}, {"pb", -1}}),
+			_manager.Start(CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> { { "pa", -1 }, { "pb", -1 } }),
 				null);
 			_manager.RecordEventOrder(_event1,
-				CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"pa", 1}, {"pb", -1}}),
+				CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> { { "pa", 1 }, { "pb", -1 } }),
 				committed: noop);
 			_manager.RecordEventOrder(_event2,
-				CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"pa", 1}, {"pb", 1}}),
+				CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> { { "pa", 1 }, { "pb", 1 } }),
 				committed: noop);
 		}
 

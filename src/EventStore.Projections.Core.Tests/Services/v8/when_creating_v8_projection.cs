@@ -161,7 +161,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 			}
 		}
 
-		[Test, Explicit, Category("v8"), Category("Manual"),Ignore("CI on Ubuntu not respecting explicit attribute, this should be run manually if needed")]
+		[Test, Explicit, Category("v8"), Category("Manual"), Ignore("CI on Ubuntu not respecting explicit attribute, this should be run manually if needed")]
 		public void long_execution_times_out_many() {
 			//string m = null;
 			for (var i = 0; i < 10; i++) {

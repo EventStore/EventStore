@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
@@ -16,7 +17,6 @@ using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
-using EventStore.ClientAPI.Projections;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
 			_node = new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
-				subsystems: new ISubsystem[] {_projections});
+				subsystems: new ISubsystem[] { _projections });
 			_projectionsCreated = SystemProjections.Created(_projections.LeaderMainBus);
 
 			await _node.Start();
@@ -182,7 +182,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 						DumpFailed("Stream does not contain enough events", streamId, events, result.Events);
 					else {
 						for (var index = 0; index < events.Length; index++) {
-							var parts = events[index].Split(new char[] {':'}, 2);
+							var parts = events[index].Split(new char[] { ':' }, 2);
 							var eventType = parts[0];
 							var eventData = parts[1];
 

@@ -8,15 +8,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
-using EventStore.Core.TransactionLog;
-using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
-using ILogger = Serilog.ILogger;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Util;
 using EventStore.LogCommon;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Index {
 	public abstract class TableIndex {
@@ -97,7 +97,8 @@ namespace EventStore.Core.Index {
 			if (maxTablesPerLevel <= 1)
 				throw new ArgumentOutOfRangeException("maxTablesPerLevel");
 
-			if (indexCacheDepth > 28 || indexCacheDepth < 8) throw new ArgumentOutOfRangeException("indexCacheDepth");
+			if (indexCacheDepth > 28 || indexCacheDepth < 8)
+				throw new ArgumentOutOfRangeException("indexCacheDepth");
 
 			_directory = directory;
 			_memTableFactory = memTableFactory;
@@ -111,7 +112,7 @@ namespace EventStore.Core.Index {
 			_indexCacheDepth = indexCacheDepth;
 			_initializationThreads = initializationThreads;
 			_ptableVersion = ptableVersion;
-			_awaitingMemTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+			_awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1, 0) };
 
 			_lowHasher = lowHasher;
 			_highHasher = highHasher;
@@ -174,7 +175,7 @@ namespace EventStore.Core.Index {
 
 			// clean up all other remaining files
 			var indexFiles = _indexMap.InOrder().Select(x => Path.GetFileName(x.Filename))
-				.Union(new[] {IndexMapFilename});
+				.Union(new[] { IndexMapFilename });
 			var toDeleteFiles = Directory.EnumerateFiles(_directory).Select(Path.GetFileName)
 				.Except(indexFiles, StringComparer.OrdinalIgnoreCase);
 			foreach (var filePath in toDeleteFiles) {
@@ -215,7 +216,7 @@ namespace EventStore.Core.Index {
 			Ensure.Nonnegative(version, "version");
 			Ensure.Nonnegative(position, "position");
 
-			AddEntries(commitPos, new[] {CreateIndexKey(streamId, version, position)});
+			AddEntries(commitPos, new[] { CreateIndexKey(streamId, version, position) });
 		}
 
 		public void AddEntries(long commitPos, IList<IndexKey<TStreamId>> entries) {
@@ -247,14 +248,15 @@ namespace EventStore.Core.Index {
 		//Automerge only
 		private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint) {
 			lock (_awaitingTablesLock) {
-				var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+				var newTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1, 0) };
 				newTables.AddRange(_awaitingMemTables.Select(
 					(x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
 
 				Log.Debug("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
 
 				_awaitingMemTables = newTables;
-				if (_inMem) return;
+				if (_inMem)
+					return;
 				TryProcessAwaitingTables();
 
 				if (_additionalReclaim)
@@ -497,7 +499,8 @@ namespace EventStore.Core.Index {
 				lock (_awaitingTablesLock) {
 					for (var j = _awaitingMemTables.Count - 1; j >= 1; j--) {
 						var tableItem = _awaitingMemTables[j];
-						if (!(tableItem.Table is IMemTable) || tableItem.Table.Id != ptable.Id) continue;
+						if (!(tableItem.Table is IMemTable) || tableItem.Table.Id != ptable.Id)
+							continue;
 						swapped = true;
 						_awaitingMemTables[j] = new TableItem(ptable,
 							tableItem.PrepareCheckpoint,
@@ -673,7 +676,7 @@ namespace EventStore.Core.Index {
 
 				var best = winner.Current;
 				if (first || ((last.Stream != best.Stream) && (last.Version != best.Version)) ||
-				    last.Position != best.Position) {
+					last.Position != best.Position) {
 					last = best;
 					sortedCandidates.Add(best);
 					first = false;
@@ -705,7 +708,8 @@ namespace EventStore.Core.Index {
 				throw new TimeoutException("Could not finish background thread in reasonable time.");
 			if (_inMem)
 				return;
-			if (_indexMap == null) return;
+			if (_indexMap == null)
+				return;
 			if (removeFiles) {
 				_indexMap.InOrder().ToList().ForEach(x => x.MarkForDestruction());
 				var fileName = Path.Combine(_directory, IndexMapFilename);

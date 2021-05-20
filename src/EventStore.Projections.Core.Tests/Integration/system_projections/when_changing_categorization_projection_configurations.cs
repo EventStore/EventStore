@@ -17,7 +17,8 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections {
 		}
 
 		protected override IEnumerable<WhenStep> When() {
-			foreach (var e in base.When()) yield return e;
+			foreach (var e in base.When())
+				yield return e;
 			string query = "first\r\n-";
 			yield return
 				new ProjectionManagementMessage.Command.UpdateQuery(

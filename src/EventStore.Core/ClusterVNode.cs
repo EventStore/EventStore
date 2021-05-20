@@ -7,18 +7,31 @@ using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
+using EventStore.Common.Exceptions;
+using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
+using EventStore.Core.Authentication;
+using EventStore.Core.Authentication.DelegatedAuthentication;
+using EventStore.Core.Authentication.PassthroughAuthentication;
+using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Core.Cluster;
 using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Gossip;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.RequestManager;
 using EventStore.Core.Services.Storage;
@@ -32,21 +45,8 @@ using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Authentication;
-using EventStore.Core.Helpers;
-using EventStore.Core.Services.PersistentSubscription;
-using EventStore.Core.Services.Histograms;
-using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
-using System.Threading.Tasks;
-using EventStore.Common.Exceptions;
-using EventStore.Common.Log;
-using EventStore.Common.Options;
-using EventStore.Core.Authentication.DelegatedAuthentication;
-using EventStore.Core.Authentication.PassthroughAuthentication;
-using EventStore.Core.Authorization;
-using EventStore.Core.Cluster;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Native.UnixSignalManager;
@@ -109,7 +109,7 @@ namespace EventStore.Core {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<SystemMessage.BecomeShutdown>,
 		IHandle<SystemMessage.SystemStart>,
-		IHandle<ClientMessage.ReloadConfig>{
+		IHandle<ClientMessage.ReloadConfig> {
 		private readonly ClusterVNodeOptions _options;
 		public override TFChunkDb Db { get; }
 
@@ -140,7 +140,7 @@ namespace EventStore.Core {
 		public override QueueStatsManager QueueStatsManager => _queueStatsManager;
 
 		public override IStartup Startup => _startup;
-		
+
 		public override IAuthenticationProvider AuthenticationProvider {
 			get { return _authenticationProvider; }
 		}
@@ -465,8 +465,8 @@ namespace EventStore.Core {
 			_certificateSelector = () => _certificate;
 			_trustedRootCertsSelector = () => _trustedRootCerts;
 
-			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
-			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_internalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_internalClientCertificateValidator = (cert, chain, errors) => ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 			_externalClientCertificateValidator = delegate { return (true, null); };
 			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
 
@@ -867,8 +867,7 @@ namespace EventStore.Core {
 			var httpAuthenticationProviders = new List<IHttpAuthenticationProvider>();
 
 			foreach (var authenticationScheme in _authenticationProvider.GetSupportedAuthenticationSchemes() ?? Enumerable.Empty<string>()) {
-				switch (authenticationScheme)
-				{
+				switch (authenticationScheme) {
 					case "Basic":
 						httpAuthenticationProviders.Add(new BasicHttpAuthenticationProvider(_authenticationProvider));
 						break;
@@ -913,7 +912,7 @@ namespace EventStore.Core {
 			var infoController = new InfoController(options, new Dictionary<string, bool> {
 				["projections"] = options.Projections.RunProjections != ProjectionType.None,
 				["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault &&
-				                     !options.Application.Insecure,
+									 !options.Application.Insecure,
 				["atomPub"] = options.Interface.EnableAtomPubOverHttp
 
 			}, _authenticationProvider);
@@ -1162,14 +1161,14 @@ namespace EventStore.Core {
 				var gossipSeedSource = (
 					options.Cluster.DiscoverViaDns,
 					options.Cluster.ClusterSize > 1,
-					options.Cluster.GossipSeed is {Length: >0}) switch {
-					(true, true, _) => (IGossipSeedSource)new DnsGossipSeedSource(options.Cluster.ClusterDns,
-						options.Cluster.ClusterGossipPort),
-					(false, true, false) => throw new InvalidConfigurationException(
-						"DNS discovery is disabled, but no gossip seed endpoints have been specified. "
-						+ "Specify gossip seeds using the `GossipSeed` option."),
-					_ => new KnownEndpointGossipSeedSource(options.Cluster.GossipSeed)
-				};
+					options.Cluster.GossipSeed is { Length: > 0 }) switch {
+						(true, true, _) => (IGossipSeedSource)new DnsGossipSeedSource(options.Cluster.ClusterDns,
+							options.Cluster.ClusterGossipPort),
+						(false, true, false) => throw new InvalidConfigurationException(
+							"DNS discovery is disabled, but no gossip seed endpoints have been specified. "
+							+ "Specify gossip seeds using the `GossipSeed` option."),
+						_ => new KnownEndpointGossipSeedSource(options.Cluster.GossipSeed)
+					};
 
 				var gossip = new NodeGossipService(
 					_mainQueue,

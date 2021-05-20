@@ -1,6 +1,6 @@
 using System;
-using EventStore.Projections.Core.Services.v8;
 using System.Linq;
+using EventStore.Projections.Core.Services.v8;
 
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionStateHandlerFactory {

@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Standard {
 			var isStreamDeletedEvent = StreamDeletedHelper.IsStreamDeletedEvent(
 				data.PositionStreamId, data.EventType, data.Data, out deletedStreamId);
 
-			var category = _streamCategoryExtractor.GetCategoryByStreamId(isStreamDeletedEvent?deletedStreamId:data.PositionStreamId);
+			var category = _streamCategoryExtractor.GetCategoryByStreamId(isStreamDeletedEvent ? deletedStreamId : data.PositionStreamId);
 			if (category == null)
 				return true; // handled but not interesting
 

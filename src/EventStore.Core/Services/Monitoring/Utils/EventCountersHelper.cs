@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 			_providers = new List<EventPipeProvider> {
 				new EventPipeProvider("System.Runtime", EventLevel.Informational,
 					(long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Threading |
-					       ClrTraceEventParser.Keywords.Exception | ClrTraceEventParser.Keywords.Contention),
+						   ClrTraceEventParser.Keywords.Exception | ClrTraceEventParser.Keywords.Contention),
 					new Dictionary<string, string> {
 						{"EventCounterIntervalSec", $"{collectIntervalInMs / 1000}"}
 					}),
@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 							}
 						}
 					};
-					
+
 					source.Process();
 				} catch (Exception exception) {
 					Log.Warning(exception, "Error encountered while processing events");
@@ -113,7 +113,8 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		}
 
 		private double GetCounterValue(string name) {
-			if (!_collectedStats.TryGetValue(name, out var value)) return InvalidCounterResult;
+			if (!_collectedStats.TryGetValue(name, out var value))
+				return InvalidCounterResult;
 			return value;
 		}
 

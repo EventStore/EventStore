@@ -12,10 +12,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		private static readonly BoundedChannelOptions BoundedChannelOptions =
 			new BoundedChannelOptions(MaxLiveEventBufferCount) {
-			FullMode = BoundedChannelFullMode.Wait,
-			SingleReader = true,
-			SingleWriter = true
-		};
+				FullMode = BoundedChannelFullMode.Wait,
+				SingleReader = true,
+				SingleWriter = true
+			};
 
 		private static bool ShouldIgnore(Exception ex) =>
 			ex is OperationCanceledException ||

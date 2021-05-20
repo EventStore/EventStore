@@ -7,8 +7,8 @@ using EventStore.ClientAPI;
 using EventStore.Common.Utils;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Http.Users;
-using NUnit.Framework;
 using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Http.StreamSecurity {
 	namespace stream_access {

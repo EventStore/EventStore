@@ -30,28 +30,28 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		public static IEventFilter Get(bool isAllStream, TcpClientMessageDto.Filter filter) {
 			if (filter == null || filter.Data.Length == 0) {
-				return isAllStream ? (IEventFilter) new DefaultAllFilterStrategy() : new DefaultStreamFilterStrategy();
+				return isAllStream ? (IEventFilter)new DefaultAllFilterStrategy() : new DefaultStreamFilterStrategy();
 			}
 
 			return filter.Context switch {
 				TcpClientMessageDto.Filter.FilterContext.EventType when filter.Type ==
-				                                                        TcpClientMessageDto.Filter.FilterType.Prefix =>
+																		TcpClientMessageDto.Filter.FilterType.Prefix =>
 				EventType.Prefixes(isAllStream, filter.Data),
 				TcpClientMessageDto.Filter.FilterContext.EventType when filter.Type ==
-				                                                        TcpClientMessageDto.Filter.FilterType.Regex =>
+																		TcpClientMessageDto.Filter.FilterType.Regex =>
 				EventType.Regex(isAllStream, filter.Data[0]),
 				TcpClientMessageDto.Filter.FilterContext.StreamId when filter.Type ==
-				                                                       TcpClientMessageDto.Filter.FilterType.Prefix =>
+																	   TcpClientMessageDto.Filter.FilterType.Prefix =>
 				StreamName.Prefixes(isAllStream, filter.Data),
 				TcpClientMessageDto.Filter.FilterContext.StreamId when filter.Type ==
-				                                                       TcpClientMessageDto.Filter.FilterType.Regex =>
+																	   TcpClientMessageDto.Filter.FilterType.Regex =>
 				StreamName.Regex(isAllStream, filter.Data[0]),
 				_ => throw new Exception() // Invalid filter
 			};
 		}
 
 		private sealed class DefaultStreamFilterStrategy : IEventFilter {
-			[MethodImpl(MethodImplOptions.AggressiveInlining|MethodImplOptions.AggressiveOptimization)]
+			[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 			public bool IsEventAllowed(EventRecord eventRecord) => true;
 		}
 
@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				(new OrdinalStreamIdPrefixAndSuffixStrategy("$persistentsubscription-$all::","-parked"), false)
 			};
 
-			[MethodImpl(MethodImplOptions.AggressiveInlining|MethodImplOptions.AggressiveOptimization)]
+			[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 			public bool IsEventAllowed(EventRecord eventRecord) {
 				var filters = _allFilters.AsSpan();
 				Debug.Assert(filters.Length > 0);
@@ -84,7 +84,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			private class NonSystemStreamStrategy : IEventFilter {
 
-				[MethodImpl(MethodImplOptions.AggressiveInlining|MethodImplOptions.AggressiveOptimization)]
+				[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 				public bool IsEventAllowed(EventRecord eventRecord) =>
 					eventRecord.EventStreamId[0] != '$';
 
@@ -102,7 +102,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_minLength = _prefix.Length + _suffix.Length;
 				}
 
-				[MethodImpl(MethodImplOptions.AggressiveInlining|MethodImplOptions.AggressiveOptimization)]
+				[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 				public bool IsEventAllowed(EventRecord eventRecord) =>
 					eventRecord.EventStreamId.Length >= _minLength
 					&& eventRecord.EventStreamId.StartsWith(_prefix, StringComparison.Ordinal)
@@ -216,12 +216,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 
 			if (parsedType == TcpClientMessageDto.Filter.FilterType.Regex) {
-				filter = Get(isAllStream, new TcpClientMessageDto.Filter(parsedContext, parsedType, new[] {data}));
+				filter = Get(isAllStream, new TcpClientMessageDto.Filter(parsedContext, parsedType, new[] { data }));
 				return (true, null);
 			}
 
 			filter = Get(isAllStream, new TcpClientMessageDto.Filter(parsedContext, parsedType,
-				data.Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries)));
+				data.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)));
 			return (true, null);
 		}
 	}

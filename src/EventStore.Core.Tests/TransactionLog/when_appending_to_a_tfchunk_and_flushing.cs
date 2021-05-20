@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[OneTimeSetUp]
 		public override void TestFixtureSetUp() {
 			base.TestFixtureSetUp();
-			
+
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			logFormat.StreamNameIndex.GetOrAddId("test", out var streamId, out _, out _);
 

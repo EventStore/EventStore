@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 			.Where(pi => pi.PropertyType == typeof(HttpMethod))
 			.Select(pi => (HttpMethod)pi.GetValue(null))
 			.Where(x => x != HttpMethod.Get && x != HttpMethod.Head)
-			.Select(x => new object[] {x})
+			.Select(x => new object[] { x })
 			.ToArray();
 
 		[TestCaseSource(nameof(MethodAllowedTestCases))]

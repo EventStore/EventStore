@@ -6,21 +6,21 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using EventStore.Common.Utils;
-using EventStore.Core.Services.Monitoring;
-using EventStore.Core.Tests.Http;
-using EventStore.Core.Tests.Services.Transport.Tcp;
-using EventStore.Core.TransactionLog.Chunks;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Tests.Http;
+using EventStore.Core.Tests.Services.Transport.Tcp;
+using EventStore.Core.TransactionLog.Chunks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
-using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode<TLogFormat, TStreamId> {
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Helpers {
 			RunCount += 1;
 
 			var ip = IPAddress.Loopback;
-			
+
 
 			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
 			int httpEndPointPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
@@ -82,37 +82,37 @@ namespace EventStore.Core.Tests.Helpers {
 			HttpEndPoint = new IPEndPoint(ip, httpEndPointPort);
 
 			var options = new ClusterVNodeOptions {
-					IndexBitnessVersion = indexBitnessVersion,
-					Application = new() {
-						StatsPeriodSec = 60 * 60,
-						WorkerThreads = 1
-					},
-					Interface = new() {
-						ExtTcpHeartbeatInterval = 10_000,
-						ExtTcpHeartbeatTimeout = 10_000,
-						IntTcpHeartbeatInterval = 10_000,
-						IntTcpHeartbeatTimeout = 10_000,
-						EnableTrustedAuth = enableTrustedAuth,
-						EnableAtomPubOverHttp = true
-					},
-					Cluster = new() {
-						DiscoverViaDns = false,
-						ReadOnlyReplica = isReadOnlyReplica
-					},
-					Database = new() {
-						ChunkSize = chunkSize ?? ChunkSize,
-						ChunksCacheSize = cachedChunkSize ?? CachedChunkSize,
-						SkipDbVerify = true,
-						StatsStorage = StatsStorage.None,
-						MaxMemTableSize = memTableSize,
-						DisableScavengeMerging = true,
-						HashCollisionReadLimit = hashCollisionReadLimit,
-						CommitTimeoutMs = 10_000,
-						PrepareTimeoutMs = 10_000,
-						UnsafeDisableFlushToDisk = disableFlushToDisk
-					},
-					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
-				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+				IndexBitnessVersion = indexBitnessVersion,
+				Application = new() {
+					StatsPeriodSec = 60 * 60,
+					WorkerThreads = 1
+				},
+				Interface = new() {
+					ExtTcpHeartbeatInterval = 10_000,
+					ExtTcpHeartbeatTimeout = 10_000,
+					IntTcpHeartbeatInterval = 10_000,
+					IntTcpHeartbeatTimeout = 10_000,
+					EnableTrustedAuth = enableTrustedAuth,
+					EnableAtomPubOverHttp = true
+				},
+				Cluster = new() {
+					DiscoverViaDns = false,
+					ReadOnlyReplica = isReadOnlyReplica
+				},
+				Database = new() {
+					ChunkSize = chunkSize ?? ChunkSize,
+					ChunksCacheSize = cachedChunkSize ?? CachedChunkSize,
+					SkipDbVerify = true,
+					StatsStorage = StatsStorage.None,
+					MaxMemTableSize = memTableSize,
+					DisableScavengeMerging = true,
+					HashCollisionReadLimit = hashCollisionReadLimit,
+					CommitTimeoutMs = 10_000,
+					PrepareTimeoutMs = 10_000,
+					UnsafeDisableFlushToDisk = disableFlushToDisk
+				},
+				Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
+			}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate())
 				.WithInternalSecureTcpOn(IntTcpEndPoint)
 				.WithExternalSecureTcpOn(TcpEndPoint)

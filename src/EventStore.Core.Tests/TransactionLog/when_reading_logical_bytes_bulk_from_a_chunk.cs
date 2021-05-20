@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void a_read_on_scavenged_chunk_does_not_include_map() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("afile"), 200, isScavenged: true);
-			chunk.CompleteScavenge(new[] {new PosMap(0, 0), new PosMap(1, 1)});
+			chunk.CompleteScavenge(new[] { new PosMap(0, 0), new PosMap(1, 1) });
 			using (var reader = chunk.AcquireReader()) {
 				var buffer = new byte[1024];
 				var result = reader.ReadNextDataBytes(1024, buffer);

@@ -25,12 +25,12 @@ namespace EventStore.Core.Services.Storage {
 		private readonly MultiQueuedHandler _workersMultiHandler;
 
 		public StorageReaderService(
-			IPublisher bus, 
-			ISubscriber subscriber, 
+			IPublisher bus,
+			ISubscriber subscriber,
 			IReadIndex<TStreamId> readIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			int threadCount,
-			IReadOnlyCheckpoint writerCheckpoint, 
+			IReadOnlyCheckpoint writerCheckpoint,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");

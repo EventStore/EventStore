@@ -20,7 +20,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 	}
 
-	public class EpochRecord: IComparable {
+	public class EpochRecord : IComparable {
 		public readonly long EpochPosition;
 		public readonly int EpochNumber;
 		public readonly Guid EpochId;
@@ -59,9 +59,11 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 
 		public int CompareTo(object obj) {
-			if (obj == null) return 1;
+			if (obj == null)
+				return 1;
 			EpochRecord other = obj as EpochRecord;
-			if(other == null) throw new ArgumentException("Object is not a Epoch Record");
+			if (other == null)
+				throw new ArgumentException("Object is not a Epoch Record");
 			return EpochNumber.CompareTo(other.EpochNumber);
 		}
 

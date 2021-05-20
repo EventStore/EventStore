@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			PurgeTimedOutRequests();
 		}
-	
+
 		private void InternalServerError(HttpEntityManager entity) {
 			entity.ReplyStatus(HttpStatusCode.InternalServerError, "Internal Server Error",
 				e => Log.Debug("Error while closing HTTP connection (HTTP service core): {e}.", e.Message));

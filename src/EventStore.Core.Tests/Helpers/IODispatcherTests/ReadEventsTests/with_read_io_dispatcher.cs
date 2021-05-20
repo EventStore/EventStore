@@ -5,10 +5,10 @@ using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Tests.Helpers.IODispatcherTests;
+using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
-			var _queue = QueuedHandler.CreateQueuedHandler(_bus,"TestQueuedHandler", new QueueStatsManager());
+			var _queue = QueuedHandler.CreateQueuedHandler(_bus, "TestQueuedHandler", new QueueStatsManager());
 			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_queue));
 			IODispatcherTestHelpers.SubscribeIODispatcher(_ioDispatcher, _bus);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);

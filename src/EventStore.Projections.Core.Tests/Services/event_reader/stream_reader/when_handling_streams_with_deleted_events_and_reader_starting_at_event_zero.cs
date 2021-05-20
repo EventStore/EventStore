@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader 
 							eventNumber, 50 * (eventNumber + 1), Guid.NewGuid(), Guid.NewGuid(), 50 * (eventNumber + 1),
 							0, _streamName, ExpectedVersion.Any, DateTime.UtcNow,
 							PrepareFlags.SingleWrite | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-							eventType, new byte[] {0}, new byte[] {0}
+							eventType, new byte[] { 0 }, new byte[] { 0 }
 						)
 					)
 				);
@@ -73,7 +73,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader 
 
 		private void HandleEvents(long start, long end) {
 			List<long> eventNumbers = new List<long>();
-			for (long i = start; i <= end; i++) eventNumbers.Add(i);
+			for (long i = start; i <= end; i++)
+				eventNumbers.Add(i);
 			HandleEvents(eventNumbers.ToArray());
 		}
 

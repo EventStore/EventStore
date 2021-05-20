@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public long LastIndexedPosition {
 			get { throw new NotImplementedException(); }
 		}
-		
+
 		public IIndexWriter<TStreamId> IndexWriter {
 			get { throw new NotImplementedException(); }
 		}

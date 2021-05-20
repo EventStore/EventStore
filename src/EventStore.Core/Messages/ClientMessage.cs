@@ -176,7 +176,7 @@ namespace EventStore.Core.Messages {
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (expectedVersion < Data.ExpectedVersion.StreamExists ||
-				    expectedVersion == Data.ExpectedVersion.Invalid)
+					expectedVersion == Data.ExpectedVersion.Invalid)
 					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
 				Ensure.NotNull(events, "events");
 
@@ -190,7 +190,7 @@ namespace EventStore.Core.Messages {
 				string eventStreamId, long expectedVersion, Event @event, ClaimsPrincipal user,
 				IReadOnlyDictionary<string, string> tokens = null)
 				: this(internalCorrId, correlationId, envelope, requireLeader, eventStreamId, expectedVersion,
-					@event == null ? null : new[] {@event}, user, tokens) {
+					@event == null ? null : new[] { @event }, user, tokens) {
 			}
 
 			public override string ToString() {
@@ -523,7 +523,8 @@ namespace EventStore.Core.Messages {
 				bool resolveLinkTos, bool requireLeader, ClaimsPrincipal user, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (eventNumber < -1) throw new ArgumentOutOfRangeException(nameof(eventNumber));
+				if (eventNumber < -1)
+					throw new ArgumentOutOfRangeException(nameof(eventNumber));
 
 				EventStreamId = eventStreamId;
 				EventNumber = eventNumber;
@@ -585,7 +586,8 @@ namespace EventStore.Core.Messages {
 				TimeSpan? longPollTimeout = null, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
+				if (fromEventNumber < -1)
+					throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
 
 				EventStreamId = eventStreamId;
 				FromEventNumber = fromEventNumber;
@@ -598,7 +600,7 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
-				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
+													+ "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
 					InternalCorrId, CorrelationId, EventStreamId,
 					FromEventNumber, MaxCount, ResolveLinkTos, RequireLeader, ValidationStreamVersion);
 			}
@@ -676,7 +678,8 @@ namespace EventStore.Core.Messages {
 				bool requireLeader, long? validationStreamVersion, ClaimsPrincipal user, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
+				if (fromEventNumber < -1)
+					throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
 
 				EventStreamId = eventStreamId;
 				FromEventNumber = fromEventNumber;
@@ -688,7 +691,7 @@ namespace EventStore.Core.Messages {
 
 			public override string ToString() {
 				return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
-				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
+													+ "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
 					InternalCorrId, CorrelationId, EventStreamId, FromEventNumber, MaxCount,
 					ResolveLinkTos, RequireLeader, ValidationStreamVersion);
 			}
@@ -1913,8 +1916,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class SetNodePriority : Message
-		{
+		public class SetNodePriority : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
@@ -1928,8 +1930,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ResignNode : Message
-		{
+		public class ResignNode : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {

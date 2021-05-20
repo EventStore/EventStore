@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly CancellationToken _cancellationToken;
 			private readonly SemaphoreSlim _semaphore;
 			private readonly Channel<ResolvedEvent> _channel;
-			
+
 			private ResolvedEvent _current;
 			private ulong _readCount;
 
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_readCount++;
 				return true;
 			}
-			
+
 			private void ReadPage(StreamRevision startRevision) {
 				Guid correlationId = Guid.NewGuid();
 
@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+						RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 						_channel.Writer.TryComplete(ex);
 						return;
 					}

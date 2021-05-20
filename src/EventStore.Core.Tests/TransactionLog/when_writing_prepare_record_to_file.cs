@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Open();
 			_writer = new TFChunkWriter(_db);
 			_writer.Open();
-			
+
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
 
@@ -43,8 +43,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.SingleWrite,
 				eventType: "type",
-				data: new byte[] {1, 2, 3, 4, 5},
-				metadata: new byte[] {7, 17});
+				data: new byte[] { 1, 2, 3, 4, 5 },
+				metadata: new byte[] { 7, 17 });
 			long newPos;
 			_writer.Write(_record, out newPos);
 			_writer.Flush();

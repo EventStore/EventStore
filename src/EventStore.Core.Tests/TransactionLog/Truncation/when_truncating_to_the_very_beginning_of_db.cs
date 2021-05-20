@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			_config = TFChunkHelper.CreateDbConfigEx(PathName, 11111, 5500, 5500, -1,0, 1000, -1);
+			_config = TFChunkHelper.CreateDbConfigEx(PathName, 11111, 5500, 5500, -1, 0, 1000, -1);
 
 			DbUtil.CreateMultiChunk(_config, 0, 2, GetFilePathFor("chunk-000000.000001"));
 			DbUtil.CreateMultiChunk(_config, 0, 2, GetFilePathFor("chunk-000000.000002"));

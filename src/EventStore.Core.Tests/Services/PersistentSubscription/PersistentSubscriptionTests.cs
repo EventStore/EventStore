@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Tests.ClientAPI;
 using EventStore.Core.Tests.Services.Replication;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
-using EventStore.Core.Tests.ClientAPI;
-using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
 	public enum EventSource {
@@ -125,8 +125,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 		[Test]
 		public void null_groupname_throws_argument_null() {
-			switch (_eventSource)
-			{
+			switch (_eventSource) {
 				case EventSource.SingleStream:
 					Assert.Throws<ArgumentNullException>(() => {
 						_sub = new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -234,7 +233,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			reader.Load(null);
 			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
-			sub.HandleReadCompleted(new[] {Helper.GetFakeEventFor(0, _eventSource)}, Helper.GetStreamPositionFor(1, _eventSource), false);
+			sub.HandleReadCompleted(new[] { Helper.GetFakeEventFor(0, _eventSource) }, Helper.GetStreamPositionFor(1, _eventSource), false);
 			Assert.AreEqual(1, envelope1.Replies.Count);
 		}
 
@@ -251,7 +250,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.StartFromBeginning());
 			Assert.DoesNotThrow(() => {
 				sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
-				sub.HandleReadCompleted(new[] {Helper.GetFakeEventFor( 0, _eventSource)}, Helper.GetStreamPositionFor(1, _eventSource),
+				sub.HandleReadCompleted(new[] { Helper.GetFakeEventFor(0, _eventSource) }, Helper.GetStreamPositionFor(1, _eventSource),
 					false);
 			});
 		}
@@ -992,8 +991,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			bool skip = false;
 			var reader = new FakeCheckpointReader();
 			var streamReader = new FakeStreamReader(
-				(stream, startPosition, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) =>
-				{ skip = skipFirstEvent; }
+				(stream, startPosition, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) => { skip = skipFirstEvent; }
 			);
 			new Core.Services.PersistentSubscription.PersistentSubscription(
 				Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
@@ -1004,8 +1002,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.PreferDispatchToSingle()
 					.StartFromBeginning()
 					.MaximumToCheckPoint(1));
-			switch (_eventSource)
-			{
+			switch (_eventSource) {
 				case EventSource.SingleStream:
 					reader.Load("1");
 					break;
@@ -1035,8 +1032,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
 
-			switch (_eventSource)
-			{
+			switch (_eventSource) {
 				case EventSource.SingleStream:
 					Assert.AreEqual(new PersistentSubscriptionSingleStreamPosition(0L), actualStart);
 					break;
@@ -1458,7 +1454,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			var ev = Helper.GetFakeEventFor(0, _eventSource);
 			sub.HandleReadCompleted(new[] {
 				ev,
-			},Helper.GetStreamPositionFor(1, _eventSource), false);
+			}, Helper.GetStreamPositionFor(1, _eventSource), false);
 
 			for (int i = 1; i < 11; i++) {
 				sub.NotAcknowledgeMessagesProcessed(corrid, new[] { Helper.GetEventIdFor(0) }, NakAction.Retry, "a reason from client.");
@@ -1501,7 +1497,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			sub.NotAcknowledgeMessagesProcessed(corrid, new[] { Helper.GetEventIdFor(0) }, NakAction.Park, "a reason from client.");
 			Assert.AreEqual(2, envelope1.Replies.Count);
-			Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == Helper.GetEventIdFor(0) ));
+			Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == Helper.GetEventIdFor(0)));
 
 			sub.NotAcknowledgeMessagesProcessed(corrid, new[] { Helper.GetEventIdFor(1) }, NakAction.Park, "a reason from client.");
 			Assert.That(parker.ParkedEvents, Has.Exactly(1).Matches<ResolvedEvent>(_ => _.Event.EventId == Helper.GetEventIdFor(1)));
@@ -1682,7 +1678,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			//retry parked messages stop at version 5000
 			sub.RetryParkedMessages(5000);
-			
+
 			//this should invoke message parker's BeginReadEndSequence
 			Assert.AreEqual(1, parker.BeginReadEndSequenceCount);
 		}
@@ -1705,9 +1701,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MinimumToCheckPoint(1)
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
-			
+
 			loadCount.Clear(); // clear loads from checkpoint reader
-			
+
 			var clientConnectionId = Guid.NewGuid();
 			var clientCorrelationId = Guid.NewGuid();
 			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 50, "foo", "bar");
@@ -1718,22 +1714,22 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			foreach (var parkedEvent in parkedEvents) {
 				messageParker.BeginParkMessage(parkedEvent, "parked", (ev, res) => { });
 			}
-			
+
 			sub.RetryParkedMessages(null);
-			
+
 			Assert.AreEqual(19, loadCount[0]);
-			
+
 			sub.HandleParkedReadCompleted(
 				parkedEvents,
 				new PersistentSubscriptionSingleStreamPosition(19),
 				true,
 				20);
-			
+
 			Assert.AreEqual(19, messageParker.MarkedAsProcessed);
 			Assert.AreEqual(19, sub.OutstandingMessageCount);
 
 		}
-		
+
 		[Test]
 		public void retrying_parked_messages_with_stop_at_replays_parkedEvents_until_that_version() {
 			var messageParker = new FakeMessageParker();
@@ -1751,9 +1747,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					.MinimumToCheckPoint(1)
 					.MaximumToCheckPoint(1));
 			reader.Load(null);
-			
+
 			loadCount.Clear(); // clear loads from checkpoint reader
-			
+
 			var clientConnectionId = Guid.NewGuid();
 			var clientCorrelationId = Guid.NewGuid();
 			sub.AddClient(clientCorrelationId, clientConnectionId, "connection-1", new FakeEnvelope(), 50, "foo", "bar");
@@ -1767,7 +1763,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var stopAt = 7L;
 			sub.RetryParkedMessages(stopAt);
-			
+
 			// stopAt == Count
 			Assert.AreEqual(stopAt, loadCount[0]);
 
@@ -1776,9 +1772,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 				new PersistentSubscriptionSingleStreamPosition(7),
 				false,
 				stopAt);
-			
+
 			Assert.AreEqual(7, messageParker.MarkedAsProcessed);
-			
+
 			Assert.AreEqual(7, sub.OutstandingMessageCount);
 
 		}
@@ -1888,18 +1884,18 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			};
 		}
 
-		public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version, long commitPosition=1234567, long preparePosition=1234567) {
+		public static ResolvedEvent BuildFakeEvent(Guid id, string type, string stream, long version, long commitPosition = 1234567, long preparePosition = 1234567) {
 			return BuildFakeEventWithMetadata(id, type, stream, version, new byte[0], commitPosition, preparePosition);
 		}
 
-		public static ResolvedEvent BuildFakeEventWithMetadata(Guid id, string type, string stream, long version, byte[] metaData, long commitPosition=1234567, long preparePosition=1234567) {
+		public static ResolvedEvent BuildFakeEventWithMetadata(Guid id, string type, string stream, long version, byte[] metaData, long commitPosition = 1234567, long preparePosition = 1234567) {
 			return
 				ResolvedEvent.ForUnresolvedEvent(new EventRecord(version, preparePosition, Guid.NewGuid(), id, commitPosition, 1234,
 					stream, version,
 					DateTime.UtcNow, PrepareFlags.SingleWrite, type, new byte[0], metaData), commitPosition);
 		}
 
-		public static ResolvedEvent BuildLinkEvent(Guid id, string stream, long version, ResolvedEvent ev, bool resolved = true, long commitPosition=1234567, long preparePosition=1234567) {
+		public static ResolvedEvent BuildLinkEvent(Guid id, string stream, long version, ResolvedEvent ev, bool resolved = true, long commitPosition = 1234567, long preparePosition = 1234567) {
 			var link = new EventRecord(version, preparePosition, Guid.NewGuid(), id, commitPosition, 1234, stream, version,
 				DateTime.UtcNow, PrepareFlags.SingleWrite, SystemEventTypes.LinkTo,
 				Encoding.UTF8.GetBytes(string.Format("{0}@{1}", ev.OriginalEventNumber, ev.OriginalStreamId)),

@@ -81,45 +81,45 @@ namespace EventStore.Core.Data {
 				var name = (string)reader.Value;
 				switch (name) {
 					case SystemMetadata.MaxCount: {
-						Check(reader.Read(), reader);
-						Check(JsonToken.Integer, reader);
-						maxCount = (long)reader.Value;
-						break;
-					}
+							Check(reader.Read(), reader);
+							Check(JsonToken.Integer, reader);
+							maxCount = (long)reader.Value;
+							break;
+						}
 					case SystemMetadata.MaxAge: {
-						Check(reader.Read(), reader);
-						Check(JsonToken.Integer, reader);
-						maxAge = TimeSpan.FromSeconds((long)reader.Value);
-						break;
-					}
+							Check(reader.Read(), reader);
+							Check(JsonToken.Integer, reader);
+							maxAge = TimeSpan.FromSeconds((long)reader.Value);
+							break;
+						}
 					case SystemMetadata.TruncateBefore: {
-						Check(reader.Read(), reader);
-						Check(JsonToken.Integer, reader);
-						truncateBefore = (long)reader.Value;
-						break;
-					}
+							Check(reader.Read(), reader);
+							Check(JsonToken.Integer, reader);
+							truncateBefore = (long)reader.Value;
+							break;
+						}
 					case SystemMetadata.TempStream: {
-						Check(reader.Read(), reader);
-						Check(JsonToken.Boolean, reader);
-						tempStream = (bool)reader.Value;
-						break;
-					}
+							Check(reader.Read(), reader);
+							Check(JsonToken.Boolean, reader);
+							tempStream = (bool)reader.Value;
+							break;
+						}
 					case SystemMetadata.CacheControl: {
-						Check(reader.Read(), reader);
-						Check(JsonToken.Integer, reader);
-						cacheControl = TimeSpan.FromSeconds((long)reader.Value);
-						break;
-					}
+							Check(reader.Read(), reader);
+							Check(JsonToken.Integer, reader);
+							cacheControl = TimeSpan.FromSeconds((long)reader.Value);
+							break;
+						}
 					case SystemMetadata.Acl: {
-						acl = ReadAcl(reader);
-						break;
-					}
+							acl = ReadAcl(reader);
+							break;
+						}
 					default: {
-						Check(reader.Read(), reader);
-						// skip
-						JToken.ReadFrom(reader);
-						break;
-					}
+							Check(reader.Read(), reader);
+							// skip
+							JToken.ReadFrom(reader);
+							break;
+						}
 				}
 			}
 
@@ -170,7 +170,7 @@ namespace EventStore.Core.Data {
 		private static string[] ReadRoles(JsonTextReader reader) {
 			Check(reader.Read(), reader);
 			if (reader.TokenType == JsonToken.String)
-				return new[] {(string)reader.Value};
+				return new[] { (string)reader.Value };
 
 			if (reader.TokenType == JsonToken.StartArray) {
 				var roles = new List<string>();

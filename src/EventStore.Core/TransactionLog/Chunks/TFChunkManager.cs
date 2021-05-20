@@ -1,15 +1,15 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
-using System.Linq;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkManager : IDisposable {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkManager>();
 
-		public const int MaxChunksCount = 200000; 
+		public const int MaxChunksCount = 200000;
 
 		public int ChunksCount {
 			get { return _chunksCount; }
@@ -47,7 +47,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				Interlocked.Exchange(ref _backgroundRunning, 0);
 			} while (Interlocked.CompareExchange(ref _backgroundPassesRemaining, 0, 0) > 0
-			         && Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0);
+					 && Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0);
 		}
 
 		private void CacheUncacheReadOnlyChunks() {
@@ -284,7 +284,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				ThreadPool.QueueUserWorkItem(BackgroundCachingProcess);
 
 			if (!chunk.IsReadOnly && chunk.ChunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size <=
-			    _config.MaxChunksCacheSize)
+				_config.MaxChunksCacheSize)
 				chunk.CacheInMemory();
 		}
 

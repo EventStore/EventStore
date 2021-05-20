@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 		//readonly string _string2 = "two";
 		readonly LogV3RecordFactory _sut = new();
 		readonly PrepareFlags _prepareflags = PrepareFlags.SingleWrite;
-		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 }; 
+		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 };
 		readonly ReadOnlyMemory<byte> _bytes2 = new byte[] { 0x20, 0x01 };
 
 		[Fact]

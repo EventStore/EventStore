@@ -1,13 +1,13 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Bus;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class specification_with_a_single_node<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {

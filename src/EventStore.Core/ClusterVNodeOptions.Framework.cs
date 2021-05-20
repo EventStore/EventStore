@@ -33,7 +33,7 @@ namespace EventStore.Core {
 
 			return type.GetProperties().Select(property =>
 				new KeyValuePair<string, object?>(property.Name, property.PropertyType switch {
-					{IsArray: true} => string.Join(",",
+					{ IsArray: true } => string.Join(",",
 						((Array)(property.GetValue(defaultInstance) ?? Array.Empty<object>())).OfType<object>()),
 					_ => property.GetValue(defaultInstance)
 				}));
@@ -46,13 +46,13 @@ namespace EventStore.Core {
 			var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
 
 			var deprecationWarnings = from section in OptionSections
-				from option in section.GetProperties()
-				let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
-				where deprecationWarning is not null
-				let value = ConfigurationRoot.GetValue<string?>(option.Name)
-				where defaultValues.TryGetValue(option.Name, out var defaultValue)
-				      && !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
-				      select deprecationWarning;
+									  from option in section.GetProperties()
+									  let deprecationWarning = option.GetCustomAttribute<DeprecatedAttribute>()?.Message
+									  where deprecationWarning is not null
+									  let value = ConfigurationRoot.GetValue<string?>(option.Name)
+									  where defaultValues.TryGetValue(option.Name, out var defaultValue)
+											&& !string.Equals(value, defaultValue?.ToString(), StringComparison.OrdinalIgnoreCase)
+									  select deprecationWarning;
 
 			var builder = deprecationWarnings
 				.Aggregate(new StringBuilder(), (builder, deprecationWarning) => builder.AppendLine(deprecationWarning));
@@ -126,8 +126,8 @@ namespace EventStore.Core {
 				return (value, Runtime.IsWindows) switch {
 					(bool b, false) => b.ToString().ToLower(),
 					(bool b, true) => b.ToString(),
-					(Array {Length: 0}, _) => string.Empty,
-					(Array {Length: >0} a, _) => string.Join(",", a.OfType<object>()),
+					(Array { Length: 0 }, _) => string.Empty,
+					(Array { Length: > 0 } a, _) => string.Join(",", a.OfType<object>()),
 					_ => value?.ToString() ?? string.Empty
 				};
 			}
@@ -146,6 +146,6 @@ namespace EventStore.Core {
 		}
 
 		[AttributeUsage(AttributeTargets.Property)]
-		private class OptionGroupAttribute : Attribute{}
+		private class OptionGroupAttribute : Attribute { }
 	}
 }

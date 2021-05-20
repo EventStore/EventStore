@@ -59,7 +59,7 @@ namespace EventStore.Core.Services.Transport.Http {
 		}
 
 		public void Handle(SystemMessage.SystemInit message) {
-			
+
 			_isListening = true;
 		}
 

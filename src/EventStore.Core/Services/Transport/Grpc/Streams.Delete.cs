@@ -2,11 +2,11 @@ using System;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -65,7 +65,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			};
 
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
-			
+
 			var user = context.GetHttpContext().User;
 			var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
@@ -109,7 +109,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			void HandleStreamDeletedCompleted(Message message) {
 				if (message is ClientMessage.NotHandled notHandled &&
-				    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+					RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					deleteResponseSource.TrySetException(ex);
 					return;
 				}

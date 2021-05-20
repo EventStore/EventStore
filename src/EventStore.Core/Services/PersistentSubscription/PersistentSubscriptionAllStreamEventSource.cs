@@ -8,7 +8,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public string EventStreamId => throw new InvalidOperationException();
 		public bool FromAll => true;
 		public override string ToString() => SystemStreams.AllStream;
-		public IPersistentSubscriptionStreamPosition StreamStartPosition  => new PersistentSubscriptionAllStreamPosition(0L, 0L);
+		public IPersistentSubscriptionStreamPosition StreamStartPosition => new PersistentSubscriptionAllStreamPosition(0L, 0L);
 		public IPersistentSubscriptionStreamPosition GetStreamPositionFor(ResolvedEvent @event) {
 			if (@event.OriginalPosition.HasValue) {
 				return new PersistentSubscriptionAllStreamPosition(@event.OriginalPosition.Value.CommitPosition, @event.OriginalPosition.Value.PreparePosition);

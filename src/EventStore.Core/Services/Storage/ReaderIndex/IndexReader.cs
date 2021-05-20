@@ -94,7 +94,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		IndexReadEventResult IIndexReader<TStreamId>.ReadEvent(string streamName, TStreamId streamId, long eventNumber) {
 			Ensure.Valid(streamId, _validator);
-			if (eventNumber < -1) throw new ArgumentOutOfRangeException("eventNumber");
+			if (eventNumber < -1)
+				throw new ArgumentOutOfRangeException("eventNumber");
 			using (var reader = _backend.BorrowReader()) {
 				return ReadEventInternal(reader, streamName, streamId, eventNumber);
 			}
@@ -108,7 +109,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return new IndexReadEventResult(ReadEventResult.StreamDeleted, metadata, lastEventNumber,
 					originalStreamExists);
 			if (lastEventNumber == ExpectedVersion.NoStream || metadata.TruncateBefore == EventNumber.DeletedStream)
-				return new IndexReadEventResult(ReadEventResult.NoStream, metadata,lastEventNumber,
+				return new IndexReadEventResult(ReadEventResult.NoStream, metadata, lastEventNumber,
 					originalStreamExists);
 			if (lastEventNumber == EventNumber.Invalid)
 				return new IndexReadEventResult(ReadEventResult.NoStream, metadata, lastEventNumber,
@@ -124,13 +125,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
 			//TODO(clc): confirm this logic, it seems that reads less than min should be invaild rather than found
 			if (eventNumber < minEventNumber || eventNumber > lastEventNumber)
-				return new IndexReadEventResult(ReadEventResult.NotFound, metadata,  lastEventNumber,
+				return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber,
 					originalStreamExists);
 
 			var prepare = ReadPrepareInternal(reader, streamId, eventNumber);
 			if (prepare != null) {
 				if (metadata.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
-					return new IndexReadEventResult(ReadEventResult.NotFound, metadata,  lastEventNumber,
+					return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber,
 						originalStreamExists);
 				return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(eventNumber, prepare, streamName),
 					metadata, lastEventNumber, originalStreamExists);
@@ -158,7 +159,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private IPrepareLogRecord<TStreamId> ReadPrepare(TFReaderLease reader, TStreamId streamId, long eventNumber) {
 			var recordsQuery = _tableIndex.GetRange(streamId, eventNumber, eventNumber)
-				.Select(x => new {x.Version, Prepare = ReadPrepareInternal(reader, x.Position)})
+				.Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
 				.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId))
 				.GroupBy(x => x.Version).Select(x => x.Last()).ToList();
 			if (recordsQuery.Count() == 1) {
@@ -237,7 +238,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				startEventNumber = Math.Max(startEventNumber, minEventNumber);
 
 				var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
-					.Select(x => new {x.Version, Prepare = ReadPrepareInternal(reader, x.Position)})
+					.Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
 					.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
 				if (!skipIndexScanOnRead) {
 					recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
@@ -302,7 +303,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				}
 
 				var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
-					.Select(x => new {x.Version, Prepare = ReadPrepareInternal(reader, x.Position)})
+					.Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
 					.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
 				if (!skipIndexScanOnRead) {
 					recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
@@ -318,10 +319,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				var records = recordsQuery.Select(x => new EventRecord(x.Version, x.Prepare, streamName)).ToArray();
 
 				isEndOfStream = isEndOfStream
-				                || startEventNumber == 0
-				                || (startEventNumber <= lastEventNumber
-				                    && (records.Length == 0 ||
-				                        records[records.Length - 1].EventNumber != startEventNumber));
+								|| startEventNumber == 0
+								|| (startEventNumber <= lastEventNumber
+									&& (records.Length == 0 ||
+										records[records.Length - 1].EventNumber != startEventNumber));
 				long nextEventNumber = isEndOfStream ? -1 : Math.Min(startEventNumber - 1, lastEventNumber);
 				return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
 					nextEventNumber, lastEventNumber, isEndOfStream);
@@ -355,7 +356,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return new StorageMessage.EffectiveAcl(acl, sysAcl, defAcl);
 			}
 		}
-		
+
 		long IIndexReader<TStreamId>.GetStreamLastEventNumber(TStreamId streamId) {
 			Ensure.Valid(streamId, _validator);
 			using (var reader = _backend.BorrowReader()) {
@@ -373,8 +374,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private long GetStreamLastEventNumberCached(TFReaderLease reader, TStreamId streamId) {
 			// if this is metastream -- check if original stream was deleted, if yes -- metastream is deleted as well
 			if (_systemStreams.IsMetaStream(streamId)
-			    && GetStreamLastEventNumberCached(reader, _systemStreams.OriginalStreamOf(streamId)) ==
-			    EventNumber.DeletedStream)
+				&& GetStreamLastEventNumberCached(reader, _systemStreams.OriginalStreamOf(streamId)) ==
+				EventNumber.DeletedStream)
 				return EventNumber.DeletedStream;
 
 			var cache = _backend.TryGetStreamLastEventNumber(streamId);

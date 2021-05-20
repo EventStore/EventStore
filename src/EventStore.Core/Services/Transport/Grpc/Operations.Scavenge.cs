@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
+using EventStore.Client.Operations;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client.Operations;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 

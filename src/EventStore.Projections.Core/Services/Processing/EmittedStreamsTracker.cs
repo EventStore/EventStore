@@ -1,3 +1,4 @@
+using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
@@ -5,7 +6,6 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.Settings;
-using System;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Processing {
@@ -56,7 +56,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void TrackEmittedStream(EmittedEvent[] emittedEvents) {
-			if (!_projectionConfig.TrackEmittedStreams) return;
+			if (!_projectionConfig.TrackEmittedStreams)
+				return;
 			foreach (var emittedEvent in emittedEvents) {
 				string streamId;
 				if (!_streamIdCache.TryGetRecord(emittedEvent.StreamId, out streamId)) {

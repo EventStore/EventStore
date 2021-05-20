@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Services.Monitoring.Stats;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.TimerService {
 	public class ThreadBasedScheduler : IMonitoredQueue, IScheduler, IDisposable {

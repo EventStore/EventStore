@@ -4,24 +4,24 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
 using EventStore.Core.Authentication;
-using EventStore.Core.Services.Transport.Http.Controllers;
-using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.PluginModel;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Services.Transport.Http.Controllers;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using EventStore.Core.LogAbstraction;
 
 namespace EventStore.ClusterNode {
 	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
@@ -34,7 +34,8 @@ namespace EventStore.ClusterNode {
 		public ClusterVNode Node { get; }
 
 		public ClusterVNodeHostedService(ClusterVNodeOptions options) {
-			if (options == null) throw new ArgumentNullException(nameof(options));
+			if (options == null)
+				throw new ArgumentNullException(nameof(options));
 			_options = options.Projections.RunProjections >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(options.Projections.ProjectionThreads,
 					options.Projections.RunProjections, options.Application.StartStandardProjections,
@@ -75,7 +76,7 @@ namespace EventStore.ClusterNode {
 
 			var runProjections = _options.Projections.RunProjections;
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
-				? new[] {NodeSubsystems.Projections}
+				? new[] { NodeSubsystems.Projections }
 				: Array.Empty<NodeSubsystems>();
 
 			RegisterWebControllers(enabledNodeSubsystems);
@@ -210,7 +211,7 @@ namespace EventStore.ClusterNode {
 			Node.StopAsync(cancellationToken: cancellationToken);
 
 		public void Dispose() {
-			if (_dbLock is not {IsAcquired: true}) {
+			if (_dbLock is not { IsAcquired: true }) {
 				return;
 			}
 			using (_dbLock) {

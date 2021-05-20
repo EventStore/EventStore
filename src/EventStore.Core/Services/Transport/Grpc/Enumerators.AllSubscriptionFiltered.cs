@@ -115,7 +115,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			public async ValueTask<bool> MoveNextAsync() {
-				ReadLoop:
+ReadLoop:
 				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
 					return false;
 				}
@@ -123,7 +123,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var (@event, position) = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
 				if (@event.HasValue) {
 					if (@event.Value.OriginalPosition.Value <= _startPositionExclusive || _current.HasValue &&
-					    @event.Value.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
+						@event.Value.OriginalPosition.Value <= _current.Value.OriginalPosition.Value) {
 						Log.Verbose(
 							"Subscription {subscriptionId} to $all:{eventFilter} skipping event {position}.",
 							_subscriptionId, _eventFilter, @event.Value.OriginalPosition.Value);
@@ -163,7 +163,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+						RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 						Fail(ex);
 						return;
 					}
@@ -256,7 +256,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async Task OnSubscriptionMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
-					    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+						RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 						Fail(ex);
 						return;
 					}
@@ -274,7 +274,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 								if (message is ClientMessage.NotHandled notHandled &&
-								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+									RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 									Fail(ex);
 									return;
 								}
@@ -358,39 +358,40 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									return;
 							}
 						case ClientMessage.StreamEventAppeared appeared: {
-							if (liveMessagesCancelled == 1) {
+								if (liveMessagesCancelled == 1) {
+									return;
+								}
+
+								using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+								try {
+									Log.Verbose(
+										"Live subscription {subscriptionId} to $all:{eventFilter} enqueuing live message {position}.",
+										_subscriptionId, _eventFilter, appeared.Event.OriginalPosition);
+
+									await liveEvents.Writer.WriteAsync(appeared.Event, cts.Token)
+										.ConfigureAwait(false);
+								} catch (Exception e) {
+									if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0)
+										return;
+
+									Log.Verbose(
+										e,
+										"Live subscription {subscriptionId} to $all:{eventFilter} timed out at {position}; unsubscribing...",
+										_subscriptionId, _eventFilter, appeared.Event.OriginalPosition.GetValueOrDefault());
+
+									Unsubscribe();
+
+									liveEvents.Writer.Complete();
+
+									var originalPosition = _current.GetValueOrDefault()
+										.OriginalPosition.GetValueOrDefault();
+									CatchUp(Position.FromInt64(
+										originalPosition.CommitPosition,
+										originalPosition.PreparePosition));
+								}
+
 								return;
 							}
-
-							using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-							try {
-								Log.Verbose(
-									"Live subscription {subscriptionId} to $all:{eventFilter} enqueuing live message {position}.",
-									_subscriptionId, _eventFilter, appeared.Event.OriginalPosition);
-
-								await liveEvents.Writer.WriteAsync(appeared.Event, cts.Token)
-									.ConfigureAwait(false);
-							} catch (Exception e) {
-								if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0) return;
-
-								Log.Verbose(
-									e,
-									"Live subscription {subscriptionId} to $all:{eventFilter} timed out at {position}; unsubscribing...",
-									_subscriptionId, _eventFilter, appeared.Event.OriginalPosition.GetValueOrDefault());
-
-								Unsubscribe();
-
-								liveEvents.Writer.Complete();
-
-								var originalPosition = _current.GetValueOrDefault()
-									.OriginalPosition.GetValueOrDefault();
-								CatchUp(Position.FromInt64(
-									originalPosition.CommitPosition,
-									originalPosition.PreparePosition));
-							}
-
-							return;
-						}
 						case ClientMessage.CheckpointReached checkpointReached:
 							await _channel.Writer.WriteAsync((new ResolvedEvent?(), Position.FromInt64(
 								checkpointReached.Position.Value.CommitPosition,
@@ -409,7 +410,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			private void ConfirmSubscription() {
-				if (_subscriptionStarted.Task.IsCompletedSuccessfully) return;
+				if (_subscriptionStarted.Task.IsCompletedSuccessfully)
+					return;
 				_subscriptionStarted.TrySetResult(true);
 			}
 

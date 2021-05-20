@@ -38,14 +38,14 @@ namespace EventStore.Projections.Core.Messages {
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-			
+
 			public Guid QueueId { get; }
 
 			public StopCoreTimeout(Guid queueId) {
 				QueueId = queueId;
 			}
 		}
-		
+
 		public class CoreTick : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Messages {
 
 			public string SubComponent { get; }
 			public Guid InstanceCorrelationId { get; }
-		
+
 			public SubComponentStarted(string subComponent, Guid instanceCorrelationId) {
 				InstanceCorrelationId = instanceCorrelationId;
 				SubComponent = subComponent;

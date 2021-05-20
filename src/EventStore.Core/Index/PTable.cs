@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Security.Cryptography;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
@@ -78,7 +78,7 @@ namespace EventStore.Core.Index {
 		private bool _disposed;
 
 		public ReadOnlySpan<Midpoint> GetMidPoints() {
-			if(_midpoints == null)
+			if (_midpoints == null)
 				return ReadOnlySpan<Midpoint>.Empty;
 
 			return _midpoints.AsSpan();

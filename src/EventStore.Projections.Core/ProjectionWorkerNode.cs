@@ -1,7 +1,7 @@
 ﻿using System;
 using EventStore.Common.Options;
-using EventStore.Core.Bus;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core {
 
 			_coreOutput = new InMemoryBus("Core Output");
 			_leaderOutputBus = leaderOutputBus;
-			
+
 			IPublisher publisher = CoreOutput;
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(publisher);
 

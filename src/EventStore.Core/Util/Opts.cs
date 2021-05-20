@@ -6,7 +6,7 @@ using EventStore.Core.TransactionLog.Chunks;
 namespace EventStore.Core.Util {
 	public static class Opts {
 		public const int ConnectionPendingSendBytesThresholdDefault = 10 * 1024 * 1024;
-		
+
 		public const int ConnectionQueueSizeThresholdDefault = 50000;
 
 		public const int StreamInfoCacheCapacityDefault = 100000;

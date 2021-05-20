@@ -1,15 +1,15 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.ClientAPI.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Projections.Core.Messages;
-using NUnit.Framework;
-using EventStore.ClientAPI.Common.Utils;
-using System.Collections;
 using EventStore.Core.Tests;
-using EventStore.Projections.Core.Services.Processing;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 	public class SystemProjectionNames : IEnumerable {
@@ -20,8 +20,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 					System.Reflection.BindingFlags.FlattenHierarchy)
 				.Where(x => x.IsLiteral && !x.IsInitOnly)
 				.Select(x => x.GetRawConstantValue())) {
-				yield return new[] {typeof(LogFormat.V2), typeof(string), projection};
-				yield return new[] {typeof(LogFormat.V3), typeof(long), projection};
+				yield return new[] { typeof(LogFormat.V2), typeof(string), projection };
+				yield return new[] { typeof(LogFormat.V3), typeof(long), projection };
 			}
 		}
 	}

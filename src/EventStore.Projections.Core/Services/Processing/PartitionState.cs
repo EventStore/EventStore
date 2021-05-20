@@ -10,7 +10,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings {
 			DateParseHandling = DateParseHandling.None,
 		};
-		
+
 		public bool IsChanged(PartitionState newState) {
 			return State != newState.State || Result != newState.Result;
 		}
@@ -50,8 +50,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly CheckpointTag _causedBy;
 
 		public PartitionState(string state, string result, CheckpointTag causedBy) {
-			if (state == null) throw new ArgumentNullException("state");
-			if (causedBy == null) throw new ArgumentNullException("causedBy");
+			if (state == null)
+				throw new ArgumentNullException("state");
+			if (causedBy == null)
+				throw new ArgumentNullException("causedBy");
 
 			_state = state;
 			_result = result;

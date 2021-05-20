@@ -344,7 +344,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				OutstandingMessage? lowestMessage;
 				long lowestSequenceNumber;
 
-				(lowestMessage, lowestSequenceNumber)  = _outstandingMessages.GetLowestPosition();
+				(lowestMessage, lowestSequenceNumber) = _outstandingMessages.GetLowestPosition();
 				var (lowestRetryMessage, lowestRetrySequenceNumber) = StreamBuffer.GetLowestRetry();
 
 				if (lowestRetrySequenceNumber < lowestSequenceNumber) {
@@ -373,7 +373,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					lowestSequenceNumber = _lastKnownSequenceNumber;
 					lowestPosition = _lastKnownMessage;
 					Debug.Assert((lowestPosition != null && lowestSequenceNumber >= 0L) ||
-					             (lowestPosition == null && lowestSequenceNumber == -1L));
+								 (lowestPosition == null && lowestSequenceNumber == -1L));
 				}
 
 				if (lowestSequenceNumber == -1) //we have not even pushed any message yet
@@ -476,7 +476,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			});
 		}
 
-		
+
 		public void RetryParkedMessages(long? stopAt) {
 			lock (_lock) {
 				if ((_state & PersistentSubscriptionState.ReplayingParkedMessages) > 0)
@@ -489,7 +489,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					}
 
 					var stopRead = stopAt.HasValue ? Math.Min(stopAt.Value, end.Value + 1) : end.Value + 1;
-					TryReadingParkedMessagesFrom(0,stopRead);
+					TryReadingParkedMessagesFrom(0, stopRead);
 				});
 			}
 		}

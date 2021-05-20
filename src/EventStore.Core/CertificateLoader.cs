@@ -15,9 +15,9 @@ namespace EventStore.Core {
 		}
 
 		public static X509Certificate2 FromStore(StoreName storeName, string certificateSubjectName,
-        	string certificateThumbprint) {
-        	var store = new X509Store(storeName);
-        	return GetCertificateFromStore(store, certificateSubjectName, certificateThumbprint);
+			string certificateThumbprint) {
+			var store = new X509Store(storeName);
+			return GetCertificateFromStore(store, certificateSubjectName, certificateThumbprint);
 		}
 
 		public static X509Certificate2 FromFile(
@@ -90,9 +90,9 @@ namespace EventStore.Core {
 				"No thumbprint or subject name was specified for a certificate, but a certificate store was specified.");
 		}
 
-		public static IEnumerable<(string fileName,X509Certificate2 certificate)> LoadAllCertificates(string path) {
+		public static IEnumerable<(string fileName, X509Certificate2 certificate)> LoadAllCertificates(string path) {
 			var files = Directory.GetFiles(path);
-			var acceptedExtensions = new[] {".crt", ".cert", ".cer", ".pem", ".der"};
+			var acceptedExtensions = new[] { ".crt", ".cert", ".cer", ".pem", ".der" };
 			foreach (var file in files) {
 				var fileInfo = new FileInfo(file);
 				var extension = fileInfo.Extension;

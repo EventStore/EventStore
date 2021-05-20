@@ -103,26 +103,26 @@ namespace EventStore.Core.Services.Replication {
 				case VNodeState.ResigningLeader:
 				case VNodeState.ShuttingDown:
 				case VNodeState.Shutdown: {
-					Disconnect();
-					break;
-				}
+						Disconnect();
+						break;
+					}
 				case VNodeState.PreReplica: {
-					var m = (SystemMessage.BecomePreReplica)message;
-					ConnectToLeader(m.Leader);
-					break;
-				}
+						var m = (SystemMessage.BecomePreReplica)message;
+						ConnectToLeader(m.Leader);
+						break;
+					}
 				case VNodeState.PreReadOnlyReplica: {
-					var m = (SystemMessage.BecomePreReadOnlyReplica)message;
-					ConnectToLeader(m.Leader);
-					break;
-				}
+						var m = (SystemMessage.BecomePreReadOnlyReplica)message;
+						ConnectToLeader(m.Leader);
+						break;
+					}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
 				case VNodeState.Follower:
-				case VNodeState.ReadOnlyReplica:  {
-					// nothing changed, essentially
-					break;
-				}
+				case VNodeState.ReadOnlyReplica: {
+						// nothing changed, essentially
+						break;
+					}
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
@@ -172,7 +172,7 @@ namespace EventStore.Core.Services.Replication {
 				_sslServerCertValidator,
 				() => {
 					var cert = _sslClientCertificateSelector();
-					return new X509CertificateCollection{cert};
+					return new X509CertificateCollection { cert };
 				},
 				_networkSendQueue,
 				_authProvider,
@@ -222,31 +222,33 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationMessage.AckLogPosition message) {
-			if (!_state.IsReplica()) throw new Exception("!_state.IsReplica()");
-			if (_connection == null) throw new Exception("_connection == null");
+			if (!_state.IsReplica())
+				throw new Exception("!_state.IsReplica()");
+			if (_connection == null)
+				throw new Exception("_connection == null");
 			SendTcpMessage(_connection, message);
 		}
 
 		public void Handle(ClientMessage.TcpForwardMessage message) {
 			switch (_state) {
 				case VNodeState.PreReplica: {
-					if (_connection != null)
-						SendTcpMessage(_connection, message.Message);
-					break;
-				}
+						if (_connection != null)
+							SendTcpMessage(_connection, message.Message);
+						break;
+					}
 				case VNodeState.PreReadOnlyReplica: {
-					if (_connection != null)
-						SendTcpMessage(_connection, message.Message);
-					break;
-				}
+						if (_connection != null)
+							SendTcpMessage(_connection, message.Message);
+						break;
+					}
 				case VNodeState.CatchingUp:
 				case VNodeState.Clone:
 				case VNodeState.Follower:
-				case VNodeState.ReadOnlyReplica:  {
-					Debug.Assert(_connection != null, "Connection manager is null in follower/clone/catching up state");
-					SendTcpMessage(_connection, message.Message);
-					break;
-				}
+				case VNodeState.ReadOnlyReplica: {
+						Debug.Assert(_connection != null, "Connection manager is null in follower/clone/catching up state");
+						SendTcpMessage(_connection, message.Message);
+						break;
+					}
 
 				default:
 					throw new Exception(string.Format("Unexpected state: {0}", _state));

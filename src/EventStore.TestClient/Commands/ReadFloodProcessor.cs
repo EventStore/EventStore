@@ -69,9 +69,11 @@ namespace EventStore.TestClient.Commands {
 						var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
 						monitor.EndOperation(pkg.CorrelationId);
 						if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success) {
-							if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write(".");
+							if (Interlocked.Increment(ref succ) % 1000 == 0)
+								Console.Write(".");
 						} else {
-							if (Interlocked.Increment(ref fail) % 1000 == 0) Console.Write("#");
+							if (Interlocked.Increment(ref fail) % 1000 == 0)
+								Console.Write("#");
 						}
 
 						Interlocked.Increment(ref received);
@@ -101,11 +103,11 @@ namespace EventStore.TestClient.Commands {
 
 						var localSent = Interlocked.Increment(ref sent);
 						while (localSent - Interlocked.Read(ref received) >
-						       context.Client.Options.ReadWindow / clientsCnt) {
+							   context.Client.Options.ReadWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}
-				}) {IsBackground = true});
+				}) { IsBackground = true });
 			}
 
 			var sw = Stopwatch.StartNew();

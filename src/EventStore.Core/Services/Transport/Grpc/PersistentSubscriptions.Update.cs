@@ -1,15 +1,15 @@
 using System;
 using System.Threading.Tasks;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
-using StreamOptionOneofCase = EventStore.Client.PersistentSubscriptions.UpdateReq.Types.Options.StreamOptionOneofCase;
-using RevisionOptionOneofCase = EventStore.Client.PersistentSubscriptions.UpdateReq.Types.StreamOptions.RevisionOptionOneofCase;
 using AllOptionOneofCase = EventStore.Client.PersistentSubscriptions.UpdateReq.Types.AllOptions.AllOptionOneofCase;
+using RevisionOptionOneofCase = EventStore.Client.PersistentSubscriptions.UpdateReq.Types.StreamOptions.RevisionOptionOneofCase;
+using StreamOptionOneofCase = EventStore.Client.PersistentSubscriptions.UpdateReq.Types.Options.StreamOptionOneofCase;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal partial class PersistentSubscriptions {
@@ -27,60 +27,59 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			string streamId = null;
 
-			switch (request.Options.StreamOptionCase)
-			{
+			switch (request.Options.StreamOptionCase) {
 				case StreamOptionOneofCase.Stream:
 				case StreamOptionOneofCase.None: /*for backwards compatibility*/
 				{
-					StreamRevision startRevision;
+						StreamRevision startRevision;
 
-					if (request.Options.StreamOptionCase == StreamOptionOneofCase.Stream) {
-						streamId = request.Options.Stream.StreamIdentifier;
-						startRevision = request.Options.Stream.RevisionOptionCase switch {
-							RevisionOptionOneofCase.Revision => new StreamRevision(request.Options.Stream.Revision),
-							RevisionOptionOneofCase.Start => StreamRevision.Start,
-							RevisionOptionOneofCase.End => StreamRevision.End,
-							_ => throw new InvalidOperationException()
-						};
-					} else { /*for backwards compatibility*/
-						#pragma warning disable 612
-						streamId = request.Options.StreamIdentifier;
-						startRevision = new StreamRevision(request.Options.Settings.Revision);
-						#pragma warning restore 612
+						if (request.Options.StreamOptionCase == StreamOptionOneofCase.Stream) {
+							streamId = request.Options.Stream.StreamIdentifier;
+							startRevision = request.Options.Stream.RevisionOptionCase switch {
+								RevisionOptionOneofCase.Revision => new StreamRevision(request.Options.Stream.Revision),
+								RevisionOptionOneofCase.Start => StreamRevision.Start,
+								RevisionOptionOneofCase.End => StreamRevision.End,
+								_ => throw new InvalidOperationException()
+							};
+						} else { /*for backwards compatibility*/
+#pragma warning disable 612
+							streamId = request.Options.StreamIdentifier;
+							startRevision = new StreamRevision(request.Options.Settings.Revision);
+#pragma warning restore 612
+						}
+
+						_publisher.Publish(new ClientMessage.UpdatePersistentSubscriptionToStream(
+							correlationId,
+							correlationId,
+							new CallbackEnvelope(HandleUpdatePersistentSubscriptionCompleted),
+							streamId,
+							request.Options.GroupName,
+							settings.ResolveLinks,
+							startRevision.ToInt64(),
+							settings.MessageTimeoutCase switch {
+								UpdateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutMs => settings.MessageTimeoutMs,
+								UpdateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutTicks => (int)TimeSpan
+									.FromTicks(settings.MessageTimeoutTicks).TotalMilliseconds,
+								_ => 0
+							},
+							settings.ExtraStatistics,
+							settings.MaxRetryCount,
+							settings.HistoryBufferSize,
+							settings.LiveBufferSize,
+							settings.ReadBatchSize,
+							settings.CheckpointAfterCase switch {
+								UpdateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterMs => settings.CheckpointAfterMs,
+								UpdateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterTicks => (int)TimeSpan
+									.FromTicks(settings.CheckpointAfterTicks).TotalMilliseconds,
+								_ => 0
+							},
+							settings.MinCheckpointCount,
+							settings.MaxCheckpointCount,
+							settings.MaxSubscriberCount,
+							settings.NamedConsumerStrategy.ToString(),
+							user));
+						break;
 					}
-
-					_publisher.Publish(new ClientMessage.UpdatePersistentSubscriptionToStream(
-						correlationId,
-						correlationId,
-						new CallbackEnvelope(HandleUpdatePersistentSubscriptionCompleted),
-						streamId,
-						request.Options.GroupName,
-						settings.ResolveLinks,
-						startRevision.ToInt64(),
-						settings.MessageTimeoutCase switch {
-							UpdateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutMs => settings.MessageTimeoutMs,
-							UpdateReq.Types.Settings.MessageTimeoutOneofCase.MessageTimeoutTicks => (int)TimeSpan
-								.FromTicks(settings.MessageTimeoutTicks).TotalMilliseconds,
-							_ => 0
-						},
-						settings.ExtraStatistics,
-						settings.MaxRetryCount,
-						settings.HistoryBufferSize,
-						settings.LiveBufferSize,
-						settings.ReadBatchSize,
-						settings.CheckpointAfterCase switch {
-							UpdateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterMs => settings.CheckpointAfterMs,
-							UpdateReq.Types.Settings.CheckpointAfterOneofCase.CheckpointAfterTicks => (int)TimeSpan
-								.FromTicks(settings.CheckpointAfterTicks).TotalMilliseconds,
-							_ => 0
-						},
-						settings.MinCheckpointCount,
-						settings.MaxCheckpointCount,
-						settings.MaxSubscriberCount,
-						settings.NamedConsumerStrategy.ToString(),
-						user));
-					break;
-				}
 				case StreamOptionOneofCase.All:
 					var startPosition = request.Options.All.AllOptionCase switch {
 						AllOptionOneofCase.Position => new Position(

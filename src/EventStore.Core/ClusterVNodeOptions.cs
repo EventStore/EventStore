@@ -36,7 +36,7 @@ namespace EventStore.Core {
 		public IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
 
 		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
-			Subsystems = new List<ISubsystem>(Subsystems) {subsystem}
+			Subsystems = new List<ISubsystem>(Subsystems) { subsystem }
 		};
 
 		public X509Certificate2? ServerCertificate { get; init; }
@@ -46,8 +46,10 @@ namespace EventStore.Core {
 		internal string? DebugView => ConfigurationRoot?.GetDebugView();
 
 		public static ClusterVNodeOptions FromConfiguration(string[] args, IDictionary environment) {
-			if (args == null) throw new ArgumentNullException(nameof(args));
-			if (environment == null) throw new ArgumentNullException(nameof(environment));
+			if (args == null)
+				throw new ArgumentNullException(nameof(args));
+			if (environment == null)
+				throw new ArgumentNullException(nameof(environment));
 
 			var configurationRoot = new ConfigurationBuilder()
 				.AddEventStore(args, environment, DefaultValues)
@@ -107,7 +109,7 @@ namespace EventStore.Core {
 			public int WorkerThreads { get; init; } = 5;
 
 			[Description("Enables the tracking of various histograms in the backend, " +
-			             "typically only used for debugging, etc.")]
+						 "typically only used for debugging, etc.")]
 			public bool EnableHistograms { get; init; } = false;
 
 			[Description("Log Http Requests and Responses before processing them.")]
@@ -117,7 +119,7 @@ namespace EventStore.Core {
 			public bool LogFailedAuthenticationAttempts { get; init; } = false;
 
 			[Description("Skip Index Scan on Reads. This skips the index scan which was used " +
-			             "to stop reading duplicates.")]
+						 "to stop reading duplicates.")]
 			public bool SkipIndexScanOnReads { get; init; } = false;
 
 			[Description("The maximum size of appends, in bytes. May not exceed 16MB.")]
@@ -162,7 +164,7 @@ namespace EventStore.Core {
 			public string? AuthenticationConfig { get; init; }
 
 			[Description("Disables first level authorization checks on all HTTP endpoints. " +
-			             "This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.")]
+						 "This option can be enabled for backwards compatibility with EventStore 5.0.1 or earlier.")]
 			public bool DisableFirstLevelHttpAuthorization { get; init; } = false;
 
 			internal static AuthOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
@@ -181,7 +183,7 @@ namespace EventStore.Core {
 			public string? CertificateFile { get; init; }
 
 			[Description("The path to the certificate private key file (.key) if an X.509 (.pem, .crt, .cer, .der) " +
-			             "certificate file is provided.")]
+						 "certificate file is provided.")]
 			public string? CertificatePrivateKeyFile { get; init; }
 
 			[Description("The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided."),
@@ -198,7 +200,7 @@ namespace EventStore.Core {
 		[Description("Certificate Options")]
 		public record CertificateOptions {
 			[Description("The path to a directory which contains trusted X.509 (.pem, .crt, .cer, .der) " +
-			             "root certificate files.")]
+						 "root certificate files.")]
 			public string? TrustedRootCertificatesPath { get; init; }
 
 			[Description("The reserved common name to authenticate EventStoreDB nodes/servers from certificates")]
@@ -272,11 +274,11 @@ namespace EventStore.Core {
 			public int GossipTimeoutMs { get; init; } = 2_500;
 
 			[Description("Sets this node as a read only replica that is not allowed to participate in elections " +
-			             "or accept writes from clients.")]
+						 "or accept writes from clients.")]
 			public bool ReadOnlyReplica { get; init; } = false;
 
 			[Description("Allow more nodes than the cluster size to join the cluster as clones. " +
-			             "(UNSAFE: can cause data loss if a clone is promoted as leader)")]
+						 "(UNSAFE: can cause data loss if a clone is promoted as leader)")]
 			public bool UnsafeAllowSurplusNodes { get; init; } = false;
 
 			[Description("The number of seconds a dead node will remain in the gossip before being pruned.")]
@@ -339,14 +341,14 @@ namespace EventStore.Core {
 			public bool MemDb { get; init; } = false;
 
 			[Description("Bypasses the checking of file hashes of database during startup " +
-			             "(allows for faster startup).")]
+						 "(allows for faster startup).")]
 			public bool SkipDbVerify { get; init; } = false;
 
 			[Description("Enables Write Through when writing to the file system, this bypasses filesystem caches.")]
 			public bool WriteThrough { get; init; } = false;
 
 			[Description("Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem " +
-			             "caches.")]
+						 "caches.")]
 			public bool Unbuffered { get; init; } = false;
 
 			[Description("The initial number of readers to start when opening a TFChunk.")]
@@ -376,7 +378,7 @@ namespace EventStore.Core {
 			public bool UnsafeIgnoreHardDelete { get; init; } = false;
 
 			[Description("Bypasses the checking of file hashes of indexes during startup and after index merges " +
-			             "(allows for faster startup and less disk pressure after merges).")]
+						 "(allows for faster startup and less disk pressure after merges).")]
 			public bool SkipIndexVerify { get; init; } = false;
 
 			[Description("Sets the depth to cache for the mid point cache in index.")]
@@ -392,15 +394,15 @@ namespace EventStore.Core {
 			public bool ReduceFileCachePressure { get; init; } = false;
 
 			[Description("Number of threads to be used to initialize the database. " +
-			             "Will be capped at host processor count.")]
+						 "Will be capped at host processor count.")]
 			public int InitializationThreads { get; init; } = 1;
 
 			[Description("The number of reader threads to use for processing reads.")]
 			public int ReaderThreadsCount { get; init; } = 4;
 
 			[Description("During large Index Merge operations, writes may be slowed down. Set this to the maximum " +
-			             "index file level for which automatic merges should happen. Merging indexes above this level " +
-			             "should be done manually.")]
+						 "index file level for which automatic merges should happen. Merging indexes above this level " +
+						 "should be done manually.")]
 			public int MaxAutoMergeIndexLevel { get; init; } = int.MaxValue;
 
 			[Description("Set this option to write statistics to the database.")]
@@ -410,9 +412,9 @@ namespace EventStore.Core {
 			}
 
 			[Description("When truncate.chk is set, the database will be truncated on startup. " +
-			             "This is a safety check to ensure large amounts of data truncation does not happen " +
-			             "accidentally. This value should be set in the low 10,000s for allow for " +
-			             "standard cluster recovery operations. -1 is no max.")]
+						 "This is a safety check to ensure large amounts of data truncation does not happen " +
+						 "accidentally. This value should be set in the low 10,000s for allow for " +
+						 "standard cluster recovery operations. -1 is no max.")]
 			public long MaxTruncation { get; init; } = 256 * 1_024 * 1_024;
 
 			public int ChunkSize { get; init; } = TFConsts.ChunkSize;
@@ -421,12 +423,12 @@ namespace EventStore.Core {
 
 			public int GetPTableMaxReaderCount() {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
-				                           + 1 /* StorageChaser */
-				                           + 1 /* Projections */
-				                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
-				                           + 1 /* Subscription LinkTos resolving */
-				                           + ReaderThreadsCount
-				                           + 5 /* just in case reserve :) */;
+										   + 1 /* StorageChaser */
+										   + 1 /* Projections */
+										   + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+										   + 1 /* Subscription LinkTos resolving */
+										   + ReaderThreadsCount
+										   + 5 /* just in case reserve :) */;
 				return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 			}
 
@@ -477,12 +479,12 @@ namespace EventStore.Core {
 		[Description("gRPC Options")]
 		public record GrpcOptions {
 			[Description("Controls the period (in milliseconds) after which a keepalive ping " +
-			             "is sent on the transport.")]
+						 "is sent on the transport.")]
 			public int KeepAliveInterval { get; init; } = 10_000;
 
 			[Description("Controls the amount of time (in milliseconds) the sender of the keepalive ping waits " +
-			             "for an acknowledgement. If it does not receive an acknowledgment within this time, " +
-			             "it will close the connection.")]
+						 "for an acknowledgement. If it does not receive an acknowledgment within this time, " +
+						 "it will close the connection.")]
 			public int KeepAliveTimeout { get; init; } = 10_000;
 
 			internal static GrpcOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
@@ -569,8 +571,8 @@ namespace EventStore.Core {
 
 			[Description("Whether to disable secure internal TCP communication."),
 			 Deprecated("The '" + nameof(DisableInternalTcpTls) +
-			            "' option has been deprecated as of version 20.6.1 and currently has no effect. Please use the '" +
-			            nameof(Application.Insecure) + "' option instead.")]
+						"' option has been deprecated as of version 20.6.1 and currently has no effect. Please use the '" +
+						nameof(Application.Insecure) + "' option instead.")]
 			public bool DisableInternalTcpTls { get; init; } = false;
 
 			[Description("Whether to disable secure external TCP communication."),
@@ -585,9 +587,9 @@ namespace EventStore.Core {
 			internal static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				GossipOnSingleNode = configurationRoot.GetValue<bool?>(nameof(GossipOnSingleNode)),
 				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp)) ??
-				                        IPAddress.Loopback.ToString()),
+										IPAddress.Loopback.ToString()),
 				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp)) ??
-				                        IPAddress.Loopback.ToString()),
+										IPAddress.Loopback.ToString()),
 				HttpPort = configurationRoot.GetValue<int>(nameof(HttpPort)),
 				EnableExternalTcp = configurationRoot.GetValue<bool>(nameof(EnableExternalTcp)),
 				ExtTcpPort = configurationRoot.GetValue<int>(nameof(ExtTcpPort)),
@@ -620,7 +622,7 @@ namespace EventStore.Core {
 		[Description("Projection Options")]
 		public record ProjectionOptions {
 			[Description("Enables the running of projections. System runs built-in projections, " +
-			             "All runs user projections.")]
+						 "All runs user projections.")]
 			public ProjectionType RunProjections { get; init; }
 
 			[Description("The number of threads to use for projections.")]
@@ -630,7 +632,7 @@ namespace EventStore.Core {
 			public int ProjectionsQueryExpiry { get; init; } = 5;
 
 			[Description("Fault the projection if the Event number that was expected in the stream differs " +
-			             "from what is received. This may happen if events have been deleted or expired.")]
+						 "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {

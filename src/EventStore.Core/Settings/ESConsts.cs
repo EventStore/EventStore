@@ -12,7 +12,7 @@ namespace EventStore.Core.Settings {
 		public const int ReadRequestTimeout = 10000;
 		public const bool PerformAdditionlCommitChecks = false;
 		public const int MetaStreamMaxCount = 1;
-			
+
 		public const int CachedPrincipalCount = 1000;
 
 		public static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(10);

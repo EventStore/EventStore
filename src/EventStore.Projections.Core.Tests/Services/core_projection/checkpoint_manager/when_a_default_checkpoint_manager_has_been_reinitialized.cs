@@ -30,9 +30,9 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 				_manager.BeginLoadPrerecordedEvents(checkpointLoaded.CheckpointTag);
 
 				_manager.Start(CheckpointTag.FromStreamPosition(0, "stream", 10), null);
-//                _manager.StateUpdated("", @"{""state"":""state1""}");
+				//                _manager.StateUpdated("", @"{""state"":""state1""}");
 				_manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 11), 77.7f);
-//                _manager.StateUpdated("", @"{""state"":""state2""}");
+				//                _manager.StateUpdated("", @"{""state"":""state2""}");
 				_manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 12), 77.7f);
 				_manager.Initialize();
 				_checkpointReader.Initialize();
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 
 		[Test]
 		public void event_processed_throws_invalid_operation_exception() {
-//            _manager.StateUpdated("", @"{""state"":""state""}");
+			//            _manager.StateUpdated("", @"{""state"":""state""}");
 			Assert.Throws<InvalidOperationException>(() => {
 				_manager.EventProcessed(CheckpointTag.FromStreamPosition(0, "stream", 10), 77.7f);
 			});

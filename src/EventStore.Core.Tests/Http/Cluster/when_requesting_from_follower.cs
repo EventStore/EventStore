@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		protected override async Task Given() {
 			var leader = GetLeader();
 			_leaderEndPoint = leader.HttpEndPoint;
-			
+
 			// Wait for the admin user to be created
 			await leader.AdminUserCreated;
 			var replica = GetFollowers().First();
@@ -31,13 +31,13 @@ namespace EventStore.Core.Tests.Http.Cluster {
 
 			// Wait for the admin user created event to be replicated before starting our tests
 			var leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
-			
+			AssertEx.IsOrBecomesTrue(() => replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
+
 			var path = $"streams/{TestStream}";
 			var response = await PostEvent(_followerEndPoint, path, requireLeader: false);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 			leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
+			AssertEx.IsOrBecomesTrue(() => replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
 		}
 
 		public override Task TestFixtureTearDown() {
@@ -184,7 +184,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 
 			return GetRequestResponse(request);
 		}
-		
+
 		private static string GetAuthorizationHeader(NetworkCredential credentials)
 			=> Convert.ToBase64String(Encoding.ASCII.GetBytes($"{credentials.UserName}:{credentials.Password}"));
 
@@ -192,7 +192,7 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			var request = new HttpRequestMessage(method, uri);
 			request.Headers.Add("ES-RequireLeader", requireLeader ? "True" : "False");
 			request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
-            					GetAuthorizationHeader(DefaultData.AdminNetworkCredentials));
+								GetAuthorizationHeader(DefaultData.AdminNetworkCredentials));
 			return request;
 		}
 

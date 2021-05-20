@@ -1,8 +1,8 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using EventStore.Common.Utils;
-using System.Linq;
 
 namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 	public class VersionedPatternFileNamingStrategy : IFileNamingStrategy {

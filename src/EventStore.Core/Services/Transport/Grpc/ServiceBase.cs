@@ -1,16 +1,16 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using EventStore.Client;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Grpc;
-using EventStore.Client;
 using Grpc.Core;
 
 namespace EventStore.Cluster {
 	partial class Gossip {
 		partial class GossipBase : ServiceBase {
-			
+
 		}
 	}
 
@@ -59,11 +59,12 @@ namespace EventStore.Client.Gossip {
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public class ServiceBase {
-		
+
 		public static bool GetRequiresLeader(Metadata requestHeaders) {
 			var requiresLeaderHeaderValue =
 				requestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.RequiresLeader)?.Value;
-			if (string.IsNullOrEmpty(requiresLeaderHeaderValue)) return false;
+			if (string.IsNullOrEmpty(requiresLeaderHeaderValue))
+				return false;
 			bool.TryParse(requiresLeaderHeaderValue, out var requiresLeader);
 			return requiresLeader;
 		}

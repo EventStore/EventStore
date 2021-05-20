@@ -11,7 +11,7 @@ namespace EventStore.Core {
 		public static ClusterVNodeOptions InCluster(this ClusterVNodeOptions options, int clusterSize) => options with {
 			Cluster = options.Cluster with {
 				ClusterSize = clusterSize <= 1
-					? throw new ArgumentOutOfRangeException(nameof(clusterSize), clusterSize,  $"{nameof(clusterSize)} must be greater than 1.")
+					? throw new ArgumentOutOfRangeException(nameof(clusterSize), clusterSize, $"{nameof(clusterSize)} must be greater than 1.")
 					: clusterSize
 			}
 		};
@@ -65,15 +65,15 @@ namespace EventStore.Core {
 		/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
 		public static ClusterVNodeOptions Secure(this ClusterVNodeOptions options,
 			X509Certificate2Collection trustedRootCertificates, X509Certificate2 serverCertificate) => options with {
-			Application = options.Application with {
-				Insecure = false,
-			},
-			Interface = options.Interface with {
-				DisableExternalTcpTls = false
-			},
-			ServerCertificate = serverCertificate,
-			TrustedRootCertificates = trustedRootCertificates
-		};
+				Application = options.Application with {
+					Insecure = false,
+				},
+				Interface = options.Interface with {
+					DisableExternalTcpTls = false
+				},
+				ServerCertificate = serverCertificate,
+				TrustedRootCertificates = trustedRootCertificates
+			};
 
 		/// <summary>
 		/// Sets gossip seeds to the specified value and turns off dns discovery
@@ -251,7 +251,8 @@ namespace EventStore.Core {
 		/// <returns></returns>
 		/// <exception cref="InvalidConfigurationException"></exception>
 		public static X509Certificate2Collection LoadTrustedRootCertificates(this ClusterVNodeOptions options) {
-			if (options.TrustedRootCertificates != null) return options.TrustedRootCertificates;
+			if (options.TrustedRootCertificates != null)
+				return options.TrustedRootCertificates;
 			var trustedRootCerts = new X509Certificate2Collection();
 			if (string.IsNullOrEmpty(options.Certificate.TrustedRootCertificatesPath)) {
 				throw new InvalidConfigurationException(

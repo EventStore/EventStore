@@ -6,8 +6,8 @@ namespace EventStore.Transport.Tcp.Framing {
 		private const int STX = 2;
 		private const int ETX = 3;
 
-		private static readonly ArraySegment<byte> STXBUFFER = new ArraySegment<byte>(new byte[] {STX});
-		private static readonly ArraySegment<byte> ETXBUFFER = new ArraySegment<byte>(new byte[] {ETX});
+		private static readonly ArraySegment<byte> STXBUFFER = new ArraySegment<byte>(new byte[] { STX });
+		private static readonly ArraySegment<byte> ETXBUFFER = new ArraySegment<byte>(new byte[] { ETX });
 
 		private enum ParserState {
 			AwaitingEtx,
@@ -24,7 +24,8 @@ namespace EventStore.Transport.Tcp.Framing {
 		/// </summary>
 		/// <param name="initialBufferSize">Initial size of the Buffer.</param>
 		public StxEtxMessageFramer(int initialBufferSize) {
-			if (initialBufferSize < 1) throw new ArgumentException("Buffer size must be greater than zero.");
+			if (initialBufferSize < 1)
+				throw new ArgumentException("Buffer size must be greater than zero.");
 			_messageBuffer = new byte[initialBufferSize];
 			_currentState = ParserState.AwaitingStx;
 		}

@@ -60,7 +60,8 @@ namespace EventStore.Projections.Core.v8 {
 						if (attempts > 0 && (ex.ErrorCode == -1 || ex.ErrorCode == -2)) {
 							// timeouts
 							Thread.Sleep(2000);
-						} else throw;
+						} else
+							throw;
 					}
 				} while (prelude == default(IntPtr));
 
@@ -166,11 +167,11 @@ namespace EventStore.Projections.Core.v8 {
 
 		private bool EnterCancellableRegion() {
 			var entered = Interlocked.CompareExchange(ref _cancelTokenOrStatus, _currentCancelToken, Scheduled) ==
-			              Scheduled;
+						  Scheduled;
 			var result = entered && !_terminateRequested.TerminateRequested;
 			if (!result && entered) {
 				if (Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, _currentCancelToken) !=
-				    _currentCancelToken)
+					_currentCancelToken)
 					throw new Exception();
 			}
 
@@ -183,8 +184,8 @@ namespace EventStore.Projections.Core.v8 {
 		/// <returns></returns>
 		private bool ExitCancellableRegion() {
 			return Interlocked.CompareExchange(ref _cancelTokenOrStatus, Scheduled, _currentCancelToken) ==
-			       _currentCancelToken
-			       && !_terminateRequested.TerminateRequested;
+				   _currentCancelToken
+				   && !_terminateRequested.TerminateRequested;
 		}
 	}
 }

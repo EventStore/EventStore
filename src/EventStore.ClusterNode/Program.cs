@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
-using EventStore.Core.Services.Transport.Http;
 using EventStore.Core;
+using EventStore.Core.Services.Transport.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
@@ -70,7 +70,7 @@ namespace EventStore.ClusterNode {
 				}
 
 				if (!options.Cluster.DiscoverViaDns && options.Cluster.GossipSeed.Length == 0 &&
-				    options.Cluster.ClusterSize == 1) {
+					options.Cluster.ClusterSize == 1) {
 					Log.Information(
 						"DNS discovery is disabled, but no gossip seed endpoints have been specified. Since "
 						+ "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
@@ -155,8 +155,7 @@ namespace EventStore.ClusterNode {
 			} catch (InvalidConfigurationException ex) {
 				Log.Fatal("Invalid Configuration: " + ex.Message);
 				return 1;
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				Log.Fatal(ex, "Host terminated unexpectedly.");
 				return 1;
 			} finally {

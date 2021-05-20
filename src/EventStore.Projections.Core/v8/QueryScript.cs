@@ -173,7 +173,8 @@ namespace EventStore.Projections.Core.v8 {
 
 		private void OnEmit(string obj) {
 			Action<string> handler = Emit;
-			if (handler != null) handler(obj);
+			if (handler != null)
+				handler(obj);
 		}
 
 		public void Dispose() {

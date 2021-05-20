@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
-using NUnit.Framework;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Util;
+using NUnit.Framework;
 using static EventStore.Core.Messages.TcpClientMessageDto.Filter;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {

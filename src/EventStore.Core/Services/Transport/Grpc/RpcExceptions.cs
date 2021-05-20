@@ -1,9 +1,9 @@
 using System;
 using System.Net;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
 using EventStore.Client;
 using EventStore.Common.Utils;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		private static Exception NoLeaderInfo() =>
 			new RpcException(new Status(StatusCode.Unknown, "No leader info available in response"));
-		
+
 		private static Exception LeaderInfo(string host, int port) =>
 			new RpcException(new Status(StatusCode.NotFound, $"Leader info available"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.NotLeader},

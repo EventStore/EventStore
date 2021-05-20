@@ -1,7 +1,7 @@
 using System;
 using System.IO;
-using EventStore.Common.Utils;
 using System.Reflection;
+using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Services.v8 {
 	public class DefaultV8ProjectionStateHandler : V8ProjectionStateHandler {

@@ -1,7 +1,7 @@
 using System;
-using System.Threading;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using KellermanSoftware.CompareNetObjects;
 using NUnit.Framework;
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests {
 		/// slice to any thread of equal priority that is ready to run.</param>
 		public static void IsOrBecomesTrue(Func<bool> func, TimeSpan? timeout = null, string msg = null, bool yieldThread = false) {
 			if (func()) {
-				return; 
+				return;
 			}
 
 			var expire = DateTime.UtcNow + (timeout ?? TimeSpan.FromMilliseconds(1000));
@@ -80,11 +80,11 @@ namespace EventStore.Core.Tests {
 				}
 
 				while (!spin.NextSpinWillYield) {
-					spin.SpinOnce(); 
+					spin.SpinOnce();
 				}
 
 				if (func()) {
-					return; 
+					return;
 				}
 
 				spin = new SpinWait();

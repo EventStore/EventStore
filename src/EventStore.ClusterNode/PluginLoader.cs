@@ -45,7 +45,7 @@ namespace EventStore.ClusterNode {
 		}
 
 		private class PluginLoadContext : AssemblyLoadContext {
-			private static readonly string[] Shared = {"Serilog", "YamlDotNet", "EventStore.Plugins"};
+			private static readonly string[] Shared = { "Serilog", "YamlDotNet", "EventStore.Plugins" };
 			private readonly AssemblyDependencyResolver _resolver;
 
 			public PluginLoadContext(DirectoryInfo directory) : base(true) {

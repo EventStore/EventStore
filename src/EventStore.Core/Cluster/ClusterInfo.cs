@@ -32,8 +32,10 @@ namespace EventStore.Core.Cluster {
 		}
 
 		public bool HasChangedSince(ClusterInfo other) {
-			if (ReferenceEquals(null, other)) return true;
-			if (ReferenceEquals(this, other)) return false;
+			if (ReferenceEquals(null, other))
+				return true;
+			if (ReferenceEquals(this, other))
+				return false;
 
 			if (other.Members.Length != Members.Length)
 				return true;
@@ -45,7 +47,7 @@ namespace EventStore.Core.Cluster {
 
 			return false;
 		}
-		
+
 		public static ClusterInfo FromGrpcClusterInfo(EventStore.Cluster.ClusterInfo grpcCluster) {
 			var receivedMembers = Array.ConvertAll(grpcCluster.Members.ToArray(), x =>
 				new MemberInfo(

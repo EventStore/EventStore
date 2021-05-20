@@ -1,14 +1,14 @@
 using System;
 using System.Linq;
-using EventStore.Projections.Core.Messages;
-using NUnit.Framework;
-using EventStore.Projections.Core.Services;
-using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
-using EventStore.Core.Data;
-using EventStore.Projections.Core.Services.Processing;
 using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Tests;
+using EventStore.Projections.Core.Messages;
+using EventStore.Projections.Core.Services;
+using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
+using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				_writeEventHandler.HandledMessages.Count(
 					v => v.Events.Any(
 						e => e.EventType == ProjectionEventTypes.ProjectionCheckpoint
-						     && Helper.UTF8NoBom.GetString(e.Data).Equals("[" + _testProjectionState + "]")
+							 && Helper.UTF8NoBom.GetString(e.Data).Equals("[" + _testProjectionState + "]")
 					)
 				)
 			);

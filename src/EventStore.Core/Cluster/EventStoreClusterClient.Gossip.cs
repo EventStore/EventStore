@@ -2,13 +2,13 @@
 using System.Threading.Tasks;
 using EventStore.Client.Shared;
 using EventStore.Cluster;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Common.Utils;
 using Empty = EventStore.Client.Shared.Empty;
-using ILogger = Serilog.ILogger;
 using EndPoint = System.Net.EndPoint;
 using GossipEndPoint = EventStore.Cluster.EndPoint;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Cluster {
 	public partial class EventStoreClusterClient {

@@ -114,12 +114,12 @@ namespace EventStore.TestClient {
 						Console.Write(">>> ");
 					}
 				}
-			}) {IsBackground = true, Name = "Client Main Loop Thread"}.Start();
+			}) { IsBackground = true, Name = "Client Main Loop Thread" }.Start();
 			return 0;
 		}
 
 		private static string[] ParseCommandLine(string line) {
-			return line.Split(new[] {' ', '\t'}, StringSplitOptions.RemoveEmptyEntries);
+			return line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 		}
 
 		private int Execute(string[] args) {
@@ -180,7 +180,7 @@ namespace EventStore.TestClient {
 					endpoint.GetHost(),
 					endpoint.ResolveDnsToIPAddress(),
 					TcpConnectionManager.ConnectionTimeout,
-					(cert,chain,err) => (err == SslPolicyErrors.None || !ValidateServer, err.ToString()),
+					(cert, chain, err) => (err == SslPolicyErrors.None || !ValidateServer, err.ToString()),
 					() => null,
 					onConnectionEstablished,
 					onConnectionFailed,

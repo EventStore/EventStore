@@ -1,4 +1,6 @@
-﻿using EventStore.Common.Utils;
+﻿using System;
+using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -12,8 +14,6 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using NUnit.Framework;
-using System;
-using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]

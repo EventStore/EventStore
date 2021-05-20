@@ -13,7 +13,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 
 			var encodedData = Helper.UTF8NoBom.GetBytes(Codec.Json.To(@event));
 			var encodedMetadata =
-				Helper.UTF8NoBom.GetBytes(Codec.Json.To(new Dictionary<string, object> {{"IsEmpty", true}}));
+				Helper.UTF8NoBom.GetBytes(Codec.Json.To(new Dictionary<string, object> { { "IsEmpty", true } }));
 
 			return new EventData(Guid.NewGuid(), @event.GetType().Name, true, encodedData, encodedMetadata);
 		}

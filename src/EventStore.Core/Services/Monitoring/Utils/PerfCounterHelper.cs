@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		}
 
 		private PerformanceCounter CreatePerfCounter(string category, string counter, string instance = null) {
-			if(!Runtime.IsWindows){
+			if (!Runtime.IsWindows) {
 				return null;
 			}
 

@@ -142,11 +142,12 @@ namespace EventStore.Core.Services {
 		private bool AreAnyCommittedRecordsTruncatedWithLastEpoch(long subscriptionPosition, EpochRecord lastEpoch,
 			long lastCommitPosition) {
 			return lastEpoch != null && subscriptionPosition <= lastEpoch.EpochPosition &&
-			       lastCommitPosition >= lastEpoch.EpochPosition;
+				   lastCommitPosition >= lastEpoch.EpochPosition;
 		}
 
 		public void Handle(ReplicationMessage.CreateChunk message) {
-			if (_subscriptionId != message.SubscriptionId) return;
+			if (_subscriptionId != message.SubscriptionId)
+				return;
 
 			if (_activeChunk != null) {
 				_activeChunk.MarkForDeletion();
@@ -175,14 +176,15 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(ReplicationMessage.RawChunkBulk message) {
-			if (_subscriptionId != message.SubscriptionId) return;
+			if (_subscriptionId != message.SubscriptionId)
+				return;
 			if (_activeChunk == null)
 				ReplicationFail(
 					"Physical chunk bulk received, but we do not have active chunk.",
 					"Physical chunk bulk received, but we do not have active chunk.");
 
 			if (_activeChunk.ChunkHeader.ChunkStartNumber != message.ChunkStartNumber ||
-			    _activeChunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber) {
+				_activeChunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber) {
 				Log.Error(
 					"Received RawChunkBulk for TFChunk {chunkStartNumber}-{chunkEndNumber}, but active chunk is {activeChunk}.",
 					message.ChunkStartNumber, message.ChunkEndNumber, _activeChunk);
@@ -226,7 +228,8 @@ namespace EventStore.Core.Services {
 		public void Handle(ReplicationMessage.DataChunkBulk message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
-				if (_subscriptionId != message.SubscriptionId) return;
+				if (_subscriptionId != message.SubscriptionId)
+					return;
 				if (_activeChunk != null)
 					ReplicationFail(
 						"Data chunk bulk received, but we have active chunk for receiving raw chunk bulks.",
@@ -234,7 +237,7 @@ namespace EventStore.Core.Services {
 
 				var chunk = Writer.CurrentChunk;
 				if (chunk.ChunkHeader.ChunkStartNumber != message.ChunkStartNumber ||
-				    chunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber) {
+					chunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber) {
 					Log.Error(
 						"Received DataChunkBulk for TFChunk {chunkStartNumber}-{chunkEndNumber}, but active chunk is {activeChunkStartNumber}-{activeChunkEndNumber}.",
 						message.ChunkStartNumber, message.ChunkEndNumber, chunk.ChunkHeader.ChunkStartNumber,

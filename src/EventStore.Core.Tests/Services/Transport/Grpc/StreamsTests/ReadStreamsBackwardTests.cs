@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			[Test]
 			public void should_not_receive_null_events() {
-				Assert.False(_responses.Any(x=> x.Event is null));
+				Assert.False(_responses.Any(x => x.Event is null));
 			}
 
 			[Test]
@@ -93,24 +93,24 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					_responses.Add(enumerator.Current);
 				}
 			}
-			
+
 			[Test]
 			public void should_not_receive_null_events() {
-				Assert.False(_responses.Any(x=> x.Event is null));
+				Assert.False(_responses.Any(x => x.Event is null));
 			}
 
 			[Test]
 			public void should_read_a_number_of_events_equal_to_the_max_count() {
 				Assert.AreEqual(_maxCount, _responses.Count);
 			}
-			
+
 			[Test]
 			public void should_read_the_correct_events() {
 				Assert.AreEqual(29, _responses[0].OriginalEventNumber);
 				Assert.AreEqual(10, _responses[^1].OriginalEventNumber);
 			}
 		}
-		
+
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class when_reading_backward_from_the_start_of_the_stream<TLogFormat, TStreamId>

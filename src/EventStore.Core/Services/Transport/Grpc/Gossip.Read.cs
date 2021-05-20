@@ -19,7 +19,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
-			_bus.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs))));;
+			_bus.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs))));
+			;
 			return await tcs.Task.ConfigureAwait(false);
 		}
 
@@ -35,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				TimeStamp = x.TimeStamp.ToTicksSinceEpoch(),
 				State = (MemberInfo.Types.VNodeState)x.State,
 				IsAlive = x.IsAlive,
-				HttpEndPoint = new EndPoint{
+				HttpEndPoint = new EndPoint {
 					Address = x.HttpEndPointIp,
 					Port = (uint)x.HttpEndPointPort
 				}

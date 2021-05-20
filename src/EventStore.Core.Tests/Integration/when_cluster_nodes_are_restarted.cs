@@ -1,9 +1,9 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Integration {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -15,9 +15,9 @@ namespace EventStore.Core.Tests.Integration {
 			for (int i = 0; i < 9; i++) {
 				await _nodes[i % 3].Shutdown(keepDb: true);
 				await Task.Delay(2000);
-				
+
 				var node = CreateNode(i % 3, _nodeEndpoints[i % 3],
-					new[] {_nodeEndpoints[(i+1)%3].HttpEndPoint, _nodeEndpoints[(i+2)%3].HttpEndPoint});
+					new[] { _nodeEndpoints[(i + 1) % 3].HttpEndPoint, _nodeEndpoints[(i + 2) % 3].HttpEndPoint });
 				node.Start();
 				_nodes[i % 3] = node;
 
@@ -32,8 +32,10 @@ namespace EventStore.Core.Tests.Integration {
 
 			for (int i = 0; i < 3; i++) {
 				var state = _nodes[i].NodeState;
-				if (state == VNodeState.Leader) leaders++;
-				else if (state == VNodeState.Follower) followers++;
+				if (state == VNodeState.Leader)
+					leaders++;
+				else if (state == VNodeState.Follower)
+					followers++;
 			}
 
 			Assert.AreEqual(1, leaders);

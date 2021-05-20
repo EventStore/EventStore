@@ -54,7 +54,7 @@ namespace EventStore.Core.Index {
 						AppendRecordTo(bs, buffer, table.Version, rec, indexEntrySize);
 						dumpedEntryCount += 1;
 						if (table.Version >= PTableVersions.IndexV4 &&
-						    IsMidpointIndex(indexEntry, table.Count, requiredMidpointCount)) {
+							IsMidpointIndex(indexEntry, table.Count, requiredMidpointCount)) {
 							midpoints.Add(new Midpoint(new IndexEntryKey(rec.Stream, rec.Version), indexEntry));
 						}
 
@@ -150,7 +150,7 @@ namespace EventStore.Core.Index {
 							var current = enumerators[idx].Current;
 							AppendRecordTo(bs, buffer, version, current, indexEntrySize);
 							if (version >= PTableVersions.IndexV4 &&
-							    IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
+								IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
 								midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version),
 									indexEntry));
 							}
@@ -272,7 +272,7 @@ namespace EventStore.Core.Index {
 
 							AppendRecordTo(bs, buffer, version, current, indexEntrySize);
 							if (version >= PTableVersions.IndexV4 &&
-							    IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
+								IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
 								midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version),
 									indexEntry));
 							}
@@ -614,7 +614,8 @@ namespace EventStore.Core.Index {
 
 			public bool MoveNext() {
 				var hasMovedToNext = _enumerator.MoveNext();
-				if (_list == null || hasMovedToNext) return hasMovedToNext;
+				if (_list == null || hasMovedToNext)
+					return hasMovedToNext;
 
 				_enumerator.Dispose();
 				_list = ReadUntilDifferentHash(_mergedPTableVersion, _ptableEnumerator, _upgradeHash, _existsAt,
@@ -695,7 +696,8 @@ namespace EventStore.Core.Index {
 
 		private static int GetDepth(long indexEntriesFileSize, int minDepth) {
 			minDepth = Math.Max(0, Math.Min(minDepth, 28));
-			if ((2L << 28) * 4096L < indexEntriesFileSize) return 28;
+			if ((2L << 28) * 4096L < indexEntriesFileSize)
+				return 28;
 			for (int i = 27; i >= minDepth; i--) {
 				if ((2L << i) * 4096L < indexEntriesFileSize) {
 					return i + 1;
@@ -706,8 +708,10 @@ namespace EventStore.Core.Index {
 		}
 
 		private static uint GetRequiredMidpointCount(long numIndexEntries, byte version, int minDepth) {
-			if (numIndexEntries == 0) return 0;
-			if (numIndexEntries == 1) return 2;
+			if (numIndexEntries == 0)
+				return 0;
+			if (numIndexEntries == 1)
+				return 2;
 
 			int indexEntrySize = GetIndexEntrySize(version);
 			var depth = GetDepth(numIndexEntries * indexEntrySize, minDepth);
@@ -722,15 +726,18 @@ namespace EventStore.Core.Index {
 		}
 
 		public static long GetMidpointIndex(long k, long numIndexEntries, long numMidpoints) {
-			if (numIndexEntries == 1 && numMidpoints == 2 && (k == 0 || k == 1)) return 0;
+			if (numIndexEntries == 1 && numMidpoints == 2 && (k == 0 || k == 1))
+				return 0;
 			return (long)k * (numIndexEntries - 1) / (numMidpoints - 1);
 		}
 
 		public static bool IsMidpointIndex(long index, long numIndexEntries, long numMidpoints) {
 			//special cases
-			if (numIndexEntries < 1) return false;
+			if (numIndexEntries < 1)
+				return false;
 			if (numIndexEntries == 1) {
-				if (numMidpoints == 2 && index == 0) return true;
+				if (numMidpoints == 2 && index == 0)
+					return true;
 				return false;
 			}
 
@@ -739,9 +746,11 @@ namespace EventStore.Core.Index {
 			//we need to find if there exists an integer x, such that:
 			//index*(numMidpoints-1)/(numIndexEntries-1) <= x < (index+1)*(numMidpoints-1)/(numIndexEntries-1)
 			var lower = index * (numMidpoints - 1) / (numIndexEntries - 1);
-			if ((index * (numMidpoints - 1)) % (numIndexEntries - 1) != 0) lower++;
+			if ((index * (numMidpoints - 1)) % (numIndexEntries - 1) != 0)
+				lower++;
 			var upper = (index + 1) * (numMidpoints - 1) / (numIndexEntries - 1);
-			if (((index + 1) * (numMidpoints - 1)) % (numIndexEntries - 1) == 0) upper--;
+			if (((index + 1) * (numMidpoints - 1)) % (numIndexEntries - 1) == 0)
+				upper--;
 			return lower <= upper;
 		}
 	}

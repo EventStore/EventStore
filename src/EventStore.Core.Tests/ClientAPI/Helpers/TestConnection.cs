@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 				.UseCustomLogger(ClientApiLoggerBridge.Default)
 				.EnableVerboseLogging()
 				.LimitReconnectionsTo(10)
-				.LimitAttemptsForOperationTo(1)				
+				.LimitAttemptsForOperationTo(1)
 				.SetTimeoutCheckPeriodTo(TimeSpan.FromMilliseconds(100))
 				.SetReconnectionDelayTo(TimeSpan.Zero)
 				.FailOnNoServerResponse()

@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.ReplicaWriteAck>(msg => ReplicaWriteAcks.Enqueue(msg)));
 			Publisher.Subscribe(new AdHocHandler<SystemMessage.VNodeConnectionLost>(msg => ReplicaLostMessages.Enqueue(msg)));
 			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
-			
+
 			DbConfig = CreateDbConfig();
 			var db = new TFChunkDb(DbConfig);
 			db.Open();
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				queueStatsManager: new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(), 0));
 
 			ReplicaSubscriptionId = AddSubscription(ReplicaId, true, out ReplicaManager1);
 			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, true, out ReplicaManager2);
@@ -93,7 +93,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 			var subRequest = new ReplicationMessage.ReplicaSubscriptionRequest(
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public abstract void When();
 		protected void BecomeLeader() {
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(), 0));
 		}
 
 		protected void BecomeUnknown() {
@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
 			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
 			var nodeConfig = new TFChunkDbConfig(
-				PathName, 
+				PathName,
 				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
 				1000,
 				10000,

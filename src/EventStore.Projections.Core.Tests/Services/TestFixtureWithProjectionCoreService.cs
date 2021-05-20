@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
-			
+
 			var instanceCorrelationId = Guid.NewGuid();
 			_readerService.Handle(new ReaderCoreServiceMessage.StartReader(instanceCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StartCore(instanceCorrelationId));

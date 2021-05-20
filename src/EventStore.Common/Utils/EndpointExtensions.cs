@@ -24,7 +24,7 @@ namespace EventStore.Common.Utils {
 				_ => throw new ArgumentOutOfRangeException(nameof(endpoint), endpoint?.GetType(),
 					"An invalid endpoint has been provided")
 			};
-		
+
 		public static int GetPort(this EndPoint endpoint) =>
 			endpoint switch {
 				IPEndPoint ip => ip.Port,

@@ -148,10 +148,10 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 
 			var ioDispatcher = new IODispatcher(output, new PublishEnvelope(inputQueue), true);
-//            var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(
-//                output,
-//                ioDispatcher,
-//                workerId.ToString("N"));
+			//            var coreServiceCommandReader = new ProjectionCoreServiceCommandReader(
+			//                output,
+			//                ioDispatcher,
+			//                workerId.ToString("N"));
 
 			var coreService = new ProjectionCoreService(
 				workerId,

@@ -98,9 +98,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 					long streamVersion = streamUncommitedVersion[rec.StreamId];
 					if (streamVersion == -1
-					    && rec.Type != Rec.RecType.TransStart
-					    && rec.Type != Rec.RecType.Prepare
-					    && rec.Type != Rec.RecType.Delete) {
+						&& rec.Type != Rec.RecType.TransStart
+						&& rec.Type != Rec.RecType.Prepare
+						&& rec.Type != Rec.RecType.Delete) {
 						throw new Exception(string.Format("Stream {0} is empty.", rec.StreamId));
 					}
 
@@ -119,46 +119,46 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.Any;
 					switch (rec.Type) {
 						case Rec.RecType.Prepare: {
-							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
+								record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 
-							if (SystemStreams.IsMetastream(rec.StreamId))
-								transInfo.StreamMetadata = rec.Metadata;
+								if (SystemStreams.IsMetastream(rec.StreamId))
+									transInfo.StreamMetadata = rec.Metadata;
 
-							streamUncommitedVersion[rec.StreamId] += 1;
-							break;
-						}
+								streamUncommitedVersion[rec.StreamId] += 1;
+								break;
+							}
 
 						case Rec.RecType.Delete: {
-							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
+								record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 
-							streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV0
-								? int.MaxValue
-								: EventNumber.DeletedStream;
-							break;
-						}
+								streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV0
+									? int.MaxValue
+									: EventNumber.DeletedStream;
+								break;
+							}
 
 						case Rec.RecType.TransStart:
 						case Rec.RecType.TransEnd: {
-							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
-							break;
-						}
-						case Rec.RecType.Commit: {
-							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
-
-							if (transInfo.StreamMetadata != null) {
-								var streamId = SystemStreams.OriginalStreamOf(rec.StreamId);
-								if (!streams.ContainsKey(streamId))
-									streams.Add(streamId, new StreamInfo(-1));
-								streams[streamId].StreamMetadata = transInfo.StreamMetadata;
+								record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
+								break;
 							}
+						case Rec.RecType.Commit: {
+								record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 
-							if (transInfo.IsDelete)
-								streams[rec.StreamId].StreamVersion = EventNumber.DeletedStream;
-							else
-								streams[rec.StreamId].StreamVersion =
-									transInfo.TransactionEventNumber + transInfo.TransactionOffset - 1;
-							break;
-						}
+								if (transInfo.StreamMetadata != null) {
+									var streamId = SystemStreams.OriginalStreamOf(rec.StreamId);
+									if (!streams.ContainsKey(streamId))
+										streams.Add(streamId, new StreamInfo(-1));
+									streams[streamId].StreamMetadata = transInfo.StreamMetadata;
+								}
+
+								if (transInfo.IsDelete)
+									streams[rec.StreamId].StreamVersion = EventNumber.DeletedStream;
+								else
+									streams[rec.StreamId].StreamVersion =
+										transInfo.TransactionEventNumber + transInfo.TransactionOffset - 1;
+								break;
+							}
 						default:
 							throw new ArgumentOutOfRangeException();
 					}
@@ -181,7 +181,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		}
 
 		private byte[] FormatRecordMetadata(Rec rec) {
-			if (rec.Metadata == null) return null;
+			if (rec.Metadata == null)
+				return null;
 
 			var meta = rec.Metadata;
 			return meta.ToJsonBytes();
@@ -190,98 +191,98 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		private ILogRecord CreateLogRecord(Rec rec, TransactionInfo transInfo, long logPos, long expectedVersion) {
 			switch (rec.Type) {
 				case Rec.RecType.Prepare: {
-					int transOffset = transInfo.TransactionOffset;
-					transInfo.TransactionOffset += 1;
+						int transOffset = transInfo.TransactionOffset;
+						transInfo.TransactionOffset += 1;
 
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
-							rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
-							PrepareFlags.Data
+						if (rec.Version == LogRecordVersion.LogRecordV0) {
+							return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
+								rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
+								PrepareFlags.Data
+								| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
+								| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
+								| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
+						}
+
+						_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
+						return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
+							Guid.NewGuid(),
+							rec.Id,
+							transInfo.TransactionPosition,
+							transOffset,
+							streamId,
+							expectedVersion,
+							rec.PrepareFlags
 							| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
-							| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
+							| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
+							rec.EventType,
+							rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
+							null,
+							rec.TimeStamp);
 					}
-
-					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
-					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
-						Guid.NewGuid(),
-						rec.Id,
-						transInfo.TransactionPosition,
-						transOffset,
-						streamId,
-						expectedVersion,
-						rec.PrepareFlags
-						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
-						| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
-						rec.EventType,
-						rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
-						null,
-						rec.TimeStamp);
-				}
 
 				case Rec.RecType.Delete: {
-					int transOffset = transInfo.TransactionOffset;
-					transInfo.TransactionOffset += 1;
+						int transOffset = transInfo.TransactionOffset;
+						transInfo.TransactionOffset += 1;
 
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
-							LogRecord.NoData,
+						if (rec.Version == LogRecordVersion.LogRecordV0) {
+							return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
+								LogRecord.NoData,
+								PrepareFlags.StreamDelete
+								| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
+								| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
+						}
+
+						_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
+						return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
+							Guid.NewGuid(),
+							rec.Id,
+							transInfo.TransactionPosition,
+							transOffset,
+							streamId,
+							expectedVersion,
 							PrepareFlags.StreamDelete
 							| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
+							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
+							rec.EventType,
+							LogRecord.NoData,
+							null,
+							rec.TimeStamp);
 					}
-
-					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
-					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
-						Guid.NewGuid(),
-						rec.Id,
-						transInfo.TransactionPosition,
-						transOffset,
-						streamId,
-						expectedVersion,
-						PrepareFlags.StreamDelete
-						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
-						rec.EventType,
-						LogRecord.NoData,
-						null,
-						rec.TimeStamp);
-				}
 
 				case Rec.RecType.TransStart:
 				case Rec.RecType.TransEnd: {
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return CreateLogRecordV0(rec, transInfo, -1, logPos, expectedVersion,
-							LogRecord.NoData,
+						if (rec.Version == LogRecordVersion.LogRecordV0) {
+							return CreateLogRecordV0(rec, transInfo, -1, logPos, expectedVersion,
+								LogRecord.NoData,
+								(transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
+								| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
+						}
+
+						_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
+						return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
+							Guid.NewGuid(),
+							rec.Id,
+							transInfo.TransactionPosition,
+							-1,
+							streamId,
+							expectedVersion,
 							(transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
+							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
+							rec.EventType,
+							LogRecord.NoData,
+							null,
+							rec.TimeStamp);
 					}
-
-					_logFormat.StreamNameIndex.GetOrAddId(rec.StreamId, out var streamId, out _, out _);
-					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
-						Guid.NewGuid(),
-						rec.Id,
-						transInfo.TransactionPosition,
-						-1,
-						streamId,
-						expectedVersion,
-						(transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
-						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
-						rec.EventType,
-						LogRecord.NoData,
-						null,
-						rec.TimeStamp);
-				}
 				case Rec.RecType.Commit: {
-					if (rec.Version == LogRecordVersion.LogRecordV0) {
-						return new CommitLogRecord(logPos, Guid.NewGuid(), transInfo.TransactionPosition,
-							DateTime.UtcNow, transInfo.TransactionEventNumber, LogRecordVersion.LogRecordV0);
-					}
+						if (rec.Version == LogRecordVersion.LogRecordV0) {
+							return new CommitLogRecord(logPos, Guid.NewGuid(), transInfo.TransactionPosition,
+								DateTime.UtcNow, transInfo.TransactionEventNumber, LogRecordVersion.LogRecordV0);
+						}
 
-					return LogRecord.Commit(logPos, Guid.NewGuid(), transInfo.TransactionPosition,
-						transInfo.TransactionEventNumber);
-				}
+						return LogRecord.Commit(logPos, Guid.NewGuid(), transInfo.TransactionPosition,
+							transInfo.TransactionEventNumber);
+					}
 				default:
 					throw new ArgumentOutOfRangeException();
 			}

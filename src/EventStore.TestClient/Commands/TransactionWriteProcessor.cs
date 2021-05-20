@@ -51,101 +51,101 @@ namespace EventStore.TestClient.Commands {
 				handlePackage: (conn, pkg) => {
 					switch (stage) {
 						case Stage.AcquiringTransactionId: {
-							if (pkg.Command != TcpCommand.TransactionStartCompleted) {
-								context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-								return;
-							}
+								if (pkg.Command != TcpCommand.TransactionStartCompleted) {
+									context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
+									return;
+								}
 
-							var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionStartCompleted>();
-							if (dto.Result != TcpClientMessageDto.OperationResult.Success) {
-								var msg = string.Format("Error while starting transaction: {0} ({1}).", dto.Message,
-									dto.Result);
-								context.Log.Information("Error while starting transaction: {message} ({e}).", dto.Message,
-									dto.Result);
-								context.Fail(reason: msg);
-							} else {
-								context.Log.Information("Successfully started transaction. TransactionId: {transactionId}.",
-									dto.TransactionId);
-								context.Log.Information("Now sending transactional events. TransactionId: {transactionId}",
-									dto.TransactionId);
+								var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionStartCompleted>();
+								if (dto.Result != TcpClientMessageDto.OperationResult.Success) {
+									var msg = string.Format("Error while starting transaction: {0} ({1}).", dto.Message,
+										dto.Result);
+									context.Log.Information("Error while starting transaction: {message} ({e}).", dto.Message,
+										dto.Result);
+									context.Fail(reason: msg);
+								} else {
+									context.Log.Information("Successfully started transaction. TransactionId: {transactionId}.",
+										dto.TransactionId);
+									context.Log.Information("Now sending transactional events. TransactionId: {transactionId}",
+										dto.TransactionId);
 
-								transactionId = dto.TransactionId;
-								stage = Stage.Writing;
-								for (int i = 0; i < eventsCnt; ++i) {
-									var writeDto = new TcpClientMessageDto.TransactionWrite(
-										transactionId,
-										new[] {
+									transactionId = dto.TransactionId;
+									stage = Stage.Writing;
+									for (int i = 0; i < eventsCnt; ++i) {
+										var writeDto = new TcpClientMessageDto.TransactionWrite(
+											transactionId,
+											new[] {
 											new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
 												"TakeSomeSpaceEvent",
 												0, 0,
 												Common.Utils.Helper.UTF8NoBom.GetBytes(Guid.NewGuid().ToString()),
 												Common.Utils.Helper.UTF8NoBom.GetBytes(Guid.NewGuid().ToString()))
-										},
-										false);
-									var package = new TcpPackage(TcpCommand.TransactionWrite, Guid.NewGuid(),
-										writeDto.Serialize());
-									conn.EnqueueSend(package.AsByteArray());
+											},
+											false);
+										var package = new TcpPackage(TcpCommand.TransactionWrite, Guid.NewGuid(),
+											writeDto.Serialize());
+										conn.EnqueueSend(package.AsByteArray());
+									}
 								}
-							}
 
-							break;
-						}
+								break;
+							}
 						case Stage.Writing: {
-							if (pkg.Command != TcpCommand.TransactionWriteCompleted) {
-								context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-								return;
-							}
-
-							var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionWriteCompleted>();
-							if (dto.Result != TcpClientMessageDto.OperationResult.Success) {
-								context.Log.Information("Error while writing transactional event: {message} ({e}).",
-									dto.Message, dto.Result);
-								var msg = String.Format("Error while writing transactional event: {0} ({1}).",
-									dto.Message, dto.Result);
-								context.Fail(reason: msg);
-							} else {
-								writtenEvents += 1;
-								if (writtenEvents == eventsCnt) {
-									context.Log.Information("Written all events. Committing...");
-
-									stage = Stage.Committing;
-									var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, false);
-									var package = new TcpPackage(TcpCommand.TransactionCommit, Guid.NewGuid(),
-										commitDto.Serialize());
-									conn.EnqueueSend(package.AsByteArray());
+								if (pkg.Command != TcpCommand.TransactionWriteCompleted) {
+									context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
+									return;
 								}
-							}
 
-							break;
-						}
+								var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionWriteCompleted>();
+								if (dto.Result != TcpClientMessageDto.OperationResult.Success) {
+									context.Log.Information("Error while writing transactional event: {message} ({e}).",
+										dto.Message, dto.Result);
+									var msg = String.Format("Error while writing transactional event: {0} ({1}).",
+										dto.Message, dto.Result);
+									context.Fail(reason: msg);
+								} else {
+									writtenEvents += 1;
+									if (writtenEvents == eventsCnt) {
+										context.Log.Information("Written all events. Committing...");
+
+										stage = Stage.Committing;
+										var commitDto = new TcpClientMessageDto.TransactionCommit(transactionId, false);
+										var package = new TcpPackage(TcpCommand.TransactionCommit, Guid.NewGuid(),
+											commitDto.Serialize());
+										conn.EnqueueSend(package.AsByteArray());
+									}
+								}
+
+								break;
+							}
 						case Stage.Committing: {
-							if (pkg.Command != TcpCommand.TransactionCommitCompleted) {
-								context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
-								return;
+								if (pkg.Command != TcpCommand.TransactionCommitCompleted) {
+									context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
+									return;
+								}
+
+								sw.Stop();
+
+								var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionCommitCompleted>();
+								if (dto.Result != TcpClientMessageDto.OperationResult.Success) {
+									var msg = string.Format("Error while committing transaction: {0} ({1}).", dto.Message,
+										dto.Result);
+									context.Log.Information("Error while committing transaction: {message} ({e}).", dto.Message,
+										dto.Result);
+									context.Log.Information("Transaction took: {elapsed}.", sw.Elapsed);
+									context.Fail(reason: msg);
+								} else {
+									context.Log.Information("Successfully committed transaction [{transactionId}]!",
+										dto.TransactionId);
+									context.Log.Information("Transaction took: {elapsed}.", sw.Elapsed);
+									PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
+										(int)Math.Round(sw.Elapsed.TotalMilliseconds));
+									context.Success();
+								}
+
+								conn.Close();
+								break;
 							}
-
-							sw.Stop();
-
-							var dto = pkg.Data.Deserialize<TcpClientMessageDto.TransactionCommitCompleted>();
-							if (dto.Result != TcpClientMessageDto.OperationResult.Success) {
-								var msg = string.Format("Error while committing transaction: {0} ({1}).", dto.Message,
-									dto.Result);
-								context.Log.Information("Error while committing transaction: {message} ({e}).", dto.Message,
-									dto.Result);
-								context.Log.Information("Transaction took: {elapsed}.", sw.Elapsed);
-								context.Fail(reason: msg);
-							} else {
-								context.Log.Information("Successfully committed transaction [{transactionId}]!",
-									dto.TransactionId);
-								context.Log.Information("Transaction took: {elapsed}.", sw.Elapsed);
-								PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
-									(int)Math.Round(sw.Elapsed.TotalMilliseconds));
-								context.Success();
-							}
-
-							conn.Close();
-							break;
-						}
 						default:
 							throw new ArgumentOutOfRangeException();
 					}

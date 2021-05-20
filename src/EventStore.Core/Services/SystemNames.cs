@@ -61,7 +61,7 @@ namespace EventStore.Core.Services {
 	}
 
 	public static class SystemEventTypes {
-		private static readonly char[] _linkToSeparator = new[] {'@'};
+		private static readonly char[] _linkToSeparator = new[] { '@' };
 		public const string StreamDeleted = "$streamDeleted";
 		public const string StatsCollection = "$statsCollected";
 		public const string LinkTo = "$>";
@@ -83,16 +83,16 @@ namespace EventStore.Core.Services {
 			string streamId = null;
 			switch (eventType) {
 				case LinkTo: {
-					string[] parts = Helper.UTF8NoBom.GetString(data.Span).Split(_linkToSeparator, 2);
-					streamId = parts[1];
-					break;
-				}
+						string[] parts = Helper.UTF8NoBom.GetString(data.Span).Split(_linkToSeparator, 2);
+						streamId = parts[1];
+						break;
+					}
 				case StreamReference:
 				case V1__StreamCreated__:
 				case V2__StreamCreated_InIndex: {
-					streamId = Helper.UTF8NoBom.GetString(data.Span);
-					break;
-				}
+						streamId = Helper.UTF8NoBom.GetString(data.Span);
+						break;
+					}
 				default:
 					throw new NotSupportedException("Unknown event type: " + eventType);
 			}
@@ -104,16 +104,16 @@ namespace EventStore.Core.Services {
 			string streamId = null;
 			switch (eventType) {
 				case LinkTo: {
-					string[] parts = data.Split(_linkToSeparator, 2);
-					streamId = parts[1];
-					break;
-				}
+						string[] parts = data.Split(_linkToSeparator, 2);
+						streamId = parts[1];
+						break;
+					}
 				case StreamReference:
 				case V1__StreamCreated__:
 				case V2__StreamCreated_InIndex: {
-					streamId = data;
-					break;
-				}
+						streamId = data;
+						break;
+					}
 				default:
 					throw new NotSupportedException("Unknown event type: " + eventType);
 			}

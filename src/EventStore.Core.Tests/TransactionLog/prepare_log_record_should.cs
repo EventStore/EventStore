@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void throw_argumentexception_when_given_empty_eventtype() {
 			Assert.DoesNotThrow(() =>
 				LogRecord.Prepare(_logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, _streamId, 0,
-					PrepareFlags.None, string.Empty, new byte[0], null,  DateTime.UtcNow));
+					PrepareFlags.None, string.Empty, new byte[0], null, DateTime.UtcNow));
 		}
 	}
 }

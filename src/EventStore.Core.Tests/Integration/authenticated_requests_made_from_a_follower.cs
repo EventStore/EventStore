@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Integration {
 					}
 				};
 
-				var content = JsonSerializer.SerializeToUtf8Bytes(new [] {
+				var content = JsonSerializer.SerializeToUtf8Bytes(new[] {
 					new {
 						eventId = Guid.NewGuid(),
 						data = new{},
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Integration {
 						metadata.Add("authorization", AuthorizationHeaderValue);
 						return Task.CompletedTask;
 					})));
-				
+
 
 				await call.RequestStream.WriteAsync(new AppendReq {
 					Options = new AppendReq.Types.Options {

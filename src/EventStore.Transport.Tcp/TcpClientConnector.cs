@@ -157,7 +157,7 @@ namespace EventStore.Transport.Tcp {
 			}
 
 			return _pendingConections.TryRemove(pendingConnection.Connection.ConnectionId, out conn)
-			       && Interlocked.CompareExchange(ref conn.Done, 1, 0) == 0;
+				   && Interlocked.CompareExchange(ref conn.Done, 1, 0) == 0;
 		}
 
 		private class CallbacksStateToken {

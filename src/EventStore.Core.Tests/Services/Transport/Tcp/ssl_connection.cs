@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			_ip = IPAddress.Loopback;
 			_port = PortsHelper.GetAvailablePort(_ip);
 		}
-		
+
 		[Test]
 		public void should_connect_to_each_other_and_send_data() {
 			var serverEndPoint = new IPEndPoint(_ip, _port);
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var listener = new TcpServerListener(serverEndPoint);
 			listener.StartListening((endPoint, socket) => {
-				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, () => cert,delegate { return (true, null); },
+				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, () => cert, delegate { return (true, null); },
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();
 				if (ssl.IsClosed)

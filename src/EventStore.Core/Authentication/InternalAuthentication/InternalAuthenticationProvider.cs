@@ -30,7 +30,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			_passwordHashAlgorithm = passwordHashAlgorithm;
 			_userPasswordsCache = new LRUCache<string, Tuple<string, ClaimsPrincipal>>(cacheSize);
 			_logFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
-			
+
 			var userManagement = new UserManagementService(ioDispatcher, _passwordHashAlgorithm,
 				skipInitializeStandardUsersCheck: false, _tcs);
 			subscriber.Subscribe<UserManagementMessage.Create>(userManagement);
@@ -64,7 +64,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		public IReadOnlyList<string> GetSupportedAuthenticationSchemes() {
-			return new [] {
+			return new[] {
 				"Basic"
 			};
 		}
@@ -73,8 +73,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			AuthenticationRequest authenticationRequest) {
 			try {
 				if (completed.Result == ReadStreamResult.StreamDeleted ||
-				    completed.Result == ReadStreamResult.NoStream ||
-				    completed.Result == ReadStreamResult.AccessDenied) {
+					completed.Result == ReadStreamResult.NoStream ||
+					completed.Result == ReadStreamResult.AccessDenied) {
 					if (_logFailedAuthenticationAttempts)
 						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id, "Invalid user.");
 					authenticationRequest.Unauthorized();
@@ -123,7 +123,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		private static ClaimsPrincipal CreatePrincipal(UserData userData) {
-			var claims = new List<Claim> {new Claim(ClaimTypes.Name, userData.LoginName)};
+			var claims = new List<Claim> { new Claim(ClaimTypes.Name, userData.LoginName) };
 			if (userData.Groups != null) {
 				claims.AddRange(userData.Groups.Select(x => new Claim(ClaimTypes.Role, x)));
 			}

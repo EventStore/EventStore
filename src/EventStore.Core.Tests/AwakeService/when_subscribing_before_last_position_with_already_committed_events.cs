@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.AwakeService {
 				100,
 				LogRecord.Prepare(
 					logFormat.RecordFactory, 1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, streamId, 99, PrepareFlags.Data,
-					"event", new byte[0], null, DateTime.UtcNow),"Stream");
+					"event", new byte[0], null, DateTime.UtcNow), "Stream");
 			_eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord, isTfEof: true);
 			_publisher = new InMemoryBus("bus");
 			_envelope = new PublishEnvelope(_publisher);

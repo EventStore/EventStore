@@ -1,23 +1,23 @@
-﻿using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Tcp;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Net;
-using EventStore.Transport.Tcp;
-using System.Net.Sockets;
-using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Authentication;
-using EventStore.Core.TransactionLog.LogRecords;
 using System.Linq;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Bus;
+using EventStore.Core.Data;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Core.Settings;
+using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Authorization;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
+using EventStore.Transport.Tcp;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture]
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				new InternalAuthenticationProvider(
 					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				publisher, dummyConnection, publisher,
 				new InternalAuthenticationProvider(publisher, new Core.Helpers.IODispatcher(publisher, new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -115,7 +115,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				new InternalAuthenticationProvider(
 					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(),
 						new NoopEnvelope()), null, 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -144,7 +144,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);
 
@@ -177,7 +177,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
@@ -189,7 +189,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
 				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
 		}
-		
+
 		[Test]
 		public void
 			when_send_queue_size_is_smaller_than_threshold_should_not_close_connection() {
@@ -210,7 +210,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 
@@ -222,7 +222,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(receivedPackage.Command, TcpCommand.ReadEventCompleted,
 				"Expected ReadEventCompleted but got {0}", receivedPackage.Command);
 		}
-		
+
 		[Test]
 		public void
 			when_send_queue_size_is_larger_than_threshold_should_close_connection() {
@@ -243,7 +243,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()), null, 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { mre.Set(); },
 				ESConsts.UnrestrictedPendingSendBytes, ESConsts.MaxConnectionQueueSize);
 

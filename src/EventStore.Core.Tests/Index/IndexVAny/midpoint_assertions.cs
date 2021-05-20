@@ -6,15 +6,17 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 	[TestFixture]
 	public class midpoint_assertions {
 		private const long MAX_INDEX_ENTRIES = 1000000000000L;
-	    private const int MAX_TEST_DEPTH = 35;
-	    private const int MAX_DEPTH = 28;
-	    private readonly byte[] IndexVersions = { PTableVersions.IndexV1,  PTableVersions.IndexV2,  PTableVersions.IndexV3, PTableVersions.IndexV4 };
+		private const int MAX_TEST_DEPTH = 35;
+		private const int MAX_DEPTH = 28;
+		private readonly byte[] IndexVersions = { PTableVersions.IndexV1, PTableVersions.IndexV2, PTableVersions.IndexV3, PTableVersions.IndexV4 };
 
-	    private static int getIncrement(long numIndexEntries) {
-		    if (numIndexEntries < 100) return 1;
-		    if (numIndexEntries < 1000000) return 1337;
-		    return 133333337;
-	    }
+		private static int getIncrement(long numIndexEntries) {
+			if (numIndexEntries < 100)
+				return 1;
+			if (numIndexEntries < 1000000)
+				return 1337;
+			return 133333337;
+		}
 
 		[Test]
 		public void file_size_should_be_greater_or_equal_after_adding_midpoints() {
@@ -26,7 +28,7 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 						if (version < PTableVersions.IndexV4) {
 							Assert.AreEqual(0, midpointCount, testCase);
 						} else {
-							Assert.GreaterOrEqual(midpointCount, Math.Min(1<<Math.Min(MAX_DEPTH, minDepth), numIndexEntries), testCase);
+							Assert.GreaterOrEqual(midpointCount, Math.Min(1 << Math.Min(MAX_DEPTH, minDepth), numIndexEntries), testCase);
 							Assert.LessOrEqual(midpointCount, Math.Max(2, numIndexEntries), testCase);
 						}
 
@@ -48,11 +50,11 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 		public void for_a_fixed_min_depth_and_increasing_index_entries_midpoint_count_should_increase_monotonically() {
 			for (int minDepth = 0; minDepth <= MAX_TEST_DEPTH; minDepth++) {
 				long prevMidpointCount = 0L;
-				for (long numIndexEntries = 0; numIndexEntries < MAX_INDEX_ENTRIES;  numIndexEntries += getIncrement(numIndexEntries)) {
+				for (long numIndexEntries = 0; numIndexEntries < MAX_INDEX_ENTRIES; numIndexEntries += getIncrement(numIndexEntries)) {
 					string testCase = $"numIndexEntries: {numIndexEntries}, minDepth: {minDepth}";
 					var midpointCount = PTable.GetRequiredMidpointCountCached(numIndexEntries, PTableVersions.IndexV4, minDepth);
 					Assert.GreaterOrEqual(midpointCount, prevMidpointCount, testCase);
-					Assert.GreaterOrEqual(midpointCount, Math.Min(1<<Math.Min(MAX_DEPTH, minDepth), numIndexEntries), testCase);
+					Assert.GreaterOrEqual(midpointCount, Math.Min(1 << Math.Min(MAX_DEPTH, minDepth), numIndexEntries), testCase);
 					Assert.LessOrEqual(midpointCount, Math.Max(2, numIndexEntries), testCase);
 					prevMidpointCount = midpointCount;
 				}
@@ -61,13 +63,13 @@ namespace EventStore.Core.Tests.Index.IndexVAny {
 
 		[Test]
 		public void for_a_fixed_number_of_index_entries_and_increasing_min_depth_midpoint_count_should_increase_monotonically() {
-			for (long numIndexEntries = 0; numIndexEntries < MAX_INDEX_ENTRIES;  numIndexEntries += getIncrement(numIndexEntries)) {
+			for (long numIndexEntries = 0; numIndexEntries < MAX_INDEX_ENTRIES; numIndexEntries += getIncrement(numIndexEntries)) {
 				long prevMidpointCount = 0L;
 				for (int minDepth = 0; minDepth <= MAX_TEST_DEPTH; minDepth++) {
 					string testCase = $"numIndexEntries: {numIndexEntries}, minDepth: {minDepth}";
 					var midpointCount = PTable.GetRequiredMidpointCountCached(numIndexEntries, PTableVersions.IndexV4, minDepth);
 					Assert.GreaterOrEqual(midpointCount, prevMidpointCount, testCase);
-					Assert.GreaterOrEqual(midpointCount, Math.Min(1<<Math.Min(MAX_DEPTH, minDepth), numIndexEntries), testCase);
+					Assert.GreaterOrEqual(midpointCount, Math.Min(1 << Math.Min(MAX_DEPTH, minDepth), numIndexEntries), testCase);
 					Assert.LessOrEqual(midpointCount, Math.Max(2, numIndexEntries), testCase);
 					prevMidpointCount = midpointCount;
 				}

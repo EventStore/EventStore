@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			_streamNameIndex.GetOrAddId(_deletedEventStreamId, out var id, out _, out _);
 			var deletedRecord = (IPrepareLogRecord<TStreamId>)chunkRecords.First(
 				x => x.RecordType == LogRecordType.Prepare
-				     && EqualityComparer<TStreamId>.Default.Equals(((IPrepareLogRecord<TStreamId>)x).EventStreamId, id));
+					 && EqualityComparer<TStreamId>.Default.Equals(((IPrepareLogRecord<TStreamId>)x).EventStreamId, id));
 
 			Assert.AreEqual(EventNumber.DeletedStream - 1, deletedRecord.ExpectedVersion);
 		}

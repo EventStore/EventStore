@@ -26,33 +26,33 @@ namespace EventStore.TestClient.Commands {
 				handlePackage: (conn, pkg) => {
 					switch (pkg.Command) {
 						case TcpCommand.SubscriptionConfirmation: {
-							var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
-							context.Log.Information(
-								"Subscription to <{stream}> WAS CONFIRMED! Subscribed at {lastIndexedPosition} ({lastEventNumber})",
-								streamByCorrId[pkg.CorrelationId], dto.LastIndexedPosition, dto.LastEventNumber);
-							break;
-						}
+								var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+								context.Log.Information(
+									"Subscription to <{stream}> WAS CONFIRMED! Subscribed at {lastIndexedPosition} ({lastEventNumber})",
+									streamByCorrId[pkg.CorrelationId], dto.LastIndexedPosition, dto.LastEventNumber);
+								break;
+							}
 						case TcpCommand.StreamEventAppeared: {
-							var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
-							context.Log.Information("NEW EVENT:\n\n"
-							                 + "\tEventStreamId: {stream}\n"
-							                 + "\tEventNumber:   {eventNumber}\n"
-							                 + "\tEventType:     {eventType}\n"
-							                 + "\tData:          {data}\n"
-							                 + "\tMetadata:      {metadata}\n",
-								dto.Event.Event.EventStreamId,
-								dto.Event.Event.EventNumber,
-								dto.Event.Event.EventType,
-								Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Data ?? new byte[0]),
-								Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata ?? new byte[0]));
-							break;
-						}
+								var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
+								context.Log.Information("NEW EVENT:\n\n"
+												 + "\tEventStreamId: {stream}\n"
+												 + "\tEventNumber:   {eventNumber}\n"
+												 + "\tEventType:     {eventType}\n"
+												 + "\tData:          {data}\n"
+												 + "\tMetadata:      {metadata}\n",
+									dto.Event.Event.EventStreamId,
+									dto.Event.Event.EventNumber,
+									dto.Event.Event.EventType,
+									Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Data ?? new byte[0]),
+									Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata ?? new byte[0]));
+								break;
+							}
 						case TcpCommand.SubscriptionDropped: {
-							pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
-							context.Log.Error("Subscription to <{stream}> WAS DROPPED!",
-								streamByCorrId[pkg.CorrelationId]);
-							break;
-						}
+								pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
+								context.Log.Error("Subscription to <{stream}> WAS DROPPED!",
+									streamByCorrId[pkg.CorrelationId]);
+								break;
+							}
 						default:
 							context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
 							break;

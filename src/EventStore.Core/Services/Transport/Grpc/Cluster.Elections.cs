@@ -28,7 +28,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			_bus = bus;
 			_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
 		}
-		
+
 		public override async Task<Empty> ViewChange(ViewChangeRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ViewChangeOperation, context.CancellationToken).ConfigureAwait(false)) {
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				request.AttemptedView));
 			return EmptyResult;
 		}
-		
+
 		public override async Task<Empty> ViewChangeProof(ViewChangeProofRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ViewChangeProofOperation, context.CancellationToken).ConfigureAwait(false)) {
@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				request.InstalledView));
 			return EmptyResult;
 		}
-		
+
 		public override async Task<Empty> Prepare(PrepareRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, PrepareOperation, context.CancellationToken).ConfigureAwait(false)) {
@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				request.View));
 			return EmptyResult;
 		}
-	
+
 		public override async Task<Empty> PrepareOk(PrepareOkRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, PrepareOkOperation, context.CancellationToken).ConfigureAwait(false)) {
@@ -85,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				ClusterInfo.FromGrpcClusterInfo(request.ClusterInfo)));
 			return EmptyResult;
 		}
-				
+
 		public override async Task<Empty> Proposal(ProposalRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ProposalOperation, context.CancellationToken).ConfigureAwait(false)) {
@@ -135,7 +135,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 					(int)request.LeaderHttp.Port)));
 			return EmptyResult;
 		}
-		
+
 		public override async Task<Empty> LeaderIsResigningOk(LeaderIsResigningOkRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, MasterIsResigningOkOperation, context.CancellationToken).ConfigureAwait(false)) {

@@ -88,7 +88,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			_state = message.State;
 
-			if (message.State == VNodeState.Leader) return;
+			if (message.State == VNodeState.Leader)
+				return;
 			Log.Debug("Persistent subscriptions received state change to {state}. Stopping listening", _state);
 			ShutdownSubscriptions();
 			Stop();
@@ -98,16 +99,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Log.Debug("Persistent subscriptions Became Leader so now handling subscriptions");
 			StartSubscriptions();
 		}
-		
+
 		public void Handle(SubscriptionMessage.PersistentSubscriptionsRestart message) {
 			if (!_started) {
 				message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.InvalidPersistentSubscriptionsRestart());
 				return;
 			}
-			
+
 			Log.Debug("Persistent Subscriptions are being restarted");
 			message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.PersistentSubscriptionsRestarting());
-			
+
 			Stop();
 			ShutdownSubscriptions();
 			StartSubscriptions();
@@ -130,7 +131,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		private void ShutdownSubscriptions() {
-			if (_subscriptionsById == null) return;
+			if (_subscriptionsById == null)
+				return;
 			foreach (var subscription in _subscriptionsById.Values) {
 				subscription.Shutdown();
 			}
@@ -147,47 +149,45 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
-			if (!_started) return;
+			if (!_started)
+				return;
 			UnsubscribeFromStream(message.CorrelationId, true);
 		}
 
 		private bool ValidateStartFrom(IPersistentSubscriptionStreamPosition startFromPosition, out string error) {
-			switch (startFromPosition)
-			{
-				case PersistentSubscriptionSingleStreamPosition startFromStream:
-				{
-					if (startFromStream.StreamEventNumber < -1) {
-						error = "Invalid Start From position: event number must be greater than or equal to -1.";
-						return false;
+			switch (startFromPosition) {
+				case PersistentSubscriptionSingleStreamPosition startFromStream: {
+						if (startFromStream.StreamEventNumber < -1) {
+							error = "Invalid Start From position: event number must be greater than or equal to -1.";
+							return false;
+						}
+
+						error = null;
+						return true;
 					}
+				case PersistentSubscriptionAllStreamPosition startFromAll: {
+						var (commit, prepare) = startFromAll.TFPosition;
 
-					error = null;
-					return true;
-				}
-				case PersistentSubscriptionAllStreamPosition startFromAll:
-				{
-					var (commit, prepare) = startFromAll.TFPosition;
+						if (prepare > commit) {
+							error = "Invalid Start From position: prepare position must be less than or equal to the commit position.";
+							return false;
+						}
 
-					if (prepare > commit) {
-						error = "Invalid Start From position: prepare position must be less than or equal to the commit position.";
-						return false;
+						if (commit > _readIndex.LastIndexedPosition) {
+							error =
+								"Invalid Start From position: commit position must be less than or equal to the last commit position in the transaction file.";
+							return false;
+						}
+
+						if ((prepare <= -1 || commit <= -1) && !(prepare == -1 && commit == -1)) {
+							error =
+								"Invalid Start From position: prepare and commit positions must be greater than or equal to 0 or both equal to -1.";
+							return false;
+						}
+
+						error = null;
+						return true;
 					}
-
-					if (commit > _readIndex.LastIndexedPosition) {
-						error =
-							"Invalid Start From position: commit position must be less than or equal to the last commit position in the transaction file.";
-						return false;
-					}
-
-					if ((prepare <= -1 || commit <= -1) && !(prepare == -1 && commit == -1)) {
-						error =
-							"Invalid Start From position: prepare and commit positions must be greater than or equal to 0 or both equal to -1.";
-						return false;
-					}
-
-					error = null;
-					return true;
-				}
 				default:
 					throw new InvalidOperationException();
 			}
@@ -215,7 +215,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				Action<string> onAccessDenied,
 				string user
 		) {
-			if (!_started) return;
+			if (!_started)
+				return;
 			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
 			Log.Debug("Creating persistent subscription {subscriptionKey}", key);
 
@@ -269,9 +270,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				MaxSubscriberCount = maxSubscriberCount,
 				MessageTimeout = messageTimeoutMilliseconds,
 				NamedConsumerStrategy = namedConsumerStrategy,
-				#pragma warning disable 612
+#pragma warning disable 612
 				StartFrom = startFrom is PersistentSubscriptionSingleStreamPosition x ? x.StreamEventNumber : long.MinValue,
-				#pragma warning restore 612
+#pragma warning restore 612
 				StartPosition = startFrom.ToString()
 			});
 			SaveConfiguration(() => onSuccess(""));
@@ -399,7 +400,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				Action<string> onAccessDenied,
 				string user
 		) {
-			if (!_started) return;
+			if (!_started)
+				return;
 			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
 			Log.Debug("Updating persistent subscription {subscriptionKey}", key);
 
@@ -455,9 +457,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				MaxSubscriberCount = maxSubscriberCount,
 				MessageTimeout = messageTimeoutMilliseconds,
 				NamedConsumerStrategy = namedConsumerStrategy,
-				#pragma warning disable 612
+#pragma warning disable 612
 				StartFrom = startFrom is PersistentSubscriptionSingleStreamPosition x ? x.StreamEventNumber : long.MinValue,
-				#pragma warning restore 612
+#pragma warning restore 612
 				StartPosition = startFrom.ToString()
 			});
 			SaveConfiguration(() => onSuccess(""));
@@ -622,7 +624,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				Action<string> onAccessDenied,
 				string user
 		) {
-			if (!_started) return;
+			if (!_started)
+				return;
 			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
 			Log.Debug("Deleting persistent subscription {subscriptionKey}", key);
 
@@ -749,7 +752,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			//TODO CC make a map for this
 			Log.Debug("Persistent subscription lost connection from {remoteEndPoint}",
 				message.Connection.RemoteEndPoint);
-			if (_subscriptionsById == null) return; //havn't built yet.
+			if (_subscriptionsById == null)
+				return; //havn't built yet.
 			foreach (var subscription in _subscriptionsById.Values) {
 				subscription.RemoveClientByConnectionId(message.Connection.ConnectionId);
 			}
@@ -765,7 +769,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Guid correlationId,
 			IEnvelope envelope,
 			string user) {
-			if (!_started) return;
+			if (!_started)
+				return;
 
 			List<PersistentSubscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(eventSource.ToString(), out subscribers)) {
@@ -834,7 +839,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(StorageMessage.EventCommitted message) {
-			if (!_started) return;
+			if (!_started)
+				return;
 			ProcessEventCommited(message.Event.EventStreamId, message.CommitPosition, message.Event);
 		}
 
@@ -846,7 +852,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 
 			if (EventFilter.DefaultAllFilter.IsEventAllowed(evnt)
-			    && _subscriptionTopics.TryGetValue(SystemStreams.AllStream, out var subscriptionsToAll)) {
+				&& _subscriptionTopics.TryGetValue(SystemStreams.AllStream, out var subscriptionsToAll)) {
 				subscriptions.AddRange(subscriptionsToAll);
 			}
 
@@ -883,7 +889,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(ClientMessage.PersistentSubscriptionAckEvents message) {
-			if (!_started) return;
+			if (!_started)
+				return;
 			PersistentSubscription subscription;
 			if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription)) {
 				subscription.AcknowledgeMessagesProcessed(message.CorrelationId, message.ProcessedEventIds);
@@ -891,7 +898,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(ClientMessage.PersistentSubscriptionNackEvents message) {
-			if (!_started) return;
+			if (!_started)
+				return;
 			PersistentSubscription subscription;
 			if (_subscriptionsById.TryGetValue(message.SubscriptionId, out subscription)) {
 				subscription.NotAcknowledgeMessagesProcessed(message.CorrelationId, message.ProcessedEventIds,
@@ -900,7 +908,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(ClientMessage.ReadNextNPersistentMessages message) {
-			if (!_started) return;
+			if (!_started)
+				return;
 
 			if (string.IsNullOrEmpty(message.EventStreamId) || message.EventStreamId == SystemStreams.AllStream) {
 				message.Envelope.ReplyWith(new ClientMessage.ReadNextNPersistentMessagesCompleted(
@@ -944,7 +953,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.ReplayParkedMessages message) {
 			PersistentSubscription subscription;
 			var key = BuildSubscriptionGroupKey(message.EventStreamId, message.GroupName);
-			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey} {to}", 
+			Log.Debug("Replaying parked messages for persistent subscription {subscriptionKey} {to}",
 				key,
 				message.StopAt.HasValue ? $" (To: '{message.StopAt.ToString()}')" : " (All)");
 
@@ -1014,9 +1023,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 							CreateSubscriptionGroup(eventSource,
 								entry.Group,
 								entry.ResolveLinkTos,
-								#pragma warning disable 612
+#pragma warning disable 612
 								eventSource.GetStreamPositionFor(entry.StartPosition ?? entry.StartFrom.ToString()),
-								#pragma warning restore 612
+#pragma warning restore 612
 								entry.ExtraStatistics,
 								entry.MaxRetryCount,
 								entry.LiveBufferSize,
@@ -1037,12 +1046,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 					break;
 				case ReadStreamResult.NoStream:
-					_config = new PersistentSubscriptionConfig {Version = "2"};
+					_config = new PersistentSubscriptionConfig { Version = "2" };
 					continueWith();
 					break;
 				default:
 					throw new Exception(readStreamEventsBackwardCompleted.Result +
-					                    " is an unexpected result writing subscription configuration.");
+										" is an unexpected result writing subscription configuration.");
 			}
 		}
 
@@ -1052,7 +1061,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			var ev = new Event(Guid.NewGuid(), "PersistentConfig1", true, data, new byte[0]);
 			var metadata = new StreamMetadata(maxCount: 2);
 			Lazy<StreamMetadata> streamMetadata = new Lazy<StreamMetadata>(() => metadata);
-			Event[] events = new Event[] {ev};
+			Event[] events = new Event[] { ev };
 			_ioDispatcher.ConfigureStreamAndWriteEvents(SystemStreams.PersistentSubscriptionConfig,
 				ExpectedVersion.Any, streamMetadata, events, SystemAccounts.System,
 				x => HandleSaveConfigurationCompleted(continueWith, x));
@@ -1070,7 +1079,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					break;
 				default:
 					throw new Exception(obj.Result +
-					                    " is an unexpected result writing persistent subscription configuration.");
+										" is an unexpected result writing persistent subscription configuration.");
 			}
 		}
 
@@ -1137,15 +1146,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 
 			var stats = (from subscription in _subscriptionTopics.Values
-				from sub in subscription
-				select sub.GetStatistics()).ToList();
+						 from sub in subscription
+						 select sub.GetStatistics()).ToList();
 			message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(
 				MonitoringMessage.GetPersistentSubscriptionStatsCompleted.OperationStatus.Success, stats)
 			);
 		}
 
 		public void Handle(SubscriptionMessage.PersistentSubscriptionTimerTick message) {
-			if (!_handleTick || _timerTickCorrelationId != message.CorrelationId) return;
+			if (!_handleTick || _timerTickCorrelationId != message.CorrelationId)
+				return;
 			try {
 				WakeSubscriptions();
 			} finally {
@@ -1164,7 +1174,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		
+
 		private TimeSpan ToCheckPointAfterTimeout(int milliseconds) {
 			return milliseconds == 0 ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
 		}

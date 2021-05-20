@@ -142,7 +142,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(long))]
 	public class with_custom_gossip_seeds<TLogFormat, TStreamId> : ClusterMemberScenario<TLogFormat, TStreamId> {
-		private readonly DnsEndPoint[] _gossipSeeds = {new("127.0.1.15", 2112), new("127.0.1.15", 3112)};
+		private readonly DnsEndPoint[] _gossipSeeds = { new("127.0.1.15", 2112), new("127.0.1.15", 3112) };
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options.WithGossipSeeds(_gossipSeeds);

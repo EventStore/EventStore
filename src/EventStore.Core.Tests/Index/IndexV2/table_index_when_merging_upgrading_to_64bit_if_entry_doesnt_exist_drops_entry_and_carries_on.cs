@@ -15,8 +15,8 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Index.IndexV2 {
 	public class TestCases : IEnumerable {
 		public IEnumerator GetEnumerator() {
-			yield return new object[] {typeof(LogFormat.V2), typeof(string), new ByLengthHasher(), new ByLengthHasher(), "hhh", "hh", "h"};
-			yield return new object[] {typeof(LogFormat.V3), typeof(long), new IdentityLowHasher(), new IdentityHighHasher(), 3L, 2L, 1L};
+			yield return new object[] { typeof(LogFormat.V2), typeof(string), new ByLengthHasher(), new ByLengthHasher(), "hhh", "hh", "h" };
+			yield return new object[] { typeof(LogFormat.V3), typeof(long), new IdentityLowHasher(), new IdentityHighHasher(), 3L, 2L, 1L };
 		}
 	}
 

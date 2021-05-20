@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using EventStore.Client.Shared;
+using EventStore.Client.Streams;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client.Shared;
-using EventStore.Client.Streams;
 using Google.Protobuf;
 using Grpc.Core;
 
@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var options = requestStream.Current.Options;
 			var streamName = options.StreamIdentifier;
-			
+
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(
 					options.Revision).ToInt64(),

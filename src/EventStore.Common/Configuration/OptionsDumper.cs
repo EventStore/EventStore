@@ -27,7 +27,7 @@ namespace EventStore.Common.Configuration {
 			var nameColumnWidth = info.Keys.Select(x => x.Length).Max() + 7;
 
 			return PrintOptions(nameof(modified), modified) + Environment.NewLine +
-			       PrintOptions(nameof(@default), @default);
+				   PrintOptions(nameof(@default), @default);
 
 			string PrintOptions(string name,
 				IEnumerable<KeyValuePair<string, (Type source, string value)>> options) =>

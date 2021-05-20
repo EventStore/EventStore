@@ -17,40 +17,40 @@ namespace EventStore.Core.Messages {
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-			
+
 			public readonly long LogPosition;
-			
-			public IndexedTo(long logPosition ) {
+
+			public IndexedTo(long logPosition) {
 				Ensure.Nonnegative(logPosition + 1, "logPosition");
 				LogPosition = logPosition;
 			}
 		}
 
-		public class ReplicatedTo : Message { 
+		public class ReplicatedTo : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-			
+
 			public readonly long LogPosition;
-			
-			public ReplicatedTo(long logPosition ) {
+
+			public ReplicatedTo(long logPosition) {
 				Ensure.Nonnegative(logPosition + 1, "logPosition");
 				LogPosition = logPosition;
 			}
 		}
 
-		public class LeaderReplicatedTo : Message { 
+		public class LeaderReplicatedTo : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-			
+
 			public readonly long LogPosition;
-			
-			public LeaderReplicatedTo(long logPosition ) {
+
+			public LeaderReplicatedTo(long logPosition) {
 				Ensure.Nonnegative(logPosition + 1, "logPosition");
 				LogPosition = logPosition;
 			}

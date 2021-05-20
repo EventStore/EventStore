@@ -68,20 +68,25 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 
 		public bool Equals(CommitLogRecord other) {
-			if (ReferenceEquals(null, other)) return false;
-			if (ReferenceEquals(this, other)) return true;
+			if (ReferenceEquals(null, other))
+				return false;
+			if (ReferenceEquals(this, other))
+				return true;
 			return other.LogPosition == LogPosition
-			       && other.TransactionPosition == TransactionPosition
-			       && other.FirstEventNumber == FirstEventNumber
-			       && other.SortKey == SortKey
-			       && other.CorrelationId == CorrelationId
-			       && other.TimeStamp.Equals(TimeStamp);
+				   && other.TransactionPosition == TransactionPosition
+				   && other.FirstEventNumber == FirstEventNumber
+				   && other.SortKey == SortKey
+				   && other.CorrelationId == CorrelationId
+				   && other.TimeStamp.Equals(TimeStamp);
 		}
 
 		public override bool Equals(object obj) {
-			if (ReferenceEquals(null, obj)) return false;
-			if (ReferenceEquals(this, obj)) return true;
-			if (obj.GetType() != typeof(CommitLogRecord)) return false;
+			if (ReferenceEquals(null, obj))
+				return false;
+			if (ReferenceEquals(this, obj))
+				return true;
+			if (obj.GetType() != typeof(CommitLogRecord))
+				return false;
 			return Equals((CommitLogRecord)obj);
 		}
 
@@ -107,11 +112,11 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public override string ToString() {
 			return string.Format("LogPosition: {0}, "
-			                     + "TransactionPosition: {1}, "
-			                     + "FirstEventNumber: {2}, "
-			                     + "SortKey: {3}, "
-			                     + "CorrelationId: {4}, "
-			                     + "TimeStamp: {5}",
+								 + "TransactionPosition: {1}, "
+								 + "FirstEventNumber: {2}, "
+								 + "SortKey: {3}, "
+								 + "CorrelationId: {4}, "
+								 + "TimeStamp: {5}",
 				LogPosition,
 				TransactionPosition,
 				FirstEventNumber,

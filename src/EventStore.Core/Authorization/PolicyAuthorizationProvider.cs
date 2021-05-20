@@ -24,7 +24,8 @@ namespace EventStore.Core.Authorization {
 		}
 
 		public ValueTask<bool> CheckAccessAsync(ClaimsPrincipal cp, Operation operation, CancellationToken ct) {
-			if (cp == null) cp = SystemAccounts.Anonymous;
+			if (cp == null)
+				cp = SystemAccounts.Anonymous;
 
 			try {
 				var startedAt = sw.Elapsed;

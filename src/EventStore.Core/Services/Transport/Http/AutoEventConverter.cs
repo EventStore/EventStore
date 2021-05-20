@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using System.Xml.Linq;
+using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -8,8 +10,6 @@ using EventStore.Transport.Http.Codecs;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Formatting = Newtonsoft.Json.Formatting;
-using System.Linq;
-using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http {
@@ -25,20 +25,20 @@ namespace EventStore.Core.Services.Transport.Http {
 					return evnt.Event.Data.ToArray();
 				case ContentType.Xml:
 				case ContentType.ApplicationXml: {
-					var serializeObject = JsonConvert.SerializeObject(dto.data);
-					var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "data");
-					return deserializeXmlNode.InnerXml;
-				}
+						var serializeObject = JsonConvert.SerializeObject(dto.data);
+						var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "data");
+						return deserializeXmlNode.InnerXml;
+					}
 				case ContentType.Json:
 					return targetCodec.To(dto.data);
 
 
 				case ContentType.Atom:
 				case ContentType.EventXml: {
-					var serializeObject = JsonConvert.SerializeObject(dto);
-					var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "event");
-					return deserializeXmlNode.InnerXml;
-				}
+						var serializeObject = JsonConvert.SerializeObject(dto);
+						var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "event");
+						return deserializeXmlNode.InnerXml;
+					}
 
 				case ContentType.EventJson:
 					return targetCodec.To(dto);
@@ -126,17 +126,17 @@ namespace EventStore.Core.Services.Transport.Http {
 					@event.SetAttributeValue(jsonNsValue + "Array", "true");
 				}
 				//doc.Root.ReplaceNodes(events);
-//                foreach (var element in doc.Root.Descendants("data").Concat(doc.Root.Descendants("metadata")))
-//                {
-//                    element.RemoveAttributes();
-//                }
+				//                foreach (var element in doc.Root.Descendants("data").Concat(doc.Root.Descendants("metadata")))
+				//                {
+				//                    element.RemoveAttributes();
+				//                }
 
 				var json = JsonConvert.SerializeXNode(doc.Root, Formatting.None, true);
 				var root = JsonConvert.DeserializeObject<HttpClientMessageDto.WriteEventsDynamic>(json);
 				return root.events;
-//                var root = JsonConvert.DeserializeObject<JObject>(json);
-//                var dynamicEvents = root.ToObject<HttpClientMessageDto.WriteEventsDynamic>();
-//                return dynamicEvents.events;
+				//                var root = JsonConvert.DeserializeObject<JObject>(json);
+				//                var dynamicEvents = root.ToObject<HttpClientMessageDto.WriteEventsDynamic>();
+				//                return dynamicEvents.events;
 			} catch (Exception e) {
 				Log.Information(e, "Failed to load xml. Invalid format");
 				return null;
@@ -163,17 +163,15 @@ namespace EventStore.Core.Services.Transport.Http {
 			if (obj is JObject || obj is JArray) {
 				isJson = true;
 				return Helper.UTF8NoBom.GetBytes(Codec.Json.To(obj));
-			} else if(obj is string){
-				try{
+			} else if (obj is string) {
+				try {
 					var jsonObject = JsonConvert.DeserializeObject((string)obj);
-					if(jsonObject is JObject || jsonObject is JArray){
+					if (jsonObject is JObject || jsonObject is JArray) {
 						isJson = true;
 						return Helper.UTF8NoBom.GetBytes(Codec.Json.To(jsonObject));
-					}
-					else
+					} else
 						throw new JsonException();
-				}
-				catch(JsonException){
+				} catch (JsonException) {
 					isJson = false;
 					return Helper.UTF8NoBom.GetBytes((obj as string));
 				}

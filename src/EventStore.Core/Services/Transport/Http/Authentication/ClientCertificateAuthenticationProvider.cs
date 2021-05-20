@@ -16,7 +16,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
 			request = null;
 			var clientCertificate = context.Connection.ClientCertificate;
-			if (clientCertificate is null) return false;
+			if (clientCertificate is null)
+				return false;
 
 			bool hasReservedNodeCN;
 			try {
@@ -38,8 +39,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				AsnEncodedData asnData = new AsnEncodedData(extension.Oid, extension.RawData);
 				if (extension.Oid.Value == "2.5.29.17") { //Oid for Subject Alternative Names extension
 					var data = asnData.Format(false);
-					string[] parts = data.Split(new[] {':', '=', ','}, StringSplitOptions.RemoveEmptyEntries);
-					var acceptedHeaders = new[] {"DNS", "DNS Name", "IP", "IP Address"};
+					string[] parts = data.Split(new[] { ':', '=', ',' }, StringSplitOptions.RemoveEmptyEntries);
+					var acceptedHeaders = new[] { "DNS", "DNS Name", "IP", "IP Address" };
 					for (int i = 0; i < parts.Length; i += 2) {
 						var header = parts[i].Trim();
 						if (acceptedHeaders.Any(x => x == header)) {

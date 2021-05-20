@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
                 }});
             ";
 		}
-		
+
 		[Test, Category("v8")]
 		public void process_event_ignores_emitted_event() {
 			string state;

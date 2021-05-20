@@ -11,11 +11,11 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
-using EventStore.Transport.Http;
-using NUnit.Framework;
-using Newtonsoft.Json.Linq;
-using HttpStatusCode = System.Net.HttpStatusCode;
 using EventStore.Core.Tests.Http.Users.users;
+using EventStore.Transport.Http;
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
+using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	namespace feed {
@@ -599,7 +599,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(long))]
 		public class
-			when_reading_a_stream_forward_from_beginning_asking_for_less_events_than_in_the_stream<TLogFormat, TStreamId>  :
+			when_reading_a_stream_forward_from_beginning_asking_for_less_events_than_in_the_stream<TLogFormat, TStreamId> :
 				SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
@@ -680,7 +680,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
+			var headers = new NameValueCollection { { "ES-ResolveLinkTos", "True" } };
 			_feed = await GetJson<JObject>("/streams/$all",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
@@ -691,13 +691,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(3, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_no_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
@@ -714,7 +714,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
+			var headers = new NameValueCollection { { "ES-ResolveLinkTos", "False" } };
 			_feed = await GetJson<JObject>("/streams/$all",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
@@ -725,20 +725,20 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_is_one_event_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(1, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
 			Assert.AreEqual(2, events.Count());
 		}
 	}
-		
+
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(long))]
@@ -748,8 +748,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
-			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20", 
+			var headers = new NameValueCollection { { "ES-ResolveLinkTos", "True" } };
+			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
@@ -759,13 +759,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(3, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_no_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));
@@ -782,8 +782,8 @@ namespace EventStore.Core.Tests.Http.Streams {
 		private List<JToken> _entries;
 
 		protected override async Task When() {
-			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
-			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20", 
+			var headers = new NameValueCollection { { "ES-ResolveLinkTos", "False" } };
+			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
@@ -793,13 +793,13 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(StreamName));
 			Assert.AreEqual(2, events.Count());
 		}
-		
+
 		[Test]
 		public void there_is_one_event_for_the_second_original_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(Stream2Name));
 			Assert.AreEqual(1, events.Count());
 		}
-		
+
 		[Test]
 		public void there_are_two_events_for_the_linked_stream() {
 			var events = _entries.Where(x => x["title"].Value<string>().Contains(LinkedStreamName));

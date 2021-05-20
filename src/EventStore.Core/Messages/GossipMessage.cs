@@ -89,7 +89,7 @@ namespace EventStore.Core.Messages {
 				ServerEndPoint = serverEndPoint;
 			}
 		}
-		
+
 		public class ClientGossip : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -151,7 +151,7 @@ namespace EventStore.Core.Messages {
 				return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
 			}
 		}
-		
+
 		public class GetGossip : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -161,7 +161,7 @@ namespace EventStore.Core.Messages {
 
 			public GetGossip() { }
 		}
-		
+
 		public class GetGossipFailed : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -181,7 +181,7 @@ namespace EventStore.Core.Messages {
 				return String.Format("Reason: {0}, Recipient: {1}", Reason, Recipient);
 			}
 		}
-		
+
 		public class GetGossipReceived : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 

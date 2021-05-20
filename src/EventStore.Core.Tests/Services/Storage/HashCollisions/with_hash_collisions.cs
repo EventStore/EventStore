@@ -1,14 +1,14 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.Core.Tests;
-using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Tests;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Services.Storage.ReaderIndex;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	[TestFixture]

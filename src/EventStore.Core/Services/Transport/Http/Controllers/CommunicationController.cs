@@ -11,7 +11,7 @@ using ILogger = Serilog.ILogger;
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public abstract class CommunicationController : IHttpController {
 		private static readonly ILogger Log = Serilog.Log.ForContext<CommunicationController>();
-		private static readonly ICodec[] DefaultCodecs = new ICodec[] {Codec.Json, Codec.Xml};
+		private static readonly ICodec[] DefaultCodecs = new ICodec[] { Codec.Json, Codec.Xml };
 
 		private readonly IPublisher _publisher;
 
@@ -61,7 +61,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		protected void Register(IHttpService service, string uriTemplate, string httpMethod,
-			Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs, Func<UriTemplateMatch,Operation> operation) {
+			Action<HttpEntityManager, UriTemplateMatch> handler, ICodec[] requestCodecs, ICodec[] responseCodecs, Func<UriTemplateMatch, Operation> operation) {
 			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, operation),
 				handler);
 		}
@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		protected void RegisterCustom(IHttpService service, string uriTemplate, string httpMethod,
 			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler,
-			ICodec[] requestCodecs, ICodec[] responseCodecs, Func<UriTemplateMatch,Operation> operation) {
+			ICodec[] requestCodecs, ICodec[] responseCodecs, Func<UriTemplateMatch, Operation> operation) {
 			service.RegisterCustomAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, operation),
 				handler);
 		}
@@ -85,13 +85,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs, operation);
 		}
 
-		protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod, Func<UriTemplateMatch,Operation> operation,
+		protected void RegisterUrlBased(IHttpService service, string uriTemplate, string httpMethod, Func<UriTemplateMatch, Operation> operation,
 			Action<HttpEntityManager, UriTemplateMatch> action) {
 			Register(service, uriTemplate, httpMethod, action, Codec.NoCodecs, DefaultCodecs, operation);
 		}
 
 		protected static string MakeUrl(HttpEntityManager http, string path) {
-			if (path.Length > 0 && path[0] == '/') path = path.Substring(1);
+			if (path.Length > 0 && path[0] == '/')
+				path = path.Substring(1);
 			var hostUri = http.ResponseUrl;
 			var builder = new UriBuilder(hostUri.Scheme, hostUri.Host, hostUri.Port, hostUri.LocalPath + path);
 			return builder.Uri.AbsoluteUri;

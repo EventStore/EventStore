@@ -97,9 +97,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void AddReadMessage(OutstandingMessage ev) {
-			if (Live) return;
+			if (Live)
+				return;
 			if (_initialSequence != null &&
-			    ev.EventPosition.CompareTo(_initialSequence) <= 0)
+				ev.EventPosition.CompareTo(_initialSequence) <= 0)
 				return;
 
 			var livePosition = TryPeekLive();
@@ -120,7 +121,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public IEnumerable<OutstandingMessagePointer> Scan() {
 			// This enumerator assumes that nothing is added to the buffers during enumeration.
 
-			foreach (var list in new[] {_retry, _buffer}) // save on code duplication
+			foreach (var list in new[] { _retry, _buffer }) // save on code duplication
 			{
 				var current = list.First;
 				if (current != null) {
@@ -148,8 +149,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public (OutstandingMessage? message, long sequenceNumber) GetLowestRetry() {
 			(OutstandingMessage? message, long sequenceNumber) result = (null, long.MaxValue);
-			foreach(var x in _retry) {
-				if (x.IsReplayedEvent || !x.EventSequenceNumber.HasValue) continue;
+			foreach (var x in _retry) {
+				if (x.IsReplayedEvent || !x.EventSequenceNumber.HasValue)
+					continue;
 				if (x.EventSequenceNumber.Value < result.sequenceNumber) {
 					result = (x, x.EventSequenceNumber.Value);
 				}

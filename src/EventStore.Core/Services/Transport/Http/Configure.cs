@@ -261,7 +261,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				return HandleNotHandled(entity.RequestedUrl, notHandled);
 			return InternalServerError();
 		}
-		
+
 		public static ResponseConfiguration ReadAllEventsBackwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
 			var msg = message as ClientMessage.FilteredReadAllEventsBackwardCompleted;
@@ -319,7 +319,7 @@ namespace EventStore.Core.Services.Transport.Http {
 				return HandleNotHandled(entity.RequestedUrl, notHandled);
 			return InternalServerError();
 		}
-		
+
 		public static ResponseConfiguration ReadAllEventsForwardFilteredCompleted(HttpResponseConfiguratorArgs entity,
 			Message message, bool headOfTf) {
 			var msg = message as ClientMessage.FilteredReadAllEventsForwardCompleted;
@@ -434,17 +434,17 @@ namespace EventStore.Core.Services.Transport.Http {
 				case TcpClientMessageDto.NotHandled.NotHandledReason.TooBusy:
 					return ServiceUnavailable("Server Is Too Busy");
 				case TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader: {
-					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
-					if (leaderInfo == null)
-						return InternalServerError("No leader info available in response");
-					return TemporaryRedirect(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
-				}
+						var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
+						if (leaderInfo == null)
+							return InternalServerError("No leader info available in response");
+						return TemporaryRedirect(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
+					}
 				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly: {
-					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
-					if (leaderInfo == null)
-						return InternalServerError("No leader info available in response");
-					return DenyRequestBecauseReadOnly(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
-				}
+						var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
+						if (leaderInfo == null)
+							return InternalServerError("No leader info available in response");
+						return DenyRequestBecauseReadOnly(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
+					}
 				default:
 					return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));
 			}

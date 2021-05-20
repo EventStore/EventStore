@@ -14,7 +14,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static readonly Operation DeleteOperation = new Operation(Plugins.Authorization.Operations.Streams.Delete);
 		public Streams(IPublisher publisher, IReadIndex<TStreamId> readIndex,
 			int maxAppendSize, IAuthorizationProvider provider) {
-			if (publisher == null) throw new ArgumentNullException(nameof(publisher));
+			if (publisher == null)
+				throw new ArgumentNullException(nameof(publisher));
 			_publisher = publisher;
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;

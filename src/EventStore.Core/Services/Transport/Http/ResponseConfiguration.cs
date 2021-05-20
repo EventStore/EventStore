@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using EventStore.Transport.Http;
 using HttpStatusCode = System.Net.HttpStatusCode;
-using System.Linq;
 
 namespace EventStore.Core.Services.Transport.Http {
 	public class ResponseConfiguration {

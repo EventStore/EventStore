@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Collections.Concurrent;
 
 namespace EventStore.Transport.Http {
 	/// <summary>

@@ -45,15 +45,15 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 		}
 
 		//TODO: SW1
-/*
-        [Test]
-        public void can_handle_special_update_position_event()
-        {
-            _point.Handle(
-                new ProjectionCoreServiceMessage.CommittedEventDistributed(
-                    _distibutionPointCorrelationId, new EventPosition(long.MinValue, 30), "stream", 12, false, null));
-        }
-*/
+		/*
+				[Test]
+				public void can_handle_special_update_position_event()
+				{
+					_point.Handle(
+						new ProjectionCoreServiceMessage.CommittedEventDistributed(
+							_distibutionPointCorrelationId, new EventPosition(long.MinValue, 30), "stream", 12, false, null));
+				}
+		*/
 
 		[Test]
 		public void cannot_handle_previous_event() {

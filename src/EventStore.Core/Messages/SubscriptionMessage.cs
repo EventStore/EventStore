@@ -49,16 +49,16 @@ namespace EventStore.Core.Messages {
 				CorrelationId = correlationId;
 			}
 		}
-		
+
 		public class PersistentSubscriptionsRestart : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-			
+
 			public IEnvelope ReplyEnvelope { get; }
-			
+
 			public PersistentSubscriptionsRestart(IEnvelope replyEnvelope) {
 				ReplyEnvelope = replyEnvelope;
 			}
@@ -79,7 +79,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 		}
-	
+
 		public class PersistentSubscriptionsStarted : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 		}
-		
+
 		public class PersistentSubscriptionsStopped : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 

@@ -33,7 +33,7 @@ namespace EventStore.TestClient {
 		}
 
 		private static string[] ParseCommandLine(string line) {
-			return line.Split(new[] {' ', '\t'}, StringSplitOptions.RemoveEmptyEntries);
+			return line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 		}
 
 		public bool TryProcess(CommandProcessorContext context, string[] args, out int exitCode) {

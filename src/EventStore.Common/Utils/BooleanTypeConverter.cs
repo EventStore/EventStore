@@ -14,7 +14,7 @@ namespace EventStore.Common.Utils {
 			object value) {
 			int possibleBinaryBoolean;
 			if (value.ToString().Length == 1 &&
-			    int.TryParse(value.ToString(), out possibleBinaryBoolean)) {
+				int.TryParse(value.ToString(), out possibleBinaryBoolean)) {
 				return possibleBinaryBoolean == 1;
 			}
 

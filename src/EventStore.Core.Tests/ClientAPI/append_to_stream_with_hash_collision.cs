@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
-using EventStore.Core.Tests;
 using EventStore.ClientAPI.Exceptions;
+using EventStore.Core.Tests;
 using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;

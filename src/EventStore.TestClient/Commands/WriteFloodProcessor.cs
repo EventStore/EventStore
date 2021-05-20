@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Collections.Concurrent;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -161,11 +161,11 @@ namespace EventStore.TestClient.Commands {
 
 						var localSent = Interlocked.Increment(ref sent);
 						while (localSent - Interlocked.Read(ref received) >
-						       context.Client.Options.WriteWindow / clientsCnt) {
+							   context.Client.Options.WriteWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}
-				}) {IsBackground = true});
+				}) { IsBackground = true });
 			}
 
 			var sw = Stopwatch.StartNew();

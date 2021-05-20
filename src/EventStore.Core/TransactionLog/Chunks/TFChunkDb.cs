@@ -41,7 +41,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				var chunkHeader = ReadChunkHeader(chunkFileName);
 
-				yield return new ChunkInfo {ChunkFileName = chunkFileName, ChunkStartNumber = chunkNum};
+				yield return new ChunkInfo { ChunkFileName = chunkFileName, ChunkStartNumber = chunkNum };
 
 				chunkNum = chunkHeader.ChunkEndNumber + 1;
 			}
@@ -63,11 +63,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			try {
 				Parallel.ForEach(GetAllLatestChunkVersions(checkpoint),
-					new ParallelOptions {MaxDegreeOfParallelism = threads},
+					new ParallelOptions { MaxDegreeOfParallelism = threads },
 					chunkInfo => {
 						TFChunk.TFChunk chunk;
 						if (lastChunkVersions.Length == 0 &&
-						    (chunkInfo.ChunkStartNumber + 1) * (long)Config.ChunkSize == checkpoint) {
+							(chunkInfo.ChunkStartNumber + 1) * (long)Config.ChunkSize == checkpoint) {
 							// The situation where the logical data size is exactly divisible by ChunkSize,
 							// so it might happen that we have checkpoint indicating one more chunk should exist,
 							// but the actual last chunk is (lastChunkNum-1) one and it could be not completed yet -- perfectly valid situation.
@@ -129,7 +129,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						lastChunk.Dispose();
 						throw new CorruptDatabaseException(new BadChunkInDatabaseException(
 							string.Format("Chunk {0} is corrupted. Expected local chunk position: {1}, "
-							              + "but Chunk.LogicalDataSize is {2} (Chunk.PhysicalDataSize is {3}). Writer checkpoint: {4}.",
+										  + "but Chunk.LogicalDataSize is {2} (Chunk.PhysicalDataSize is {3}). Writer checkpoint: {4}.",
 								chunkFileName, chunkLocalPos, lastChunk.LogicalDataSize, lastChunk.PhysicalDataSize,
 								checkpoint)));
 					}
@@ -194,7 +194,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private void ValidateReaderChecksumsMustBeLess(TFChunkDbConfig config) {
 			var current = config.WriterCheckpoint.Read();
-			foreach (var checkpoint in new[] {config.ChaserCheckpoint, config.EpochCheckpoint}) {
+			foreach (var checkpoint in new[] { config.ChaserCheckpoint, config.EpochCheckpoint }) {
 				if (checkpoint.Read() > current)
 					throw new CorruptDatabaseException(new ReaderCheckpointHigherThanWriterException(checkpoint.Name));
 			}

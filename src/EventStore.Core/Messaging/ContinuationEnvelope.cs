@@ -19,9 +19,7 @@ namespace EventStore.Core.Messaging {
 			try {
 				_semaphore.Wait(_cancellationToken);
 				_onMessage(message, _cancellationToken).ContinueWith(_ => _semaphore.Release(), _cancellationToken);
-			}
-			catch (ObjectDisposedException) {}
-			catch (OperationCanceledException) {}
+			} catch (ObjectDisposedException) { } catch (OperationCanceledException) { }
 		}
 	}
 }

@@ -1,24 +1,24 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using EventStore.Common.Utils;
-using EventStore.Transport.Http;
-using EventStore.Transport.Http.Codecs;
-using EventStore.Transport.Http.EntityManagement;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using EventStore.Transport.Http;
+using EventStore.Transport.Http.Codecs;
+using EventStore.Transport.Http.EntityManagement;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class InfoController : IHttpController,
 		IHandle<SystemMessage.StateChangeMessage> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<InfoController>();
-		private static readonly ICodec[] SupportedCodecs = {Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text};
+		private static readonly ICodec[] SupportedCodecs = { Codec.Json, Codec.Xml, Codec.ApplicationXml, Codec.Text };
 
 		private readonly ClusterVNodeOptions _options;
 		private readonly IDictionary<string, bool> _features;
@@ -46,11 +46,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match) {
 			entity.ReplyTextContent(Codec.Json.To(new {
-					ESVersion = VersionInfo.Version,
-					State = _currentState.ToString().ToLower(),
-					Features = _features,
-					Authentication = GetAuthenticationInfo()
-				}),
+				ESVersion = VersionInfo.Version,
+				State = _currentState.ToString().ToLower(),
+				Features = _features,
+				Authentication = GetAuthenticationInfo()
+			}),
 				HttpStatusCode.OK,
 				"OK",
 				entity.ResponseCodec.ContentType,
@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null && (entity.User.LegacyRoleCheck(SystemRoles.Operations) || entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
-				entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(_options), new[] {"CertificatePassword"})),
+				entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(_options), new[] { "CertificatePassword" })),
 					HttpStatusCode.OK,
 					"OK",
 					entity.ResponseCodec.ContentType,
@@ -105,7 +105,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						possibleValues = property.PropertyType.GetEnumNames();
 					} else if (property.PropertyType.IsArray) {
 						var array = configFileOptionValue as Array;
-						if (array == null) continue;
+						if (array == null)
+							continue;
 						var configFileOptionValueAsString = String.Empty;
 						for (var i = 0; i < array.Length; i++) {
 							configFileOptionValueAsString += array.GetValue(i).ToString();

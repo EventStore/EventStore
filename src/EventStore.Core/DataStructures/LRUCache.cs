@@ -63,7 +63,8 @@ namespace EventStore.Core.DataStructures {
 					_items.Add(key, node);
 					_orderList.AddLast(node);
 
-					if (_onPut != null) _onPut(node.Value.Value);
+					if (_onPut != null)
+						_onPut(node.Value.Value);
 				} else {
 					node.Value.Value = value;
 
@@ -83,7 +84,8 @@ namespace EventStore.Core.DataStructures {
 				if (_items.TryGetValue(key, out node)) {
 					_orderList.Remove(node);
 					_items.Remove(key);
-					if (_onRemove != null) _onRemove(node.Value.Value);
+					if (_onRemove != null)
+						_onRemove(node.Value.Value);
 
 					ReturnNode(node);
 				}
@@ -96,7 +98,8 @@ namespace EventStore.Core.DataStructures {
 					var node = _orderList.First;
 					_orderList.RemoveFirst();
 					_items.Remove(node.Value.Key);
-					if (_onRemove != null) _onRemove(node.Value.Value);
+					if (_onRemove != null)
+						_onRemove(node.Value.Value);
 
 					ReturnNode(node);
 				}
@@ -116,7 +119,8 @@ namespace EventStore.Core.DataStructures {
 
 					_items.Add(key, node);
 					_orderList.AddLast(node);
-					if (_onPut != null) _onPut(node.Value.Value);
+					if (_onPut != null)
+						_onPut(node.Value.Value);
 				} else {
 					node.Value.Value = updateFactory(key, node.Value.Value, userData);
 
@@ -135,7 +139,8 @@ namespace EventStore.Core.DataStructures {
 				var node = _orderList.First;
 				_orderList.Remove(node);
 				_items.Remove(node.Value.Key);
-				if (_onRemove != null) _onRemove(node.Value.Value);
+				if (_onRemove != null)
+					_onRemove(node.Value.Value);
 
 				ReturnNode(node);
 			}

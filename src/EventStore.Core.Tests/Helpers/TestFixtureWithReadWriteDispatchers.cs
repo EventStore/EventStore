@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using EventStore.Core.Bus;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
@@ -9,7 +10,6 @@ using EventStore.Core.Tests.Bus;
 using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
-using System.Linq;
 
 namespace EventStore.Core.Tests.Helpers {
 	public abstract class TestFixtureWithReadWriteDispatchers {
@@ -175,7 +175,8 @@ namespace EventStore.Core.Tests.Helpers {
 				else if (Messages != null)
 					foreach (var message in Messages)
 						yield return message;
-				else yield return null;
+				else
+					yield return null;
 			}
 
 			IEnumerator IEnumerable.GetEnumerator() {

@@ -1,11 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Bus {
@@ -74,7 +74,7 @@ namespace EventStore.Core.Bus {
 
 			_stopped.Reset();
 
-			_thread = new Thread(ReadFromQueue) {IsBackground = true, Name = Name};
+			_thread = new Thread(ReadFromQueue) { IsBackground = true, Name = Name };
 			_thread.Start();
 			return _tcs.Task;
 		}

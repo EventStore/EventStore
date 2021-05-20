@@ -15,10 +15,10 @@ namespace EventStore.Core.Messages {
 
 			public ReplicaLogWrite(long logPosition, byte[] replicaId) {
 				LogPosition = logPosition;
-				ReplicaId =replicaId;
+				ReplicaId = replicaId;
 			}
 		}
-		
+
 		[ProtoContract]
 		public class ReplicatedTo {
 			[ProtoMember(1)] public long LogPosition { get; set; }
@@ -27,7 +27,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public ReplicatedTo(long logPosition) {
-				LogPosition = logPosition;				
+				LogPosition = logPosition;
 			}
 		}
 

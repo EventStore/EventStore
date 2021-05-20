@@ -1,21 +1,21 @@
-using EventStore.Core.Bus;
-using EventStore.Core.Services.Transport.Tcp;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using EventStore.Core.Messaging;
-using EventStore.Core.Tests.Authentication;
 using System.Linq;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using System.Text;
 using EventStore.Core.Authentication.InternalAuthentication;
+using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.LogV2;
-using EventStore.Core.Services.UserManagement;
-using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services;
+using EventStore.Core.Services.Transport.Tcp;
+using EventStore.Core.Services.UserManagement;
+using EventStore.Core.Tests.Authentication;
 using EventStore.Core.Tests.Authorization;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture]
@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				InMemoryBus.CreateTest(), dummyConnection, InMemoryBus.CreateTest(), new InternalAuthenticationProvider(
 					InMemoryBus.CreateTest(), new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
 					new StubPasswordHashAlgorithm(), 1, false),
-				new AuthorizationGateway(new TestAuthorizationProvider()), 
+				new AuthorizationGateway(new TestAuthorizationProvider()),
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				Opts.ConnectionPendingSendBytesThresholdDefault, Opts.ConnectionQueueSizeThresholdDefault);
 		}

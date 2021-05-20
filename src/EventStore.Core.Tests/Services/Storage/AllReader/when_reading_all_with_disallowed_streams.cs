@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
-using NUnit.Framework;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Util;
+using NUnit.Framework;
 using static EventStore.Core.Messages.TcpClientMessageDto.Filter;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_event_type_prefix() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.EventType,
-				FilterType.Prefix, new[] {"event-type"});
+				FilterType.Prefix, new[] { "event-type" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_event_type_regex() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.EventType,
-				FilterType.Regex, new[] {@"^.*event-type.*$"});
+				FilterType.Regex, new[] { @"^.*event-type.*$" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_stream_id_prefix() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.StreamId,
-				FilterType.Prefix, new[] {"$persistentsubscripti"});
+				FilterType.Prefix, new[] { "$persistentsubscripti" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_stream_id_regex() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.StreamId,
-				FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
+				FilterType.Regex, new[] { @"^.*istentsubsc.*$" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -111,7 +111,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_event_type_prefix() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.EventType,
-				FilterType.Prefix, new[] {"event-type"});
+				FilterType.Prefix, new[] { "event-type" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
@@ -125,7 +125,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_event_type_regex() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.EventType,
-				FilterType.Regex, new[] {@"^.*event-type.*$"});
+				FilterType.Regex, new[] { @"^.*event-type.*$" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_stream_id_prefix() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.StreamId,
-				FilterType.Prefix, new[] {"$persistentsubscripti"});
+				FilterType.Prefix, new[] { "$persistentsubscripti" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_stream_id_regex() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.StreamId,
-				FilterType.Regex, new[] {@"^.*istentsubsc.*$"});
+				FilterType.Regex, new[] { @"^.*istentsubsc.*$" });
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);

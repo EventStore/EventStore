@@ -302,7 +302,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				new Lazy<StreamMetadata>(() => new StreamMetadata(null, TimeSpan.FromHours(1)));
 			_ioDispatcher.ConfigureStreamAndWriteEvents(
 				UserPasswordNotificationsStreamId, ExpectedVersion.Any, streamMetadata,
-				new[] {CreatePasswordChangedEvent(loginName)}, SystemAccounts.System, completed);
+				new[] { CreatePasswordChangedEvent(loginName) }, SystemAccounts.System, completed);
 		}
 
 		private void WritePasswordChangedEventCompleted(
@@ -330,7 +330,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		private static Event CreatePasswordChangedEvent(string loginName) {
-			return new Event(Guid.NewGuid(), PasswordChanged, true, new {LoginName = loginName}.ToJsonBytes(), null);
+			return new Event(Guid.NewGuid(), PasswordChanged, true, new { LoginName = loginName }.ToJsonBytes(), null);
 		}
 
 		private void ReadUpdateCheckAnd(
@@ -382,7 +382,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			Action<ClientMessage.WriteEventsCompleted> onCompleted) {
 			var userCreatedEvent = new Event(Guid.NewGuid(), eventType, true, userData.ToJsonBytes(), null);
 			_ioDispatcher.WriteEvents(
-				"$user-" + userData.LoginName, expectedVersion, new[] {userCreatedEvent}, SystemAccounts.System,
+				"$user-" + userData.LoginName, expectedVersion, new[] { userCreatedEvent }, SystemAccounts.System,
 				onCompleted);
 		}
 
@@ -404,7 +404,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private void WriteUsersStreamEvent(string loginName, Action<ClientMessage.WriteEventsCompleted> onCompleted) {
 			var userCreatedEvent = new Event(Guid.NewGuid(), UsersStreamType, false, loginName, null);
 			_ioDispatcher.WriteEvents(
-				"$users", ExpectedVersion.Any, new[] {userCreatedEvent}, SystemAccounts.System,
+				"$users", ExpectedVersion.Any, new[] { userCreatedEvent }, SystemAccounts.System,
 				onCompleted);
 		}
 
@@ -476,7 +476,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 		private void CreateAdminUser() {
 			var userData = CreateUserData(
-				SystemUsers.Admin, "Event Store Administrator", new[] {SystemRoles.Admins},
+				SystemUsers.Admin, "Event Store Administrator", new[] { SystemRoles.Admins },
 				SystemUsers.DefaultAdminPassword);
 			WriteStreamAcl(
 				SystemUsers.Admin, completed1 => {
@@ -523,7 +523,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 		private void CreateOperationsUser() {
 			var userData = CreateUserData(
-				SystemUsers.Operations, "Event Store Operations", new[] {SystemRoles.Operations},
+				SystemUsers.Operations, "Event Store Operations", new[] { SystemRoles.Operations },
 				SystemUsers.DefaultAdminPassword);
 			WriteStreamAcl(
 				SystemUsers.Operations, completed1 => {

@@ -158,7 +158,8 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(SystemMessage.VNodeConnectionLost msg) {
-			if (_state != VNodeState.Leader || !msg.SubscriptionId.HasValue) return;
+			if (_state != VNodeState.Leader || !msg.SubscriptionId.HasValue)
+				return;
 			_replicaLogPositions.TryRemove(msg.SubscriptionId.Value, out _);
 		}
 

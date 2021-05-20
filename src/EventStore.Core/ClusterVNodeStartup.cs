@@ -19,15 +19,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
+using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
+using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
+using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Elections;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
-using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Elections;
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
-using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
-using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -70,7 +70,7 @@ namespace EventStore.Core {
 				throw new ArgumentNullException(nameof(httpAuthenticationProviders));
 			}
 
-			if(authorizationProvider == null)
+			if (authorizationProvider == null)
 				throw new ArgumentNullException(nameof(authorizationProvider));
 
 			if (readIndex == null) {
@@ -107,8 +107,8 @@ namespace EventStore.Core {
 			app.Map("/health", _statusCheck.Configure)
 				.UseMiddleware<AuthenticationMiddleware>()
 				.UseRouting()
-				.UseWhen(ctx => ctx.Request.Method == HttpMethods.Options 
-				                && !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
+				.UseWhen(ctx => ctx.Request.Method == HttpMethods.Options
+								&& !(ctx.Request.GetTypedHeaders().ContentType?.IsSubsetOf(grpc)).GetValueOrDefault(false),
 					b => b
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
 				)

@@ -147,25 +147,24 @@ namespace EventStore.Core.Services.Monitoring {
 			RegularLog.Information("{@stats}", rawStats);
 		}
 
-        private DateTime? GetTimestamp(string line) {
+		private DateTime? GetTimestamp(string line) {
 			var separatorIdx = line.IndexOf(',');
-			if(separatorIdx == -1)
+			if (separatorIdx == -1)
 				return null;
 
-			try{
+			try {
 				return DateTime.Parse(line.Substring(0, separatorIdx)).ToUniversalTime();
-			}
-			catch{
+			} catch {
 				return null;
 			}
-        }
+		}
 
-        private void SaveStatsToStream(Dictionary<string, object> rawStats) {
+		private void SaveStatsToStream(Dictionary<string, object> rawStats) {
 			var data = rawStats.ToJsonBytes();
 			var evnt = new Event(Guid.NewGuid(), SystemEventTypes.StatsCollection, true, data, null);
 			var corrId = Guid.NewGuid();
 			var msg = new ClientMessage.WriteEvents(corrId, corrId, NoopEnvelope, false, _nodeStatsStream,
-				ExpectedVersion.Any, new[] {evnt}, SystemAccounts.System);
+				ExpectedVersion.Any, new[] { evnt }, SystemAccounts.System);
 			_mainBus.Publish(msg);
 		}
 
@@ -182,9 +181,9 @@ namespace EventStore.Core.Services.Monitoring {
 				case VNodeState.Follower:
 				case VNodeState.ReadOnlyReplica:
 				case VNodeState.Leader: {
-					SetStatsStreamMetadata();
-					break;
-				}
+						SetStatsStreamMetadata();
+						break;
+					}
 			}
 		}
 
@@ -208,7 +207,7 @@ namespace EventStore.Core.Services.Monitoring {
 				new ClientMessage.WriteEvents(
 					_streamMetadataWriteCorrId, _streamMetadataWriteCorrId, new PublishEnvelope(_monitoringQueue),
 					false, SystemStreams.MetastreamOf(_nodeStatsStream), ExpectedVersion.NoStream,
-					new[] {new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null)},
+					new[] { new Event(Guid.NewGuid(), SystemEventTypes.StreamMetadata, true, metadata, null) },
 					SystemAccounts.System));
 		}
 
@@ -219,30 +218,30 @@ namespace EventStore.Core.Services.Monitoring {
 				case OperationResult.Success:
 				case OperationResult.WrongExpectedVersion: // already created
 				{
-					Log.Debug("Created stats stream '{stream}', code = {result}", _nodeStatsStream, message.Result);
-					_statsStreamCreated = true;
-					break;
-				}
+						Log.Debug("Created stats stream '{stream}', code = {result}", _nodeStatsStream, message.Result);
+						_statsStreamCreated = true;
+						break;
+					}
 				case OperationResult.PrepareTimeout:
 				case OperationResult.CommitTimeout:
 				case OperationResult.ForwardTimeout: {
-					Log.Debug("Failed to create stats stream '{stream}'. Reason : {e}({message}). Retrying...",
-						_nodeStatsStream, message.Result, message.Message);
-					SetStatsStreamMetadata();
-					break;
-				}
+						Log.Debug("Failed to create stats stream '{stream}'. Reason : {e}({message}). Retrying...",
+							_nodeStatsStream, message.Result, message.Message);
+						SetStatsStreamMetadata();
+						break;
+					}
 				case OperationResult.AccessDenied: {
-					// can't do anything about that right now
-					break;
-				}
+						// can't do anything about that right now
+						break;
+					}
 				case OperationResult.StreamDeleted:
 				case OperationResult.InvalidTransaction: // should not happen at all
 				{
-					Log.Error(
-						"Monitoring service got unexpected response code when trying to create stats stream ({e}).",
-						message.Result);
-					break;
-				}
+						Log.Error(
+							"Monitoring service got unexpected response code when trying to create stats stream ({e}).",
+							message.Result);
+						break;
+					}
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
@@ -306,7 +305,7 @@ namespace EventStore.Core.Services.Monitoring {
 					var tcpConnSsl = conn as TcpConnectionSsl;
 					if (tcpConnSsl != null) {
 						var isExternalConnection = _tcpSecureEndpoint != null &&
-						                           _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.GetPort();
+												   _tcpSecureEndpoint.Port == tcpConnSsl.LocalEndPoint.GetPort();
 						connStats.Add(new MonitoringMessage.TcpConnectionStats {
 							IsExternalConnection = isExternalConnection,
 							RemoteEndPoint = tcpConnSsl.RemoteEndPoint.ToString(),

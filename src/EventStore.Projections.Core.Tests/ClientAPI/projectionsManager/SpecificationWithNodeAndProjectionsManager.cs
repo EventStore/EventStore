@@ -4,19 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NUnit.Framework;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
-using EventStore.Core.Tests;
-using EventStore.Core.Tests.Helpers;
-using EventStore.Core.Tests.ClientAPI.Helpers;
 using EventStore.Core.Services;
+using EventStore.Core.Tests;
+using EventStore.Core.Tests.ClientAPI.Helpers;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
 using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 	public abstract class SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderMainBus);
 			return new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
-				subsystems: new ISubsystem[] {_projectionsSubsystem});
+				subsystems: new ISubsystem[] { _projectionsSubsystem });
 		}
 
 		protected EventData CreateEvent(string eventType, string data) {
@@ -118,7 +118,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
                     } 
                 });";
 		}
-		
+
 		private List<string> _systemProjections =>
 			typeof(ProjectionNamesBuilder.StandardProjections).GetFields(
 					System.Reflection.BindingFlags.Public |

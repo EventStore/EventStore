@@ -46,11 +46,11 @@ namespace EventStore.Core.Data {
 							systemStreamAcl = StreamMetadata.ReadAcl(reader);
 							break;
 						default: {
-							Check(reader.Read(), reader);
-							// skip
-							JToken.ReadFrom(reader);
-							break;
-						}
+								Check(reader.Read(), reader);
+								// skip
+								JToken.ReadFrom(reader);
+								break;
+							}
 					}
 				}
 

@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						await Task.Delay(TimeSpan.FromSeconds(backOff)).ConfigureAwait(false);
 						BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, resolveLinkTos,
 							skipFirstEvent, onEventsFound, onError, retryCount + 1);
-					},Guid.NewGuid());
+					}, Guid.NewGuid());
 			} else {
 				throw new InvalidOperationException();
 			}

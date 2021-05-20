@@ -57,10 +57,10 @@ namespace EventStore.Core.Tests {
 		[Test]
 		public void all_keys_are_read_from_configuration() {
 			string[] excluded = new[] {
-				nameof(ClusterVNodeOptions.Subsystems), 
-				nameof(ClusterVNodeOptions.ServerCertificate), 
-				nameof(ClusterVNodeOptions.TrustedRootCertificates), 
-				nameof(ClusterVNodeOptions.IndexBitnessVersion), 
+				nameof(ClusterVNodeOptions.Subsystems),
+				nameof(ClusterVNodeOptions.ServerCertificate),
+				nameof(ClusterVNodeOptions.TrustedRootCertificates),
+				nameof(ClusterVNodeOptions.IndexBitnessVersion),
 				nameof(ClusterVNodeOptions.Cluster.QuorumSize),
 				nameof(ClusterVNodeOptions.Cluster.CommitAckCount),
 				nameof(ClusterVNodeOptions.Cluster.PrepareAckCount),
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests {
 
 			var expected = typeof(ClusterVNodeOptions).GetProperties().Where(x => !excluded.Contains(x.Name))
 				.SelectMany(property => property.PropertyType.GetProperties().Where(x => !excluded.Contains(x.Name)))
-				.Where(x=> !excluded.Contains(x.Name))
+				.Where(x => !excluded.Contains(x.Name))
 				.Select(property => property.Name);
 
 			CollectionAssert.AreEquivalent(expected, actual);
@@ -82,31 +82,31 @@ namespace EventStore.Core.Tests {
 
 		public static IEnumerable<PrecedenceCase> PrecedenceCases() {
 			yield return new(
-				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				new Dictionary<string, object> { [nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1 },
 				string.Empty,
 				new Dictionary<string, string>(),
 				Array.Empty<string>(),
 				1
 			);
 			yield return new(
-				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				new Dictionary<string, object> { [nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1 },
 				$"{nameof(ClusterVNodeOptions.Application.StatsPeriodSec)}: 2",
 				new Dictionary<string, string>(),
 				Array.Empty<string>(),
 				2
 			);
 			yield return new(
-				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				new Dictionary<string, object> { [nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1 },
 				$"{nameof(ClusterVNodeOptions.Application.StatsPeriodSec)}: 2",
-				new Dictionary<string, string> {["EVENTSTORE_STATS_PERIOD_SEC"] = "3"},
+				new Dictionary<string, string> { ["EVENTSTORE_STATS_PERIOD_SEC"] = "3" },
 				Array.Empty<string>(),
 				3
 			);
 			yield return new(
-				new Dictionary<string, object> {[nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1},
+				new Dictionary<string, object> { [nameof(ClusterVNodeOptions.Application.StatsPeriodSec)] = 1 },
 				$"{nameof(ClusterVNodeOptions.Application.StatsPeriodSec)}: 2",
-				new Dictionary<string, string> {["EVENTSTORE_STATS_PERIOD_SEC"] = "3"},
-				new[] {"--stats-period-sec=4"},
+				new Dictionary<string, string> { ["EVENTSTORE_STATS_PERIOD_SEC"] = "3" },
+				new[] { "--stats-period-sec=4" },
 				4
 			);
 		}
@@ -154,7 +154,7 @@ namespace EventStore.Core.Tests {
 
 		[Test]
 		public void dump() {
-			var dumpedOptions = ClusterVNodeOptions.FromConfiguration(new[] {"--mem-db"}, new Hashtable {
+			var dumpedOptions = ClusterVNodeOptions.FromConfiguration(new[] { "--mem-db" }, new Hashtable {
 				["EVENTSTORE_MAX_APPEND_SIZE"] = "10"
 			}).DumpOptions();
 			Console.WriteLine(dumpedOptions);
@@ -166,7 +166,7 @@ namespace EventStore.Core.Tests {
 			try {
 				await WriteConfiguration();
 
-				var options = ClusterVNodeOptions.FromConfiguration(new[] {"--config", yamlConfiguration.FullName},
+				var options = ClusterVNodeOptions.FromConfiguration(new[] { "--config", yamlConfiguration.FullName },
 					new Hashtable());
 
 				Assert.AreEqual(yamlConfiguration.FullName, options.Application.Config);
@@ -193,10 +193,10 @@ namespace EventStore.Core.Tests {
 
 		[Test]
 		public void do_not_reveal_sensitive_information_when_dumped() {
-			var optionsDumper = new OptionsDumper(new[] {typeof(TestOptions)});
+			var optionsDumper = new OptionsDumper(new[] { typeof(TestOptions) });
 			var dumpedOptions = optionsDumper
 				.Dump(new ConfigurationBuilder()
-					.Add(new CommandLineSource(new[] {"--sensitive=123"}))
+					.Add(new CommandLineSource(new[] { "--sensitive=123" }))
 					.Build());
 			var certificatePasswordLine = dumpedOptions
 				.Split(Environment.NewLine)
@@ -211,35 +211,35 @@ namespace EventStore.Core.Tests {
 			public static IEnumerable TestCases() {
 				const string array = nameof(TestOptions.ArrayOfStrings);
 
-				yield return new TestCaseData(array, new[] {"--array-of-strings", "a,b,c"})
-					.Returns(new[] {"a", "b", "c"});
-				yield return new TestCaseData(array, new[] {"-ArrayOfStrings", "a,b,c"})
-					.Returns(new[] {"a", "b", "c"});
+				yield return new TestCaseData(array, new[] { "--array-of-strings", "a,b,c" })
+					.Returns(new[] { "a", "b", "c" });
+				yield return new TestCaseData(array, new[] { "-ArrayOfStrings", "a,b,c" })
+					.Returns(new[] { "a", "b", "c" });
 
 				const string flag = nameof(TestOptions.Flag);
 
-				yield return new TestCaseData(flag, new[] {"--flag"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"--flag=true"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"--flag", "true"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"-flag"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"-flag=true"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"-flag", "true"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"-flag+"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"--flag+"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"--flag-"}).Returns(false);
-				yield return new TestCaseData(flag, new[] {"-flag-"}).Returns(false);
-				yield return new TestCaseData(flag, new[] {"--flag", "--extra-flag"}).Returns(true);
-				yield return new TestCaseData(flag, new[] {"--extra-flag", "--flag"}).Returns(true);
+				yield return new TestCaseData(flag, new[] { "--flag" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "--flag=true" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "--flag", "true" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "-flag" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "-flag=true" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "-flag", "true" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "-flag+" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "--flag+" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "--flag-" }).Returns(false);
+				yield return new TestCaseData(flag, new[] { "-flag-" }).Returns(false);
+				yield return new TestCaseData(flag, new[] { "--flag", "--extra-flag" }).Returns(true);
+				yield return new TestCaseData(flag, new[] { "--extra-flag", "--flag" }).Returns(true);
 
 				const string ipAddresses = nameof(TestOptions.IPEndPoints);
 
 				yield return new TestCaseData(ipAddresses,
-					new[] {"--ip-endpoints=127.0.0.1:2122,127.0.0.1:2132"}).Returns(new[] {
+					new[] { "--ip-endpoints=127.0.0.1:2122,127.0.0.1:2132" }).Returns(new[] {
 					new IPEndPoint(IPAddress.Loopback, 2122),
 					new IPEndPoint(IPAddress.Loopback, 2132),
 				});
 				yield return new TestCaseData(ipAddresses,
-					new[] {"--ip-endpoints", "127.0.0.1:2122,127.0.0.1:2132"}).Returns(new[] {
+					new[] { "--ip-endpoints", "127.0.0.1:2122,127.0.0.1:2132" }).Returns(new[] {
 					new IPEndPoint(IPAddress.Loopback, 2122),
 					new IPEndPoint(IPAddress.Loopback, 2132),
 				});

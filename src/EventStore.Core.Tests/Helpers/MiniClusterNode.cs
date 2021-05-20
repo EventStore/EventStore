@@ -12,14 +12,14 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.Data;
-using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -72,7 +72,7 @@ namespace EventStore.Core.Tests.Helpers {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
 					true); //TODO JPB Remove this sadness when dotnet core supports kestrel + http2 on macOS
 			}
-			
+
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.Helpers {
 					o.Listen(HttpEndPoint, options => {
 						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 							options.Protocols = HttpProtocols.Http2;
-						} else { 
+						} else {
 							options.UseHttps(new HttpsConnectionAdapterOptions {
 								ServerCertificate = serverCertificate,
 								ClientCertificateMode = ClientCertificateMode.AllowCertificate,

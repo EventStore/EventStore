@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.Replication {
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Leader Replication Service");
 
 			_lastRolesAssignmentTimestamp = _stopwatch.Elapsed;
-			_mainLoopThread = new Thread(MainLoop) {Name = _queueStats.Name, IsBackground = true};
+			_mainLoopThread = new Thread(MainLoop) { Name = _queueStats.Name, IsBackground = true };
 		}
 
 		public void Handle(SystemMessage.SystemStart message) {
@@ -161,7 +161,7 @@ namespace EventStore.Core.Services.Replication {
 			if (_subscriptions.TryGetValue(message.SubscriptionId, out var subscription)) {
 				Interlocked.Exchange(ref subscription.AckedLogPosition, message.ReplicationLogPosition);
 				if (subscription.IsPromotable) {
-					_publisher.Publish(new ReplicationTrackingMessage.ReplicaWriteAck(message.SubscriptionId,message.ReplicationLogPosition));
+					_publisher.Publish(new ReplicationTrackingMessage.ReplicaWriteAck(message.SubscriptionId, message.ReplicationLogPosition));
 				}
 			}
 		}
@@ -261,7 +261,7 @@ namespace EventStore.Core.Services.Replication {
 				return Math.Min(replicaPosition, leaderCheckpoint);
 
 			// common epoch number is older than the last epoch
-			var nextEpoch = _epochManager.GetEpochAfter(commonEpoch.EpochNumber , false);
+			var nextEpoch = _epochManager.GetEpochAfter(commonEpoch.EpochNumber, false);
 
 			if (nextEpoch == null) {
 				var msg = string.Format(
@@ -442,7 +442,8 @@ namespace EventStore.Core.Services.Replication {
 					ReplicaSendWindow)
 					continue;
 
-				if (subscription.BulkReader == null) throw new Exception("BulkReader is null for subscription.");
+				if (subscription.BulkReader == null)
+					throw new Exception("BulkReader is null for subscription.");
 
 				try {
 					var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
@@ -645,7 +646,7 @@ namespace EventStore.Core.Services.Replication {
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
 			//TODO(clc): if the node is busy and misses an update it might be a long time till the next update do we need check if they get too stale?
 			foreach (var subscription in _subscriptions.Values) {
-				if (subscription.IsConnectionClosed ||subscription.SendQueueSize >= MaxQueueSize) { continue;}
+				if (subscription.IsConnectionClosed || subscription.SendQueueSize >= MaxQueueSize) { continue; }
 				subscription.SendMessage(message);
 			}
 		}

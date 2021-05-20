@@ -151,18 +151,18 @@ namespace EventStore.LogV3 {
 				get => _partitionTypeId;
 				set => _partitionTypeId = value;
 			}
-			
+
 			public Guid ParentPartitionId {
 				get => _parentPartitionId;
 				set => _parentPartitionId = value;
 			}
-			
+
 			public byte Flags {
 				get => _flags;
 				set => _flags = value;
 			}
 		}
-		
+
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct PartitionTypeHeader {
 			[FieldOffset(0)] private Guid _partitionId;
@@ -184,20 +184,20 @@ namespace EventStore.LogV3 {
 				set => _partitionId = value;
 			}
 		}
-		
+
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]
 		public struct EventTypeHeader {
 			[FieldOffset(0)] private Guid _partitionId;
 			[FieldOffset(16)] private uint _referenceNumber;
 			[FieldOffset(20)] private ushort _version;
-			
+
 			public const int Size = 22;
 
 			public Guid PartitionId {
 				get => _partitionId;
 				set => _partitionId = value;
 			}
-			
+
 			public uint ReferenceNumber {
 				get => _referenceNumber;
 				set => _referenceNumber = value;

@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
 	public class SubscribeToAllFilteredTests {
 		private static ClaimsPrincipal TestUser =>
-			new ClaimsPrincipal(new ClaimsIdentity(new[] {new Claim(ClaimTypes.Name, "admin"),}, "ES-Test"));
+			new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "admin"), }, "ES-Test"));
 
 		private static IEnumerable<EventData> CreateEvents(int count) => Enumerable.Range(0, count)
 			.Select(i => new EventData(Guid.NewGuid(), i.ToString(), false, Array.Empty<byte>(), null));
@@ -87,8 +87,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				var skippedEventCount = (await _conn.ReadAllEventsForwardAsync(EventStore.ClientAPI.Position.Start,
 						4096, false, new UserCredentials("admin", "changeit")).ConfigureAwait(false))
 					.Events.Count(e => new Position((ulong)e.OriginalPosition.Value.CommitPosition,
-						                   (ulong)e.OriginalPosition.Value.PreparePosition) <= _position &&
-					                   e.OriginalEvent.EventStreamId != _streamName);
+										   (ulong)e.OriginalPosition.Value.PreparePosition) <= _position &&
+									   e.OriginalEvent.EventStreamId != _streamName);
 				_expected = skippedEventCount / _checkpointInterval;
 
 				await using var enumerator = new Enumerators.AllSubscriptionFiltered(_node.Node.MainQueue,

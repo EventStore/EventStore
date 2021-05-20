@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using EventStore.Core.Index;
-using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EventStore.Core.Index;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTableVersions.IndexV2, false)]

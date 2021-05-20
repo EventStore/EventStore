@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
+using System.Xml.Linq;
 using EventStore.ClientAPI;
+using EventStore.Core.Bus;
+using EventStore.Core.Messages;
+using EventStore.Core.Tests.Http.Users.users;
 using EventStore.Transport.Http;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using HttpStatusCode = System.Net.HttpStatusCode;
-using System.Xml.Linq;
-using System.Threading.Tasks;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
-using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[Category("LongRunning")]
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				knownNumberOfEvents);
 		}
 	}
-	
+
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(long))]

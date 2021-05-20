@@ -1,12 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
-using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class specification_with_cluster<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
@@ -83,13 +83,13 @@ namespace EventStore.Core.Tests.Integration {
 			Assert.IsEmpty(duplicates);
 
 			_nodeCreationFactory.Add(0, wait => CreateNode(0,
-				_nodeEndpoints[0], new[] {_nodeEndpoints[1].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint},
+				_nodeEndpoints[0], new[] { _nodeEndpoints[1].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint },
 				wait));
 			_nodeCreationFactory.Add(1, wait => CreateNode(1,
-				_nodeEndpoints[1], new[] {_nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint},
+				_nodeEndpoints[1], new[] { _nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint },
 				wait));
 			_nodeCreationFactory.Add(2, wait => CreateNode(2,
-				_nodeEndpoints[2], new[] {_nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[1].HttpEndPoint},
+				_nodeEndpoints[2], new[] { _nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[1].HttpEndPoint },
 				wait));
 
 			_nodes[0] = _nodeCreationFactory[0](true);

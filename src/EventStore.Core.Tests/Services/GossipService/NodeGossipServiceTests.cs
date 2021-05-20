@@ -504,7 +504,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			);
 
 		protected override Message When() =>
-			new SystemMessage.BecomeLeader(Guid.NewGuid(),0);
+			new SystemMessage.BecomeLeader(Guid.NewGuid(), 0);
 
 		[Test]
 		public void should_update_gossip() {
@@ -811,7 +811,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			);
 
 		protected override Message When() =>
-			new ElectionMessage.ElectionsDone(0,0,
+			new ElectionMessage.ElectionsDone(0, 0,
 				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, nodeState: VNodeState.Leader));
 
 		[Test]

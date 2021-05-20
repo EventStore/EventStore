@@ -11,8 +11,8 @@ using EventStore.Core.Tests.Services;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
-using NUnit.Framework;
 using EventStore.Core.Util;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 	[TestFixture]
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				logFormat.StreamIdSizer,
 				100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
-				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
+				_dbResult.Db.Config.ReplicationCheckpoint, _dbResult.Db.Config.IndexCheckpoint);
 			readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
 

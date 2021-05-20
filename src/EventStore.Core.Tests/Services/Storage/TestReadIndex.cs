@@ -45,8 +45,8 @@ namespace EventStore.Core.Tests.Services {
 			ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount) =>
 			_readIndex.ReadStreamEventsForward(streamName, streamId, fromEventNumber, maxCount);
 		public bool IsStreamDeleted(TStreamId streamId) => _readIndex.IsStreamDeleted(streamId);
-			public long GetStreamLastEventNumber(TStreamId streamId) => _readIndex.GetStreamLastEventNumber(streamId);
-			public StreamMetadata GetStreamMetadata(TStreamId streamId) => _readIndex.GetStreamMetadata(streamId);
+		public long GetStreamLastEventNumber(TStreamId streamId) => _readIndex.GetStreamLastEventNumber(streamId);
+		public StreamMetadata GetStreamMetadata(TStreamId streamId) => _readIndex.GetStreamMetadata(streamId);
 		public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId) => _readIndex.GetEffectiveAcl(streamId);
 		public TStreamId GetEventStreamIdByTransactionId(long transactionId) =>
 			_readIndex.GetEventStreamIdByTransactionId(transactionId);

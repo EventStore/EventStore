@@ -1,9 +1,9 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
+using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 	[TestFixture]

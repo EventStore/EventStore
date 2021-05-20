@@ -2,20 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Services.Histograms;
 using EventStore.Core.Util;
-using System.Threading.Tasks;
-using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
+using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Storage {
 	public abstract class StorageChaser {
@@ -180,21 +180,21 @@ namespace EventStore.Core.Services.Storage {
 		private void ProcessLogRecord(SeqReadResult result) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Prepare: {
-					var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-					ProcessPrepareRecord(record, result.RecordPostPosition);
-					break;
-				}
+						var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+						ProcessPrepareRecord(record, result.RecordPostPosition);
+						break;
+					}
 				case LogRecordType.Commit: {
-					_commitsAfterEof = !result.Eof;
-					var record = (CommitLogRecord)result.LogRecord;
-					ProcessCommitRecord(record, result.RecordPostPosition);
-					break;
-				}
+						_commitsAfterEof = !result.Eof;
+						var record = (CommitLogRecord)result.LogRecord;
+						ProcessCommitRecord(record, result.RecordPostPosition);
+						break;
+					}
 				case LogRecordType.System: {
-					var record = (ISystemLogRecord)result.LogRecord;
-					ProcessSystemRecord(record);
-					break;
-				}
+						var record = (ISystemLogRecord)result.LogRecord;
+						ProcessSystemRecord(record);
+						break;
+					}
 				default:
 					throw new ArgumentOutOfRangeException();
 			}

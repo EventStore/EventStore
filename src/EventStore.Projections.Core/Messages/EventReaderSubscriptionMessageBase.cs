@@ -180,7 +180,8 @@ namespace EventStore.Projections.Core.Messages {
 				Guid subscriptionId, CheckpointTag checkpointTag, string eventCategory, ResolvedEvent data,
 				float progress, long subscriptionMessageSequenceNumber, object source)
 				: base(subscriptionId, checkpointTag, progress, subscriptionMessageSequenceNumber, source) {
-				if (data == null) throw new ArgumentNullException("data");
+				if (data == null)
+					throw new ArgumentNullException("data");
 				_data = data;
 				_eventCategory = eventCategory;
 			}

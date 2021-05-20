@@ -24,7 +24,7 @@ namespace EventStore.LogV3 {
 		private static LogRecordType Type(this ref Raw.StreamWriteHeader _) => LogRecordType.StreamWrite;
 		private static LogRecordType Type(this ref Raw.EventTypeHeader _) => LogRecordType.EventType;
 		private static LogRecordType Type(this ref Raw.ContentTypeHeader _) => LogRecordType.ContentType;
-		
+
 		const int MaxStringBytes = 100;
 		public static void PopulateString(string str, Span<byte> target) {
 			Utf8.FromUtf16(str, target, out _, out var bytesWritten, true, true);
@@ -88,7 +88,7 @@ namespace EventStore.LogV3 {
 
 			return StringPayloadRecord.Create(record);
 		}
-		
+
 		public static StringPayloadRecord<Raw.PartitionTypeHeader> CreatePartitionTypeRecord(
 			DateTime timeStamp,
 			long logPosition,
@@ -136,7 +136,7 @@ namespace EventStore.LogV3 {
 
 			return StringPayloadRecord.Create(record);
 		}
-		
+
 		public static StringPayloadRecord<Raw.EventTypeHeader> CreateEventTypeRecord(
 			DateTime timeStamp,
 			long logPosition,
@@ -164,7 +164,7 @@ namespace EventStore.LogV3 {
 
 			return StringPayloadRecord.Create(record);
 		}
-		
+
 		public static StringPayloadRecord<Raw.ContentTypeHeader> CreateContentTypeRecord(
 			DateTime timeStamp,
 			long logPosition,

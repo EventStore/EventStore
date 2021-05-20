@@ -1,9 +1,9 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http.Codecs;
-using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 

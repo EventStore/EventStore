@@ -46,7 +46,7 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_guid2, record.SubHeader.LeaderInstanceId);
 			Assert.Equal(_long2, record.SubHeader.PrevEpochPosition);
 		}
-		
+
 		[Fact]
 		public void can_create_partition_record() {
 			var record = RecordCreator.CreatePartitionRecord(
@@ -68,7 +68,7 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_byte1, record.SubHeader.Flags);
 			Assert.Equal(_string1, record.StringPayload);
 		}
-		
+
 		[Fact]
 		public void can_create_partition_type_record() {
 			var record = RecordCreator.CreatePartitionTypeRecord(
@@ -104,7 +104,7 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_guid2, record.SubHeader.PartitionId);
 			Assert.Equal(_string1, record.StringPayload);
 		}
-		
+
 		[Fact]
 		public void can_create_event_type_record() {
 			var record = RecordCreator.CreateEventTypeRecord(
@@ -126,7 +126,7 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_ushort1, record.SubHeader.Version);
 			Assert.Equal(_string1, record.StringPayload);
 		}
-		
+
 		[Fact]
 		public void can_create_content_type_record() {
 			var record = RecordCreator.CreateContentTypeRecord(

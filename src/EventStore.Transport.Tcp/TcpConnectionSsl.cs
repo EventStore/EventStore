@@ -345,8 +345,10 @@ namespace EventStore.Transport.Tcp {
 			try {
 				do {
 					lock (_streamLock) {
-						if (_isSending || (_sendQueue.IsEmpty && _memoryStreamOffset >= _memoryStream.Length) || _sslStream == null || !_isAuthenticated) return;
-						if (TcpConnectionMonitor.Default.IsSendBlocked()) return;
+						if (_isSending || (_sendQueue.IsEmpty && _memoryStreamOffset >= _memoryStream.Length) || _sslStream == null || !_isAuthenticated)
+							return;
+						if (TcpConnectionMonitor.Default.IsSendBlocked())
+							return;
 						_isSending = true;
 					}
 
@@ -362,7 +364,7 @@ namespace EventStore.Transport.Tcp {
 						}
 					}
 
-					_sendingBytes = Math.Min((int)_memoryStream.Length - (int) _memoryStreamOffset, TcpConnection.MaxSendPacketSize);
+					_sendingBytes = Math.Min((int)_memoryStream.Length - (int)_memoryStreamOffset, TcpConnection.MaxSendPacketSize);
 
 					NotifySendStarting(_sendingBytes);
 					var result = _sslStream.BeginWrite(_memoryStream.GetBuffer(), (int)_memoryStreamOffset, _sendingBytes, OnEndWrite, null);
@@ -384,7 +386,8 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void OnEndWrite(IAsyncResult ar) {
-			if (ar.CompletedSynchronously) return;
+			if (ar.CompletedSynchronously)
+				return;
 
 			EndWrite(ar);
 			TrySend();
@@ -447,7 +450,8 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private void OnEndRead(IAsyncResult ar) {
-			if (ar.CompletedSynchronously) return;
+			if (ar.CompletedSynchronously)
+				return;
 
 			EndRead(ar);
 			StartReceive();
@@ -518,7 +522,7 @@ namespace EventStore.Transport.Tcp {
 					}
 
 					lock (_closeLock) {
-						if(!_isClosed)
+						if (!_isClosed)
 							callback(this, data);
 					}
 
@@ -531,8 +535,8 @@ namespace EventStore.Transport.Tcp {
 
 				Interlocked.Exchange(ref _receiveHandling, 0);
 			} while (!_receiveQueue.IsEmpty
-			         && _receiveCallback != null
-			         && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
+					 && _receiveCallback != null
+					 && Interlocked.CompareExchange(ref _receiveHandling, 1, 0) == 0);
 		}
 
 		public void Close(string reason) {
@@ -541,7 +545,8 @@ namespace EventStore.Transport.Tcp {
 
 		private void CloseInternal(SocketError socketError, string reason) {
 			lock (_closeLock) {
-				if (_isClosed) return;
+				if (_isClosed)
+					return;
 				_isClosed = true;
 			}
 

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.RequestManager.Managers;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
-using EventStore.Core.Services.RequestManager.Managers;
 
 namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 	[TestFixture]
@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 
 		protected override IEnumerable<Message> WithInitialMessages() {
 			yield return new StorageMessage.CommitIndexed(InternalCorrId, commitPosition, 2, 3, 3);
-			}
+		}
 
 		protected override Message When() {
 			return new ReplicationTrackingMessage.IndexedTo(commitPosition);

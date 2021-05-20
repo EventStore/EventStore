@@ -24,7 +24,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				throw new Exception(
 					string.Format("MaxTruncation is set ({0}) and truncate checkpoint is out of bounds (requested truncation is {1} [{2} => {3}]).", _config.MaxTruncation, requestedTruncation, writerChk, truncateChk));
 			}
-			
+
 			var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 			var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
 
@@ -123,9 +123,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private void TruncateChunkAndFillWithZeros(ChunkHeader chunkHeader, string chunkFilename, long truncateChk) {
 			if (chunkHeader.IsScavenged
-			    || chunkHeader.ChunkStartNumber != chunkHeader.ChunkEndNumber
-			    || truncateChk < chunkHeader.ChunkStartPosition
-			    || truncateChk >= chunkHeader.ChunkEndPosition) {
+				|| chunkHeader.ChunkStartNumber != chunkHeader.ChunkEndNumber
+				|| truncateChk < chunkHeader.ChunkStartPosition
+				|| truncateChk >= chunkHeader.ChunkEndPosition) {
 				throw new Exception(
 					string.Format(
 						"Chunk #{0}-{1} ({2}) is not correct unscavenged chunk. TruncatePosition: {3}, ChunkHeader: {4}.",

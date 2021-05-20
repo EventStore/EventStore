@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Core.Data;
-using EventStore.Core.Util;
 using EventStore.Client;
 using EventStore.Client.Shared;
 using EventStore.Client.Streams;
+using EventStore.Core.Data;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Util;
 using Google.Protobuf;
 using Grpc.Core;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
@@ -183,7 +183,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition,
 				long? preparePosition) {
-				if (e == null) return null;
+				if (e == null)
+					return null;
 				var position = Position.FromInt64(commitPosition ?? -1, preparePosition ?? -1);
 				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
 					Id = uuidOptionsCase switch {

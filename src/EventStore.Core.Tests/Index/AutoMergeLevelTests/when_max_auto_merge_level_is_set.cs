@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Index.AutoMergeLevelTests {
 				first = _result.MergedMap;
 			var pTable = PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 			_result = first.AddAndMergePTable(pTable,
-				10, 20, UpgradeHash, ExistsAt, RecordExistsAt, _fileNameProvider, _ptableVersion,0, skipIndexVerify: _skipIndexVerify);
+				10, 20, UpgradeHash, ExistsAt, RecordExistsAt, _fileNameProvider, _ptableVersion, 0, skipIndexVerify: _skipIndexVerify);
 			for (int i = 3; i <= count * 2; i += 2) {
 				pTable = PTable.FromMemtable(memtable, GetTempFilePath(), Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
 				_result = _result.MergedMap.AddAndMergePTable(
