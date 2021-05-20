@@ -101,7 +101,7 @@ namespace EventStore.TestClient {
 				details.AppendFormat("\n{0}-->{1}", new string(' ', level * 2), ex.Message);
 
 				var aggregated = ex as AggregateException;
-				if (aggregated != null && aggregated.InnerExceptions != null) {
+				if (aggregated?.InnerExceptions != null) {
 					if (level > maxLevel)
 						break;
 

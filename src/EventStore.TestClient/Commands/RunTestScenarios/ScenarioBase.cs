@@ -561,7 +561,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 			readTask.ContinueWith(t => {
 				try {
 					var slice = t.Result;
-					if (slice == null || slice.Events == null || slice.Events.Length != count) {
+					if (slice?.Events == null || slice.Events.Length != count) {
 						throw new Exception(string.Format(
 							"Tried to read {0} events from event number {1} from stream '{2}' but failed. Reason: {3}.",
 							count,

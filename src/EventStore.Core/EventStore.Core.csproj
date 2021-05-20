@@ -63,5 +63,8 @@
 	  <Protobuf Include="..\Protos\Grpc\users.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
 	    <Link>Services\Transport\Grpc\Protos\users.proto</Link>
 	  </Protobuf>
+		<Protobuf Include="..\Protos\Grpc\monitoring.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+			<Link>Services\Transport\Grpc\Protos\monitoring.proto</Link>	
+		</Protobuf>
 	</ItemGroup>
 </Project>

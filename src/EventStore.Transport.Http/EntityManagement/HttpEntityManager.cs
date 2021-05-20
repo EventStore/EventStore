@@ -443,7 +443,7 @@ namespace EventStore.Transport.Http.EntityManagement {
 		}
 
 		private string GetRequestedContentEncoding(HttpEntity httpEntity) {
-			if (httpEntity == null || httpEntity.Request == null)
+			if (httpEntity?.Request == null)
 				return null;
 
 			var httpEntityRequest = httpEntity.Request;

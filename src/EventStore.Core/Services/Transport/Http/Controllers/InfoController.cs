@@ -95,7 +95,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		public OptionStructure[] GetOptionsInfo(ClusterVNodeOptions options) {
 			var optionsToSendToClient = new List<OptionStructure>();
-			foreach (PropertyInfo sectionInfo in typeof(ClusterVNodeOptions).GetProperties()) {
+			var optionGroups = typeof(ClusterVNodeOptions).GetProperties()
+				.Where(p => p.IsDefined(typeof(ClusterVNodeOptions.OptionGroupAttribute)));
+			foreach (PropertyInfo sectionInfo in optionGroups) {
 				var section = sectionInfo.GetValue(options, null);
 				foreach (PropertyInfo property in sectionInfo.PropertyType.GetProperties()) {
 					var argumentDescriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>();

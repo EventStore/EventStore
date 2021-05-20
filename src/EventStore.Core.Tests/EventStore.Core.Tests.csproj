@@ -8,6 +8,8 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
+		<PackageReference Include="Grpc.Core" Version="2.34.0" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.34.0" />
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.5" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
@@ -49,6 +51,7 @@
 		<Protobuf Include="..\Protos\Grpc\persistent.proto" Link="Protos\persistent.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\streams.proto" Link="Protos\streams.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\users.proto" Link="Protos\users.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\monitoring.proto" Link="Protos\monitoring.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<None Include="Resources\es-tile.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

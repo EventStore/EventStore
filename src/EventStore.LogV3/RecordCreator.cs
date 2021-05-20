@@ -16,6 +16,8 @@ namespace EventStore.LogV3 {
 		private static byte CurrentVersion(this ref Raw.StreamWriteHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.EventTypeHeader _) => LogRecordVersion.LogRecordV0;
 		private static byte CurrentVersion(this ref Raw.ContentTypeHeader _) => LogRecordVersion.LogRecordV0;
+		private static byte CurrentVersion(this ref Raw.TransactionStartHeader _) => LogRecordVersion.LogRecordV0;
+		private static byte CurrentVersion(this ref Raw.TransactionEndHeader _) => LogRecordVersion.LogRecordV0;
 
 		private static LogRecordType Type(this ref Raw.EpochHeader _) => LogRecordType.System;
 		private static LogRecordType Type(this ref Raw.PartitionHeader _) => LogRecordType.Partition;
@@ -24,7 +26,9 @@ namespace EventStore.LogV3 {
 		private static LogRecordType Type(this ref Raw.StreamWriteHeader _) => LogRecordType.StreamWrite;
 		private static LogRecordType Type(this ref Raw.EventTypeHeader _) => LogRecordType.EventType;
 		private static LogRecordType Type(this ref Raw.ContentTypeHeader _) => LogRecordType.ContentType;
-
+		private static LogRecordType Type(this ref Raw.TransactionStartHeader _) => LogRecordType.TransactionStart;
+		private static LogRecordType Type(this ref Raw.TransactionEndHeader _) => LogRecordType.TransactionEnd;
+		
 		const int MaxStringBytes = 100;
 		public static void PopulateString(string str, Span<byte> target) {
 			Utf8.FromUtf16(str, target, out _, out var bytesWritten, true, true);
@@ -67,7 +71,8 @@ namespace EventStore.LogV3 {
 			Guid partitionId,
 			Guid partitionTypeId,
 			Guid parentPartitionId,
-			byte flags,
+			Raw.PartitionFlags flags,
+			ushort referenceNumber,
 			string name) {
 
 			var payloadLength = _utf8NoBom.GetByteCount(name);
@@ -84,11 +89,12 @@ namespace EventStore.LogV3 {
 			subHeader.PartitionTypeId = partitionTypeId;
 			subHeader.ParentPartitionId = parentPartitionId;
 			subHeader.Flags = flags;
+			subHeader.ReferenceNumber = referenceNumber;
 			PopulateString(name, record.Payload.Span);
 
 			return StringPayloadRecord.Create(record);
 		}
-
+		
 		public static StringPayloadRecord<Raw.PartitionTypeHeader> CreatePartitionTypeRecord(
 			DateTime timeStamp,
 			long logPosition,
@@ -136,11 +142,12 @@ namespace EventStore.LogV3 {
 
 			return StringPayloadRecord.Create(record);
 		}
-
+		
 		public static StringPayloadRecord<Raw.EventTypeHeader> CreateEventTypeRecord(
 			DateTime timeStamp,
 			long logPosition,
 			Guid eventTypeId,
+			Guid parentEventTypeId,
 			Guid partitionId,
 			uint referenceNumber,
 			ushort version,
@@ -157,6 +164,7 @@ namespace EventStore.LogV3 {
 			header.RecordId = eventTypeId;
 			header.LogPosition = logPosition;
 
+			subHeader.ParentEventTypeId = parentEventTypeId;
 			subHeader.PartitionId = partitionId;
 			subHeader.ReferenceNumber = referenceNumber;
 			subHeader.Version = version;
@@ -164,7 +172,7 @@ namespace EventStore.LogV3 {
 
 			return StringPayloadRecord.Create(record);
 		}
-
+		
 		public static StringPayloadRecord<Raw.ContentTypeHeader> CreateContentTypeRecord(
 			DateTime timeStamp,
 			long logPosition,
@@ -209,6 +217,8 @@ namespace EventStore.LogV3 {
 				CorrelationId = correlationId,
 				TransactionPosition = transactionPosition,
 				TransactionOffset = transactionOffset,
+				StartingEventNumberRoot = 0,
+				StartingEventNumberCategory = 0,
 			};
 
 			var eventSystemMetadata = new EventSystemMetadata {
@@ -235,7 +245,7 @@ namespace EventStore.LogV3 {
 			header.TimeStamp = timeStamp;
 			header.LogPosition = logPosition;
 
-			// todo recordId.ParentTopicNumber = 0;
+			recordId.ParentTopicNumber = 0;
 			recordId.TopicNumber = 0;
 			recordId.CategoryNumber = 0;
 			recordId.StreamNumber = (uint)streamNumber; // todo: remove cast
@@ -305,6 +315,52 @@ namespace EventStore.LogV3 {
 				data.CopyTo(slicer.Slice(header.DataSize).Span);
 				metadata.CopyTo(slicer.Remaining.Span);
 			}
+		}
+
+		public static RecordView<Raw.TransactionStartHeader> CreateTransactionStartRecord(
+			DateTime timeStamp,
+			long logPosition,
+			Guid transactionId,
+			Raw.TransactionStatus status,
+			Raw.TransactionType type,
+			uint recordCount) {
+
+			var record = MutableRecordView<Raw.TransactionStartHeader>.Create(payloadLength: 0);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+			
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.RecordId = transactionId;
+			header.LogPosition = logPosition;
+
+			subHeader.Status = status;
+			subHeader.Type = type;
+			subHeader.RecordCount = recordCount;
+
+			return record;
+		}
+		
+		public static RecordView<Raw.TransactionEndHeader> CreateTransactionEndRecord(
+			DateTime timeStamp,
+			long logPosition,
+			Guid transactionId,
+			uint recordCount) {
+
+			var record = MutableRecordView<Raw.TransactionEndHeader>.Create(payloadLength: 0);
+			ref var header = ref record.Header;
+			ref var subHeader = ref record.SubHeader;
+
+			header.Type = subHeader.Type();
+			header.Version = subHeader.CurrentVersion();
+			header.TimeStamp = timeStamp;
+			header.RecordId = transactionId;
+			header.LogPosition = logPosition;
+			
+			subHeader.RecordCount = recordCount;
+
+			return record;
 		}
 	}
 }

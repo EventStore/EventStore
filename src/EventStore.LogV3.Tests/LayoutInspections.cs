@@ -22,9 +22,11 @@ namespace EventStore.LogV3.Tests {
 		[InlineData(typeof(Raw.StreamWriteHeader))]
 		[InlineData(typeof(Raw.EventTypeHeader))]
 		[InlineData(typeof(Raw.ContentTypeHeader))]
+		[InlineData(typeof(Raw.TransactionStartHeader))]
+		[InlineData(typeof(Raw.TransactionEndHeader))]
 		public void InspectLayout(Type t) {
 			var layout = TypeLayout.GetLayout(t);
-			_output.WriteLine($"{layout}");
+			_output.WriteLine(layout.ToString(recursively: false));
 		}
 	}
 }

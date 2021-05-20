@@ -32,7 +32,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var streamName = "es-to-scavenge";
 			logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId, out _, out _);
-			_p1 = LogRecord.SingleWrite(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
+			var expectedVersion = ExpectedVersion.NoStream;
+
+			_p1 = LogRecord.SingleWrite(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
 				new byte[2048], new byte[] { 5, 7 });
 			_res1 = chunk.TryAppend(_p1);
 
@@ -40,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_cres1 = chunk.TryAppend(_c1);
 
 			_p2 = LogRecord.SingleWrite(logFormat.RecordFactory, _cres1.NewPosition,
-				Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
+				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
 				new byte[2048], new byte[] { 5, 7 });
 			_res2 = chunk.TryAppend(_p2);
 
@@ -48,7 +50,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_cres2 = chunk.TryAppend(_c2);
 
 			_p3 = LogRecord.SingleWrite(logFormat.RecordFactory, _cres2.NewPosition,
-				Guid.NewGuid(), Guid.NewGuid(), streamId, ExpectedVersion.Any, "et1",
+				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
 				new byte[2048], new byte[] { 5, 7 });
 			_res3 = chunk.TryAppend(_p3);
 

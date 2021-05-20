@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			bootstrap?.Invoke(_service);
 			_server = new TestServer(
 				new WebHostBuilder()
-					.UseStartup(new ClusterVNodeStartup<string>(Array.Empty<ISubsystem>(), queue, _bus, _multiQueuedHandler,
+					.UseStartup(new ClusterVNodeStartup<string>(Array.Empty<ISubsystem>(), queue, queue, _bus, _multiQueuedHandler,
 						new TestAuthenticationProvider(),
 						new IHttpAuthenticationProvider[] {
 							new BasicHttpAuthenticationProvider(new TestAuthenticationProvider()),
