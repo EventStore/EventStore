@@ -36,6 +36,7 @@ namespace EventStore.Core.Services.Storage {
 
 		private readonly IPublisher _leaderBus;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
+		private IReadOnlyCheckpoint _replicationCheckpoint;
 		private readonly ITransactionFileChaser _chaser;
 		private readonly IIndexCommitterService<TStreamId> _indexCommitterService;
 		private readonly IEpochManager _epochManager;
@@ -62,18 +63,21 @@ namespace EventStore.Core.Services.Storage {
 
 		public StorageChaser(IPublisher leaderBus,
 			IReadOnlyCheckpoint writerCheckpoint,
+			IReadOnlyCheckpoint replicationCheckpoint,
 			ITransactionFileChaser chaser,
 			IIndexCommitterService<TStreamId> indexCommitterService,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(leaderBus, "leaderBus");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
+			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 			Ensure.NotNull(chaser, "chaser");
 			Ensure.NotNull(indexCommitterService, "indexCommitterService");
 			Ensure.NotNull(epochManager, "epochManager");
 
 			_leaderBus = leaderBus;
 			_writerCheckpoint = writerCheckpoint;
+			_replicationCheckpoint = replicationCheckpoint;
 			_chaser = chaser;
 			_indexCommitterService = indexCommitterService;
 			_epochManager = epochManager;
@@ -103,11 +107,13 @@ namespace EventStore.Core.Services.Storage {
 
 				_chaser.Open();
 
-				// We rebuild index till the chaser position, because
-				// everything else will be done by chaser as during replication
-				// with no concurrency issues with writer, as writer before jumping
-				// into leader mode and accepting writes will wait till chaser caught up.
-				_indexCommitterService.Init(_chaser.Checkpoint.Read());
+				var replicationCheckpoint = _replicationCheckpoint.Read();
+				var chaserCheckpoint = _chaser.Checkpoint.Read();
+
+				// We rebuild index till min(replication position, chaser position) since in some cases it's possible
+				// for the replication checkpoint to be slightly ahead of the chaser checkpoint.
+				// if we don't have a replication checkpoint yet (e.g during an upgrade), use the chaser checkpoint
+				_indexCommitterService.Init(Math.Min(replicationCheckpoint == -1 ? long.MaxValue : replicationCheckpoint, chaserCheckpoint));
 				_leaderBus.Publish(new SystemMessage.ServiceInitialized("StorageChaser"));
 
 				while (!_stop) {

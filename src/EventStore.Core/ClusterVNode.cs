@@ -680,6 +680,7 @@ namespace EventStore.Core {
 			var storageChaser = new StorageChaser<TStreamId>(
 				_mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
+				Db.Config.ReplicationCheckpoint.AsReadOnly(),
 				chaser,
 				indexCommitterService,
 				epochManager,

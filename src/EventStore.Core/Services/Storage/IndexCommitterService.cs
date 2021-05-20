@@ -87,8 +87,8 @@ namespace EventStore.Core.Services.Storage {
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		}
 
-		public void Init(long chaserCheckpoint) {
-			_indexCommitter.Init(chaserCheckpoint);
+		public void Init(long checkpoint) {
+			_indexCommitter.Init(checkpoint);
 			_publisher.Publish(new ReplicationTrackingMessage.IndexedTo(_indexCommitter.LastIndexedPosition));
 			_thread = new Thread(HandleReplicatedQueue);
 			_thread.IsBackground = true;
