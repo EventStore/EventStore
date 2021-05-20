@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Configuration;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Http;
@@ -11,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Core;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
@@ -57,6 +57,8 @@ namespace EventStore.ClusterNode {
 				.ConfigureAppConfiguration(builder =>
 					builder.AddEnvironmentVariables().AddCommandLine(args ?? Array.Empty<string>()))
 				.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
+				.ConfigureServices(services => services.Configure<KestrelServerOptions>(
+					EventStoreKestrelConfiguration.GetConfiguration()))
 				.ConfigureLogging(logging => logging.AddSerilog())
 				.ConfigureWebHostDefaults(builder => builder
 					.UseKestrel(server => {
