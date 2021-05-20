@@ -1,0 +1,12 @@
+{
+	"Kestrel": {
+		"Limits": {
+			"MaxConcurrentConnections": 5000,
+			"MaxConcurrentUpgradedConnections": 5000,
+			"Http2": {
+				"InitialConnectionWindowSize": 134217728,
+				"InitialStreamWindowSize": 100663296
+			}
+		}
+	}
+}
