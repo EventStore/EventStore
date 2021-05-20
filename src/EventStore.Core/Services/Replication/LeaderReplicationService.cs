@@ -151,7 +151,7 @@ namespace EventStore.Core.Services.Replication {
 						subscription.SubscriptionId, existingSubscr, subscription));
 					subscription.Dispose();
 				} else {
-					var replicationCheckpoint = _db.Config.ReplicationCheckpoint.Read();
+					var replicationCheckpoint = _db.Config.ReplicationCheckpoint.ReadNonFlushed();
 					subscription.SendMessage(new ReplicationTrackingMessage.ReplicatedTo(replicationCheckpoint));
 				}
 			}

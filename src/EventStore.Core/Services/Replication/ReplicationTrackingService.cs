@@ -30,6 +30,9 @@ namespace EventStore.Core.Services.Replication {
 		private bool _stop;
 		private VNodeState _state;
 		private long _publishedPosition;
+		private DateTime _lastReplicationCheckpointFlush = DateTime.MinValue;
+		private readonly TimeSpan _replicationCheckpointFlushInterval = TimeSpan.FromMilliseconds(2);
+
 		private readonly ConcurrentDictionary<Guid, long> _replicaLogPositions = new ConcurrentDictionary<Guid, long>();
 
 		private readonly ManualResetEventSlim _replicationChange = new ManualResetEventSlim(false, 1);
@@ -65,7 +68,17 @@ namespace EventStore.Core.Services.Replication {
 
 		public bool IsCurrent() {
 			Debug.Assert(_state == VNodeState.Leader);
-			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
+			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.ReadNonFlushed();
+		}
+
+		private void UpdateReplicationCheckpoint(long value) {
+			_replicationCheckpoint.Write(value);
+			var now = DateTime.UtcNow;
+			if (now - _lastReplicationCheckpointFlush >= _replicationCheckpointFlushInterval) {
+				_replicationCheckpoint.Flush();
+				_lastReplicationCheckpointFlush = now;
+			}
+			_replicationChange.Set();
 		}
 
 		private void TrackReplication() {
@@ -75,7 +88,7 @@ namespace EventStore.Core.Services.Replication {
 					_replicationChange.Reset();
 					if (_state == VNodeState.Leader) {
 						//Publish Log Commit Position
-						var newPos = _replicationCheckpoint.Read();
+						var newPos = _replicationCheckpoint.ReadNonFlushed();
 						if (newPos > Interlocked.Read(ref _publishedPosition)) {
 							_publisher.Publish(new ReplicationTrackingMessage.ReplicatedTo(newPos));
 							Interlocked.Exchange(ref _publishedPosition, newPos);
@@ -97,25 +110,21 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationTrackingMessage.LeaderReplicatedTo message) {
-			if (_state != VNodeState.Leader && message.LogPosition > _replicationCheckpoint.Read()) {
-				_replicationCheckpoint.Write(message.LogPosition);
-				_replicationCheckpoint.Flush();
+			if (_state != VNodeState.Leader && message.LogPosition > _replicationCheckpoint.ReadNonFlushed()) {
+				UpdateReplicationCheckpoint(message.LogPosition);
 				_publisher.Publish(new ReplicationTrackingMessage.ReplicatedTo(message.LogPosition));
 			}
 		}
 
 
 		private void UpdateReplicationPosition() {
-
-			var replicationCp = _replicationCheckpoint.Read();
+			var replicationCp = _replicationCheckpoint.ReadNonFlushed();
 			var writerCp = _writerCheckpoint.Read();
 			if (writerCp <= replicationCp) { return; }
 
 			var minReplicas = _quorumSize - 1; //total - leader = min replicas
 			if (minReplicas == 0) {
-				_replicationCheckpoint.Write(writerCp);
-				_replicationCheckpoint.Flush();
-				_replicationChange.Set();
+				UpdateReplicationCheckpoint(writerCp);
 				return;
 			}
 			long[] positions;
@@ -130,9 +139,7 @@ namespace EventStore.Core.Services.Replication {
 			if (furthestReplicatedPosition <= replicationCp) { return; }
 
 			var newReplicationPoint = Math.Min(writerCp, furthestReplicatedPosition);
-			_replicationCheckpoint.Write(newReplicationPoint);
-			_replicationCheckpoint.Flush();
-			_replicationChange.Set();
+			UpdateReplicationCheckpoint(newReplicationPoint);
 		}
 
 
