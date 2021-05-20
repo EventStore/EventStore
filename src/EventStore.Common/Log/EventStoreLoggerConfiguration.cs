@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using Microsoft.Extensions.Configuration;
@@ -47,10 +48,7 @@ namespace EventStore.Common.Log {
 				throw new InvalidOperationException($"{nameof(Initialize)} may not be called more than once.");
 			}
 
-			var potentialLogConfigurationDirectories = new[] {
-				Locations.ApplicationDirectory,
-				Locations.DefaultConfigurationDirectory
-			}.Distinct();
+			var potentialLogConfigurationDirectories = Locations.GetPotentialConfigurationDirectories();
 			var logConfigurationDirectory =
 				potentialLogConfigurationDirectories.FirstOrDefault(directory =>
 					File.Exists(Path.Combine(directory, logConfig)));

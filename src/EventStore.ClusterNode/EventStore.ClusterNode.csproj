@@ -24,6 +24,9 @@
 						<Link>logconfig.json</Link>
 						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 				</None>
+				<None Update="kestrelsettings.json">
+				  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+				</None>
 		</ItemGroup>
 		<ItemGroup>
 				<Content Include="app2.ico" />
