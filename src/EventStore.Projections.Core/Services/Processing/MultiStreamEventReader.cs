@@ -22,7 +22,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private CheckpointTag _fromPositions;
 		private readonly bool _resolveLinkTos;
 		private readonly ITimeProvider _timeProvider;
-
 		private readonly HashSet<string> _eventsRequested = new HashSet<string>();
 		private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
 
