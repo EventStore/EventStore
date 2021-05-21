@@ -37,7 +37,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_set_command_line_args_to_default_values() {
 			Assert.AreEqual(Opts.EnableTrustedAuthDefault, _settings.EnableTrustedAuth, "EnableTrustedAuth");
 			Assert.AreEqual(Opts.LogHttpRequestsDefault, _settings.LogHttpRequests, "LogHttpRequests");
-			Assert.AreEqual(Opts.WorkerThreadsDefault, _settings.WorkerThreads, "WorkerThreads");
 			Assert.AreEqual(Opts.DiscoverViaDnsDefault, _settings.DiscoverViaDns, "DiscoverViaDns");
 			Assert.AreEqual(Opts.StatsPeriodDefault, _settings.StatsPeriod.Seconds, "StatsPeriod");
 			Assert.AreEqual(Opts.HistogramEnabledDefault, _settings.EnableHistograms, "EnableHistograms");
@@ -115,7 +114,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		public void should_set_command_line_args_to_default_values() {
 			Assert.AreEqual(Opts.EnableTrustedAuthDefault, _settings.EnableTrustedAuth, "EnableTrustedAuth");
 			Assert.AreEqual(Opts.LogHttpRequestsDefault, _settings.LogHttpRequests, "LogHttpRequests");
-			Assert.AreEqual(Opts.WorkerThreadsDefault, _settings.WorkerThreads, "WorkerThreads");
 			Assert.AreEqual(Opts.DiscoverViaDnsDefault, _settings.DiscoverViaDns, "DiscoverViaDns");
 			Assert.AreEqual(Opts.StatsPeriodDefault, _settings.StatsPeriod.Seconds, "StatsPeriod");
 			Assert.AreEqual(Opts.HistogramEnabledDefault, _settings.EnableHistograms, "EnableHistograms");

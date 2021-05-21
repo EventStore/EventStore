@@ -155,12 +155,7 @@ namespace EventStore.Core {
 						.AddGrpc()
 						.AddServiceOptions<Streams>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
-						.Services.Configure<KestrelServerOptions>(options => {
-							options.Limits.MaxConcurrentConnections = 5000;
-							options.Limits.MaxConcurrentUpgradedConnections = 5000;
-							options.Limits.Http2.InitialConnectionWindowSize = 131072 * 1024;
-							options.Limits.Http2.InitialStreamWindowSize = 98304 * 1024;
-						}),
+						.Services,
 					(s, subsystem) => subsystem.ConfigureServices(s));
 
 		public void Handle(SystemMessage.SystemReady _) => _ready = true;
