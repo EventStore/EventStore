@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Simple stream writes for LogV3 [EventStore#2930](https://github.com/EventStore/EventStore/pull/2930)
 - TransactionStart and TransactionEnd structs for LogV3. [EventStore#2953](https://github.com/EventStore/EventStore/pull/2953)
 - Implement Monitoring gRPC API. [EventStore#2932](https://github.com/EventStore/EventStore/pull/2932)
+- Add the ability to configure kestrel with kestrelsettings.json [EventStore#2949](https://github.com/EventStore/EventStore/pull/2949)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
@@ -29,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Start projections when requested [EventStore#2929](https://github.com/EventStore/EventStore/pull/2929)
 - Handle missing case for UpdatePersistentSubscriptionTo{Stream,All}Result.DoesNotExist [EventStore#2941](https://github.com/EventStore/EventStore/pull/2941)
 - In gRPC projection management, disable a projection when writing a checkpoint, and abort it if not writing a checkpoint. [EventStore#2944](https://github.com/EventStore/EventStore/pull/2944)
+- Parameter count mismatch when loading the dashboard in the UI [EventStore#2964](https://github.com/EventStore/EventStore/pull/2964)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
@@ -62,6 +64,9 @@ All notable changes to this project will be documented in this file.
 
 ### hello!
 - wave: [EventStore#2939](https://github.com/EventStore/EventStore/pull/2939)
+
+### Reverted solution-wide formatting https
+- //github.com/EventStore/EventStore/pull/2947 [EventStore#2966](https://github.com/EventStore/EventStore/pull/2966)
 
 ## [21.2.0] Server - 2021-02-26
 
