@@ -66,7 +66,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									continue;
 								}
 
-								pendingWrites.AddOrUpdate(correlation, c => FromOptions(c, request.Options),
+								pendingWrites.AddOrUpdate(correlation,
+									c => FromOptions(c, request.Options, context.CancellationToken),
 									(_, writeRequest) => writeRequest);
 							}
 
@@ -112,7 +113,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw;
 				}
 
-				ClientWriteRequest FromOptions(Guid correlation, BatchAppendReq.Types.Options options) =>
+				ClientWriteRequest FromOptions(Guid correlation, BatchAppendReq.Types.Options options,
+					CancellationToken cancellationToken) =>
 					new(correlation, options.StreamIdentifier, options.ExpectedStreamPositionCase switch {
 						BatchAppendReq.Types.Options.ExpectedStreamPositionOneofCase.StreamPosition => new
 							StreamRevision(options.StreamPosition).ToInt64(),
@@ -127,8 +129,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						pendingWrites.TryRemove(correlation, out _)
 							? channel.Writer.WriteAsync((new ClientMessage.WriteEventsCompleted(correlation,
 									OperationResult.CommitTimeout, default),
-								correlation, options.StreamIdentifier, 0))
-							: new ValueTask(Task.CompletedTask));
+								correlation, options.StreamIdentifier, 0), cancellationToken)
+							: new ValueTask(Task.CompletedTask), cancellationToken);
 
 				static Event FromProposedMessage(BatchAppendReq.Types.ProposedMessage proposedMessage) =>
 					new(Uuid.FromDto(proposedMessage.Id).ToGuid(),
@@ -223,7 +225,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public int Size => _size;
 
 			public ClientWriteRequest(Guid correlationId, string streamId, long expectedVersion, TimeSpan timeout,
-				Func<ValueTask> onTimeout) {
+				Func<ValueTask> onTimeout, CancellationToken cancellationToken) {
 				CorrelationId = correlationId;
 				StreamId = streamId;
 				_events = new List<Event>();
@@ -233,7 +235,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (Max(timeout, TimeSpan.Zero) == TimeSpan.Zero) {
 					onTimeout();
 				} else {
-					Task.Delay(timeout).ContinueWith(_ => onTimeout());
+					Task.Delay(timeout, cancellationToken).ContinueWith(_ => onTimeout(), cancellationToken);
 				}
 
 				static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
