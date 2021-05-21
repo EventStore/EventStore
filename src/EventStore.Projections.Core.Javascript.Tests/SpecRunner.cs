@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Javascript.Tests {
@@ -83,7 +84,8 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 						}
 						if (stateCount > 2)
 							throw new InvalidOperationException("Cannot specify more than 2 states");
-						sequence.Events.Add(new InputEvent(et!, e.GetProperty("data").GetRawText(), initializedPartitions, expectedStates, skip));
+						
+						sequence.Events.Add(new InputEvent(et!, e.GetProperty("data").GetRawText(), initializedPartitions, expectedStates, skip, e.TryGetProperty("eventId", out var idElement) && idElement.TryGetGuid(out var id) ? id: Guid.NewGuid()));
 					}
 				}
 
@@ -232,11 +234,11 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 						save emitted events to verify later
 						*/
 						var @event = sequence.Events[j];
-
+						var body = JObject.Parse(@event.Body).ToString(Formatting.Indented);
 						var er = new EventRecord(
-							revision[sequence.Stream], logPosition, Guid.NewGuid(), Guid.NewGuid(), i, j,
+							revision[sequence.Stream], logPosition, Guid.NewGuid(), @event.EventId, i, j,
 							sequence.Stream, i, DateTime.Now, flags, @event.EventType,
-							Utf8NoBom.GetBytes(@event.Body), Array.Empty<byte>());
+							Utf8NoBom.GetBytes(body), Array.Empty<byte>());
 						var e = new ResolvedEvent(EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(er, logPosition), Array.Empty<byte>());
 						if (@event.Skip) {
 							yield return For($"{projection} skips {er.EventNumber}@{sequence.Stream}",
@@ -322,6 +324,7 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 												if (string.IsNullOrEmpty(expectedState.Value)) {
 													Assert.Null(partitionedState[expectedState.Key]);
 												} else {
+													Assert.True(partitionedState.ContainsKey(expectedState.Key), $"partition does not contain key {expectedState.Key}");
 													Assert.NotNull(partitionedState[expectedState.Key]);
 													Assert.NotEmpty(partitionedState[expectedState.Key]);
 													var expected = Sort(expectedState.Value, "expected");
@@ -427,13 +430,15 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 			public IReadOnlyList<string> InitializedPartitions { get; }
 			public IReadOnlyDictionary<string, string> ExpectedStates { get; }
 			public bool Skip { get; }
+			public Guid EventId { get; }
 
-			public InputEvent(string eventType, string body, IReadOnlyList<string> initializedPartitions, IReadOnlyDictionary<string, string> expectedStates, bool skip) {
+			public InputEvent(string eventType, string body, IReadOnlyList<string> initializedPartitions, IReadOnlyDictionary<string, string> expectedStates, bool skip, Guid eventId) {
 				EventType = eventType;
 				Body = body;
 				InitializedPartitions = initializedPartitions;
 				ExpectedStates = expectedStates;
 				Skip = skip;
+				EventId = eventId;
 			}
 		}
 

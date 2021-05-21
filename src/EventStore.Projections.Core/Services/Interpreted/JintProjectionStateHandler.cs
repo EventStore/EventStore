@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 		private JsValue _state;
 		private JsValue _sharedState;
-		
+
 		public JintProjectionStateHandler(string source, bool enableContentTypeValidation, TimeSpan compilationTimeout, TimeSpan executionTimeout) {
 
 			_enableContentTypeValidation = enableContentTypeValidation;
@@ -97,13 +97,13 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		public void LoadShared(string? state) {
 			_engine.ResetConstraints();
 			if (state != null) {
-				var jsValue = _json.Parse(_interpreterRuntime, new JsValue[] {new JsString(state)});
+				var jsValue = _json.Parse(_interpreterRuntime, new JsValue[] { new JsString(state) });
 				LoadCurrentSharedState(jsValue);
 			} else {
 				LoadCurrentSharedState(JsValue.Null);
 			}
 
-			
+
 		}
 
 		private void LoadCurrentSharedState(JsValue jsValue) {
@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				PrepareOutput(out newState, out newSharedState, out emittedEvents);
 				return true;
 			}
-			
+
 			var envelope = _interpreterRuntime.CreateEnvelope(partition, @event, category);
 			_state = _interpreterRuntime.Handle(_state, envelope);
 			PrepareOutput(out newState, out newSharedState, out emittedEvents);
@@ -209,17 +209,16 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					newSharedState = null;
 				}
 
-			}else if (_state.IsString()) {
+			} else if (_state.IsString()) {
 				newState = _state.AsString();
 				newSharedState = null;
-			}
-			else {
+			} else {
 				newState = ConvertToStringHandlingNulls(_json, _state);
 				newSharedState = null;
 			}
-			
 
-			
+
+
 		}
 
 		private static string? ConvertToStringHandlingNulls(JsonInstance json, JsValue value) {
@@ -227,7 +226,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				return null;
 			return json.Stringify(JsValue.Undefined, new[] { value }).AsString();
 		}
-		
+
 		JsValue Emit(JsValue thisValue, JsValue[] parameters) {
 			if (parameters.Length < 3)
 				throw new ArgumentException("invalid number of parameters");
@@ -239,7 +238,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			if (parameters.Length == 4 && !parameters.At(3).IsObject())
 #pragma warning disable CA2208 // ReSharper disable once NotResolvedInText 
 				throw new ArgumentException("object expected", "metadata");
-#pragma warning restore CA2208 
+#pragma warning restore CA2208
 
 			var data = _json.Stringify(JsValue.Undefined, new JsValue[] { eventBody }).AsString();
 			ExtraMetaData? metadata = null;
@@ -294,9 +293,9 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				throw new ArgumentException("wrong number of parameters");
 			var stream = EnsureNonNullStringValue(parameters.At(0), "streamId");
 			var @event = EnsureNonNullObjectValue(parameters.At(1), "event");
-			
+
 			if (!@event.TryGetValue("sequenceNumber", out var numberValue) | !@event.TryGetValue("streamId", out var sourceValue) || !numberValue.IsNumber()
-			     || !sourceValue.IsString()) {
+				 || !sourceValue.IsString()) {
 				throw new Exception($"Invalid link to event {numberValue}@{sourceValue}");
 			}
 
@@ -348,7 +347,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private readonly TimeSpan _executionTimeout;
 			private TimeSpan _start;
 			private TimeSpan _timeout;
-			
+
 			public TimeConstraint(TimeSpan compilationTimeout, TimeSpan executionTimeout) {
 				_compilationTimeout = compilationTimeout;
 				_executionTimeout = executionTimeout;
@@ -491,16 +490,17 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					return Undefined;
 				}
 
-				
+
 				if (parameters.Length > 1) {
 					var sb = new StringBuilder();
 					for (int i = 0; i < parameters.Length; i++) {
-						if (i > 1) sb.Append(" ,");
+						if (i > 1)
+							sb.Append(" ,");
 						var p = parameters.At(i);
 						if (p != null && p.IsPrimitive())
 							Log(p.ToString());
 						if (p is ObjectInstance oi)
-							sb.Append(_json.Stringify(Undefined, new JsValue[] {oi}).AsString());
+							sb.Append(_json.Stringify(Undefined, new JsValue[] { oi }).AsString());
 					}
 
 					Log(sb.ToString());
@@ -650,7 +650,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				AddHandler("$any", fi);
 				return Undefined;
 			}
-			
+
 			private void AddHandler(string name, ScriptFunctionInstance handler) {
 				switch (name) {
 					case "$init":
@@ -720,19 +720,17 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 			public JsValue TransformStateToResult(JsValue state) {
 				foreach (var (type, transform) in _transforms) {
-					switch (type)
-					{
+					switch (type) {
 						case TransformType.Transform:
 							state = transform.Invoke(state);
 							break;
-						case TransformType.Filter:
-						{
-							var result = transform.Invoke(state);
-							if (!(result.IsBoolean() && result.AsBoolean()) || result == Null || result == Undefined) {
-								return Null;
+						case TransformType.Filter: {
+								var result = transform.Invoke(state);
+								if (!(result.IsBoolean() && result.AsBoolean()) || result == Null || result == Undefined) {
+									return Null;
+								}
+								break;
 							}
-							break;
-						}
 						case TransformType.None:
 							throw new InvalidOperationException("Unknown transform type");
 					}
@@ -826,98 +824,133 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				private readonly JsonInstance _json;
 
 				public string StreamId {
-					set => FastSetProperty("streamId", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("streamId", new PropertyDescriptor(value, false, true, false));
 				}
 				public long SequenceNumber {
-					set => FastSetProperty("sequenceNumber", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("sequenceNumber", new PropertyDescriptor(value, false, true, false));
 				}
 
 				public string EventType {
 					get => Get("eventType").AsString();
-					set => FastSetProperty("eventType", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("eventType", new PropertyDescriptor(value, false, true, false));
 				}
 
 				public JsValue Body {
 					get {
 						if (TryGetValue("body", out var value) && value is ObjectInstance oi)
 							return oi;
-						if (IsJson && TryGetValue("bodyRaw", out var raw)) {
-							var args = new JsValue[1];
-							args[0] = raw;
-							var body = _json.Parse(JsValue.Undefined, args);
-							FastSetProperty("body", PropertyDescriptor.ToPropertyDescriptor(Engine, body));
-							return (ObjectInstance)body;
-						}
+						if (EnsureBody(out JsValue objectInstance))
+							return objectInstance;
 
 						return Undefined;
 					}
 				}
 
+				private bool EnsureBody(out JsValue objectInstance) {
+					if (IsJson && TryGetValue("bodyRaw", out var raw)) {
+						var args = new JsValue[1];
+						args[0] = raw;
+						var body = _json.Parse(JsValue.Undefined, args);
+						var pd = new PropertyDescriptor(body, false, true, false);
+						SetOwnProperty("body", pd);
+						SetOwnProperty("data", pd);
+						objectInstance = (ObjectInstance)body;
+						return true;
+					}
+
+					objectInstance = Undefined;
+					return false;
+				}
+
 				public bool IsJson {
 					get => Get("isJson").AsBoolean();
-					set => FastSetProperty("isJson", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("isJson", new PropertyDescriptor(value, false, true, false));
 				}
 
 				public string BodyRaw {
 					get => Get("bodyRaw").AsString();
-					set => FastSetProperty("bodyRaw", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("bodyRaw", new PropertyDescriptor(value, false, true, false));
 				}
 
 				private JsValue Metadata {
 					get {
 						if (TryGetValue("metadata", out var value) && value is ObjectInstance oi)
 							return oi;
-						if (TryGetValue("metadataRaw", out var raw)) {
-							var args = new JsValue[1];
-							args[0] = raw;
-							var metadata = _json.Parse(JsValue.Undefined, args);
-							FastSetProperty("metadata", PropertyDescriptor.ToPropertyDescriptor(Engine, metadata));
-							return (ObjectInstance)metadata;
-						}
+						if (EnsureMetadata(out value)) return value;
 
 						return Undefined;
 					}
 				}
 
+				private bool EnsureMetadata(out JsValue value)
+				{
+					if (TryGetValue("metadataRaw", out var raw))
+					{
+						var args = new JsValue[1];
+						args[0] = raw;
+						var metadata = _json.Parse(JsValue.Undefined, args);
+						SetOwnProperty("metadata", new PropertyDescriptor(metadata, false, true, false));
+						{
+							value = metadata;
+							return true;
+						}
+					}
+
+					value = Undefined;
+					return false;
+				}
+
 				public string MetadataRaw {
-					set => FastSetProperty("metadataRaw", new PropertyDescriptor(value, false, false, false));
+					set => FastSetProperty("metadataRaw", new PropertyDescriptor(value, false, true, false));
 				}
 
 				private JsValue LinkMetadata {
 					get {
 						if (TryGetValue("linkMetadata", out var value) && value is ObjectInstance oi)
 							return oi;
-						if (TryGetValue("linkMetadataRaw", out var raw)) {
-							var args = new JsValue[1];
-							args[0] = raw;
-							var metadata = _json.Parse(JsValue.Undefined, args);
-							FastSetProperty("linkMetadata", PropertyDescriptor.ToPropertyDescriptor(Engine, metadata));
-							return (ObjectInstance)metadata;
-						}
+						if (EnsureLinkMetadata(out value)) return value;
 
 						return Undefined;
 					}
 				}
 
+				private bool EnsureLinkMetadata(out JsValue value)
+				{
+					if (TryGetValue("linkMetadataRaw", out var raw))
+					{
+						var args = new JsValue[1];
+						args[0] = raw;
+						var metadata = _json.Parse(JsValue.Undefined, args);
+						SetOwnProperty("linkMetadata", new PropertyDescriptor(metadata, false, true, false));
+						{
+							value = metadata;
+							return true;
+						}
+					}
+
+					value = Undefined;
+					return false;
+				}
+
 				public string LinkMetadataRaw {
-					set => FastSetProperty("linkMetadataRaw", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("linkMetadataRaw", new PropertyDescriptor(value, false, true, false));
 				}
 
 				public string Partition {
-					set => FastSetProperty("partition", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("partition", new PropertyDescriptor(value, false, true, false));
 				}
 
 				public string Category {
-					set => FastSetProperty("category", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("category", new PropertyDescriptor(value, false, true, false));
 				}
 
 				public string EventId {
-					set => FastSetProperty("eventId", new PropertyDescriptor(value, false, false, false));
+					set => SetOwnProperty("eventId", new PropertyDescriptor(value, false, true, false));
 				}
 
 				public EventEnvelope(Engine engine, JsonInstance json) : base(engine) {
 					_json = json;
-					PreventExtensions();
+
 				}
 
 				public override JsValue Get(JsValue property, JsValue receiver) {
@@ -934,16 +967,36 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					}
 					return base.Get(property, receiver);
 				}
+
+				public override List<JsValue> GetOwnPropertyKeys(Types types = Types.None | Types.String | Types.Symbol) {
+					var list = base.GetOwnPropertyKeys(types);
+					return list;
+				}
+
+				public override IEnumerable<KeyValuePair<JsValue, PropertyDescriptor>> GetOwnProperties() {
+					if (!HasOwnProperty("body")) {
+						EnsureBody(out _);
+					}
+
+					if (!HasOwnProperty("metadata")) {
+						EnsureMetadata(out _);
+					}
+
+					if (!HasOwnProperty("linkMetadata")) {
+						EnsureLinkMetadata(out _);
+					}
+
+					var list = base.GetOwnProperties();
+
+					return list;
+				}
 			}
 
 			public void HandleDeleted(string partition, bool isSoftDelete) {
 				if (_deleted != null) {
-					_deleted.Call(this, new JsValue[]{partition, isSoftDelete} );
+					_deleted.Call(this, new JsValue[] { partition, isSoftDelete });
 				}
 			}
 		}
-
-
 	}
-
 }

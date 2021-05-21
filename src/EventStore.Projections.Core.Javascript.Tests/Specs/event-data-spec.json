@@ -6,30 +6,35 @@
 			"events": [
 				{
 					"eventType": "baz",
+					"eventId": "81f23435-6b5b-47c6-84fd-b9d1a64916d8",
 					"data": {
 						"something": "one"
 					},
-					"initializedPartitions": [""],
+					"initializedPartitions": [ "" ],
 					"states": [
 						{
 							"partition": "",
 							"state": {
 								"events": [
 									{
+										"partition": "",
+										"bodyRaw": "{\r\n  \"something\": \"one\"\r\n}",
+										"metadataRaw": null,
+										"streamId": "foo",
+										"eventId": "81f23435-6b5b-47c6-84fd-b9d1a64916d8",
+										"eventType": "baz",
+										"linkMetadataRaw": null,
 										"isJson": true,
-										"data": {
-											"something": "one"
-										},
+										"category": "",
+										"sequenceNumber": 0,
 										"body": {
 											"something": "one"
 										},
-										"bodyRaw": "{\r\n  \"something\": \"one\"\r\n}",
-										"eventType": "baz",
-										"streamId": "foo",
-										"sequenceNumber": "0",
-										"metadataRaw": "{}",
-										"partition": "",
-										"metadata_": null
+										"data": {
+											"something": "one"
+										},
+										"metadata": null,
+										"linkMetadata": null
 									}
 								]
 							}

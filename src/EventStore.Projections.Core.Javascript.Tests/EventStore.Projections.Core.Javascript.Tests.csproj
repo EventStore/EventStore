@@ -14,6 +14,8 @@
     <None Remove="Specs\account-closer.js" />
     <None Remove="Specs\by-category-spec.json" />
     <None Remove="Specs\by-category.js" />
+    <None Remove="Specs\event-data.js" />
+    <None Remove="Specs\event-data-spec.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,9 +23,7 @@
     <EmbeddedResource Include="Specs\account-closer.js" />
     <EmbeddedResource Include="Specs\by-category-spec.json" />
     <EmbeddedResource Include="Specs\by-category.js" />
-    <None Remove="Specs\event-data.js" />
     <EmbeddedResource Include="Specs\event-data.js" />
-    <None Remove="Specs\event-data-spec.json" />
     <EmbeddedResource Include="Specs\event-data-spec.json" />
   </ItemGroup>
 
