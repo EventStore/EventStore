@@ -129,6 +129,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 						CheckEof();
 					} else {
 						_eofs[message.EventStreamId] = false;
+						if (message.Events.Length == 0) {
+							_fromPositions.Streams[message.EventStreamId] = message.NextEventNumber;
+						}
 						for (int index = 0; index < message.Events.Length; index++) {
 							var @event = message.Events[index].Event;
 							var @link = message.Events[index].Link;
