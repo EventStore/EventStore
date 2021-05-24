@@ -54,7 +54,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_forward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(2, events.Length);
 			Assert.AreEqual(_event0, events[0]);
 			Assert.AreEqual(_event1, events[1]);
@@ -62,7 +64,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_backward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event)
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);
 			Assert.AreEqual(_event1, events[0]);

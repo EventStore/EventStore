@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_forward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
 
 			Assert.AreEqual(2, records.Count);
 			Assert.AreEqual(_id1, records[0].Event.EventId);
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
 
 			Assert.AreEqual(2, records.Count);
 			Assert.AreEqual(_id1, records[1].Event.EventId);

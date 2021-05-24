@@ -52,7 +52,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_events_forward_does_not_return_duplicate() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(11, events.Length);
 			Assert.AreEqual(_event1, events[0]);
 			Assert.AreEqual(_event2, events[1]);

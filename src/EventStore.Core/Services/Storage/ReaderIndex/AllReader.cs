@@ -92,7 +92,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					nextCommitPos = result.RecordPostPosition;
 
 					switch (result.LogRecord.RecordType) {
-						case LogRecordType.Prepare: {
+						case LogRecordType.Prepare:
+						case LogRecordType.Stream: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
@@ -217,7 +218,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					switch (result.LogRecord.RecordType) {
-						case LogRecordType.Prepare: {
+						case LogRecordType.Prepare:
+						case LogRecordType.Stream: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
@@ -309,7 +311,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private static bool IsCommitAlike(ILogRecord rec) {
 			return rec.RecordType == LogRecordType.Commit
-			       || (rec.RecordType == LogRecordType.Prepare &&
+			       || ((rec.RecordType == LogRecordType.Prepare || rec.RecordType == LogRecordType.Stream) &&
 			           ((IPrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
 		}
 	}

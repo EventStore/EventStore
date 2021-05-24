@@ -110,14 +110,17 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 		[Test]
 		public void read_all_forward_should_return_all_stream_records_except_uncommited() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(1, events.Length);
 			Assert.AreEqual(_deleteTombstone, events[0]);
 		}
 
 		[Test]
 		public void read_all_backward_should_return_all_stream_records_except_uncommited() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event)
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(1, events.Length);
 			Assert.AreEqual(_deleteTombstone, events[0]);

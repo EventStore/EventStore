@@ -1,4 +1,7 @@
-﻿using EventStore.Core.Data;
+﻿using System.Collections.Generic;
+using System.Linq;
+using EventStore.Core.Data;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests {
@@ -33,6 +36,10 @@ namespace EventStore.Core.Tests {
 		public static StreamMetadata GetStreamMetadata<TStreamId>(this IReadIndex<TStreamId> self, string streamName) {
 			var streamId = self.GetStreamId(streamName);
 			return self.GetStreamMetadata(streamId);
+		}
+
+		public static List<CommitEventRecord> EventRecords(this IndexReadAllResult result) {
+			return result.Records.Where(r => r.Event.EventStreamId != SystemStreams.StreamsCreatedStream).ToList();
 		}
 	}
 }

@@ -50,14 +50,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_forward_returns_no_events() {
-			var result = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10);
-			Assert.AreEqual(0, result.Records.Count);
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
+			Assert.AreEqual(0, records.Count);
 		}
 
 		[Test]
 		public void read_all_events_backward_returns_no_events() {
-			var result = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10);
-			Assert.AreEqual(0, result.Records.Count);
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
+			Assert.AreEqual(0, records.Count);
 		}
 	}
 }

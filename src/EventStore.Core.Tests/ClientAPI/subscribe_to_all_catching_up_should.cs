@@ -176,6 +176,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
+						if (y.Event.EventStreamId == SystemStreams.StreamsCreatedStream) {
+							return Task.CompletedTask;
+						}
 						events.Add(y);
 						appeared.Signal();
 						return Task.CompletedTask;
