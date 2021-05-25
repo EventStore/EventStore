@@ -309,6 +309,7 @@ namespace EventStore.Core.Services.Storage {
 
 					var result =
 						_readIndex.ReadStreamEventsForward(streamName, streamId, msg.FromEventNumber, msg.MaxCount);
+					
 					CheckEventsOrder(msg, result);
 					var resolvedPairs = ResolveLinkToEvents(result.Records, msg.ResolveLinkTos, msg.User);
 					if (resolvedPairs == null)

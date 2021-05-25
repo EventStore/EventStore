@@ -415,7 +415,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private List<JToken> _entries;
 
 			protected override async Task When() {
-				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10?embed=rich",
+				_feed = await GetJson<JObject>("/streams/" + LinkedStreamName + "/0/forward/10",extra: "embed=rich",
 					accept: ContentType.Json);
 				_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 			}

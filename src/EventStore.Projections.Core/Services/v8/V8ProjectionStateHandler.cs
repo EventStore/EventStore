@@ -10,6 +10,8 @@ using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.v8 {
+	using System.Threading;
+	using Client.PersistentSubscriptions;
 
 	public class V8ProjectionStateHandler : IProjectionStateHandler {
 		private readonly PreludeScript _prelude;
@@ -122,6 +124,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			CheckDisposed();
 			_query.InitializeShared();
 		}
+
 
 		public string GetStatePartition(
 			CheckpointTag eventPosition, string category, ResolvedEvent @event) {

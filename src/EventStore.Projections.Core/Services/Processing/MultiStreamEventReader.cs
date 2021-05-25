@@ -22,7 +22,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private CheckpointTag _fromPositions;
 		private readonly bool _resolveLinkTos;
 		private readonly ITimeProvider _timeProvider;
-
 		private readonly HashSet<string> _eventsRequested = new HashSet<string>();
 		private readonly Dictionary<string, long?> _preparePositions = new Dictionary<string, long?>();
 
@@ -121,7 +120,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					CheckEof();
 					break;
 				case ReadStreamResult.Success:
-					if (message.Events.Length == 0) {
+					if ((message.Events.Length == 0) && message.IsEndOfStream) {
 						// the end
 						_eofs[message.EventStreamId] = true;
 						UpdateSafePositionToJoin(message.EventStreamId, MessageToLastCommitPosition(message));
@@ -129,6 +128,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 						CheckEof();
 					} else {
 						_eofs[message.EventStreamId] = false;
+						if (message.Events.Length == 0) {
+							_fromPositions.Streams[message.EventStreamId] = message.NextEventNumber;
+						}
 						for (int index = 0; index < message.Events.Length; index++) {
 							var @event = message.Events[index].Event;
 							var @link = message.Events[index].Link;
