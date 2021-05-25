@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using KellermanSoftware.CompareNetObjects;
 using NUnit.Framework;
@@ -66,7 +67,12 @@ namespace EventStore.Core.Tests {
 		/// <param name="msg">A message to display if the condition is not satisfied.</param>
 		/// <param name="yieldThread">If true, the thread relinquishes the remainder of its time
 		/// slice to any thread of equal priority that is ready to run.</param>
-		public static void IsOrBecomesTrue(Func<bool> func, TimeSpan? timeout = null, string msg = null, bool yieldThread = false) {
+		public static void IsOrBecomesTrue(Func<bool> func, TimeSpan? timeout = null,
+			string msg = "AssertEx.IsOrBecomesTrue() timed out", bool yieldThread = false,
+			[CallerMemberName] string memberName = "",
+			[CallerFilePath] string sourceFilePath = "",
+			[CallerLineNumber] int sourceLineNumber = 0) {
+			
 			if (func()) {
 				return; 
 			}
@@ -90,7 +96,7 @@ namespace EventStore.Core.Tests {
 				spin = new SpinWait();
 			}
 
-			Assert.Fail(msg ?? "");
+			Assert.Fail($"{msg} in {memberName} {sourceFilePath}:{sourceLineNumber}");
 		}
 	}
 }
