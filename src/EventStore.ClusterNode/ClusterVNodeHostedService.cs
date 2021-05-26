@@ -68,11 +68,18 @@ namespace EventStore.ClusterNode {
 
 			var plugInContainer = FindPlugins();
 
-			//var logFormatFactory = new LogV3FormatAbstractorFactory();
-			var logFormatFactory = new LogV2FormatAbstractorFactory();
-			Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
-				GetPersistentSubscriptionConsumerStrategyFactories());
-
+			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
+				var logFormatFactory = new LogV2FormatAbstractorFactory();
+            	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
+	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories());	
+			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
+				var logFormatFactory = new LogV3FormatAbstractorFactory();
+				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
+					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories());
+			} else {
+				throw new ArgumentOutOfRangeException("Unexpected log format specified.");
+			}
+			
 			var runProjections = _options.Projections.RunProjections;
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
 				? new[] {NodeSubsystems.Projections}
