@@ -641,7 +641,7 @@ namespace EventStore.Core {
 
 			[Description(
 				"The runtime used for executing user projections. Legacy will run v8, Interpreted will run the new interpreted runtime"),
-			Deprecated("This option is for compatibility with the v8 projection engine and should only be set if problems are encountered running the interpreted runtime")]
+			Deprecated("The Legacy ProjectionRuntime option is for compatibility with the v8 projection engine and should only be set if problems are encountered running the interpreted runtime")]
 			public JavascriptProjectionRuntime ProjectionRuntime { get; init; } =
 				JavascriptProjectionRuntime.Interpreted;
 
