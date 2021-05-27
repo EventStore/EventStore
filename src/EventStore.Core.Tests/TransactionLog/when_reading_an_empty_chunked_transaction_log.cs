@@ -39,9 +39,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			Assert.IsFalse(reader.TryReadNext().Success);
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("ES", out var streamId, out _, out _);
-			var rec = LogRecord.SingleWrite(logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, -1, "ET", new byte[] {7}, null);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var rec = LogRecord.SingleWrite(recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, -1, "ET", new byte[] {7}, null);
 			long tmp;
 			Assert.IsTrue(writer.Write(rec, out tmp));
 			writer.Flush();

@@ -16,10 +16,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public override void SetUp() {
 			base.SetUp();
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("test", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
-			var record = LogRecord.Prepare(logFormat.RecordFactory, 15556, _corrId, _eventId, 15556, 0, streamId, 1,
+			var record = LogRecord.Prepare(recordFactory, 15556, _corrId, _eventId, 15556, 0, streamId, 1,
 				PrepareFlags.None, "Foo", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			_chunk = TFChunkHelper.CreateNewChunk(Filename, 20);
 			_written = _chunk.TryAppend(record).Success;

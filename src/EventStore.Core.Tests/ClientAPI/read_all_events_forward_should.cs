@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task return_events_in_same_order_as_written() {
-			var read = await _conn.ReadAllEventsForwardAsync(Position.Start, _testEvents.Length + 10, false);
+			var read = await _conn.ReadAllEventsForwardAsync(Position.Start, _testEvents.Length + 20, false);
 			Assert.That(EventDataComparer.Equal(
 				_testEvents.ToArray(),
 				read.Events.Skip(read.Events.Length - _testEvents.Length).Select(x => x.Event).ToArray()));
@@ -68,8 +68,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task return_partial_slice_if_not_enough_events() {
-			var read = await _conn.ReadAllEventsForwardAsync(Position.Start, 30, false);
-			Assert.That(read.Events.Length, Is.LessThan(30));
+			var read = await _conn.ReadAllEventsForwardAsync(Position.Start, 40, false);
+			Assert.That(read.Events.Length, Is.LessThan(40));
 			Assert.That(EventDataComparer.Equal(
 				_testEvents,
 				read.Events.Skip(read.Events.Length - _testEvents.Length).Select(x => x.Event).ToArray()));

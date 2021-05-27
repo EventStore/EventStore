@@ -21,9 +21,9 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			_id3 = Guid.NewGuid();
 			_deleteId = Guid.NewGuid();
 
-			_streamNameIndex.GetOrAddId("ES", out var streamId, out _, out _);
+			GetOrReserve("ES", out var streamId, out var pos0);
 			long pos1, pos2, pos3;
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, 0, _id1, _id1, streamId, ExpectedVersion.NoStream, "type", new byte[0],
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId, ExpectedVersion.NoStream, "type", new byte[0],
 				new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos1);
 			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId, 0, "type", new byte[0],
 				new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos2);

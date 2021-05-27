@@ -10,6 +10,8 @@ namespace EventStore.Core.LogV3 {
 		// but more appealing for the settings stream.
 		// Reservations are 2 apart to make room for their metastreams.
 		public static long FirstRealStream { get; } = 1024;
+		// difference between each stream record (2 because of metastreams)
+		public static long StreamInterval { get; } = 2;
 
 		// Even streams that dont exist can be normal/meta and user/system
 		// e.g. for default ACLs.
@@ -18,7 +20,7 @@ namespace EventStore.Core.LogV3 {
 		public const long NoSystemStream = 2;
 		public const long NoSystemMetastream = 3;
 
-		private const long FirstVirtualStream = 4;
+		public const long FirstVirtualStream = 4;
 
 		// virtual stream so that we can write metadata to $$$all
 		private const long AllStreamNumber = 4;
@@ -33,11 +35,11 @@ namespace EventStore.Core.LogV3 {
 		public long SettingsStream => SettingsStreamNumber;
 
 		private readonly IMetastreamLookup<long> _metastreams;
-		private readonly IStreamNameLookup<long> _streamNames;
+		private readonly INameLookup<long> _streamNames;
 
 		public LogV3SystemStreams(
 			IMetastreamLookup<long> metastreams,
-			IStreamNameLookup<long> streamNames) {
+			INameLookup<long> streamNames) {
 
 			_metastreams = metastreams;
 			_streamNames = streamNames;
@@ -88,6 +90,9 @@ namespace EventStore.Core.LogV3 {
 				_metastreams.IsMetaStream(streamId) ||
 				streamId == NoSystemStream)
 				return true;
+
+			if (streamId == NoUserStream)
+				return false;
 
 			var streamName = _streamNames.LookupName(streamId);
 			return SystemStreams.IsSystemStream(streamName);

@@ -27,12 +27,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Open();
 			_writer = new TFChunkWriter(_db);
 			_writer.Open();
-			
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			_record = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				eventId: _eventId,
 				correlationId: _correlationId,
@@ -64,8 +64,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				ILogRecord r;
 				Assert.IsTrue(reader.TryReadNext(out r));
 
-				var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-				logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+				var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 				Assert.True(r is IPrepareLogRecord<TStreamId>);
 				var p = (IPrepareLogRecord<TStreamId>)r;

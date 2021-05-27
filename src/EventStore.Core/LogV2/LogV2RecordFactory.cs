@@ -7,6 +7,16 @@ namespace EventStore.Core.LogV2 {
 		public LogV2RecordFactory() {
 		}
 
+		public bool ExplicitStreamCreation => false;
+
+		public IPrepareLogRecord<string> CreateStreamRecord(
+			Guid streamId,
+			long logPosition,
+			DateTime timeStamp,
+			string streamNumber,
+			string streamName) =>
+			throw new NotSupportedException();
+
 		public ISystemLogRecord CreateEpoch(EpochRecord epoch) {
 			var result = new SystemLogRecord(
 				logPosition: epoch.EpochPosition,

@@ -43,6 +43,7 @@ namespace EventStore.LogV3.Tests {
 		[Fact] public void EventHeaderLayout() => AssertSize<Raw.EventHeader>(Raw.EventHeader.Size);
 		[Fact] public void PartitionHeaderLayout() => AssertSize<Raw.PartitionHeader>(Raw.PartitionHeader.Size);
 		[Fact] public void PartitionTypeHeaderLayout() => AssertSize<Raw.PartitionTypeHeader>(Raw.PartitionTypeHeader.Size);
+		[Fact] public void StreamHeaderLayout() => AssertSize<Raw.StreamHeader>(Raw.StreamHeader.Size);
 		[Fact] public void StreamTypeHeaderLayout() => AssertSize<Raw.StreamTypeHeader>(Raw.StreamTypeHeader.Size);
 		[Fact] public void StreamWriteHeaderLayout() => AssertSize<Raw.StreamWriteHeader>(Raw.StreamWriteHeader.Size);
 		[Fact] public void EventTypeHeaderLayout() => AssertSize<Raw.EventTypeHeader>(Raw.EventTypeHeader.Size);

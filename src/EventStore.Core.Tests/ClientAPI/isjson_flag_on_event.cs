@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.To(node, TcpType.Ssl);
+			return TestConnection.To(node, TcpType.Ssl);
 		}
 
 		[Test, Category("LongRunning"), Category("Network")]
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 							Helper.UTF8NoBom.GetBytes("{\"some\":\"json\"}")));
 				var expectedEvents = 3;
 
-				if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+				if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
 					using (var transaction = await connection.StartTransactionAsync(stream, ExpectedVersion.Any)) {
 						await transaction.WriteAsync(
 							new EventData(Guid.NewGuid(), "some-type", true,

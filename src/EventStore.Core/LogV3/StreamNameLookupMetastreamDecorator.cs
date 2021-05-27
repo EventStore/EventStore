@@ -3,32 +3,35 @@ using EventStore.Core.Services;
 
 namespace EventStore.Core.LogV3 {
 	// Decorates a StreamNameLookup, intercepting Metastream (and VirtualStream) calls
-	public class StreamNameLookupMetastreamDecorator : IStreamNameLookup<long> {
-		private readonly IStreamNameLookup<long> _wrapped;
+	public class StreamNameLookupMetastreamDecorator : INameLookup<long> {
+		private readonly INameLookup<long> _wrapped;
 		private readonly IMetastreamLookup<long> _metastreams;
 
 		public StreamNameLookupMetastreamDecorator(
-			IStreamNameLookup<long> wrapped,
+			INameLookup<long> wrapped,
 			IMetastreamLookup<long> metastreams) {
 
 			_wrapped = wrapped;
 			_metastreams = metastreams;
 		}
 
-		public string LookupName(long streamId) {
-			string name;
+		public bool TryGetName(long streamId, out string name) {
 			if (_metastreams.IsMetaStream(streamId)) {
 				streamId = _metastreams.OriginalStreamOf(streamId);
-				name = LookupName(streamId);
+				if (!TryGetName(streamId, out name))
+					return false;
 				name = SystemStreams.MetastreamOf(name);
-				return name;
+				return true;
 			}
 
 			if (LogV3SystemStreams.TryGetVirtualStreamName(streamId, out name))
-				return name;
+				return true;
 
-			name = _wrapped.LookupName(streamId);
-			return name;
+			return _wrapped.TryGetName(streamId, out name);
+		}
+
+		public bool TryGetLastValue(out long last) {
+			return _wrapped.TryGetLastValue(out last);
 		}
 	}
 }

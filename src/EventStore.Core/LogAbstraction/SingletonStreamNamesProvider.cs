@@ -4,11 +4,11 @@ namespace EventStore.Core.LogAbstraction {
 	public class SingletonStreamNamesProvider<TStreamId> : IStreamNamesProvider<TStreamId> {
 		public ISystemStreamLookup<TStreamId> SystemStreams { get; }
 
-		public IStreamNameLookup<TStreamId> StreamNames { get; }
+		public INameLookup<TStreamId> StreamNames { get; }
 
 		public SingletonStreamNamesProvider(
 			ISystemStreamLookup<TStreamId> systemStreams,
-			IStreamNameLookup<TStreamId> streamNames) {
+			INameLookup<TStreamId> streamNames) {
 
 			SystemStreams = systemStreams;
 			StreamNames = streamNames;

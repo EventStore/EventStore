@@ -42,7 +42,7 @@ namespace EventStore.Core.Services {
 			TFChunkWriter writer,
 			IIndexWriter<TStreamId> indexWriter,
 			IRecordFactory<TStreamId> recordFactory,
-			IStreamNameIndex<TStreamId> streamNameIndex,
+			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,

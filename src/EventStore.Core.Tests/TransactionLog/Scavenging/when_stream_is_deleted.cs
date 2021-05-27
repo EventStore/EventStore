@@ -16,8 +16,17 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				return new[] {
+					new ILogRecord[0],
+					dbResult.Recs[1]
+				};
+			}
+
 			return new[] {
-				new ILogRecord[0],
+				new[] {
+					dbResult.Recs[0][0], // "bla" created
+				},
 				dbResult.Recs[1]
 			};
 		}
@@ -44,8 +53,17 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				return new[] {
+					new ILogRecord[0],
+					new ILogRecord[0]
+				};
+			}
+
 			return new[] {
-				new ILogRecord[0],
+				new[] {
+					dbResult.Recs[0][0], // "bla" created
+				},
 				new ILogRecord[0]
 			};
 		}

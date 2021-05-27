@@ -78,7 +78,6 @@ namespace EventStore.Core.Tests.Helpers {
 		private bool _readAllEnabled;
 		private bool _noOtherStreams;
 		private bool _readsTimeOut;
-		private LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat,TStreamId>.LogFormat;
 
 		protected readonly HashSet<string> _readsToTimeOutOnce = new HashSet<string>();
 
@@ -96,12 +95,13 @@ namespace EventStore.Core.Tests.Helpers {
 				_streams[streamName] = list;
 			}
 
-			_logFormat.StreamNameIndex.GetOrAddId(streamName, out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamIdIgnored = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var eventRecord = new EventRecord(
 				list.Count,
 				LogRecord.Prepare(
-					_logFormat.RecordFactory,
-					_fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamId, list.Count - 1,
+					recordFactory,
+					_fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamIdIgnored, list.Count - 1,
 					PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
 					eventType, eventData is null ? null : Helper.UTF8NoBom.GetBytes(eventData),
 					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata),

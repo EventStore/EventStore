@@ -17,9 +17,9 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		protected override void WriteTestScenario() {
 			long pos;
 			string stream = "ES";
-			_streamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
+			GetOrReserve(stream, out var streamId, out pos);
 
-			var prepare1 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare1
+			var prepare1 = LogRecord.SingleWrite(_recordFactory, pos, // prepare1
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				streamId,
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				DateTime.UtcNow);
 			Assert.IsTrue(Writer.Write(prepare1, out pos));
 
-			var prepare2 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare2
+			var prepare2 = LogRecord.SingleWrite(_recordFactory, pos, // prepare2
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				streamId,
@@ -42,12 +42,12 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			Assert.IsTrue(Writer.Write(prepare2, out pos));
 
 
-			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // delete prepare
+			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, pos, // delete prepare
 				Guid.NewGuid(), Guid.NewGuid(), streamId, -1);
 			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare, stream);
 			Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 
-			var prepare3 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare3
+			var prepare3 = LogRecord.SingleWrite(_recordFactory, pos, // prepare3
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				streamId,
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				DateTime.UtcNow);
 			Assert.IsTrue(Writer.Write(prepare3, out pos));
 
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), // committing delete
+			var commit = LogRecord.Commit(pos, // committing delete
 				deletePrepare.CorrelationId,
 				deletePrepare.LogPosition,
 				EventNumber.DeletedStream);

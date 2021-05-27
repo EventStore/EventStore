@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 	public class when_writing_a_second_batch_of_events_after_the_first_batch_has_not_yet_been_replicated<TLogFormat, TStreamId> : WriteEventsToIndexScenario<TLogFormat, TStreamId>{
 		private const int _numEvents = 10;
 		private List<Guid> _eventIds = new List<Guid>();
-		private TStreamId _streamId;
+		private TStreamId _streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
         public override void WriteEvents()
         {
@@ -23,8 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 				eventTypes.Add("type");
 			}
 
-			_logFormat.StreamNameIndex.GetOrAddId("stream", out _streamId, out _, out _);
-			var prepares = CreatePrepareLogRecords("stream", expectedEventNumber, eventTypes, _eventIds, transactionPosition);
+			var prepares = CreatePrepareLogRecords(_streamId, expectedEventNumber, eventTypes, _eventIds, transactionPosition);
 			var commit = CreateCommitLogRecord(transactionPosition + 1000 * _numEvents, transactionPosition, expectedEventNumber + _numEvents);
 			
 			/*First batch write: committed to db and pre-committed to index but not yet committed to index*/

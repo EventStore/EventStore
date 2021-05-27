@@ -2,6 +2,7 @@
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog;
@@ -20,7 +21,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 	public abstract class RepeatableDbTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected readonly int MaxEntriesInMemTable;
 		protected TableIndex<TStreamId> TableIndex;
-		protected ITestReadIndex<TStreamId> ReadIndex;
+		protected IReadIndex<TStreamId> ReadIndex;
+		protected LogFormatAbstractor<TStreamId> _logFormat;
 
 		protected DbResult DbRes;
 		protected TFChunkDbCreationHelper<TLogFormat, TStreamId> DbCreationHelper;
@@ -38,8 +40,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 				DbRes.Db.Close();
 			}
 
+			var indexDirectory = GetFilePathFor("index");
+			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+				IndexDirectory = indexDirectory,
+			});
+
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig);
+			var dbHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, _logFormat);
 
 			DbRes = dbHelper.Chunk(records).CreateDb();
 
@@ -47,14 +54,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 			DbRes.Db.Config.ChaserCheckpoint.Write(DbRes.Db.Config.WriterCheckpoint.Read());
 			DbRes.Db.Config.ChaserCheckpoint.Flush();
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var readers = new ObjectPool<ITransactionFileReader>(
 				"Readers", 2, 2, () => new TFChunkReader(DbRes.Db, DbRes.Db.Config.WriterCheckpoint));
 
-			var lowHasher = logFormat.LowHasher;
-			var highHasher = logFormat.HighHasher;
-			var emptyStreamId = logFormat.EmptyStreamId;
-			TableIndex = new TableIndex<TStreamId>(GetFilePathFor("index"), lowHasher, highHasher, emptyStreamId,
+			var lowHasher = _logFormat.LowHasher;
+			var highHasher = _logFormat.HighHasher;
+			var emptyStreamId = _logFormat.EmptyStreamId;
+			TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV3,
@@ -65,11 +71,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				TableIndex,
-				logFormat.StreamIds,
-				logFormat.StreamNamesProvider,
-				logFormat.EmptyStreamId,
-				logFormat.StreamIdValidator,
-				logFormat.StreamIdSizer,
+				_logFormat.StreamNameIndexConfirmer,
+				_logFormat.StreamIds,
+				_logFormat.StreamNamesProvider,
+				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdConverter,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamIdSizer,
 				0,
 				additionalCommitChecks: true,
 				metastreamMaxCount: _metastreamMaxCount,
@@ -79,10 +87,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint);
 
 			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
-			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
+			ReadIndex = readIndex;
 		}
 
 		public override Task TestFixtureTearDown() {
+			_logFormat?.Dispose();
 			DbRes.Db.Close();
 			return base.TestFixtureTearDown();
 		}

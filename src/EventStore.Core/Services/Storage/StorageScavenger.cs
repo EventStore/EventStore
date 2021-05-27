@@ -24,7 +24,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly TFChunkDb _db;
 		private readonly ITableIndex<TStreamId> _tableIndex;
 		private readonly IReadIndex<TStreamId> _readIndex;
-		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
+		private readonly IMetastreamLookup<TStreamId> _metastreams;
 		private readonly bool _alwaysKeepScavenged;
 		private readonly bool _mergeChunks;
 		private readonly bool _unsafeIgnoreHardDeletes;
@@ -35,19 +35,19 @@ namespace EventStore.Core.Services.Storage {
 		private CancellationTokenSource _cancellationTokenSource;
 
 		public StorageScavenger(TFChunkDb db, ITableIndex<TStreamId> tableIndex, IReadIndex<TStreamId> readIndex,
-			ISystemStreamLookup<TStreamId> systemStreams,
+			IMetastreamLookup<TStreamId> metastreams,
 			ITFChunkScavengerLogManager logManager, bool alwaysKeepScavenged, bool mergeChunks,
 			bool unsafeIgnoreHardDeletes) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(logManager, "logManager");
 			Ensure.NotNull(tableIndex, "tableIndex");
 			Ensure.NotNull(readIndex, "readIndex");
-			Ensure.NotNull(systemStreams, nameof(systemStreams));
+			Ensure.NotNull(metastreams, nameof(metastreams));
 
 			_db = db;
 			_tableIndex = tableIndex;
 			_readIndex = readIndex;
-			_systemStreams = systemStreams;
+			_metastreams = metastreams;
 			_alwaysKeepScavenged = alwaysKeepScavenged;
 			_mergeChunks = mergeChunks;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Storage {
 
 						_cancellationTokenSource = new CancellationTokenSource();
 						var newScavenge = _currentScavenge = new TFChunkScavenger<TStreamId>(_db, tfChunkScavengerLog, _tableIndex,
-							_readIndex, _systemStreams, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads);
+							_readIndex, _metastreams, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads);
 						var newScavengeTask = _currentScavenge.Scavenge(_alwaysKeepScavenged, _mergeChunks,
 							message.StartFromChunk, _cancellationTokenSource.Token);
 

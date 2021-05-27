@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				}
 			}.RunInMemory();
 			try {
-				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormat);
+				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory);
 			} catch (Exception e) {
 				_caughtException = e;
 			}

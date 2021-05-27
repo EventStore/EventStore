@@ -31,12 +31,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_records = new ILogRecord[RecordsCount];
 			_results = new RecordWriteResult[RecordsCount];
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("es1", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var expectedVersion = ExpectedVersion.NoStream;
 
 			for (int i = 0; i < _records.Length; ++i) {
-				_records[i] = LogRecord.SingleWrite(logFormat.RecordFactory, i == 0 ? 0 : _results[i - 1].NewPosition,
+				_records[i] = LogRecord.SingleWrite(recordFactory, i == 0 ? 0 : _results[i - 1].NewPosition,
 					Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
 					new byte[] { 0, 1, 2 }, new byte[] { 5, 7 });
 				_results[i] = chunk.TryAppend(_records[i]);

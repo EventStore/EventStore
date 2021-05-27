@@ -23,17 +23,17 @@ namespace EventStore.Core.Tests.TransactionLog {
 			base.TestFixtureSetUp();
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("test", out var streamId1, out _, out _);
-			logFormat.StreamNameIndex.GetOrAddId("test2", out var streamId2, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId1 = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var streamId2 = LogFormatHelper<TLogFormat, TStreamId>.StreamId2;
 
-			_prepare1 = LogRecord.Prepare(logFormat.RecordFactory, 0, _corrId, _eventId, 0, 0, streamId1, 1,
+			_prepare1 = LogRecord.Prepare(recordFactory, 0, _corrId, _eventId, 0, 0, streamId1, 1,
 				PrepareFlags.None, "Foo", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			var r1 = _chunk.TryAppend(_prepare1);
 			_written1 = r1.Success;
 			_position1 = r1.OldPosition;
 
-			_prepare2 = LogRecord.Prepare(logFormat.RecordFactory, r1.NewPosition, _corrId, _eventId, 0, 0, streamId2, 2,
+			_prepare2 = LogRecord.Prepare(recordFactory, r1.NewPosition, _corrId, _eventId, 0, 0, streamId2, 2,
 				PrepareFlags.None, "Foo2", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			var r2 = _chunk.TryAppend(_prepare2);
 			_written2 = r2.Success;

@@ -7,7 +7,20 @@ namespace EventStore.Core.Tests {
 		public class V3{}
 	}
 
+	internal static class LogFormatHelper {
+		// v2 contains no state
+		public static LogFormatAbstractor<string> V2 { get; } = new LogV2FormatAbstractorFactory().Create(new());
+	}
+
 	internal static class LogFormatHelper<TLogFormat, TStreamId> {
+		public static bool IsV2 => typeof(TLogFormat) == typeof(LogFormat.V2);
+		public static bool IsV3 => typeof(TLogFormat) == typeof(LogFormat.V3);
+
+		// static v3 but private so that we can be sure we only hand out stateless parts of it
+		readonly static LogFormatAbstractor<long> _v3 = new LogV3FormatAbstractorFactory().Create(new() {
+			InMemory = true,
+		});
+
 		public static T Choose<T>(object v2, object v3) {
 			if (typeof(TLogFormat) == typeof(LogFormat.V2)) {
 				if (typeof(TStreamId) != typeof(string)) throw new InvalidOperationException();
@@ -20,8 +33,24 @@ namespace EventStore.Core.Tests {
 			throw new InvalidOperationException();
 		}
 
-		public static LogFormatAbstractor<TStreamId> LogFormat { get; } =
-			Choose<LogFormatAbstractor<TStreamId>>(LogFormatAbstractor.V2, LogFormatAbstractor.V3);
+		private static LogFormatAbstractor<TStreamId> _staticLogFormat =
+			Choose<LogFormatAbstractor<TStreamId>>(LogFormatHelper.V2, _v3);
+
+		public static ILogFormatAbstractorFactory<TStreamId> LogFormatFactory { get; } =
+			Choose<ILogFormatAbstractorFactory<TStreamId>>(new LogV2FormatAbstractorFactory(), new LogV3FormatAbstractorFactory());
+
+		// safe because stateless
+		public static IRecordFactory<TStreamId> RecordFactory { get; } = _staticLogFormat.RecordFactory;
+
+		// safe because stateless
+		public static bool SupportsExplicitTransactions { get; } = _staticLogFormat.SupportsExplicitTransactions;
+
+		// safe because stateless
+		public static TStreamId EmptyStreamId { get; } = _staticLogFormat.EmptyStreamId;
+
+		/// just a valid stream id
+		public static TStreamId StreamId { get; } =	Choose<TStreamId>("stream", 1024L);
+		public static TStreamId StreamId2 { get; } = Choose<TStreamId>("stream2", 1026L);
 
 		public static void CheckIfExplicitTransactionsSupported() {
 			if (typeof(TLogFormat) == typeof(LogFormat.V3)) {
@@ -36,4 +65,3 @@ namespace EventStore.Core.Tests {
 		}
 	}
 }
-		

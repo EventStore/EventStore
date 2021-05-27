@@ -14,10 +14,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		protected override void WriteTestScenario() {
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
-			_streamNameIndex.GetOrAddId("ES", out var esStreamId, out _, out _);
-			var prepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(),
+			GetOrReserve("ES", out var esStreamId, out var pos);
+			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos, Guid.NewGuid(), Guid.NewGuid(),
 				esStreamId, 2);
-			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			_event1 = WriteSingleEvent("ES", 1, "bla1");

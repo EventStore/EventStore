@@ -31,9 +31,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private IBus _mainBus;
 		private readonly Guid _instanceId = Guid.NewGuid();
 		private readonly List<Message> _published = new List<Message>();
-		private readonly LogFormatAbstractor<TStreamId> _logFormat;
 		public when_starting_having_TFLog_with_no_epochs() {
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 		}
 
 		private static int GetNextEpoch() {
@@ -49,7 +47,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				_logFormat.RecordFactory,
+				LogFormatHelper<TLogFormat, TStreamId>.RecordFactory,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager manager) {

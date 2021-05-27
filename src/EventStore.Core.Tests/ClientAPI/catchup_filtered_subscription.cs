@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
+			return TestConnection.Create(node.TcpEndPoint);
 		}
 
 		[Test]
@@ -95,7 +95,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 				Assert.Fail("Checkpoint reached not called enough times within time limit.");
 			}
 
-			Assert.AreEqual(10, eventsSeen);
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				Assert.AreEqual(10, eventsSeen);
+			} else {
+				// accounting for stream records
+				Assert.AreEqual(7, eventsSeen);
+			}
 		}
 
 		[Test]

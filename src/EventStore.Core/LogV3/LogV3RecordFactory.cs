@@ -13,6 +13,25 @@ namespace EventStore.Core.LogV3 {
 			}
 		}
 
+		public bool ExplicitStreamCreation => true;
+
+		public IPrepareLogRecord<long> CreateStreamRecord(
+			Guid streamId,
+			long logPosition,
+			DateTime timeStamp,
+			long streamNumber,
+			string streamName) {
+
+			var result = new LogV3StreamRecord(
+				streamId: streamId,
+				logPosition: logPosition,
+				timeStamp: timeStamp,
+				streamNumber: (uint)streamNumber, // todo: switch to uint
+				streamName: streamName);
+
+			return result;
+		}
+
 		public ISystemLogRecord CreateEpoch(EpochRecord epoch) {
 			var result = new LogV3EpochLogRecord(
 				logPosition: epoch.EpochPosition,

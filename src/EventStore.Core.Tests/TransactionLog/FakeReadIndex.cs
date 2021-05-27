@@ -12,8 +12,7 @@ using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	internal class FakeReadIndex<TLogFormat, TStreamId> : IReadIndex<TStreamId> {
-		private readonly ISystemStreamLookup<TStreamId> _systemStreams =
-			LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SystemStreams;
+		private readonly IMetastreamLookup<TStreamId> _metastreams;
 
 		public long LastIndexedPosition {
 			get { throw new NotImplementedException(); }
@@ -25,9 +24,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		private readonly Func<TStreamId, bool> _isStreamDeleted;
 
-		public FakeReadIndex(Func<TStreamId, bool> isStreamDeleted) {
+		public FakeReadIndex(
+			Func<TStreamId, bool> isStreamDeleted,
+			IMetastreamLookup<TStreamId> metastreams) {
+
 			Ensure.NotNull(isStreamDeleted, "isStreamDeleted");
 			_isStreamDeleted = isStreamDeleted;
+			_metastreams = metastreams;
 		}
 
 		public void Init(long buildToPosition) {
@@ -81,8 +84,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		public long GetStreamLastEventNumber(TStreamId streamId) {
-			if (_systemStreams.IsMetaStream(streamId))
-				return GetStreamLastEventNumber(_systemStreams.OriginalStreamOf(streamId));
+			if (_metastreams.IsMetaStream(streamId))
+				return GetStreamLastEventNumber(_metastreams.OriginalStreamOf(streamId));
 			return _isStreamDeleted(streamId) ? EventNumber.DeletedStream : 1000000;
 		}
 

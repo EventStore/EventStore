@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_indexDir = PathName;
 			_fakeReader = new TFReaderLease(new FakeReader());
 			_indexBackend = new FakeIndexBackend<string>(_fakeReader);
-			var logFormat = LogFormatAbstractor.V2;
+			var logFormat = LogFormatHelper.V2;
 			_lowHasher = logFormat.LowHasher;
 			_highHasher = logFormat.HighHasher;
 			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, logFormat.EmptyStreamId,
@@ -239,8 +239,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_tableIndex.Initialize(long.MaxValue);
 			_indexReader = new IndexReader<string>(
 				_indexBackend, _tableIndex,
-				LogFormatAbstractor.V2.StreamNamesProvider,
-				LogFormatAbstractor.V2.StreamIdValidator,
+				LogFormatHelper.V2.StreamNamesProvider,
+				LogFormatHelper.V2.StreamIdValidator,
 				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 			//memtable with 64bit indexes

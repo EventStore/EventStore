@@ -34,11 +34,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var tf = new TFChunkWriter(db);
 			long pos;
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			var record1 = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.IsTrue(tf.Write(record1, out pos)); // almost fill up first chunk
 
 			var record2 = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: pos,
 				correlationId: _correlationId,
 				eventId: _eventId,
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.IsFalse(tf.Write(record2, out pos)); // chunk has too small space
 
 			var record3 = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: pos,
 				correlationId: _correlationId,
 				eventId: _eventId,

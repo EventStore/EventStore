@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
 			await _node.Start();
 
-			_connection = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint);
+			_connection = TestConnection.Create(_node.TcpEndPoint);
 			await _connection.ConnectAsync();
 
 			await _connection.SetStreamMetadataAsync(Stream, ExpectedVersion.NoStream,

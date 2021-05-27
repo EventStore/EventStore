@@ -15,14 +15,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		protected override void WriteTestScenario() {
 			_id1 = Guid.NewGuid();
 			_id2 = Guid.NewGuid();
-			long pos1, pos2, pos3, pos4;
-			_streamNameIndex.GetOrAddId("test1", out var streamId, out _, out _);
+			long pos0, pos1, pos2, pos3, pos4;
+			GetOrReserve("test1", out var streamId, out pos0);
 
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, 0, _id1, _id1, streamId, ExpectedVersion.NoStream, "type", new byte[0],
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId, ExpectedVersion.NoStream, "type", new byte[0],
 				new byte[0], DateTime.UtcNow), out pos1);
 			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId, 0, "type", new byte[0],
 					new byte[0]), out pos2);
-			Writer.Write(new CommitLogRecord(pos2, _id1, 0, DateTime.UtcNow, 0), out pos3);
+			Writer.Write(new CommitLogRecord(pos2, _id1, pos0, DateTime.UtcNow, 0), out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id2, pos1, DateTime.UtcNow, 1), out pos4);
 		}
 
