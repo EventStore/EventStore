@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.AwakeService {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_handling_comitted_event<TLogFormat, TStreamId> {
 		private Core.Services.AwakeReaderService.AwakeService _it;
 		private EventRecord _eventRecord;

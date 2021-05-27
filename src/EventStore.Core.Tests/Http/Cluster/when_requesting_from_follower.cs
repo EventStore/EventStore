@@ -12,7 +12,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Http.Cluster {
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_requesting_from_follower<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		const int Retries = 5;
 		private const string TestStream = "test-stream";

@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_requesting_multiple_writes_with_the_same_key<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		protected override void Given() {
 			AllWritesQueueUp();

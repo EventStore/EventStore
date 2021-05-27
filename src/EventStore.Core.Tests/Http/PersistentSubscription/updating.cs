@@ -12,7 +12,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_updating_a_subscription_without_permissions<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_updating_a_non_existent_subscription_without_permissions<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_updating_an_existing_subscription<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 		private readonly string _groupName = Guid.NewGuid().ToString();

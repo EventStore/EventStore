@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_on_existing_stream<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_on_non_existing_stream<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_on_all_stream<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
 			.DoNotResolveLinkTos()
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_with_too_big_message_timeout<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		protected override Task When() => Task.CompletedTask;
 
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_with_too_big_checkpoint_after<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		protected override Task When() => Task.CompletedTask;
 
@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_with_dont_timeout<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -121,7 +121,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_duplicate_persistent_subscription_group<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		can_create_duplicate_persistent_subscription_group_name_on_different_streams<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
@@ -167,7 +167,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_group_without_permissions<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -187,7 +187,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class create_persistent_subscription_after_deleting_the_same<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 

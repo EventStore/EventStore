@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_emitting_events_in_correct_order_the_started_projection_checkpoint<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private ProjectionCheckpoint _checkpoint;

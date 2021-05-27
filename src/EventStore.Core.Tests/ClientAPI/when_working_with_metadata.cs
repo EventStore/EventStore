@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_working_with_metadata<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
 		private IEventStoreConnection _connection;

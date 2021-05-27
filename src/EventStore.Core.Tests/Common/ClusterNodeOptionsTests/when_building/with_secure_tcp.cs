@@ -10,7 +10,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_ssl_enabled_and_using_a_security_certificate_from_file<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly IPEndPoint _internalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1114);
 		private readonly IPEndPoint _externalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_ssl_enabled_and_using_a_security_certificate<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		private readonly IPEndPoint _internalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1114);
 		private readonly IPEndPoint _externalSecTcp = new(IPAddress.Parse("127.0.1.15"), 1115);
@@ -94,7 +94,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_secure_tcp_endpoints_and_no_certificates<TLogFormat, TStreamId> {
 		private ClusterVNodeOptions _options;
 		private Exception _caughtException;

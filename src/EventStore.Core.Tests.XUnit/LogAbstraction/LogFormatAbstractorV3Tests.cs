@@ -8,21 +8,22 @@ using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 	// check that lookups of the various combinations of virtual/normal/meta
 	// work in both directions and in the stream index.
 	public class LogFormatAbstractorV3Tests : IDisposable {
 		readonly static string _outputDir = $"testoutput/{nameof(LogFormatAbstractorV3Tests)}";
-		readonly LogFormatAbstractor<long> _sut = new LogV3FormatAbstractorFactory().Create(new() {
+		readonly LogFormatAbstractor<StreamId> _sut = new LogV3FormatAbstractorFactory().Create(new() {
 			IndexDirectory = _outputDir,
 			InMemory = false,
 		});
 
 		readonly string _stream = "account-abc";
 		readonly string _systemStream = "$something-parked";
-		readonly long _streamId;
-		readonly long _systemStreamId;
+		readonly StreamId _streamId;
+		readonly StreamId _systemStreamId;
 		readonly MockIndexReader _mockIndexReader = new();
 		readonly int _numStreams;
 
@@ -46,7 +47,7 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 
 		// it is up to the user of the V3 abstractor to index created streams, simulate that here.
 		// this is because we are currently using the normal event index to look up the stream names
-		bool GetOrReserve(string streamName, out long streamId, out long createdId, out string createdName) {
+		bool GetOrReserve(string streamName, out StreamId streamId, out StreamId createdId, out string createdName) {
 			_sut.StreamNameIndex.GetOrReserve(
 				recordFactory: _sut.RecordFactory,
 				streamName: streamName,
@@ -179,7 +180,7 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		[InlineData(4, "$all")]
 		[InlineData(6, "$streams-created")]
 		[InlineData(8, "$settings")]
-		public void can_find_virtual_stream(long expectedId, string name) {
+		public void can_find_virtual_stream(StreamId expectedId, string name) {
 			Assert.True(GetOrReserve(name, out var streamId, out _, out _));
 			Assert.Equal(_numStreams, _mockIndexReader.Count);
 			Assert.Equal(expectedId, streamId);
@@ -193,8 +194,8 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		public void can_find_virtual_meta_stream() {
 			Assert.True(GetOrReserve("$$$all", out var streamId, out _, out _));
 			Assert.Equal(_numStreams, _mockIndexReader.Count);
-			Assert.Equal(5, streamId);
-			Assert.Equal(5, _sut.StreamIds.LookupValue("$$$all"));
+			Assert.Equal(5U, streamId);
+			Assert.Equal(5U, _sut.StreamIds.LookupValue("$$$all"));
 			Assert.Equal("$$$all", _sut.StreamNames.LookupName(5));
 			Assert.True(_sut.SystemStreams.IsMetaStream(streamId));
 			Assert.True(_sut.SystemStreams.IsSystemStream(streamId));
@@ -205,20 +206,20 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 		[InlineData(LogV3SystemStreams.NoUserMetastream, true, true, "$$new-user-stream")]
 		[InlineData(LogV3SystemStreams.NoSystemStream, false, true, "$new-system-stream")]
 		[InlineData(LogV3SystemStreams.NoSystemMetastream, true, true, "$$$new-system-stream")]
-		public void can_attempt_to_lookup_non_existent_streams(long expectedId, bool expectedIsMeta, bool expectedIsSystem, string name) {
+		public void can_attempt_to_lookup_non_existent_streams(StreamId expectedId, bool expectedIsMeta, bool expectedIsSystem, string name) {
 			Assert.Equal(expectedId, _sut.StreamIds.LookupValue(name));
 			Assert.Equal(expectedIsMeta, _sut.SystemStreams.IsMetaStream(expectedId));
 			Assert.Equal(expectedIsSystem, _sut.SystemStreams.IsSystemStream(expectedId));
 		}
 
-		class MockIndexReader : IIndexReader<long> {
-			private readonly Dictionary<long, IPrepareLogRecord<long>> _streamsStream = new();
+		class MockIndexReader : IIndexReader<StreamId> {
+			private readonly Dictionary<long, IPrepareLogRecord<StreamId>> _streamsStream = new();
 
-			public void Add(long streamId, IPrepareLogRecord<long> streamRecord) => _streamsStream.Add(streamId, streamRecord);
+			public void Add(long streamId, IPrepareLogRecord<StreamId> streamRecord) => _streamsStream.Add(streamId, streamRecord);
 
 			public int Count => _streamsStream.Count;
 
-			public IPrepareLogRecord<long> ReadPrepare(long streamId, long eventNumber) {
+			public IPrepareLogRecord<StreamId> ReadPrepare(StreamId streamId, long eventNumber) {
 				// simulates what would be in the index.
 				return _streamsStream[eventNumber];
 			}
@@ -229,25 +230,25 @@ namespace EventStore.Core.Tests.XUnit.LogAbstraction {
 
 			public long HashCollisions => throw new NotImplementedException();
 
-			public StorageMessage.EffectiveAcl GetEffectiveAcl(long streamId) =>
+			public StorageMessage.EffectiveAcl GetEffectiveAcl(StreamId streamId) =>
 				throw new NotImplementedException();
 
-			public long GetEventStreamIdByTransactionId(long transactionId) =>
+			public StreamId GetEventStreamIdByTransactionId(long transactionId) =>
 				throw new NotImplementedException();
 
-			public long GetStreamLastEventNumber(long streamId) =>
+			public long GetStreamLastEventNumber(StreamId streamId) =>
 				throw new NotImplementedException();
 
-			public StreamMetadata GetStreamMetadata(long streamId) =>
+			public StreamMetadata GetStreamMetadata(StreamId streamId) =>
 				throw new NotImplementedException();
 
-			public IndexReadEventResult ReadEvent(string streamName, long streamId, long eventNumber) =>
+			public IndexReadEventResult ReadEvent(string streamName, StreamId streamId, long eventNumber) =>
 				throw new NotImplementedException();
 
-			public IndexReadStreamResult ReadStreamEventsBackward(string streamName, long streamId, long fromEventNumber, int maxCount) =>
+			public IndexReadStreamResult ReadStreamEventsBackward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
 				throw new NotImplementedException();
 
-			public IndexReadStreamResult ReadStreamEventsForward(string streamName, long streamId, long fromEventNumber, int maxCount) =>
+			public IndexReadStreamResult ReadStreamEventsForward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
 				throw new NotImplementedException();
 		}
 	}

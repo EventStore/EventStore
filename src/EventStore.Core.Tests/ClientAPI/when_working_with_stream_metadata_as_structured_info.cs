@@ -13,7 +13,7 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_working_with_stream_metadata_as_structured_info<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
 		private IEventStoreConnection _connection;

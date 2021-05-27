@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class async_read_stream_events_backward_with_cancelled_read<TLogFormat, TStreamId> : with_read_io_dispatcher<TLogFormat, TStreamId> {
 		private bool _hasTimedOut;
 		private bool _hasRead;

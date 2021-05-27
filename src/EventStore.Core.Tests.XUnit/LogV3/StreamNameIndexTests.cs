@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using EventStore.Core.LogV3;
 using EventStore.Core.LogV3.FASTER;
 using Xunit;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.Tests.XUnit.LogV3 {
 	public class StreamNameIndexTests : IDisposable {
@@ -60,7 +61,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 				_persistence.Scan(),
 				x => {
 					Assert.Equal(name, x.Name);
-					Assert.Equal(1024, x.Value);
+					Assert.Equal(1024U, x.Value);
 				});
 		}
 
@@ -94,13 +95,13 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 			_sut.Confirm("streamA", 1024);
 			_sut.Confirm("streamB", 1026);
 			Assert.False(_sut.GetOrReserve("streamC", out var numberC, out _, out _));
-			Assert.Equal(1028, numberC);
+			Assert.Equal(1028U, numberC);
 		}
 
 		[Fact]
 		public void can_cancel_reservations() {
 			Assert.False(_sut.GetOrReserve("streamA", out var numberA, out _, out _));
-			Assert.Equal(1024, numberA);
+			Assert.Equal(1024U, numberA);
 			_sut.CancelReservations();
 			Assert.False(_sut.GetOrReserve("streamC", out var numberC, out _, out _));
 			Assert.Equal(numberA, numberC);
@@ -151,7 +152,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 			Assert.Equal(streamAId, streamBId);
 		}
 
-		static readonly IEnumerable<(long StreamId, string StreamName)> _streamsSource =
+		static readonly IEnumerable<(StreamId StreamId, string StreamName)> _streamsSource =
 			Enumerable
 				.Range(0, int.MaxValue)
 				.Select(x => {
@@ -176,7 +177,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 			_sut.InitializeWithConfirmed(source);
 		}
 
-		static IList<(long StreamId, string StreamName)> GenerateStreamsStream(int numStreams) {
+		static IList<(StreamId StreamId, string StreamName)> GenerateStreamsStream(int numStreams) {
 			return _streamsSource.Take(numStreams).ToList();
 		}
 
@@ -237,7 +238,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 
 			void GetOrReserve() {
 				Assert.True(_sut.GetOrReserve("stream2000", out var streamId, out _, out _));
-				Assert.Equal(2000, streamId);
+				Assert.Equal(2000U, streamId);
 			}
 
 			GetOrReserve();
@@ -254,12 +255,12 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 			var numStreams = 100_000;
 			PopulateSut(numStreams);
 
-			Assert.Equal(2000, _persistence.LookupValue("stream2000"));
+			Assert.Equal(2000U, _persistence.LookupValue("stream2000"));
 
 			var sw = new Stopwatch();
 			sw.Start();
 			for (int i = 0; i < 100_000; i++)
-				Assert.Equal(2000, _persistence.LookupValue("stream2000"));
+				Assert.Equal(2000U, _persistence.LookupValue("stream2000"));
 			Assert.True(sw.ElapsedMilliseconds < 1000);
 		}
 

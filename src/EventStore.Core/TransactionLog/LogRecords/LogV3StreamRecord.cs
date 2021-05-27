@@ -2,12 +2,13 @@
 using EventStore.Core.LogV3;
 using EventStore.Core.Services;
 using EventStore.LogV3;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	// todo: when we have partition records etc there might be a baseclass to refactor
 	// the string payload to.
-	public class LogV3StreamRecord : LogV3Record<StringPayloadRecord<Raw.StreamHeader>>, IEquatable<LogV3StreamRecord>, IPrepareLogRecord<long> {
-		public long EventStreamId => LogV3SystemStreams.StreamsCreatedStreamNumber;
+	public class LogV3StreamRecord : LogV3Record<StringPayloadRecord<Raw.StreamHeader>>, IEquatable<LogV3StreamRecord>, IPrepareLogRecord<StreamId> {
+		public StreamId EventStreamId => LogV3SystemStreams.StreamsCreatedStreamNumber;
 		// so we can see the stream name in the webui if we want
 		public PrepareFlags Flags => PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
 		public long TransactionPosition => LogPosition;
@@ -21,7 +22,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public ReadOnlyMemory<byte> Metadata => ReadOnlyMemory<byte>.Empty;
 
 		public string StreamName => Record.StringPayload;
-		public long StreamNumber => Record.SubHeader.ReferenceNumber;
+		public StreamId StreamNumber => Record.SubHeader.ReferenceNumber;
 
 		public LogV3StreamRecord(
 			Guid streamId,
@@ -44,7 +45,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			Record = StringPayloadRecord.Create(new RecordView<Raw.StreamHeader>(bytes));
 		}
 
-		public IPrepareLogRecord<long> CopyForRetry(long logPosition, long transactionPosition) {
+		public IPrepareLogRecord<StreamId> CopyForRetry(long logPosition, long transactionPosition) {
 			return new LogV3StreamRecord(
 				streamId: Record.Header.RecordId,
 				timeStamp: Record.Header.TimeStamp,

@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class happy_case_writing_and_subscribing_to_normal_events_manual_ack<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private const int BufferCount = 10;
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class happy_case_writing_and_subscribing_to_normal_events_auto_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private const int BufferCount = 10;
 		private const int EventWriteCount = BufferCount * 2;
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class happy_case_catching_up_to_normal_events_auto_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private const int BufferCount = 10;
 		private const int EventWriteCount = BufferCount * 2;
@@ -158,7 +158,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class happy_case_catching_up_to_normal_events_manual_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private const int BufferCount = 10;
 		private const int EventWriteCount = BufferCount * 2;
@@ -208,7 +208,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class happy_case_catching_up_to_link_to_events_manual_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private const int BufferCount = 10;
 		private const int EventWriteCount = BufferCount * 2;
@@ -262,7 +262,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class happy_case_catching_up_to_link_to_events_auto_ack<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private const int BufferCount = 10;
 		private const int EventWriteCount = BufferCount * 2;
@@ -314,7 +314,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_writing_and_subscribing_to_normal_events_manual_nack<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private const int BufferCount = 10;
@@ -364,7 +364,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_connection_drops_messages_that_have_run_out_of_retries_are_not_retried<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly TaskCompletionSource<bool> _subscriptionDropped = new TaskCompletionSource<bool>();

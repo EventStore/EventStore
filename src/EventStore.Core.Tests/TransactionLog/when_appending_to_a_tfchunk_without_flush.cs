@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_appending_to_a_tfchunk_without_flush<TLogFormat, TStreamId> : SpecificationWithFilePerTestFixture {
 		private TFChunk _chunk;
 		private readonly Guid _corrId = Guid.NewGuid();

@@ -6,7 +6,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 		[Fact]
 		public void can_get_size() {
 			var sut = new LogV3Sizer();
-			Assert.Equal(8, sut.GetSizeInBytes(12345));
+			Assert.Equal(4, sut.GetSizeInBytes(12345));
 		}
 	}
 }

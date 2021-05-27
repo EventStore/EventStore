@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "No such thing as a V0 prepare in LogV3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "No such thing as a V0 prepare in LogV3")]
 	public class when_reading_deleted_stream_written_with_old_log_record_version<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private Guid _id1;
 		private Guid _id2;

@@ -11,7 +11,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();

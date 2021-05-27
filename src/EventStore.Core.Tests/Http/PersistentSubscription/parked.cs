@@ -19,7 +19,7 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_parking_a_message<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private string _nackLink;
 		private Guid _eventIdToPark;
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]	
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]	
 	class when_replaying_one_all_parked_message<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private string _nackLink;
 		private Guid _eventIdToPark;
@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_replaying_multiple_all_parked_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private List<Guid> _parkedEventIds = new List<Guid>();
 		private List<Guid> _receivedEventId = new List<Guid>();
@@ -244,7 +244,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_replaying_multiple_some_parked_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private List<Guid> _parkedEventIds = new List<Guid>();
 		private List<Guid> _receivedEventId = new List<Guid>();

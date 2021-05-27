@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_getting_a_stream_without_accept_header<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_getting_a_stream_with_description_document_media_type<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_getting_description_document<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;
@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_getting_description_document_and_subscription_exists_for_stream<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _descriptionDocument;
 		private List<JToken> _links;

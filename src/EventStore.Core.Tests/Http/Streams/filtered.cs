@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_with_invalid_context<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStream,
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_with_invalid_type<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStream,
@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_with_invalid_data<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStream,
@@ -96,7 +96,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
@@ -146,7 +146,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_feed_events_by_event_type_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -169,7 +169,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_feed_events_by_event_type_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_feed_events_by_stream_id_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -213,7 +213,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_feed_events_by_stream_id_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -235,7 +235,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_backward_feed_events_filtering_system_events<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -257,7 +257,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_with_invalid_context<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStreamForward,
@@ -273,7 +273,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_with_invalid_type<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStreamForward,
@@ -288,7 +288,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_with_invalid_data<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			protected override Task When() =>
 				GetJson<JObject>(AllFilteredStreamForward,
@@ -303,7 +303,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_feed_head<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private JObject _feed;
 
@@ -345,7 +345,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_feed_events_by_event_type_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -368,7 +368,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_feed_events_by_event_type_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -390,7 +390,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_feed_events_by_stream_id_and_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -412,7 +412,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_feed_events_by_stream_id_and_regex<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 
@@ -434,7 +434,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_forward_feed_events_filtering_system_events<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 			private List<string> _eventTypes;
 

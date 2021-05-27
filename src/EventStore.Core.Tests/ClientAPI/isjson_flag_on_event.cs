@@ -14,7 +14,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class isjson_flag_on_event<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private MiniNode<TLogFormat, TStreamId> _node;
 

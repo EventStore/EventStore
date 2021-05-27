@@ -12,7 +12,7 @@ using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_stopping_a_projection_with_existing_state_without_updating_the_state<TLogFormat, TStreamId> :
 			TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {

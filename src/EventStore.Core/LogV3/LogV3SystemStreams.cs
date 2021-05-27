@@ -1,51 +1,52 @@
 ﻿using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
-	public class LogV3SystemStreams : ISystemStreamLookup<long> {
+	public class LogV3SystemStreams : ISystemStreamLookup<StreamId> {
 		// Virtual streams are streams that exist without requiring a stream record.
 		// Reserving a thousand. Doubtful we will need many, but just in case.
 		// As an alternative to reserving virtual streams, we could add their stream records as part
 		// of the database bootstrapping. This would be odd for the AllStream
 		// but more appealing for the settings stream.
 		// Reservations are 2 apart to make room for their metastreams.
-		public static long FirstRealStream { get; } = 1024;
+		public static StreamId FirstRealStream { get; } = 1024;
 		// difference between each stream record (2 because of metastreams)
-		public static long StreamInterval { get; } = 2;
+		public static StreamId StreamInterval { get; } = 2;
 
 		// Even streams that dont exist can be normal/meta and user/system
 		// e.g. for default ACLs.
-		public const long NoUserStream = 0;
-		public const long NoUserMetastream = 1;
-		public const long NoSystemStream = 2;
-		public const long NoSystemMetastream = 3;
+		public const StreamId NoUserStream = 0;
+		public const StreamId NoUserMetastream = 1;
+		public const StreamId NoSystemStream = 2;
+		public const StreamId NoSystemMetastream = 3;
 
-		public const long FirstVirtualStream = 4;
+		public const StreamId FirstVirtualStream = 4;
 
 		// virtual stream so that we can write metadata to $$$all
-		private const long AllStreamNumber = 4;
+		private const StreamId AllStreamNumber = 4;
 
 		// virtual stream so that we can index StreamRecords for looking up stream names
-		public const long StreamsCreatedStreamNumber = 6;
+		public const StreamId StreamsCreatedStreamNumber = 6;
 
 		// virtual stream for storing system settings
-		private const long SettingsStreamNumber = 8;
+		private const StreamId SettingsStreamNumber = 8;
 
-		public long AllStream => AllStreamNumber;
-		public long SettingsStream => SettingsStreamNumber;
+		public StreamId AllStream => AllStreamNumber;
+		public StreamId SettingsStream => SettingsStreamNumber;
 
-		private readonly IMetastreamLookup<long> _metastreams;
-		private readonly INameLookup<long> _streamNames;
+		private readonly IMetastreamLookup<StreamId> _metastreams;
+		private readonly INameLookup<StreamId> _streamNames;
 
 		public LogV3SystemStreams(
-			IMetastreamLookup<long> metastreams,
-			INameLookup<long> streamNames) {
+			IMetastreamLookup<StreamId> metastreams,
+			INameLookup<StreamId> streamNames) {
 
 			_metastreams = metastreams;
 			_streamNames = streamNames;
 		}
 
-		public static bool TryGetVirtualStreamName(long streamId, out string name) {
+		public static bool TryGetVirtualStreamName(StreamId streamId, out string name) {
 			if (!IsVirtualStream(streamId)) {
 				name = null;
 				return false;
@@ -61,7 +62,7 @@ namespace EventStore.Core.LogV3 {
 			return name != null;
 		}
 
-		public static bool TryGetVirtualStreamId(string name, out long streamId) {
+		public static bool TryGetVirtualStreamId(string name, out StreamId streamId) {
 			switch (name) {
 				case SystemStreams.AllStream:
 					streamId = AllStreamNumber;
@@ -85,7 +86,7 @@ namespace EventStore.Core.LogV3 {
 		// for now do the latter because (1) allocating a range of numbers will probably get fiddly
 		// and (2) i expect we will find that at the point we are trying to determine if a stream is a system stream then
 		// we will have already looked up its info in the stream index, so this call will become trivial or unnecessary.
-		public bool IsSystemStream(long streamId) {
+		public bool IsSystemStream(StreamId streamId) {
 			if (IsVirtualStream(streamId) ||
 				_metastreams.IsMetaStream(streamId) ||
 				streamId == NoSystemStream)
@@ -98,13 +99,13 @@ namespace EventStore.Core.LogV3 {
 			return SystemStreams.IsSystemStream(streamName);
 		}
 
-		private static bool IsVirtualStream(long streamId) =>
+		private static bool IsVirtualStream(StreamId streamId) =>
 			FirstVirtualStream <= streamId && streamId < FirstRealStream;
 
-		public bool IsMetaStream(long streamId) => _metastreams.IsMetaStream(streamId);
+		public bool IsMetaStream(StreamId streamId) => _metastreams.IsMetaStream(streamId);
 
-		public long MetaStreamOf(long streamId) => _metastreams.MetaStreamOf(streamId);
+		public StreamId MetaStreamOf(StreamId streamId) => _metastreams.MetaStreamOf(streamId);
 
-		public long OriginalStreamOf(long streamId) => _metastreams.OriginalStreamOf(streamId);
+		public StreamId OriginalStreamOf(StreamId streamId) => _metastreams.OriginalStreamOf(streamId);
 	}
 }

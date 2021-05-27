@@ -1,9 +1,10 @@
 using System;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.LogRecords;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
-	public class LogV3RecordFactory : IRecordFactory<long> {
+	public class LogV3RecordFactory : IRecordFactory<StreamId> {
 		public LogV3RecordFactory() {
 			if (!BitConverter.IsLittleEndian) {
 				// to support big endian we would need to adjust some of the bit
@@ -15,18 +16,18 @@ namespace EventStore.Core.LogV3 {
 
 		public bool ExplicitStreamCreation => true;
 
-		public IPrepareLogRecord<long> CreateStreamRecord(
+		public IPrepareLogRecord<StreamId> CreateStreamRecord(
 			Guid streamId,
 			long logPosition,
 			DateTime timeStamp,
-			long streamNumber,
+			StreamId streamNumber,
 			string streamName) {
 
 			var result = new LogV3StreamRecord(
 				streamId: streamId,
 				logPosition: logPosition,
 				timeStamp: timeStamp,
-				streamNumber: (uint)streamNumber, // todo: switch to uint
+				streamNumber: streamNumber,
 				streamName: streamName);
 
 			return result;
@@ -43,13 +44,13 @@ namespace EventStore.Core.LogV3 {
 			return result;
 		}
 
-		public IPrepareLogRecord<long> CreatePrepare(
+		public IPrepareLogRecord<StreamId> CreatePrepare(
 			long logPosition,
 			Guid correlationId,
 			Guid eventId,
 			long transactionPosition,
 			int transactionOffset,
-			long eventStreamId,
+			StreamId eventStreamId,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,

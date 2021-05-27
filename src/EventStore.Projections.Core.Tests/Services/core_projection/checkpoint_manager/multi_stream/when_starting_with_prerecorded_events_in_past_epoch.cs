@@ -9,7 +9,7 @@ using EventStore.Projections.Core.Services;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager.multi_stream {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_starting_with_prerecorded_events_in_past_epoch<TLogFormat, TStreamId> : TestFixtureWithMultiStreamCheckpointManager<TLogFormat, TStreamId> {
 		private readonly CheckpointTag _tag1 =
 			CheckpointTag.FromStreamPositions(0, new Dictionary<string, long> {{"a", 0}, {"b", 0}, {"c", 1}});

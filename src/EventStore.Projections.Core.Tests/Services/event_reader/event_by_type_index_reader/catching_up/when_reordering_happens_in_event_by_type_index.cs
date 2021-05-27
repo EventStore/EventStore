@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_starting_with_empty_index<TLogFormat, TStreamId> : ReadingReorderedEventsInTheIndexTestFixture<TLogFormat, TStreamId> {
 			protected override void GivenInitialIndexState() {
 				NoStream("$et-type1");
@@ -118,7 +118,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_starting_with_partially_built_index<TLogFormat, TStreamId> : ReadingReorderedEventsInTheIndexTestFixture<TLogFormat, TStreamId> {
 			protected override void GivenInitialIndexState() {
 				// simulate index-by-type system projection

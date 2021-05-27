@@ -17,7 +17,7 @@ using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_streams_deleter.when_deleting {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_emitted_streams_read_times_out<TLogFormat, TStreamId> : with_emitted_stream_deleter<TLogFormat, TStreamId>,
 		IHandle<TimerMessage.Schedule> {
 		protected Action _onDeleteStreamCompleted;

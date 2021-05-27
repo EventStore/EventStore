@@ -6,7 +6,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class
 		when_having_two_intermingled_transactions_spanning_few_chunks_read_index_should<TLogFormat, TStreamId>
 		: ReadIndexTestScenario<TLogFormat, TStreamId> {

@@ -12,7 +12,7 @@ using EventStore.Core.Tests.Http.Users.users;
 
 namespace EventStore.Core.Tests.Http.Streams {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_posting_metadata_as_json_to_non_existing_stream<TLogFormat, TStreamId>
 		: with_admin_user<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_posting_metadata_as_json_to_existing_stream<TLogFormat, TStreamId>
 		: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId> {
 		protected override async Task Given() {
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_getting_metadata_for_an_existing_stream_without_an_accept_header<TLogFormat, TStreamId> :
 			HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId> {
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_getting_metadata_for_an_existing_stream_and_no_metadata_exists<TLogFormat, TStreamId>
 		: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId> {

@@ -13,6 +13,7 @@ using EventStore.Core.Tests.ClientAPI;
 using NUnit.Framework;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 using Position = EventStore.Core.Services.Transport.Grpc.Position;
+using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
@@ -32,7 +33,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			var logFormats = new[] {
 					(typeof(LogFormat.V2), typeof(string)),
-					(typeof(LogFormat.V3), typeof(long)),
+					(typeof(LogFormat.V3), typeof(LogV3StreamId)),
 				};
 
 			return from checkpointInterval in checkpointIntervalMultipliers

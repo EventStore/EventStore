@@ -10,7 +10,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class append_to_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType = TcpType.Ssl;
 		private MiniNode<TLogFormat, TStreamId> _node;
@@ -383,7 +383,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class ssl_append_to_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType = TcpType.Ssl;
 		protected MiniNode<TLogFormat, TStreamId> _node;

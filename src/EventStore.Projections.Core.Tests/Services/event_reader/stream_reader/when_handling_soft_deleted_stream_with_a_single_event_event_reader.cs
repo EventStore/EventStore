@@ -13,7 +13,7 @@ using EventStore.Projections.Core.Messages;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.stream_reader {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_handling_soft_deleted_stream_with_a_single_event_event_reader<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private StreamEventReader _streamEventReader;
 		private Guid _distibutionPointCorrelationId;

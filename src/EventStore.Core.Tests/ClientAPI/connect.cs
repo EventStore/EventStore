@@ -10,9 +10,9 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Normal)]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Normal)]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Normal)]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Ssl)]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Ssl)]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Ssl)]
 	public class connect<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType;
 

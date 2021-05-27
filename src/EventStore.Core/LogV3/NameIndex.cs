@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using EventStore.Core.LogAbstraction;
 using Serilog;
-using Value = System.Int64;
+using Value = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
 	// There are two components to the NameIndex. The NameIndex class and the INameIndexPersistence

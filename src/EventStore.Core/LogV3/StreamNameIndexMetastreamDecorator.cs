@@ -1,16 +1,17 @@
 using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
 	// Decorates a StreamNameIndex, intercepting Metastream (and VirtualStream) calls
-	public class StreamNameIndexMetastreamDecorator : INameIndex<long> {
-		private readonly INameIndex<long> _wrapped;
-		private readonly IMetastreamLookup<long> _metastreams;
+	public class StreamNameIndexMetastreamDecorator : INameIndex<StreamId> {
+		private readonly INameIndex<StreamId> _wrapped;
+		private readonly IMetastreamLookup<StreamId> _metastreams;
 
 		public StreamNameIndexMetastreamDecorator(
-			INameIndex<long> wrapped,
-			IMetastreamLookup<long> metastreams) {
+			INameIndex<StreamId> wrapped,
+			IMetastreamLookup<StreamId> metastreams) {
 
 			_wrapped = wrapped;
 			_metastreams = metastreams;
@@ -20,7 +21,7 @@ namespace EventStore.Core.LogV3 {
 			_wrapped.CancelReservations();
 		}
 
-		public bool GetOrReserve(string streamName, out long streamId, out long createdId, out string createdName) {
+		public bool GetOrReserve(string streamName, out StreamId streamId, out StreamId createdId, out string createdName) {
 			Ensure.NotNullOrEmpty(streamName, "streamName");
 			if (SystemStreams.IsMetastream(streamName)) {
 				streamName = SystemStreams.OriginalStreamOf(streamName);

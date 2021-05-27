@@ -9,7 +9,7 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.LogAbstraction;
 using FASTER.core;
 using Serilog;
-using Value = System.Int64;
+using Value = System.UInt32;
 
 namespace EventStore.Core.LogV3.FASTER {
 	public class NameIndexPersistence {
@@ -18,7 +18,7 @@ namespace EventStore.Core.LogV3.FASTER {
 
 	public class FASTERNameIndexPersistence :
 		NameIndexPersistence,
-		INameIndexPersistence<long> {
+		INameIndexPersistence<Value> {
 
 		private static readonly Encoding _utf8NoBom = new UTF8Encoding(false, true);
 		private readonly IDevice _log;

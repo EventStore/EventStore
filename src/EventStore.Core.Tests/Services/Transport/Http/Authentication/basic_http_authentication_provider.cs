@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_handling_a_request_without_an_authorization_header<TLogFormat, TStreamId> : TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
 			private bool _authenticateResult;
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_handling_a_request_with_correct_user_name_and_password<TLogFormat, TStreamId> :
 				TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_handling_a_request_with_incorrect_user_name_and_password<TLogFormat, TStreamId> :
 				TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {

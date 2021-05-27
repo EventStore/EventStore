@@ -2,7 +2,7 @@
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_building_an_index_off_tfile_with_non_zero_capacity<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		public when_building_an_index_off_tfile_with_non_zero_capacity() : base(streamInfoCacheCapacity: 20) {
 		}
