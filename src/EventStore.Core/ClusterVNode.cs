@@ -572,6 +572,7 @@ namespace EventStore.Core {
 				InMemory = options.Database.MemDb,
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
+				LruSize = options.Cluster.StreamInfoCacheCapacity,
 				MaxReaderCount = options.Database.GetPTableMaxReaderCount(),
 				SkipIndexScanOnReads = options.Application.SkipIndexScanOnReads,
 			});

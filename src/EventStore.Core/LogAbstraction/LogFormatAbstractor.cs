@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogV2;
 using EventStore.Core.LogV3;
@@ -12,6 +13,7 @@ namespace EventStore.Core.LogAbstraction {
 		public string IndexDirectory { get; init; }
 		public bool InMemory { get; init; }
 		public int InitialReaderCount { get; init; } = ESConsts.PTableInitialReaderCount;
+		public int LruSize { get; init; } = 10_000;
 		public int MaxReaderCount { get; init; } = 100;
 		public bool SkipIndexScanOnReads { get; init; }
 	}
@@ -47,15 +49,31 @@ namespace EventStore.Core.LogAbstraction {
 			var streamNameIndex = GenStreamNameIndex(options, streamNameIndexPersistence);
 			var metastreams = new LogV3Metastreams();
 
+			ILRUCache<LogV3StreamId, string> streamNameLookupLru = null;
+			INameIndexConfirmer<LogV3StreamId> streamNameIndexConfirmer = streamNameIndex;
+
+			var useStreamNameLookupLru = options.LruSize > 0;
+			if (useStreamNameLookupLru) {
+				streamNameLookupLru = new LRUCache<LogV3StreamId, string>(options.LruSize);
+				streamNameIndexConfirmer = new NameConfirmerLruDecorator<LogV3StreamId>(streamNameLookupLru, streamNameIndexConfirmer);
+			}
+
 			var abstractor = new LogFormatAbstractor<LogV3StreamId>(
 				lowHasher: new IdentityLowHasher(),
 				highHasher: new IdentityHighHasher(),
 				streamNameIndex: new StreamNameIndexMetastreamDecorator(streamNameIndex, metastreams),
-				streamNameIndexConfirmer: streamNameIndex,
+				streamNameIndexConfirmer: streamNameIndexConfirmer,
 				streamIds: new StreamIdLookupMetastreamDecorator(streamNameIndexPersistence, metastreams),
 				metastreams: metastreams,
 				streamNamesProvider: new AdHocStreamNamesProvider<LogV3StreamId>(indexReader => {
 					INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
+
+					if (useStreamNameLookupLru) {
+						streamNames = new NameLookupLruDecorator<LogV3StreamId>(
+							lru: streamNameLookupLru,
+							wrappedLookup: streamNames);
+					}
+
 					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
 					streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
 					return (systemStreams, streamNames);
