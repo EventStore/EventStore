@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		private MiniNode<TLogFormat, TStreamId> _node;
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.To(node, _tcpType);
+			return TestConnection.To(node, _tcpType);
 		}
 
 		[OneTimeSetUp]
@@ -389,7 +389,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		protected MiniNode<TLogFormat, TStreamId> _node;
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.To(node, _tcpType);
+			return TestConnection.To(node, _tcpType);
 		}
 
 

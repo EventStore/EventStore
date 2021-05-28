@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
+			return TestConnection.Create(node.TcpEndPoint);
 		}
 
 		[Test, Category("LongRunning")]
@@ -176,6 +176,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var subscription = store.SubscribeToAllFrom(lastEvent.OriginalPosition,
 					CatchUpSubscriptionSettings.Default,
 					(x, y) => {
+						if (y.Event.EventStreamId == SystemStreams.StreamsCreatedStream) {
+							return Task.CompletedTask;
+						}
 						events.Add(y);
 						appeared.Signal();
 						return Task.CompletedTask;

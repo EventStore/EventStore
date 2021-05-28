@@ -67,7 +67,7 @@ namespace EventStore.Core {
 
 		public static ClusterVNode<TStreamId> Create<TStreamId>(
 			ClusterVNodeOptions options,
-			LogFormatAbstractor<TStreamId> logFormat,
+			ILogFormatAbstractorFactory<TStreamId> logFormatAbstractorFactory,
 			AuthenticationProviderFactory authenticationProviderFactory = null,
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> factories = null,
@@ -76,7 +76,7 @@ namespace EventStore.Core {
 
 			return new ClusterVNode<TStreamId>(
 				options,
-				logFormat,
+				logFormatAbstractorFactory,
 				authenticationProviderFactory,
 				authorizationProviderFactory,
 				factories,
@@ -210,7 +210,7 @@ namespace EventStore.Core {
 		}
 
 		public ClusterVNode(ClusterVNodeOptions options,
-			LogFormatAbstractor<TStreamId> logFormat,
+			ILogFormatAbstractorFactory<TStreamId> logFormatAbstractorFactory,
 			AuthenticationProviderFactory authenticationProviderFactory = null,
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
@@ -568,6 +568,13 @@ namespace EventStore.Core {
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
 
+			var logFormat = logFormatAbstractorFactory.Create(new() {
+				InMemory = options.Database.MemDb,
+				IndexDirectory = indexPath,
+				InitialReaderCount = ESConsts.PTableInitialReaderCount,
+				MaxReaderCount = options.Database.GetPTableMaxReaderCount(),
+			});
+
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
 				logFormat.LowHasher,
 				logFormat.HighHasher,
@@ -588,9 +595,11 @@ namespace EventStore.Core {
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
 				tableIndex,
+				logFormat.StreamNameIndexConfirmer,
 				logFormat.StreamIds,
 				logFormat.StreamNamesProvider,
 				logFormat.EmptyStreamId,
+				logFormat.StreamIdConverter,
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,
 				options.Cluster.StreamInfoCacheCapacity,

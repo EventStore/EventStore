@@ -148,7 +148,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void read_all_forward_returns_all_records_including_expired_ones() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords();
 			Assert.AreEqual(12, records.Count);
 			Assert.AreEqual(_r11, records[0].Event);
 			Assert.AreEqual(_r21, records[1].Event);
@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void read_all_backward_returns_all_records_including_expired_ones() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords();
 			Assert.AreEqual(12, records.Count);
 			Assert.AreEqual(_r11, records[11].Event);
 			Assert.AreEqual(_r21, records[10].Event);

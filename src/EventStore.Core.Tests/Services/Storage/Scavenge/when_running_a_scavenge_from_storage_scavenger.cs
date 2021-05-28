@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		}
 
 		public async Task When() {
-			using (var conn = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint, TcpType.Ssl, DefaultData.AdminCredentials)) {
+			using (var conn = TestConnection.Create(_node.TcpEndPoint, TcpType.Ssl, DefaultData.AdminCredentials)) {
 				await conn.ConnectAsync();
 				var countdown = new CountdownEvent(2);
 				_result = new List<ResolvedEvent>();

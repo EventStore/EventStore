@@ -111,11 +111,19 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public void handle_paging_between_events_returns_correct_number_of_events_for_max_search_window_forward() {
 			var filter = Filter.EventType.Prefix("BE");
 
-			var slice = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 20, false, filter, maxSearchWindow: 20)
+			var slice = _conn.FilteredReadAllEventsForwardAsync(Position.Start, 30, false, filter, maxSearchWindow: 30)
 				.GetAwaiter()
 				.GetResult();
 
-			Assert.AreEqual(2, slice.Events.Length); // Includes system events at start of stream
+			// Includes system events at start of stream
+			var expectedCount = 12;
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
+				// account for stream records: $scavenges, $user-admin, $user-ops, $users, stream-a
+				expectedCount -= 5;
+			}
+
+			Assert.AreEqual(expectedCount, slice.Events.Length);
 		}
 
 		[Test, Category("LongRunning")]

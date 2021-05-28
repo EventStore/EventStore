@@ -32,7 +32,6 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 
 		protected ConcurrentQueue<StorageMessage.PrepareAck> PrepareAcks = new ConcurrentQueue<StorageMessage.PrepareAck>();
 		protected ConcurrentQueue<StorageMessage.CommitAck> CommitAcks = new ConcurrentQueue<StorageMessage.CommitAck>();
-		private static LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {

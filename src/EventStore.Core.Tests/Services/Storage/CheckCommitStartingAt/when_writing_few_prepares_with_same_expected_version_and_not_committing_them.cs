@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare0.LogPosition,
 				WriterCheckpoint.ReadNonFlushed());
 
-			_streamNameIndex.GetOrAddId("ES", out var streamId, out _, out _);
+			var streamId = _logFormat.StreamIds.LookupValue("ES");
 
 			Assert.AreEqual(CommitDecision.Ok, res.Decision);
 			Assert.AreEqual(streamId, res.EventStreamId);

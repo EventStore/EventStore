@@ -21,9 +21,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
-			return new[] {
-				dbResult.Recs[0].Where((x, i) => i >= 3).ToArray()
-			};
+			return LogFormatHelper<TLogFormat, TStreamId>.IsV2
+				? new[] { dbResult.Recs[0].Where((x, i) => i >= 3).ToArray() }
+				: new[] { dbResult.Recs[0].Where((x, i) => i == 0 || i >= 4).ToArray() };
 		}
 
 		[Test]

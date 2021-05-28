@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 	public class TestCases : IEnumerable {
 		public IEnumerator GetEnumerator() {
 			yield return new object[] {typeof(LogFormat.V2), typeof(string), new ByLengthHasher(), new ByLengthHasher(), "hhh", "hh", "h"};
-			yield return new object[] {typeof(LogFormat.V3), typeof(long), new IdentityLowHasher(), new IdentityHighHasher(), 3L, 2L, 1L};
+			yield return new object[] {typeof(LogFormat.V3), typeof(long), new IdentityLowHasher(), new IdentityHighHasher(), 1028L, 1026L, 1024L};
 		}
 	}
 
@@ -35,7 +35,6 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 		private static TStreamId _streamId1;
 		private static TStreamId _streamId2;
 		private static TStreamId _streamId3;
-		private readonly LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		public
 			table_index_when_merging_upgrading_to_64bit_if_single_stream_entry_doesnt_exist_drops_entry_and_carries_on(
@@ -56,9 +55,10 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
+			var emptyStreamId = LogFormatHelper<TLogFormat, TStreamId>.EmptyStreamId;
 			_indexDir = PathName;
 			var fakeReader = new TFReaderLease(new FakeIndexReader2());
-			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
+			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: 3),
 				() => fakeReader,
 				PTableVersions.IndexV1,
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 
 			_tableIndex.Close(false);
 
-			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
+			_tableIndex = new TableIndex<TStreamId>(_indexDir, _lowHasher, _highHasher, emptyStreamId,
 				() => new HashListMemTable(_ptableVersion, maxSize: 3),
 				() => fakeReader,
 				_ptableVersion,
@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			}
 
 			public RecordReadResult TryReadAt(long position) {
-				TStreamId streamId = default;
+				TStreamId streamId;
 				switch (position) {
 					case 1:
 						streamId = _streamId1;
@@ -162,8 +162,8 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 						throw new ArgumentOutOfRangeException("Unexpected position look up.");
 				}
 
-				var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-				var record = LogRecord.Prepare(logFormat.RecordFactory, position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+				var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+				var record = LogRecord.Prepare(recordFactory, position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 					streamId, -1, PrepareFlags.None, "type", new byte[0], null, DateTime.UtcNow);
 				return new RecordReadResult(true, position + 1, record, 1);
 			}

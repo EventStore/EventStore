@@ -32,13 +32,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			_records = new ILogRecord[RecordsCount];
 			_results = new RecordWriteResult[RecordsCount];
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("es1", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var expectedVersion = ExpectedVersion.NoStream;
 
 			for (int i = 0; i < _records.Length - 1; ++i) {
 				_records[i] = LogRecord.SingleWrite(
-					logFormat.RecordFactory,
+					recordFactory,
 					i == 0 ? 0 : _results[i - 1].NewPosition,
 					Guid.NewGuid(),
 					Guid.NewGuid(),
@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			}
 
 			_records[_records.Length - 1] = LogRecord.Prepare(
-				logFormat.RecordFactory,
+				recordFactory,
 				_results[_records.Length - 1 - 1].NewPosition,
 				Guid.NewGuid(),
 				Guid.NewGuid(),

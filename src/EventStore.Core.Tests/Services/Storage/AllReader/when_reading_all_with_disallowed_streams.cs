@@ -37,11 +37,11 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_forward() {
-			var result = ReadIndex.ReadAllEventsForward(_forwardReadPos, 10);
-			Assert.AreEqual(2, result.Records.Count);
-			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
-			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
-			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+			var records = ReadIndex.ReadAllEventsForward(_forwardReadPos, 10).EventRecords();
+			Assert.AreEqual(2, records.Count);
+			Assert.True(records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(records.Any(x => x.Event.EventStreamId == _allowedStream2));
 		}
 
 		[Test]
@@ -100,11 +100,11 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 
 		[Test]
 		public void should_filter_out_disallowed_streams_when_reading_events_backward() {
-			var result = ReadIndex.ReadAllEventsBackward(_backwardReadPos, 10);
-			Assert.AreEqual(2, result.Records.Count);
-			Assert.True(result.Records.All(x => x.Event.EventStreamId != _disallowedStream));
-			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream1));
-			Assert.True(result.Records.Any(x => x.Event.EventStreamId == _allowedStream2));
+			var records = ReadIndex.ReadAllEventsBackward(_backwardReadPos, 10).EventRecords();
+			Assert.AreEqual(2, records.Count);
+			Assert.True(records.All(x => x.Event.EventStreamId != _disallowedStream));
+			Assert.True(records.Any(x => x.Event.EventStreamId == _allowedStream1));
+			Assert.True(records.Any(x => x.Event.EventStreamId == _allowedStream2));
 		}
 
 		[Test]

@@ -35,14 +35,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		[Category("Network")]
 		public void not_throw_on_close_if_connect_was_not_called() {
-			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
+			var connection = TestConnection.To(_node, _tcpType);
 			Assert.DoesNotThrow(connection.Close);
 		}
 
 		[Test]
 		[Category("Network")]
 		public async Task not_throw_on_close_if_called_multiple_times() {
-			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
+			var connection = TestConnection.To(_node, _tcpType);
 			await connection.ConnectAsync();
 			connection.Close();
 			Assert.DoesNotThrow(connection.Close);
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		[Category("Network")]
 		public async Task throw_invalid_operation_on_every_api_call_if_connect_was_not_called() {
-			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
+			var connection = TestConnection.To(_node, _tcpType);
 
 			const string s = "stream";
 			var events = new[] { TestEvent.NewTestEvent() };

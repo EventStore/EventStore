@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -14,13 +15,13 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]
-	public abstract class WriteEventsToIndexScenario<TLogFormat, TStreamId> {
+	public abstract class WriteEventsToIndexScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected InMemoryBus _publisher;
 		protected ITransactionFileReader _tfReader;
 		protected ITableIndex<TStreamId> _tableIndex;
 		protected IIndexBackend<TStreamId> _indexBackend;
-		protected IStreamIdLookup<TStreamId> _streamIds;
-		protected IStreamNameLookup<TStreamId> _streamNames;
+		protected IValueLookup<TStreamId> _streamIds;
+		protected INameLookup<TStreamId> _streamNames;
 		protected ISystemStreamLookup<TStreamId> _systemStreams;
 		protected IStreamNamesProvider<TStreamId> _factory;
 		protected IValidator<TStreamId> _validator;
@@ -31,8 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected ObjectPool<ITransactionFileReader> _readerPool;
 		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected const int RecordOffset = 1000;
-		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecord(string stream, int expectedVersion, string eventType, Guid eventId, long transactionPosition){
-			_logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
+		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecord(TStreamId streamId, int expectedVersion, string eventType, Guid eventId, long transactionPosition){
 			return new[]{
 				PrepareLogRecord.SingleWrite (
 					_logFormat.RecordFactory,
@@ -50,19 +50,18 @@ namespace EventStore.Core.Tests.Services.Storage {
 			};
 		}
 
-		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecords(string stream, int expectedVersion, IList<string> eventTypes, IList<Guid> eventIds, long transactionPosition){
+		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecords(TStreamId streamId, int expectedVersion, IList<string> eventTypes, IList<Guid> eventIds, long transactionPosition){
 			if(eventIds.Count != eventTypes.Count)
 				throw new Exception("eventType and eventIds length mismatch!");
 			if(eventIds.Count == 0)
 				throw new Exception("eventIds is empty");
 			if(eventIds.Count == 1)
-				return CreatePrepareLogRecord(stream, expectedVersion, eventTypes[0], eventIds[0], transactionPosition);
+				return CreatePrepareLogRecord(streamId, expectedVersion, eventTypes[0], eventIds[0], transactionPosition);
 
 			var numEvents = eventTypes.Count;
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
-			logFormat.StreamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
 			for(var i=0;i<numEvents;i++){
 				PrepareFlags flags = PrepareFlags.Data | PrepareFlags.IsCommitted;
 				if(i==0) flags |= PrepareFlags.TransactionBegin;
@@ -70,7 +69,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 				prepares.Add(
 					PrepareLogRecord.Prepare(
-						logFormat.RecordFactory,
+						recordFactory,
 						transactionPosition + RecordOffset * i,
 						Guid.NewGuid(),
 						eventIds[i],
@@ -121,9 +120,12 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		public abstract void WriteEvents();
 
-        [OneTimeSetUp]
-		public virtual void TestFixtureSetUp() {
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+		public override async Task TestFixtureSetUp() {
+			await base.TestFixtureSetUp();
+
+			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+				IndexDirectory = GetFilePathFor("index"),
+			});
 			_publisher = new InMemoryBus("publisher");
 			_tfReader = new FakeInMemoryTfReader(RecordOffset);
 			_tableIndex = new FakeInMemoryTableIndex<TStreamId>();
@@ -131,24 +133,25 @@ namespace EventStore.Core.Tests.Services.Storage {
 				"ReadIndex readers pool", 5, 100,
 				() => _tfReader);
 			_indexBackend = new IndexBackend<TStreamId>(_readerPool, 100000, 100000);
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			_streamIds = logFormat.StreamIds;
-			_streamNames = logFormat.StreamNames;
-			_systemStreams = logFormat.SystemStreams;
-			_factory = logFormat.StreamNamesProvider;
-			_validator = logFormat.StreamIdValidator;
-			var emptyStreamId = logFormat.EmptyStreamId;
-			_sizer = logFormat.StreamIdSizer;
+			_streamIds = _logFormat.StreamIds;
+			_factory = _logFormat.StreamNamesProvider;
+			var converter = _logFormat.StreamIdConverter;
+			_validator = _logFormat.StreamIdValidator;
+			var emptyStreamId = _logFormat.EmptyStreamId;
+			_sizer = _logFormat.StreamIdSizer;
 			_indexReader = new IndexReader<TStreamId>(_indexBackend, _tableIndex, _factory, _validator, new StreamMetadata(maxCount: 100000), 100, false);
+			_streamNames = _logFormat.StreamNames;
+			_systemStreams = _logFormat.SystemStreams;
 			_indexWriter = new IndexWriter<TStreamId>(_indexBackend, _indexReader, _streamIds, _streamNames, _systemStreams, emptyStreamId, _sizer);
-			_indexCommitter = new Core.Services.Storage.ReaderIndex.IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex, _streamNames, _systemStreams, new InMemoryCheckpoint(-1),  false);
+			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex, _logFormat.StreamNameIndexConfirmer, _streamNames, _systemStreams, converter, new InMemoryCheckpoint(-1),  false);
 
 			WriteEvents();
 		}
 
-		[OneTimeTearDown]
-		public virtual void TestFixtureTearDown() {
+		public override Task TestFixtureTearDown() {
+			_logFormat?.Dispose();
 			_readerPool.Dispose();
+			return base.TestFixtureTearDown();
 		}
 	}
 }

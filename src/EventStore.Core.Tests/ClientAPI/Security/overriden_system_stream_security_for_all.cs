@@ -29,11 +29,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, "user1", "pa$$1");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
 				await TransStart(stream, "user1", "pa$$1");
 			}
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
 				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 				var trans = Connection.ContinueTransaction(transId, new UserCredentials("user1", "pa$$1"));
 				await trans.WriteAsync();
@@ -57,11 +57,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, null, null);
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
 				await TransStart(stream, null, null);
 			}
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
 				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 				var trans = Connection.ContinueTransaction(transId);
 				await trans.WriteAsync();
@@ -85,11 +85,11 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 			await WriteStream(stream, "adm", "admpa$$");
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
 				await TransStart(stream, "adm", "admpa$$");
 			}
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.LogFormat.SupportsExplicitTransactions) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.SupportsExplicitTransactions) {
 				var transId = (await TransStart(stream, "adm", "admpa$$")).TransactionId;
 				var trans = Connection.ContinueTransaction(transId, new UserCredentials("adm", "admpa$$"));
 				await trans.WriteAsync();

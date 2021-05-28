@@ -24,8 +24,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
+			var keep = LogFormatHelper<TLogFormat, TStreamId>.IsV2
+				? new int[] { 8, 9 }
+				: new int[] { 0, 9, 10 }; // "bla" created
+
 			return new[] {
-				dbResult.Recs[0].Where((x, i) => new[] {8, 9}.Contains(i)).ToArray(),
+				dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToArray(),
 			};
 		}
 
@@ -59,8 +63,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
+			var keep = LogFormatHelper<TLogFormat, TStreamId>.IsV2
+				? new int[] { }
+				: new int[] { 0 }; // "bla" created
+
 			return new[] {
-				dbResult.Recs[0].Where((x, i) => new int[] { }.Contains(i)).ToArray(),
+				dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToArray(),
 			};
 		}
 

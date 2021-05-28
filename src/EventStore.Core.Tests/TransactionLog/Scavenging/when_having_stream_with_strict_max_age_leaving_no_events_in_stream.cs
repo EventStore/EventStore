@@ -28,8 +28,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
+			var keep = LogFormatHelper<TLogFormat, TStreamId>.IsV2
+				? new int[] { 0, 1, 7, 8 }
+				: new int[] { 0, 1, 2, 8, 9 };
+
 			return new[] {
-				dbResult.Recs[0].Where((x, i) => new[] {0, 1, 7, 8}.Contains(i)).ToArray()
+				dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToArray(),
 			};
 		}
 

@@ -556,7 +556,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void return_all_prepares_on_read_all_forward() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(3 + 5 + 7 + 1, events.Length);
 
 			Assert.AreEqual(_prepares1[0], events[0]);
@@ -582,7 +584,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void return_all_prepares_on_read_all_backward() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event)
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(3 + 5 + 7 + 1, events.Length);
 

@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 			await _systemProjectionsCreated.WithTimeout(_timeout);
 
-			_connection = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint);
+			_connection = TestConnection.Create(_node.TcpEndPoint);
 			await _connection.ConnectAsync();
 
 			_projManager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, _timeout, _node.HttpMessageHandler);

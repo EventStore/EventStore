@@ -127,7 +127,9 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		[Test]
 		public void read_all_forward_returns_only_survived_events() {
 			var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100);
-			var records = res.Records.Select(r => r.Event).ToArray();
+			var records = res.EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 
 			Assert.AreEqual(1, records.Length);
 			Assert.AreEqual(_event2, records[0]);
@@ -136,7 +138,9 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		[Test]
 		public void read_all_backward_doesnt_return_truncated_records() {
 			var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100);
-			var records = res.Records.Select(r => r.Event).ToArray();
+			var records = res.EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 
 			Assert.AreEqual(1, records.Length);
 			Assert.AreEqual(_event2, records[0]);

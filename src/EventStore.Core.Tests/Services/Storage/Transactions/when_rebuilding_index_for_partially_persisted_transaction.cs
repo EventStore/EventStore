@@ -41,9 +41,11 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				TableIndex,
+				_logFormat.StreamNameIndexConfirmer,
 				_logFormat.StreamIds,
 				_logFormat.StreamNamesProvider,
 				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
 				0,
@@ -54,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint);
 			readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
-			ReadIndex = new TestReadIndex<TStreamId>(readIndex, _streamNameIndex);
+			ReadIndex = readIndex;
 		}
 
 		protected override void WriteTestScenario() {

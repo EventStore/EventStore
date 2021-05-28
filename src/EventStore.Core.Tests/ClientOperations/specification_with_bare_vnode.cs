@@ -6,7 +6,6 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 
@@ -15,11 +14,11 @@ namespace EventStore.Core.Tests.ClientOperations {
 		private ClusterVNode _node;
 		private readonly List<IDisposable> _disposables = new List<IDisposable>();
 		public void CreateTestNode() {
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			_node = new ClusterVNode<TStreamId>(new ClusterVNodeOptions()
 					.RunInMemory()
 					.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-						ssl_connections.GetServerCertificate()), logFormat,
+						ssl_connections.GetServerCertificate()), logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			_node.StartAsync(true).Wait();

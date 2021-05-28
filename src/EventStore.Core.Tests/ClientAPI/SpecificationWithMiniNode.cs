@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		protected abstract Task When();
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint, TcpType.Ssl);
+			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl);
 		}
 
 		[OneTimeSetUp]

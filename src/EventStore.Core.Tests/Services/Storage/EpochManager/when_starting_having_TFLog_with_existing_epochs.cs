@@ -32,16 +32,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private readonly Guid _instanceId = Guid.NewGuid();
 		private readonly List<Message> _published = new List<Message>();
 		private List<EpochRecord> _epochs;
-		private LogFormatAbstractor<TStreamId> _logFormat;
+		private static readonly IRecordFactory<TStreamId> _recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 
 		private static int GetNextEpoch() {
 			return (int)Interlocked.Increment(ref _currentEpoch);
 		}
 		private static long _currentEpoch = -1;
 
-		public when_starting_having_TFLog_with_existing_epochs() {
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-		}
 		private EpochManager GetManager() {
 			return new EpochManager(_mainBus,
 				10,
@@ -51,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				_logFormat.RecordFactory,
+				_recordFactory,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager manager) {
@@ -115,7 +112,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				_logFormat.RecordFactory,
+				_recordFactory,
 				_instanceId);
 			_epochManager.Init();
 			_cache = GetCache(_epochManager);

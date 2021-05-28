@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		private MiniNode<TLogFormat, TStreamId> _node;
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.To(node, TcpType.Ssl);
+			return TestConnection.To(node, TcpType.Ssl);
 		}
 
 		[OneTimeSetUp]

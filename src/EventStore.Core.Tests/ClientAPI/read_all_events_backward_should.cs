@@ -33,8 +33,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task return_partial_slice_if_not_enough_events() {
-			var read = await _conn.ReadAllEventsBackwardAsync(Position.End, 30, false);
-			Assert.That(read.Events.Length, Is.LessThan(30));
+			var read = await _conn.ReadAllEventsBackwardAsync(Position.End, 40, false);
+			Assert.That(read.Events.Length, Is.LessThan(40));
 			Assert.That(EventDataComparer.Equal(_testEvents.Reverse().ToArray(),
 				read.Events.Take(_testEvents.Length).Select(x => x.Event).ToArray()));
 		}

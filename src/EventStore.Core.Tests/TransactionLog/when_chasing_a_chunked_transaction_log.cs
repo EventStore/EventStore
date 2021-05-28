@@ -26,7 +26,6 @@ namespace EventStore.Core.Tests.TransactionLog {
 	public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();
-		private readonly LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 
 		[Test]
 		public void try_read_returns_false_when_writer_checkpoint_is_zero() {
@@ -69,10 +68,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void try_read_returns_record_when_writerchecksum_ahead() {
-			_logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			var recordToWrite = LogRecord.Prepare(
-				factory: _logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
@@ -125,10 +125,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 			db.Open();
 
-			_logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			var recordToWrite = LogRecord.Prepare(
-				factory: _logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
@@ -170,10 +171,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, writerchk, chaserchk));
 			db.Open();
 
-			_logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			var recordToWrite = LogRecord.Prepare(
-				factory: _logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,

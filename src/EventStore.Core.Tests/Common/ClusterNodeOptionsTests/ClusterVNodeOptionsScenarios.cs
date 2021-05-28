@@ -12,17 +12,17 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 	public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
 		protected ClusterVNode _node;
 		protected ClusterVNodeOptions _options;
-		protected LogFormatAbstractor<TStreamId> _logFormat;
+		protected ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			_options = WithOptions(
 				new ClusterVNodeOptions()
 					.RunInMemory()
 					.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 						ssl_connections.GetServerCertificate()));
-			_node = new ClusterVNode<TStreamId>(_options, _logFormat,
+			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			_node.Start();
@@ -41,11 +41,11 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 		protected int _clusterSize = 3;
 		protected int _quorumSize;
 		protected ClusterVNodeOptions _options;
-		protected LogFormatAbstractor<TStreamId> _logFormat;
+		protected ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
 
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			_quorumSize = _clusterSize / 2 + 1;
 
 			_options = WithOptions(new ClusterVNodeOptions()
@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 				.RunInMemory()
 				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate()));
-			_node = new ClusterVNode<TStreamId>(_options, _logFormat,
+			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(_ => new InternalAuthenticationProviderFactory(_)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			_node.Start();

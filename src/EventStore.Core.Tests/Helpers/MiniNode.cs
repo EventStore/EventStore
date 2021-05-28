@@ -23,7 +23,14 @@ using ILogger = Serilog.ILogger;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.Helpers {
-	public class MiniNode<TLogFormat, TStreamId> {
+	public class MiniNode {
+		protected static readonly ILogger Log = Serilog.Log.ForContext<MiniNode>();
+		public IPEndPoint TcpEndPoint { get; protected set; }
+		public IPEndPoint IntTcpEndPoint { get; protected set; }
+		public IPEndPoint HttpEndPoint { get; protected set; }
+	}
+
+	public class MiniNode<TLogFormat, TStreamId> : MiniNode {
 		public static int RunCount;
 		public static readonly Stopwatch RunningTime = new Stopwatch();
 		public static readonly Stopwatch StartingTime = new Stopwatch();
@@ -32,11 +39,6 @@ namespace EventStore.Core.Tests.Helpers {
 		public const int ChunkSize = 1024 * 1024;
 		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
 
-		private static readonly ILogger Log = Serilog.Log.ForContext<MiniNode<TLogFormat, TStreamId>>();
-
-		public IPEndPoint TcpEndPoint { get; }
-		public IPEndPoint IntTcpEndPoint { get; }
-		public IPEndPoint HttpEndPoint { get; }
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
@@ -144,8 +146,8 @@ namespace EventStore.Core.Tests.Helpers {
 				"TCP ENDPOINT:", TcpEndPoint,
 				"HTTP ENDPOINT:", HttpEndPoint);
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			Node = new ClusterVNode<TStreamId>(options, logFormat,
+			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
+			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
 			Db = Node.Db;

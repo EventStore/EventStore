@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task should_not_throw_exception_when_server_is_down() {
 			var ip = IPAddress.Loopback;
 			int port = PortsHelper.GetAvailablePort(ip);
-			using var connection = TestConnection<TLogFormat, TStreamId>.Create(new IPEndPoint(ip, port), _tcpType);
+			using var connection = TestConnection.Create(new IPEndPoint(ip, port), _tcpType);
 			await connection.ConnectAsync();
 		}
 

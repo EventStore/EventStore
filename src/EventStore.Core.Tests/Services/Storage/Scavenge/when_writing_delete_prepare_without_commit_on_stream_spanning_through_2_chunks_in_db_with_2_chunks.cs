@@ -14,10 +14,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		protected override void WriteTestScenario() {
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
-			_streamNameIndex.GetOrAddId("ES", out var esStreamId, out _, out _);
-			var prepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(),
+			GetOrReserve("ES", out var esStreamId, out var pos);
+			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos, Guid.NewGuid(), Guid.NewGuid(),
 				esStreamId, 2);
-			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			_event1 = WriteSingleEvent("ES", 1, "bla1");
@@ -55,7 +54,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_forward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(2, events.Length);
 			Assert.AreEqual(_event0, events[0]);
 			Assert.AreEqual(_event1, events[1]);
@@ -63,7 +64,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_backward_returns_all_events() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event)
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(2, events.Length);
 			Assert.AreEqual(_event1, events[0]);

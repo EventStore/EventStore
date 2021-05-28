@@ -1,56 +1,109 @@
-﻿using EventStore.Common.Utils;
+using System;
+using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogV2;
 using EventStore.Core.LogV3;
+using EventStore.Core.LogV3.FASTER;
+using EventStore.Core.Settings;
 
 namespace EventStore.Core.LogAbstraction {
-	public class LogFormatAbstractor {
-		public static LogFormatAbstractor<string> V2 { get; }
-		public static LogFormatAbstractor<long> V3 { get; }
+	public class LogFormatAbstractorOptions {
+		public string IndexDirectory { get; init; }
+		public bool InMemory { get; init; }
+		public int InitialReaderCount { get; init; } = ESConsts.PTableInitialReaderCount;
+		public int MaxReaderCount { get; init; } = 100;
 
-		static LogFormatAbstractor() {
+	}
+
+	public interface ILogFormatAbstractorFactory<TStreamId> {
+		LogFormatAbstractor<TStreamId> Create(LogFormatAbstractorOptions options);
+	}
+
+	public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
+		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions _) {
 			var streamNameIndex = new LogV2StreamNameIndex();
-			V2 = new LogFormatAbstractor<string>(
-				new XXHashUnsafe(),
-				new Murmur3AUnsafe(),
-				streamNameIndex,
-				streamNameIndex,
-				new SingletonStreamNamesProvider<string>(new LogV2SystemStreams(), streamNameIndex),
-				new LogV2StreamIdValidator(),
+			return new LogFormatAbstractor<string>(
+				lowHasher: new XXHashUnsafe(),
+				highHasher: new Murmur3AUnsafe(),
+				streamNameIndex: streamNameIndex,
+				streamNameIndexConfirmer: streamNameIndex,
+				streamIds: streamNameIndex,
+				metastreams: new LogV2SystemStreams(),
+				streamNamesProvider: new SingletonStreamNamesProvider<string>(new LogV2SystemStreams(), streamNameIndex),
+				streamIdConverter: new LogV2StreamIdConverter(),
+				streamIdValidator: new LogV2StreamIdValidator(),
 				emptyStreamId: string.Empty,
-				new LogV2Sizer(),
-				new LogV2RecordFactory(),
+				streamIdSizer: new LogV2Sizer(),
+				recordFactory: new LogV2RecordFactory(),
 				supportsExplicitTransactions: true);
+		}
+	}
 
-			var logV3StreamNameIndex = new InMemoryStreamNameIndex();
+	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<long> {
+		public LogFormatAbstractor<long> Create(LogFormatAbstractorOptions options) {
+			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
+			var streamNameIndex = GenStreamNameIndex(options, streamNameIndexPersistence);
 			var metastreams = new LogV3Metastreams();
-			V3 = new LogFormatAbstractor<long>(
+
+			var abstractor = new LogFormatAbstractor<long>(
 				lowHasher: new IdentityLowHasher(),
 				highHasher: new IdentityHighHasher(),
-				streamNameIndex: new StreamNameIndexMetastreamDecorator(logV3StreamNameIndex, metastreams),
-				streamIds: new StreamIdLookupMetastreamDecorator(logV3StreamNameIndex, metastreams),
+				streamNameIndex: new StreamNameIndexMetastreamDecorator(streamNameIndex, metastreams),
+				streamNameIndexConfirmer: streamNameIndex,
+				streamIds: new StreamIdLookupMetastreamDecorator(streamNameIndexPersistence, metastreams),
+				metastreams: metastreams,
 				streamNamesProvider: new AdHocStreamNamesProvider<long>(indexReader => {
-					// todo: IStreamNameLookup<long> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
-					IStreamNameLookup<long> streamNames = logV3StreamNameIndex;
+					INameLookup<long> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
 					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
 					streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
 					return (systemStreams, streamNames);
 				}),
+				streamIdConverter: new LogV3StreamIdConverter(),
 				streamIdValidator: new LogV3StreamIdValidator(),
 				emptyStreamId: 0,
 				streamIdSizer: new LogV3Sizer(),
 				recordFactory: new LogV3RecordFactory(),
 				supportsExplicitTransactions: false);
+			return abstractor;
+		}
+
+		static NameIndex GenStreamNameIndex(LogFormatAbstractorOptions options, INameIndexPersistence<long> persistence) {
+			var streamNameIndex = new NameIndex(
+				indexName: "StreamNameIndex",
+				firstValue: LogV3SystemStreams.FirstRealStream,
+				valueInterval: LogV3SystemStreams.StreamInterval,
+				persistence: persistence);
+			return streamNameIndex;
+		}
+
+		static INameIndexPersistence<long> GenStreamNameIndexPersistence(LogFormatAbstractorOptions options) {
+			if (options.InMemory) {
+				return new NameIndexInMemoryPersistence();
+			}
+
+			var persistence = new FASTERNameIndexPersistence(
+				indexName: "StreamNameIndexPersistence",
+				logDir: $"{options.IndexDirectory}/stream-name-index",
+				firstValue: LogV3SystemStreams.FirstRealStream,
+				valueInterval: LogV3SystemStreams.StreamInterval,
+				initialReaderCount: options.InitialReaderCount,
+				maxReaderCount: options.MaxReaderCount,
+				enableReadCache: false,
+				checkpointInterval: TimeSpan.FromSeconds(60));
+			return persistence;
 		}
 	}
 
-	public class LogFormatAbstractor<TStreamId> : LogFormatAbstractor {
+	public class LogFormatAbstractor<TStreamId> : IDisposable {
 		public LogFormatAbstractor(
 			IHasher<TStreamId> lowHasher,
 			IHasher<TStreamId> highHasher,
-			IStreamNameIndex<TStreamId> streamNameIndex,
-			IStreamIdLookup<TStreamId> streamIds,
+			INameIndex<TStreamId> streamNameIndex,
+			INameIndexConfirmer<TStreamId> streamNameIndexConfirmer,
+			IValueLookup<TStreamId> streamIds,
+			IMetastreamLookup<TStreamId> metastreams,
 			IStreamNamesProvider<TStreamId> streamNamesProvider,
+			IStreamIdConverter<TStreamId> streamIdConverter,
 			IValidator<TStreamId> streamIdValidator,
 			TStreamId emptyStreamId,
 			ISizer<TStreamId> streamIdSizer,
@@ -60,8 +113,11 @@ namespace EventStore.Core.LogAbstraction {
 			LowHasher = lowHasher;
 			HighHasher = highHasher;
 			StreamNameIndex = streamNameIndex;
+			StreamNameIndexConfirmer = streamNameIndexConfirmer;
 			StreamIds = streamIds;
+			Metastreams = metastreams;
 			StreamNamesProvider = streamNamesProvider;
+			StreamIdConverter = streamIdConverter;
 			StreamIdValidator = streamIdValidator;
 			EmptyStreamId = emptyStreamId;
 			StreamIdSizer = streamIdSizer;
@@ -69,17 +125,24 @@ namespace EventStore.Core.LogAbstraction {
 			SupportsExplicitTransactions = supportsExplicitTransactions;
 		}
 
+		public void Dispose() {
+			StreamNameIndexConfirmer?.Dispose();
+		}
+
 		public IHasher<TStreamId> LowHasher { get; }
 		public IHasher<TStreamId> HighHasher { get; }
-		public IStreamNameIndex<TStreamId> StreamNameIndex { get; }
-		public IStreamIdLookup<TStreamId> StreamIds { get; }
+		public INameIndex<TStreamId> StreamNameIndex { get; }
+		public INameIndexConfirmer<TStreamId> StreamNameIndexConfirmer { get; }
+		public IValueLookup<TStreamId> StreamIds { get; }
+		public IMetastreamLookup<TStreamId> Metastreams { get; }
 		public IStreamNamesProvider<TStreamId> StreamNamesProvider { get; }
+		public IStreamIdConverter<TStreamId> StreamIdConverter { get; }
 		public IValidator<TStreamId> StreamIdValidator { get; }
 		public TStreamId EmptyStreamId { get; }
 		public ISizer<TStreamId> StreamIdSizer { get; }
 		public IRecordFactory<TStreamId> RecordFactory { get; }
 
-		public IStreamNameLookup<TStreamId> StreamNames => StreamNamesProvider.StreamNames;
+		public INameLookup<TStreamId> StreamNames => StreamNamesProvider.StreamNames;
 		public ISystemStreamLookup<TStreamId> SystemStreams => StreamNamesProvider.SystemStreams;
 		public bool SupportsExplicitTransactions { get; }
 	}

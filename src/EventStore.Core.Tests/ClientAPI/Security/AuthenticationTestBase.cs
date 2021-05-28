@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 
 
 		public virtual IEventStoreConnection SetupConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint, TcpType.Ssl, _userCredentials);
+			return TestConnection.Create(node.TcpEndPoint, TcpType.Ssl, _userCredentials);
 		}
 
 		[OneTimeSetUp]
@@ -224,7 +224,7 @@ namespace EventStore.Core.Tests.ClientAPI.Security {
 		}
 
 		protected async Task<string> CreateStreamWithMeta(StreamMetadata metadata, string streamPrefix = null) {
-			var stream = (streamPrefix ?? string.Empty) + TestContext.CurrentContext.Test.Name;
+			var stream = (streamPrefix ?? string.Empty) + Guid.NewGuid().ToString();
 			await Connection.SetStreamMetadataAsync(stream, ExpectedVersion.NoStream,
 				metadata, new UserCredentials("adm", "admpa$$"));
 			return stream;

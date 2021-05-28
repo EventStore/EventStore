@@ -6,6 +6,6 @@ namespace EventStore.Core.LogAbstraction {
 	public interface IStreamNamesProvider<TStreamId> {
 		void SetReader(IIndexReader<TStreamId> reader);
 		ISystemStreamLookup<TStreamId> SystemStreams { get; }
-		IStreamNameLookup<TStreamId> StreamNames { get; }
+		INameLookup<TStreamId> StreamNames { get; }
 	}
 }

@@ -39,9 +39,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public class AllReader<TStreamId> : IAllReader {
 		private readonly IIndexBackend _backend;
 		private readonly IIndexCommitter _indexCommitter;
-		private readonly IStreamNameLookup<TStreamId> _streamNames;
+		private readonly INameLookup<TStreamId> _streamNames;
 
-		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, IStreamNameLookup<TStreamId> streamNames) {
+		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, INameLookup<TStreamId> streamNames) {
 			Ensure.NotNull(backend, "backend");
 			Ensure.NotNull(indexCommitter, "indexCommitter");
 			Ensure.NotNull(indexCommitter, nameof(streamNames));
@@ -92,7 +92,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					nextCommitPos = result.RecordPostPosition;
 
 					switch (result.LogRecord.RecordType) {
-						case LogRecordType.Prepare: {
+						case LogRecordType.Prepare:
+						case LogRecordType.Stream: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
@@ -217,7 +218,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					switch (result.LogRecord.RecordType) {
-						case LogRecordType.Prepare: {
+						case LogRecordType.Prepare:
+						case LogRecordType.Stream: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
@@ -309,7 +311,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private static bool IsCommitAlike(ILogRecord rec) {
 			return rec.RecordType == LogRecordType.Commit
-			       || (rec.RecordType == LogRecordType.Prepare &&
+			       || ((rec.RecordType == LogRecordType.Prepare || rec.RecordType == LogRecordType.Stream) &&
 			           ((IPrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
 		}
 	}

@@ -201,18 +201,19 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task calls_checkpoint_reached_according_to_checkpoint_message_count() {
+			var isV3 = LogFormatHelper<TLogFormat, TStreamId>.IsV3;
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 				var appeared = new TaskCompletionSource<bool>();
-				var eventsSeen = 0;
+				var eventsSeen = new List<ResolvedEvent>();
 				var checkpointsSeen = 0;
 
 				using (await store.FilteredSubscribeToAllAsync(false,
 					filter,
 					(s, e) => {
-						eventsSeen++;
+						eventsSeen.Add(e);
 						return Task.CompletedTask;
 					},
 					(s, p) => {
@@ -226,7 +227,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 					await appeared.Task.WithTimeout(Timeout);
 
-					Assert.AreEqual(10, eventsSeen);
+					Assert.AreEqual(5 /*checkpoints*/ * 2 /*considered events*/ - (isV3 ? 1 : 0) /*filtered out "stream-a" stream record event*/, eventsSeen.Count);
+					Assert.True(eventsSeen.All(x => x.Event.EventStreamId == "stream-a"));
 				}
 			}
 		}
@@ -239,7 +241,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
+			return TestConnection.Create(node.TcpEndPoint);
 		}
 	}
 }

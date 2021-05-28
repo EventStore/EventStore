@@ -10,6 +10,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.LogV3;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Histograms;
@@ -47,7 +48,7 @@ namespace EventStore.Core.Services.Storage {
 		protected readonly TFChunkWriter Writer;
 		private readonly IIndexWriter<TStreamId> _indexWriter;
 		private readonly IRecordFactory<TStreamId> _recordFactory;
-		private readonly IStreamNameIndex<TStreamId> _streamNameIndex;
+		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		protected readonly IEpochManager EpochManager;
 
@@ -89,7 +90,7 @@ namespace EventStore.Core.Services.Storage {
 			TFChunkWriter writer,
 			IIndexWriter<TStreamId> indexWriter,
 			IRecordFactory<TStreamId> recordFactory,
-			IStreamNameIndex<TStreamId> streamNameIndex,
+			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager) {
@@ -195,6 +196,7 @@ namespace EventStore.Core.Services.Storage {
 			switch (message.State) {
 				case VNodeState.Leader: {
 						_indexWriter.Reset();
+						_streamNameIndex.CancelReservations();
 						EpochManager.WriteNewEpoch(((SystemMessage.BecomeLeader)message).EpochNumber);
 						break;
 					}
@@ -249,7 +251,18 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
-				_streamNameIndex.GetOrAddId(msg.EventStreamId, out var streamId, out _, out _);
+				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				_streamNameIndex.GetOrReserve(
+					recordFactory: _recordFactory,
+					streamName: msg.EventStreamId,
+					logPosition: logPosition,
+					streamId: out var streamId,
+					streamRecord: out var streamRecord);
+				if (streamRecord != null) {
+					var res = WritePrepareWithRetry(streamRecord);
+					logPosition = res.NewPos;
+				}
+
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
 					msg.Events.Select(x => x.EventId));
 				if (commitCheck.Decision != CommitDecision.Ok) {
@@ -258,7 +271,6 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
 				if (msg.Events.Length > 0) {
 					var transactionPosition = logPosition;
 					for (int i = 0; i < msg.Events.Length; ++i) {
@@ -362,7 +374,18 @@ namespace EventStore.Core.Services.Storage {
 
 				var eventId = Guid.NewGuid();
 
-				_streamNameIndex.GetOrAddId(message.EventStreamId, out var streamId, out _, out _);
+				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				_streamNameIndex.GetOrReserve(
+					recordFactory: _recordFactory,
+					streamName: message.EventStreamId,
+					logPosition: logPosition,
+					streamId: out var streamId,
+					streamRecord: out var streamRecord);
+				if (streamRecord != null) {
+					var res = WritePrepareWithRetry(streamRecord);
+					logPosition = res.NewPos;
+				}
+
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
 					new[] { eventId });
 				if (commitCheck.Decision != CommitDecision.Ok) {
@@ -373,7 +396,7 @@ namespace EventStore.Core.Services.Storage {
 				if (message.HardDelete) {
 					// HARD DELETE
 					const long expectedVersion = EventNumber.DeletedStream - 1;
-					var record = LogRecord.DeleteTombstone(_recordFactory, Writer.Checkpoint.ReadNonFlushed(), message.CorrelationId,
+					var record = LogRecord.DeleteTombstone(_recordFactory, logPosition, message.CorrelationId,
 						eventId, streamId, expectedVersion, PrepareFlags.IsCommitted);
 					var res = WritePrepareWithRetry(record);
 					_indexWriter.PreCommit(new[] { res.Prepare });
@@ -381,7 +404,6 @@ namespace EventStore.Core.Services.Storage {
 					// SOFT DELETE
 					var metastreamId = _systemStreams.MetaStreamOf(streamId);
 					var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
-					var logPosition = Writer.Checkpoint.ReadNonFlushed();
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
 											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
@@ -581,8 +603,7 @@ namespace EventStore.Core.Services.Storage {
 					? newPos
 					: prepare.TransactionPosition;
 
-				record = _recordFactory.CopyForRetry(
-					prepare,
+				record = prepare.CopyForRetry(
 					logPosition: newPos,
 					transactionPosition: transactionPos);
 

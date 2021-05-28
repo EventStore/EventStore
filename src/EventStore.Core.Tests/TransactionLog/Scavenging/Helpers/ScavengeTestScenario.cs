@@ -13,11 +13,12 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
+using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 	[TestFixture]
 	public abstract class ScavengeTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
-		protected ITestReadIndex<TStreamId> ReadIndex;
+		protected IReadIndex<TStreamId> ReadIndex;
 
 		protected TFChunkDb Db {
 			get { return _dbResult.Db; }
@@ -27,6 +28,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		private DbResult _dbResult;
 		private ILogRecord[][] _keptRecords;
 		private bool _checked;
+		private LogFormatAbstractor<TStreamId> _logFormat;
 
 		protected virtual bool UnsafeIgnoreHardDelete() {
 			return false;
@@ -39,8 +41,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
+			var indexDirectory = GetFilePathFor("index");
+			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+				IndexDirectory = indexDirectory,
+			});
+
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
-			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig);
+			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, _logFormat);
 			_dbResult = CreateDb(dbCreationHelper);
 			_keptRecords = KeptRecords(_dbResult);
 
@@ -48,15 +55,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			_dbResult.Db.Config.ChaserCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());
 			_dbResult.Db.Config.ChaserCheckpoint.Flush();
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			var indexPath = Path.Combine(PathName, "index");
 			var readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool", Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
 				() => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
-			var lowHasher = logFormat.LowHasher;
-			var highHasher = logFormat.HighHasher;
-			var emptyStreamId = logFormat.EmptyStreamId;
-			var tableIndex = new TableIndex<TStreamId>(indexPath, lowHasher, highHasher, emptyStreamId,
+			var lowHasher = _logFormat.LowHasher;
+			var highHasher = _logFormat.HighHasher;
+			var emptyStreamId = _logFormat.EmptyStreamId;
+			var tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV3, maxSize: 200),
 				() => new TFReaderLease(readerPool),
 				PTableVersions.IndexV3,
@@ -64,24 +69,27 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				maxSizeForMemory: 100,
 				maxTablesPerLevel: 2);
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(), readerPool, tableIndex,
-				logFormat.StreamIds,
-				logFormat.StreamNamesProvider,
-				logFormat.EmptyStreamId,
-				logFormat.StreamIdValidator,
-				logFormat.StreamIdSizer,
+				_logFormat.StreamNameIndexConfirmer,
+				_logFormat.StreamIds,
+				_logFormat.StreamNamesProvider,
+				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdConverter,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamIdSizer,
 				100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
 			readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
-			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
+			ReadIndex = readIndex;
 
 			var scavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
-				logFormat.SystemStreams,
+				_logFormat.Metastreams,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 		}
 
 		public override async Task TestFixtureTearDown() {
+			_logFormat?.Dispose();
 			ReadIndex.Close();
 			_dbResult.Db.Close();
 

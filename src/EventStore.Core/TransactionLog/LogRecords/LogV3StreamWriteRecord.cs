@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using EventStore.Common.Utils;
+using EventStore.Core.LogV3;
 using EventStore.LogCommon;
 using EventStore.LogV3;
 
@@ -32,7 +33,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			Ensure.Nonnegative(transactionPosition, "transactionPosition");
 			if (transactionOffset < -1)
 				throw new ArgumentOutOfRangeException("transactionOffset");
-			Ensure.Nonnegative(eventStreamId, "eventStreamId");
+			if (eventStreamId < LogV3SystemStreams.FirstVirtualStream)
+				throw new ArgumentOutOfRangeException("eventStreamId", eventStreamId, null);
 			if (expectedVersion < Core.Data.ExpectedVersion.Any)
 				throw new ArgumentOutOfRangeException("expectedVersion");
 			eventType ??= "";
@@ -68,6 +70,22 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public string EventType => Record.Event.SystemMetadata.EventType;
 		public ReadOnlyMemory<byte> Data => Record.Event.Data;
 		public ReadOnlyMemory<byte> Metadata => Record.Event.Metadata;
+
+		public IPrepareLogRecord<long> CopyForRetry(long logPosition, long transactionPosition) {
+			return new LogV3StreamWriteRecord(
+				logPosition: logPosition,
+				transactionPosition: transactionPosition,
+				transactionOffset: TransactionOffset,
+				correlationId: CorrelationId,
+				eventId: EventId,
+				eventStreamId: EventStreamId,
+				expectedVersion: ExpectedVersion,
+				timeStamp: TimeStamp,
+				flags: Flags,
+				eventType: EventType,
+				data: Data.Span,
+				metadata: Metadata.Span);
+		}
 
 		public bool Equals(LogV3StreamWriteRecord other) {
 			if (ReferenceEquals(null, other)) return false;

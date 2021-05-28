@@ -31,15 +31,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly IIndexWriter<TStreamId> _indexWriter;
 		private readonly IIndexCommitter<TStreamId> _indexCommitter;
 		private readonly IAllReader _allReader;
-		private readonly IStreamIdLookup<TStreamId> _streamIds;
-		private readonly IStreamNameLookup<TStreamId> _streamNames;
+		private readonly IValueLookup<TStreamId> _streamIds;
+		private readonly INameLookup<TStreamId> _streamNames;
 
 		public ReadIndex(IPublisher bus,
 			ObjectPool<ITransactionFileReader> readerPool,
 			ITableIndex<TStreamId> tableIndex,
-			IStreamIdLookup<TStreamId> streamIds,
+			INameIndexConfirmer<TStreamId> streamNameIndex,
+			IValueLookup<TStreamId> streamIds,
 			IStreamNamesProvider<TStreamId> streamNamesProvider,
 			TStreamId emptyStreamName,
+			IStreamIdConverter<TStreamId> streamIdConverter,
 			IValidator<TStreamId> streamIdValidator,
 			ISizer<TStreamId> sizer,
 			int streamInfoCacheCapacity,
@@ -73,7 +75,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var systemStreams = streamNamesProvider.SystemStreams;
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
-			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, _streamNames, systemStreams, indexCheckpoint, additionalCommitChecks);
+			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames, systemStreams, streamIdConverter, indexCheckpoint, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames);
 		}
 
@@ -90,7 +92,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		TStreamId IReadIndex<TStreamId>.GetStreamId(string streamName) {
-			return _streamIds.LookupId(streamName);
+			return _streamIds.LookupValue(streamName);
 		}
 
 		string IReadIndex<TStreamId>.GetStreamName(TStreamId streamId) {

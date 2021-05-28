@@ -22,9 +22,10 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
+		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.1" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
 		<PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
-		<PackageReference Include="System.Linq.Async" Version="4.1.1" />
+		<PackageReference Include="System.Linq.Async" Version="5.0.0" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
 		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.57" />

@@ -18,6 +18,7 @@ namespace EventStore.LogV3.Tests {
 		[InlineData(typeof(Raw.EventHeader))]
 		[InlineData(typeof(Raw.PartitionHeader))]
 		[InlineData(typeof(Raw.PartitionTypeHeader))]
+		[InlineData(typeof(Raw.StreamHeader))]
 		[InlineData(typeof(Raw.StreamTypeHeader))]
 		[InlineData(typeof(Raw.StreamWriteHeader))]
 		[InlineData(typeof(Raw.EventTypeHeader))]
