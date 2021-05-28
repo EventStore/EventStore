@@ -31,6 +31,8 @@ All notable changes to this project will be documented in this file.
 - Handle missing case for UpdatePersistentSubscriptionTo{Stream,All}Result.DoesNotExist [EventStore#2941](https://github.com/EventStore/EventStore/pull/2941)
 - In gRPC projection management, disable a projection when writing a checkpoint, and abort it if not writing a checkpoint. [EventStore#2944](https://github.com/EventStore/EventStore/pull/2944)
 - Parameter count mismatch when loading the dashboard in the UI [EventStore#2964](https://github.com/EventStore/EventStore/pull/2964)
+- Tests failing with empty error message in `EventStore.Core.Tests.Http.Cluster.when_requesting_from_follower.*`. [EventStore#2969](https://github.com/EventStore/EventStore/pull/2969)
+- Tests failing with `already exists` error because same initial values were being re-used in `EventStore.Core.Tests.ClientAPI.when_connection_drops_messages_that_have_run_out_of_retries_are_not_retried`. [EventStore#2969](https://github.com/EventStore/EventStore/pull/2969)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
