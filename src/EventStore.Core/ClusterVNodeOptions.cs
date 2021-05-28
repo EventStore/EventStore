@@ -419,6 +419,10 @@ namespace EventStore.Core {
 
 			public StatsStorage StatsStorage { get; init; } = StatsStorage.File;
 
+			[Description("The log format version to use for storing the event log. " +
+			             "V3 is currently in development and should only be used for testing purposes.")]
+			public DbLogFormat DbLogFormat { get; init; } = DbLogFormat.V2;
+			
 			public int GetPTableMaxReaderCount() {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
 				                           + 1 /* StorageChaser */
@@ -470,10 +474,11 @@ namespace EventStore.Core {
 				ReaderThreadsCount = configurationRoot.GetValue<int>(nameof(ReaderThreadsCount)),
 				MaxAutoMergeIndexLevel = configurationRoot.GetValue<int>(nameof(MaxAutoMergeIndexLevel)),
 				WriteStatsToDb = configurationRoot.GetValue<bool>(nameof(WriteStatsToDb)),
-				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation))
+				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation)),
+				DbLogFormat = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat))
 			};
 		}
-
+		
 		[Description("gRPC Options")]
 		public record GrpcOptions {
 			[Description("Controls the period (in milliseconds) after which a keepalive ping " +
