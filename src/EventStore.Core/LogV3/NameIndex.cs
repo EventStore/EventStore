@@ -105,7 +105,7 @@ namespace EventStore.Core.LogV3 {
 				addedValue = value;
 				addedName = name;
 				_reservations[name] = value;
-				Log.Debug("{indexName} reserved new entry: {key}:{value}", _indexName, name, value);
+				Log.Verbose("{indexName} reserved new entry: {key}:{value}", _indexName, name, value);
 				return false;
 			}
 		}

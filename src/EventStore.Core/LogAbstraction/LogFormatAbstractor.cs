@@ -13,7 +13,7 @@ namespace EventStore.Core.LogAbstraction {
 		public bool InMemory { get; init; }
 		public int InitialReaderCount { get; init; } = ESConsts.PTableInitialReaderCount;
 		public int MaxReaderCount { get; init; } = 100;
-
+		public bool SkipIndexScanOnReads { get; init; }
 	}
 
 	public interface ILogFormatAbstractorFactory<TStreamId> {
@@ -21,7 +21,7 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
-		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions _) {
+		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
 			var streamNameIndex = new LogV2StreamNameIndex();
 			return new LogFormatAbstractor<string>(
 				lowHasher: new XXHashUnsafe(),
@@ -36,7 +36,8 @@ namespace EventStore.Core.LogAbstraction {
 				emptyStreamId: string.Empty,
 				streamIdSizer: new LogV2Sizer(),
 				recordFactory: new LogV2RecordFactory(),
-				supportsExplicitTransactions: true);
+				supportsExplicitTransactions: true,
+				skipIndexScanOnReads: options.SkipIndexScanOnReads);
 		}
 	}
 
@@ -64,7 +65,8 @@ namespace EventStore.Core.LogAbstraction {
 				emptyStreamId: 0,
 				streamIdSizer: new LogV3Sizer(),
 				recordFactory: new LogV3RecordFactory(),
-				supportsExplicitTransactions: false);
+				supportsExplicitTransactions: false,
+				skipIndexScanOnReads: true);
 			return abstractor;
 		}
 
@@ -109,7 +111,8 @@ namespace EventStore.Core.LogAbstraction {
 			TStreamId emptyStreamId,
 			ISizer<TStreamId> streamIdSizer,
 			IRecordFactory<TStreamId> recordFactory,
-			bool supportsExplicitTransactions) {
+			bool supportsExplicitTransactions,
+			bool skipIndexScanOnReads) {
 
 			LowHasher = lowHasher;
 			HighHasher = highHasher;
@@ -124,6 +127,7 @@ namespace EventStore.Core.LogAbstraction {
 			StreamIdSizer = streamIdSizer;
 			RecordFactory = recordFactory;
 			SupportsExplicitTransactions = supportsExplicitTransactions;
+			SkipIndexScanOnReads = skipIndexScanOnReads;
 		}
 
 		public void Dispose() {
@@ -146,5 +150,6 @@ namespace EventStore.Core.LogAbstraction {
 		public INameLookup<TStreamId> StreamNames => StreamNamesProvider.StreamNames;
 		public ISystemStreamLookup<TStreamId> SystemStreams => StreamNamesProvider.SystemStreams;
 		public bool SupportsExplicitTransactions { get; }
+		public bool SkipIndexScanOnReads { get; }
 	}
 }

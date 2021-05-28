@@ -573,6 +573,7 @@ namespace EventStore.Core {
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
 				MaxReaderCount = options.Database.GetPTableMaxReaderCount(),
+				SkipIndexScanOnReads = options.Application.SkipIndexScanOnReads,
 			});
 
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
@@ -606,7 +607,7 @@ namespace EventStore.Core {
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
 				options.Database.HashCollisionReadLimit,
-				options.Application.SkipIndexScanOnReads,
+				logFormat.SkipIndexScanOnReads,
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
 				Db.Config.IndexCheckpoint);
 			_readIndex = readIndex;
