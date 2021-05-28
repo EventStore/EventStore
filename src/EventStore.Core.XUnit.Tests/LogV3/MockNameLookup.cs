@@ -3,7 +3,7 @@ using System.Linq;
 using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;
 
-namespace EventStore.Core.Tests.XUnit.LogV3 {
+namespace EventStore.Core.XUnit.Tests.LogV3 {
 	class MockNameLookup : INameLookup<StreamId> {
 		private readonly Dictionary<StreamId, string> _dict;
 
