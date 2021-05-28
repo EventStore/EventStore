@@ -82,9 +82,9 @@ namespace EventStore.Core.LogV3.FASTER {
 			_logSettings = new LogSettings {
 				LogDevice = _log,
 				// todo: dynamic settings according to available memory
-				MemorySizeBits = 15,
-				PageSizeBits = 12,
-				//PreallocateLog = true,
+//				MemorySizeBits = 34,
+//				PageSizeBits = 25,
+//				PreallocateLog = true,
 
 				ReadCacheSettings = readCacheSettings,
 			};
@@ -93,7 +93,7 @@ namespace EventStore.Core.LogV3.FASTER {
 				// todo: dynamic settings according to available memory
 				// but bear in mind if we have taken an index checkpoint there is a 
 				// procedure to resize it.
-				size: 1L << 20,
+				size: 1L << 27,
 				checkpointSettings: checkpointSettings,
 				logSettings: _logSettings);
 
@@ -386,9 +386,12 @@ namespace EventStore.Core.LogV3.FASTER {
 					session.CompletePending(wait: true);
 					switch (context.Status) {
 						case Status.OK:
+							Log.Warning($"Pending looking up {name} which was FOUND");
 							value = context.Value;
 							return true;
-						case Status.NOTFOUND: return false;
+						case Status.NOTFOUND:
+							Log.Warning($"Pending looking up {name} which was NON-EXISTENT");
+							return false;
 						default: throw new Exception($"{_indexName} Unexpected status {context.Status} completing read for \"{name}\"");
 					}
 				case Status.ERROR:
