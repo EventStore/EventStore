@@ -10,7 +10,7 @@ using EventStore.Core.LogV3.FASTER;
 using Xunit;
 using StreamId = System.UInt32;
 
-namespace EventStore.Core.Tests.XUnit.LogV3 {
+namespace EventStore.Core.XUnit.Tests.LogV3 {
 	public class StreamNameIndexTests : IDisposable {
 		readonly string _outputDir = $"testoutput/{nameof(StreamNameIndexTests)}";
 		FASTERNameIndexPersistence _persistence;
@@ -233,6 +233,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 
 		[Fact]
 		void can_use_read_cache_for_getoradd() {
+			GenSut(enableReadCache: true);
 			var numStreams = 100_000;
 			PopulateSut(numStreams);
 
@@ -252,6 +253,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 
 		[Fact]
 		void can_use_read_cache_for_lookup() {
+			GenSut(enableReadCache: true);
 			var numStreams = 100_000;
 			PopulateSut(numStreams);
 
@@ -383,7 +385,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 		}
 
 		[Theory]
-		[InlineData(true, Skip = "suspected bug: https://github.com/microsoft/FASTER/issues/482")]
+//		[InlineData(true, Skip = "suspected bug: https://github.com/microsoft/FASTER/issues/482")]
 		[InlineData(false)]
 		public void read_cache_problem_reproduction(bool enableReadCache) {
 			GenSut(enableReadCache);

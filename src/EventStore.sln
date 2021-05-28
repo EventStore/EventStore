@@ -43,13 +43,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common.Utils", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.NETCore.Compatibility", "EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj", "{066B6514-86A0-41D8-BB6A-D9B05141D026}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Core.Tests.XUnit", "EventStore.Core.Tests.XUnit\EventStore.Core.Tests.XUnit.csproj", "{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.LogV3", "EventStore.LogV3\EventStore.LogV3.csproj", "{0A8829D0-0A6F-43A5-ACD4-970690296C52}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.LogV3.Tests", "EventStore.LogV3.Tests\EventStore.LogV3.Tests.csproj", "{97EDD08B-0E2F-4445-A4CA-36285954BBDC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.LogCommon", "EventStore.LogCommon\EventStore.LogCommon.csproj", "{B1185D46-45AE-49DD-99BF-602B9359BACF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Core.XUnit.Tests", "EventStore.Core.XUnit.Tests\EventStore.Core.XUnit.Tests.csproj", "{101DD668-2140-4183-8C97-F641173AF736}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -117,10 +117,6 @@ Global
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Debug|x64.Build.0 = Debug|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Release|x64.ActiveCfg = Release|Any CPU
 		{066B6514-86A0-41D8-BB6A-D9B05141D026}.Release|x64.Build.0 = Release|Any CPU
-		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Debug|x64.ActiveCfg = Debug|x64
-		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Debug|x64.Build.0 = Debug|x64
-		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Release|x64.ActiveCfg = Release|x64
-		{D8066904-C17E-46AF-98D1-ACBDB2A2F25F}.Release|x64.Build.0 = Release|x64
 		{0A8829D0-0A6F-43A5-ACD4-970690296C52}.Debug|x64.ActiveCfg = Debug|x64
 		{0A8829D0-0A6F-43A5-ACD4-970690296C52}.Debug|x64.Build.0 = Debug|x64
 		{0A8829D0-0A6F-43A5-ACD4-970690296C52}.Release|x64.ActiveCfg = Release|x64
@@ -133,6 +129,10 @@ Global
 		{B1185D46-45AE-49DD-99BF-602B9359BACF}.Debug|x64.Build.0 = Debug|x64
 		{B1185D46-45AE-49DD-99BF-602B9359BACF}.Release|x64.ActiveCfg = Release|x64
 		{B1185D46-45AE-49DD-99BF-602B9359BACF}.Release|x64.Build.0 = Release|x64
+		{101DD668-2140-4183-8C97-F641173AF736}.Debug|x64.ActiveCfg = Debug|x64
+		{101DD668-2140-4183-8C97-F641173AF736}.Debug|x64.Build.0 = Debug|x64
+		{101DD668-2140-4183-8C97-F641173AF736}.Release|x64.ActiveCfg = Release|x64
+		{101DD668-2140-4183-8C97-F641173AF736}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

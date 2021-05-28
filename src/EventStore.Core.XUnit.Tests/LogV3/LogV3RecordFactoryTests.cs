@@ -5,7 +5,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 using Xunit;
 
-namespace EventStore.Core.Tests.XUnit.LogV3 {
+namespace EventStore.Core.XUnit.Tests.LogV3 {
 	// we dont want too many tests here, rather pass this factory into the higher up
 	// integration tests like we do for the v2 factory.
 	public class LogV3RecordFactoryTests {

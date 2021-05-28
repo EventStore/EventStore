@@ -10,7 +10,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 using StreamId = System.UInt32;
 
-namespace EventStore.Core.Tests.XUnit.LogAbstraction {
+namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 	// check that lookups of the various combinations of virtual/normal/meta
 	// work in both directions and in the stream index.
 	public class LogFormatAbstractorV3Tests : IDisposable {

@@ -2,7 +2,7 @@
 using Xunit;
 using LogV3StreamId = System.UInt32;
 
-namespace EventStore.Core.Tests.XUnit.LogAbstraction {
+namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 	public class CombinedHasherTests {
 		[Theory]
 		[InlineData(0)]
