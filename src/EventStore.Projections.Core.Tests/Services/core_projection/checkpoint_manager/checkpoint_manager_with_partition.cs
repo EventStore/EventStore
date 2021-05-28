@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_manager {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class checkpoint_manager_with_partition<TLogFormat, TStreamId> :
 		TestFixtureWithCoreProjectionCheckpointManager<TLogFormat, TStreamId> {
 		[Test]

@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing {
 	namespace matching {
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_matching_against_simple_placeholders<TLogFormat, TStreamId> : HttpBehaviorSpecification<TLogFormat, TStreamId> {
 			private JObject _response;
 
@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.Http.ArgumentPassing {
 		[Category("LongRunning")]
 		[Ignore("Only demonstrates differences between .NET and Mono")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_matching_against_placeholders_with_reserved_characters<TLogFormat, TStreamId> : HttpBehaviorSpecification<TLogFormat, TStreamId> {
 			private JObject _response;
 

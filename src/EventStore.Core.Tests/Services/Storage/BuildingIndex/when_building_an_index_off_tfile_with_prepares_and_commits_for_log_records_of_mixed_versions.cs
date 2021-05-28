@@ -8,7 +8,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Not applicable")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Not applicable")]
 	public class
 		when_building_an_index_off_tfile_with_prepares_and_commits_for_log_records_of_mixed_versions<TLogFormat, TStreamId> :
 			ReadIndexTestScenario<TLogFormat, TStreamId> {

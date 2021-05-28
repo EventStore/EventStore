@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_reading_forward_from_stream_that_has_been_truncated<TLogFormat, TStreamId>
 			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();
@@ -73,7 +73,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_reading_forward_from_the_start_of_the_stream<TLogFormat, TStreamId>
 			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();
@@ -115,7 +115,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_reading_forward_from_stream_with_no_events_after_position<TLogFormat, TStreamId>
 			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();

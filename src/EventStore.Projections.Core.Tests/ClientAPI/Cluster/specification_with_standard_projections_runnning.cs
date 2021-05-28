@@ -298,7 +298,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 	[Explicit]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class vnode_cluster_specification<TLogFormat, TStreamId> : specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 		[Test, Explicit]
 		public async Task vnode_cluster_starts() {

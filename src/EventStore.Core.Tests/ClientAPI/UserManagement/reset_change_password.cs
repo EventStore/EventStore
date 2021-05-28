@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class reset_password<TLogFormat, TStreamId> : TestWithUser<TLogFormat, TStreamId> {
 		[Test]
 		public async Task null_user_name_throws() {
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class change_password<TLogFormat, TStreamId> : TestWithUser<TLogFormat, TStreamId> {
 		[Test]
 		public async Task null_username_throws() {

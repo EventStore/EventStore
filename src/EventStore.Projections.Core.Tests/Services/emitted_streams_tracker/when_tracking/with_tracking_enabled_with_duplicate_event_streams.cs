@@ -9,7 +9,7 @@ using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream_manager.when_tracking {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_tracking_enabled_with_duplicate_event_streams<TLogFormat, TStreamId> : SpecificationWithEmittedStreamsTrackerAndDeleter<TLogFormat, TStreamId> {
 		private CountdownEvent _eventAppeared = new CountdownEvent(2);
 		private UserCredentials _credentials = new UserCredentials("admin", "changeit");

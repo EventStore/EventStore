@@ -8,7 +8,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "No such thing as a V0 prepare in LogV3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "No such thing as a V0 prepare in LogV3")]
 	public class when_stream_is_softdeleted_with_log_record_version_0<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator.Chunk(

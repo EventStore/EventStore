@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			should_create_stream_with_no_stream_exp_ver_on_first_write_if_does_not_exist<TLogFormat, TStreamId> :
 				ExpectedVersionSpecification<TLogFormat, TStreamId> {
@@ -83,7 +83,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_fail_appending_with_no_stream_exp_ver_to_existing_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 			private List<JToken> _read;
@@ -117,7 +117,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			should_create_stream_with_any_exp_ver_on_first_write_if_does_not_exist<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_append_with_any_exp_ver_to_existing_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 			private List<JToken> _read;
@@ -172,7 +172,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_fail_appending_with_any_exp_ver_to_deleted_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -193,7 +193,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_append_with_correct_exp_ver_to_existing_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 			private List<JToken> _read;
@@ -222,7 +222,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_fail_appending_with_wrong_exp_ver_to_existing_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 			private List<JToken> _read;
@@ -258,7 +258,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_fail_appending_with_wrong_exp_ver_to_new_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 			private List<JToken> _read;
@@ -290,7 +290,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_fail_appending_with_correct_exp_ver_to_deleted_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -311,7 +311,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_fail_appending_with_invalid_exp_ver_to_deleted_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -332,7 +332,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_append_with_stream_exists_exp_ver_to_existing_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 			private List<JToken> _read;
@@ -359,7 +359,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			should_append_with_stream_exists_exp_ver_to_stream_with_multiple_events<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
@@ -389,7 +389,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class should_append_with_stream_exists_exp_ver_if_metadata_stream_exists<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 			private List<JToken> _read;
@@ -424,7 +424,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			should_fail_appending_with_stream_exists_exp_ver_and_stream_does_not_exist<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
@@ -458,7 +458,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			should_fail_appending_with_stream_exists_exp_ver_to_hard_deleted_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
@@ -480,7 +480,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			should_fail_appending_with_stream_exists_exp_ver_to_soft_deleted_stream<TLogFormat, TStreamId> : ExpectedVersionSpecification<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;

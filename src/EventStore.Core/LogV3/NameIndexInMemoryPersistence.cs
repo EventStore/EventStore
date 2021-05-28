@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Concurrent;
 using EventStore.Core.LogAbstraction;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
 	public class NameIndexInMemoryPersistence :
-		INameIndexPersistence<long> {
+		INameIndexPersistence<StreamId> {
 
-		readonly ConcurrentDictionary<string, long> _dict = new();
+		readonly ConcurrentDictionary<string, StreamId> _dict = new();
 
-		public long LastValueAdded { get; private set; }
+		public StreamId LastValueAdded { get; private set; }
 
 		public NameIndexInMemoryPersistence() {
 		}
@@ -16,18 +17,18 @@ namespace EventStore.Core.LogV3 {
 		public void Dispose() {
 		}
 
-		public void Init(INameLookup<long> source) {
+		public void Init(INameLookup<StreamId> source) {
 		}
 
-		public void Add(string name, long value) {
+		public void Add(string name, StreamId value) {
 			_dict[name] = value;
 			LastValueAdded = value;
 		}
 
-		public bool TryGetValue(string name, out long value) =>
+		public bool TryGetValue(string name, out StreamId value) =>
 			_dict.TryGetValue(name, out value);
 
-		public long LookupValue(string name) {
+		public StreamId LookupValue(string name) {
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException(nameof(name));
 

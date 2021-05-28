@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class deleting_existing_persistent_subscription_group_with_permissions<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class deleting_existing_persistent_subscription_with_subscriber<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly PersistentSubscriptionSettings _settings = PersistentSubscriptionSettings.Create()
 			.DoNotResolveLinkTos()
@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class deleting_persistent_subscription_group_that_doesnt_exist<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class deleting_persistent_subscription_group_without_permissions<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private readonly string _stream = Guid.NewGuid().ToString();
 

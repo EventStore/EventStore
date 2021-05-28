@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_chasing_a_chunked_transaction_log<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();
 		private readonly Guid _eventId = Guid.NewGuid();

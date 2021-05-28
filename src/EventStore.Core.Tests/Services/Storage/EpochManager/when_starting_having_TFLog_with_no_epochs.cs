@@ -21,7 +21,7 @@ using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public sealed class when_starting_having_TFLog_with_no_epochs<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture, IDisposable {
 		private TFChunkDb _db;
 		private EpochManager _epochManager;

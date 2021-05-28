@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_running_scavenge_from_storage_scavenger<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private static readonly ILogger Log = Serilog.Log.ForContext<when_running_scavenge_from_storage_scavenger<TLogFormat, TStreamId>>();
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);

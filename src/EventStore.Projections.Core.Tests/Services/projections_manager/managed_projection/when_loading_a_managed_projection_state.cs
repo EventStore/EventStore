@@ -13,7 +13,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_loading_a_managed_projection_state<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private new ITimeProvider _timeProvider;
 

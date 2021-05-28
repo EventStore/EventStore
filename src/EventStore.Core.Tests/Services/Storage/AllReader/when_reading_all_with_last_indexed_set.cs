@@ -5,7 +5,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Tests.Services.Storage.AllReader {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_reading_all<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 
 		protected override void WriteTestScenario() {

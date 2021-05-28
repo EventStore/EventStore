@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_writing_an_existing_chunked_transaction_file_with_checksum_and_data_bigger_than_buffer<TLogFormat, TStreamId> :
 			SpecificationWithDirectory {

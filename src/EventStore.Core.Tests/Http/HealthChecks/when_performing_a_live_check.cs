@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Http.HealthChecks {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_performing_a_live_check<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
 

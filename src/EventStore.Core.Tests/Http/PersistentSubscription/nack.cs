@@ -17,7 +17,7 @@ using EventStore.Transport.Http;
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_nacking_a_message<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 		private string _nackLink;
@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_nacking_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private HttpResponseMessage _response;
 		private string _nackAllLink;

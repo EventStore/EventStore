@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_retrieving_statistics<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var s in base.When()) yield return s;
@@ -58,7 +58,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_deleted_on_expiry<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var s in base.When()) yield return s;

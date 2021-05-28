@@ -14,7 +14,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_getting_config<TLogFormat, TStreamId> : projection_config_test_base<TLogFormat, TStreamId> {
 		private ManagedProjection _mp;
 		private Guid _projectionId = Guid.NewGuid();
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_updating_projection_config_of_faulted_projection<TLogFormat, TStreamId> : projection_config_test_base<TLogFormat, TStreamId> {
 		private ManagedProjection _mp;
 		private Guid _projectionId = Guid.NewGuid();
@@ -150,7 +150,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_updating_projection_config_of_running_projection<TLogFormat, TStreamId> : projection_config_test_base<TLogFormat, TStreamId> {
 		private ManagedProjection _mp;
 		private Guid _projectionId = Guid.NewGuid();

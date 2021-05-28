@@ -2,7 +2,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_deleting_stream_spanning_through_multiple_chunks_in_db_with_other_streams_read_index_should<TLogFormat, TStreamId> :
 			ReadIndexTestScenario<TLogFormat, TStreamId> {

@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Integration {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_a_single_node_is_shutdown<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		[Test]
 		public async Task cancels_after_timeout() {

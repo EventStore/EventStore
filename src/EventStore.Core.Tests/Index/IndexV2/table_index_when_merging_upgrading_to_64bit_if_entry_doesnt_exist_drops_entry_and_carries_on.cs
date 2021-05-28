@@ -11,12 +11,13 @@ using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.Tests.Index.IndexV2 {
 	public class TestCases : IEnumerable {
 		public IEnumerator GetEnumerator() {
 			yield return new object[] {typeof(LogFormat.V2), typeof(string), new ByLengthHasher(), new ByLengthHasher(), "hhh", "hh", "h"};
-			yield return new object[] {typeof(LogFormat.V3), typeof(long), new IdentityLowHasher(), new IdentityHighHasher(), 1028L, 1026L, 1024L};
+			yield return new object[] {typeof(LogFormat.V3), typeof(LogV3StreamId), new IdentityLowHasher(), new IdentityHighHasher(), 1028U, 1026U, 1024U};
 		}
 	}
 

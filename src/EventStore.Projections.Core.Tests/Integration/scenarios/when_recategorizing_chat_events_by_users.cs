@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.scenarios {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_recategorizing_chat_events_by_users<TLogFormat, TStreamId> : specification_with_a_v8_query_posted<TLogFormat, TStreamId> {
 		protected override void GivenEvents() {
 		}

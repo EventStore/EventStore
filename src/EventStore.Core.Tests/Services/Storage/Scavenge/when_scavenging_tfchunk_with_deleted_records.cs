@@ -11,7 +11,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_scavenging_tfchunk_with_deleted_records<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private const string _eventStreamId = "ES";
 		private const string _deletedEventStreamId = "Deleted-ES";

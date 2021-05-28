@@ -5,6 +5,7 @@ using EventStore.Core.LogV2;
 using EventStore.Core.LogV3;
 using EventStore.Core.LogV3.FASTER;
 using EventStore.Core.Settings;
+using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.LogAbstraction {
 	public class LogFormatAbstractorOptions {
@@ -39,21 +40,21 @@ namespace EventStore.Core.LogAbstraction {
 		}
 	}
 
-	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<long> {
-		public LogFormatAbstractor<long> Create(LogFormatAbstractorOptions options) {
+	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
+		public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
 			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
 			var streamNameIndex = GenStreamNameIndex(options, streamNameIndexPersistence);
 			var metastreams = new LogV3Metastreams();
 
-			var abstractor = new LogFormatAbstractor<long>(
+			var abstractor = new LogFormatAbstractor<LogV3StreamId>(
 				lowHasher: new IdentityLowHasher(),
 				highHasher: new IdentityHighHasher(),
 				streamNameIndex: new StreamNameIndexMetastreamDecorator(streamNameIndex, metastreams),
 				streamNameIndexConfirmer: streamNameIndex,
 				streamIds: new StreamIdLookupMetastreamDecorator(streamNameIndexPersistence, metastreams),
 				metastreams: metastreams,
-				streamNamesProvider: new AdHocStreamNamesProvider<long>(indexReader => {
-					INameLookup<long> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
+				streamNamesProvider: new AdHocStreamNamesProvider<LogV3StreamId>(indexReader => {
+					INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
 					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
 					streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
 					return (systemStreams, streamNames);
@@ -67,7 +68,7 @@ namespace EventStore.Core.LogAbstraction {
 			return abstractor;
 		}
 
-		static NameIndex GenStreamNameIndex(LogFormatAbstractorOptions options, INameIndexPersistence<long> persistence) {
+		static NameIndex GenStreamNameIndex(LogFormatAbstractorOptions options, INameIndexPersistence<LogV3StreamId> persistence) {
 			var streamNameIndex = new NameIndex(
 				indexName: "StreamNameIndex",
 				firstValue: LogV3SystemStreams.FirstRealStream,
@@ -76,7 +77,7 @@ namespace EventStore.Core.LogAbstraction {
 			return streamNameIndex;
 		}
 
-		static INameIndexPersistence<long> GenStreamNameIndexPersistence(LogFormatAbstractorOptions options) {
+		static INameIndexPersistence<LogV3StreamId> GenStreamNameIndexPersistence(LogFormatAbstractorOptions options) {
 			if (options.InMemory) {
 				return new NameIndexInMemoryPersistence();
 			}

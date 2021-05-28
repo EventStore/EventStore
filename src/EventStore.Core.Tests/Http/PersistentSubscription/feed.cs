@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_retrieving_an_empty_feed<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 		private JObject _feed;
 		private JObject _head;
@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_retrieving_a_feed_with_events<TLogFormat, TStreamId>
 		: SpecificationWithLongFeed<TLogFormat, TStreamId> {
 		private JObject _feed;
@@ -168,7 +168,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_polling_the_head_forward_and_a_new_event_appears<TLogFormat, TStreamId>
 		: SpecificationWithLongFeed<TLogFormat, TStreamId> {
 		private JObject _feed;
@@ -220,7 +220,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_retrieving_a_feed_with_events_with_competing_xml<TLogFormat, TStreamId>
 		: SpecificationWithLongFeed<TLogFormat, TStreamId> {
 		private XDocument document;
@@ -282,7 +282,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_retrieving_a_feed_with_invalid_content_type<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 		protected override Task When() {
 			return Get(MakeUrl(_subscriptionEndpoint + "/" + _numberOfEvents).ToString(), String.Empty, ContentType.Xml);
@@ -296,7 +296,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_retrieving_a_feed_with_events_using_prefix<TLogFormat, TStreamId> : SpecificationWithLongFeed<TLogFormat, TStreamId> {
 		private JObject _feed;
 		private List<JToken> _entries;

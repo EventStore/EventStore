@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection.projection_checkpoint {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_emitting_events_with_null_streamId<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private ProjectionCheckpoint _checkpoint;
 		private Exception _lastException;

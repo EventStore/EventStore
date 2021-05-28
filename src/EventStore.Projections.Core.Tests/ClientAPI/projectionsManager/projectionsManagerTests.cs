@@ -11,7 +11,7 @@ using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	[Category("ProjectionsManager")]
 	public class when_creating_one_time_projection<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _streamName;
@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_creating_transient_projection<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _streamName;
 		private string _projectionName;
@@ -66,7 +66,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_creating_continuous_projection<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _streamName;
 		private string _emittedStreamName;
@@ -108,7 +108,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_creating_continuous_projection_with_track_emitted_streams<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _streamName;
@@ -150,7 +150,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_disabling_projections<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _streamName;
 		private string _projectionName;
@@ -181,7 +181,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_enabling_projections<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _streamName;
 		private string _projectionName;
@@ -213,7 +213,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_listing_the_projections<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private List<ProjectionDetails> _result;
 
@@ -233,7 +233,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_listing_one_time_projections<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private List<ProjectionDetails> _result;
 
@@ -253,7 +253,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_listing_continuous_projections<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private List<ProjectionDetails> _result;
 		private string _projectionName;
@@ -275,7 +275,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_a_projection_is_running<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _projectionName;
 		private string _streamName;
@@ -321,7 +321,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 	[Category("ProjectionsManager")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_updating_a_projection_query<TLogFormat, TStreamId> : SpecificationWithNodeAndProjectionsManager<TLogFormat, TStreamId> {
 		private string _projectionName;
 		private string _streamName;

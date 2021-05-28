@@ -13,7 +13,7 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class read_all_events_forward_with_soft_deleted_stream_should<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private EventData[] _testEvents;

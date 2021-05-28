@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_loading_a_new_projection<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionLoaded<TLogFormat, TStreamId> {
 		protected override void Given() {
 			NoStream("$projections-projection-result");

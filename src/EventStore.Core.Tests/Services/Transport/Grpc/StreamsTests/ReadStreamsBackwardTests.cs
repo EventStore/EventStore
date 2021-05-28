@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_reading_backward_from_past_the_end_of_the_stream<TLogFormat, TStreamId>
 			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();
@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_reading_backward_from_the_end_of_the_stream<TLogFormat, TStreamId>
 			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();
@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		}
 		
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_reading_backward_from_the_start_of_the_stream<TLogFormat, TStreamId>
 			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 			private readonly string _streamName = Guid.NewGuid().ToString();

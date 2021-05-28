@@ -12,7 +12,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.AwakeService {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_subscribing_before_last_position_with_already_committed_events<TLogFormat, TStreamId> {
 		private Core.Services.AwakeReaderService.AwakeService _it;
 		private EventRecord _eventRecord;

@@ -12,7 +12,7 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_the_state_handler_does_emit_an_event_the_projection_should<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		private Guid _causingEventId;

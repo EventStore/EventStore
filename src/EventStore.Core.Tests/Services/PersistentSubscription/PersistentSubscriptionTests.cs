@@ -1786,7 +1786,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[Ignore("very long test")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class DeadlockTest<TLogFormat, TStreamId> : SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		protected override Task Given() {
 			_conn = BuildConnection(_node);

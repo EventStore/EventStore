@@ -11,7 +11,7 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 	namespace creating {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_creating<TLogFormat, TStreamId> {
 			[Test]
 			public void it_can_be_created() {
@@ -86,7 +86,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_created<TLogFormat, TStreamId> : specification_with_write_query_result_projection_processing_phase<TLogFormat, TStreamId> {
 			protected override void When() {
 			}
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_subscribing<TLogFormat, TStreamId> : specification_with_write_query_result_projection_processing_phase<TLogFormat, TStreamId> {
 			protected override void When() {
 				_phase.Subscribe(CheckpointTag.FromPhase(1, completed: false), false);
@@ -116,7 +116,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_processing_event<TLogFormat, TStreamId> : specification_with_write_query_result_projection_processing_phase<TLogFormat, TStreamId> {
 			protected override void When() {
 				_phase.Subscribe(CheckpointTag.FromPhase(1, completed: false), false);
@@ -131,7 +131,7 @@ namespace EventStore.Projections.Core.Tests.Services.write_query_result_phase {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class
 			when_completed_query_processing_event<TLogFormat, TStreamId> : specification_with_write_query_result_projection_processing_phase<TLogFormat, TStreamId> {
 			protected override void When() {

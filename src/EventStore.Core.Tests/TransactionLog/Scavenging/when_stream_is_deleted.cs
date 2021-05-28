@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_stream_is_deleted<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_stream_is_deleted_with_ignore_hard_deletes<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override bool UnsafeIgnoreHardDelete() {
 			return true;

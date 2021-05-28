@@ -1,8 +1,8 @@
-﻿using System;
-using EventStore.Core.Index.Hashes;
+﻿using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.LogAbstraction {
-	public class IdentityHighHasher : IHasher<long> {
-		public uint Hash(long s) => (uint)(s >> 32);
+	// if the streams are only 32 bit, neednt have 64 bits in the index
+	public class IdentityHighHasher : IHasher<uint> {
+		public uint Hash(uint s) => 0;
 	}
 }

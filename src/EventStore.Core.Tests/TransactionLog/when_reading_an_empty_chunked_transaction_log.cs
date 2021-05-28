@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_reading_an_empty_chunked_transaction_log<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		[Test]
 		public void try_read_returns_false_when_writer_checksum_is_zero() {

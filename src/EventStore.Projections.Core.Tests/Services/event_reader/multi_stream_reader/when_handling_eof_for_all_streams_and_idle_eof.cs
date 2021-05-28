@@ -16,7 +16,7 @@ using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_reader {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_handling_eof_for_all_streams_and_idle_eof<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private MultiStreamEventReader _edp;
 		private Guid _distibutionPointCorrelationId;

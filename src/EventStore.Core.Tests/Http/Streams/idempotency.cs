@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_to_idempotent_guid_id_then_as_array<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
 			private Guid _eventId;
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_to_idempotent_guid_id_twice<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId>  {
 			private Guid _eventId;
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_to_idempotent_guid_id_three_times<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId>  {
 			private Guid _eventId;
@@ -151,7 +151,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_an_event_once_raw_once_with_array<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId>  {
 			private Guid _eventId;
@@ -184,7 +184,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_an_event_twice_raw<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
 			private Guid _eventId;
@@ -214,7 +214,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_an_event_three_times_raw<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
 			private Guid _eventId;
@@ -245,7 +245,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_an_event_twice_array<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
 			private Guid _eventId;
@@ -268,7 +268,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_posting_an_event_three_times_as_array<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationOfSuccessfulCreateEvent<TLogFormat, TStreamId> {
 			private Guid _eventId;

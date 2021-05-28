@@ -14,8 +14,8 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 		readonly DateTime _dateTime1 = new(0x08_D9_15_80_C3_A1_00_00);
 		readonly long _long1 = 1;
 		readonly long _long2 = 2;
-		readonly long _long3000 = 3000;
 		readonly long _long4 = 4;
+		readonly uint _uint3000 = 3000;
 		readonly string _string1 = "one";
 		//readonly string _string2 = "two";
 		readonly LogV3RecordFactory _sut = new();
@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 				transactionPosition: _long1,
 				// must be 0 since only one event is supported at the moment
 				transactionOffset: 0,
-				eventStreamId: _long3000,
+				eventStreamId: _uint3000,
 				expectedVersion: _long4,
 				timeStamp: _dateTime1,
 				flags: _prepareflags,
@@ -74,7 +74,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 			Assert.Equal(_guid2, prepare.EventId);
 			Assert.Equal(_long1, prepare.TransactionPosition);
 			Assert.Equal(0, prepare.TransactionOffset);
-			Assert.Equal(_long3000, prepare.EventStreamId);
+			Assert.Equal(_uint3000, prepare.EventStreamId);
 			Assert.Equal(_long4, prepare.ExpectedVersion);
 			Assert.Equal(_dateTime1, prepare.TimeStamp);
 			Assert.Equal(_prepareflags, prepare.Flags);

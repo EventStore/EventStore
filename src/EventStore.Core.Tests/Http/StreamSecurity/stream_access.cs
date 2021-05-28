@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Http.StreamSecurity {
 	namespace stream_access {
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_creating_a_secured_stream_by_posting_metadata<TLogFormat, TStreamId> : SpecificationWithUsers<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 

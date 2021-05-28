@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_stopping<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;
@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_starting<TLogFormat, TStreamId> : Base<TLogFormat, TStreamId> {
 			protected override IEnumerable<WhenStep> When() {
 				foreach (var m in base.When()) yield return m;

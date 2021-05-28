@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string), LogRecordVersion.LogRecordV0)]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), LogRecordVersion.LogRecordV1)]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), LogRecordVersion.LogRecordV1)]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), LogRecordVersion.LogRecordV1)]
 	public class when_scavenging_tfchunk_with_incomplete_chunk<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		private readonly byte _version = LogRecordVersion.LogRecordV0;
 

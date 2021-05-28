@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Core.LogAbstraction;
+using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.Tests {
 	public class LogFormat {
@@ -17,7 +18,7 @@ namespace EventStore.Core.Tests {
 		public static bool IsV3 => typeof(TLogFormat) == typeof(LogFormat.V3);
 
 		// static v3 but private so that we can be sure we only hand out stateless parts of it
-		readonly static LogFormatAbstractor<long> _v3 = new LogV3FormatAbstractorFactory().Create(new() {
+		readonly static LogFormatAbstractor<LogV3StreamId> _v3 = new LogV3FormatAbstractorFactory().Create(new() {
 			InMemory = true,
 		});
 
@@ -27,7 +28,7 @@ namespace EventStore.Core.Tests {
 				return (T)v2;
 			}
 			if(typeof(TLogFormat) == typeof(LogFormat.V3)) {
-				if (typeof(TStreamId) != typeof(long)) throw new InvalidOperationException($"TStreamId was {typeof(TStreamId)} but expected long");
+				if (typeof(TStreamId) != typeof(LogV3StreamId)) throw new InvalidOperationException($"TStreamId was {typeof(TStreamId)} but expected {typeof(LogV3StreamId)}");
 				return (T)v3;
 			}
 			throw new InvalidOperationException();
@@ -49,8 +50,8 @@ namespace EventStore.Core.Tests {
 		public static TStreamId EmptyStreamId { get; } = _staticLogFormat.EmptyStreamId;
 
 		/// just a valid stream id
-		public static TStreamId StreamId { get; } =	Choose<TStreamId>("stream", 1024L);
-		public static TStreamId StreamId2 { get; } = Choose<TStreamId>("stream2", 1026L);
+		public static TStreamId StreamId { get; } =	Choose<TStreamId>("stream", 1024U);
+		public static TStreamId StreamId2 { get; } = Choose<TStreamId>("stream2", 1026U);
 
 		public static void CheckIfExplicitTransactionsSupported() {
 			if (typeof(TLogFormat) == typeof(LogFormat.V3)) {
