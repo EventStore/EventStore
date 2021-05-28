@@ -626,6 +626,7 @@ namespace EventStore.Core {
 				InMemory = options.Database.MemDb,
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
+				LruSize = streamInfoCacheCapacity,
 				MaxReaderCount = pTableMaxReaderCount,
 				StreamNameExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 				StreamNameExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,

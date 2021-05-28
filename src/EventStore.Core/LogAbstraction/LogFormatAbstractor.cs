@@ -1,6 +1,7 @@
 using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Index;
+using EventStore.Core.DataStructures;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.LogV2;
@@ -16,6 +17,7 @@ namespace EventStore.Core.LogAbstraction {
 		public string IndexDirectory { get; init; }
 		public bool InMemory { get; init; }
 		public int InitialReaderCount { get; init; } = ESConsts.PTableInitialReaderCount;
+		public int LruSize { get; init; } = 10_000;
 		public int MaxReaderCount { get; init; } = 100;
 		public long StreamNameExistenceFilterSize { get; init; }
 		public ICheckpoint StreamNameExistenceFilterCheckpoint { get; init; }
@@ -94,7 +96,6 @@ namespace EventStore.Core.LogAbstraction {
 	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
 		public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
 			var metastreams = new LogV3Metastreams();
-			var streamNamesProvider = GenStreamNamesProvider(metastreams);
 
 			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
 			var streamNameExistenceFilter = GenStreamNameExistenceFilter(options);
@@ -106,11 +107,23 @@ namespace EventStore.Core.LogAbstraction {
 				.Wrap(x => new NameExistenceFilterValueLookupDecorator<LogV3StreamId>(x, streamNameExistenceFilter))
 				.Wrap(x => new StreamIdLookupMetastreamDecorator(x, metastreams));
 
+			ILRUCache<LogV3StreamId, string> streamNameLookupLru = null;
+			var useStreamNameLookupLru = options.LruSize > 0;
+
+			INameIndexConfirmer<LogV3StreamId> streamNameIndexConfirmer = streamNameIndex;
+
+			if (useStreamNameLookupLru) {
+				streamNameLookupLru = new LRUCache<LogV3StreamId, string>(options.LruSize);
+				streamNameIndexConfirmer = new NameConfirmerLruDecorator<LogV3StreamId>(streamNameLookupLru, streamNameIndexConfirmer);
+			}
+
+			var streamNamesProvider = GenStreamNamesProvider(metastreams, streamNameLookupLru);
+
 			var abstractor = new LogFormatAbstractor<LogV3StreamId>(
 				lowHasher: new IdentityLowHasher(),
 				highHasher: new IdentityHighHasher(),
 				streamNameIndex: new StreamNameIndexMetastreamDecorator(streamNameIndex, metastreams),
-				streamNameIndexConfirmer: streamNameIndex,
+				streamNameIndexConfirmer: streamNameIndexConfirmer,
 				streamIds: streamIds,
 				metastreams: metastreams,
 				streamNamesProvider: streamNamesProvider,
@@ -124,10 +137,18 @@ namespace EventStore.Core.LogAbstraction {
 			return abstractor;
 		}
 
-		static IStreamNamesProvider<LogV3StreamId> GenStreamNamesProvider(IMetastreamLookup<LogV3StreamId> metastreams) {
+		static IStreamNamesProvider<LogV3StreamId> GenStreamNamesProvider(
+			IMetastreamLookup<LogV3StreamId> metastreams,
+			ILRUCache<LogV3StreamId, string> streamNameLookupLru) {
+
 			return new AdHocStreamNamesProvider<LogV3StreamId>(
 				setReader: indexReader => {
 					INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
+
+					if (streamNameLookupLru != null) {
+						streamNames = streamNames.Wrap(x => new NameLookupLruDecorator<LogV3StreamId>(streamNameLookupLru, x));
+					}
+
 					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
 					streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
 					//qq consider if the enumerator should use the metastream decorated one
