@@ -251,8 +251,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 						break;
 					case ReadStreamResult.Success:
 						_reader.UpdateNextStreamPosition(message.EventStreamId, message.NextEventNumber);
-						var isEof = message.Events.Length == 0;
-						_eofs[message.EventStreamId] = isEof;
+						_eofs[message.EventStreamId] = (message.Events.Length == 0) && message.IsEndOfStream;
 						EnqueueEvents(message);
 						ProcessBuffersAndContinue(eventStreamId: message.EventStreamId);
 						break;
