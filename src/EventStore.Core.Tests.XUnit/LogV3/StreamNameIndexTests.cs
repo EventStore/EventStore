@@ -390,7 +390,7 @@ namespace EventStore.Core.Tests.XUnit.LogV3 {
 			int numStreams = 30000;
 
 			// confirm the streams
-			for (int i = 0, num = 1024; i < numStreams; i++) {
+			for (uint i = 0, num = 1024; i < numStreams; i++) {
 				var confirmStreamName = $"{i}";
 				_persistence.Add(confirmStreamName, num);
 				num += 2;
