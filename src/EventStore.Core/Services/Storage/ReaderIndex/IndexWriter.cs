@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		void Reset();
 		CommitCheckResult<TStreamId> CheckCommitStartingAt(long transactionPosition, long commitPosition);
-		CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds);
+		CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool? isNewStream);
 		void PreCommit(CommitLogRecord commit);
 		void PreCommit(IList<IPrepareLogRecord<TStreamId>> commitedPrepares);
 		void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo<TStreamId> transactionInfo);
@@ -148,7 +148,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var eventIds = from prepare in GetTransactionPrepares(transactionPosition, commitPosition)
 				where prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 				select prepare.EventId;
-			return CheckCommit(streamId, expectedVersion, eventIds);
+			return CheckCommit(streamId, expectedVersion, eventIds, null);
 		}
 
 		private static IPrepareLogRecord<TStreamId> GetPrepare(TFReaderLease reader, long logPosition) {
@@ -161,7 +161,21 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return (IPrepareLogRecord<TStreamId>)result.LogRecord;
 		}
 
-		public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds) {
+		private CommitCheckResult<TStreamId> CheckCommitForNewStream(TStreamId streamId, long expectedVersion) {
+			var commitDecision = expectedVersion switch {
+				ExpectedVersion.Any or ExpectedVersion.NoStream => CommitDecision.Ok,
+				_ => CommitDecision.WrongExpectedVersion
+			};
+
+			return new CommitCheckResult<TStreamId>(commitDecision, streamId, ExpectedVersion.NoStream, -1, -1, false);
+		}
+
+		public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool? isNewStream) {
+			if (isNewStream ?? false) {
+				//fast path for completely new streams
+				return CheckCommitForNewStream(streamId, expectedVersion);
+			}
+
 			var curVersion = GetStreamLastEventNumber(streamId);
 			if (curVersion == EventNumber.DeletedStream)
 				return new CommitCheckResult<TStreamId>(CommitDecision.Deleted, streamId, curVersion, -1, -1, false);

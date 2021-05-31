@@ -258,13 +258,16 @@ namespace EventStore.Core.Services.Storage {
 					logPosition: logPosition,
 					streamId: out var streamId,
 					streamRecord: out var streamRecord);
+
+				bool? isNewStream = null;
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
+					isNewStream = true;
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
-					msg.Events.Select(x => x.EventId));
+					msg.Events.Select(x => x.EventId), isNewStream);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
 					return;
@@ -381,13 +384,16 @@ namespace EventStore.Core.Services.Storage {
 					logPosition: logPosition,
 					streamId: out var streamId,
 					streamRecord: out var streamRecord);
+
+				bool? isNewStream = null;
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
+					isNewStream = true;
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
-					new[] { eventId });
+					new[] { eventId }, isNewStream);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
 					return;
