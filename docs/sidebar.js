@@ -26,6 +26,7 @@ module.exports = [
         path: "configuration/",
         children: [
             "configuration/",
+            "configuration/auto-configured-options.md"
         ]
     },
     {
