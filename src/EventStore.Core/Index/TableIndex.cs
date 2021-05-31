@@ -621,7 +621,7 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 
-		public IEnumerable<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
+		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
 			int? limit = null) {
 			ulong hash = CreateHash(streamId);
 			var counter = 0;
@@ -640,7 +640,7 @@ namespace EventStore.Core.Index {
 			throw new InvalidOperationException("Files are locked.");
 		}
 
-		private IEnumerable<IndexEntry> GetRangeInternal(ulong hash, long startVersion, long endVersion,
+		private IReadOnlyList<IndexEntry> GetRangeInternal(ulong hash, long startVersion, long endVersion,
 			int? limit = null) {
 			if (startVersion < 0)
 				throw new ArgumentOutOfRangeException("startVersion");
