@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using EventStore.Core.DataStructures;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.DataStructures {
@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.DataStructures {
 		public void always_return_true_if_an_item_was_added() {
 			for (int n = 1; n <= 1000; n++) {
 				for (double p = 0.1; p > 1.0e-7; p /= 10.0) {
-					BloomFilter filter = new BloomFilter(n, p);
+					InMemoryBloomFilter filter = new InMemoryBloomFilter(n, p);
 
 					//no items added yet
 					for (int i = 0; i <= n; i++) {
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			int n = 1234567;
 			double p = 1.0e-6;
 
-			BloomFilter filter = new BloomFilter(n, p);
+			InMemoryBloomFilter filter = new InMemoryBloomFilter(n, p);
 
 			//no items added yet
 			for (int i = 0; i <= n; i++) {
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			int n = 1234567;
 			double p = 1.0e-6;
 
-			BloomFilter filter = new BloomFilter(n, p);
+			InMemoryBloomFilter filter = new InMemoryBloomFilter(n, p);
 			long[] items = {
 				192389123812L, 286928492L, 27582928698L, 72669175482L, 1738996371L, 939342020387L, 37253255484L,
 				346536436L, 123921398432L, 8324982394329432L, 183874782348723874L, long.MaxValue
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.DataStructures {
 		public void have_false_positives_with_probability_p() {
 			for (int n = 1; n <= 1000; n++) {
 				for (double p = 0.1; p > 1.0e-7; p /= 10.0) {
-					BloomFilter filter = new BloomFilter(n, p);
+					InMemoryBloomFilter filter = new InMemoryBloomFilter(n, p);
 
 					//add only odd numbers
 					for (int i = 1; i <= n; i += 2) {
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			int n = 1234567;
 
 			for (double p = 0.1; p > 1.0e-7; p /= 10.0) {
-				BloomFilter filter = new BloomFilter(n, p);
+				InMemoryBloomFilter filter = new InMemoryBloomFilter(n, p);
 
 				//add only odd numbers
 				for (int i = 1; i <= n; i += 2) {
@@ -149,25 +149,25 @@ namespace EventStore.Core.Tests.DataStructures {
 
 		[Test]
 		public void throw_argumentoutofrangeexception_when_given_non_positive_n() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => new BloomFilter(0, 0.1));
-			Assert.Throws<ArgumentOutOfRangeException>(() => new BloomFilter(-1, 0.1));
+			Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryBloomFilter(0, 0.1));
+			Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryBloomFilter(-1, 0.1));
 		}
 
 		[Test]
 		public void throw_argumentoutofrangeexception_when_given_non_positive_p() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => new BloomFilter(1, 0.0));
-			Assert.Throws<ArgumentOutOfRangeException>(() => new BloomFilter(1, -0.1));
+			Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryBloomFilter(1, 0.0));
+			Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryBloomFilter(1, -0.1));
 		}
 
 		[Test]
 		public void throw_argumentoutofrangeexception_when_number_of_bits_too_large() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => new BloomFilter(123456789, 0.0000000001));
+			Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryBloomFilter(123456789, 0.0000000001));
 		}
 
 		[Test]
 		public void correctly_convert_long_to_bytes() {
 			for (long i = -1000; i <= 1000; i++) {
-				byte[] bytes = BloomFilter.toBytes(i);
+				byte[] bytes = InMemoryBloomFilter.toBytes(i);
 				Assert.AreEqual(8, bytes.Length);
 				long v = 0;
 
@@ -184,7 +184,7 @@ namespace EventStore.Core.Tests.DataStructures {
 				939342020387L, 37253255484L, 346536436L, 123921398432L, 8324982394329432L, 183874782348723874L
 			};
 			for (long i = 0; i < nums.Length; i++) {
-				byte[] bytes = BloomFilter.toBytes(nums[i]);
+				byte[] bytes = InMemoryBloomFilter.toBytes(nums[i]);
 				Assert.AreEqual(8, bytes.Length);
 				long v = 0;
 				for (int j = 7; j >= 0; j--) {
