@@ -44,10 +44,11 @@ namespace EventStore.Core.Services {
 			IRecordFactory<TStreamId> recordFactory,
 			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
+			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
 			Func<long> getLastIndexedPosition)
-			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex, systemStreams, epochManager, queueStatsManager) {
+			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex, systemStreams, streamNameExistenceFilter, epochManager, queueStatsManager) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;

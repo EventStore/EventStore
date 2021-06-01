@@ -28,5 +28,28 @@ namespace EventStore.Core.LogAbstraction {
 				streamNumber: addedId,
 				streamName: addedName);
 		}
+
+		public static void Reserve<TStreamId>(
+			this INameIndex<TStreamId> streamNameIndex,
+			IRecordFactory<TStreamId> recordFactory,
+			string streamName,
+			long logPosition,
+			out TStreamId streamId,
+			out IPrepareLogRecord<TStreamId> streamRecord) {
+
+			streamNameIndex.Reserve(streamName, out streamId, out var addedId, out var addedName);
+
+			if (!recordFactory.ExplicitStreamCreation) {
+				streamRecord = null;
+				return;
+			}
+
+			streamRecord = recordFactory.CreateStreamRecord(
+				streamId: Guid.NewGuid(),
+				logPosition: logPosition,
+				timeStamp: DateTime.UtcNow,
+				streamNumber: addedId,
+				streamName: addedName);
+		}
 	}
 }

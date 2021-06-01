@@ -31,6 +31,13 @@ namespace EventStore.Core.LogV2 {
 			return true;
 		}
 
+		public void Reserve(string streamName, out string streamId, out string createdId, out string createdName) {
+			Ensure.NotNullOrEmpty(streamName, "streamName");
+			streamId = streamName;
+			createdId = default;
+			createdName = default;
+		}
+
 		public string LookupValue(string streamName) => streamName;
 
 		public bool TryGetName(string value, out string name) {

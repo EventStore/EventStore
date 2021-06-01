@@ -669,6 +669,7 @@ namespace EventStore.Core {
 				logFormat.RecordFactory,
 				logFormat.StreamNameIndex,
 				logFormat.SystemStreams,
+				logFormat.StreamNameExistenceFilter,
 				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 

@@ -50,6 +50,8 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IRecordFactory<TStreamId> _recordFactory;
 		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
+		private readonly INameExistenceFilter<TStreamId> _streamNameExistenceFilter;
+
 		protected readonly IEpochManager EpochManager;
 
 		protected readonly IPublisher Bus;
@@ -92,6 +94,7 @@ namespace EventStore.Core.Services.Storage {
 			IRecordFactory<TStreamId> recordFactory,
 			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
+			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
@@ -102,6 +105,7 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(recordFactory, nameof(recordFactory));
 			Ensure.NotNull(streamNameIndex, nameof(streamNameIndex));
 			Ensure.NotNull(systemStreams, nameof(systemStreams));
+			Ensure.NotNull(streamNameExistenceFilter, nameof(streamNameExistenceFilter));
 			Ensure.NotNull(epochManager, "epochManager");
 
 			Bus = bus;
@@ -110,6 +114,7 @@ namespace EventStore.Core.Services.Storage {
 			_indexWriter = indexWriter;
 			_recordFactory = recordFactory;
 			_streamNameIndex = streamNameIndex;
+			_streamNameExistenceFilter = streamNameExistenceFilter;
 			_systemStreams = systemStreams;
 			EpochManager = epochManager;
 
@@ -252,18 +257,32 @@ namespace EventStore.Core.Services.Storage {
 					return;
 
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				_streamNameIndex.GetOrReserve(
-					recordFactory: _recordFactory,
-					streamName: msg.EventStreamId,
-					logPosition: logPosition,
-					streamId: out var streamId,
-					streamRecord: out var streamRecord);
+				bool? isNewStream = !_streamNameExistenceFilter.Exists(msg.EventStreamId);
 
-				bool? isNewStream = null;
+				IPrepareLogRecord<TStreamId> streamRecord;
+				TStreamId streamId;
+
+				if (isNewStream ?? false) {
+					_streamNameIndex.Reserve(
+						recordFactory: _recordFactory,
+						streamName: msg.EventStreamId,
+						logPosition: logPosition,
+						streamId: out streamId,
+						streamRecord: out streamRecord);
+
+				} else {
+					_streamNameIndex.GetOrReserve(
+						recordFactory: _recordFactory,
+						streamName: msg.EventStreamId,
+						logPosition: logPosition,
+						streamId: out streamId,
+						streamRecord: out streamRecord);
+				}
+
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
-					isNewStream = true;
+					_streamNameExistenceFilter.Add(msg.EventStreamId, streamId);
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
@@ -378,18 +397,32 @@ namespace EventStore.Core.Services.Storage {
 				var eventId = Guid.NewGuid();
 
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				_streamNameIndex.GetOrReserve(
-					recordFactory: _recordFactory,
-					streamName: message.EventStreamId,
-					logPosition: logPosition,
-					streamId: out var streamId,
-					streamRecord: out var streamRecord);
+				bool? isNewStream = !_streamNameExistenceFilter.Exists(message.EventStreamId);
 
-				bool? isNewStream = null;
+				IPrepareLogRecord<TStreamId> streamRecord;
+				TStreamId streamId;
+
+				if (isNewStream ?? false) {
+					_streamNameIndex.Reserve(
+						recordFactory: _recordFactory,
+						streamName: message.EventStreamId,
+						logPosition: logPosition,
+						streamId: out streamId,
+						streamRecord: out streamRecord);
+
+				} else {
+					_streamNameIndex.GetOrReserve(
+						recordFactory: _recordFactory,
+						streamName: message.EventStreamId,
+						logPosition: logPosition,
+						streamId: out streamId,
+						streamRecord: out streamRecord);
+				}
+
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
-					isNewStream = true;
+					_streamNameExistenceFilter.Add(message.EventStreamId, streamId);
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,

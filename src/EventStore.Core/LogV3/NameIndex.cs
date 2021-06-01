@@ -98,7 +98,11 @@ namespace EventStore.Core.LogV3 {
 				return true;
 			}
 
-			// adding
+			Reserve(name, out value, out addedValue, out addedName);
+			return false;
+		}
+
+		public void Reserve(string name, out Value value, out Value addedValue, out string addedName) {
 			lock (_nextValueLock) {
 				value = _nextValue;
 				_nextValue += _valueInterval;
@@ -106,7 +110,6 @@ namespace EventStore.Core.LogV3 {
 				addedName = name;
 				_reservations[name] = value;
 				Log.Debug("{indexName} reserved new entry: {key}:{value}", _indexName, name, value);
-				return false;
 			}
 		}
 	}

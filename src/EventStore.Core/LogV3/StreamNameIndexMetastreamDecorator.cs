@@ -1,3 +1,4 @@
+using System;
 using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
@@ -37,6 +38,22 @@ namespace EventStore.Core.LogV3 {
 			}
 
 			return _wrapped.GetOrReserve(streamName, out streamId, out createdId, out createdName);
+		}
+
+		public void Reserve(string streamName, out StreamId streamId, out uint createdId, out string createdName) {
+			Ensure.NotNullOrEmpty(streamName, "streamName");
+			if (SystemStreams.IsMetastream(streamName)) {
+				streamName = SystemStreams.OriginalStreamOf(streamName);
+				Reserve(streamName, out streamId, out createdId, out createdName);
+				streamId = _metastreams.MetaStreamOf(streamId);
+				return;
+			}
+
+			if (LogV3SystemStreams.TryGetVirtualStreamId(streamName, out streamId)) {
+				throw new Exception("Reserve() must not be called with virtual stream names");
+			}
+
+			_wrapped.Reserve(streamName, out streamId, out createdId, out createdName);
 		}
 	}
 }
