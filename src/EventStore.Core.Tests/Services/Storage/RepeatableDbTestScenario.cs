@@ -78,6 +78,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
+				_logFormat.StreamNameExistenceFilter,
 				0,
 				additionalCommitChecks: true,
 				metastreamMaxCount: _metastreamMaxCount,

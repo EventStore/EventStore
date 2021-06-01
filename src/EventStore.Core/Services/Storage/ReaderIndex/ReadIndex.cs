@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IStreamIdConverter<TStreamId> streamIdConverter,
 			IValidator<TStreamId> streamIdValidator,
 			ISizer<TStreamId> sizer,
+			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
 			int streamInfoCacheCapacity,
 			bool additionalCommitChecks,
 			long metastreamMaxCount,
@@ -58,6 +59,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.NotNull(streamNamesProvider, nameof(streamNamesProvider));
 			Ensure.NotNull(streamIdValidator, nameof(streamIdValidator));
 			Ensure.NotNull(sizer, nameof(sizer));
+			Ensure.NotNull(streamNameExistenceFilter, nameof(streamNameExistenceFilter));
+
 			Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
 			Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
@@ -75,7 +78,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var systemStreams = streamNamesProvider.SystemStreams;
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
-			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames, systemStreams, streamIdConverter, indexCheckpoint, additionalCommitChecks);
+			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames,
+				systemStreams, streamIdConverter, streamNameExistenceFilter, indexCheckpoint, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames);
 		}
 

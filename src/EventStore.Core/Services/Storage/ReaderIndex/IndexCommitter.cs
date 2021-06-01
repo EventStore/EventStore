@@ -44,6 +44,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
+		private readonly INameExistenceFilter<TStreamId> _streamNameExistenceFilter;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -59,6 +60,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IStreamIdConverter<TStreamId> streamIdConverter,
+			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
@@ -69,6 +71,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
 			_streamIdConverter = streamIdConverter;
+			_streamNameExistenceFilter = streamNameExistenceFilter;
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
@@ -176,10 +179,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				_backend.SetSystemSettings(GetSystemSettings());
 			}
 			_indexRebuild = false;
+
+			// once the index has caught up, we initialize the stream name existence checker to add any missing entries.
+			// it's possible that we add some extra entries here since the index catches up to the chaser checkpoint instead of the
+			// replication checkpoint and the log may get truncated later when the node joins the cluster,
+			// but since we're using a bloom filter internally the stream name existence checker will only return
+			// false positives and correctness will not be affected.
+			_streamNameExistenceFilter.InitializeWithExisting(_streamNames);
 		}
 
 		public void Dispose() {
-			_streamNameIndex.Dispose();
+			_streamNameIndex?.Dispose();
+			_streamNameExistenceFilter?.Dispose();
 			try {
 				_tableIndex.Close(removeFiles: false);
 			} catch (TimeoutException exc) {
