@@ -86,7 +86,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			foreach(var bitPosition in GetBitPositions(item)) {
 				SetBit(bitPosition);
 			}
-			_mmfDataWriteAccessor.Flush();
 		}
 
 		public bool MayExist(TItem item) {
@@ -94,6 +93,10 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				if (!IsBitSet(bitPosition)) return false;
 			}
 			return true;
+		}
+
+		public void Flush() {
+			_mmfDataWriteAccessor.Flush();
 		}
 
 		private IEnumerable<long> GetBitPositions(TItem item) {

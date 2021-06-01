@@ -610,7 +610,8 @@ namespace EventStore.Core {
 				InMemory = options.Database.MemDb,
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
-				MaxReaderCount = pTableMaxReaderCount
+				MaxReaderCount = pTableMaxReaderCount,
+				StreamNameExistenceFilterSize = 256 * 1000 * 1000 //TODO: make configurable
 			});
 
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
