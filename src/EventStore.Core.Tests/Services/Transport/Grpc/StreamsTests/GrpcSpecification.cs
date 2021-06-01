@@ -122,13 +122,19 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			public void Start() =>
 				Task.Run(async () => {
-					while (await BatchAppend.ResponseStream.MoveNext().ConfigureAwait(false)) {
-						var response = BatchAppend.ResponseStream.Current;
-						var correlationId = Uuid.FromInt64(response.CorrelationId.Structured.MostSignificantBits,
-							response.CorrelationId.Structured.LeastSignificantBits);
+					try {
+						while (await BatchAppend.ResponseStream.MoveNext().ConfigureAwait(false)) {
+							var response = BatchAppend.ResponseStream.Current;
+							var correlationId = Uuid.FromInt64(response.CorrelationId.Structured.MostSignificantBits,
+								response.CorrelationId.Structured.LeastSignificantBits);
 
-						if (_responses.TryRemove(correlationId, out var tcs)) {
-							tcs.TrySetResult(response);
+							if (_responses.TryRemove(correlationId, out var tcs)) {
+								tcs.TrySetResult(response);
+							}
+						}
+					} catch (Exception ex) {
+						foreach (var kvp in _responses) {
+							kvp.Value.TrySetException(ex);
 						}
 					}
 				});

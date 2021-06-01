@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class multiple_batches<TLogFormat, TStreamId> : GrpcSpecification<TLogFormat, TStreamId> {
 			private BatchAppendResp _response;
 			protected override Task Given() => Task.CompletedTask;
