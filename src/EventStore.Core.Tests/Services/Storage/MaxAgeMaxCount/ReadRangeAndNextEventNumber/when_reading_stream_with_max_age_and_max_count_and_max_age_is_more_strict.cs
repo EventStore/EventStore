@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using EventStore.Core.Data;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -195,6 +196,75 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 
 			var records = res.Records;
 			Assert.AreEqual(0, records.Length);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class
+		when_reading_stream_with_max_age_and_a_mostly_expired<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat,
+			TStreamId> {
+
+		public when_reading_stream_with_max_age_and_a_mostly_expired() : base(maxEntriesInMemTable: 50,
+			chunkSize: 100000) {
+
+		}
+
+		protected override void WriteTestScenario() {
+			var now = DateTime.UtcNow;
+
+			var metadata = string.Format(@"{{""$maxAge"":{0}}}",
+				(int)TimeSpan.FromMinutes(20).TotalSeconds);
+
+			WriteStreamMetadata("ES", 0, metadata);
+			var start = 0;
+			var end = 1008;
+			for (int i = start; i < end; i++) {
+				WriteSingleEvent("ES", i, "bla", now.AddMinutes(-100), retryOnFail: true);
+			}
+
+			start = end;
+			end += 5;
+			for (int i = start; i < end; i++) {
+				WriteSingleEvent("ES", i, "bla", now, retryOnFail: true);
+			}
+
+		}
+
+		[Test]
+		public void reading_forward_should_match_reading_backwards_in_reverse() {
+			var backwardsCollected = new List<EventRecord>();
+			var forwardsCollected = new List<EventRecord>();
+			var from = long.MaxValue;
+			while (true) {
+				var backwards = ReadIndex.ReadStreamEventsBackward("ES", from, 7);
+				for (int i = 0; i < backwards.Records.Length; i++) {
+					backwardsCollected.Add(backwards.Records[i]);
+				}
+
+				from = backwards.NextEventNumber;
+				if (backwards.IsEndOfStream) break;
+			}
+
+			from = 0;
+			while (true) {
+				var forwards = ReadIndex.ReadStreamEventsForward("ES", from, 7);
+				for (int i = 0; i < forwards.Records.Length; i++) {
+					forwardsCollected.Add(forwards.Records[i]);
+				}
+
+				from = forwards.NextEventNumber;
+				if (forwards.IsEndOfStream) break;
+			}
+
+			Assert.AreEqual(forwardsCollected.Count, backwardsCollected.Count);
+			backwardsCollected.Reverse();
+			for (int i = 0; i < backwardsCollected.Count; i++) {
+				Assert.AreEqual(backwardsCollected[i].EventId, forwardsCollected[i].EventId);
+				Assert.AreEqual(backwardsCollected[i].EventType, forwardsCollected[i].EventType);
+				Assert.AreEqual(backwardsCollected[i].ExpectedVersion, forwardsCollected[i].ExpectedVersion);
+				Assert.AreEqual(backwardsCollected[i].EventNumber, forwardsCollected[i].EventNumber);
+			}
 		}
 	}
 }

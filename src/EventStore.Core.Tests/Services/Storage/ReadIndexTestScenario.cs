@@ -29,6 +29,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected readonly int StreamInfoCacheCapacity;
 		protected readonly long MetastreamMaxCount;
 		protected readonly bool PerformAdditionalCommitChecks;
+		private readonly int _chunkSize;
 		protected readonly byte IndexBitnessVersion;
 		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected IRecordFactory<TStreamId> _recordFactory;
@@ -48,13 +49,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, long metastreamMaxCount = 1,
 			int streamInfoCacheCapacity = 0,
-			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true) {
+			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true, int chunkSize = 10000) {
 			Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
 			MaxEntriesInMemTable = maxEntriesInMemTable;
 			StreamInfoCacheCapacity = streamInfoCacheCapacity;
 			MetastreamMaxCount = metastreamMaxCount;
 			IndexBitnessVersion = indexBitnessVersion;
 			PerformAdditionalCommitChecks = performAdditionalChecks;
+			_chunkSize = chunkSize;
 		}
 
 		public override async Task TestFixtureSetUp() {
@@ -71,7 +73,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			ChaserCheckpoint = new InMemoryCheckpoint(0);
 
 			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint,
-				replicationCheckpoint: new InMemoryCheckpoint(-1)));
+				replicationCheckpoint: new InMemoryCheckpoint(-1), chunkSize: _chunkSize));
 
 			Db.Open();
 			// create db
@@ -130,13 +132,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		public override Task TestFixtureTearDown() {
 			_logFormat?.Dispose();
-			ReadIndex.Close();
-			ReadIndex.Dispose();
+			ReadIndex?.Close();
+			ReadIndex?.Dispose();
 
-			TableIndex.Close();
+			TableIndex?.Close();
 
-			Db.Close();
-			Db.Dispose();
+			Db?.Close();
+			Db?.Dispose();
 
 			return base.TestFixtureTearDown();
 		}
@@ -189,9 +191,21 @@ namespace EventStore.Core.Tests.Services.Storage {
 				}
 			}
 
+			
 			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
-			Assert.IsTrue(Writer.Write(commit, out pos));
+			if (!retryOnFail) {
+				Assert.IsTrue(Writer.Write(commit, out pos));
+			} else {
+				var firstPos = commit.LogPosition;
+				if (!Writer.Write(commit, out pos)) {
+					commit = LogRecord.Commit(pos, prepare.CorrelationId, prepare.LogPosition,
+						eventNumber);
+					if (!Writer.Write(commit, out pos))
+						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
+							prepare.LogPosition);
+				}
+			}
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName);

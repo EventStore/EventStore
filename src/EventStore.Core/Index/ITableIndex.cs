@@ -22,6 +22,6 @@ namespace EventStore.Core.Index {
 		bool TryGetLatestEntry(TStreamId streamId, out IndexEntry entry);
 		bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry);
 
-		IEnumerable<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null);
+		IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null);
 	}
 }
