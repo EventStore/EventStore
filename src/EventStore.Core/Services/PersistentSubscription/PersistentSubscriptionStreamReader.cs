@@ -25,11 +25,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void BeginReadEvents(IPersistentSubscriptionEventSource eventSource,
-			IPersistentSubscriptionStreamPosition startPosition, int countToLoad, int batchSize, bool resolveLinkTos,
-			bool skipFirstEvent,
-			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound, Action<string> onError) {
-			BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, resolveLinkTos,
-				skipFirstEvent, onEventsFound, onError, 0);
+			IPersistentSubscriptionStreamPosition startPosition, int countToLoad, int batchSize,
+			int maxWindowSize, bool resolveLinkTos, bool skipFirstEvent,
+			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound,
+			Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped,
+			Action<string> onError) {
+			BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos,
+				skipFirstEvent, onEventsFound, onEventsSkipped, onError, 0);
 		}
 
 		private int GetBackOffDelay(int retryCount) {
@@ -38,14 +40,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		private void BeginReadEventsInternal(IPersistentSubscriptionEventSource eventSource,
-			IPersistentSubscriptionStreamPosition startPosition, int countToLoad, int batchSize, bool resolveLinkTos, bool skipFirstEvent,
-			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound, Action<string> onError, int retryCount) {
+			IPersistentSubscriptionStreamPosition startPosition, int countToLoad, int batchSize, int maxWindowSize, bool resolveLinkTos, bool skipFirstEvent,
+			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound,
+			Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped,
+			Action<string> onError, int retryCount) {
 			var actualBatchSize = GetBatchSize(batchSize);
 
 			if (eventSource.FromStream) {
 				_ioDispatcher.ReadForward(
 					eventSource.EventStreamId, startPosition.StreamEventNumber, Math.Min(countToLoad, actualBatchSize),
-					resolveLinkTos, SystemAccounts.System, new ResponseHandler(onEventsFound, onError, skipFirstEvent).FetchCompleted,
+					resolveLinkTos, SystemAccounts.System, new ResponseHandler(onEventsFound, onEventsSkipped, onError, skipFirstEvent).FetchCompleted,
 					async () => await HandleTimeout(eventSource.EventStreamId).ConfigureAwait(false),
 					Guid.NewGuid());
 			} else if (eventSource.FromAll) {
@@ -59,22 +63,23 @@ namespace EventStore.Core.Services.PersistentSubscription {
 						null,
 						SystemAccounts.System,
 						null,
-						new ResponseHandler(onEventsFound, onError, skipFirstEvent).FetchAllCompleted,
+						new ResponseHandler(onEventsFound, onEventsSkipped, onError, skipFirstEvent).FetchAllCompleted,
 						async () => await HandleTimeout(SystemStreams.AllStream).ConfigureAwait(false),
 						Guid.NewGuid());
 				} else {
+					var maxSearchWindow = Math.Max(actualBatchSize, maxWindowSize);
 					_ioDispatcher.ReadAllForwardFiltered(
 						startPosition.TFPosition.Commit,
 						startPosition.TFPosition.Prepare,
 						Math.Min(countToLoad, actualBatchSize),
 						resolveLinkTos,
 						true,
-						actualBatchSize, // TODO: We need to set the max window size for the subscriptions
+						maxSearchWindow,
 						null,
 						eventSource.EventFilter,
 						SystemAccounts.System,
 						null,
-						new ResponseHandler(onEventsFound, onError, skipFirstEvent).FetchAllFilteredCompleted,
+						new ResponseHandler(onEventsFound, onEventsSkipped, onError, skipFirstEvent).FetchAllFilteredCompleted,
 						async () => await HandleTimeout($"{SystemStreams.AllStream} with filter {eventSource.EventFilter}").ConfigureAwait(false),
 						Guid.NewGuid());
 				}
@@ -88,8 +93,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					"Timed out reading from stream: {stream{. Retrying in {retryInterval} seconds.",
 					streamName, backOff);
 				await Task.Delay(TimeSpan.FromSeconds(backOff)).ConfigureAwait(false);
-				BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, resolveLinkTos,
-					skipFirstEvent, onEventsFound, onError, retryCount + 1);
+				BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos,
+					skipFirstEvent, onEventsFound, onEventsSkipped, onError, retryCount + 1);
 			}
 		}
 
@@ -99,11 +104,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		private class ResponseHandler {
 			private readonly Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> _onFetchCompleted;
+			private readonly Action<IPersistentSubscriptionStreamPosition, long> _onEventsSkipped;
 			private readonly Action<string> _onError;
 			private readonly bool _skipFirstEvent;
 
-			public ResponseHandler(Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onFetchCompleted, Action<string> onError, bool skipFirstEvent) {
+			public ResponseHandler(Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onFetchCompleted,
+				Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped, Action<string> onError, bool skipFirstEvent) {
 				_onFetchCompleted = onFetchCompleted;
+				_onEventsSkipped = onEventsSkipped;
 				_skipFirstEvent = skipFirstEvent;
 				_onError = onError;
 			}
@@ -141,8 +149,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			public void FetchAllFilteredCompleted(ClientMessage.FilteredReadAllEventsForwardCompleted msg) {
 				switch (msg.Result) {
 					case FilteredReadAllResult.Success:
+						if (msg.Events.Length == 0 && msg.ConsideredEventsCount > 0) {
+							// Checkpoint on the position we read from rather than the next position
+							// to prevent skipping the next event when loading from the checkpoint
+							_onEventsSkipped(
+								new PersistentSubscriptionAllStreamPosition(msg.CurrentPos.CommitPosition, msg.CurrentPos.PreparePosition),
+								msg.ConsideredEventsCount);
+						}
 						_onFetchCompleted(_skipFirstEvent ? msg.Events.Skip(1).ToArray() : msg.Events,
 							new PersistentSubscriptionAllStreamPosition(msg.NextPos.CommitPosition, msg.NextPos.PreparePosition), msg.IsEndOfStream);
+
 						break;
 					case FilteredReadAllResult.AccessDenied:
 						_onError($"Read access denied for stream: {SystemStreams.AllStream}");

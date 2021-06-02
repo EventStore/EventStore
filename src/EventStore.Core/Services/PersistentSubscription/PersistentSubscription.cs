@@ -146,8 +146,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					return;
 				_state |= PersistentSubscriptionState.OutstandingPageRequest;
 				_settings.StreamReader.BeginReadEvents(_settings.EventSource, _nextEventToPullFrom,
-					Math.Max(_settings.ReadBatchSize, 10), _settings.ReadBatchSize, _settings.ResolveLinkTos, _skipFirstEvent,
-					HandleReadCompleted, HandleReadError);
+					Math.Max(_settings.ReadBatchSize, 10), _settings.ReadBatchSize, _settings.MaxCheckPointCount,
+					_settings.ResolveLinkTos, _skipFirstEvent, HandleReadCompleted, HandleSkippedEvents, HandleReadError);
 				_skipFirstEvent = false;
 			}
 		}
@@ -248,6 +248,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				}
 
 				if (_settings.EventSource.EventFilter != null && !_settings.EventSource.EventFilter.IsEventAllowed(resolvedEvent.Event)) {
+					IPersistentSubscriptionStreamPosition position = new PersistentSubscriptionAllStreamPosition(-1, -1);
+					if (resolvedEvent.OriginalPosition.HasValue) {
+						position = new PersistentSubscriptionAllStreamPosition(
+							resolvedEvent.OriginalPosition.Value.CommitPosition,
+							resolvedEvent.OriginalPosition.Value.PreparePosition);
+					}
+					HandleSkippedEvents(position, 1);
 					return;
 				}
 
@@ -318,6 +325,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
+		public void HandleSkippedEvents(IPersistentSubscriptionStreamPosition position, long skippedCount) {
+			_lastKnownMessage = position;
+			_nextSequenceNumber += skippedCount;
+			_lastKnownSequenceNumber = _nextSequenceNumber - 1;
+			TryMarkCheckpoint(false);
+		}
+
 		public void RemoveClientByConnectionId(Guid connectionId) {
 			lock (_lock) {
 				var lostMessages =
@@ -381,7 +395,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					             (lowestPosition == null && lowestSequenceNumber == -1L));
 				}
 
-				if (lowestSequenceNumber == -1) //we have not even pushed any message yet
+				if (lowestSequenceNumber == -1) //we have not even pushed any messages yet
 					return;
 
 				Debug.Assert(lowestPosition != null);
@@ -510,9 +524,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				new PersistentSubscriptionSingleStreamEventSource(_settings.ParkedMessageStream),
 				new PersistentSubscriptionSingleStreamPosition(position),
 				count,
-				_settings.ReadBatchSize, true, false,
+				_settings.ReadBatchSize, _settings.MaxCheckPointCount, true, false,
 				(events, newposition, isstop) => HandleParkedReadCompleted(events, newposition, isstop, stopAt),
-				HandleParkedReadError);
+				(_, _) => { }, HandleParkedReadError);
 		}
 
 		private void HandleParkedReadError(string error) {
