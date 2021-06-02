@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
-using EventStore.Core.Cluster.Settings;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -46,6 +44,7 @@ using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
+using EventStore.Core.LogV3;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
@@ -625,12 +624,19 @@ namespace EventStore.Core {
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
+			var partitionManager = logFormat.CreatePartitionManager(new TFChunkReader(
+					Db,
+					Db.Config.WriterCheckpoint.AsReadOnly(),
+					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+				writer);
+			
 			var storageWriter = new ClusterStorageWriterService<TStreamId>(_mainQueue, _mainBus,
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
 				logFormat.RecordFactory,
 				logFormat.StreamNameIndex,
 				logFormat.SystemStreams,
-				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition); // subscribes internally
+				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition,
+				partitionManager); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);

@@ -51,6 +51,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		protected readonly IEpochManager EpochManager;
+		private readonly IPartitionManager _partitionManager;
 
 		protected readonly IPublisher Bus;
 		private readonly ISubscriber _subscribeToBus;
@@ -93,7 +94,8 @@ namespace EventStore.Core.Services.Storage {
 			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
-			QueueStatsManager queueStatsManager) {
+			QueueStatsManager queueStatsManager,
+			IPartitionManager partitionManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -103,6 +105,7 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(streamNameIndex, nameof(streamNameIndex));
 			Ensure.NotNull(systemStreams, nameof(systemStreams));
 			Ensure.NotNull(epochManager, "epochManager");
+			Ensure.NotNull(partitionManager, "partitionManager");
 
 			Bus = bus;
 			_subscribeToBus = subscribeToBus;
@@ -111,6 +114,7 @@ namespace EventStore.Core.Services.Storage {
 			_recordFactory = recordFactory;
 			_streamNameIndex = streamNameIndex;
 			_systemStreams = systemStreams;
+			_partitionManager = partitionManager;
 			EpochManager = epochManager;
 
 			_minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
@@ -198,6 +202,7 @@ namespace EventStore.Core.Services.Storage {
 						_indexWriter.Reset();
 						_streamNameIndex.CancelReservations();
 						EpochManager.WriteNewEpoch(((SystemMessage.BecomeLeader)message).EpochNumber);
+						_partitionManager.Initialize();
 						break;
 					}
 				case VNodeState.ShuttingDown: {
