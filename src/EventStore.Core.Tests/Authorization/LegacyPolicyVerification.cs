@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Authorization {
 				SystemSettings.Default.SystemStreamAcl
 			);
 
-			StorageMessage.EffectiveAcl defaultUseruserStreamPermission = new StorageMessage.EffectiveAcl(
+			StorageMessage.EffectiveAcl defaultUserStreamPermission = new StorageMessage.EffectiveAcl(
 				SystemSettings.Default.UserStreamAcl,
 				SystemSettings.Default.UserStreamAcl,
 				SystemSettings.Default.UserStreamAcl
@@ -68,70 +68,93 @@ namespace EventStore.Core.Tests.Authorization {
 				SystemSettings.Default.UserStreamAcl
 			);
 
+			StorageMessage.EffectiveAcl grantAllAndGroupToStream = new StorageMessage.EffectiveAcl(
+				new StreamAcl(new[] {"$all", "newgroup"}, Array.Empty<string>(), Array.Empty<string>(),
+					Array.Empty<string>(), Array.Empty<string>()),
+				SystemSettings.Default.UserStreamAcl,
+				SystemSettings.Default.UserStreamAcl
+			);
+
+			StorageMessage.EffectiveAcl grantGroupToStream = new StorageMessage.EffectiveAcl(
+				new StreamAcl(new[] {"newgroup"}, Array.Empty<string>(), Array.Empty<string>(),
+					Array.Empty<string>(), Array.Empty<string>()),
+				SystemSettings.Default.UserStreamAcl,
+				SystemSettings.Default.UserStreamAcl
+			);
+
+			StorageMessage.EffectiveAcl systemGrantGroupToStream = new StorageMessage.EffectiveAcl(
+				null,
+				new StreamAcl(new[] {"newgroup"}, Array.Empty<string>(), Array.Empty<string>(),
+					Array.Empty<string>(), Array.Empty<string>()),
+				SystemSettings.Default.UserStreamAcl
+			);
+
+			
 			ClaimsPrincipal admin = CreatePrincipal("admin", SystemRoles.Admins);
 			ClaimsPrincipal userAdmin = CreatePrincipal("adminuser", SystemRoles.Admins);
 			ClaimsPrincipal ops = CreatePrincipal("ops", SystemRoles.Operations);
 			ClaimsPrincipal userOps = CreatePrincipal("opsuser", SystemRoles.Operations);
 			ClaimsPrincipal user1 = CreatePrincipal("test");
 			ClaimsPrincipal user2 = CreatePrincipal("test2");
+			ClaimsPrincipal user3 = CreatePrincipal("test3", "newgroup");
 			ClaimsPrincipal userSystem = SystemAccounts.System;
 
 			var admins = new[] {admin, userAdmin};
 			var operations = new[] {ops, userOps};
-			var users = new[] {user1, user2};
+			var users = new[] {user1, user2, user3};
 			var system = new[] {userSystem};
 			var anonymous = new[]{new ClaimsPrincipal(), new ClaimsPrincipal(new ClaimsIdentity(new Claim[]{new Claim(ClaimTypes.Anonymous, ""), })), };
 			foreach (var user in system) {
-				foreach (var operation in SystemOperations()) {
+				foreach (var (operation, stream, acl) in SystemOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
 						false
 					);
 				}
 			}
 			foreach (var user in admins) {
-				foreach (var operation in SystemOperations()) {
+				foreach (var (operation, stream, acl) in SystemOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
 						false
 					);
 				}
-				foreach (var operation in AdminOperations()) {
+				foreach (var (operation, stream, acl) in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
 						false
 					);
 				}
-				foreach (var operation in OpsOperations()) {
+				foreach (var (operation, stream, acl) in OpsOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
 						false
 					);
 				}
 
-				foreach (var operation in UserOperations()) {
+				foreach (var (operation, stream, acl) in UserOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
 						false
 					);
 				}
 				
-				foreach (var operation in AuthenticatedOperations()) {
+				foreach (var (operation, stream, acl) in AuthenticatedOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
 						false
 					);
 				}
 				
-				foreach (var operation in AnonymousOperations()) {
+				foreach (var (operation, stream, acl) in AnonymousOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
 						false
 					);
@@ -139,148 +162,163 @@ namespace EventStore.Core.Tests.Authorization {
 			}
 
 			foreach (var user in operations) {
-				foreach (var operation in SystemOperations()) {
+				foreach (var (operation, stream, acl) in SystemOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
 						false
 					);
 				}
-				foreach (var operation in AdminOperations()) {
+				foreach (var (operation, stream, acl) in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
-						operation.Item3 != null
+						acl != null
 					);
 				}
-				foreach (var operation in OpsOperations()) {
+				foreach (var (operation, stream, acl) in OpsOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
 						false
 					);
 				}
 
-				foreach (var operation in UserOperations()) {
+				foreach (var (operation, stream, acl) in UserOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
-						operation.Item2 == null || operation.Item3 == defaultUseruserStreamPermission,
-						operation.Item2 != null
+						operation, stream, acl,
+						stream == null || acl == defaultUserStreamPermission,
+						acl != null
 					);
 				}
 
-				foreach (var operation in AuthenticatedOperations()) {
+				foreach (var (operation, stream, acl) in AuthenticatedOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
-						operation.Item2 != null
+						stream != null
 					);
 				}
 
-				foreach (var operation in AnonymousOperations()) {
+				foreach (var (operation, stream, acl) in AnonymousOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
-						operation.Item2 != null
+						stream != null
 					);
 				}
 			}
 
 			foreach (var user in users) {
-				foreach (var operation in SystemOperations()) {
+				foreach (var (operation, stream, acl) in SystemOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
 						false
 					);
 				}
-				foreach (var operation in AdminOperations()) {
+				foreach (var (operation, stream, acl) in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
-						operation.Item3 != null
+						acl != null
 					);
 				}
-				foreach (var operation in OpsOperations()) {
+				foreach (var (operation, stream, acl) in OpsOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
 						false
 					);
 				}
 
-				foreach (var operation in UserOperations()) {
+				foreach (var (operation, stream, acl) in UserOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
-						operation.Item2 == null || user.Identity.Name != "test2" || operation.Item3 == defaultUseruserStreamPermission,
-						operation.Item3 != null
+						operation, stream, acl,
+						stream == null || (user.Identity!.Name != "test2" && user.Identity.Name != "test3") || acl == defaultUserStreamPermission,
+						acl != null
 					);
 				}
 
-				foreach (var operation in AuthenticatedOperations()) {
+				foreach (var (operation, stream, acl) in AuthenticatedOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
-						operation.Item3 != null
+						acl != null
 					);
 				}
-				foreach (var operation in AnonymousOperations()) {
+				foreach (var (operation, stream, acl) in AnonymousOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
-						operation.Item3 != null
+						acl != null
+					);
+				}
+
+				foreach (var (operation, stream, acl)  in CustomStreamAcls()) {
+					yield return new PolicyVerificationParameters(user,
+						operation, stream, acl,
+						acl == grantAllAndGroupToStream || user == user3,
+						true
 					);
 				}
 			}
 
 			foreach (var user in anonymous) {
-				foreach (var operation in SystemOperations()) {
+				foreach (var (operation, stream, acl) in SystemOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
 						false
 					);
 				}
-				foreach (var operation in AdminOperations()) {
+				foreach (var (operation, stream, acl) in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
-						operation.Item3 != null
+						acl != null
 					);
 				}
-				foreach (var operation in OpsOperations()) {
+				foreach (var (operation, stream, acl) in OpsOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
-						operation.Item3 != null
+						acl != null
 					);
 				}
 
-				foreach (var operation in UserOperations()) {
+				foreach (var (operation, stream, acl) in UserOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
 						false
 					);
 				}
 
-				foreach (var operation in AuthenticatedOperations()) {
+				foreach (var (operation, stream, acl) in AuthenticatedOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						false,
 						false
 					);
 				}
-				foreach (var operation in AnonymousOperations()) {
+				foreach (var (operation, stream, acl) in AnonymousOperations()) {
 					yield return new PolicyVerificationParameters(user,
-						operation.Item1, operation.Item2, operation.Item3,
+						operation, stream, acl,
 						true,
-						operation.Item3 != null
+						acl != null
+					);
+				}
+				foreach (var (operation, stream, acl)  in CustomStreamAcls()) {
+					yield return new PolicyVerificationParameters(user,
+						operation, stream, acl,
+						acl == grantAllAndGroupToStream,
+						true
 					);
 				}
 			}
 
-			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> SystemOperations() {
+			IEnumerable<(Operation operation, string stream, StorageMessage.EffectiveAcl acl)> SystemOperations() {
 				yield return CreateOperation(Operations.Node.Gossip.Update);
 
 				yield return CreateOperation(Operations.Node.Elections.Prepare);
@@ -293,14 +331,14 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.Elections.LeaderIsResigningOk);
 			}
 
-			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AdminOperations() {
+			IEnumerable<(Operation operation, string stream, StorageMessage.EffectiveAcl acl)> AdminOperations() {
 				yield return (new Operation(Operations.Streams.Read).WithParameter(
 						Operations.Streams.Parameters.StreamId("$$$scavenge")),
 					"$$$scavenge",
 					systemStreamPermission);
 			}
 
-			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> OpsOperations() {
+			IEnumerable<(Operation operation, string stream, StorageMessage.EffectiveAcl acl)> OpsOperations() {
 				yield return CreateOperation(Operations.Node.Information.Subsystems);
 
 				yield return CreateOperation(Operations.Node.Shutdown);
@@ -328,10 +366,10 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Projections.Restart);
 			}
 
-			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> UserOperations() {
+			IEnumerable<(Operation operation, string stream, StorageMessage.EffectiveAcl acl)> UserOperations() {
 				
 				yield return (new Operation(Operations.Subscriptions.ProcessMessages).WithParameter(Operations.Subscriptions.Parameters.StreamId(_streamWithCustomPermissions)), _streamWithCustomPermissions, userStreamPermission);
-				yield return (new Operation(Operations.Subscriptions.ProcessMessages).WithParameter(Operations.Subscriptions.Parameters.StreamId(_streamWithDefaultPermissions)), _streamWithDefaultPermissions, defaultUseruserStreamPermission);
+				yield return (new Operation(Operations.Subscriptions.ProcessMessages).WithParameter(Operations.Subscriptions.Parameters.StreamId(_streamWithDefaultPermissions)), _streamWithDefaultPermissions, defaultUserStreamPermission);
 				yield return CreateOperation(Operations.Projections.List);
 				yield return CreateOperation(Operations.Projections.Abort);
 				yield return CreateOperation(Operations.Projections.Create);
@@ -346,12 +384,12 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Projections.Statistics);
 			}
 
-			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AuthenticatedOperations() {
+			IEnumerable<(Operation operation, string stream, StorageMessage.EffectiveAcl acl)> AuthenticatedOperations() {
 				yield return CreateOperation(Operations.Subscriptions.Statistics);
 				yield return CreateOperation(Operations.Projections.List);
 			}
 
-			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AnonymousOperations() {
+			IEnumerable<(Operation operation, string stream, StorageMessage.EffectiveAcl acl)> AnonymousOperations() {
 				yield return CreateOperation(Operations.Node.Redirect);
 				yield return CreateOperation(Operations.Node.StaticContent);
 				yield return CreateOperation(Operations.Node.Ping);
@@ -370,12 +408,22 @@ namespace EventStore.Core.Tests.Authorization {
 
 				yield return (new Operation(Operations.Streams.Read).WithParameter(
 						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
-					_streamWithDefaultPermissions, defaultUseruserStreamPermission);
+					_streamWithDefaultPermissions, defaultUserStreamPermission);
 			}
 
-			
+			IEnumerable<(Operation operation, string stream, StorageMessage.EffectiveAcl acl)> CustomStreamAcls() {
+				yield return (new Operation(Operations.Streams.Read).WithParameter(
+						Operations.Streams.Parameters.StreamId(_streamWithCustomPermissions)),
+					_streamWithCustomPermissions, grantAllAndGroupToStream);
+				yield return (new Operation(Operations.Streams.Read).WithParameter(
+						Operations.Streams.Parameters.StreamId(_streamWithCustomPermissions)),
+					_streamWithCustomPermissions, grantGroupToStream);
+				yield return (new Operation(Operations.Streams.Read).WithParameter(
+						Operations.Streams.Parameters.StreamId(_streamWithCustomPermissions)),
+					_streamWithCustomPermissions, systemGrantGroupToStream);
+			}
 
-			(Operation, string, StorageMessage.EffectiveAcl) CreateOperation(OperationDefinition def) {
+			(Operation operation, string stream, StorageMessage.EffectiveAcl acl) CreateOperation(OperationDefinition def) {
 				return (new Operation(def),null, null);
 			}
 
