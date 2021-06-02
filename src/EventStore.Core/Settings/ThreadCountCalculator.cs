@@ -5,12 +5,11 @@ namespace EventStore.Core.Settings {
 	public static class ThreadCountCalculator {
 		private const int ReaderThreadCountFloor = 4;
 
-		public static int CalculateReaderThreadCount(int configuredCount, ulong availableMemoryBytes) {
+		public static int CalculateReaderThreadCount(int configuredCount, int processorCount) {
 			if (configuredCount > 0)
 				return configuredCount;
 
-			var estimatedGigabytes = Math.Floor(availableMemoryBytes / (float)CacheSizeCalculator.Gigabyte);
-			var readerCount = Math.Clamp(estimatedGigabytes * 2, ReaderThreadCountFloor, 16);
+			var readerCount = Math.Clamp(processorCount * 2, ReaderThreadCountFloor, 16);
 
 			return (int)readerCount;
 		}

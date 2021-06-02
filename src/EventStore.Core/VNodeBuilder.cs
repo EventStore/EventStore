@@ -1407,13 +1407,14 @@ namespace EventStore.Core {
 			using var statsHelper = new SystemStatsHelper(_log, new InMemoryCheckpoint(), "", statsCollectionPeriod);
 			var availableMem = statsHelper.GetFreeMem();
 
+			var processorCount = Environment.ProcessorCount;
 			var newReaderThreadsCount =
-				ThreadCountCalculator.CalculateReaderThreadCount(_readerThreadsCount, availableMem);
+				ThreadCountCalculator.CalculateReaderThreadCount(_readerThreadsCount, processorCount);
 			_log.Information(
 				"ReaderThreadsCount set to {readerThreadsCount:N0}. " +
-				"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCount:N0}",
+				"Calculated based on processor count of {processorCount:N0} and configured value of {configuredCount:N0}",
 				newReaderThreadsCount,
-				availableMem, _readerThreadsCount);
+				processorCount, _readerThreadsCount);
 			_readerThreadsCount = newReaderThreadsCount;
 
 			var newWorkerThreadsCount =
