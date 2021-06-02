@@ -27,8 +27,12 @@ namespace EventStore.Core.Tests.Integration {
 		public void cluster_should_stabilize() {
 			var leaders = 0;
 			var followers = 0;
+			var acceptedStates = new[] {VNodeState.Leader, VNodeState.Follower};
 
 			for (int i = 0; i < 3; i++) {
+				AssertEx.IsOrBecomesTrue(() => acceptedStates.Contains(_nodes[i].NodeState),
+					TimeSpan.FromSeconds(5), $"node {i} failed to become a leader/follower");
+
 				var state = _nodes[i].NodeState;
 				if (state == VNodeState.Leader) leaders++;
 				else if (state == VNodeState.Follower) followers++;
