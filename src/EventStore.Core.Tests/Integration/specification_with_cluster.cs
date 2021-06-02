@@ -142,6 +142,6 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected MiniClusterNode<TLogFormat, TStreamId> GetLeader() => _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
 
-		protected MiniClusterNode<TLogFormat, TStreamId>[] GetFollowers() => _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
+		protected MiniClusterNode<TLogFormat, TStreamId>[] GetFollowers() => _nodes.Where(x => x.NodeState == Data.VNodeState.Follower).ToArray();
 	}
 }
