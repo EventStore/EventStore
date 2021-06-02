@@ -422,7 +422,14 @@ namespace EventStore.Core {
 			[Description("The log format version to use for storing the event log. " +
 			             "V3 is currently in development and should only be used for testing purposes.")]
 			public DbLogFormat DbLogFormat { get; init; } = DbLogFormat.V2;
-			
+
+			[Description("The amount of memory & disk space, in bytes, to use for the stream name existence filter (applies to Log V3 format only). " +
+			             "This should be set to roughly the maximum number of streams you expect to have in your database, " +
+			             "i.e if you expect to have a max of 500 million streams, use a value of 500 megabytes. " +
+			             "The value you select should also fit entirely in memory to avoid any performance degradation. " +
+			             "Use 0 to disable the filter.")]
+			public long StreamExistenceFilterSize { get; init; } = 256_000_000L;
+
 			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
 				                           + 1 /* StorageChaser */
@@ -475,7 +482,8 @@ namespace EventStore.Core {
 				MaxAutoMergeIndexLevel = configurationRoot.GetValue<int>(nameof(MaxAutoMergeIndexLevel)),
 				WriteStatsToDb = configurationRoot.GetValue<bool>(nameof(WriteStatsToDb)),
 				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation)),
-				DbLogFormat = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat))
+				DbLogFormat = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat)),
+				StreamExistenceFilterSize = configurationRoot.GetValue<long>(nameof(StreamExistenceFilterSize)),
 			};
 		}
 		
