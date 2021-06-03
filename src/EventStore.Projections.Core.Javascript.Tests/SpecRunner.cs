@@ -84,8 +84,8 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 						}
 						if (stateCount > 2)
 							throw new InvalidOperationException("Cannot specify more than 2 states");
-						
-						sequence.Events.Add(new InputEvent(et!, e.GetProperty("data").GetRawText(), initializedPartitions, expectedStates, skip, e.TryGetProperty("eventId", out var idElement) && idElement.TryGetGuid(out var id) ? id: Guid.NewGuid()));
+
+						sequence.Events.Add(new InputEvent(et!, e.GetProperty("data").GetRawText(), e.TryGetProperty("metadata", out var metadata) ? metadata.GetRawText() : null, initializedPartitions, expectedStates, skip, e.TryGetProperty("eventId", out var idElement) && idElement.TryGetGuid(out var id) ? id: Guid.NewGuid()));
 					}
 				}
 
@@ -235,10 +235,14 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 						*/
 						var @event = sequence.Events[j];
 						var body = JObject.Parse(@event.Body).ToString(Formatting.Indented);
+						var metadata = Array.Empty<byte>();
+						if (@event.Metadata != null) {
+							metadata = Utf8NoBom.GetBytes(JObject.Parse(@event.Metadata).ToString(Formatting.Indented));
+						}
 						var er = new EventRecord(
 							revision[sequence.Stream], logPosition, Guid.NewGuid(), @event.EventId, i, j,
 							sequence.Stream, i, DateTime.Now, flags, @event.EventType,
-							Utf8NoBom.GetBytes(body), Array.Empty<byte>());
+							Utf8NoBom.GetBytes(body), metadata);
 						var e = new ResolvedEvent(EventStore.Core.Data.ResolvedEvent.ForUnresolvedEvent(er, logPosition), Array.Empty<byte>());
 						if (@event.Skip) {
 							yield return For($"{projection} skips {er.EventNumber}@{sequence.Stream}",
@@ -427,14 +431,16 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 		class InputEvent {
 			public string EventType { get; }
 			public string Body { get; }
+			public string Metadata { get; }
 			public IReadOnlyList<string> InitializedPartitions { get; }
 			public IReadOnlyDictionary<string, string> ExpectedStates { get; }
 			public bool Skip { get; }
 			public Guid EventId { get; }
 
-			public InputEvent(string eventType, string body, IReadOnlyList<string> initializedPartitions, IReadOnlyDictionary<string, string> expectedStates, bool skip, Guid eventId) {
+			public InputEvent(string eventType, string body, string metadata, IReadOnlyList<string> initializedPartitions, IReadOnlyDictionary<string, string> expectedStates, bool skip, Guid eventId) {
 				EventType = eventType;
 				Body = body;
+				Metadata = metadata;
 				InitializedPartitions = initializedPartitions;
 				ExpectedStates = expectedStates;
 				Skip = skip;

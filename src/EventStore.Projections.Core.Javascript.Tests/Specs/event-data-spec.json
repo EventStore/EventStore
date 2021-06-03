@@ -17,24 +17,54 @@
 							"state": {
 								"events": [
 									{
-										"partition": "",
-										"bodyRaw": "{\r\n  \"something\": \"one\"\r\n}",
-										"metadataRaw": null,
 										"streamId": "foo",
+										"sequenceNumber": 0,
 										"eventId": "81f23435-6b5b-47c6-84fd-b9d1a64916d8",
 										"eventType": "baz",
-										"linkMetadataRaw": null,
-										"isJson": true,
-										"category": "",
-										"sequenceNumber": 0,
-										"body": {
-											"something": "one"
-										},
 										"data": {
 											"something": "one"
 										},
-										"metadata": null,
-										"linkMetadata": null
+										"metadata": null
+									}
+								]
+							}
+						}
+					]
+				}, {
+					"eventType": "baz",
+					"eventId": "100bd839-2b31-4908-99ef-6af615f51648",
+					"data": {
+						"something": "two"
+					},
+					"metadata": {
+						"test": 1
+					},
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"events": [
+									{
+										"streamId": "foo",
+										"sequenceNumber": 0,
+										"eventId": "81f23435-6b5b-47c6-84fd-b9d1a64916d8",
+										"eventType": "baz",
+										"data": {
+											"something": "one"
+										},
+										"metadata": null
+									},
+									{
+										"streamId": "foo",
+										"sequenceNumber": 1,
+										"eventId": "100bd839-2b31-4908-99ef-6af615f51648",
+										"eventType": "baz",
+										"data": {
+											"something": "two"
+										},
+										"metadata": {
+											"test": 1
+										}
 									}
 								]
 							}

@@ -216,9 +216,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				newState = ConvertToStringHandlingNulls(_json, _state);
 				newSharedState = null;
 			}
-
-
-
 		}
 
 		private static string? ConvertToStringHandlingNulls(JsonInstance json, JsValue value) {
@@ -437,8 +434,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				};
 
 			private readonly List<string> _definitionFunctions;
-			private readonly EventEnvelope _envelope;
-
 
 			public InterpreterRuntime(Engine engine, SourceDefinitionBuilder builder) : base(engine) {
 				_logger = Serilog.Log.ForContext<InterpreterRuntime>();
@@ -448,7 +443,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				_transforms = new List<(TransformType, ScriptFunctionInstance)>();
 				_json = JsonInstance.CreateJsonObject(_engine);
 				_definitionFunctions = new List<string>();
-				_envelope = new EventEnvelope(_engine, _json);
 				_engine.Global.FastAddProperty("log", new ClrFunctionInstance(_engine, "log", Log), false, false, false);
 				AddDefinitionFunction("options", SetOptions, 1);
 				AddDefinitionFunction("fromStream", FromStream, 1);
@@ -808,17 +802,18 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			}
 
 			public EventEnvelope CreateEnvelope(string partition, ResolvedEvent @event, string category) {
-				_envelope.Partition = partition;
-				_envelope.BodyRaw = @event.Data;
-				_envelope.MetadataRaw = @event.Metadata;
-				_envelope.StreamId = @event.EventStreamId;
-				_envelope.EventId = @event.EventId.ToString("D");
-				_envelope.EventType = @event.EventType;
-				_envelope.LinkMetadataRaw = @event.PositionMetadata;
-				_envelope.IsJson = @event.IsJson;
-				_envelope.Category = category;
-				_envelope.SequenceNumber = @event.EventSequenceNumber;
-				return _envelope;
+				var envelope = new EventEnvelope(_engine, _json);
+				envelope.Partition = partition;
+				envelope.BodyRaw = @event.Data;
+				envelope.MetadataRaw = @event.Metadata;
+				envelope.StreamId = @event.EventStreamId;
+				envelope.EventId = @event.EventId.ToString("D");
+				envelope.EventType = @event.EventType;
+				envelope.LinkMetadataRaw = @event.PositionMetadata;
+				envelope.IsJson = @event.IsJson;
+				envelope.Category = category;
+				envelope.SequenceNumber = @event.EventSequenceNumber;
+				return envelope;
 			}
 			public sealed class EventEnvelope : ObjectInstance {
 				private readonly JsonInstance _json;

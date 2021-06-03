@@ -25,6 +25,7 @@
     <EmbeddedResource Include="Specs\by-category.js" />
     <EmbeddedResource Include="Specs\event-data.js" />
     <EmbeddedResource Include="Specs\event-data-spec.json" />
+    <EmbeddedResource Include="Specs\account-spec.json" />
   </ItemGroup>
 
   <ItemGroup>
