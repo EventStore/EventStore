@@ -1,4 +1,5 @@
-﻿using EventStore.Core.LogAbstraction;
+﻿using System.Collections.Generic;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 using StreamId = System.UInt32;
 
@@ -77,6 +78,18 @@ namespace EventStore.Core.LogV3 {
 					streamId = 0;
 					return false;
 			}
+		}
+
+		public static IEnumerable<string> EnumerateVirtualStreamNames() {
+			yield return SystemStreams.AllStream;
+			yield return SystemStreams.StreamsCreatedStream;
+			yield return SystemStreams.SettingsStream;
+		}
+
+		public static IEnumerable<StreamId> EnumerateVirtualStreamIds() {
+			yield return AllStreamNumber;
+			yield return StreamsCreatedStreamNumber;
+			yield return SettingsStreamNumber;
 		}
 
 		// in v2 this checks if the first character is '$'

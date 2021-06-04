@@ -48,8 +48,8 @@ namespace EventStore.Core.LogAbstraction {
 			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
 			var streamNameIndex = GenStreamNameIndex(options, streamNameIndexPersistence);
 			var streamNameExistenceFilter = GenStreamNameExistenceFilter(options);
-
 			var metastreams = new LogV3Metastreams();
+			var streamNamesProvider = GenStreamNamesProvider(metastreams);
 
 			var abstractor = new LogFormatAbstractor<LogV3StreamId>(
 				lowHasher: new IdentityLowHasher(),
@@ -58,20 +58,25 @@ namespace EventStore.Core.LogAbstraction {
 				streamNameIndexConfirmer: streamNameIndex,
 				streamIds: new StreamIdLookupMetastreamDecorator(streamNameIndexPersistence, metastreams),
 				metastreams: metastreams,
-				streamNamesProvider: new AdHocStreamNamesProvider<LogV3StreamId>(indexReader => {
-					INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
-					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
-					streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
-					return (systemStreams, streamNames);
-				}),
+				streamNamesProvider: streamNamesProvider,
 				streamIdConverter: new LogV3StreamIdConverter(),
 				streamIdValidator: new LogV3StreamIdValidator(),
 				emptyStreamId: 0,
 				streamIdSizer: new LogV3Sizer(),
 				streamNameExistenceFilter: streamNameExistenceFilter,
+				streamNameEnumerator: new LogV3StreamNameEnumerator(streamNamesProvider.StreamNames),
 				recordFactory: new LogV3RecordFactory(),
 				supportsExplicitTransactions: false);
 			return abstractor;
+		}
+
+		static IStreamNamesProvider<LogV3StreamId> GenStreamNamesProvider(IMetastreamLookup<LogV3StreamId> metastreams) {
+			return new AdHocStreamNamesProvider<LogV3StreamId>(indexReader => {
+				INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
+				var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
+				streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
+				return (systemStreams, streamNames);
+			});
 		}
 
 		static NameIndex GenStreamNameIndex(LogFormatAbstractorOptions options, INameIndexPersistence<LogV3StreamId> persistence) {
@@ -129,6 +134,7 @@ namespace EventStore.Core.LogAbstraction {
 			TStreamId emptyStreamId,
 			ISizer<TStreamId> streamIdSizer,
 			INameExistenceFilter<Checkpoint> streamNameExistenceFilter,
+			INameEnumerator<Checkpoint> streamNameEnumerator,
 			IRecordFactory<TStreamId> recordFactory,
 			bool supportsExplicitTransactions) {
 
@@ -144,6 +150,7 @@ namespace EventStore.Core.LogAbstraction {
 			EmptyStreamId = emptyStreamId;
 			StreamIdSizer = streamIdSizer;
 			StreamNameExistenceFilter = streamNameExistenceFilter;
+			StreamNameEnumerator = streamNameEnumerator;
 
 			RecordFactory = recordFactory;
 			SupportsExplicitTransactions = supportsExplicitTransactions;
@@ -165,6 +172,7 @@ namespace EventStore.Core.LogAbstraction {
 		public TStreamId EmptyStreamId { get; }
 		public ISizer<TStreamId> StreamIdSizer { get; }
 		public INameExistenceFilter<Checkpoint> StreamNameExistenceFilter { get; }
+		public INameEnumerator<Checkpoint> StreamNameEnumerator { get; }
 		public IRecordFactory<TStreamId> RecordFactory { get; }
 
 		public INameLookup<TStreamId> StreamNames => StreamNamesProvider.StreamNames;
