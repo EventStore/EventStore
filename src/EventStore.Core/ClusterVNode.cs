@@ -644,6 +644,7 @@ namespace EventStore.Core {
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,
 				logFormat.StreamNameExistenceFilter,
+				logFormat.StreamNameEnumerator,
 				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,

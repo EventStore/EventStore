@@ -57,6 +57,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
 				_logFormat.StreamNameExistenceFilter,
+				_logFormat.StreamNameEnumerator,
 				0,
 				additionalCommitChecks: true,
 				metastreamMaxCount: MetastreamMaxCount,

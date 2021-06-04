@@ -144,7 +144,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_systemStreams = _logFormat.SystemStreams;
 			_indexWriter = new IndexWriter<TStreamId>(_indexBackend, _indexReader, _streamIds, _streamNames, _systemStreams, emptyStreamId, _sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex, _logFormat.StreamNameIndexConfirmer, _streamNames, _systemStreams,
-				converter, _logFormat.StreamNameExistenceFilter, new InMemoryCheckpoint(-1),  false);
+				converter, _logFormat.StreamNameExistenceFilter, _logFormat.StreamNameEnumerator, new InMemoryCheckpoint(-1),  false);
 
 			WriteEvents();
 		}

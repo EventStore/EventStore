@@ -45,6 +45,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IValidator<TStreamId> streamIdValidator,
 			ISizer<TStreamId> sizer,
 			INameExistenceFilter<long> streamNameExistenceFilter,
+			INameEnumerator<long> streamNameEnumerator,
 			int streamInfoCacheCapacity,
 			bool additionalCommitChecks,
 			long metastreamMaxCount,
@@ -60,6 +61,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.NotNull(streamIdValidator, nameof(streamIdValidator));
 			Ensure.NotNull(sizer, nameof(sizer));
 			Ensure.NotNull(streamNameExistenceFilter, nameof(streamNameExistenceFilter));
+			Ensure.NotNull(streamNameEnumerator, nameof(streamNameEnumerator));
 
 			Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
 			Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
@@ -79,7 +81,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames,
-				systemStreams, streamIdConverter, streamNameExistenceFilter, indexCheckpoint, additionalCommitChecks);
+				systemStreams, streamIdConverter, streamNameExistenceFilter, streamNameEnumerator, indexCheckpoint, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames);
 		}
 

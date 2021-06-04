@@ -45,6 +45,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
 		private readonly INameExistenceFilter<long> _streamNameExistenceFilter;
+		private INameEnumerator<long> _streamNameEnumerator;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -61,6 +62,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IStreamIdConverter<TStreamId> streamIdConverter,
 			INameExistenceFilter<long> streamNameExistenceFilter,
+			INameEnumerator<long> streamNameEnumerator,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
@@ -72,6 +74,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_systemStreams = systemStreams;
 			_streamIdConverter = streamIdConverter;
 			_streamNameExistenceFilter = streamNameExistenceFilter;
+			_streamNameEnumerator = streamNameEnumerator;
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
@@ -180,12 +183,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 			_indexRebuild = false;
 
-			// once the index has caught up, we initialize the stream name existence checker to add any missing entries.
-			// it's possible that we add some extra entries here since the index catches up to the chaser checkpoint instead of the
-			// replication checkpoint and the log may get truncated later when the node joins the cluster,
-			// but since we're using a bloom filter internally the stream name existence checker will only return
-			// false positives and correctness will not be affected.
-			_streamNameExistenceFilter.InitializeWithExisting(_streamNames);
+			// once the index has caught up, we initialize the stream name existence filter to add any missing entries.
+			// V2:
+			// reads the transaction file forward from the last checkpoint (a log position) and adds stream names to the filter, possibly multiple times
+			// but it's not an issue since it's idempotent
+			//
+			// V3:
+			// reads the stream created stream forward from the last checkpoint (an event number) and adds stream names to the filter
+			//
+			// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
+			// the cluster but false positives are not a problem since it's a probabilistic filter
+			_streamNameExistenceFilter.Initialize(_streamNameEnumerator);
 		}
 
 		public void Dispose() {

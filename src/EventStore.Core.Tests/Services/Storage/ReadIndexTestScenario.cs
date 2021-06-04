@@ -111,6 +111,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
 				_logFormat.StreamNameExistenceFilter,
+				_logFormat.StreamNameEnumerator,
 				streamInfoCacheCapacity: StreamInfoCacheCapacity,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
