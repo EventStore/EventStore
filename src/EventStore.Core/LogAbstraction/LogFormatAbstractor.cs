@@ -89,7 +89,7 @@ namespace EventStore.Core.LogAbstraction {
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
-				enableReadCache: false,
+				enableReadCache: true,
 				checkpointInterval: TimeSpan.FromSeconds(60));
 			return persistence;
 		}
