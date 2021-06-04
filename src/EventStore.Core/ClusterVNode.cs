@@ -1057,6 +1057,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 			_mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
 			_mainBus.Subscribe<ClientMessage.ReadAllEventsForwardCompleted>(ioDispatcher.AllForwardReader);
+			_mainBus.Subscribe<ClientMessage.FilteredReadAllEventsForwardCompleted>(ioDispatcher.AllForwardFilteredReader);
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
 			_mainBus.Subscribe(ioDispatcher);
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));

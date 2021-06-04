@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
-using EventStore.ClientAPI.SystemData;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.PersistentSubscription;
@@ -16,15 +15,18 @@ using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 using EventStore.Core.Tests.ClientAPI;
 using System.Threading.Tasks;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests.Services.PersistentSubscription {
 	public enum EventSource {
 		SingleStream,
-		AllStream
+		AllStream,
+		FilteredAllStream
 	}
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class when_creating_persistent_subscription {
 		private Core.Services.PersistentSubscription.PersistentSubscription _sub;
 		private readonly EventSource _eventSource;
@@ -34,6 +36,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			_eventSource = eventSource;
 			_streamName = _eventSource switch {
 				EventSource.AllStream => "$all",
+				EventSource.FilteredAllStream => "$all",
 				EventSource.SingleStream => "streamName",
 				_ => throw new InvalidOperationException()
 			};
@@ -153,6 +156,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class LiveTests {
 		private readonly EventSource _eventSource;
 
@@ -331,7 +335,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
 				Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
 					.WithEventLoader(new FakeStreamReader(
-						(stream, startEventNumber, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) => {
+						(stream, startEventNumber, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) => {
 							List<ResolvedEvent> events = new List<ResolvedEvent>();
 							int nextPosition;
 							bool isEndOfStream;
@@ -386,8 +390,344 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		}
 	}
 
+	public class FilteredAllTests {
+		private EventSource _eventSource = EventSource.FilteredAllStream;
+		[Test]
+		public void live_subscription_with_stream_prefix_filter_pushes_matching_events_to_client() {
+			var envelope = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var streamFilter = EventFilter.StreamName.Prefixes(true, "test");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", streamFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromCurrent());
+			reader.Load(null);
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix:"test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix:"something"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix:"test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix:"foo"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix:"bar"));
+			Assert.AreEqual(2, envelope.Replies.Count);
+		}
+
+		[Test]
+		public void live_subscription_with_stream_regex_filter_pushes_matching_events_to_client() {
+			var envelope = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var streamFilter = EventFilter.StreamName.Regex(true, "^te");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", streamFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromCurrent());
+			reader.Load(null);
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix:"test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix:"ttest"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix:"team"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix:"tteam"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix:"bar"));
+			Assert.AreEqual(2, envelope.Replies.Count);
+		}
+
+		[Test]
+		public void live_subscription_with_event_type_prefix_filter_pushes_matching_events_to_client() {
+			var envelope = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.EventType.Prefixes(true, "test");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromCurrent());
+			reader.Load(null);
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, eventType:"test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, eventType:"something"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, eventType:"test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, eventType:"foo"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, eventType:"bar"));
+			Assert.AreEqual(2, envelope.Replies.Count);
+		}
+
+		[Test]
+		public void live_subscription_with_event_type_regex_filter_pushes_matching_events_to_client() {
+			var envelope = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.EventType.Regex(true, "^te");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromCurrent());
+			reader.Load(null);
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-1", envelope, 10, "foo", "bar");
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, eventType:"test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, eventType:"ttest"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, eventType:"team"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, eventType:"tteam"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, eventType:"bar"));
+			Assert.AreEqual(2, envelope.Replies.Count);
+		}
+
+		[Test]
+		public void catching_up_subscription_does_write_checkpoint_on_time_when_min_events_have_been_skipped() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "stream");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleSkippedEvents(Helper.GetStreamPositionFor(1, _eventSource), 2);
+			sub.NotifyClockTick(DateTime.UtcNow);
+			Assert.AreEqual(Helper.GetStreamPositionFor(1, _eventSource), cp);
+		}
+
+		[Test]
+		public void catching_up_subscription_does_write_checkpoint_when_max_events_have_been_skipped() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "stream");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleSkippedEvents(Helper.GetStreamPositionFor(1, _eventSource), 6);
+
+			Assert.AreEqual(Helper.GetStreamPositionFor(1, _eventSource), cp);
+		}
+
+		[Test]
+		public void catching_up_subscription_does_write_checkpoint_when_max_events_seen_and_some_skipped() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "stream");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleReadCompleted(new[] {
+				Helper.GetFakeEventFor(0, _eventSource),
+				Helper.GetFakeEventFor(1, _eventSource)
+			}, Helper.GetStreamPositionFor(2, _eventSource), false);
+			sub.AcknowledgeMessagesProcessed(corrid, new[] {
+				Helper.GetEventIdFor(0),
+				Helper.GetEventIdFor(1),
+			});
+
+			sub.HandleSkippedEvents(Helper.GetStreamPositionFor(2, _eventSource), 3);
+			Assert.AreEqual(Helper.GetStreamPositionFor(2, _eventSource), cp);
+		}
+
+		[Test]
+		public void catching_up_subscription_does_not_write_checkpoint_when_max_events_skipped_and_some_messages_outstanding() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "stream");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleReadCompleted(new[] {
+				Helper.GetFakeEventFor(0, _eventSource),
+				Helper.GetFakeEventFor(1, _eventSource)
+			}, Helper.GetStreamPositionFor(2, _eventSource), false);
+
+			sub.HandleSkippedEvents(Helper.GetStreamPositionFor(2, _eventSource), 5);
+			Assert.IsNull(cp);
+		}
+
+		[Test]
+		public void live_subscription_does_write_checkpoint_when_max_events_skipped() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "foo");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleReadCompleted(Array.Empty<ResolvedEvent>(), new PersistentSubscriptionAllStreamPosition(0, 0), true);
+
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix: "test"));
+			Assert.AreEqual(Helper.GetStreamPositionFor(4, _eventSource), cp);
+		}
+
+		[Test]
+		public void live_subscription_does_write_checkpoint_on_time_when_min_events_skipped() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "foo");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleReadCompleted(Array.Empty<ResolvedEvent>(), new PersistentSubscriptionAllStreamPosition(0, 0), true);
+
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix: "test"));
+
+			sub.NotifyClockTick(DateTime.UtcNow);
+			Assert.AreEqual(Helper.GetStreamPositionFor(0, _eventSource), cp);
+		}
+
+		[Test]
+		public void live_subscription_does_write_checkpoint_when_max_events_seen_and_some_skipped() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "foo");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleReadCompleted(Array.Empty<ResolvedEvent>(), new PersistentSubscriptionAllStreamPosition(0, 0), true);
+
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix: "foo"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix: "foo"));
+			sub.AcknowledgeMessagesProcessed(corrid, new[] {
+				Helper.GetEventIdFor(0),
+				Helper.GetEventIdFor(1),
+			});
+
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix: "test"));
+			Assert.AreEqual(Helper.GetStreamPositionFor(4, _eventSource), cp);
+		}
+
+		[Test]
+		public void live_subscription_does_not_write_checkpoint_when_max_events_skipped_and_some_messages_outstanding() {
+			IPersistentSubscriptionStreamPosition cp = null;
+			var envelope1 = new FakeEnvelope();
+			var reader = new FakeCheckpointReader();
+			var eventFilter = EventFilter.StreamName.Prefixes(true, "foo");
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName", eventFilter)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(i => cp = i))
+					.PreferDispatchToSingle()
+					.WithMessageParker(new FakeMessageParker())
+					.StartFromBeginning()
+					.MinimumToCheckPoint(1)
+					.MaximumToCheckPoint(5));
+			reader.Load(null);
+			var corrid = Guid.NewGuid();
+			sub.AddClient(corrid, Guid.NewGuid(), "connection-1", envelope1, 10, "foo", "bar");
+			sub.AddClient(Guid.NewGuid(), Guid.NewGuid(), "connection-2", envelope1, 10, "foo", "bar");
+
+			sub.HandleReadCompleted(Array.Empty<ResolvedEvent>(), new PersistentSubscriptionAllStreamPosition(0, 0), true);
+
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(0, _eventSource, streamPrefix: "foo"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(1, _eventSource, streamPrefix: "foo"));
+
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(2, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(3, _eventSource, streamPrefix: "test"));
+			sub.NotifyLiveSubscriptionMessage(Helper.GetFakeEventFor(4, _eventSource, streamPrefix: "test"));
+			Assert.IsNull(cp);
+		}
+	}
+
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class DeleteTests {
 		private readonly EventSource _eventSource;
 		public DeleteTests(EventSource eventSource) {
@@ -429,6 +769,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class SynchronousReadingClient {
 		private readonly EventSource _eventSource;
 		public SynchronousReadingClient(EventSource eventSource) {
@@ -519,6 +860,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class Checkpointing {
 		private readonly EventSource _eventSource;
 		public Checkpointing(EventSource eventSource) {
@@ -981,6 +1323,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class LoadCheckpointTests {
 		private readonly EventSource _eventSource;
 		public LoadCheckpointTests(EventSource eventSource) {
@@ -992,7 +1335,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			bool skip = false;
 			var reader = new FakeCheckpointReader();
 			var streamReader = new FakeStreamReader(
-				(stream, startPosition, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) =>
+				(stream, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) =>
 				{ skip = skipFirstEvent; }
 			);
 			new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -1010,6 +1353,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					reader.Load("1");
 					break;
 				case EventSource.AllStream:
+				case EventSource.FilteredAllStream:
 					reader.Load("C:1/P:1");
 					break;
 			}
@@ -1021,7 +1365,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			IPersistentSubscriptionStreamPosition actualStart = null;
 			var reader = new FakeCheckpointReader();
 			var streamReader = new FakeStreamReader(
-				(stream, startPosition, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) => {
+				(stream, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) => {
 					actualStart = startPosition;
 				});
 			new Core.Services.PersistentSubscription.PersistentSubscription(
@@ -1041,6 +1385,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					Assert.AreEqual(new PersistentSubscriptionSingleStreamPosition(0L), actualStart);
 					break;
 				case EventSource.AllStream:
+				case EventSource.FilteredAllStream:
 					Assert.AreEqual(new PersistentSubscriptionAllStreamPosition(0L, 0L), actualStart);
 					break;
 			}
@@ -1052,12 +1397,13 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var reader = new FakeCheckpointReader();
 			var streamReader = new FakeStreamReader(
-				(stream, startPosition, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) => {
+				(stream, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) => {
 					actualStart = startPosition;
 				});
 			IPersistentSubscriptionStreamPosition startFrom = _eventSource switch {
 				EventSource.SingleStream => new PersistentSubscriptionSingleStreamPosition(10),
 				EventSource.AllStream => new PersistentSubscriptionAllStreamPosition(10, 10),
+				EventSource.FilteredAllStream => new PersistentSubscriptionAllStreamPosition(10, 10),
 				_ => null
 			};
 
@@ -1078,6 +1424,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class TimeoutTests {
 		private readonly EventSource _eventSource;
 		public TimeoutTests(EventSource eventSource) {
@@ -1331,6 +1678,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class NAKTests {
 		private readonly EventSource _eventSource;
 		public NAKTests(EventSource eventSource) {
@@ -1511,6 +1859,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class AddingClientTests {
 		private readonly EventSource _eventSource;
 		public AddingClientTests(EventSource eventSource) {
@@ -1534,6 +1883,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class RemoveClientTests {
 		private readonly EventSource _eventSource;
 		public RemoveClientTests(EventSource eventSource) {
@@ -1629,6 +1979,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 	[TestFixture(EventSource.SingleStream)]
 	[TestFixture(EventSource.AllStream)]
+	[TestFixture(EventSource.FilteredAllStream)]
 	public class ParkTests {
 		private readonly EventSource _eventSource;
 		public ParkTests(EventSource eventSource) {
@@ -1697,7 +2048,8 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
 				Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
-					.WithEventLoader(new FakeStreamReader((stream, startEventNumber, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) => loadCount.Add(countToLoad)))
+					.WithEventLoader(new FakeStreamReader((stream, startEventNumber, countToLoad, batchSize,
+						maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) => loadCount.Add(countToLoad)))
 					.WithCheckpointReader(reader)
 					.WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
 					.WithMessageParker(messageParker)
@@ -1743,7 +2095,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
 				Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
-					.WithEventLoader(new FakeStreamReader((stream, startEventNumber, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound) => loadCount.Add(countToLoad)))
+					.WithEventLoader(new FakeStreamReader((stream, startEventNumber, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound) => loadCount.Add(countToLoad)))
 					.WithCheckpointReader(reader)
 					.WithCheckpointWriter(new FakeCheckpointWriter(i => { }))
 					.WithMessageParker(messageParker)
@@ -1837,6 +2189,9 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 					return PersistentSubscriptionToStreamParamsBuilder.CreateFor("streamName", "groupName");
 				case EventSource.AllStream:
 					return PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName");
+				case EventSource.FilteredAllStream:
+					return PersistentSubscriptionToAllParamsBuilder.CreateFor("groupName",
+						EventFilter.StreamName.Prefixes(true, "stream"));
 				default:
 					throw new InvalidOperationException();
 			}
@@ -1865,16 +2220,20 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			return eventIds[position];
 		}
 
-		public static ResolvedEvent GetFakeEventFor(int position, EventSource eventSource, Guid? forcedEventId = null) {
+		public static ResolvedEvent GetFakeEventFor(int position, EventSource eventSource, Guid? forcedEventId = null,
+			string streamPrefix = "", string eventType = "type") {
 			var eventId = forcedEventId ?? GetEventIdFor(position);
 			switch (eventSource) {
 				case EventSource.SingleStream:
-					return BuildFakeEvent(eventId, "type", "streamName", position, 1234, 1234);
+					var streamName = string.IsNullOrEmpty(streamPrefix) ? "streamName" : streamPrefix;
+					return BuildFakeEvent(eventId, eventType, streamName, position, 1234, 1234);
 				case EventSource.AllStream:
-					string stream = "stream" + (position % 2);
+				case EventSource.FilteredAllStream:
+					streamPrefix = string.IsNullOrEmpty(streamPrefix) ? "stream" : streamPrefix;
+					string stream = streamPrefix + (position % 2);
 					int eventNumber = (position / 2) + (position % 2 == 0 ? 2 : 0); //intentionally add offset to make event positions not continuous across all streams
 					var streamPos = GetStreamPositionFor(position, eventSource);
-					return BuildFakeEvent(eventId, "type", stream, eventNumber, streamPos.TFPosition.Commit, streamPos.TFPosition.Prepare);
+					return BuildFakeEvent(eventId, eventType, stream, eventNumber, streamPos.TFPosition.Commit, streamPos.TFPosition.Prepare);
 				default:
 					throw new InvalidOperationException();
 			}
@@ -1884,6 +2243,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			return eventSource switch {
 				EventSource.SingleStream => new PersistentSubscriptionSingleStreamPosition(position),
 				EventSource.AllStream => new PersistentSubscriptionAllStreamPosition(1234 + position * 2, 1233 + position * 2),
+				EventSource.FilteredAllStream => new PersistentSubscriptionAllStreamPosition(1234 + position * 2, 1233 + position * 2),
 				_ => throw new InvalidOperationException()
 			};
 		}
@@ -1912,20 +2272,23 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 	}
 
 	class FakeStreamReader : IPersistentSubscriptionStreamReader {
-		private readonly Action<IPersistentSubscriptionEventSource, IPersistentSubscriptionStreamPosition, int, int, bool, bool, Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool>> _action = null;
+		private readonly Action<IPersistentSubscriptionEventSource, IPersistentSubscriptionStreamPosition, int, int, int, bool, bool,
+			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool>> _action = null;
 
 		public FakeStreamReader() {
 		}
 
-		public FakeStreamReader(Action<IPersistentSubscriptionEventSource, IPersistentSubscriptionStreamPosition, int, int, bool, bool, Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool>> action) {
+		public FakeStreamReader(Action<IPersistentSubscriptionEventSource, IPersistentSubscriptionStreamPosition, int, int, int, bool, bool, Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool>> action) {
 			_action = action;
 		}
 
-		public void BeginReadEvents(IPersistentSubscriptionEventSource stream, IPersistentSubscriptionStreamPosition startEventNumber, int countToLoad, int batchSize,
-			bool resolveLinkTos, bool skipFirstEvent,
-			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound, Action<string> onError) {
+		public void BeginReadEvents(IPersistentSubscriptionEventSource stream, IPersistentSubscriptionStreamPosition startEventNumber,
+			int countToLoad, int batchSize, int maxWindowSize, bool resolveLinkTos, bool skipFirstEvent,
+			Action<ResolvedEvent[], IPersistentSubscriptionStreamPosition, bool> onEventsFound,
+			Action<IPersistentSubscriptionStreamPosition, long> onEventsSkipped,
+			Action<string> onError) {
 			if (_action != null) {
-				_action(stream, startEventNumber, countToLoad, batchSize, resolveLinkTos, skipFirstEvent, onEventsFound);
+				_action(stream, startEventNumber, countToLoad, batchSize, maxWindowSize, resolveLinkTos, skipFirstEvent, onEventsFound);
 			}
 		}
 	}

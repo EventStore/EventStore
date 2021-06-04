@@ -2848,6 +2848,66 @@
                     "id": 3,
                     "name": "end",
                     "type": "event_store.client.shared.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "filter",
+                    "type": "FilterOptions"
+                  },
+                  {
+                    "id": 5,
+                    "name": "no_filter",
+                    "type": "event_store.client.shared.Empty"
+                  }
+                ],
+                "messages": [
+                  {
+                    "name": "FilterOptions",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "stream_identifier",
+                        "type": "Expression"
+                      },
+                      {
+                        "id": 2,
+                        "name": "event_type",
+                        "type": "Expression"
+                      },
+                      {
+                        "id": 3,
+                        "name": "max",
+                        "type": "uint32"
+                      },
+                      {
+                        "id": 4,
+                        "name": "count",
+                        "type": "event_store.client.shared.Empty"
+                      },
+                      {
+                        "id": 5,
+                        "name": "checkpointIntervalMultiplier",
+                        "type": "uint32"
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "name": "Expression",
+                        "fields": [
+                          {
+                            "id": 1,
+                            "name": "regex",
+                            "type": "string"
+                          },
+                          {
+                            "id": 2,
+                            "name": "prefix",
+                            "type": "string",
+                            "is_repeated": true
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               },
