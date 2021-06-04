@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IRecordFactory<TStreamId> _recordFactory;
 		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
-		private readonly INameExistenceFilter<TStreamId> _streamNameExistenceFilter;
+		private readonly INameExistenceFilter<long> _streamNameExistenceFilter;
 
 		protected readonly IEpochManager EpochManager;
 
@@ -94,7 +94,7 @@ namespace EventStore.Core.Services.Storage {
 			IRecordFactory<TStreamId> recordFactory,
 			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
-			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
+			INameExistenceFilter<long> streamNameExistenceFilter,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");

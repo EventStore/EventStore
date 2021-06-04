@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
-		private readonly INameExistenceFilter<TStreamId> _streamNameExistenceFilter;
+		private readonly INameExistenceFilter<long> _streamNameExistenceFilter;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IStreamIdConverter<TStreamId> streamIdConverter,
-			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
+			INameExistenceFilter<long> streamNameExistenceFilter,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;

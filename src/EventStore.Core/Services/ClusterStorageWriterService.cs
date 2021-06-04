@@ -44,7 +44,7 @@ namespace EventStore.Core.Services {
 			IRecordFactory<TStreamId> recordFactory,
 			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
-			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
+			INameExistenceFilter<long> streamNameExistenceFilter,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
 			Func<long> getLastIndexedPosition)

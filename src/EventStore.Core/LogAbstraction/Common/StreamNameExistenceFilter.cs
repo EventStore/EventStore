@@ -4,38 +4,28 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Checkpoint;
 using Serilog;
-using Value = System.UInt32;
+using Checkpoint = System.Int64;
 
-namespace EventStore.Core.LogV3 {
-	public class NameExistenceFilter {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<NameExistenceFilter>();
-	}
-
-	public class LogV3StreamNameExistenceFilter :
-		NameExistenceFilter,
-		INameExistenceFilter<Value> {
+namespace EventStore.Core.LogAbstraction.Common {
+	public class StreamNameExistenceFilter :
+		INameExistenceFilter<Checkpoint> {
 		private readonly string _filterName;
 		private readonly Encoding _utf8NoBom = new UTF8Encoding(false, true);
 		private readonly MemoryMappedFileBloomFilter<string> _mmfBloomFilter;
 		private readonly MemoryMappedFileCheckpoint _checkpoint;
 		private readonly Debouncer _checkpointer;
-		private readonly Value _firstValue;
-		private readonly Value _valueInterval;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
-		public LogV3StreamNameExistenceFilter(
+		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamNameExistenceFilter>();
+
+		public StreamNameExistenceFilter(
 			string directory,
 			string filterName,
 			long size,
-			Value firstValue,
-			Value valueInterval,
 			TimeSpan checkpointInterval) {
 			_filterName = filterName;
-			_firstValue = firstValue;
-			_valueInterval = valueInterval;
 
 			if (!Directory.Exists(directory)) {
 				Directory.CreateDirectory(directory);
@@ -82,21 +72,17 @@ namespace EventStore.Core.LogV3 {
 
 		}
 
-		public void InitializeWithExisting(INameLookup<Value> source) {
-			if (!source.TryGetLastValue(out var lastValue)) return;
-			var checkpoint = _checkpoint.Read();
-			for (var value = lastValue; value >= _firstValue && value > checkpoint; value -= _valueInterval) {
-				var name = source.LookupName(value);
-				Add(name, value);
+		public void Initialize(INameEnumerator<Checkpoint> source) {
+			var lastCheckpoint = _checkpoint.Read();
+			foreach (var (name, checkpoint) in source.EnumerateNames(lastCheckpoint)) {
+				Add(name, checkpoint);
 			}
-			_checkpoint.Write(lastValue);
-			_checkpointer.Trigger();
 		}
 
-		public void Add(string name, Value value) {
+		public void Add(string name, Checkpoint checkpoint) {
 			_mmfBloomFilter.Add(name);
 			Log.Verbose("{filterName} added new entry: {name}", _filterName, name);
-			_checkpoint.Write(value);
+			_checkpoint.Write(checkpoint);
 			_checkpointer.Trigger();
 		}
 

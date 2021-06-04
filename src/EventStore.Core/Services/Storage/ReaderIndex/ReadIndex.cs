@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IStreamIdConverter<TStreamId> streamIdConverter,
 			IValidator<TStreamId> streamIdValidator,
 			ISizer<TStreamId> sizer,
-			INameExistenceFilter<TStreamId> streamNameExistenceFilter,
+			INameExistenceFilter<long> streamNameExistenceFilter,
 			int streamInfoCacheCapacity,
 			bool additionalCommitChecks,
 			long metastreamMaxCount,
