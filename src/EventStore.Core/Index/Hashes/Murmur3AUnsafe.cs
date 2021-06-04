@@ -29,6 +29,12 @@ namespace EventStore.Core.Index.Hashes {
 			}
 		}
 
+		public unsafe uint Hash(ReadOnlySpan<byte> data) {
+			fixed (byte* input = data) {
+				return Hash(input, (uint)data.Length, _seed);
+			}
+		}
+
 		private unsafe static uint Hash(byte* data, uint len, uint seed) {
 			UInt32 nblocks = len / 4;
 			UInt32 h1 = seed;

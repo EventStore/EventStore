@@ -12,7 +12,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		public const long MaxSizeKB = 4_000_000;
 	}
 
-	public class MemoryMappedFileBloomFilter<TItem> : MemoryMappedFileBloomFilter, IProbabilisticFilter<TItem>, IDisposable {
+	public abstract class MemoryMappedFileBloomFilter<TItem> : MemoryMappedFileBloomFilter, IProbabilisticFilter<TItem>, IDisposable {
 		/*
 		    Bloom filter implementation based on the following paper by Adam Kirsch and Michael Mitzenmacher:
 		    "Less Hashing, Same Performance: Building a Better Bloom Filter"
@@ -26,7 +26,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		private readonly long _numBits;
 		public readonly long OptimalMaxItems;
 
-		private readonly Func<TItem, byte[]> _serializer;
 		private readonly IHasher[] _hashers = {
 			new XXHashUnsafe(seed: 0xC0015EEDU),
 			new Murmur3AUnsafe(seed: 0xC0015EEDU),
@@ -43,17 +42,14 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		/// <param name="path">Path to the bloom filter file</param>
 		/// <param name="size">Size of the bloom filter in bytes</param>
 		/// <param name="serializer">Function to serialize an item to a byte array</param>
-		public MemoryMappedFileBloomFilter(string path, long size, Func<TItem, byte[]> serializer) {
+		public MemoryMappedFileBloomFilter(string path, long size) {
 			Ensure.NotNull(path, nameof(path));
-			Ensure.NotNull(serializer, nameof(serializer));
 
 			if (size < MinSizeKB * 1000 || size > MaxSizeKB * 1000) {
 				throw new ArgumentOutOfRangeException(nameof(size), $"size should be between {MinSizeKB:N0} and {MaxSizeKB:N0} KB inclusive");
 			}
 
-			_serializer = serializer;
 			_numBits = size * 8;
-
 			OptimalMaxItems = Convert.ToInt64(-_numBits * Math.Log(2) * Math.Log(2) / Math.Log(_falsePositiveProbability));
 
 			var newFile = !File.Exists(path);
@@ -82,6 +78,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			_mmfDataWriteAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.Write);
 		}
 
+		protected abstract ReadOnlySpan<byte> Serialize(TItem item);
+
 		public void Add(TItem item) {
 			foreach(var bitPosition in GetBitPositions(item)) {
 				SetBit(bitPosition);
@@ -100,7 +98,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		}
 
 		private IEnumerable<long> GetBitPositions(TItem item) {
-			var bytes = _serializer(item);
+			var bytes = Serialize(item);
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 

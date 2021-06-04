@@ -13,7 +13,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		INameExistenceFilter<Checkpoint> {
 		private readonly string _filterName;
 		private readonly Encoding _utf8NoBom = new UTF8Encoding(false, true);
-		private readonly MemoryMappedFileBloomFilter<string> _mmfBloomFilter;
+		private readonly MemoryMappedFileStringBloomFilter _mmfStringBloomFilter;
 		private readonly MemoryMappedFileCheckpoint _checkpoint;
 		private readonly Debouncer _checkpointer;
 		private readonly CancellationTokenSource _cancellationTokenSource;
@@ -34,16 +34,13 @@ namespace EventStore.Core.LogAbstraction.Common {
 			var bloomFilterFilePath = $"{directory}/{_filterName}.dat";
 			var checkpointFilePath =  $"{directory}/{_filterName}.chk";
 
-			byte[] Serializer(string s) => _utf8NoBom.GetBytes(s);
 			try {
-				_mmfBloomFilter = new MemoryMappedFileBloomFilter<string>
-					(bloomFilterFilePath, size, Serializer);
+				_mmfStringBloomFilter = new MemoryMappedFileStringBloomFilter(bloomFilterFilePath, size);
 			} catch (CorruptedFileException exc) {
 				Log.Error(exc, "{filterName} is corrupted. Rebuilding...", _filterName);
 				File.Delete(bloomFilterFilePath);
 				File.Delete(checkpointFilePath);
-				_mmfBloomFilter = new MemoryMappedFileBloomFilter<string>
-					(bloomFilterFilePath, size, Serializer);
+				_mmfStringBloomFilter = new MemoryMappedFileStringBloomFilter(bloomFilterFilePath, size);
 			}
 
 			Log.Information("{filterName} has successfully loaded.", _filterName);
@@ -51,8 +48,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 			                "{size:N0} MB is approximately equal to: {n:N0} with false positive probability: {p:N2}",
 				_filterName,
 				size / 1000 / 1000,
-				_mmfBloomFilter.OptimalMaxItems,
-				_mmfBloomFilter.FalsePositiveProbability);
+				_mmfStringBloomFilter.OptimalMaxItems,
+				_mmfStringBloomFilter.FalsePositiveProbability);
 
 			_checkpoint = new MemoryMappedFileCheckpoint(checkpointFilePath, _filterName, true);
 
@@ -61,7 +58,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 				checkpointInterval,
 				token => {
 					try {
-						_mmfBloomFilter.Flush();
+						_mmfStringBloomFilter.Flush();
 						_checkpoint.Flush();
 						Log.Debug("{filterName} took checkpoint at position: {position}", _filterName, _checkpoint.Read());
 					} catch (Exception ex) {
@@ -80,17 +77,17 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public void Add(string name, Checkpoint checkpoint) {
-			_mmfBloomFilter.Add(name);
+			_mmfStringBloomFilter.Add(name);
 			Log.Verbose("{filterName} added new entry: {name}", _filterName, name);
 			_checkpoint.Write(checkpoint);
 			_checkpointer.Trigger();
 		}
 
-		public bool? Exists(string name) => !_mmfBloomFilter.MayExist(name) ? false : null;
+		public bool? Exists(string name) => !_mmfStringBloomFilter.MayExist(name) ? false : null;
 
 		public void Dispose() {
 			_cancellationTokenSource?.Cancel();
-			_mmfBloomFilter?.Dispose();
+			_mmfStringBloomFilter?.Dispose();
 			GC.SuppressFinalize(this);
 		}
 	}

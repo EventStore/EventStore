@@ -32,6 +32,12 @@ namespace EventStore.Core.Index.Hashes {
 			}
 		}
 
+		public unsafe uint Hash(ReadOnlySpan<byte> data) {
+			fixed (byte* input = data) {
+				return Hash(input, (uint)data.Length, _seed);
+			}
+		}
+
 		private unsafe static uint Hash(byte* data, uint len, uint seed) {
 			if (len < 16)
 				return HashSmall(data, len, seed);
