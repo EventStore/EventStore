@@ -611,7 +611,9 @@ namespace EventStore.Core {
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
 				MaxReaderCount = pTableMaxReaderCount,
-				StreamNameExistenceFilterSize = options.Database.StreamExistenceFilterSize
+				StreamNameExistenceFilterSize = options.Database.StreamExistenceFilterSize,
+				ChaserCheckpoint = Db.Config.ChaserCheckpoint,
+				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
 			});
 
 			var tableIndex = new TableIndex<TStreamId>(indexPath,

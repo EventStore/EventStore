@@ -6,6 +6,8 @@ using EventStore.Core.LogV2;
 using EventStore.Core.LogV3;
 using EventStore.Core.LogV3.FASTER;
 using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using LogV3StreamId = System.UInt32;
 using Checkpoint = System.Int64;
 
@@ -16,6 +18,8 @@ namespace EventStore.Core.LogAbstraction {
 		public int InitialReaderCount { get; init; } = ESConsts.PTableInitialReaderCount;
 		public int MaxReaderCount { get; init; } = 100;
 		public long StreamNameExistenceFilterSize { get; init; }
+		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
+		public IReadOnlyCheckpoint ChaserCheckpoint { get; init; }
 	}
 
 	public interface ILogFormatAbstractorFactory<TStreamId> {
@@ -23,7 +27,7 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
-		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions _) {
+		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
 			var streamNameIndex = new LogV2StreamNameIndex();
 			return new LogFormatAbstractor<string>(
 				lowHasher: new XXHashUnsafe(),
@@ -38,6 +42,7 @@ namespace EventStore.Core.LogAbstraction {
 				emptyStreamId: string.Empty,
 				streamIdSizer: new LogV2Sizer(),
 				streamNameExistenceFilter: new NoStreamNameExistenceFilter<long>(),
+				streamNameEnumerator: new LogV2StreamNameEnumerator(options.TFReaderLeaseFactory, options.ChaserCheckpoint),
 				recordFactory: new LogV2RecordFactory(),
 				supportsExplicitTransactions: true);
 		}
