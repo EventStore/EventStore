@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
 using Serilog;
@@ -81,23 +82,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		protected abstract ReadOnlySpan<byte> Serialize(TItem item);
 
 		public void Add(TItem item) {
-			foreach(var bitPosition in GetBitPositions(item)) {
-				SetBit(bitPosition);
-			}
-		}
-
-		public bool MayExist(TItem item) {
-			foreach(var bitPosition in GetBitPositions(item)) {
-				if (!IsBitSet(bitPosition)) return false;
-			}
-			return true;
-		}
-
-		public void Flush() {
-			_mmfDataWriteAccessor.Flush();
-		}
-
-		private IEnumerable<long> GetBitPositions(TItem item) {
 			var bytes = Serialize(item);
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
@@ -107,8 +91,27 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				hash += hash2;
 				hash &= long.MaxValue; //make non-negative
 				long bitPosition = hash % _numBits;
-				yield return bitPosition;
+				SetBit(bitPosition);
 			}
+		}
+
+		public bool MayExist(TItem item) {
+			var bytes = Serialize(item);
+			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
+			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
+
+			long hash = hash1;
+			for (int i = 0; i < NumHashFunctions; i++) {
+				hash += hash2;
+				hash &= long.MaxValue; //make non-negative
+				long bitPosition = hash % _numBits;
+				if (!IsBitSet(bitPosition)) return false;
+			}
+			return true;
+		}
+
+		public void Flush() {
+			_mmfDataWriteAccessor.Flush();
 		}
 
 		private void SetBit(long position) {
