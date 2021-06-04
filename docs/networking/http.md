@@ -76,15 +76,11 @@ Sets the maximum number of open connections. See the docs [here](https://docs.mi
 
 This is configured with `Kestrel.Limits.MaxConcurrentConnections` in the settings file.
 
-**Default**: `5000`
-
 ### MaxConcurrentUpgradedConnections
 
 Sets the maximum number of open, upgraded connections. An upgraded connection is one that has been switched from HTTP to another protocol, such as WebSockets. See the docs [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.server.kestrel.core.kestrelserverlimits.maxconcurrentupgradedconnections?view=aspnetcore-5.0).
 
 This is configured with `Kestrel.Limits.MaxConcurrentUpgradedConnections` in the settings file.
-
-**Default**: `5000`
 
 ### Http2 InitialConnectionWindowSize
 
@@ -94,8 +90,6 @@ The value must be greater than or equal to 65,535 and less than 2^31. See the do
 
 This is configured with `Kestrel.Limits.Http2.InitialConnectionWindowSize` in the settings file.
 
-**Default**: `131072 * 1024`
-
 ### Http2 InitialStreamWindowSize
 
 Sets how much request body data the server is willing to receive and buffer at a time per stream. Note connections are also limited by `KestrelInitialConnectionWindowSize`
@@ -103,5 +97,3 @@ Sets how much request body data the server is willing to receive and buffer at a
 Value must be greater than or equal to 65,535 and less than 2^31. See the docs [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.server.kestrel.core.http2limits.initialstreamwindowsize?view=aspnetcore-5.0).
 
 This is configured with `Kestrel.Limits.Http2.InitialStreamWindowSize` in the settings file.
-
-**Default**: `98304 * 1024`
