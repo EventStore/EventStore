@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common;
 using EventStore.Common.Configuration;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -638,11 +639,25 @@ namespace EventStore.Core {
 			             "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
+			[Description(
+				"The runtime used for executing user projections. Legacy will run v8, Interpreted will run the new interpreted runtime"),
+			Deprecated("The Legacy ProjectionRuntime option is for compatibility with the v8 projection engine and should only be set if problems are encountered running the interpreted runtime")]
+			public JavascriptProjectionRuntime ProjectionRuntime { get; init; } =
+				JavascriptProjectionRuntime.Interpreted;
+
+			[Description("The time in milliseconds allowed for the compilation phase of user projections")] 
+			public int ProjectionCompilationTimeout { get; set; } = 500;
+			[Description("The time in milliseconds allowed for the executing a handler in a user projection")] 
+			public int ProjectionExecutionTimeout { get; set; } = 250;
+
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
 				ProjectionThreads = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
 				ProjectionsQueryExpiry = configurationRoot.GetValue<int>(nameof(ProjectionsQueryExpiry)),
-				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections))
+				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections)),
+				ProjectionRuntime = configurationRoot.GetValue<JavascriptProjectionRuntime>(nameof(ProjectionRuntime)),
+				ProjectionCompilationTimeout = configurationRoot.GetValue<int>(nameof(ProjectionCompilationTimeout)),
+				ProjectionExecutionTimeout = configurationRoot.GetValue<int>(nameof(ProjectionExecutionTimeout))
 			};
 		}
 	}

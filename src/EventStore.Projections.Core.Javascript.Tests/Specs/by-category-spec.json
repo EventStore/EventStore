@@ -1,0 +1,88 @@
+{
+	"projection": "by-category",
+	"input": [
+		{
+			"streamId": "category1-a",
+			"events": [
+				{
+					"eventType": "t1",
+					"data": {},
+					"metadata": {}
+				},
+				{
+					"eventType": "t2",
+					"data": {},
+					"metadata": {}
+				},
+				{
+					"eventType": "t3",
+					"data": {},
+					"metadata": {}
+				}
+			]
+		},
+		{
+			"streamId": "category2-a",
+			"events": [
+				{
+					"eventType": "t1",
+					"data": {},
+					"metadata": {}
+				},
+				{
+					"eventType": "t2",
+					"data": {},
+					"metadata": {}
+				},
+				{
+					"eventType": "t3",
+					"data": {},
+					"metadata": {}
+				}
+			]
+		},
+		{
+			"streamId": "category1-b",
+			"events": [
+				{
+					"eventType": "t1",
+					"data": {},
+					"metadata": {}
+				},
+				{
+					"eventType": "t2",
+					"data": {},
+					"metadata": {}
+				},
+				{
+					"eventType": "t3",
+					"data": {},
+					"metadata": {}
+				}
+			]
+		}
+	],
+	"output": {
+		"config": {
+			"allEvents": true,
+			"allStreams": true, 
+			"categories": [],
+			"events": [],
+			"partitioned": false,
+			"definesStateTransform": false,
+			"handlesDeletedNotifications": false,
+			"producesResults": false,
+			"definesFold": true,
+			"resultStreamName": null,
+			"partitionResultStreamNamePattern": null,
+			"$includeLinks": true,
+			"reorderEvents": false,
+			"processingLag": 0,
+			"biState": false
+		},
+		"emitted": {
+			"$ct-category1": [ "0@category1-a", "1@category1-a", "2@category1-a", "0@category1-b", "1@category1-b", "2@category1-b" ] ,
+			"$ct-category2": [ "0@category2-a", "1@category2-a", "2@category2-a"] 
+		} 
+	}
+}

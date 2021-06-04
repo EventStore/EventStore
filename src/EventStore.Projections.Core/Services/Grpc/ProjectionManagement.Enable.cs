@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation EnableOperation = new Operation(Operations.Projections.Enable);
 		public override async Task<EnableResp> Enable(EnableReq request, ServerCallContext context) {
 			var enableSource = new TaskCompletionSource<bool>();

@@ -1,0 +1,96 @@
+{
+	"projection": "event-data",
+	"input": [
+		{
+			"streamId": "foo",
+			"events": [
+				{
+					"eventType": "baz",
+					"eventId": "81f23435-6b5b-47c6-84fd-b9d1a64916d8",
+					"data": {
+						"something": "one"
+					},
+					"initializedPartitions": [ "" ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"events": [
+									{
+										"streamId": "foo",
+										"sequenceNumber": 0,
+										"eventId": "81f23435-6b5b-47c6-84fd-b9d1a64916d8",
+										"eventType": "baz",
+										"data": {
+											"something": "one"
+										},
+										"metadata": null
+									}
+								]
+							}
+						}
+					]
+				}, {
+					"eventType": "baz",
+					"eventId": "100bd839-2b31-4908-99ef-6af615f51648",
+					"data": {
+						"something": "two"
+					},
+					"metadata": {
+						"test": 1
+					},
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"events": [
+									{
+										"streamId": "foo",
+										"sequenceNumber": 0,
+										"eventId": "81f23435-6b5b-47c6-84fd-b9d1a64916d8",
+										"eventType": "baz",
+										"data": {
+											"something": "one"
+										},
+										"metadata": null
+									},
+									{
+										"streamId": "foo",
+										"sequenceNumber": 1,
+										"eventId": "100bd839-2b31-4908-99ef-6af615f51648",
+										"eventType": "baz",
+										"data": {
+											"something": "two"
+										},
+										"metadata": {
+											"test": 1
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"output": {
+		"config": {
+			"categories": [],
+			"allStreams": true,
+			"events": ["baz"] ,
+			"partitioned": false,
+			"definesStateTransform": true,
+			"handlesDeletedNotifications": false,
+			"producesResults": true,
+			"definesFold": true,
+			"resultStreamName": "",
+			"partitionResultStreamNamePattern": "",
+			"$includeLinks": false,
+			"reorderEvents": false,
+			"processingLag": 0,
+			"biState": false
+		}
+	}
+}
+

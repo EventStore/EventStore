@@ -1,0 +1,220 @@
+{
+	"projection": "account-balancer",
+	"input": [
+		{
+			"streamId": "transaction-1",
+			"events": [
+				{
+					"eventType": "header",
+					"data": {
+						"description": "transfer from alice"
+					},
+					"initializedPartitions": [ "", "description" ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"numberOfAccounts": 0,
+								"totalBalance": 0,
+								"description": "transfer from alice"
+							}
+						},
+						{
+							"partition": "description",
+							"state": null
+						}
+					]
+				},
+				{
+					"eventType": "debit",
+					"data": {
+						"accountId": "External-01",
+						"amount": 1000
+					},
+					"skip" : true 
+				},
+				{
+					"eventType": "credit",
+					"data": {
+						"accountId": "ESDBB-01",
+						"amount": 1000
+					},
+					"initializedPartitions": [ "ESDBB-01" ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"numberOfAccounts": 1,
+								"totalBalance": 1000,
+								"description": "transfer from alice"
+							}
+						},
+						{
+							"partition": "ESDBB-01",
+							"state": {
+								"description": "transfer from alice",
+								"balance": 1000, 
+								"credit":  1000 
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"streamId": "transaction-2",
+			"events": [
+				{
+					"eventType": "header",
+					"data": {
+						"description": "transfer to savings"
+					},
+					"initializedPartitions": [ ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"numberOfAccounts": 1,
+								"totalBalance": 1000,
+								"description": "transfer to savings"
+							}
+						},
+						{
+							"partition": "description",
+							"state": null
+						}
+					]
+				},
+				{
+					"eventType": "debit",
+					"data": {
+						"accountId": "ESDBB-01",
+						"amount": 300
+					},
+					"initializedPartitions": [ ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"numberOfAccounts": 1,
+								"totalBalance": 700,
+								"description": "transfer to savings"
+							}
+						},
+						{
+							"partition": "ESDBB-01",
+							"state": {
+								"description": "transfer to savings",
+								"balance": 700,
+								"debit": 300
+							}
+						}
+					]
+				},
+				{
+					"eventType": "credit",
+					"data": {
+						"accountId": "ESDBB-S01",
+						"amount": 300
+					},
+					"initializedPartitions": [ "ESDBB-S01" ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"numberOfAccounts": 2,
+								"totalBalance": 1000,
+								"description": "transfer to savings"
+							}
+						},
+						{
+							"partition": "ESDBB-S01",
+							"state": {
+								"description": "transfer to savings",
+								"balance": 300,
+								"credit": 300
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"streamId": "transaction-3",
+			"events": [
+				{
+					"eventType": "header",
+					"data": {
+						"description": "bill payment"
+					},
+					"initializedPartitions": [ ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"numberOfAccounts": 2,
+								"totalBalance": 1000,
+								"description": "bill payment"
+							}
+						},
+						{
+							"partition": "description",
+							"state": null
+						}
+					]
+				},
+				{
+					"eventType": "debit",
+					"data": {
+						"accountId": "ESDBB-01",
+						"amount": 150
+					},
+					"initializedPartitions": [ ],
+					"states": [
+						{
+							"partition": "",
+							"state": {
+								"numberOfAccounts": 2,
+								"totalBalance": 850,
+								"description": "bill payment"
+							}
+						},
+						{
+							"partition": "ESDBB-01",
+							"state": {
+								"balance": 550,
+								"debit": 150,
+								"description": "bill payment"
+							}
+						}
+					]
+				},
+				{
+					"eventType": "credit",
+					"data": {
+						"accountId": "EXTERNAL-02",
+						"amount": 150
+					},
+					"skip":  true
+				}
+			]
+		}
+	],
+	"output": {
+		"config": {
+			"categories": [ "transaction" ],
+			"events": ["header", "credit", "debit"] ,
+			"partitioned": true,
+			"definesStateTransform": true,
+			"handlesDeletedNotifications": false,
+			"producesResults": true,
+			"definesFold": true,
+			"resultStreamName": "total-balance",
+			"partitionResultStreamNamePattern": "account-balance-{0}",
+			"$includeLinks": false,
+			"reorderEvents": false,
+			"processingLag": 0,
+			"biState": true
+		}
+	} 
+}

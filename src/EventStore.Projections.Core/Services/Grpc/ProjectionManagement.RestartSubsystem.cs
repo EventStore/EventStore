@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation RestartOperation = new Operation(Operations.Projections.Restart);
 
 		public override async Task<Empty> RestartSubsystem(Empty empty, ServerCallContext context) {
