@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.LogV2 {
@@ -26,18 +27,17 @@ namespace EventStore.Core.LogV2 {
 		public void CancelReservations() {
 		}
 
-		public bool Confirm(IList<IPrepareLogRecord<string>> prepares) {
+		public void Confirm(IList<IPrepareLogRecord<string>> prepares, bool catchingUp, IIndexBackend<string> backend) {
 			if (prepares.Count == 0)
-				return false;
+				return;
 
 			if (prepares[0].ExpectedVersion != ExpectedVersion.NoStream)
-				return false;
+				return;
 
 			var lastPrepare = prepares[prepares.Count - 1];
 
 			//qq lastprepare is ok isn't it?
 			_existenceFilter.Add(lastPrepare.EventStreamId, lastPrepare.LogPosition);
-			return true;
 		}
 
 		public bool GetOrReserve(string streamName, out string streamId, out string createdId, out string createdName) {

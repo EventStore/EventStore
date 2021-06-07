@@ -59,7 +59,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 				createdId = streamRecord.Record.SubHeader.ReferenceNumber;
 				createdName = streamRecord.StreamName;
 				_mockIndexReader.Add(streamRecord.ExpectedVersion + 1, streamRecord);
-				_sut.StreamNameIndexConfirmer.Confirm(new[] { streamRecord });
+				_sut.StreamNameIndexConfirmer.Confirm(new[] { streamRecord }, false, null); //qq null
 				return false;
 			} else {
 				createdId = default;

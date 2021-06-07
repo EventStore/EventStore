@@ -367,11 +367,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
 				}
 
-				if (_streamNameIndex.Confirm(prepares)) {
-					// initialisation of the stream name index caused an entry to be populated in
-					// the last event number cache, now we need to keep it up to date even on initialisation
-					cacheLastEventNumber = true;
-				}
+				_streamNameIndex.Confirm(
+					replicatedPrepares: prepares,
+					catchingUp: !cacheLastEventNumber,
+					backend: _backend);
 
 				_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
 			}

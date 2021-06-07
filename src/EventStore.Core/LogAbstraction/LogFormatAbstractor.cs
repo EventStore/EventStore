@@ -60,12 +60,14 @@ namespace EventStore.Core.LogAbstraction {
 
 	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
 		public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
-			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
-			var streamNameExistenceFilter = GenStreamNameExistenceFilter(options);
-			var streamNameIndex = GenStreamNameIndex(options, streamNameExistenceFilter, streamNameIndexPersistence);
-
 			var metastreams = new LogV3Metastreams();
 			var streamNamesProvider = GenStreamNamesProvider(metastreams);
+
+			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
+			var streamNameExistenceFilter = GenStreamNameExistenceFilter(options);
+			var streamNameIndex = GenStreamNameIndex(
+				options, streamNameExistenceFilter,
+				streamNameIndexPersistence, metastreams);
 
 			var streamIds = streamNameIndexPersistence
 				.Wrap(x => new NameExistenceFilterValueLookupDecorator<LogV3StreamId>(x, streamNameExistenceFilter))
@@ -103,14 +105,16 @@ namespace EventStore.Core.LogAbstraction {
 		static NameIndex GenStreamNameIndex(
 			LogFormatAbstractorOptions options,
 			INameExistenceFilter existenceFilter,
-			INameIndexPersistence<LogV3StreamId> persistence) {
+			INameIndexPersistence<LogV3StreamId> persistence,
+			IMetastreamLookup<LogV3StreamId> metastreams) {
 
 			var streamNameIndex = new NameIndex(
 				indexName: "StreamNameIndex",
 				firstValue: LogV3SystemStreams.FirstRealStream,
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				existenceFilter: existenceFilter,
-				persistence: persistence);
+				persistence: persistence,
+				metastreams: metastreams);
 			return streamNameIndex;
 		}
 

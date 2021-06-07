@@ -45,7 +45,8 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				firstValue: LogV3SystemStreams.FirstRealStream,
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				existenceFilter: null, //qq
-				persistence: _persistence);
+				persistence: _persistence,
+				metastreams: new LogV3Metastreams());
 		}
 
 		public void Dispose() {

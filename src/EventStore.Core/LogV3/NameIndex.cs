@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 using Serilog;
@@ -28,6 +30,7 @@ namespace EventStore.Core.LogV3 {
 		private readonly ConcurrentDictionary<string, Value> _reservations = new();
 		private readonly INameExistenceFilter _existenceFilter;
 		private readonly INameIndexPersistence<Value> _persistence;
+		private readonly IMetastreamLookup<uint> _metastreams;
 		private readonly string _indexName;
 		private readonly Value _firstValue;
 		private readonly Value _valueInterval;
@@ -39,7 +42,8 @@ namespace EventStore.Core.LogV3 {
 			Value firstValue,
 			Value valueInterval,
 			INameExistenceFilter existenceFilter,
-			INameIndexPersistence<Value> persistence) {
+			INameIndexPersistence<Value> persistence,
+			IMetastreamLookup<Value> metastreams) {
 
 			_indexName = indexName;
 			_firstValue = firstValue;
@@ -47,6 +51,7 @@ namespace EventStore.Core.LogV3 {
 			_nextValue = firstValue;
 			_existenceFilter = existenceFilter;
 			_persistence = persistence;
+			_metastreams = metastreams;
 		}
 
 		public void Dispose() {
@@ -95,8 +100,11 @@ namespace EventStore.Core.LogV3 {
 			}
 		}
 
-		public bool Confirm(IList<IPrepareLogRecord<Value>> prepares) {
-			var confirmedSomething = false;
+		// this is stream specific and will need to be generalised for eventtypes
+		// not terribly happy with the 'catchingUp' mechanism here because it couples
+		// the IndexCommitter behaviour to this method. but the intention is to remove
+		// the use of the old indexes by logv3
+		public void Confirm(IList<IPrepareLogRecord<Value>> prepares, bool catchingUp, IIndexBackend<Value> backend) {
 			for (int i = 0; i < prepares.Count; i++) {
 				var prepare = prepares[i];
 				if (prepare.RecordType == LogRecordType.Stream &&
@@ -104,10 +112,28 @@ namespace EventStore.Core.LogV3 {
 					Confirm(
 						name: streamRecord.StreamName,
 						value: streamRecord.StreamNumber);
-					confirmedSomething = true;
+
+					// update the streams stream
+					// initialisation of the stream name index caused an entry to be populated in
+					// the last event number cache, now we need to keep it up to date even on initialisation
+					backend.SetStreamLastEventNumber(prepare.EventStreamId, prepare.ExpectedVersion + 1);
+
+					if (catchingUp) {
+						// we are catching up, do not set the last event numbers because they will not be
+						// updated during the catchup if we do write some events to those streams.
+						// thesefore leave the entry blank so it will be (cheaply because in mem) be
+						// populated on miss.
+					}
+					else {
+						// we just created the stream so we know that no events exist in either
+						// the stream itself or its metastream.
+						var createdStreamNumber = streamRecord.StreamNumber;
+						var createdMetaStreamNumber = _metastreams.MetaStreamOf(streamRecord.StreamNumber);
+						backend.SetStreamLastEventNumber(createdStreamNumber, ExpectedVersion.NoStream);
+						backend.SetStreamLastEventNumber(createdMetaStreamNumber, ExpectedVersion.NoStream);
+					}
 				}
 			}
-			return confirmedSomething;
 		}
 
 		public bool GetOrReserve(string name, out Value value, out Value addedValue, out string addedName) {
