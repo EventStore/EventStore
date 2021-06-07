@@ -135,16 +135,15 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_indexBackend = new IndexBackend<TStreamId>(_readerPool, 100000, 100000);
 			_streamIds = _logFormat.StreamIds;
 			_factory = _logFormat.StreamNamesProvider;
-			var converter = _logFormat.StreamIdConverter;
 			_validator = _logFormat.StreamIdValidator;
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			_sizer = _logFormat.StreamIdSizer;
-			_indexReader = new IndexReader<TStreamId>(_indexBackend, _tableIndex, _factory, _validator, new StreamMetadata(maxCount: 100000), 100, false);
+			_indexReader = new IndexReader<TStreamId>(_indexBackend, _tableIndex, _factory, _validator, _logFormat.StreamNameExistenceFilterReader, new StreamMetadata(maxCount: 100000), 100, false);
 			_streamNames = _logFormat.StreamNames;
 			_systemStreams = _logFormat.SystemStreams;
 			_indexWriter = new IndexWriter<TStreamId>(_indexBackend, _indexReader, _streamIds, _streamNames, _systemStreams, emptyStreamId, _sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex, _logFormat.StreamNameIndexConfirmer, _streamNames, _systemStreams,
-				converter, _logFormat.StreamNameExistenceFilter, _logFormat.StreamNameEnumerator, new InMemoryCheckpoint(-1),  false);
+				_logFormat.StreamNameExistenceFilter, _logFormat.StreamNameEnumerator, new InMemoryCheckpoint(-1),  false);
 
 			WriteEvents();
 		}

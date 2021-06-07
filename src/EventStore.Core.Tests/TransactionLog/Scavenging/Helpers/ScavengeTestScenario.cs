@@ -73,11 +73,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				_logFormat.StreamIds,
 				_logFormat.StreamNamesProvider,
 				_logFormat.EmptyStreamId,
-				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
 				_logFormat.StreamNameExistenceFilter,
-				_logFormat.StreamNameEnumerator,
+				_logFormat.StreamNameExistenceFilterReader,
 				100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);

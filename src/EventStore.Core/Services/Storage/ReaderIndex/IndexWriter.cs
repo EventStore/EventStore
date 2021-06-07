@@ -167,9 +167,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				_ => CommitDecision.WrongExpectedVersion
 			};
 
+			//qq make sure this is the result that we would have had anyway
+			// i think we wont need this for v2 but will for v3, tbc
 			return new CommitCheckResult<TStreamId>(commitDecision, streamId, ExpectedVersion.NoStream, -1, -1, false);
 		}
 
+		//qq probably shouldn't be nullable bool now
 		public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool? isNewStream) {
 			if (isNewStream ?? false) {
 				//fast path for completely new streams

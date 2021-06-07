@@ -44,6 +44,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				indexName: "StreamNameIndex",
 				firstValue: LogV3SystemStreams.FirstRealStream,
 				valueInterval: LogV3SystemStreams.StreamInterval,
+				existenceFilter: null, //qq
 				persistence: _persistence);
 		}
 

@@ -1,18 +1,15 @@
 using System;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
 using EventStore.Core.TransactionLog.Checkpoint;
 using Serilog;
-using Checkpoint = System.Int64;
 
 namespace EventStore.Core.LogAbstraction.Common {
 	public class StreamNameExistenceFilter :
-		INameExistenceFilter<Checkpoint> {
+		INameExistenceFilter {
 		private readonly string _filterName;
-		private readonly Encoding _utf8NoBom = new UTF8Encoding(false, true);
 		private readonly MemoryMappedFileStringBloomFilter _mmfStringBloomFilter;
 		private readonly MemoryMappedFileCheckpoint _checkpoint;
 		private readonly Debouncer _checkpointer;
@@ -34,6 +31,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 			var bloomFilterFilePath = $"{directory}/{_filterName}.dat";
 			var checkpointFilePath =  $"{directory}/{_filterName}.chk";
 
+			//qq 
 			try {
 				_mmfStringBloomFilter = new MemoryMappedFileStringBloomFilter(bloomFilterFilePath, size);
 			} catch (CorruptedFileException exc) {
@@ -69,21 +67,21 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		}
 
-		public void Initialize(INameEnumerator<Checkpoint> source) {
+		public void Initialize(INameEnumerator source) {
 			var lastCheckpoint = _checkpoint.Read();
 			foreach (var (name, checkpoint) in source.EnumerateNames(lastCheckpoint)) {
 				Add(name, checkpoint);
 			}
 		}
 
-		public void Add(string name, Checkpoint checkpoint) {
+		public void Add(string name, long checkpoint) {
 			_mmfStringBloomFilter.Add(name);
 			Log.Verbose("{filterName} added new entry: {name}", _filterName, name);
 			_checkpoint.Write(checkpoint);
 			_checkpointer.Trigger();
 		}
 
-		public bool? Exists(string name) => !_mmfStringBloomFilter.MayExist(name) ? false : null;
+		public bool MightExist(string name) => _mmfStringBloomFilter.MayExist(name);
 
 		public void Dispose() {
 			_cancellationTokenSource?.Cancel();

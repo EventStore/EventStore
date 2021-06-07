@@ -7,8 +7,5 @@
 		// return false => stream was created. addedValue and addedName are the details of the created stream.
 		// these can be different to streamName/streamId e.g. if streamName is a metastream.
 		bool GetOrReserve(string name, out TValue value, out TValue addedValue, out string addedName);
-
-		// must be called only if the name does not already exist
-		void Reserve(string name, out TValue value, out TValue addedValue, out string addedName);
 	}
 }

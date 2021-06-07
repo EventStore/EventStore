@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 using StreamId = System.UInt32;
-using Checkpoint = System.Int64;
 
 namespace EventStore.Core.LogV3 {
-	public class LogV3StreamNameEnumerator : INameEnumerator<Checkpoint> {
+	public class LogV3StreamNameEnumerator : INameEnumerator {
 		private readonly INameLookup<StreamId> _streamNames;
 
 		public LogV3StreamNameEnumerator(INameLookup<StreamId> streamNames) {
@@ -31,6 +30,9 @@ namespace EventStore.Core.LogV3 {
 			for (var eventNumber = startEventNumber; eventNumber <= lastEventNumber; eventNumber++) {
 				var name = _streamNames.LookupName(StreamIdConverter.ToStreamId(eventNumber));
 				yield return (name, eventNumber);
+				//qq i think we wont need to emit the metastreams in the end
+				// instead they are implicitly in the filter (and the places that have
+				// access are wrapped in metahandlers)
 				yield return (SystemStreams.MetastreamOf(name), eventNumber);
 			}
 		}

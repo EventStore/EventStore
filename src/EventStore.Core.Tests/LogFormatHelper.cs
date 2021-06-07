@@ -9,6 +9,7 @@ namespace EventStore.Core.Tests {
 	}
 
 	internal static class LogFormatHelper {
+		//qqq this is no longer true!
 		// v2 contains no state
 		public static LogFormatAbstractor<string> V2 { get; } = new LogV2FormatAbstractorFactory().Create(new());
 	}

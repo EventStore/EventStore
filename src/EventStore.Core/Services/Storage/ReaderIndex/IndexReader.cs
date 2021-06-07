@@ -61,6 +61,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly ITableIndex<TStreamId> _tableIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly IValidator<TStreamId> _validator;
+		private readonly IExistenceFilterReader<TStreamId> _streamNameExistenceFilter;
 		private readonly bool _skipIndexScanOnRead;
 		private readonly StreamMetadata _metastreamMetadata;
 
@@ -74,6 +75,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ITableIndex<TStreamId> tableIndex,
 			IStreamNamesProvider<TStreamId> streamNamesProvider,
 			IValidator<TStreamId> validator,
+			IExistenceFilterReader<TStreamId> streamNameExistenceFilter,
 			StreamMetadata metastreamMetadata,
 			int hashCollisionReadLimit, bool skipIndexScanOnRead) {
 			Ensure.NotNull(backend, "backend");
@@ -88,6 +90,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_tableIndex = tableIndex;
 			_systemStreams = streamNamesProvider.SystemStreams;
 			_validator = validator;
+			_streamNameExistenceFilter = streamNameExistenceFilter;
 			_metastreamMetadata = metastreamMetadata;
 			_hashCollisionReadLimit = hashCollisionReadLimit;
 			_skipIndexScanOnRead = skipIndexScanOnRead;
@@ -576,6 +579,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private long GetStreamLastEventNumberUncached(TFReaderLease reader, TStreamId streamId) {
+			if (!_streamNameExistenceFilter.MightExist(streamId))
+				return ExpectedVersion.NoStream;
+
 			IndexEntry latestEntry;
 			if (!_tableIndex.TryGetLatestEntry(streamId, out latestEntry))
 				return ExpectedVersion.NoStream;

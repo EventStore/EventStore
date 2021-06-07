@@ -10,7 +10,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.LogV3;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Histograms;
@@ -50,7 +49,6 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IRecordFactory<TStreamId> _recordFactory;
 		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
-		private readonly INameExistenceFilter<long> _streamNameExistenceFilter;
 
 		protected readonly IEpochManager EpochManager;
 
@@ -94,7 +92,6 @@ namespace EventStore.Core.Services.Storage {
 			IRecordFactory<TStreamId> recordFactory,
 			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
-			INameExistenceFilter<long> streamNameExistenceFilter,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
@@ -105,7 +102,6 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(recordFactory, nameof(recordFactory));
 			Ensure.NotNull(streamNameIndex, nameof(streamNameIndex));
 			Ensure.NotNull(systemStreams, nameof(systemStreams));
-			Ensure.NotNull(streamNameExistenceFilter, nameof(streamNameExistenceFilter));
 			Ensure.NotNull(epochManager, "epochManager");
 
 			Bus = bus;
@@ -114,7 +110,6 @@ namespace EventStore.Core.Services.Storage {
 			_indexWriter = indexWriter;
 			_recordFactory = recordFactory;
 			_streamNameIndex = streamNameIndex;
-			_streamNameExistenceFilter = streamNameExistenceFilter;
 			_systemStreams = systemStreams;
 			EpochManager = epochManager;
 
@@ -257,36 +252,21 @@ namespace EventStore.Core.Services.Storage {
 					return;
 
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				bool? isNewStream = !_streamNameExistenceFilter.Exists(msg.EventStreamId);
 
-				IPrepareLogRecord<TStreamId> streamRecord;
-				TStreamId streamId;
-
-				if (isNewStream ?? false) {
-					_streamNameIndex.Reserve(
-						recordFactory: _recordFactory,
-						streamName: msg.EventStreamId,
-						logPosition: logPosition,
-						streamId: out streamId,
-						streamRecord: out streamRecord);
-
-				} else {
-					_streamNameIndex.GetOrReserve(
-						recordFactory: _recordFactory,
-						streamName: msg.EventStreamId,
-						logPosition: logPosition,
-						streamId: out streamId,
-						streamRecord: out streamRecord);
-				}
+				var preExisting = _streamNameIndex.GetOrReserve(
+					recordFactory: _recordFactory,
+					streamName: msg.EventStreamId,
+					logPosition: logPosition,
+					streamId: out var streamId,
+					streamRecord: out var streamRecord);
 
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
-					_streamNameExistenceFilter.Add(msg.EventStreamId, streamId);
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
-					msg.Events.Select(x => x.EventId), isNewStream);
+					msg.Events.Select(x => x.EventId), !preExisting);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
 					return;
@@ -397,36 +377,21 @@ namespace EventStore.Core.Services.Storage {
 				var eventId = Guid.NewGuid();
 
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				bool? isNewStream = !_streamNameExistenceFilter.Exists(message.EventStreamId);
 
-				IPrepareLogRecord<TStreamId> streamRecord;
-				TStreamId streamId;
-
-				if (isNewStream ?? false) {
-					_streamNameIndex.Reserve(
-						recordFactory: _recordFactory,
-						streamName: message.EventStreamId,
-						logPosition: logPosition,
-						streamId: out streamId,
-						streamRecord: out streamRecord);
-
-				} else {
-					_streamNameIndex.GetOrReserve(
-						recordFactory: _recordFactory,
-						streamName: message.EventStreamId,
-						logPosition: logPosition,
-						streamId: out streamId,
-						streamRecord: out streamRecord);
-				}
+				var preExisting = _streamNameIndex.GetOrReserve(
+					recordFactory: _recordFactory,
+					streamName: message.EventStreamId,
+					logPosition: logPosition,
+					streamId: out var streamId,
+					streamRecord: out var streamRecord);
 
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
-					_streamNameExistenceFilter.Add(message.EventStreamId, streamId);
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
-					new[] { eventId }, isNewStream);
+					new[] { eventId }, !preExisting);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
 					return;

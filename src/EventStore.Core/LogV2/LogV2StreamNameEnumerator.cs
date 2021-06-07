@@ -6,7 +6,6 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 using StreamId = System.String;
-using Checkpoint = System.Int64;
 
 namespace EventStore.Core.LogV2 {
 	/// <summary>
@@ -14,7 +13,7 @@ namespace EventStore.Core.LogV2 {
 	/// Reads the transaction log forward and returns stream names from Prepare log records
 	/// May return a stream name more than once.
 	/// </summary>
-	public class LogV2StreamNameEnumerator : INameEnumerator<Checkpoint> {
+	public class LogV2StreamNameEnumerator : INameEnumerator {
 		private Func<TFReaderLease> _tfReaderFactory;
 		private IReadOnlyCheckpoint _chaserCheckpoint;
 

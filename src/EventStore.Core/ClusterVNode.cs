@@ -640,11 +640,10 @@ namespace EventStore.Core {
 				logFormat.StreamIds,
 				logFormat.StreamNamesProvider,
 				logFormat.EmptyStreamId,
-				logFormat.StreamIdConverter,
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,
 				logFormat.StreamNameExistenceFilter,
-				logFormat.StreamNameEnumerator,
+				logFormat.StreamNameExistenceFilterReader,
 				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
@@ -673,7 +672,6 @@ namespace EventStore.Core {
 				logFormat.RecordFactory,
 				logFormat.StreamNameIndex,
 				logFormat.SystemStreams,
-				logFormat.StreamNameExistenceFilter,
 				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 

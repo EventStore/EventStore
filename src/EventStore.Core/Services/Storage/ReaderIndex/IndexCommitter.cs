@@ -43,9 +43,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameIndexConfirmer<TStreamId> _streamNameIndex;
 		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
-		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
-		private readonly INameExistenceFilter<long> _streamNameExistenceFilter;
-		private INameEnumerator<long> _streamNameEnumerator;
+		private readonly INameExistenceFilter _streamNameExistenceFilter;
+		private INameEnumerator _streamNameEnumerator;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -60,9 +59,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameIndexConfirmer<TStreamId> streamNameIndex,
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
-			IStreamIdConverter<TStreamId> streamIdConverter,
-			INameExistenceFilter<long> streamNameExistenceFilter,
-			INameEnumerator<long> streamNameEnumerator,
+			INameExistenceFilter streamNameExistenceFilter,
+			INameEnumerator streamNameEnumerator,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
@@ -72,7 +70,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamNameIndex = streamNameIndex;
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
-			_streamIdConverter = streamIdConverter;
 			_streamNameExistenceFilter = streamNameExistenceFilter;
 			_streamNameEnumerator = streamNameEnumerator;
 			_indexChk = indexChk;
@@ -370,17 +367,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
 				}
 
-				for (int i = 0; i < prepares.Count; i++) {
-					var prepare = prepares[i];
-					if (prepare.RecordType == LogRecordType.Stream &&
-						prepare is LogV3StreamRecord streamRecord) {
-						_streamNameIndex.Confirm(
-							name: streamRecord.StreamName,
-							value: _streamIdConverter.ToStreamId(streamRecord.StreamNumber));
-						// initialisation of the stream name index caused an entry to be populated in
-						// the last event number cache, now we need to keep it up to date even on initialisation
-						cacheLastEventNumber = true;
-					}
+				if (_streamNameIndex.Confirm(prepares)) {
+					// initialisation of the stream name index caused an entry to be populated in
+					// the last event number cache, now we need to keep it up to date even on initialisation
+					cacheLastEventNumber = true;
 				}
 
 				_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
