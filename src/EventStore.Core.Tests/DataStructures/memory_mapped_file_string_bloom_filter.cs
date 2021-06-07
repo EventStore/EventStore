@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			[SetUp]
 			public void SetUp() {
 				_path = GetTempFilePath();
-				_filter = new MemoryMappedFileStringBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000);
+				_filter = new MemoryMappedFileStringBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000, 1, 1);
 			}
 
 			[TearDown]
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			public void can_close_and_reopen() {
 				_filter.Add("hello");
 				_filter.Dispose();
-				using var newFilter = new MemoryMappedFileStringBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000);
+				using var newFilter = new MemoryMappedFileStringBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000, 1, 1);
 				Assert.IsTrue(newFilter.MayExist("hello"));
 			}
 
@@ -134,7 +134,7 @@ namespace EventStore.Core.Tests.DataStructures {
 
 		[Test, Category("LongRunning")]
 		public void always_returns_true_when_an_item_was_added([Range(10_000, 100_000, 13337)] long size) {
-			using var filter = new MemoryMappedFileStringBloomFilter(GetTempFilePath(), size);
+			using var filter = new MemoryMappedFileStringBloomFilter(GetTempFilePath(), size, 1, 1);
 			var strings = GenerateRandomStrings((int)filter.OptimalMaxItems, 100);
 
 			//no items added yet
@@ -157,25 +157,25 @@ namespace EventStore.Core.Tests.DataStructures {
 		[Test]
 		public void throws_argument_out_of_range_exception_when_given_negative_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), -1));
+				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), -1, 1, 1));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_given_zero_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), 0));
+				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), 0, 1, 1));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_size_less_than_min_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MinSizeKB * 1000 - 1));
+				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MinSizeKB * 1000 - 1, 1, 1));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_size_greater_than_max_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MaxSizeKB * 1000 + 1));
+				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MaxSizeKB * 1000 + 1, 1, 1));
 		}
 	}
 }

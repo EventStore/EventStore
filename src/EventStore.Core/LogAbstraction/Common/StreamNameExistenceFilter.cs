@@ -21,6 +21,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 			string directory,
 			string filterName,
 			long size,
+			int initialReaderCount,
+			int maxReaderCount,
 			TimeSpan checkpointInterval) {
 			_filterName = filterName;
 
@@ -33,12 +35,12 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 			//qq 
 			try {
-				_mmfStringBloomFilter = new MemoryMappedFileStringBloomFilter(bloomFilterFilePath, size);
+				_mmfStringBloomFilter = new MemoryMappedFileStringBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount);
 			} catch (CorruptedFileException exc) {
 				Log.Error(exc, "{filterName} is corrupted. Rebuilding...", _filterName);
 				File.Delete(bloomFilterFilePath);
 				File.Delete(checkpointFilePath);
-				_mmfStringBloomFilter = new MemoryMappedFileStringBloomFilter(bloomFilterFilePath, size);
+				_mmfStringBloomFilter = new MemoryMappedFileStringBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount);
 			}
 
 			Log.Information("{filterName} has successfully loaded.", _filterName);

@@ -140,6 +140,8 @@ namespace EventStore.Core.LogAbstraction {
 				directory: $"{options.IndexDirectory}/stream-name-existence",
 				filterName: "StreamNameExistenceFilter",
 				size: options.StreamNameExistenceFilterSize,
+				initialReaderCount: options.InitialReaderCount,
+				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: TimeSpan.FromSeconds(60)
 			);
 			return nameExistenceFilter;

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
 
@@ -10,11 +11,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		public const long MaxSizeKB = 4_000_000;
 	}
 
-	//qq test if it is any quicker to do both of these with one accessor
-	//qq looks like we'll need multiple threads to be able to read the bloom filter at once
-	// need to think about the required locking, for now i've brute forced it a bit.
-	// but e.g. is it allowed for multiple threads to use the reader concurrently
-	// is it allowed for reader and writer to be used concurrently
 	public abstract class MemoryMappedFileBloomFilter<TItem> : MemoryMappedFileBloomFilter, IProbabilisticFilter<TItem>, IDisposable {
 		/*
 		    Bloom filter implementation based on the following paper by Adam Kirsch and Michael Mitzenmacher:
@@ -36,9 +32,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			new Murmur3AUnsafe(seed: 0x13375EEDU)
 		};
 		private readonly MemoryMappedFile _mmf;
-		private readonly MemoryMappedViewAccessor _mmfDataReadAccessor;
-		private readonly MemoryMappedViewAccessor _mmfDataWriteAccessor;
-		private readonly object _lock = new();
+		private readonly ObjectPool<MemoryMappedViewAccessor> _mmfReadersPool;
+		private readonly MemoryMappedViewAccessor _mmfWriteAccessor;
+		private readonly ReaderWriterLockSlim _readerWriterLock;
 
 		/// <summary>
 		/// Bloom filter implementation which uses a memory-mapped file for persistence.
@@ -46,7 +42,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		/// <param name="path">Path to the bloom filter file</param>
 		/// <param name="size">Size of the bloom filter in bytes</param>
 		/// <param name="serializer">Function to serialize an item to a byte array</param>
-		public MemoryMappedFileBloomFilter(string path, long size) {
+		public MemoryMappedFileBloomFilter(string path, long size, int initialReaderCount, int maxReaderCount) {
 			Ensure.NotNull(path, nameof(path));
 
 			if (size < MinSizeKB * 1000 || size > MaxSizeKB * 1000) {
@@ -78,68 +74,87 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				}
 			}
 
-			_mmfDataReadAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.Read);
-			_mmfDataWriteAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.Write);
+			_mmfReadersPool = new ObjectPool<MemoryMappedViewAccessor>(
+				objectPoolName: $"{nameof(MemoryMappedFileBloomFilter)} readers pool",
+				initialCount: initialReaderCount,
+				maxCount: maxReaderCount,
+				factory: () => _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.Read),
+				dispose: mmfAccessor => mmfAccessor?.Dispose());
+
+			_mmfWriteAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.ReadWrite);
+			_readerWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 		}
 
 		protected abstract ReadOnlySpan<byte> Serialize(TItem item);
 
 		public void Add(TItem item) {
-			lock (_lock) {
-				var bytes = Serialize(item);
-				long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
-				long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
+			var bytes = Serialize(item);
+			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
+			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 
+			_readerWriterLock.EnterWriteLock();
+			try {
 				long hash = hash1;
 				for (int i = 0; i < NumHashFunctions; i++) {
 					hash += hash2;
 					hash &= long.MaxValue; //make non-negative
 					long bitPosition = hash % _numBits;
-					SetBit(bitPosition);
+					SetBit(bitPosition, _mmfWriteAccessor);
 				}
+			} finally {
+				_readerWriterLock.ExitWriteLock();
 			}
 		}
 
 		public bool MayExist(TItem item) {
-			lock (_lock) {
-				var bytes = Serialize(item);
-				long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
-				long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
+			var bytes = Serialize(item);
+			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
+			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 
+			_readerWriterLock.EnterReadLock();
+			var readAccessor = _mmfReadersPool.Get();
+			try {
 				long hash = hash1;
 				for (int i = 0; i < NumHashFunctions; i++) {
 					hash += hash2;
 					hash &= long.MaxValue; //make non-negative
 					long bitPosition = hash % _numBits;
-					if (!IsBitSet(bitPosition))
+					if (!IsBitSet(bitPosition, readAccessor))
 						return false;
 				}
+
 				return true;
+			} finally {
+				_mmfReadersPool.Return(readAccessor);
+				_readerWriterLock.ExitReadLock();
 			}
 		}
 
 		public void Flush() {
-			lock (_lock) {
-				_mmfDataWriteAccessor.Flush();
+			_readerWriterLock.EnterWriteLock();
+			try {
+				_mmfWriteAccessor.Flush();
+			} finally {
+				_readerWriterLock.ExitWriteLock();
 			}
 		}
 
-		private void SetBit(long position) {
+		private static void SetBit(long position, MemoryMappedViewAccessor readWriteAccessor) {
 			var bytePosition = position / 8;
-			_mmfDataReadAccessor.Read(bytePosition, out byte byteValue);
+			readWriteAccessor.Read(bytePosition, out byte byteValue);
 			byteValue = (byte) (byteValue | (1 << (int)(7 - position % 8)));
-			_mmfDataWriteAccessor.Write(bytePosition, byteValue);
+			readWriteAccessor.Write(bytePosition, byteValue);
 		}
 
-		private bool IsBitSet(long position) {
+		private static bool IsBitSet(long position, MemoryMappedViewAccessor readAccessor) {
 			var bytePosition = position / 8;
-			_mmfDataReadAccessor.Read(bytePosition, out byte byteValue);
+			readAccessor.Read(bytePosition, out byte byteValue);
 			return (byteValue & (1 << (int)(7 - position % 8))) != 0;
 		}
 
 		public void Dispose() {
-			_mmfDataReadAccessor?.Dispose();
-			_mmfDataWriteAccessor?.Dispose();
+			_mmfWriteAccessor?.Dispose();
+			_mmfReadersPool?.Dispose();
 			_mmf?.Dispose();
 		}
 	}
