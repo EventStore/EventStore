@@ -10,7 +10,7 @@ using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands {
-	public class TcpSanitazationCheckProcessor : ICmdProcessor {
+	internal class TcpSanitazationCheckProcessor : ICmdProcessor {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TcpSanitazationCheckProcessor>();
 
 		public string Keyword {
@@ -58,7 +58,7 @@ namespace EventStore.TestClient.Commands {
 				else
 					Console.WriteLine("{0} Starting step {1} (RANDOM BYTES) {0}", new string('#', 20), step);
 
-				var connection = context.Client.CreateTcpConnection(
+				var connection = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, package) => {
 						if (package.Command != TcpCommand.BadRequest)
@@ -89,13 +89,13 @@ namespace EventStore.TestClient.Commands {
 
 			Log.Information("Now sending raw bytes...");
 			try {
-				SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MaxValue));
-				SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(int.MinValue));
+				SendRaw(context._tcpTestClient.TcpEndpoint, BitConverter.GetBytes(int.MaxValue));
+				SendRaw(context._tcpTestClient.TcpEndpoint, BitConverter.GetBytes(int.MinValue));
 
-				SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
-				SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
+				SendRaw(context._tcpTestClient.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
+				SendRaw(context._tcpTestClient.TcpEndpoint, BitConverter.GetBytes(double.MinValue));
 
-				SendRaw(context.Client.TcpEndpoint, BitConverter.GetBytes(new Random().NextDouble()));
+				SendRaw(context._tcpTestClient.TcpEndpoint, BitConverter.GetBytes(new Random().NextDouble()));
 			} catch (Exception e) {
 				context.Fail(e, "Raw bytes sent failed");
 				return false;

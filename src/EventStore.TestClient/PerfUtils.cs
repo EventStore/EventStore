@@ -3,7 +3,7 @@ using System.Text;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
-	public static class PerfUtils {
+	internal static class PerfUtils {
 		private static readonly ILogger Log = Serilog.Log.ForContext(typeof(PerfUtils));
 
 		private const string ColumnSplitter = ";";

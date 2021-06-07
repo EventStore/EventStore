@@ -11,7 +11,7 @@ namespace EventStore.TestClient {
 			try {
 				var hostedService = new TestClientHostedService(args);
 				await CreateHostBuilder(hostedService, args)
-					.RunConsoleAsync(options => options.SuppressStatusMessages = true);
+					.RunConsoleAsync(options => options.SuppressStatusMessages = true, hostedService.CancellationToken);
 				return await hostedService.Exited;
 			} catch (Exception ex) {
 				Log.Fatal(ex, "Host terminated unexpectedly.");

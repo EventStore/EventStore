@@ -143,7 +143,10 @@ namespace EventStore.Core.Tests.Helpers {
 				ptableMaxReaderCount: Constants.PTableMaxReaderCountDefault,
 				keepAliveInterval: TimeSpan.FromSeconds(10), keepAliveTimeout: TimeSpan.FromSeconds(10),
 				readOnlyReplica: readOnlyReplica,
-				enableExternalTCP: true, enableAtomPubOverHTTP: true, disableHttps: !useHttps);
+				streamInfoCacheCapacity: Opts.StreamInfoCacheCapacityDefault,
+				enableExternalTCP: true,
+				disableHttps: !useHttps,
+				enableAtomPubOverHTTP: true);
 			_isReadOnlyReplica = readOnlyReplica;
 
 			Log.Information(

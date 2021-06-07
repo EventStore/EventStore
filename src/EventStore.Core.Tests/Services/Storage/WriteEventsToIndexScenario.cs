@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected IIndexCommitter _indexCommitter;
 		protected ObjectPool<ITransactionFileReader> _readerPool;
 		protected const int RecordOffset = 1000;
-		public IList<PrepareLogRecord> CreatePrepareLogRecord(string stream, int expectedVersion, string eventType, Guid eventId, long transactionPosition){
+		public IList<PrepareLogRecord> CreatePrepareLogRecord(string stream, int expectedVersion, string eventType, Guid eventId, long transactionPosition) {
 			return new PrepareLogRecord[]{
 				new PrepareLogRecord (
 					transactionPosition,
@@ -41,31 +41,33 @@ namespace EventStore.Core.Tests.Services.Storage {
 			};
 		}
 
-		public IList<PrepareLogRecord> CreatePrepareLogRecords(string stream, int expectedVersion, IList<string> eventTypes, IList<Guid> eventIds, long transactionPosition){
-			if(eventIds.Count != eventTypes.Count)
+		public IList<PrepareLogRecord> CreatePrepareLogRecords(string stream, int expectedVersion, IList<string> eventTypes, IList<Guid> eventIds, long transactionPosition) {
+			if (eventIds.Count != eventTypes.Count)
 				throw new Exception("eventType and eventIds length mismatch!");
-			if(eventIds.Count == 0)
+			if (eventIds.Count == 0)
 				throw new Exception("eventIds is empty");
-			if(eventIds.Count == 1)
+			if (eventIds.Count == 1)
 				return CreatePrepareLogRecord(stream, expectedVersion, eventTypes[0], eventIds[0], transactionPosition);
 
 			var numEvents = eventTypes.Count;
 
 			var prepares = new List<PrepareLogRecord>();
-			for(var i=0;i<numEvents;i++){
+			for (var i = 0; i < numEvents; i++) {
 				PrepareFlags flags = PrepareFlags.Data | PrepareFlags.IsCommitted;
-				if(i==0) flags |= PrepareFlags.TransactionBegin;
-				if(i==numEvents-1) flags |= PrepareFlags.TransactionEnd;
+				if (i == 0)
+					flags |= PrepareFlags.TransactionBegin;
+				if (i == numEvents - 1)
+					flags |= PrepareFlags.TransactionEnd;
 
 				prepares.Add(
-					new PrepareLogRecord (
+					new PrepareLogRecord(
 						transactionPosition + RecordOffset * i,
 						Guid.NewGuid(),
 						eventIds[i],
 						transactionPosition,
 						i,
 						stream,
-						expectedVersion+i,
+						expectedVersion + i,
 						DateTime.Now,
 						flags,
 						eventTypes[i],
@@ -78,39 +80,39 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return prepares;
 		}
 
-		public CommitLogRecord CreateCommitLogRecord(long logPosition, long transactionPosition, long firstEventNumber){
-			return new CommitLogRecord (logPosition, Guid.NewGuid(), transactionPosition, DateTime.Now, 0);
+		public CommitLogRecord CreateCommitLogRecord(long logPosition, long transactionPosition, long firstEventNumber) {
+			return new CommitLogRecord(logPosition, Guid.NewGuid(), transactionPosition, DateTime.Now, 0);
 		}
 
-		public void WriteToDB(IList<PrepareLogRecord> prepares){
-			foreach(var prepare in prepares){
+		public void WriteToDB(IList<PrepareLogRecord> prepares) {
+			foreach (var prepare in prepares) {
 				((FakeInMemoryTfReader)_tfReader).AddRecord(prepare, prepare.LogPosition);
 			}
 		}
 
-		public void WriteToDB(CommitLogRecord commit){
+		public void WriteToDB(CommitLogRecord commit) {
 			((FakeInMemoryTfReader)_tfReader).AddRecord(commit, commit.LogPosition);
 		}
 
-		public void PreCommitToIndex(IList<PrepareLogRecord> prepares){
+		public void PreCommitToIndex(IList<PrepareLogRecord> prepares) {
 			_indexWriter.PreCommit(prepares);
 		}
 
-		public void PreCommitToIndex(CommitLogRecord commitLogRecord){
+		public void PreCommitToIndex(CommitLogRecord commitLogRecord) {
 			_indexWriter.PreCommit(commitLogRecord);
 		}
 
-		public void CommitToIndex(IList<PrepareLogRecord> prepares){
+		public void CommitToIndex(IList<PrepareLogRecord> prepares) {
 			_indexCommitter.Commit(prepares, false, false);
 		}
 
-		public void CommitToIndex(CommitLogRecord commitLogRecord){
+		public void CommitToIndex(CommitLogRecord commitLogRecord) {
 			_indexCommitter.Commit(commitLogRecord, false, false);
 		}
 
 		public abstract void WriteEvents();
 
-        [OneTimeSetUp]
+		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			_publisher = new InMemoryBus("publisher");
 			_tfReader = new FakeInMemoryTfReader(RecordOffset);
@@ -121,7 +123,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_indexBackend = new IndexBackend(_readerPool, 100000, 100000);
 			_indexReader = new IndexReader(_indexBackend, _tableIndex, new StreamMetadata(maxCount: 100000), 100, false);
 			_indexWriter = new IndexWriter(_indexBackend, _indexReader);
-			_indexCommitter = new Core.Services.Storage.ReaderIndex.IndexCommitter(_publisher, _indexBackend, _indexReader, _tableIndex, new InMemoryCheckpoint(-1),  false);
+			_indexCommitter = new Core.Services.Storage.ReaderIndex.IndexCommitter(_publisher, _indexBackend, _indexReader, _tableIndex, new InMemoryCheckpoint(-1), false);
 
 			WriteEvents();
 		}

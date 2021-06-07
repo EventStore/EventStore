@@ -47,7 +47,7 @@ namespace EventStore.TestClient.Commands {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
 				long received = 0;
 				long sent = 0;
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(conn, msg) => {
 						Interlocked.Increment(ref received);
@@ -68,7 +68,7 @@ namespace EventStore.TestClient.Commands {
 
 						var localSent = Interlocked.Increment(ref sent);
 						while (localSent - Interlocked.Read(ref received) >
-						       context.Client.Options.PingWindow / clientsCnt) {
+						       context._tcpTestClient.Options.PingWindow / clientsCnt) {
 							Thread.Sleep(1);
 						}
 					}

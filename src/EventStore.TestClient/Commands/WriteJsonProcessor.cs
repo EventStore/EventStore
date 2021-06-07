@@ -53,7 +53,7 @@ namespace EventStore.TestClient.Commands {
 			var sw = new Stopwatch();
 			bool dataReceived = false;
 
-			context.Client.CreateTcpConnection(
+			context._tcpTestClient.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,

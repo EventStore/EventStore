@@ -2,7 +2,7 @@ namespace EventStore.TestClient {
 	/// <summary>
 	/// Standalone command executable within the test client
 	/// </summary>
-	public interface ICmdProcessor {
+	internal interface ICmdProcessor {
 		/// <summary>
 		/// Keyword associated with this command (to start it)
 		/// </summary>

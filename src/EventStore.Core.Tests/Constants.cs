@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests {
 		                                               + 1 /* Projections */
 		                                               + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
 		                                               + 1 /* Subscription LinkTos resolving */
-		                                               + Opts.ReaderThreadsCountDefault
+		                                               + 4 /* Reader Threads Count */
 		                                               + 5 /* just in case reserve :) */;
 
 		public const int TFChunkInitialReaderCountDefault = Opts.ChunkInitialReaderCountDefault;

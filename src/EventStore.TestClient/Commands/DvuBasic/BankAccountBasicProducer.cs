@@ -7,7 +7,7 @@ using EventStore.Transport.Http.Codecs;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient.Commands.DvuBasic {
-	public class BankAccountBasicProducer : IBasicProducer {
+	internal class BankAccountBasicProducer : IBasicProducer {
 		private static readonly ILogger Log = Serilog.Log.ForContext<BankAccountBasicProducer>();
 
 		public string Name {
@@ -88,7 +88,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 		}
 	}
 
-	public class AccountCreated {
+	internal class AccountCreated {
 		public readonly string AccountNumber;
 
 		public AccountCreated(string accountNumber) {
@@ -119,7 +119,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 		}
 	}
 
-	public class AccountCredited {
+	internal class AccountCredited {
 		public readonly decimal CreditedAmount;
 		public readonly string Kind;
 
@@ -152,7 +152,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 		}
 	}
 
-	public class AccountDebited {
+	internal class AccountDebited {
 		public readonly decimal DebitedAmount;
 		public readonly string Kind;
 
@@ -185,7 +185,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 		}
 	}
 
-	public class AccountCheckPoint {
+	internal class AccountCheckPoint {
 		public readonly decimal CreditedAmount;
 		public readonly decimal DebitedAmount;
 

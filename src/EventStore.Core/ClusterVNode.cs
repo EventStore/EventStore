@@ -44,6 +44,7 @@ using EventStore.Common.Options;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
+using EventStore.Core.Util;
 using EventStore.Native.UnixSignalManager;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
@@ -238,6 +239,7 @@ namespace EventStore.Core {
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
 			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
+
 			var monitoring = new MonitoringService(monitoringQueue,
 				monitoringRequestBus,
 				_mainQueue,
@@ -281,6 +283,7 @@ namespace EventStore.Core {
 				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, vNodeSettings.PTableMaxReaderCount,
 				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
+
 			var tableIndex = new TableIndex(indexPath,
 				new XXHashUnsafe(),
 				new Murmur3AUnsafe(),
@@ -300,7 +303,7 @@ namespace EventStore.Core {
 			var readIndex = new ReadIndex(_mainQueue,
 				readerPool,
 				tableIndex,
-				ESConsts.StreamInfoCacheCapacity,
+				vNodeSettings.StreamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
 				vNodeSettings.HashCollisionReadLimit,

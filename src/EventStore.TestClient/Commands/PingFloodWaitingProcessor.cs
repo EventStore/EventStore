@@ -43,7 +43,7 @@ namespace EventStore.TestClient.Commands {
 			long all = 0;
 			for (int i = 0; i < clientsCnt; i++) {
 				var autoResetEvent = new AutoResetEvent(false);
-				var client = context.Client.CreateTcpConnection(
+				var client = context._tcpTestClient.CreateTcpConnection(
 					context,
 					(_, __) => {
 						Interlocked.Increment(ref all);

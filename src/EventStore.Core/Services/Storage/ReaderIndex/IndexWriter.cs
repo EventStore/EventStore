@@ -55,7 +55,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private readonly IIndexBackend _indexBackend;
 		private readonly IIndexReader _indexReader;
-
 		private readonly IStickyLRUCache<long, TransactionInfo> _transactionInfoCache =
 			new StickyLRUCache<long, TransactionInfo>(ESConsts.TransactionMetadataCacheCapacity);
 
@@ -66,7 +65,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				x => 16 + 4 + IntPtr.Size + 2 * x.StreamId.Length);
 
 		private readonly IStickyLRUCache<string, long> _streamVersions =
-			new StickyLRUCache<string, long>(ESConsts.StreamInfoCacheCapacity);
+			new StickyLRUCache<string, long>(ESConsts.IndexWriterCacheCapacity);
 
 		private readonly IStickyLRUCache<string, StreamMeta>
 			_streamRawMetas =

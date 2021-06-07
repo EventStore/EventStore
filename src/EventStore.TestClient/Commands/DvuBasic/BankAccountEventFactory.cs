@@ -1,5 +1,5 @@
 namespace EventStore.TestClient.Commands.DvuBasic {
-	public static class BankAccountEventFactory {
+	internal static class BankAccountEventFactory {
 		public static object CreateAccountObject(int version) {
 			object accountObject = null;
 

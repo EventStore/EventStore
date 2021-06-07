@@ -78,6 +78,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly int IndexCacheDepth;
 		public readonly byte IndexBitnessVersion;
 		public readonly bool OptimizeIndexMerge;
+		public readonly int StreamInfoCacheCapacity;
 
 		public readonly string Index;
 		public readonly int ReaderThreadsCount;
@@ -152,6 +153,7 @@ namespace EventStore.Core.Cluster.Settings {
 			int ptableMaxReaderCount,
 			TimeSpan keepAliveInterval,
 			TimeSpan keepAliveTimeout,
+			int streamInfoCacheCapacity,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -295,6 +297,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxTruncation = maxTruncation;
 			KeepAliveInterval = keepAliveInterval;
 			KeepAliveTimeout = keepAliveTimeout;
+			StreamInfoCacheCapacity = streamInfoCacheCapacity;
 		}
 
 		public override string ToString() =>
@@ -331,6 +334,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n" +
 			$"MaxTruncation: {MaxTruncation}\n" +
 			$"KeepAliveInterval: {KeepAliveInterval}\n" +
-			$"KeepAliveTimeout: {KeepAliveTimeout}";
+			$"KeepAliveTimeout: {KeepAliveTimeout}\n" + 
+			$"StreamInfoCacheCapacity: {StreamInfoCacheCapacity}\n";
 	}
 }

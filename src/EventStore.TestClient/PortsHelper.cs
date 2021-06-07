@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
-	public static class PortsHelper {
+	internal static class PortsHelper {
 		private static readonly ILogger Log =
 			Serilog.Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "PortsHelper");
 

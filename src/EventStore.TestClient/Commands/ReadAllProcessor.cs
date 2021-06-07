@@ -54,8 +54,9 @@ namespace EventStore.TestClient.Commands {
 			int total = 0;
 			var sw = new Stopwatch();
 			var tcpCommand = forward ? TcpCommand.ReadAllEventsForward : TcpCommand.ReadAllEventsBackward;
+			var tcpCommandToReceive = forward ? TcpCommand.ReadAllEventsForwardCompleted : TcpCommand.ReadAllEventsBackwardCompleted;
 
-			context.Client.CreateTcpConnection(
+			context._tcpTestClient.CreateTcpConnection(
 				context,
 				connectionEstablished: conn => {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Reading all {readDirection}...",
@@ -68,7 +69,7 @@ namespace EventStore.TestClient.Commands {
 					conn.EnqueueSend(package);
 				},
 				handlePackage: (conn, pkg) => {
-					if (pkg.Command != tcpCommand) {
+					if (pkg.Command != tcpCommandToReceive) {
 						context.Fail(reason: string.Format("Unexpected TCP package: {0}.", pkg.Command));
 						return;
 					}

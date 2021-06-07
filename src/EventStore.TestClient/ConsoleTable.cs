@@ -5,7 +5,7 @@ using System.Text;
 using EventStore.Common.Utils;
 
 namespace EventStore.TestClient {
-	public class ConsoleTable {
+	internal class ConsoleTable {
 		private readonly string[] _header;
 		private readonly int[] _columnWidths;
 		private readonly List<string> _rows;

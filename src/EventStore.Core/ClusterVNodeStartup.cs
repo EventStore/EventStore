@@ -28,6 +28,7 @@ using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Electio
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup : IStartup, IHandle<SystemMessage.SystemReady>,
