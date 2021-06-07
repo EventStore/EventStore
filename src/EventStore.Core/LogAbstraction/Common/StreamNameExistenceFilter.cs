@@ -69,12 +69,16 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		}
 
-		//qq wanna log something probably
 		public void Initialize(INameEnumerator source) {
+			var startTime = DateTime.UtcNow;
+			var processed = 0L;
 			var lastCheckpoint = _checkpoint.Read();
 			foreach (var (name, checkpoint) in source.EnumerateNames(lastCheckpoint)) {
 				Add(name, checkpoint);
+				processed++;
 			}
+			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
+				_filterName, processed, DateTime.UtcNow - startTime);
 		}
 
 		public void Add(string name, long checkpoint) {
