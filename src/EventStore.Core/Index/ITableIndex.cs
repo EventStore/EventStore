@@ -11,6 +11,7 @@ namespace EventStore.Core.Index {
 		void Close(bool removeFiles = true);
 		void Scavenge(IIndexScavengerLog log, CancellationToken ct);
 		Task MergeIndexes();
+		IEnumerable<IndexEntry> IterateAll();
 		bool IsBackgroundTaskRunning { get; }
 	}
 

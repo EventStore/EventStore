@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;
 
@@ -12,6 +13,8 @@ namespace EventStore.Core.LogV3 {
 		public LogV3StreamNameEnumerator(INameLookup<StreamId> streamNames) {
 			_streamNames = streamNames;
 		}
+
+		public void SetTableIndex(ITableIndex tableIndex) { }
 
 		public IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
 			//qq we dont need to fill virtual streams into the filter here,

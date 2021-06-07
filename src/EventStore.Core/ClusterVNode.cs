@@ -633,6 +633,8 @@ namespace EventStore.Core {
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
 				pTableMaxReaderCount: pTableMaxReaderCount);
+			logFormat.StreamNameEnumerator.SetTableIndex(tableIndex);
+
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
 				tableIndex,

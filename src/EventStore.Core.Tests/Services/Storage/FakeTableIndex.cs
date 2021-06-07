@@ -46,6 +46,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return false;
 		}
 
+		public IEnumerable<IndexEntry> IterateAll() => throw new NotImplementedException();
+
 		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
 			int? limit = null) {
 			return Array.Empty<IndexEntry>();
