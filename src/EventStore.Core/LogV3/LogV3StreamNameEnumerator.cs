@@ -1,39 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.Services;
 using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
 	public class LogV3StreamNameEnumerator : INameEnumerator {
 		private readonly INameLookup<StreamId> _streamNames;
 
+		//qq possibly this doesn't have to be a member, in which case we can
+		// constrct this earlier in the abstractor
 		public LogV3StreamNameEnumerator(INameLookup<StreamId> streamNames) {
 			_streamNames = streamNames;
 		}
 
 		public IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
-			if (lastCheckpoint < 0L) {
-				foreach (var name in LogV3SystemStreams.EnumerateVirtualStreamNames()) {
-					yield return (name, -1L);
-					yield return (SystemStreams.MetastreamOf(name), -1L);
-				}
-			}
+			//qq we dont need to fill virtual streams into the filter here,
+			// but we do need to make sure that they are either implicitly always in the filter
+			// or do get added to the filter when we write to them (almost certainly we will go with the former)
+			var source = _streamNames;
 
-			if (!_streamNames.TryGetLastValue(out var lastValue)) {
+			if (!source.TryGetLastValue(out var sourceLastStreamId)) {
 				yield break;
 			}
 
-			var startEventNumber = Math.Max(0L, lastCheckpoint);
-			var lastEventNumber = StreamIdConverter.ToEventNumber(lastValue);
+			var startStreamId = Math.Max(LogV3SystemStreams.FirstRealStream, (uint)lastCheckpoint);
 
-			for (var eventNumber = startEventNumber; eventNumber <= lastEventNumber; eventNumber++) {
-				var name = _streamNames.LookupName(StreamIdConverter.ToStreamId(eventNumber));
-				yield return (name, eventNumber);
-				//qq i think we wont need to emit the metastreams in the end
-				// instead they are implicitly in the filter (and the places that have
-				// access are wrapped in metahandlers)
-				yield return (SystemStreams.MetastreamOf(name), eventNumber);
+			for (var streamId = startStreamId; streamId <= sourceLastStreamId; streamId += LogV3SystemStreams.StreamInterval) {
+				if (!source.TryGetName(streamId, out var name))
+					throw new Exception($"NameExistenceFilter: this should never happen. could not find {streamId} in source");
+				yield return (name, streamId);
 			}
 		}
 	}

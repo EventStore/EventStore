@@ -69,6 +69,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		}
 
+		//qq wanna log something probably
 		public void Initialize(INameEnumerator source) {
 			var lastCheckpoint = _checkpoint.Read();
 			foreach (var (name, checkpoint) in source.EnumerateNames(lastCheckpoint)) {
