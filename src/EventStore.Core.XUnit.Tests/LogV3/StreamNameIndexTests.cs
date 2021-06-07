@@ -27,7 +27,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			} catch { }
 		}
 
-		void GenSut(bool enableReadCache = false) {
+		void GenSut() {
 			_sut?.CancelReservations();
 			_persistence?.Dispose();
 			_persistence = new FASTERNameIndexPersistence(
@@ -37,7 +37,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				initialReaderCount: 1,
 				maxReaderCount: 1,
-				enableReadCache: enableReadCache,
+				enableReadCache: true,
 				checkpointInterval: Timeout.InfiniteTimeSpan);
 
 			_sut = new(
@@ -233,7 +233,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 
 		[Fact]
 		void can_use_read_cache_for_getoradd() {
-			GenSut(enableReadCache: true);
+			GenSut();
 			var numStreams = 100_000;
 			PopulateSut(numStreams);
 
@@ -253,7 +253,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 
 		[Fact]
 		void can_use_read_cache_for_lookup() {
-			GenSut(enableReadCache: true);
+			GenSut();
 			var numStreams = 100_000;
 			PopulateSut(numStreams);
 
@@ -382,40 +382,6 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			t2.Join();
 
 			Assert.False(mres.IsSet);
-		}
-
-		[Theory]
-//		[InlineData(true, Skip = "suspected bug: https://github.com/microsoft/FASTER/issues/482")]
-		[InlineData(false)]
-		public void read_cache_problem_reproduction(bool enableReadCache) {
-			GenSut(enableReadCache);
-			int numStreams = 30000;
-
-			// confirm the streams
-			for (uint i = 0, num = 1024; i < numStreams; i++) {
-				var confirmStreamName = $"{i}";
-				_persistence.Add(confirmStreamName, num);
-				num += 2;
-			}
-
-			// now iterate through finding them all (success)
-			for (int i = 0; i < numStreams; i++) {
-				var streamName = $"{i}";
-				Assert.True(
-					_persistence.TryGetValue(streamName, out _),
-					$"couldn't find strea {streamName} {i}");
-			}
-
-			// but reading through in this order, can't find some!
-			var r = new Random(1);
-			for (int i = 0; i < numStreams; i++) {
-				var x = r.Next(numStreams);
-				var streamName = $"{x}";
-
-				Assert.True(
-					_persistence.TryGetValue(streamName, out _),
-					$"couldn't find strea {streamName} {x} {i}");
-			}
 		}
 	}
 }
