@@ -16,7 +16,7 @@ namespace EventStore.Core.LogV3 {
 
 		public void SetTableIndex(ITableIndex tableIndex) { }
 
-		public IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
+		private IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
 			//qq we dont need to fill virtual streams into the filter here,
 			// but we do need to make sure that they are either implicitly always in the filter
 			// or do get added to the filter when we write to them (almost certainly we will go with the former)
@@ -32,6 +32,13 @@ namespace EventStore.Core.LogV3 {
 				if (!source.TryGetName(streamId, out var name))
 					throw new Exception($"NameExistenceFilter: this should never happen. could not find {streamId} in source");
 				yield return (name, streamId);
+			}
+		}
+
+		public void Initialize(INameExistenceFilter filter) {
+			var lastCheckpoint = filter.CurrentCheckpoint;
+			foreach (var (name, checkpoint) in EnumerateNames(lastCheckpoint)) {
+				filter.Add(name, checkpoint);
 			}
 		}
 	}

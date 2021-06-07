@@ -15,7 +15,11 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private readonly Debouncer _checkpointer;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
+		private long _addedSinceLoad;
+
 		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamNameExistenceFilter>();
+
+		public long CurrentCheckpoint => _checkpoint.Read();
 
 		public StreamNameExistenceFilter(
 			string directory,
@@ -71,19 +75,25 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		public void Initialize(INameEnumerator source) {
 			var startTime = DateTime.UtcNow;
-			var processed = 0L;
-			var lastCheckpoint = _checkpoint.Read();
-			foreach (var (name, checkpoint) in source.EnumerateNames(lastCheckpoint)) {
-				Add(name, checkpoint);
-				processed++;
-			}
+			source.Initialize(this);
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
-				_filterName, processed, DateTime.UtcNow - startTime);
+				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 		}
 
 		public void Add(string name, long checkpoint) {
 			_mmfStringBloomFilter.Add(name);
 			Log.Verbose("{filterName} added new entry: {name}", _filterName, name);
+			OnAdded(checkpoint);
+		}
+
+		public void Add(ulong hash, long checkpoint) {
+			_mmfStringBloomFilter.Add(hash);
+			Log.Verbose("{filterName} added new entry from hash: {name}", _filterName, hash);
+			OnAdded(checkpoint);
+		}
+
+		private void OnAdded(long checkpoint) {
+			_addedSinceLoad++;
 			_checkpoint.Write(checkpoint);
 			_checkpointer.Trigger();
 		}

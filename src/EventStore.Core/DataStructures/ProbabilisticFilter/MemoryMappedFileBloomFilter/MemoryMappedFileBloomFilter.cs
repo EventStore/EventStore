@@ -6,12 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter {
-	public class MemoryMappedFileBloomFilter {
-		public const long MinSizeKB = 10;
-		public const long MaxSizeKB = 4_000_000;
-	}
-
-	public abstract class MemoryMappedFileBloomFilter<TItem> : MemoryMappedFileBloomFilter, IProbabilisticFilter<TItem>, IDisposable {
+	public class MemoryMappedFileBloomFilter : IProbabilisticFilter, IDisposable {
 		/*
 		    Bloom filter implementation based on the following paper by Adam Kirsch and Michael Mitzenmacher:
 		    "Less Hashing, Same Performance: Building a Better Bloom Filter"
@@ -19,6 +14,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		    Only two 32-bit hash functions can be used to simulate additional hash functions of the form g(x) = h1(x) + i*h2(x)
 		*/
+		public const long MinSizeKB = 10;
+		public const long MaxSizeKB = 4_000_000;
 		private const int NumHashFunctions = 6;
 		private readonly double _falsePositiveProbability = Math.Pow(2, -NumHashFunctions); //approximately 0.02
 		public double FalsePositiveProbability => _falsePositiveProbability;
@@ -85,10 +82,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			_readerWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 		}
 
-		protected abstract ReadOnlySpan<byte> Serialize(TItem item);
-
-		public void Add(TItem item) {
-			var bytes = Serialize(item);
+		public void Add(ReadOnlySpan<byte> bytes) {
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 
@@ -106,8 +100,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			}
 		}
 
-		public bool MayExist(TItem item) {
-			var bytes = Serialize(item);
+		public bool MayExist(ReadOnlySpan<byte> bytes) {
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 

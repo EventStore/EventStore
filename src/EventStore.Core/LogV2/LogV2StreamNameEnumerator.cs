@@ -28,7 +28,7 @@ namespace EventStore.Core.LogV2 {
 			_tableIndex = tableIndex;
 		}
 
-		public IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
+		private IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
 			if (_tableIndex == null) throw new Exception("Call SetTableIndex first");
 
 			using var reader = _tfReaderFactory();
@@ -94,6 +94,16 @@ namespace EventStore.Core.LogV2 {
 			record = result.LogRecord;
 			postPosition = result.RecordPostPosition;
 			return true;
+		}
+
+		public void Initialize(INameExistenceFilter filter) {
+			var lastCheckpoint = filter.CurrentCheckpoint;
+			foreach (var (name, checkpoint) in EnumerateNames(lastCheckpoint)) {
+				//qq add some logging probably, v3 also.
+				//qq change to use the hash
+				//filter.Add(hash, checkpoint);
+				filter.Add(name, checkpoint);
+			}
 		}
 	}
 }
