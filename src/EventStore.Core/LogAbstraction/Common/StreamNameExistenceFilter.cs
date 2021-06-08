@@ -48,12 +48,14 @@ namespace EventStore.Core.LogAbstraction.Common {
 			}
 
 			Log.Information("{filterName} has successfully loaded.", _filterName);
-			Log.Debug("Optimal maximum number of items that fits in the {filterName} with a configured size of " +
+
+			const double p = MemoryMappedFileBloomFilter.RecommendedFalsePositiveProbability;
+			Log.Debug("Optimal number of items for a {filterName} with a configured size of " +
 			                "{size:N0} MB is approximately equal to: {n:N0} with false positive probability: {p:N2}",
 				_filterName,
 				size / 1000 / 1000,
-				_mmfStringBloomFilter.OptimalMaxItems,
-				_mmfStringBloomFilter.FalsePositiveProbability);
+				_mmfStringBloomFilter.CalculateOptimalNumItems(p),
+				p);
 
 			_checkpoint = new MemoryMappedFileCheckpoint(checkpointFilePath, _filterName, true);
 

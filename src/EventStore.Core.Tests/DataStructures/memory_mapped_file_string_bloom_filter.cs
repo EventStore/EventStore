@@ -91,51 +91,69 @@ namespace EventStore.Core.Tests.DataStructures {
 				_filter.Add(longString);
 				Assert.IsTrue(_filter.MayExist(longString));
 			}
+		}
 
-			[Test]
-			public void has_false_positives_with_probability_p() {
-				var n = (int) _filter.OptimalMaxItems;
-				var p = _filter.FalsePositiveProbability;
+		[Test, Combinatorial]
+		public void has_false_positives_with_probability_p(
+			[Values(MemoryMappedFileBloomFilter.MinSizeKB*1000,2*MemoryMappedFileBloomFilter.MinSizeKB*1000)] long size,
+			[Values(0.001,0.02,0.05,0.1,0.2)] double p
+		) {
+			var filter = new MemoryMappedFileStringBloomFilter(GetTempFilePath(), size, 1, 1);
+			var n = (int) filter.CalculateOptimalNumItems(p);
 
-				var random = new Random();
-				var charset = GenerateCharset();
+			var random = new Random();
+			var charset = GenerateCharset();
 
-				var list = new List<string>();
+			var list = new List<string>();
 
-				//generate 2n items
-				for (int i = 0; i < 2 * n; i++) {
+			var selected = new HashSet<string>();
+			//generate 2n distinct items
+			for (int i = 0; i < 2 * n; i++) {
+				while (true) {
 					var length = 1 + random.Next() % 10;
-					list.Add(GenerateRandomString(length, charset, random));
+					var s = GenerateRandomString(length, charset, random);
+					if (selected.Contains(s)) continue;
+					list.Add(s);
+					selected.Add(s);
+					break;
 				}
-
-				//add n items to the filter
-				for (int i = 0; i < n; i++) {
-					_filter.Add(list[i]);
-				}
-
-				//expected number of false positives
-				var expectedFalsePositives = Convert.ToInt32(Math.Ceiling(n * p));
-
-				//none of these items should exist but there may be some false positives
-				var falsePositives = 0;
-				for (var i = n ; i < 2*n; i ++) {
-					if (_filter.MayExist(list[i])) {
-						falsePositives++;
-					}
-				}
-
-				if (falsePositives > 0)
-					Console.Out.WriteLine("n: {0}, p:{1}. Found {2} false positives. Expected false positives: {3}",
-						n, p, falsePositives, expectedFalsePositives);
-
-				Assert.LessOrEqual(falsePositives, expectedFalsePositives);
 			}
+
+			//add first n distinct items to the filter
+			for (int i = 0; i < n; i++) {
+				filter.Add(list[i]);
+			}
+
+			//expected number of false positives
+			var expectedFalsePositives = Convert.ToInt32(Math.Ceiling(n * p));
+
+			//the second n distinct items should not exist but there may be some false positives
+			var falsePositives = 0;
+			for (var i = n ; i < 2*n; i ++) {
+				if (filter.MayExist(list[i])) {
+					falsePositives++;
+				}
+			}
+
+			//X = random variable that takes value 1 with probability p and value 0 with probability (1-p)
+			//var(X) = E(X^2) - E(X)^2 = p - p*p;
+			//var(X1 + X2 + X3 + ... + Xn) = n*var(Xi); //variance of n uncorrelated random variables
+			//var(X1 + X2 + X3 + ... + Xn) = n*(p-p*p);
+			var variance = n * (p - (p * p));
+			var standardDeviation = Math.Sqrt(variance);
+			var threeStandardDeviations = 3 * standardDeviation; //99.7%
+
+			if (falsePositives > 0)
+				Console.Out.WriteLine("n: {0:N0}, p:{1:N3}. Found {2:N0} false positives. Expected false positives: {3:N0}. Standard deviation: {4:N2}",
+					n, p, falsePositives, expectedFalsePositives, standardDeviation);
+
+			Assert.LessOrEqual(falsePositives, expectedFalsePositives + threeStandardDeviations);
 		}
 
 		[Test, Category("LongRunning")]
 		public void always_returns_true_when_an_item_was_added([Range(10_000, 100_000, 13337)] long size) {
 			using var filter = new MemoryMappedFileStringBloomFilter(GetTempFilePath(), size, 1, 1);
-			var strings = GenerateRandomStrings((int)filter.OptimalMaxItems, 100);
+			var strings = GenerateRandomStrings((int)filter.CalculateOptimalNumItems(MemoryMappedFileBloomFilter.RecommendedFalsePositiveProbability), 100);
 
 			//no items added yet
 			foreach (var s in strings) {

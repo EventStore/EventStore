@@ -16,11 +16,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		*/
 		public const long MinSizeKB = 10;
 		public const long MaxSizeKB = 4_000_000;
+		public const double RecommendedFalsePositiveProbability = 0.02;
 		private const int NumHashFunctions = 6;
-		private readonly double _falsePositiveProbability = Math.Pow(2, -NumHashFunctions); //approximately 0.02
-		public double FalsePositiveProbability => _falsePositiveProbability;
 		private readonly long _numBits;
-		public readonly long OptimalMaxItems;
 
 		private readonly IHasher[] _hashers = {
 			new XXHashUnsafe(seed: 0xC0015EEDU),
@@ -47,7 +45,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			}
 
 			_numBits = size * 8;
-			OptimalMaxItems = Convert.ToInt64(-_numBits * Math.Log(2) * Math.Log(2) / Math.Log(_falsePositiveProbability));
 
 			var newFile = !File.Exists(path);
 			if (newFile) {
@@ -80,6 +77,18 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 			_mmfWriteAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.ReadWrite);
 			_readerWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+		}
+
+		/// <summary>
+		/// Calculates optimal number of items in the bloom filter for a specific false positive probability, p
+		/// </summary>
+		/// <param name="p">Desired false positive probability</param>
+		/// <returns></returns>
+		public long CalculateOptimalNumItems(double p = RecommendedFalsePositiveProbability) {
+			return Convert.ToInt64(Math.Floor(
+				Math.Log(1 - Math.Pow(p, 1.0 / NumHashFunctions)) /
+				Math.Log(Math.Pow(1 - 1.0 / _numBits, NumHashFunctions)
+			)));
 		}
 
 		public void Add(ReadOnlySpan<byte> bytes) {
