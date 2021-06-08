@@ -48,7 +48,11 @@ namespace EventStore.Core.LogAbstraction {
 				streamNamesProvider: new SingletonStreamNamesProvider<string>(
 					systemStreams: new LogV2SystemStreams(),
 					streamNames: streamNameIndex,
-					streamNameEnumerator: new LogV2StreamNameEnumerator(options.TFReaderLeaseFactory, options.ChaserCheckpoint)),
+					streamNameEnumerator: new LogV2StreamNameEnumerator(
+						options.TFReaderLeaseFactory,
+						options.ChaserCheckpoint,
+						new XXHashUnsafe(),
+						new Murmur3AUnsafe())),
 				streamIdValidator: new LogV2StreamIdValidator(),
 				emptyStreamId: string.Empty,
 				streamIdSizer: new LogV2Sizer(),

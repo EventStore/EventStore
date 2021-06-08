@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Core.Index;
+using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -17,18 +18,30 @@ namespace EventStore.Core.LogV2 {
 	public class LogV2StreamNameEnumerator : INameEnumerator {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
+		private readonly IHasher<string> _lowHasher;
+		private readonly IHasher<string> _highHasher;
 		private ITableIndex _tableIndex;
 
-		public LogV2StreamNameEnumerator(Func<TFReaderLease> tfReaderFactory, IReadOnlyCheckpoint chaserCheckpoint) {
+		public LogV2StreamNameEnumerator(
+			Func<TFReaderLease> tfReaderFactory,
+			IReadOnlyCheckpoint chaserCheckpoint,
+			IHasher<string> lowHasher,
+			IHasher<string> highHasher) {
 			_tfReaderFactory = tfReaderFactory;
 			_chaserCheckpoint = chaserCheckpoint;
+			_lowHasher = lowHasher;
+			_highHasher = highHasher;
 		}
 
 		public void SetTableIndex(ITableIndex tableIndex) {
 			_tableIndex = tableIndex;
 		}
 
-		private IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
+		private ulong Hash(string streamId) {
+			return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
+		}
+
+		private IEnumerable<(ulong streamHash, long checkpoint)> EnumerateStreamHashes(long lastCheckpoint) {
 			if (_tableIndex == null) throw new Exception("Call SetTableIndex first");
 
 			using var reader = _tfReaderFactory();
@@ -42,15 +55,7 @@ namespace EventStore.Core.LogV2 {
 						continue;
 					}
 					previousHash = entry.Stream;
-					reader.Reposition(entry.Position);
-					if (TryReadNextLogRecord(reader, buildToPosition, out var record, out var postPosition)) {
-						switch (record.RecordType) {
-							case LogRecordType.Prepare:
-								var prepare = (IPrepareLogRecord<StreamId>) record;
-								yield return (prepare.EventStreamId, postPosition);
-							break;
-						}
-					}
+					yield return (previousHash, -1L);
 				}
 				reader.Reposition(Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint));
 			} else {
@@ -65,7 +70,7 @@ namespace EventStore.Core.LogV2 {
 					case LogRecordType.Prepare:
 						var prepare = (IPrepareLogRecord<StreamId>) record;
 						if (prepare.Flags.HasFlag(PrepareFlags.IsCommitted)) {
-							yield return (prepare.EventStreamId, postPosition);
+							yield return (Hash(prepare.EventStreamId), postPosition);
 						}
 						break;
 					case LogRecordType.Commit:
@@ -73,7 +78,7 @@ namespace EventStore.Core.LogV2 {
 						reader.Reposition(commit.TransactionPosition);
 						if (TryReadNextLogRecord(reader, buildToPosition, out var transactionRecord, out _)) {
 							var transactionPrepare = (IPrepareLogRecord<StreamId>) transactionRecord;
-							yield return (transactionPrepare.EventStreamId, postPosition);
+							yield return (Hash(transactionPrepare.EventStreamId), postPosition);
 						} else {
 							// nothing to do - may have been scavenged
 						}
@@ -98,11 +103,8 @@ namespace EventStore.Core.LogV2 {
 
 		public void Initialize(INameExistenceFilter filter) {
 			var lastCheckpoint = filter.CurrentCheckpoint;
-			foreach (var (name, checkpoint) in EnumerateNames(lastCheckpoint)) {
-				//qq add some logging probably, v3 also.
-				//qq change to use the hash
-				//filter.Add(hash, checkpoint);
-				filter.Add(name, checkpoint);
+			foreach (var (hash, checkpoint) in EnumerateStreamHashes(lastCheckpoint)) {
+				filter.Add(hash, checkpoint);
 			}
 		}
 	}
