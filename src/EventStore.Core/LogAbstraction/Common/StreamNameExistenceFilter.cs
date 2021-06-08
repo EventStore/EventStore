@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
+using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog.Checkpoint;
 using Serilog;
 
@@ -12,6 +13,9 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private readonly string _filterName;
 		private readonly MemoryMappedFileStreamBloomFilter _mmfStreamBloomFilter;
 		private readonly ICheckpoint _checkpoint;
+		private readonly bool _hashStreamName;
+		private readonly IHasher<string> _lowHasher;
+		private readonly IHasher<string> _highHasher;
 		private readonly Debouncer _checkpointer;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
@@ -29,9 +33,15 @@ namespace EventStore.Core.LogAbstraction.Common {
 			long size,
 			int initialReaderCount,
 			int maxReaderCount,
-			TimeSpan checkpointInterval) {
+			TimeSpan checkpointInterval,
+			bool hashStreamName,
+			IHasher<string> lowHasher,
+			IHasher<string> highHasher) {
 			_filterName = filterName;
 			_checkpoint = checkpoint;
+			_hashStreamName = hashStreamName;
+			_lowHasher = lowHasher;
+			_highHasher = highHasher;
 
 			if (!Directory.Exists(directory)) {
 				Directory.CreateDirectory(directory);
@@ -87,7 +97,15 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_rebuilding = false;
 		}
 
+		private ulong Hash(string streamId) {
+			return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
+		}
+
 		public void Add(string name, long checkpoint) {
+			if (_hashStreamName) {
+				Add(Hash(name), checkpoint);
+				return;
+			}
 			_mmfStreamBloomFilter.Add(name);
 			Log.Verbose("{filterName} added new entry: {name}", _filterName, name);
 			OnAdded(checkpoint);
@@ -108,7 +126,13 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_checkpointer.Trigger();
 		}
 
-		public bool MightExist(string name) => _mmfStreamBloomFilter.MayExist(name);
+		public bool MightExist(string name) {
+			if (_hashStreamName) {
+				return _mmfStreamBloomFilter.MayExist(Hash(name));
+			}
+
+			return _mmfStreamBloomFilter.MayExist(name);
+		}
 
 		public void Dispose() {
 			_cancellationTokenSource?.Cancel();

@@ -37,7 +37,7 @@ namespace EventStore.Core.LogAbstraction {
 	// without any 'uncached' lookups in v2 or v3.
 	public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
 		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
-			var streamNameExistenceFilter = LogV3FormatAbstractorFactory.GenStreamNameExistenceFilter(options);
+			var streamNameExistenceFilter = GenStreamNameExistenceFilter(options);
 			var streamNameIndex = new LogV2StreamNameIndex(streamNameExistenceFilter);
 			return new LogFormatAbstractor<string>(
 				lowHasher: new XXHashUnsafe(),
@@ -62,7 +62,27 @@ namespace EventStore.Core.LogAbstraction {
 				recordFactory: new LogV2RecordFactory(),
 				supportsExplicitTransactions: true);
 		}
-	}
+
+		public static INameExistenceFilter GenStreamNameExistenceFilter(LogFormatAbstractorOptions options) {
+			if (options.InMemory || options.StreamNameExistenceFilterSize == 0) {
+				return new NoStreamNameExistenceFilter();
+			}
+
+			var nameExistenceFilter = new StreamNameExistenceFilter(
+				directory: $"{options.IndexDirectory}/stream-name-existence",
+				filterName: "StreamNameExistenceFilter",
+				size: options.StreamNameExistenceFilterSize,
+				checkpoint: options.StreamNameExistenceFilterCheckpoint,
+				initialReaderCount: options.InitialReaderCount,
+				maxReaderCount: options.MaxReaderCount,
+				checkpointInterval: TimeSpan.FromSeconds(60),
+				hashStreamName: true,
+				lowHasher: new XXHashUnsafe(),
+				highHasher: new Murmur3AUnsafe()
+			);
+			return nameExistenceFilter;
+		}
+}
 
 	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
 		public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
@@ -153,7 +173,10 @@ namespace EventStore.Core.LogAbstraction {
 				checkpoint: options.StreamNameExistenceFilterCheckpoint,
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
-				checkpointInterval: TimeSpan.FromSeconds(60)
+				checkpointInterval: TimeSpan.FromSeconds(60),
+				hashStreamName: false,
+				lowHasher: null,
+				highHasher: null
 			);
 			return nameExistenceFilter;
 		}
