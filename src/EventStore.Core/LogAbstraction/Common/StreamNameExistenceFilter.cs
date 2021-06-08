@@ -92,6 +92,9 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
 			source.Initialize(this);
+			_mmfStreamBloomFilter.Flush();
+			_checkpoint.Flush();
+
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 			_rebuilding = false;
