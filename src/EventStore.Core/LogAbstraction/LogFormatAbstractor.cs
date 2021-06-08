@@ -37,11 +37,15 @@ namespace EventStore.Core.LogAbstraction {
 	// without any 'uncached' lookups in v2 or v3.
 	public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
 		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
-			var streamNameExistenceFilter = GenStreamNameExistenceFilter(options);
+			var lowHasher = new XXHashUnsafe();
+			var highHasher = new Murmur3AUnsafe();
+			var longHasher = new CompositeHasher<string>(lowHasher, highHasher);
+			var streamNameExistenceFilter = GenStreamNameExistenceFilter(options, longHasher);
 			var streamNameIndex = new LogV2StreamNameIndex(streamNameExistenceFilter);
+
 			return new LogFormatAbstractor<string>(
-				lowHasher: new XXHashUnsafe(),
-				highHasher: new Murmur3AUnsafe(),
+				lowHasher: lowHasher,
+				highHasher: highHasher,
 				streamNameIndex: streamNameIndex,
 				streamNameIndexConfirmer: streamNameIndex,
 				streamIds: streamNameIndex,
@@ -50,10 +54,8 @@ namespace EventStore.Core.LogAbstraction {
 					systemStreams: new LogV2SystemStreams(),
 					streamNames: streamNameIndex,
 					streamNameExistenceFilterInitializer: new LogV2StreamNameExistenceFilterInitializer(
-						options.TFReaderLeaseFactory,
-						options.ChaserCheckpoint,
-						new XXHashUnsafe(),
-						new Murmur3AUnsafe())),
+						tfReaderFactory: options.TFReaderLeaseFactory,
+						chaserCheckpoint: options.ChaserCheckpoint)),
 				streamIdValidator: new LogV2StreamIdValidator(),
 				emptyStreamId: string.Empty,
 				streamIdSizer: new LogV2Sizer(),
@@ -63,7 +65,10 @@ namespace EventStore.Core.LogAbstraction {
 				supportsExplicitTransactions: true);
 		}
 
-		public static INameExistenceFilter GenStreamNameExistenceFilter(LogFormatAbstractorOptions options) {
+		public static INameExistenceFilter GenStreamNameExistenceFilter(
+			LogFormatAbstractorOptions options,
+			ILongHasher<string> longHasher) {
+
 			if (options.InMemory || options.StreamNameExistenceFilterSize == 0) {
 				return new NoStreamNameExistenceFilter();
 			}
@@ -76,11 +81,8 @@ namespace EventStore.Core.LogAbstraction {
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: TimeSpan.FromSeconds(60),
-				hashStreamName: true,
-				//qq probably pass these in
-				lowHasher: new XXHashUnsafe(),
-				highHasher: new Murmur3AUnsafe()
-			);
+				hasher: longHasher);
+
 			return nameExistenceFilter;
 		}
 }
@@ -175,9 +177,7 @@ namespace EventStore.Core.LogAbstraction {
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: TimeSpan.FromSeconds(60),
-				hashStreamName: false,
-				lowHasher: null,
-				highHasher: null
+				hasher: null
 			);
 			return nameExistenceFilter;
 		}

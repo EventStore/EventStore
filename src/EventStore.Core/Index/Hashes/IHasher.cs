@@ -10,4 +10,8 @@ namespace EventStore.Core.Index.Hashes {
 	public interface IHasher<TStreamId> {
 		uint Hash(TStreamId s);
 	}
+
+	public interface ILongHasher<T> {
+		ulong Hash(T x);
+	}
 }

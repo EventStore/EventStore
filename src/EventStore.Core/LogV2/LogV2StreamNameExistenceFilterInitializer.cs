@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Core.Index;
-using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -18,31 +17,22 @@ namespace EventStore.Core.LogV2 {
 	public class LogV2StreamNameExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
-		private readonly IHasher<string> _lowHasher;
-		private readonly IHasher<string> _highHasher;
 		private ITableIndex _tableIndex;
 
 		public LogV2StreamNameExistenceFilterInitializer(
 			Func<TFReaderLease> tfReaderFactory,
-			IReadOnlyCheckpoint chaserCheckpoint,
-			IHasher<string> lowHasher,
-			IHasher<string> highHasher) {
+			IReadOnlyCheckpoint chaserCheckpoint) {
 			_tfReaderFactory = tfReaderFactory;
 			_chaserCheckpoint = chaserCheckpoint;
-			_lowHasher = lowHasher;
-			_highHasher = highHasher;
 		}
 
 		public void SetTableIndex(ITableIndex tableIndex) {
 			_tableIndex = tableIndex;
 		}
 
-		private ulong Hash(string streamId) {
-			//qq consider how we want to deal with high and low, they're back to front here but also in the normal index
-			return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
-		}
-
-		private IEnumerable<(ulong streamHash, long checkpoint)> EnumerateStreamHashes(long lastCheckpoint) {
+		//qq wanna split this into two methods: EnumerateStreamsInIndex and EnumerateStreamsInLog and call them both from initilize
+		// i think that'll make it neater
+		private IEnumerable<(ulong streamHash, string streamName, long checkpoint)> EnumerateStreamHashes(long lastCheckpoint) {
 			if (_tableIndex == null) throw new Exception("Call SetTableIndex first");
 
 			using var reader = _tfReaderFactory();
@@ -55,10 +45,10 @@ namespace EventStore.Core.LogV2 {
 						continue;
 					}
 					previousHash = entry.Stream;
-					yield return (previousHash, -1L);
+					yield return (previousHash, null, -1L);
 				}
 				if (previousHash != ulong.MaxValue) { // send a checkpoint with the last stream hash
-					yield return (previousHash, Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint));
+					yield return (previousHash, null, Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint));
 				}
 				reader.Reposition(Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint));
 			} else {
@@ -73,7 +63,7 @@ namespace EventStore.Core.LogV2 {
 					case LogRecordType.Prepare:
 						var prepare = (IPrepareLogRecord<StreamId>) record;
 						if (prepare.Flags.HasFlag(PrepareFlags.IsCommitted)) {
-							yield return (Hash(prepare.EventStreamId), postPosition);
+							yield return (0, prepare.EventStreamId, postPosition);
 						}
 						break;
 					case LogRecordType.Commit:
@@ -81,7 +71,7 @@ namespace EventStore.Core.LogV2 {
 						reader.Reposition(commit.TransactionPosition);
 						if (TryReadNextLogRecord(reader, buildToPosition, out var transactionRecord, out _)) {
 							var transactionPrepare = (IPrepareLogRecord<StreamId>) transactionRecord;
-							yield return (Hash(transactionPrepare.EventStreamId), postPosition);
+							yield return (0, transactionPrepare.EventStreamId, postPosition);
 						} else {
 							// nothing to do - may have been scavenged
 						}
@@ -106,8 +96,11 @@ namespace EventStore.Core.LogV2 {
 
 		public void Initialize(INameExistenceFilter filter) {
 			var lastCheckpoint = filter.CurrentCheckpoint;
-			foreach (var (hash, checkpoint) in EnumerateStreamHashes(lastCheckpoint)) {
-				filter.Add(hash, checkpoint);
+			foreach (var (hash, name, checkpoint) in EnumerateStreamHashes(lastCheckpoint)) {
+				if (name == null)
+					filter.Add(hash, checkpoint);
+				else 
+					filter.Add(name, checkpoint);
 			}
 		}
 	}
