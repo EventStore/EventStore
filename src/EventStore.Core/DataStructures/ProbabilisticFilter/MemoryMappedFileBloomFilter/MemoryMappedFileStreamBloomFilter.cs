@@ -3,8 +3,8 @@ using System.Runtime.InteropServices;
 
 namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter {
 	//qq rename
-	public class MemoryMappedFileStringBloomFilter : MemoryMappedFileBloomFilter {
-		public MemoryMappedFileStringBloomFilter(string path, long size, int initialReaderCount, int maxReaderCount) :
+	public class MemoryMappedFileStreamBloomFilter : MemoryMappedFileBloomFilter {
+		public MemoryMappedFileStreamBloomFilter(string path, long size, int initialReaderCount, int maxReaderCount) :
 			base(path, size, initialReaderCount, maxReaderCount)
 		{
 		}

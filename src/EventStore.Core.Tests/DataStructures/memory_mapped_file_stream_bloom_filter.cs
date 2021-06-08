@@ -6,7 +6,7 @@ using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFi
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.DataStructures {
-	public class memory_mapped_file_string_bloom_filter : SpecificationWithDirectoryPerTestFixture {
+	public class memory_mapped_file_stream_bloom_filter : SpecificationWithDirectoryPerTestFixture {
 		private static string GenerateCharset() {
 			var charset = "";
 			for (var c = 'a'; c <= 'z'; c++) {
@@ -45,14 +45,14 @@ namespace EventStore.Core.Tests.DataStructures {
 		}
 
 		[TestFixture]
-		private class with_fixed_size_filter : memory_mapped_file_string_bloom_filter {
-			private MemoryMappedFileStringBloomFilter _filter;
+		private class with_fixed_size_filter : memory_mapped_file_stream_bloom_filter {
+			private MemoryMappedFileStreamBloomFilter _filter;
 			private string _path;
 
 			[SetUp]
 			public void SetUp() {
 				_path = GetTempFilePath();
-				_filter = new MemoryMappedFileStringBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000, 1, 1);
+				_filter = new MemoryMappedFileStreamBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000, 1, 1);
 			}
 
 			[TearDown]
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			public void can_close_and_reopen() {
 				_filter.Add("hello");
 				_filter.Dispose();
-				using var newFilter = new MemoryMappedFileStringBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000, 1, 1);
+				using var newFilter = new MemoryMappedFileStreamBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000, 1, 1);
 				Assert.IsTrue(newFilter.MayExist("hello"));
 			}
 
@@ -98,7 +98,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			[Values(MemoryMappedFileBloomFilter.MinSizeKB*1000,2*MemoryMappedFileBloomFilter.MinSizeKB*1000)] long size,
 			[Values(0.001,0.02,0.05,0.1,0.2)] double p
 		) {
-			var filter = new MemoryMappedFileStringBloomFilter(GetTempFilePath(), size, 1, 1);
+			var filter = new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), size, 1, 1);
 			var n = (int) filter.CalculateOptimalNumItems(p);
 
 			var random = new Random();
@@ -152,7 +152,7 @@ namespace EventStore.Core.Tests.DataStructures {
 
 		[Test, Category("LongRunning")]
 		public void always_returns_true_when_an_item_was_added([Range(10_000, 100_000, 13337)] long size) {
-			using var filter = new MemoryMappedFileStringBloomFilter(GetTempFilePath(), size, 1, 1);
+			using var filter = new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), size, 1, 1);
 			var strings = GenerateRandomStrings((int)filter.CalculateOptimalNumItems(MemoryMappedFileBloomFilter.RecommendedFalsePositiveProbability), 100);
 
 			//no items added yet
@@ -175,25 +175,25 @@ namespace EventStore.Core.Tests.DataStructures {
 		[Test]
 		public void throws_argument_out_of_range_exception_when_given_negative_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), -1, 1, 1));
+				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), -1, 1, 1));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_given_zero_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), 0, 1, 1));
+				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), 0, 1, 1));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_size_less_than_min_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MinSizeKB * 1000 - 1, 1, 1));
+				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MinSizeKB * 1000 - 1, 1, 1));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_size_greater_than_max_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStringBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MaxSizeKB * 1000 + 1, 1, 1));
+				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), MemoryMappedFileBloomFilter.MaxSizeKB * 1000 + 1, 1, 1));
 		}
 	}
 }
