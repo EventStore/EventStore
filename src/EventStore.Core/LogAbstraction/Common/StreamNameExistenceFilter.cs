@@ -135,10 +135,10 @@ namespace EventStore.Core.LogAbstraction.Common {
 		public bool MightExist(string name) {
 			//qq suspish that we care about this here
 			if (_hashStreamName) {
-				return _mmfStreamBloomFilter.MayExist(Hash(name));
+				return _mmfStreamBloomFilter.MightExist(Hash(name));
 			}
 
-			return _mmfStreamBloomFilter.MayExist(name);
+			return _mmfStreamBloomFilter.MightExist(name);
 		}
 
 		public void Dispose() {

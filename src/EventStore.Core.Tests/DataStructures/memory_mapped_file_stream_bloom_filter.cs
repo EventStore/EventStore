@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.DataStructures {
 				_filter.Add("hello");
 				_filter.Dispose();
 				using var newFilter = new MemoryMappedFileStreamBloomFilter(_path, MemoryMappedFileBloomFilter.MinSizeKB * 1000, 1, 1);
-				Assert.IsTrue(newFilter.MayExist("hello"));
+				Assert.IsTrue(newFilter.MightExist("hello"));
 			}
 
 			[Test]
@@ -87,9 +87,9 @@ namespace EventStore.Core.Tests.DataStructures {
 				var random = new Random();
 				var longString = GenerateRandomString(10000, charset, random);
 
-				Assert.IsFalse(_filter.MayExist(longString));
+				Assert.IsFalse(_filter.MightExist(longString));
 				_filter.Add(longString);
-				Assert.IsTrue(_filter.MayExist(longString));
+				Assert.IsTrue(_filter.MightExist(longString));
 			}
 		}
 
@@ -130,7 +130,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			//the second n distinct items should not exist but there may be some false positives
 			var falsePositives = 0;
 			for (var i = n ; i < 2*n; i ++) {
-				if (filter.MayExist(list[i])) {
+				if (filter.MightExist(list[i])) {
 					falsePositives++;
 				}
 			}
@@ -157,18 +157,18 @@ namespace EventStore.Core.Tests.DataStructures {
 
 			//no items added yet
 			foreach (var s in strings) {
-				Assert.IsFalse(filter.MayExist(s));
+				Assert.IsFalse(filter.MightExist(s));
 			}
 
 			//add the items and verify their existence
 			foreach (var s in strings) {
 				filter.Add(s);
-				Assert.IsTrue(filter.MayExist(s));
+				Assert.IsTrue(filter.MightExist(s));
 			}
 
 			//all the items should exist
 			foreach (var s in strings) {
-				Assert.IsTrue(filter.MayExist(s));
+				Assert.IsTrue(filter.MightExist(s));
 			}
 		}
 

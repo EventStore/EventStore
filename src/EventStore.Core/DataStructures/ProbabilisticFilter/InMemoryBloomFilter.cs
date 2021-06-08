@@ -62,7 +62,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 			}
 		}
 
-		public bool MayExist(long item) {
+		public bool MightExist(long item) {
 			byte[] bytes = toBytes(item);
 			int hash1 = (int)hasher1.Hash(bytes);
 			int hash2 = (int)hasher2.Hash(bytes);

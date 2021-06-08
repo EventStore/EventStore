@@ -14,11 +14,11 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		public void Add(ulong streamHash) =>
 			Add(Serialize(streamHash));
 
-		public bool MayExist(string stream) =>
-			MayExist(Serialize(stream));
+		public bool MightExist(string stream) =>
+			MightExist(Serialize(stream));
 
-		public bool MayExist(ulong streamHash) =>
-			MayExist(Serialize(streamHash));
+		public bool MightExist(ulong streamHash) =>
+			MightExist(Serialize(streamHash));
 
 		//qq probably the standard hash function is what we want to handle here (for v2) (( but not for v3))
 

@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.DataStructures {
 
 					//no items added yet
 					for (int i = 0; i <= n; i++) {
-						Assert.IsFalse(filter.MayExist(i));
+						Assert.IsFalse(filter.MightExist(i));
 					}
 
 					//add the items
@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.DataStructures {
 
 					//all the items should exist
 					for (int i = 0; i <= n; i++) {
-						Assert.IsTrue(filter.MayExist(i));
+						Assert.IsTrue(filter.MightExist(i));
 					}
 				}
 			}
@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.DataStructures {
 
 			//no items added yet
 			for (int i = 0; i <= n; i++) {
-				Assert.IsFalse(filter.MayExist(i));
+				Assert.IsFalse(filter.MightExist(i));
 			}
 
 			//add the items
@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.DataStructures {
 
 			//all the items should exist
 			for (int i = 0; i <= n; i++) {
-				Assert.IsTrue(filter.MayExist(i));
+				Assert.IsTrue(filter.MightExist(i));
 			}
 		}
 
@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.DataStructures {
 
 			//no items added yet
 			for (int i = 0; i < items.Length; i++) {
-				Assert.IsFalse(filter.MayExist(items[i]));
+				Assert.IsFalse(filter.MightExist(items[i]));
 			}
 
 			//add the items
@@ -76,13 +76,13 @@ namespace EventStore.Core.Tests.DataStructures {
 
 			//all the items should exist
 			for (int i = 0; i < items.Length; i++) {
-				Assert.IsTrue(filter.MayExist(items[i]));
+				Assert.IsTrue(filter.MightExist(items[i]));
 			}
 
 			//all the neighbouring items should probably not exist
 			for (int i = 0; i < items.Length; i++) {
-				Assert.IsFalse(filter.MayExist(items[i] - 1));
-				Assert.IsFalse(filter.MayExist(items[i] + 1));
+				Assert.IsFalse(filter.MightExist(items[i] - 1));
+				Assert.IsFalse(filter.MightExist(items[i] + 1));
 			}
 		}
 
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.DataStructures {
 					//none of these items should exist but there may be some false positives
 					int falsePositives = 0;
 					for (int i = 2; i <= n; i += 2) {
-						if (filter.MayExist(i)) {
+						if (filter.MightExist(i)) {
 							falsePositives++;
 						}
 					}
@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests.DataStructures {
 				//none of these items should exist but there may be some false positives
 				int falsePositives = 0;
 				for (int i = 2; i <= n; i += 2) {
-					if (filter.MayExist(i)) {
+					if (filter.MightExist(i)) {
 						falsePositives++;
 					}
 				}
