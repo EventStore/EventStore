@@ -36,8 +36,9 @@ namespace EventStore.Core.LogV2 {
 
 			var lastPrepare = prepares[prepares.Count - 1];
 
-			//qq lastprepare is ok isn't it?
-			_existenceFilter.Add(lastPrepare.EventStreamId, lastPrepare.LogPosition);
+			if (!catchingUp) {
+				_existenceFilter.Add(lastPrepare.EventStreamId, lastPrepare.LogPosition);
+			}
 		}
 
 		public bool GetOrReserve(string streamName, out string streamId, out string createdId, out string createdName) {
