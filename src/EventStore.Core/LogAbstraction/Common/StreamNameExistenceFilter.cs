@@ -86,7 +86,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		}
 
-		public void Initialize(INameEnumerator source) {
+		public void Initialize(INameExistenceFilterInitializer source) {
 			_rebuilding = true;
 			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint} (0x{checkpoint:X}).",
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);

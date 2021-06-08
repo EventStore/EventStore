@@ -49,7 +49,7 @@ namespace EventStore.Core.LogAbstraction {
 				streamNamesProvider: new SingletonStreamNamesProvider<string>(
 					systemStreams: new LogV2SystemStreams(),
 					streamNames: streamNameIndex,
-					streamNameEnumerator: new LogV2StreamNameEnumerator(
+					streamNameExistenceFilterInitializer: new LogV2StreamNameExistenceFilterInitializer(
 						options.TFReaderLeaseFactory,
 						options.ChaserCheckpoint,
 						new XXHashUnsafe(),
@@ -123,8 +123,8 @@ namespace EventStore.Core.LogAbstraction {
 				var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
 				streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
 				//qq consider if the enumerator should use the metastream decorated one
-				var streamNameEnumerator = new LogV3StreamNameEnumerator(streamNames);
-				return (systemStreams, streamNames, streamNameEnumerator);
+				var streamNameExistenceFilterInitializer = new LogV3StreamNameExistenceFilterInitializer(streamNames);
+				return (systemStreams, streamNames, streamNameExistenceFilterInitializer);
 			});
 		}
 
@@ -236,7 +236,7 @@ namespace EventStore.Core.LogAbstraction {
 
 		public INameLookup<TStreamId> StreamNames => StreamNamesProvider.StreamNames;
 		public ISystemStreamLookup<TStreamId> SystemStreams => StreamNamesProvider.SystemStreams;
-		public INameEnumerator StreamNameEnumerator => StreamNamesProvider.StreamNameEnumerator;
+		public INameExistenceFilterInitializer StreamNameExistenceFilterInitializer => StreamNamesProvider.StreamNameExistenceFilterInitializer;
 		public bool SupportsExplicitTransactions { get; }
 	}
 }

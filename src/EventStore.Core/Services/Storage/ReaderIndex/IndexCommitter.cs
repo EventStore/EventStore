@@ -44,7 +44,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly INameExistenceFilter _streamNameExistenceFilter;
-		private INameEnumerator _streamNameEnumerator;
+		private INameExistenceFilterInitializer _streamNameExistenceFilterInitializer;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			INameExistenceFilter streamNameExistenceFilter,
-			INameEnumerator streamNameEnumerator,
+			INameExistenceFilterInitializer streamNameExistenceFilterInitializer,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
 			_streamNameExistenceFilter = streamNameExistenceFilter;
-			_streamNameEnumerator = streamNameEnumerator;
+			_streamNameExistenceFilterInitializer = streamNameExistenceFilterInitializer;
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
@@ -190,7 +190,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			//
 			// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
 			// the cluster but false positives are not a problem since it's a probabilistic filter
-			_streamNameExistenceFilter.Initialize(_streamNameEnumerator);
+			_streamNameExistenceFilter.Initialize(_streamNameExistenceFilterInitializer);
 		}
 
 		public void Dispose() {

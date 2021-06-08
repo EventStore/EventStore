@@ -6,16 +6,16 @@ namespace EventStore.Core.LogAbstraction {
 
 		public INameLookup<TStreamId> StreamNames { get; }
 
-		public INameEnumerator StreamNameEnumerator { get; }
+		public INameExistenceFilterInitializer StreamNameExistenceFilterInitializer { get; }
 
 		public SingletonStreamNamesProvider(
 			ISystemStreamLookup<TStreamId> systemStreams,
 			INameLookup<TStreamId> streamNames,
-			INameEnumerator streamNameEnumerator) {
+			INameExistenceFilterInitializer streamNameExistenceFilterInitializer) {
 
 			SystemStreams = systemStreams;
 			StreamNames = streamNames;
-			StreamNameEnumerator = streamNameEnumerator;
+			StreamNameExistenceFilterInitializer = streamNameExistenceFilterInitializer;
 		}
 
 		public void SetReader(IIndexReader<TStreamId> reader) {

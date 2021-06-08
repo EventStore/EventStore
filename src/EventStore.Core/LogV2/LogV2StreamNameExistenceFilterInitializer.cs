@@ -11,18 +11,18 @@ using StreamId = System.String;
 
 namespace EventStore.Core.LogV2 {
 	/// <summary>
-	/// Stream name enumerator for Log V2
-	/// Reads the index and transaction log and returns stream names from Prepare log records
-	/// May return a stream name more than once.
+	/// Stream name existence filter initializer for Log V2
+	/// Reads the index and transaction log to populate the stream name existence filter from the last checkpoint.
+	/// May add a stream hash more than once.
 	/// </summary>
-	public class LogV2StreamNameEnumerator : INameEnumerator {
+	public class LogV2StreamNameExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
 		private readonly IHasher<string> _lowHasher;
 		private readonly IHasher<string> _highHasher;
 		private ITableIndex _tableIndex;
 
-		public LogV2StreamNameEnumerator(
+		public LogV2StreamNameExistenceFilterInitializer(
 			Func<TFReaderLease> tfReaderFactory,
 			IReadOnlyCheckpoint chaserCheckpoint,
 			IHasher<string> lowHasher,

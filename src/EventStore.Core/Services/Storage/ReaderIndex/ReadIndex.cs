@@ -78,11 +78,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamIds = streamIds;
 			_streamNames = streamNamesProvider.StreamNames;
 			var systemStreams = streamNamesProvider.SystemStreams;
-			var streamNamesEnumerator = streamNamesProvider.StreamNameEnumerator;
+			var streamNameExistenceFilterInitializer = streamNamesProvider.StreamNameExistenceFilterInitializer;
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames,
-				systemStreams, streamNameExistenceFilter, streamNamesEnumerator, indexCheckpoint, additionalCommitChecks);
+				systemStreams, streamNameExistenceFilter, streamNameExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames);
 		}
 
