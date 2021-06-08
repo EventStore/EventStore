@@ -15,6 +15,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private readonly Debouncer _checkpointer;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
+		private bool _rebuilding;
 		private long _addedSinceLoad;
 
 		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamNameExistenceFilter>();
@@ -76,12 +77,14 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public void Initialize(INameEnumerator source) {
+			_rebuilding = true;
 			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint} (0x{checkpoint:X}).",
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
 			source.Initialize(this);
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
+			_rebuilding = false;
 		}
 
 		public void Add(string name, long checkpoint) {
@@ -98,6 +101,9 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		private void OnAdded(long checkpoint) {
 			_addedSinceLoad++;
+			if (_rebuilding && _addedSinceLoad % 500000 == 0) {
+				Log.Debug("{_filterName} rebuilding: processed {processed} records.", _filterName, _addedSinceLoad);
+			}
 			_checkpoint.Write(checkpoint);
 			_checkpointer.Trigger();
 		}
