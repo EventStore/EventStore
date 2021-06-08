@@ -46,9 +46,8 @@ namespace EventStore.Core.LogV2 {
 
 			using var reader = _tfReaderFactory();
 			var buildToPosition = _chaserCheckpoint.Read();
-			lastCheckpoint = Math.Max(0L, lastCheckpoint);
 
-			if (lastCheckpoint <= Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint)) {
+			if (lastCheckpoint == -1L) { // if we do not have a checkpoint, rebuild the list of stream hashes from the index
 				ulong previousHash = ulong.MaxValue;
 				foreach (var entry in _tableIndex.IterateAll()) {
 					if (entry.Stream == previousHash) {
@@ -56,6 +55,9 @@ namespace EventStore.Core.LogV2 {
 					}
 					previousHash = entry.Stream;
 					yield return (previousHash, -1L);
+				}
+				if (previousHash != ulong.MaxValue) { // send a checkpoint with the last stream hash
+					yield return (previousHash, Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint));
 				}
 				reader.Reposition(Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint));
 			} else {
