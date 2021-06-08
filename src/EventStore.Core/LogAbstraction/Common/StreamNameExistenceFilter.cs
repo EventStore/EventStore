@@ -115,8 +115,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_checkpointer.Trigger();
 		}
 
-		public bool MightExist(string name) {
-			return _mmfStreamBloomFilter.MightExist(name);
+		public bool MightContain(string name) {
+			return _mmfStreamBloomFilter.MightContain(name);
 		}
 
 		public void Dispose() {

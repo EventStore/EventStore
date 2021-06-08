@@ -27,8 +27,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			Add(SerializeHash(streamHash));
 		}
 
-		public bool MightExist(string stream) =>
-			MightExist(SerializeString(stream));
+		public bool MightContain(string stream) =>
+			MightContain(SerializeString(stream));
 
 
 		private ReadOnlySpan<byte> SerializeString(string stream) {

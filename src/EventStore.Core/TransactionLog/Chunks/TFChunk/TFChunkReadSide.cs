@@ -260,7 +260,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			public bool MayExistAt(long logicalPosition) {
 				/* This function is much faster than ExistsAt. However, it may return false positives (with a very low probability) but never false negatives */
-				return _logPositionsBloomFilter.MightExist(logicalPosition);
+				return _logPositionsBloomFilter.MightContain(logicalPosition);
 			}
 
 			public RecordReadResult TryReadAt(long logicalPosition) {

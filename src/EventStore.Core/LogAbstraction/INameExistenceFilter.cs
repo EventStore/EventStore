@@ -9,6 +9,6 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public interface IExistenceFilterReader<T> {
-		bool MightExist(T item);
+		bool MightContain(T item);
 	}
 }

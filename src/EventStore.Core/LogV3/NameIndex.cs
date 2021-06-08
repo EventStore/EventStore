@@ -146,7 +146,7 @@ namespace EventStore.Core.LogV3 {
 				return true;
 			}
 
-			if (!_existenceFilter.MightExist(name)) {
+			if (!_existenceFilter.MightContain(name)) {
 				// stream definitely does not exist, we can jump straight to reserving it.
 				Reserve(name, out value, out addedValue, out addedName);
 				return false;

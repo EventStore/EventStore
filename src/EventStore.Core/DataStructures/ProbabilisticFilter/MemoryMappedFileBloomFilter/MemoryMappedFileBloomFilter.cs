@@ -112,7 +112,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			}
 		}
 
-		public bool MightExist(ReadOnlySpan<byte> bytes) {
+		public bool MightContain(ReadOnlySpan<byte> bytes) {
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 

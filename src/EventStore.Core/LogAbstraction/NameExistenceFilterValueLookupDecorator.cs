@@ -12,7 +12,7 @@
 		}
 
 		public TValue LookupValue(string name) {
-			if (_existenceFilter.MightExist(name))
+			if (_existenceFilter.MightContain(name))
 				return _wrapped.LookupValue(name);
 
 			return default;

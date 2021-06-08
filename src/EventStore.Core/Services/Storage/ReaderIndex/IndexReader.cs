@@ -579,7 +579,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private long GetStreamLastEventNumberUncached(TFReaderLease reader, TStreamId streamId) {
-			if (!_streamNameExistenceFilter.MightExist(streamId))
+			if (!_streamNameExistenceFilter.MightContain(streamId))
 				return ExpectedVersion.NoStream;
 
 			IndexEntry latestEntry;

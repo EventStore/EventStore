@@ -7,7 +7,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		public void Add(string name, long value) { }
 		public void Add(ulong hash, long checkpoint) { }
-		public bool MightExist(string name) => true;
+		public bool MightContain(string name) => true;
 		public void Dispose() { }
 	}
 }
