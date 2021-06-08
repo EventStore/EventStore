@@ -38,6 +38,7 @@ namespace EventStore.Core.LogV2 {
 		}
 
 		private ulong Hash(string streamId) {
+			//qq consider how we want to deal with high and low, they're back to front here but also in the normal index
 			return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
 		}
 

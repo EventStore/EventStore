@@ -49,7 +49,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 			var bloomFilterFilePath = $"{directory}/{_filterName}.dat";
 
-			//qq
+			//qq not necessarily corrupted, might need rebuilding for size change
 			try {
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount);
 			} catch (CorruptedFileException exc) {
@@ -101,10 +101,13 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		private ulong Hash(string streamId) {
+			//qq consider how we want to deal with high and low, they're back to front here but also in the normal index
+			// currently have this logic in three places
 			return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
 		}
 
 		public void Add(string name, long checkpoint) {
+			//qq suspish that we care about this here
 			if (_hashStreamName) {
 				Add(Hash(name), checkpoint);
 				return;
@@ -130,6 +133,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public bool MightExist(string name) {
+			//qq suspish that we care about this here
 			if (_hashStreamName) {
 				return _mmfStreamBloomFilter.MayExist(Hash(name));
 			}

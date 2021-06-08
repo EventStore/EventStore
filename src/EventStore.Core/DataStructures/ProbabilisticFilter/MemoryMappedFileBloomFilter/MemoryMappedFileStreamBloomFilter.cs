@@ -20,6 +20,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		public bool MayExist(ulong streamHash) =>
 			MayExist(Serialize(streamHash));
 
+		//qq probably the standard hash function is what we want to handle here (for v2) (( but not for v3))
+
 		private static ReadOnlySpan<byte> Serialize(string stream) => MemoryMarshal.AsBytes(stream.AsSpan());
 		private static ReadOnlySpan<byte> Serialize(ulong streamHash) => MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref streamHash, 1));
 	}

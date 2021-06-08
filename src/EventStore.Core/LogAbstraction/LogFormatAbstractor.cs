@@ -77,6 +77,7 @@ namespace EventStore.Core.LogAbstraction {
 				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: TimeSpan.FromSeconds(60),
 				hashStreamName: true,
+				//qq probably pass these in
 				lowHasher: new XXHashUnsafe(),
 				highHasher: new Murmur3AUnsafe()
 			);
