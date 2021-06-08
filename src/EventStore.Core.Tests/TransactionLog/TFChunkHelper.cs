@@ -39,6 +39,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(truncateCheckpoint),
 				new InMemoryCheckpoint(-1), 
 				new InMemoryCheckpoint(-1),
+				new InMemoryCheckpoint(-1),
 				Constants.TFChunkInitialReaderCountDefault, 
 				Constants.TFChunkMaxReaderCountDefault,
 				maxTruncation: maxTruncation);
@@ -62,6 +63,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				replicationCheckpoint, 
+				new InMemoryCheckpoint(-1),
 				new InMemoryCheckpoint(-1),
 				Constants.TFChunkInitialReaderCountDefault, 
 				Constants.TFChunkMaxReaderCountDefault);

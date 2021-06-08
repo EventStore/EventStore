@@ -18,6 +18,7 @@ namespace EventStore.Core.LogAbstraction {
 		public int InitialReaderCount { get; init; } = ESConsts.PTableInitialReaderCount;
 		public int MaxReaderCount { get; init; } = 100;
 		public long StreamNameExistenceFilterSize { get; init; }
+		public ICheckpoint StreamNameExistenceFilterCheckpoint { get; init; }
 		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
 		public IReadOnlyCheckpoint ChaserCheckpoint { get; init; }
 	}
@@ -149,6 +150,7 @@ namespace EventStore.Core.LogAbstraction {
 				directory: $"{options.IndexDirectory}/stream-name-existence",
 				filterName: "StreamNameExistenceFilter",
 				size: options.StreamNameExistenceFilterSize,
+				checkpoint: options.StreamNameExistenceFilterCheckpoint,
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: TimeSpan.FromSeconds(60)

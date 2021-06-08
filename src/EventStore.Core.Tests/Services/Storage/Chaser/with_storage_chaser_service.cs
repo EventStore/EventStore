@@ -21,6 +21,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		readonly ICheckpoint _truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 		readonly ICheckpoint _replicationCheckpoint = new InMemoryCheckpoint(-1);
 		readonly ICheckpoint _indexCheckpoint = new InMemoryCheckpoint(-1);
+		readonly ICheckpoint _streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 
 		protected InMemoryBus Publisher = new InMemoryBus("publisher");
 		protected StorageChaser<TStreamId> Service;
@@ -86,6 +87,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				_truncateChk,
 				_replicationCheckpoint,
 				_indexCheckpoint,
+				_streamExistenceFilterCheckpoint,
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
 				true);

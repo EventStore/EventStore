@@ -11,7 +11,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		INameExistenceFilter {
 		private readonly string _filterName;
 		private readonly MemoryMappedFileStreamBloomFilter _mmfStreamBloomFilter;
-		private readonly MemoryMappedFileCheckpoint _checkpoint;
+		private readonly ICheckpoint _checkpoint;
 		private readonly Debouncer _checkpointer;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
@@ -23,27 +23,29 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		public StreamNameExistenceFilter(
 			string directory,
+			ICheckpoint checkpoint,
 			string filterName,
 			long size,
 			int initialReaderCount,
 			int maxReaderCount,
 			TimeSpan checkpointInterval) {
 			_filterName = filterName;
+			_checkpoint = checkpoint;
 
 			if (!Directory.Exists(directory)) {
 				Directory.CreateDirectory(directory);
 			}
 
 			var bloomFilterFilePath = $"{directory}/{_filterName}.dat";
-			var checkpointFilePath =  $"{directory}/{_filterName}.chk";
 
-			//qq 
+			//qq
 			try {
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount);
 			} catch (CorruptedFileException exc) {
 				Log.Error(exc, "{filterName} is corrupted. Rebuilding...", _filterName);
 				File.Delete(bloomFilterFilePath);
-				File.Delete(checkpointFilePath);
+				_checkpoint.Write(-1L);
+				_checkpoint.Flush();
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount);
 			}
 
@@ -56,8 +58,6 @@ namespace EventStore.Core.LogAbstraction.Common {
 				size / 1000 / 1000,
 				_mmfStreamBloomFilter.CalculateOptimalNumItems(p),
 				p);
-
-			_checkpoint = new MemoryMappedFileCheckpoint(checkpointFilePath, _filterName, true);
 
 			_cancellationTokenSource = new();
 			_checkpointer = new Debouncer(
