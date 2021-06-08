@@ -76,6 +76,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public void Initialize(INameEnumerator source) {
+			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint} (0x{checkpoint:X}).",
+				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
 			source.Initialize(this);
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
