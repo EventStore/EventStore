@@ -68,6 +68,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				}
 			}
 
+			// the shared working set figure will be large because the memory for the file
+			// will be counted against each accessor. they are all sharing the same physical
+			// memory though so don't be alarmed
 			_mmfReadersPool = new ObjectPool<MemoryMappedViewAccessor>(
 				objectPoolName: $"{nameof(MemoryMappedFileBloomFilter)} readers pool",
 				initialCount: initialReaderCount,
@@ -143,14 +146,14 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		private static void SetBit(long position, MemoryMappedViewAccessor readWriteAccessor) {
 			var bytePosition = position / 8;
-			readWriteAccessor.Read(bytePosition, out byte byteValue);
+			var byteValue = readWriteAccessor.ReadByte(bytePosition);
 			byteValue = (byte) (byteValue | (1 << (int)(7 - position % 8)));
 			readWriteAccessor.Write(bytePosition, byteValue);
 		}
 
 		private static bool IsBitSet(long position, MemoryMappedViewAccessor readAccessor) {
 			var bytePosition = position / 8;
-			readAccessor.Read(bytePosition, out byte byteValue);
+			var byteValue = readAccessor.ReadByte(bytePosition);
 			return (byteValue & (1 << (int)(7 - position % 8))) != 0;
 		}
 
