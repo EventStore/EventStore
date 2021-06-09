@@ -29,7 +29,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			long logPosition,
 			DateTime timeStamp,
 			uint streamNumber,
-			string streamName) : base() {
+			string streamName,
+			Guid partitionId) : base() {
 
 			Record = RecordCreator.CreateStreamRecord(
 				streamId: streamId,
@@ -37,7 +38,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				logPosition: logPosition,
 				streamNumber: streamNumber,
 				streamName: streamName,
-				partitionId: Guid.Empty,
+				partitionId: partitionId,
 				streamTypeId: Guid.Empty);
 		}
 
@@ -51,7 +52,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				timeStamp: Record.Header.TimeStamp,
 				logPosition: logPosition,
 				streamNumber: Record.SubHeader.ReferenceNumber,
-				streamName: Record.StringPayload);
+				streamName: Record.StringPayload,
+				partitionId: Record.SubHeader.PartitionId);
 		}
 
 		public bool Equals(LogV3StreamRecord other) {

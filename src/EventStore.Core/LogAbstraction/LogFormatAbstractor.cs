@@ -1,10 +1,12 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogV2;
 using EventStore.Core.LogV3;
 using EventStore.Core.LogV3.FASTER;
 using EventStore.Core.Settings;
+using EventStore.Core.TransactionLog;
 using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.LogAbstraction {
@@ -36,7 +38,8 @@ namespace EventStore.Core.LogAbstraction {
 				emptyStreamId: string.Empty,
 				streamIdSizer: new LogV2Sizer(),
 				recordFactory: new LogV2RecordFactory(),
-				supportsExplicitTransactions: true);
+				supportsExplicitTransactions: true,
+				partitionManagerFactory: (r, w) => new LogV2PartitionManager());
 		}
 	}
 
@@ -45,6 +48,7 @@ namespace EventStore.Core.LogAbstraction {
 			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
 			var streamNameIndex = GenStreamNameIndex(options, streamNameIndexPersistence);
 			var metastreams = new LogV3Metastreams();
+			var recordFactory = new LogV3RecordFactory();
 
 			var abstractor = new LogFormatAbstractor<LogV3StreamId>(
 				lowHasher: new IdentityLowHasher(),
@@ -63,8 +67,9 @@ namespace EventStore.Core.LogAbstraction {
 				streamIdValidator: new LogV3StreamIdValidator(),
 				emptyStreamId: 0,
 				streamIdSizer: new LogV3Sizer(),
-				recordFactory: new LogV3RecordFactory(),
-				supportsExplicitTransactions: false);
+				recordFactory: recordFactory,
+				supportsExplicitTransactions: false,
+				partitionManagerFactory: (r,w) => new PartitionManager(r, w, recordFactory));
 			return abstractor;
 		}
 
@@ -96,6 +101,8 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public class LogFormatAbstractor<TStreamId> : IDisposable {
+		private readonly Func<ITransactionFileReader,ITransactionFileWriter,IPartitionManager> _partitionManagerFactory;
+
 		public LogFormatAbstractor(
 			IHasher<TStreamId> lowHasher,
 			IHasher<TStreamId> highHasher,
@@ -109,7 +116,10 @@ namespace EventStore.Core.LogAbstraction {
 			TStreamId emptyStreamId,
 			ISizer<TStreamId> streamIdSizer,
 			IRecordFactory<TStreamId> recordFactory,
-			bool supportsExplicitTransactions) {
+			bool supportsExplicitTransactions,
+			Func<ITransactionFileReader,ITransactionFileWriter,IPartitionManager> partitionManagerFactory) {
+			
+			_partitionManagerFactory = partitionManagerFactory;
 
 			LowHasher = lowHasher;
 			HighHasher = highHasher;
@@ -146,5 +156,9 @@ namespace EventStore.Core.LogAbstraction {
 		public INameLookup<TStreamId> StreamNames => StreamNamesProvider.StreamNames;
 		public ISystemStreamLookup<TStreamId> SystemStreams => StreamNamesProvider.SystemStreams;
 		public bool SupportsExplicitTransactions { get; }
+		
+		public IPartitionManager CreatePartitionManager(ITransactionFileReader reader, ITransactionFileWriter writer) {
+			return _partitionManagerFactory(reader, writer);
+		}
 	}
 }
