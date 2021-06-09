@@ -41,11 +41,15 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 			var bloomFilterFilePath = $"{directory}/{_filterName}.dat";
 
-			//qq not necessarily corrupted, might need rebuilding for size change
 			try {
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount, hasher);
-			} catch (CorruptedFileException exc) {
-				Log.Error(exc, "{filterName} is corrupted. Rebuilding...", _filterName);
+			} catch (Exception exc) when (exc is CorruptedFileException || exc is SizeMismatchException) {
+				if (exc is CorruptedFileException) {
+					Log.Error(exc, "{filterName} is corrupted. Rebuilding...", _filterName);
+				} else if (exc is SizeMismatchException) {
+					Log.Error(exc, "{filterName} does not have the expected size. Rebuilding...", _filterName);
+				}
+
 				File.Delete(bloomFilterFilePath);
 				_checkpoint.Write(-1L);
 				_checkpoint.Flush();
