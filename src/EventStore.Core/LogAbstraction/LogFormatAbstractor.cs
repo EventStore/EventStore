@@ -50,12 +50,7 @@ namespace EventStore.Core.LogAbstraction {
 				streamNameIndexConfirmer: streamNameIndex,
 				streamIds: streamNameIndex,
 				metastreams: new LogV2SystemStreams(),
-				streamNamesProvider: new SingletonStreamNamesProvider<string>(
-					systemStreams: new LogV2SystemStreams(),
-					streamNames: streamNameIndex,
-					streamNameExistenceFilterInitializer: new LogV2StreamNameExistenceFilterInitializer(
-						tfReaderFactory: options.TFReaderLeaseFactory,
-						chaserCheckpoint: options.ChaserCheckpoint)),
+				streamNamesProvider: GenStreamNamesProvider(options, streamNameIndex),
 				streamIdValidator: new LogV2StreamIdValidator(),
 				emptyStreamId: string.Empty,
 				streamIdSizer: new LogV2Sizer(),
@@ -85,7 +80,16 @@ namespace EventStore.Core.LogAbstraction {
 
 			return nameExistenceFilter;
 		}
-}
+
+		static IStreamNamesProvider<string> GenStreamNamesProvider(LogFormatAbstractorOptions options, LogV2StreamNameIndex streamNameIndex) =>
+			new AdHocStreamNamesProvider<string>(
+				setReader: _ => (null, null, null),
+				setTableIndex: tableIndex => new LogV2StreamNameExistenceFilterInitializer(
+					options.TFReaderLeaseFactory, options.ChaserCheckpoint, tableIndex),
+				systemStreams: new LogV2SystemStreams(),
+				streamNames: streamNameIndex,
+				streamNameExistenceFilterInitializer: null);
+	}
 
 	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
 		public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
@@ -121,14 +125,19 @@ namespace EventStore.Core.LogAbstraction {
 		}
 
 		static IStreamNamesProvider<LogV3StreamId> GenStreamNamesProvider(IMetastreamLookup<LogV3StreamId> metastreams) {
-			return new AdHocStreamNamesProvider<LogV3StreamId>(indexReader => {
-				INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
-				var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
-				streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
-				//qq consider if the enumerator should use the metastream decorated one
-				var streamNameExistenceFilterInitializer = new LogV3StreamNameExistenceFilterInitializer(streamNames);
-				return (systemStreams, streamNames, streamNameExistenceFilterInitializer);
-			});
+			return new AdHocStreamNamesProvider<LogV3StreamId>(
+				setReader: indexReader => {
+					INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
+					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
+					streamNames = new StreamNameLookupMetastreamDecorator(streamNames, metastreams);
+					//qq consider if the enumerator should use the metastream decorated one
+					var streamNameExistenceFilterInitializer = new LogV3StreamNameExistenceFilterInitializer(streamNames);
+					return (systemStreams, streamNames, streamNameExistenceFilterInitializer);
+				},
+				setTableIndex: _ => null,
+				systemStreams: null,
+				streamNames: null,
+				streamNameExistenceFilterInitializer: null);
 		}
 
 		static NameIndex GenStreamNameIndex(

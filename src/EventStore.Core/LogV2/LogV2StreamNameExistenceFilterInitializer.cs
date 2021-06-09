@@ -17,16 +17,14 @@ namespace EventStore.Core.LogV2 {
 	public class LogV2StreamNameExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
-		private ITableIndex _tableIndex;
+		private readonly ITableIndex _tableIndex;
 
 		public LogV2StreamNameExistenceFilterInitializer(
 			Func<TFReaderLease> tfReaderFactory,
-			IReadOnlyCheckpoint chaserCheckpoint) {
+			IReadOnlyCheckpoint chaserCheckpoint,
+			ITableIndex tableIndex) {
 			_tfReaderFactory = tfReaderFactory;
 			_chaserCheckpoint = chaserCheckpoint;
-		}
-
-		public void SetTableIndex(ITableIndex tableIndex) {
 			_tableIndex = tableIndex;
 		}
 
