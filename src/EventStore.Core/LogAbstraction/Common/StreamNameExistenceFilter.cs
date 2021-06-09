@@ -69,17 +69,20 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_cancellationTokenSource = new();
 			_checkpointer = new Debouncer(
 				checkpointInterval,
-				token => {
-					try {
-						_mmfStreamBloomFilter.Flush();
-						_checkpoint.Flush();
-						Log.Debug("{filterName} took checkpoint at position: {position}", _filterName, _checkpoint.Read());
-					} catch (Exception ex) {
-						Log.Error(ex, "{filterName} could not take checkpoint at position: {position}", _filterName, _checkpoint.Read());
-					}
+				_ => {
+					TakeCheckpoint();
 					return Task.CompletedTask;
 				}, _cancellationTokenSource.Token);
+		}
 
+		private void TakeCheckpoint() {
+			try {
+				_mmfStreamBloomFilter.Flush();
+				_checkpoint.Flush();
+				Log.Debug("{filterName} took checkpoint at position: {position}", _filterName, _checkpoint.Read());
+			} catch (Exception ex) {
+				Log.Error(ex, "{filterName} could not take checkpoint at position: {position}", _filterName, _checkpoint.Read());
+			}
 		}
 
 		public void Initialize(INameExistenceFilterInitializer source) {
@@ -88,9 +91,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
 			source.Initialize(this);
-			_mmfStreamBloomFilter.Flush();
-			_checkpoint.Flush();
-
+			TakeCheckpoint();
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 			_rebuilding = false;
@@ -110,13 +111,15 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		private void OnAdded(long checkpoint) {
 			_addedSinceLoad++;
-			if (_rebuilding && _addedSinceLoad % 500000 == 0) {
-				Log.Debug("{_filterName} rebuilding: processed {processed} records.", _filterName, _addedSinceLoad);
+			if (_rebuilding) {
+				if (_addedSinceLoad % 500000 == 0) {
+					Log.Debug("{_filterName} rebuilding: processed {processed} records.", _filterName, _addedSinceLoad);
+				}
+				_checkpoint.Write(checkpoint);
+			} else {
+				_checkpoint.Write(checkpoint);
+				_checkpointer.Trigger();
 			}
-
-			//qq might not want these while rebuilding, or might want to checkpoint after rebuilding or
-			_checkpoint.Write(checkpoint);
-			_checkpointer.Trigger();
 		}
 
 		public bool MightContain(string name) {
