@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		void Reset();
 		CommitCheckResult<TStreamId> CheckCommitStartingAt(long transactionPosition, long commitPosition);
-		CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool? isNewStream);
+		CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist);
 		void PreCommit(CommitLogRecord commit);
 		void PreCommit(IList<IPrepareLogRecord<TStreamId>> commitedPrepares);
 		void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo<TStreamId> transactionInfo);
@@ -148,7 +148,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var eventIds = from prepare in GetTransactionPrepares(transactionPosition, commitPosition)
 				where prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 				select prepare.EventId;
-			return CheckCommit(streamId, expectedVersion, eventIds, null);
+			return CheckCommit(streamId, expectedVersion, eventIds, streamMightExist: true);
 		}
 
 		private static IPrepareLogRecord<TStreamId> GetPrepare(TFReaderLease reader, long logPosition) {
@@ -167,15 +167,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				_ => CommitDecision.WrongExpectedVersion
 			};
 
-			//qq make sure this is the result that we would have had anyway
-			// i think we wont need this for v2 but will for v3, tbc
 			return new CommitCheckResult<TStreamId>(commitDecision, streamId, ExpectedVersion.NoStream, -1, -1, false);
 		}
 
-		//qq probably shouldn't be nullable bool now
-		public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool? isNewStream) {
-			if (isNewStream ?? false) {
-				//fast path for completely new streams
+		public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist) {
+			if (!streamMightExist) {
+				// fast path for completely new streams
 				return CheckCommitForNewStream(streamId, expectedVersion);
 			}
 
