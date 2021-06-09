@@ -21,24 +21,29 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		}
 
 		public static Header ReadFrom(MemoryMappedFile mmf) {
-			//read the version first
-			using (var headerAccessor = mmf.CreateViewAccessor(0, Size, MemoryMappedFileAccess.Read)) {
-				byte version = headerAccessor.ReadByte(0);
-				if (version != CurrentVersion) {
-					throw new CorruptedFileException($"Unsupported version: {version}");
+			try {
+				//read the version first
+				using (var headerAccessor = mmf.CreateViewAccessor(0, 1, MemoryMappedFileAccess.Read)) {
+					byte version = headerAccessor.ReadByte(0);
+					if (version != CurrentVersion) {
+						throw new CorruptedFileException($"Unsupported version: {version}");
+					}
 				}
-			}
 
-			//then the full header
-			var headerBytes = new byte[Size].AsSpan();
-			using (var headerAccessor = mmf.CreateViewStream(0, Size, MemoryMappedFileAccess.Read)) {
-				int read = headerAccessor.Read(headerBytes);
-				if (read != Size) {
-					throw new CorruptedFileException($"File header size ({read} bytes) does not match expected header size ({Size} bytes)");
+				//then the full header
+				var headerBytes = new byte[Size].AsSpan();
+				using (var headerAccessor = mmf.CreateViewStream(0, Size, MemoryMappedFileAccess.Read)) {
+					int read = headerAccessor.Read(headerBytes);
+					if (read != Size) {
+						throw new CorruptedFileException(
+							$"File header size ({read} bytes) does not match expected header size ({Size} bytes)");
+					}
 				}
-			}
 
-			return MemoryMarshal.AsRef<Header>(headerBytes);
+				return MemoryMarshal.AsRef<Header>(headerBytes);
+			} catch(Exception exc) when (!(exc is CorruptedFileException)) {
+				throw new CorruptedFileException("Failed to read the header");
+			}
 		}
 
 		public void WriteTo(MemoryMappedFile mmf) {
