@@ -73,6 +73,12 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			// create DB
 			Writer = new TFChunkWriter(Db);
 			Writer.Open();
+
+			var pm = _logFormatFactory.CreatePartitionManager(
+				reader: new TFChunkReader(Db, WriterCheckpoint),
+				writer: Writer);
+			pm.Initialize();
+
 			WriteTestScenario();
 
 			Writer.Close();
