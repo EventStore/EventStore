@@ -266,7 +266,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
-					msg.Events.Select(x => x.EventId), !preExisting);
+					msg.Events.Select(x => x.EventId), streamMightExist: preExisting);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
 					return;
@@ -391,7 +391,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
-					new[] { eventId }, !preExisting);
+					new[] { eventId }, streamMightExist: preExisting);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
 					return;
