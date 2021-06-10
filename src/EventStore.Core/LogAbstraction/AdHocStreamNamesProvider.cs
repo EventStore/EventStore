@@ -12,16 +12,13 @@ namespace EventStore.Core.LogAbstraction {
 		private INameLookup<TStreamId> _streamNames;
 		private INameExistenceFilterInitializer _streamNameExistenceFilterInitializer;
 
-		public AdHocStreamNamesProvider(Func<IIndexReader<TStreamId>, (ISystemStreamLookup<TStreamId>, INameLookup<TStreamId>, INameExistenceFilterInitializer)> setReader,
-			Func<ITableIndex, INameExistenceFilterInitializer> setTableIndex,
-			ISystemStreamLookup<TStreamId> systemStreams,
-			INameLookup<TStreamId> streamNames,
-			INameExistenceFilterInitializer streamNameExistenceFilterInitializer) {
+		public AdHocStreamNamesProvider(
+			Func<(ISystemStreamLookup<TStreamId>, INameLookup<TStreamId>, INameExistenceFilterInitializer)> init,
+			Func<IIndexReader<TStreamId>, (ISystemStreamLookup<TStreamId>, INameLookup<TStreamId>, INameExistenceFilterInitializer)> setReader,
+			Func<ITableIndex, INameExistenceFilterInitializer> setTableIndex) {
+			(_systemStreams, _streamNames, _streamNameExistenceFilterInitializer) = init();
 			_setReader = setReader;
 			_setTableIndex = setTableIndex;
-			_systemStreams = systemStreams;
-			_streamNames = streamNames;
-			_streamNameExistenceFilterInitializer = streamNameExistenceFilterInitializer;
 		}
 
 		public INameLookup<TStreamId> StreamNames =>
