@@ -137,7 +137,7 @@ namespace EventStore.Core.Tests {
 					.AddEventStore(args, environment, defaultValues.Concat(new[] {
 						new KeyValuePair<string, object>(nameof(ClusterVNodeOptions.Application.Config),
 							configurationFile.FullName)
-					}))
+					}), configurationFile.FullName)
 					.Build());
 
 				Assert.AreEqual(expected, options.Application.StatsPeriodSec);
@@ -160,16 +160,21 @@ namespace EventStore.Core.Tests {
 			Console.WriteLine(dumpedOptions);
 		}
 
-		[Test]
-		public async Task reading_from_disk() {
-			var yamlConfiguration = new FileInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+		public static IEnumerable<string> ReadingFromDiskCases() {
+			yield return Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()); // absolute
+			yield return "./conf"; // relative
+		}
+
+		[TestCaseSource(nameof(ReadingFromDiskCases))]
+		public async Task reading_from_disk(string path) {
+			var yamlConfiguration = new FileInfo(path);
 			try {
 				await WriteConfiguration();
 
-				var options = ClusterVNodeOptions.FromConfiguration(new[] {"--config", yamlConfiguration.FullName},
+				var options = ClusterVNodeOptions.FromConfiguration(new[] {"--config", path},
 					new Hashtable());
 
-				Assert.AreEqual(yamlConfiguration.FullName, options.Application.Config);
+				Assert.AreEqual(path, options.Application.Config);
 				Assert.IsTrue(options.Database.MemDb);
 				Assert.AreEqual("127.0.0.1:1113,127.0.0.1:2113",
 					string.Join(",", options.Cluster.GossipSeed.Select(x => $"{x.GetHost()}:{x.GetPort()}")));

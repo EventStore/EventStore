@@ -62,13 +62,13 @@ namespace EventStore.ClusterNode {
 			if (!_clusterNodeMutex.Acquire())
 				throw new InvalidConfigurationException($"Couldn't acquire exclusive Cluster Node mutex '{_clusterNodeMutex.MutexName}'.");
 
-			var authorizationConfig = string.IsNullOrEmpty(_options.Auth.AuthorizationConfig)
+			var authorizationConfig = Path.GetFullPath(string.IsNullOrEmpty(_options.Auth.AuthorizationConfig)
 				? _options.Application.Config
-				: _options.Auth.AuthorizationConfig;
+				: _options.Auth.AuthorizationConfig);
 
-			var authenticationConfig = string.IsNullOrEmpty(_options.Auth.AuthenticationConfig)
+			var authenticationConfig = Path.GetFullPath(string.IsNullOrEmpty(_options.Auth.AuthenticationConfig)
 				? _options.Application.Config
-				: _options.Auth.AuthenticationConfig;
+				: _options.Auth.AuthenticationConfig);
 
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 
