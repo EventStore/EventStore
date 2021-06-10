@@ -182,8 +182,9 @@ namespace EventStore.Core.LogAbstraction {
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: TimeSpan.FromSeconds(60),
-				hasher: null
-			);
+				hasher: null)
+			.Wrap(x => new StreamNameExistenceFilterValidator(x));
+
 			return nameExistenceFilter;
 		}
 	}
