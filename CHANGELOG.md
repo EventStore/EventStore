@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - auto configuration for stream cache, reader threads and worker threads. [EventStore#2902](https://github.com/EventStore/EventStore/pull/2902)
 - Interpreter runtime for user projections [EventStore#2951](https://github.com/EventStore/EventStore/pull/2951)
 - Options to switch user runtime back to legacy v8 [EventStore#2951](https://github.com/EventStore/EventStore/pull/2951)
+- Initial creation of the LogV3 root partition. [EventStore#2982](https://github.com/EventStore/EventStore/pull/2982)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
@@ -62,6 +63,7 @@ All notable changes to this project will be documented in this file.
 
 ### Removed the job check from cherry-pick-pr-for-label action. It was moved to the action itself
 - https://github.com/EventStore/Automations/pull/30. [EventStore#2903](https://github.com/EventStore/EventStore/pull/2903)
+- Custom kestrel default settings [EventStore#2984](https://github.com/EventStore/EventStore/pull/2984)
 
 ### Dotnet-retire is [being deprecated](https
 - //github.com/RetireNet/dotnet-retire/issues/75). The suggestion is now to use `dotnet list packages --vulnerable`. [EventStore#2927](https://github.com/EventStore/EventStore/pull/2927)
