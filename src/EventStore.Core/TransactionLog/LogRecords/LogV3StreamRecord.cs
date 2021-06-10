@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using EventStore.Core.LogV3;
 using EventStore.Core.Services;
 using EventStore.LogV3;
@@ -18,7 +19,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public Guid CorrelationId { get; } = Guid.NewGuid();
 		public string EventType => SystemEventTypes.StreamCreated;
 		// so we can see the stream name in the webui if we want
-		public ReadOnlyMemory<byte> Data => Record.Payload;
+		public ReadOnlyMemory<byte> Data => Record.Payload; // Encoding.UTF8.GetBytes($"\"{Record.StringPayload}\"");
 		public ReadOnlyMemory<byte> Metadata => ReadOnlyMemory<byte>.Empty;
 
 		public string StreamName => Record.StringPayload;

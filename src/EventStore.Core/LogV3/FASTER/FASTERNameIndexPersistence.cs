@@ -74,17 +74,17 @@ namespace EventStore.Core.LogV3.FASTER {
 			var readCacheSettings = enableReadCache
 				? new ReadCacheSettings {
 					// todo: dynamic settings according to available memory
-					MemorySizeBits = 15,
-					PageSizeBits = 12,
-					SecondChanceFraction = 0.1
+					//MemorySizeBits = 15,
+					//PageSizeBits = 12,
+					//SecondChanceFraction = 0.1
 				}
 				: null;
 
 			_logSettings = new LogSettings {
 				LogDevice = _log,
 				// todo: dynamic settings according to available memory
-				MemorySizeBits = 15,
-				PageSizeBits = 12,
+				//MemorySizeBits = 15,
+				//PageSizeBits = 12,
 				//PreallocateLog = true,
 
 				ReadCacheSettings = readCacheSettings,
@@ -94,7 +94,7 @@ namespace EventStore.Core.LogV3.FASTER {
 				// todo: dynamic settings according to available memory
 				// but bear in mind if we have taken an index checkpoint there is a 
 				// procedure to resize it.
-				size: 1L << 20,
+				size: 1L << 27,
 				checkpointSettings: checkpointSettings,
 				logSettings: _logSettings);
 

@@ -114,10 +114,11 @@ namespace EventStore.Core.LogAbstraction {
 
 			if (useStreamNameLookupLru) {
 				streamNameLookupLru = new LRUCache<LogV3StreamId, string>(options.LruSize);
-				streamNameIndexConfirmer = new NameConfirmerLruDecorator<LogV3StreamId>(streamNameLookupLru, streamNameIndexConfirmer);
+				streamNameIndexConfirmer = streamNameIndexConfirmer
+					.Wrap(x => new NameConfirmerLruDecorator(streamNameLookupLru, x));
 			}
 
-			var streamNamesProvider = GenStreamNamesProvider(metastreams, streamNameLookupLru);
+			var streamNamesProvider = GenStreamNamesProvider(metastreams, useStreamNameLookupLru, streamNameLookupLru);
 
 			var abstractor = new LogFormatAbstractor<LogV3StreamId>(
 				lowHasher: new IdentityLowHasher(),
@@ -139,14 +140,16 @@ namespace EventStore.Core.LogAbstraction {
 
 		static IStreamNamesProvider<LogV3StreamId> GenStreamNamesProvider(
 			IMetastreamLookup<LogV3StreamId> metastreams,
+			bool useStreamNameLookupLru,
 			ILRUCache<LogV3StreamId, string> streamNameLookupLru) {
 
 			return new AdHocStreamNamesProvider<LogV3StreamId>(
 				setReader: indexReader => {
 					INameLookup<LogV3StreamId> streamNames = new StreamIdToNameFromStandardIndex(indexReader);
 
-					if (streamNameLookupLru != null) {
-						streamNames = streamNames.Wrap(x => new NameLookupLruDecorator<LogV3StreamId>(streamNameLookupLru, x));
+					if (useStreamNameLookupLru) {
+						streamNames = streamNames
+							.Wrap(x => new NameLookupLruDecorator<LogV3StreamId>(streamNameLookupLru, x));
 					}
 
 					var systemStreams = new LogV3SystemStreams(metastreams, streamNames);
@@ -189,7 +192,7 @@ namespace EventStore.Core.LogAbstraction {
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
-				enableReadCache: false,
+				enableReadCache: true,
 				checkpointInterval: TimeSpan.FromSeconds(60));
 			return persistence;
 		}

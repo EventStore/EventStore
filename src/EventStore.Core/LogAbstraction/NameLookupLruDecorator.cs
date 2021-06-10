@@ -1,26 +1,49 @@
-﻿using EventStore.Core.DataStructures;
+﻿using System.Collections.Generic;
+using EventStore.Core.DataStructures;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
+using Value = System.UInt32;
 
 namespace EventStore.Core.LogAbstraction {
 
-	public class NameConfirmerLruDecorator<TValue> : INameIndexConfirmer<TValue> {
-		private readonly ILRUCache<TValue, string> _lru;
-		private readonly INameIndexConfirmer<TValue> _wrappedConfirmer;
+	public class NameConfirmerLruDecorator : INameIndexConfirmer<Value> {
+		private readonly ILRUCache<Value, string> _lru;
+		private readonly INameIndexConfirmer<Value> _wrappedConfirmer;
 
-		public NameConfirmerLruDecorator(ILRUCache<TValue, string> lru, INameIndexConfirmer<TValue> wrappedConfirmer) {
+		public NameConfirmerLruDecorator(ILRUCache<Value, string> lru, INameIndexConfirmer<Value> wrappedConfirmer) {
 			_wrappedConfirmer = wrappedConfirmer;
 			_lru = lru;
 		}
 
-		public void Confirm(string name, TValue value) {
-			_wrappedConfirmer.Confirm(name, value);
-			_lru.Put(value, name);
+		public void Confirm(
+			IList<IPrepareLogRecord<Value>> prepares,
+			bool catchingUp,
+			IIndexBackend<Value> backend) {
+
+			_wrappedConfirmer.Confirm(prepares, catchingUp, backend);
+
+			//qq unideal that we are looking through all the prepares, and then again in the wrapped
+			// we chould take advantage of knowing they are all for the same stream
+			// but then, we are only checking an enum field for each one so it might be negligable
+			for (int i = 0; i < prepares.Count; i++) {
+				var prepare = prepares[i];
+
+				if (prepare.RecordType == LogRecordType.Stream &&
+					prepare is LogV3StreamRecord streamRecord) {
+
+					_lru.Put(
+						streamRecord.StreamNumber,
+						streamRecord.StreamName);
+				}
+			}
 		}
 
 		public void Dispose() {
 			_wrappedConfirmer.Dispose();
 		}
 
-		public void InitializeWithConfirmed(INameLookup<TValue> source) {
+		public void InitializeWithConfirmed(INameLookup<Value> source) {
 			_wrappedConfirmer.InitializeWithConfirmed(source);
 		}
 	}
