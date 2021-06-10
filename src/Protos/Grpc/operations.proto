@@ -7,11 +7,11 @@ import "shared.proto";
 service Operations {
 	rpc StartScavenge (StartScavengeReq) returns (ScavengeResp);
 	rpc StopScavenge (StopScavengeReq) returns (ScavengeResp);
-	rpc Shutdown (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
-	rpc MergeIndexes (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
-	rpc ResignNode (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
-	rpc SetNodePriority (SetNodePriorityReq) returns (event_store.client.shared.Empty);
-	rpc RestartPersistentSubscriptions (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
+	rpc Shutdown (event_store.client.Empty) returns (event_store.client.Empty);
+	rpc MergeIndexes (event_store.client.Empty) returns (event_store.client.Empty);
+	rpc ResignNode (event_store.client.Empty) returns (event_store.client.Empty);
+	rpc SetNodePriority (SetNodePriorityReq) returns (event_store.client.Empty);
+	rpc RestartPersistentSubscriptions (event_store.client.Empty) returns (event_store.client.Empty);
 }
 
 message StartScavengeReq {

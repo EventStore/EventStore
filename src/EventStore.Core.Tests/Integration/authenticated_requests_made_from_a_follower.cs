@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using EventStore.Client.Shared;
+using EventStore.Client;
 using EventStore.Client.Streams;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;

@@ -5,7 +5,7 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class ChunkFooter {
-		public const int Size = 128;
+		public const int Size = TFConsts.ChunkFooterSize;
 		public const int ChecksumSize = 16;
 
 		// flags within single byte

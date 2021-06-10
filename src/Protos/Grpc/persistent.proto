@@ -20,8 +20,8 @@ message ReadReq {
 
 	message Options {
 		oneof stream_option {
-			event_store.client.shared.StreamIdentifier stream_identifier = 1;
-			event_store.client.shared.Empty all = 5;
+			event_store.client.StreamIdentifier stream_identifier = 1;
+			event_store.client.Empty all = 5;
 		}
 
 		string group_name = 2;
@@ -30,20 +30,20 @@ message ReadReq {
 
 		message UUIDOption {
 			oneof content {
-				event_store.client.shared.Empty structured = 1;
-				event_store.client.shared.Empty string = 2;
+				event_store.client.Empty structured = 1;
+				event_store.client.Empty string = 2;
 			}
 		}
 	}
 
 	message Ack {
 		bytes id = 1;
-		repeated event_store.client.shared.UUID ids = 2;
+		repeated event_store.client.UUID ids = 2;
 	}
 
 	message Nack {
 		bytes id = 1;
-		repeated event_store.client.shared.UUID ids = 2;
+		repeated event_store.client.UUID ids = 2;
 		Action action = 3;
 		string reason = 4;
 
@@ -67,15 +67,15 @@ message ReadResp {
 		RecordedEvent link = 2;
 		oneof position {
 			uint64 commit_position = 3;
-			event_store.client.shared.Empty no_position = 4;
+			event_store.client.Empty no_position = 4;
 		}
 		oneof count {
 			int32 retry_count = 5;
-			event_store.client.shared.Empty no_retry_count = 6;
+			event_store.client.Empty no_retry_count = 6;
 		}
 		message RecordedEvent {
-			event_store.client.shared.UUID id = 1;
-			event_store.client.shared.StreamIdentifier stream_identifier = 2;
+			event_store.client.UUID id = 1;
+			event_store.client.StreamIdentifier stream_identifier = 2;
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
 			uint64 commit_position = 5;
@@ -97,29 +97,29 @@ message CreateReq {
 			StreamOptions stream = 4;
 			AllOptions all = 5;
 		}
-		event_store.client.shared.StreamIdentifier stream_identifier = 1 [deprecated=true];
+		event_store.client.StreamIdentifier stream_identifier = 1 [deprecated=true];
 		string group_name = 2;
 		Settings settings = 3;
 	}
 
 	message StreamOptions {
-		event_store.client.shared.StreamIdentifier stream_identifier = 1;
+		event_store.client.StreamIdentifier stream_identifier = 1;
 		oneof revision_option {
 			uint64 revision = 2;
-			event_store.client.shared.Empty start = 3;
-			event_store.client.shared.Empty end = 4;
+			event_store.client.Empty start = 3;
+			event_store.client.Empty end = 4;
 		}
 	}
 
 	message AllOptions {
 		oneof all_option {
 			Position position = 1;
-			event_store.client.shared.Empty start = 2;
-			event_store.client.shared.Empty end = 3;
+			event_store.client.Empty start = 2;
+			event_store.client.Empty end = 3;
 		}
 		oneof filter_option {
 			FilterOptions filter = 4;
-			event_store.client.shared.Empty no_filter = 5;
+			event_store.client.Empty no_filter = 5;
 		}
 		message FilterOptions {
 			oneof filter {
@@ -128,7 +128,7 @@ message CreateReq {
 			}
 			oneof window {
 				uint32 max = 3;
-				event_store.client.shared.Empty count = 4;
+				event_store.client.Empty count = 4;
 			}
 			uint32 checkpointIntervalMultiplier = 5;
 
@@ -184,25 +184,25 @@ message UpdateReq {
 			StreamOptions stream = 4;
 			AllOptions all = 5;
 		}
-		event_store.client.shared.StreamIdentifier stream_identifier = 1 [deprecated = true];
+		event_store.client.StreamIdentifier stream_identifier = 1 [deprecated = true];
 		string group_name = 2;
 		Settings settings = 3;
 	}
 
 	message StreamOptions {
-		event_store.client.shared.StreamIdentifier stream_identifier = 1;
+		event_store.client.StreamIdentifier stream_identifier = 1;
 		oneof revision_option {
 			uint64 revision = 2;
-			event_store.client.shared.Empty start = 3;
-			event_store.client.shared.Empty end = 4;
+			event_store.client.Empty start = 3;
+			event_store.client.Empty end = 4;
 		}
 	}
 
 	message AllOptions {
 		oneof all_option {
 			Position position = 1;
-			event_store.client.shared.Empty start = 2;
-			event_store.client.shared.Empty end = 3;
+			event_store.client.Empty start = 2;
+			event_store.client.Empty end = 3;
 		}
 	}
 
@@ -248,8 +248,8 @@ message DeleteReq {
 
 	message Options {
 		oneof stream_option {
-			event_store.client.shared.StreamIdentifier stream_identifier = 1;
-			event_store.client.shared.Empty all = 3;
+			event_store.client.StreamIdentifier stream_identifier = 1;
+			event_store.client.Empty all = 3;
 		}
 
 		string group_name = 2;

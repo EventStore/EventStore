@@ -4,7 +4,6 @@ using EventStore.Core.Services.Transport.Grpc;
 // ReSharper disable CheckNamespace
 namespace EventStore.Client.Streams {
 // ReSharper restore CheckNamespace
-
 	partial class ReadReq {
 		partial class Types {
 			partial class Options {
