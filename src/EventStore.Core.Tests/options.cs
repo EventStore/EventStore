@@ -197,6 +197,14 @@ namespace EventStore.Core.Tests {
 		}
 
 		[Test]
+		public void specifying_config_file_that_does_not_exist() {
+			var path = Path.Combine(Environment.CurrentDirectory, $"{Guid.NewGuid():n}.conf");
+
+			Assert.Throws<FileNotFoundException>(() => ClusterVNodeOptions.FromConfiguration(new[] { "--config", path },
+				new Hashtable()));
+		}
+
+		[Test]
 		public void do_not_reveal_sensitive_information_when_dumped() {
 			var optionsDumper = new OptionsDumper(new[] {typeof(TestOptions)});
 			var dumpedOptions = optionsDumper

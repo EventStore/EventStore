@@ -51,7 +51,7 @@ namespace EventStore.Core {
 			if (environment == null) throw new ArgumentNullException(nameof(environment));
 
 			var configurationRoot = new ConfigurationBuilder()
-				.AddEventStore(args, environment, DefaultValues)
+				.AddEventStore(args, environment, DefaultValues, Default.Application.Config)
 				.Build();
 
 			return FromConfiguration(configurationRoot);
