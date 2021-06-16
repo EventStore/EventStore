@@ -32,9 +32,17 @@ Clients must acknowledge (or not acknowledge) messages as they are handled. If m
 
 ## Parked Messages
 
-Messages that have been retried too often will be parked. The number of parked events can be seen in the persistent subscription statistics or in the persistent subscription's parked message stream. You can view this through the admin UI.
+Messages that have been retried too often will be parked in the persistent subscription's parked message stream. This stream is named `$persistentsubscription-{groupname}::{streamname}-parked`. You can easily see the number of parked events in the persistent subscription statistics or browse the parked messages in the admin UI.
 
 If you want to retry the parked messages, you can `Replay` the parked messages for that subscription. This will push the parked messages to subscribers before any new events on the subscription.
+
+You can also specify the number of parked messages to replay over the HTTP endpoint. This can be done by providing the `stopAt` parameter when requesting to replay messages through the HTTP url. For example:
+
+```bash
+curl -i -X POST -d {} https://localhost:2113/subscriptions/{stream}/{groupnanme}/replayParked?stopAt={numberofevents} -u "admin:changeit"
+```
+
+If you don't want to replay any of the parked messages for a subscription and want to clear them out, you can do this by deleting the parked stream like a normal stream.
 
 ## Checkpointing
 
