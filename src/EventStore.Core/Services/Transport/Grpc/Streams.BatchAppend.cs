@@ -20,7 +20,7 @@ using Status = Google.Rpc.Status;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams<TStreamId> {
-		public override Task BatchAppend(IAsyncStreamReader<BatchAppendReq> requestStream,
+		public override async Task BatchAppend(IAsyncStreamReader<BatchAppendReq> requestStream,
 			IServerStreamWriter<BatchAppendResp> responseStream, ServerCallContext context) {
 			var channel = Channel.CreateUnbounded<BatchAppendResp>(
 				new() {
@@ -29,10 +29,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					SingleWriter = false
 				});
 
-			return Task.WhenAll(
+			await Task.WhenAll(
 				Receive(requestStream, channel.Writer, context.GetHttpContext().User,
 					GetRequiresLeader(context.RequestHeaders), context.CancellationToken),
-				Send(channel.Reader, responseStream, context.CancellationToken));
+				Send(channel.Reader, responseStream, context.CancellationToken))
+				.ConfigureAwait(false);
 
 		}
 
@@ -109,9 +110,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						}
 
 						_publisher.Publish(ToInternalMessage(clientWriteRequest,
-							new CallbackEnvelope(async message => await writer.WriteAsync(ConvertMessage(message),
-									cancellationToken)
-								.ConfigureAwait(false)),
+							new CallbackEnvelope(message => {
+								try {
+									writer.TryWrite(ConvertMessage(message));
+								} catch (Exception ex) {
+									writer.TryComplete(ex);
+								}
+							}),
 							requiresLeader, user, cancellationToken));
 
 						BatchAppendResp ConvertMessage(Message message) {
@@ -126,8 +131,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 												"Server Is Busy",
 											(TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader or
 												TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly,
-												TcpClientMessageDto.NotHandled.LeaderInfo
-												leaderInfo) =>
+												TcpClientMessageDto.NotHandled.LeaderInfo leaderInfo) =>
 												throw RpcExceptions.LeaderInfo(leaderInfo.HttpAddress,
 													leaderInfo.HttpPort),
 											(TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader or
