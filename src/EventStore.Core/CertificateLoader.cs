@@ -58,9 +58,9 @@ namespace EventStore.Core {
 			}
 
 			if (!string.IsNullOrWhiteSpace(certificateThumbprint)) {
-				var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, certificateThumbprint, true);
+				var certificates = store.Certificates.Find(X509FindType.FindByThumbprint, certificateThumbprint, false);
 				if (certificates.Count == 0)
-					throw new Exception(string.Format("Could not find valid certificate with thumbprint '{0}'.",
+					throw new Exception(string.Format("Could not find certificate with thumbprint '{0}'.",
 						certificateThumbprint));
 
 				//Can this even happen?
@@ -73,12 +73,11 @@ namespace EventStore.Core {
 
 			if (!string.IsNullOrWhiteSpace(certificateSubjectName)) {
 				var certificates =
-					store.Certificates.Find(X509FindType.FindBySubjectName, certificateSubjectName, true);
+					store.Certificates.Find(X509FindType.FindBySubjectName, certificateSubjectName, false);
 				if (certificates.Count == 0)
-					throw new Exception(string.Format("Could not find valid certificate with subject name '{0}'.",
+					throw new Exception(string.Format("Could not find certificate with subject name '{0}'.",
 						certificateSubjectName));
 
-				//Can this even happen?
 				if (certificates.Count > 1)
 					throw new Exception(string.Format(
 						"Could not determine a unique certificate from subject name '{0}'.", certificateSubjectName));
