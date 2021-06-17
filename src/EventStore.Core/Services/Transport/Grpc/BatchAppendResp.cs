@@ -2,6 +2,7 @@
 
 namespace EventStore.Client.Streams {
 	partial class BatchAppendResp {
+		internal bool IsClosing { get; set; }
 		partial class Types {
 			partial class Success {
 				public static Success Completed(long commitPosition, long preparePosition, long currentVersion) => new() {
