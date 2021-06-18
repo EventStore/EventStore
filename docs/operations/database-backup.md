@@ -81,30 +81,6 @@ rsync -a /data/eventstore/db/*.0* /backup/eventstore/db/
 2. Copy all files to the desired location.
 3. Create a copy of `chaser.chk` and call it `truncate.chk`. This effectively overwrites the restored `truncate.chk`.
 
-## Differential backup & restore
-
-The following procedure is designed to minimize the backup storage space, and can be used to do a full and differential backup.
-
-### Backing up
-
-1. Make a list of the difference between files in the backup location and the source location.
-2. List for removal of any chunks (`chunk-X.Y`) or index files in the backup that are not also in the source (These will be scavenged chunks or merged indexes.)
-3. Copy the `indexmap` file to backup.
-4. Copy all non-writer checkpoints (`chaser.chk`, `epoch.chk`, `proposal.chk`, `truncate.chk`).
-5. Copy the writer checkpoint (`writer.chk`).
-6. List for copy all chunks (`chunk-X.Y`) & index files in source.
-7. Copy all marked for copy files in source, skipping matching file names in the backup.
-8. Delete all files marked for removal in the backup directory.
-
-If any files listed for removal (step 2) or copy (step 6) are changed during the backup, the backup may be stopped and restarted. In this case, only newly changed files will be saved.
-
-### Restoring a database
-
-1. Ensure the  Event Store DB process is stopped. Restoring a database on running instance is not possible and, in most cases, will lead to data corruption.
-2. Copy all files to the desired location.
-3. Create a copy of `chaser.chk` and call it `truncate.chk`. It effectively overwrites the restored `truncate.chk`.
-
-
 ## Other options
 
 There are other options available for ensuring data recovery, that are not strictly related to backups.
