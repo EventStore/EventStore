@@ -45,6 +45,11 @@ namespace EventStore.ClusterNode {
 					return 0;
 				}
 
+				if (options.Application.Version) {
+					await Console.Out.WriteLineAsync(VersionInfo.Text);
+					return 0;
+				}
+
 				Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
 					VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
 				Log.Information("{description,-25} {osFlavor} ({osVersion})", "OS:", OS.OsFlavor,
@@ -80,9 +85,7 @@ namespace EventStore.ClusterNode {
 						+ "using the `GossipSeed` option.");
 				}
 
-				if (options.Application.Version || options.Application.WhatIf) {
-					await Console.Out.WriteLineAsync(VersionInfo.Text);
-
+				if (options.Application.WhatIf) {
 					return 0;
 				}
 
