@@ -30,6 +30,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var worker = new BatchAppendWorker(_publisher, _provider, requestStream, responseStream,
 				context.GetHttpContext().User, _maxAppendSize, _writeTimeout,
 				GetRequiresLeader(context.RequestHeaders));
+
 			await worker.Work(context.CancellationToken).ConfigureAwait(false);
 		}
 
@@ -64,9 +65,30 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				});
 			}
 
-			public Task Work(CancellationToken cancellationToken) => Task.WhenAll(
-				Send(_channel.Reader, cancellationToken),
-				Receive(_channel.Writer, _user, _requiresLeader, cancellationToken));
+			public Task Work(CancellationToken cancellationToken) {
+				var remaining = 2;
+				var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+				Send(_channel.Reader, cancellationToken)
+					.ContinueWith(HandleCompletion, cancellationToken);
+				Receive(_channel.Writer, _user, _requiresLeader, cancellationToken)
+					.ContinueWith(HandleCompletion, cancellationToken);
+
+				return tcs.Task;
+
+				async void HandleCompletion(Task task) {
+					try {
+						await task.ConfigureAwait(false);
+						if (Interlocked.Decrement(ref remaining) == 0) {
+							tcs.TrySetResult();
+						}
+					} catch (OperationCanceledException) {
+						tcs.TrySetCanceled(cancellationToken);
+					} catch (Exception ex) {
+						tcs.TrySetException(ex);
+					}
+				}
+			}
 
 			private async Task Send(ChannelReader<BatchAppendResp> reader, CancellationToken cancellationToken) {
 				try {
@@ -83,6 +105,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					}
 				} catch (Exception ex) when (ex is not OperationCanceledException or TaskCanceledException) {
 					Log.Warning(ex, string.Empty);
+
 					throw;
 				}
 			}
