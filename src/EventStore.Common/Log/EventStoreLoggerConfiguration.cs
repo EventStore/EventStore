@@ -53,10 +53,16 @@ namespace EventStore.Common.Log {
 					"The given log path starts with a '~'. Event Store does not expand '~'.");
 			}
 
-			var potentialLogConfigurationDirectories = Locations.GetPotentialConfigurationDirectories();
-			var logConfigurationDirectory =
-				potentialLogConfigurationDirectories.FirstOrDefault(directory =>
-					File.Exists(Path.Combine(directory, logConfig)));
+			var logConfigurationDirectory = Path.IsPathRooted(logConfig)
+				? Path.GetDirectoryName(logConfig)
+				: Locations
+					.GetPotentialConfigurationDirectories()
+					.FirstOrDefault(directory => File.Exists(Path.Combine(directory, logConfig)));
+
+			if (logConfigurationDirectory == null) {
+				throw new FileNotFoundException(
+					$"Could not find {logConfig} in the following directories: {string.Join(", ", Locations.GetPotentialConfigurationDirectories())}");
+			}
 
 			var configurationRoot = new ConfigurationBuilder()
 				.AddJsonFile(config => {
@@ -66,7 +72,7 @@ namespace EventStore.Common.Log {
 						UsePollingFileWatcher = true
 					};
 					config.OnLoadException = context => Serilog.Log.Error(context.Exception, "err");
-					config.Path = logConfig;
+					config.Path = Path.GetFileName(logConfig);
 					config.ReloadOnChange = true;
 				})
 				.Build();
