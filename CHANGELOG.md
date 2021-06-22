@@ -43,6 +43,7 @@ All notable changes to this project will be documented in this file.
 - Fix projections getting stuck when reading from truncated streams [EventStore#2979](https://github.com/EventStore/EventStore/pull/2979)
 - Only return nodes in Follower state. [EventStore#2974](https://github.com/EventStore/EventStore/pull/2974)
 - Wait for node to become a leader/follower. [EventStore#2974](https://github.com/EventStore/EventStore/pull/2974)
+- HTTP port parameter in docker-compose.yaml  [EventStore#2995](https://github.com/EventStore/EventStore/pull/2995)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
@@ -64,6 +65,7 @@ All notable changes to this project will be documented in this file.
 ### Removed the job check from cherry-pick-pr-for-label action. It was moved to the action itself
 - https://github.com/EventStore/Automations/pull/30. [EventStore#2903](https://github.com/EventStore/EventStore/pull/2903)
 - Custom kestrel default settings [EventStore#2984](https://github.com/EventStore/EventStore/pull/2984)
+- differential backup from documentation. [EventStore#2997](https://github.com/EventStore/EventStore/pull/2997)
 
 ### Dotnet-retire is [being deprecated](https
 - //github.com/RetireNet/dotnet-retire/issues/75). The suggestion is now to use `dotnet list packages --vulnerable`. [EventStore#2927](https://github.com/EventStore/EventStore/pull/2927)
