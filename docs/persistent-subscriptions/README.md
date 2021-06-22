@@ -78,6 +78,10 @@ EventStoreDB inspects the event for its source stream id, hashing the id to one 
 
 The main aim of this strategy is to decrease the likelihood of concurrency and ordering issues while maintaining load balancing. This is not a guarantee, and you should handle the usual ordering and concurrency issues.
 
+::: warning
+This strategy behaves differently depending on whether `ResolveLinkTos` is enabled. If you want to use this strategy with an indexing projection such as `$by_category` then you should have `ResolveLinkTos` enabled.
+:::
+
 ### PinnedByCorrelation
 
 This is similar to the `Pinned` strategy, but instead of using the source stream id to bucket the messages, it distributes the events based on the event's correlationId.
