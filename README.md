@@ -38,7 +38,7 @@ Once you've installed the prerequisites for your system, you can launch a `Relea
 dotnet build -c Release src/EventStore.sln -f netcoreapp5.0 -r <runtime identifier>
 ```
 
-where `<runtime identifier>` needs to be replaced by the [RID of the platform you want to build for](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).
+where `<runtime identifier>` needs to be replaced by the [RID of the platform you want to build for](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) (The most common would be linux-x64).
 
 The build scripts: `build.sh` and `build.ps1` are also available for Linux/macOS and Windows respectively to simplify the build process.
 
