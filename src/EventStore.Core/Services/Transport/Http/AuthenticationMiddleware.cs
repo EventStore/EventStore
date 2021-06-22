@@ -19,26 +19,31 @@ namespace EventStore.Core.Services.Transport.Http {
 		}
 
 		public async Task InvokeAsync(HttpContext context, RequestDelegate next) {
-			for (int i = 0; i < _httpAuthenticationProviders.Count; i++) {
-				if (_httpAuthenticationProviders[i].Authenticate(context, out var authenticationRequest)) {
-					if (await authenticationRequest.AuthenticateAsync().ConfigureAwait(false)) {
-						await next(context).ConfigureAwait(false);
-						return;
+			try {
+				for (int i = 0; i < _httpAuthenticationProviders.Count; i++) {
+					if (_httpAuthenticationProviders[i].Authenticate(context, out var authenticationRequest)) {
+						if (await authenticationRequest.AuthenticateAsync().ConfigureAwait(false)) {
+							await next(context).ConfigureAwait(false);
+							return;
+						}
+
+						break;
 					}
-
-					break;
 				}
-			}
 
-			context.Response.StatusCode = HttpStatusCode.Unauthorized;
-			var authSchemes = _authenticationProvider.GetSupportedAuthenticationSchemes();
-			if (authSchemes != null && authSchemes.Any()) {
-				//add "X-" in front to prevent any default browser behaviour e.g Basic Auth popups
-				context.Response.Headers.Add("WWW-Authenticate", $"X-{authSchemes.First()} realm=\"ESDB\"");
-				var properties = _authenticationProvider.GetPublicProperties();
-				if (properties != null && properties.Any()) {
-					await context.Response.WriteAsync(JsonConvert.SerializeObject(properties)).ConfigureAwait(false);
+				context.Response.StatusCode = HttpStatusCode.Unauthorized;
+				var authSchemes = _authenticationProvider.GetSupportedAuthenticationSchemes();
+				if (authSchemes != null && authSchemes.Any()) {
+					//add "X-" in front to prevent any default browser behaviour e.g Basic Auth popups
+					context.Response.Headers.Add("WWW-Authenticate", $"X-{authSchemes.First()} realm=\"ESDB\"");
+					var properties = _authenticationProvider.GetPublicProperties();
+					if (properties != null && properties.Any()) {
+						await context.Response.WriteAsync(JsonConvert.SerializeObject(properties))
+							.ConfigureAwait(false);
+					}
 				}
+			} catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException){
+				//ignore request aborted
 			}
 		}
 	}
