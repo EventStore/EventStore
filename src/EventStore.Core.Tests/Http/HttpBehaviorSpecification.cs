@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.Http {
 			_node = CreateMiniNode();
 			await _node.Start();
 
-			_connection = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint);
+			_connection = TestConnection.Create(_node.TcpEndPoint);
 			await _connection.ConnectAsync();
 
 			_lastResponse = null;

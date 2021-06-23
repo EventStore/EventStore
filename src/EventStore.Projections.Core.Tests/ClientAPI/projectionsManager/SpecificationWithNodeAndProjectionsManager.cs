@@ -9,6 +9,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
+using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Tests;
@@ -43,7 +44,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 
 			await _systemProjectionsCreated.WithTimeout(_timeout);
 
-			_connection = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint);
+			_connection = TestConnection.Create(_node.TcpEndPoint);
 			await _connection.ConnectAsync();
 
 			_projManager = new ProjectionsManager(new ConsoleLogger(), _node.HttpEndPoint, _timeout, _node.HttpMessageHandler);
@@ -72,10 +73,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.projectionsManager {
 		public abstract Task When();
 
 		protected MiniNode<TLogFormat, TStreamId> CreateNode() {
-			_projectionsSubsystem = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
-				startStandardProjections: false,
-				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
+			_projectionsSubsystem = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, false, TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), Opts.FaultOutOfOrderProjectionsDefault, JavascriptProjectionRuntime.Interpreted, 500, 250));
 			_systemProjectionsCreated = SystemProjections.Created(_projectionsSubsystem.LeaderMainBus);
 			return new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,

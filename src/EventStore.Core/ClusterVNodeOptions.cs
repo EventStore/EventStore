@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common;
 using EventStore.Common.Configuration;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -103,8 +104,8 @@ namespace EventStore.Core {
 			[Description("The number of seconds between statistics gathers.")]
 			public int StatsPeriodSec { get; init; } = 30;
 
-			[Description("The number of threads to use for pool of worker services.")]
-			public int WorkerThreads { get; init; } = 5;
+			[Description("The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)")]
+			public int WorkerThreads { get; init; } = 0;
 
 			[Description("Enables the tracking of various histograms in the backend, " +
 			             "typically only used for debugging, etc.")]
@@ -235,8 +236,8 @@ namespace EventStore.Core {
 
 		[Description("Cluster Options")]
 		public record ClusterOptions {
-			[Description("The maximum number of entries to keep in the stream info cache.")]
-			public int StreamInfoCacheCapacity { get; init; } = 100_000;
+			[Description("The maximum number of entries to keep in the stream info cache. Set to '0' to scale automatically (Default)")]
+			public int StreamInfoCacheCapacity { get; init; } = 0;
 
 			[Description("The number of nodes in the cluster.")]
 			public int ClusterSize { get; init; } = 1;
@@ -395,8 +396,8 @@ namespace EventStore.Core {
 			             "Will be capped at host processor count.")]
 			public int InitializationThreads { get; init; } = 1;
 
-			[Description("The number of reader threads to use for processing reads.")]
-			public int ReaderThreadsCount { get; init; } = 4;
+			[Description("The number of reader threads to use for processing reads. Set to '0' to scale automatically (Default)")]
+			public int ReaderThreadsCount { get; init; } = 0;
 
 			[Description("During large Index Merge operations, writes may be slowed down. Set this to the maximum " +
 			             "index file level for which automatic merges should happen. Merging indexes above this level " +
@@ -419,25 +420,29 @@ namespace EventStore.Core {
 
 			public StatsStorage StatsStorage { get; init; } = StatsStorage.File;
 
-			public int GetPTableMaxReaderCount() {
+			[Description("The log format version to use for storing the event log. " +
+			             "V3 is currently in development and should only be used for testing purposes.")]
+			public DbLogFormat DbLogFormat { get; init; } = DbLogFormat.V2;
+			
+			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
 				                           + 1 /* StorageChaser */
 				                           + 1 /* Projections */
 				                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
 				                           + 1 /* Subscription LinkTos resolving */
-				                           + ReaderThreadsCount
+				                           + readerThreadsCount
 				                           + 5 /* just in case reserve :) */;
 				return Math.Max(ptableMaxReaderCount, ESConsts.PTableInitialReaderCount);
 			}
 
 
-			internal int GetTFChunkMaxReaderCount() {
+			internal static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
 				var tfChunkMaxReaderCount =
-					GetPTableMaxReaderCount() +
+					GetPTableMaxReaderCount(readerThreadsCount) +
 					2 + /* for caching/uncaching, populating midpoints */
 					1 + /* for epoch manager usage of elections/replica service */
 					1 /* for epoch manager usage of leader replication service */;
-				return Math.Max(tfChunkMaxReaderCount, ChunkInitialReaderCount);
+				return Math.Max(tfChunkMaxReaderCount, chunkInitialReaderCount);
 			}
 
 
@@ -470,10 +475,11 @@ namespace EventStore.Core {
 				ReaderThreadsCount = configurationRoot.GetValue<int>(nameof(ReaderThreadsCount)),
 				MaxAutoMergeIndexLevel = configurationRoot.GetValue<int>(nameof(MaxAutoMergeIndexLevel)),
 				WriteStatsToDb = configurationRoot.GetValue<bool>(nameof(WriteStatsToDb)),
-				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation))
+				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation)),
+				DbLogFormat = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat))
 			};
 		}
-
+		
 		[Description("gRPC Options")]
 		public record GrpcOptions {
 			[Description("Controls the period (in milliseconds) after which a keepalive ping " +
@@ -633,11 +639,25 @@ namespace EventStore.Core {
 			             "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
+			[Description(
+				"The runtime used for executing user projections. Legacy will run v8, Interpreted will run the new interpreted runtime"),
+			Deprecated("The Legacy ProjectionRuntime option is for compatibility with the v8 projection engine and should only be set if problems are encountered running the interpreted runtime")]
+			public JavascriptProjectionRuntime ProjectionRuntime { get; init; } =
+				JavascriptProjectionRuntime.Interpreted;
+
+			[Description("The time in milliseconds allowed for the compilation phase of user projections")] 
+			public int ProjectionCompilationTimeout { get; set; } = 500;
+			[Description("The time in milliseconds allowed for the executing a handler in a user projection")] 
+			public int ProjectionExecutionTimeout { get; set; } = 250;
+
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
 				ProjectionThreads = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
 				ProjectionsQueryExpiry = configurationRoot.GetValue<int>(nameof(ProjectionsQueryExpiry)),
-				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections))
+				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections)),
+				ProjectionRuntime = configurationRoot.GetValue<JavascriptProjectionRuntime>(nameof(ProjectionRuntime)),
+				ProjectionCompilationTimeout = configurationRoot.GetValue<int>(nameof(ProjectionCompilationTimeout)),
+				ProjectionExecutionTimeout = configurationRoot.GetValue<int>(nameof(ProjectionExecutionTimeout))
 			};
 		}
 	}

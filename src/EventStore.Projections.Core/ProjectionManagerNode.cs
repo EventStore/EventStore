@@ -22,7 +22,7 @@ namespace EventStore.Projections.Core {
 			IDictionary<Guid, IPublisher> queues,
 			TimeSpan projectionQueryExpiry) {
 			IQueuedHandler inputQueue = projectionsStandardComponents.LeaderInputQueue;
-			InMemoryBus outputBus = projectionsStandardComponents.LeaderOutputBus;
+			IBus outputBus = projectionsStandardComponents.LeaderOutputBus;
 			var ioDispatcher = new IODispatcher(outputBus, new PublishEnvelope(inputQueue), true);
 
 			var projectionsController = new ProjectionsController(

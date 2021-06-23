@@ -1,9 +1,11 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Client.PersistentSubscriptions;
 using EventStore.Core.Data;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 using static EventStore.Core.Messages.ClientMessage.CreatePersistentSubscriptionToStreamCompleted;
@@ -95,6 +97,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						AllOptionOneofCase.End => Position.End,
 						_ => throw new InvalidOperationException()
 					};
+					var filter = request.Options.All.FilterOptionCase switch {
+						CreateReq.Types.AllOptions.FilterOptionOneofCase.NoFilter => null,
+						CreateReq.Types.AllOptions.FilterOptionOneofCase.Filter => ConvertToEventFilter(true,
+							request.Options.All.Filter),
+						CreateReq.Types.AllOptions.FilterOptionOneofCase.None => null,
+						_ => throw new ArgumentOutOfRangeException()
+					};
 
 					streamId = SystemStreams.AllStream;
 					_publisher.Publish(
@@ -103,6 +112,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							correlationId,
 							new CallbackEnvelope(HandleCreatePersistentSubscriptionCompleted),
 							request.Options.GroupName,
+							filter,
 							settings.ResolveLinks,
 							new TFPos(
 								startPosition.ToInt64().commitPosition,
@@ -136,6 +146,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				default:
 					throw new InvalidOperationException();
 			}
+			IEventFilter ConvertToEventFilter(bool isAllStream, CreateReq.Types.AllOptions.Types.FilterOptions filter) =>
+				filter.FilterCase switch {
+					CreateReq.Types.AllOptions.Types.FilterOptions.FilterOneofCase.EventType => (
+						string.IsNullOrEmpty(filter.EventType.Regex)
+							? EventFilter.EventType.Prefixes(isAllStream, filter.EventType.Prefix.ToArray())
+							: EventFilter.EventType.Regex(isAllStream, filter.EventType.Regex)),
+					CreateReq.Types.AllOptions.Types.FilterOptions.FilterOneofCase.StreamIdentifier => (
+						string.IsNullOrEmpty(filter.StreamIdentifier.Regex)
+							? EventFilter.StreamName.Prefixes(isAllStream, filter.StreamIdentifier.Prefix.ToArray())
+							: EventFilter.StreamName.Regex(isAllStream, filter.StreamIdentifier.Regex)),
+					_ => throw new InvalidOperationException()
+				};
 
 			return await createPersistentSubscriptionSource.Task.ConfigureAwait(false);
 

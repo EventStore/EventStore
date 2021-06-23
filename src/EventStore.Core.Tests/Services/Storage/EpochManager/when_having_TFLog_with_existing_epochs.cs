@@ -20,7 +20,7 @@ using System.Threading;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_having_TFLog_with_existing_epochs<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture, IDisposable {
 		private TFChunkDb _db;
 		private EpochManager _epochManager;
@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private readonly Guid _instanceId = Guid.NewGuid();
 		private readonly List<Message> _published = new List<Message>();
 		private List<EpochRecord> _epochs;
-		private static LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+		private static readonly IRecordFactory<TStreamId> _recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 
 		private int GetNextEpoch() {
 			return (int)Interlocked.Increment(ref _currentEpoch);
@@ -46,7 +46,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				_logFormat.RecordFactory,
+				_recordFactory,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager manager) {
@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private EpochRecord WriteEpoch(int epochNumber, long lastPos, Guid instanceId) {
 			long pos = _writer.Checkpoint.ReadNonFlushed();
 			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
-			var rec = _logFormat.RecordFactory.CreateEpoch(epoch);
+			var rec = _recordFactory.CreateEpoch(epoch);
 			_writer.Write(rec, out _);
 			_writer.Flush();
 			return epoch;

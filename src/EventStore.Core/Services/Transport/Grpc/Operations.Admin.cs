@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.Client.Operations;
-using EventStore.Client.Shared;
+using EventStore.Client;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;

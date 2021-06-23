@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Integration.system_projections {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_recategorizing_events_while_running<TLogFormat, TStreamId> : specification_with_a_v8_query_posted<TLogFormat, TStreamId> {
 		protected override void GivenEvents() {
 			ExistingEvent("account-01", "test", "", "{\"a\":1}", isJson: true);

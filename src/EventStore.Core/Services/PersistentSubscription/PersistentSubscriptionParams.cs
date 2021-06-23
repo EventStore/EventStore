@@ -1,5 +1,6 @@
 using System;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionParams {

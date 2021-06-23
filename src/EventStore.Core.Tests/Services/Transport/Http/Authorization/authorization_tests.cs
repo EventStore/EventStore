@@ -10,7 +10,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class Authorization<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		private readonly Dictionary<string, HttpClient> _httpClients = new Dictionary<string, HttpClient>();
 		private TimeSpan _timeout = TimeSpan.FromSeconds(5);

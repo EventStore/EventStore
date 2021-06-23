@@ -68,6 +68,7 @@ namespace EventStore.Core.Services {
 		public const string StreamReference = "$@";
 		public const string StreamMetadata = "$metadata";
 		public const string Settings = "$settings";
+		public const string StreamCreated = "$stream";
 
 		public const string V2__StreamCreated_InIndex = "StreamCreated";
 		public const string V1__StreamCreated__ = "$stream-created";
@@ -125,12 +126,6 @@ namespace EventStore.Core.Services {
 			string[] parts = link.Split(_linkToSeparator, 2);
 			return long.Parse(parts[0]);
 		}
-	}
-
-	public static class SystemUsers {
-		public const string Admin = "admin";
-		public const string Operations = "ops";
-		public const string DefaultAdminPassword = "changeit";
 	}
 
 	public static class SystemRoles {

@@ -6,7 +6,6 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
 
@@ -248,13 +247,13 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			Action<TcpTypedConnection<byte[]>> established = _ => { };
 			Action<TcpTypedConnection<byte[]>, SocketError> closed = null;
 			closed = (_, __) => {
-				if (!context.Client.Options.Reconnect) return;
+				if (!context._tcpTestClient.Options.Reconnect) return;
 				Thread.Sleep(TimeSpan.FromSeconds(1));
 				connection =
-					context.Client.CreateTcpConnection(context, packageHandler, cn => iteration.Set(), closed, false);
+					context._tcpTestClient.CreateTcpConnection(context, packageHandler, cn => iteration.Set(), closed, false);
 			};
 
-			connection = context.Client.CreateTcpConnection(context, packageHandler, established, closed, false);
+			connection = context._tcpTestClient.CreateTcpConnection(context, packageHandler, established, closed, false);
 
 			for (var i = 0; i < requests; ++i) {
 				streamIdx = NextStreamForWriting(rnd, writerIdx);
@@ -280,7 +279,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			status.ReportWritesProgress(writerIdx, sent, prepareTimeouts, commitTimeouts, forwardTimeouts,
 				wrongExpectedVersion, streamsDeleted, failed, requests);
 			status.FinilizeStatus(writerIdx, failed != sent);
-			context.Client.Options.Reconnect = false;
+			context._tcpTestClient.Options.Reconnect = false;
 			connection.Close();
 			finish.Set();
 		}
@@ -300,8 +299,8 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 
 			Action<TcpTypedConnection<byte[]>, TcpPackage> packageReceived = (conn, pkg) => {
 				var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
-				switch ((ReadEventResult)dto.Result) {
-					case ReadEventResult.Success:
+				switch (dto.Result) {
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success:
 						if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data)) {
 							successes++;
 							if (successes % 1000 == 0)
@@ -312,11 +311,11 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 						}
 
 						break;
-					case ReadEventResult.NotFound:
-					case ReadEventResult.NoStream:
-					case ReadEventResult.StreamDeleted:
-					case ReadEventResult.Error:
-					case ReadEventResult.AccessDenied:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.NotFound:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.NoStream:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.StreamDeleted:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Error:
+					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.AccessDenied:
 						fails++;
 						status.ReportNotFoundOnRead(readerIdx, _streams[streamIdx], eventidx);
 						break;
@@ -329,13 +328,13 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			Action<TcpTypedConnection<byte[]>> established = _ => { };
 			Action<TcpTypedConnection<byte[]>, SocketError> closed = null;
 			closed = (_, __) => {
-				if (!context.Client.Options.Reconnect) return;
+				if (!context._tcpTestClient.Options.Reconnect) return;
 				Thread.Sleep(TimeSpan.FromSeconds(1));
 				connection =
-					context.Client.CreateTcpConnection(context, packageReceived, cn => iteration.Set(), closed, false);
+					context._tcpTestClient.CreateTcpConnection(context, packageReceived, cn => iteration.Set(), closed, false);
 			};
 
-			connection = context.Client.CreateTcpConnection(context, packageReceived, established, closed, false);
+			connection = context._tcpTestClient.CreateTcpConnection(context, packageReceived, established, closed, false);
 
 			while (!_stopReading) {
 				streamIdx = NextStreamForReading(rnd, readerIdx);
@@ -359,7 +358,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 
 			status.ReportReadsProgress(readerIdx, successes, fails);
 			status.FinilizeStatus(readerIdx, fails == 0);
-			context.Client.Options.Reconnect = false;
+			context._tcpTestClient.Options.Reconnect = false;
 			connection.Close();
 			finishedEvent.Set();
 		}

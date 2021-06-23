@@ -6,7 +6,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		with_three_collisioned_streams_one_event_each_with_second_stream_deleted_read_index_should<TLogFormat, TStreamId> :
 			ReadIndexTestScenario<TLogFormat, TStreamId> {
@@ -195,7 +195,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void return_all_events_on_read_all_forward() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(4, events.Length);
 			Assert.AreEqual(_prepare1, events[0]);
 			Assert.AreEqual(_prepare2, events[1]);
@@ -205,7 +207,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void return_all_events_on_read_all_backward() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event)
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(4, events.Length);
 			Assert.AreEqual(_prepare1, events[3]);

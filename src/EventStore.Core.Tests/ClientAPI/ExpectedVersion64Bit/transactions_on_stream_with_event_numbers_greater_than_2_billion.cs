@@ -6,7 +6,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	[Category("ClientAPI"), Category("LongRunning")]
 	public class transactions_on_stream_with_event_numbers_greater_than_2_billion<TLogFormat, TStreamId>
 		: MiniNodeWithExistingRecords<TLogFormat, TStreamId> {

@@ -7,7 +7,7 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 
 namespace EventStore.Projections.Core.Tests.Services.core_projection {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_suspending_a_projection_and_an_event_is_received<TLogFormat, TStreamId> : TestFixtureWithCoreProjectionStarted<TLogFormat, TStreamId> {
 		private Guid _lastEventIdBeforeSuspension;
 

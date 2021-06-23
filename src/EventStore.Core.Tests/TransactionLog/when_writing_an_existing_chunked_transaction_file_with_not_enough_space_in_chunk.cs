@@ -11,7 +11,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_writing_an_existing_chunked_transaction_file_with_not_enough_space_in_chunk<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _correlationId = Guid.NewGuid();
@@ -34,11 +34,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var tf = new TFChunkWriter(db);
 			long pos;
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			var record1 = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.IsTrue(tf.Write(record1, out pos)); // almost fill up first chunk
 
 			var record2 = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: pos,
 				correlationId: _correlationId,
 				eventId: _eventId,
@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.IsFalse(tf.Write(record2, out pos)); // chunk has too small space
 
 			var record3 = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: pos,
 				correlationId: _correlationId,
 				eventId: _eventId,

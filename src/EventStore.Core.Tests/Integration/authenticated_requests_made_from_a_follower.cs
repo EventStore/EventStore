@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using EventStore.Client.Shared;
+using EventStore.Client;
 using EventStore.Client.Streams;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.Integration {
 			$"Basic {Convert.ToBase64String(Encoding.ASCII.GetBytes("admin:changeit"))}";
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class via_http_should : authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> {
 			private HttpStatusCode _statusCode;
 
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class via_grpc_should : authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> {
 			private Status _status;
 
@@ -128,7 +128,7 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class via_tcp_should : authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> {
 			private Exception _caughtException;
 

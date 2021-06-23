@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -18,6 +19,16 @@ using Microsoft.Extensions.DependencyInjection;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core {
+	public record ProjectionSubsystemOptions(
+		int ProjectionWorkerThreadCount, 
+		ProjectionType RunProjections, 
+		bool StartStandardProjections, 
+		TimeSpan ProjectionQueryExpiry, 
+		bool FaultOutOfOrderProjections, 
+		JavascriptProjectionRuntime Runtime, 
+		int CompilationTimeout, 
+		int ExecutionTimeout);
+
 	public sealed class ProjectionsSubsystem :ISubsystem,
 		IHandle<SystemMessage.SystemCoreReady>,
 		IHandle<SystemMessage.StateChangeMessage>,
@@ -53,6 +64,10 @@ namespace EventStore.Projections.Core {
 
 		private readonly bool _faultOutOfOrderProjections;
 		
+		private readonly JavascriptProjectionRuntime _projectionRuntime;
+		private readonly int _compilationTimeout;
+		private readonly int _executionTimeout;
+
 		private readonly int _componentCount;
 		private readonly int _dispatcherCount;
 		private bool _restarting;
@@ -71,14 +86,13 @@ namespace EventStore.Projections.Core {
 			services.AddSingleton(provider =>
 				new ProjectionManagement(_leaderInputQueue, provider.GetRequiredService<IAuthorizationProvider>()));
 
-		public ProjectionsSubsystem(int projectionWorkerThreadCount, ProjectionType runProjections,
-			bool startStandardProjections, TimeSpan projectionQueryExpiry, bool faultOutOfOrderProjections) {
-			if (runProjections <= ProjectionType.System)
+		public ProjectionsSubsystem(ProjectionSubsystemOptions projectionSubsystemOptions) {
+			if (projectionSubsystemOptions.RunProjections <= ProjectionType.System)
 				_projectionWorkerThreadCount = 1;
 			else
-				_projectionWorkerThreadCount = projectionWorkerThreadCount;
+				_projectionWorkerThreadCount = projectionSubsystemOptions.ProjectionWorkerThreadCount;
 
-			_runProjections = runProjections;
+			_runProjections = projectionSubsystemOptions.RunProjections;
 			// Projection manager & Projection Core Coordinator
 			// The manager only starts when projections are running
 			_componentCount = _runProjections == ProjectionType.None ? 1 : 2;
@@ -86,11 +100,15 @@ namespace EventStore.Projections.Core {
 			// Projection manager & each projection core worker
 			_dispatcherCount = 1 + _projectionWorkerThreadCount;
 
-			_startStandardProjections = startStandardProjections;
-			_projectionsQueryExpiry = projectionQueryExpiry;
-			_faultOutOfOrderProjections = faultOutOfOrderProjections;
+			_startStandardProjections = projectionSubsystemOptions.StartStandardProjections;
+			_projectionsQueryExpiry = projectionSubsystemOptions.ProjectionQueryExpiry;
+			_faultOutOfOrderProjections = projectionSubsystemOptions.FaultOutOfOrderProjections;
+			
 			_leaderMainBus = new InMemoryBus("manager input bus");
 			_subsystemInitialized = 0;
+			_projectionRuntime = projectionSubsystemOptions.Runtime;
+			_executionTimeout = projectionSubsystemOptions.ExecutionTimeout;
+			_compilationTimeout = projectionSubsystemOptions.CompilationTimeout;
 		}
 
 		public void Register(StandardComponents standardComponents) {
@@ -110,7 +128,9 @@ namespace EventStore.Projections.Core {
 				_runProjections,
 				_leaderOutputBus,
 				_leaderInputQueue,
-				_leaderMainBus, _faultOutOfOrderProjections);
+				_leaderMainBus,
+				_faultOutOfOrderProjections,
+				_projectionRuntime, _compilationTimeout, _executionTimeout);
 
 			CreateAwakerService(standardComponents);
 			_coreQueues =

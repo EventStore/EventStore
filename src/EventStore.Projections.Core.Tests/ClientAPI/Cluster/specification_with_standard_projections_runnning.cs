@@ -17,6 +17,7 @@ using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
+using EventStore.Common;
 using EventStore.Core.Data;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
@@ -116,10 +117,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		private MiniClusterNode<TLogFormat, TStreamId> CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds) {
-			_projections[index] = new ProjectionsSubsystem(1, runProjections: ProjectionType.All,
-				startStandardProjections: false,
-				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
+			_projections[index] = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, false, TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), Opts.FaultOutOfOrderProjectionsDefault,JavascriptProjectionRuntime.Interpreted, 500, 250));
 			var node = new MiniClusterNode<TLogFormat, TStreamId>(
 				PathName, index, endpoints.InternalTcp,
 				endpoints.ExternalTcp, endpoints.HttpEndPoint,
@@ -298,7 +296,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 
 	[Explicit]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class vnode_cluster_specification<TLogFormat, TStreamId> : specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 		[Test, Explicit]
 		public async Task vnode_cluster_starts() {

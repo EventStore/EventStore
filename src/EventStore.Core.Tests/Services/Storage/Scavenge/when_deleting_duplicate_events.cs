@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_deleting_duplicate_events<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _event1;
 		private EventRecord _event2;
@@ -52,7 +52,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void read_all_events_forward_does_not_return_duplicate() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(11, events.Length);
 			Assert.AreEqual(_event1, events[0]);
 			Assert.AreEqual(_event2, events[1]);

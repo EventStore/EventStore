@@ -6,7 +6,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI.Security {
 	[Category("ClientAPI"), Category("LongRunning"), Category("Network")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class transactional_write_stream_security<TLogFormat, TStreamId> : AuthenticationTestBase<TLogFormat, TStreamId> {
 		[Test]
 		public async Task starting_transaction_with_not_existing_credentials_is_not_authenticated() {

@@ -36,10 +36,16 @@ namespace EventStore.ClusterNode {
 		public ClusterVNodeHostedService(ClusterVNodeOptions options) {
 			if (options == null) throw new ArgumentNullException(nameof(options));
 			_options = options.Projections.RunProjections >= ProjectionType.System
-				? options.WithSubsystem(new ProjectionsSubsystem(options.Projections.ProjectionThreads,
-					options.Projections.RunProjections, options.Application.StartStandardProjections,
-					TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
-					options.Projections.FaultOutOfOrderProjections))
+				? options.WithSubsystem(new ProjectionsSubsystem(
+					new ProjectionSubsystemOptions(
+						options.Projections.ProjectionThreads, 
+						options.Projections.RunProjections, 
+						options.Application.StartStandardProjections, 
+						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
+						options.Projections.FaultOutOfOrderProjections,
+						options.Projections.ProjectionRuntime,
+						options.Projections.ProjectionCompilationTimeout,
+						options.Projections.ProjectionExecutionTimeout)))
 				: options;
 
 			if (!_options.Database.MemDb) {
@@ -68,11 +74,18 @@ namespace EventStore.ClusterNode {
 
 			var plugInContainer = FindPlugins();
 
-			//var logFormat = LogFormatAbstractor.V3;
-			var logFormat = LogFormatAbstractor.V2;
-			Node = ClusterVNode.Create(_options, logFormat, GetAuthenticationProviderFactory(), GetAuthorizationProviderFactory(),
-				GetPersistentSubscriptionConsumerStrategyFactories());
-
+			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
+				var logFormatFactory = new LogV2FormatAbstractorFactory();
+            	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
+	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories());	
+			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
+				var logFormatFactory = new LogV3FormatAbstractorFactory();
+				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
+					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories());
+			} else {
+				throw new ArgumentOutOfRangeException("Unexpected log format specified.");
+			}
+			
 			var runProjections = _options.Projections.RunProjections;
 			var enabledNodeSubsystems = runProjections >= ProjectionType.System
 				? new[] {NodeSubsystems.Projections}

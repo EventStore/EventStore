@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_writing_a_new_chunked_transaction_file<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private readonly Guid _eventId = Guid.NewGuid();
 		private readonly Guid _correlationId = Guid.NewGuid();
@@ -22,12 +22,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 			db.Open();
 			var tf = new TFChunkWriter(db);
 			tf.Open();
-			
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			var record = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				correlationId: _correlationId,
 				eventId: _eventId,

@@ -1,5 +1,6 @@
 using System;
 using EventStore.Core.Data;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public interface IPersistentSubscriptionEventSource {
@@ -10,5 +11,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IPersistentSubscriptionStreamPosition StreamStartPosition { get; }
 		IPersistentSubscriptionStreamPosition GetStreamPositionFor(ResolvedEvent @event);
 		IPersistentSubscriptionStreamPosition GetStreamPositionFor(string checkpoint);
+		IEventFilter EventFilter { get; }
 	}
 }

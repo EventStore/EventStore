@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream.another_epoch {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_handling_emits_with_previously_written_events_in_different_epochs<TLogFormat, TStreamId> : TestFixtureWithExistingEvents<TLogFormat, TStreamId> {
 		private EmittedStream _stream;

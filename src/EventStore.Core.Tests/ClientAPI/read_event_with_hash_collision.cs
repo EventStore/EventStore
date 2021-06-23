@@ -9,12 +9,12 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Hash collisions cannot occur in Log V3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Hash collisions cannot occur in Log V3")]
 	public class read_event_with_hash_collision<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.To(node, TcpType.Ssl);
+			return TestConnection.To(node, TcpType.Ssl);
 		}
 
 		[OneTimeSetUp]

@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_index_committer_service_receives_replicated_lower_position<TLogFormat, TStreamId>
 		: with_index_committer_service<TLogFormat, TStreamId> {

@@ -12,7 +12,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_sequentially_reading_db_with_few_chunks<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private const int RecordsCount = 8;
 
@@ -31,8 +31,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_records = new ILogRecord[RecordsCount];
 			_results = new RecordWriteResult[RecordsCount];
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("es1", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var expectedVersion = ExpectedVersion.NoStream;
 
 			var pos = 0;
@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 					chunk = _db.Manager.AddNewChunk();
 				}
 
-				_records[i] = LogRecord.SingleWrite(logFormat.RecordFactory, pos,
+				_records[i] = LogRecord.SingleWrite(recordFactory, pos,
 					Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
 					new byte[1200], new byte[] { 5, 7 });
 				_results[i] = chunk.TryAppend(_records[i]);

@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.LogV3;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.Storage;
@@ -42,12 +43,14 @@ namespace EventStore.Core.Services {
 			TFChunkWriter writer,
 			IIndexWriter<TStreamId> indexWriter,
 			IRecordFactory<TStreamId> recordFactory,
-			IStreamNameIndex<TStreamId> streamNameIndex,
+			INameIndex<TStreamId> streamNameIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
-			Func<long> getLastIndexedPosition)
-			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex, systemStreams, epochManager, queueStatsManager) {
+			Func<long> getLastIndexedPosition,
+			IPartitionManager partitionManager)
+			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex,
+				systemStreams, epochManager, queueStatsManager, partitionManager) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;

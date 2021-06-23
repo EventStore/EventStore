@@ -6,15 +6,15 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_building_an_index_off_tfile_with_prepares_but_no_commits<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		protected override void WriteTestScenario() {
-			_streamNameIndex.GetOrAddId("test1", out var streamId1, out _, out _);
-			_streamNameIndex.GetOrAddId("test2", out var streamId2, out _, out _);
-			_streamNameIndex.GetOrAddId("test3", out var streamId3, out _, out _);
+			GetOrReserve("test1", out var streamId1, out _);
+			GetOrReserve("test2", out var streamId2, out _);
+			GetOrReserve("test3", out var streamId3, out var p0);
 
 			long p1;
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, streamId1, -1,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, p0, Guid.NewGuid(), Guid.NewGuid(), p0, 0, streamId1, -1,
 					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
 				out p1);
 			long p2;
@@ -50,14 +50,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_forward_returns_no_events() {
-			var result = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10);
-			Assert.AreEqual(0, result.Records.Count);
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
+			Assert.AreEqual(0, records.Count);
 		}
 
 		[Test]
 		public void read_all_events_backward_returns_no_events() {
-			var result = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10);
-			Assert.AreEqual(0, result.Records.Count);
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
+			Assert.AreEqual(0, records.Count);
 		}
 	}
 }

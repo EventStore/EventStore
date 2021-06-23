@@ -12,7 +12,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Http.Cluster {
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_requesting_from_follower<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		const int Retries = 5;
 		private const string TestStream = "test-stream";
@@ -29,16 +29,17 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			var replica = GetFollowers().First();
 			_followerEndPoint = replica.HttpEndPoint;
 			_client = replica.CreateHttpClient();
-
 			// Wait for the admin user created event to be replicated before starting our tests
 			var leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
-			
+			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() >= leaderIndex, 
+				msg: $"Waiting for replica to reach index checkpoint timed out! ({leaderIndex})");
+
 			var path = $"streams/{TestStream}";
 			var response = await PostEvent(_followerEndPoint, path, requireLeader: false);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 			leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() == leaderIndex);
+			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() >= leaderIndex,
+				msg: $"Waiting for test stream to be synced with follower timed out! ({leaderIndex})");
 		}
 
 		public override Task TestFixtureTearDown() {

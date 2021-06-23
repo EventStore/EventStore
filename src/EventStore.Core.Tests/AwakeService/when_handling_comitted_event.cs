@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.AwakeService {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_handling_comitted_event<TLogFormat, TStreamId> {
 		private Core.Services.AwakeReaderService.AwakeService _it;
 		private EventRecord _eventRecord;
@@ -23,13 +23,13 @@ namespace EventStore.Core.Tests.AwakeService {
 		private void Given() {
 			_it = new Core.Services.AwakeReaderService.AwakeService();
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("Stream", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			_eventRecord = new EventRecord(
 				10,
 				LogRecord.Prepare(
-					logFormat.RecordFactory, 500, Guid.NewGuid(), Guid.NewGuid(), 500, 0, streamId, 99, PrepareFlags.Data,
+					recordFactory, 500, Guid.NewGuid(), Guid.NewGuid(), 500, 0, streamId, 99, PrepareFlags.Data,
 					"event", new byte[0], null, DateTime.UtcNow), "Stream");
 			_eventCommitted = new StorageMessage.EventCommitted(1000, _eventRecord, isTfEof: true);
 		}

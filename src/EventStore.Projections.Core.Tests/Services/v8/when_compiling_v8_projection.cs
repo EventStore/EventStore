@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using EventStore.Common;
+using EventStore.Common.Options;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.v8;
@@ -35,7 +37,8 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
                 });
             ";
 				_logged = new List<string>();
-				_stateHandlerFactory = new ProjectionStateHandlerFactory();
+				_stateHandlerFactory = new ProjectionStateHandlerFactory(TimeSpan.FromMilliseconds(1000),
+					TimeSpan.FromMilliseconds(500), JavascriptProjectionRuntime.Legacy);
 				_stateHandler = _stateHandlerFactory.Create(
 					"JS", _projection, true, logger: (s, _) => {
 						if (!s.StartsWith("P:")) _logged.Add(s);

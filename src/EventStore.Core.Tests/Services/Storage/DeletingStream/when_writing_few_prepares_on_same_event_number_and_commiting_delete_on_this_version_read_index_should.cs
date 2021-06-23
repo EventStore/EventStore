@@ -8,7 +8,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_writing_few_prepares_with_same_event_number_and_commiting_delete_on_this_version_read_index_should<TLogFormat, TStreamId> :
 			ReadIndexTestScenario<TLogFormat, TStreamId> {
@@ -17,9 +17,9 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		protected override void WriteTestScenario() {
 			long pos;
 			string stream = "ES";
-			_streamNameIndex.GetOrAddId(stream, out var streamId, out _, out _);
+			GetOrReserve(stream, out var streamId, out pos);
 
-			var prepare1 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare1
+			var prepare1 = LogRecord.SingleWrite(_recordFactory, pos, // prepare1
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				streamId,
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				DateTime.UtcNow);
 			Assert.IsTrue(Writer.Write(prepare1, out pos));
 
-			var prepare2 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare2
+			var prepare2 = LogRecord.SingleWrite(_recordFactory, pos, // prepare2
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				streamId,
@@ -42,12 +42,12 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			Assert.IsTrue(Writer.Write(prepare2, out pos));
 
 
-			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // delete prepare
+			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, pos, // delete prepare
 				Guid.NewGuid(), Guid.NewGuid(), streamId, -1);
 			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare, stream);
 			Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 
-			var prepare3 = LogRecord.SingleWrite(_recordFactory, WriterCheckpoint.ReadNonFlushed(), // prepare3
+			var prepare3 = LogRecord.SingleWrite(_recordFactory, pos, // prepare3
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				streamId,
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				DateTime.UtcNow);
 			Assert.IsTrue(Writer.Write(prepare3, out pos));
 
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), // committing delete
+			var commit = LogRecord.Commit(pos, // committing delete
 				deletePrepare.CorrelationId,
 				deletePrepare.LogPosition,
 				EventNumber.DeletedStream);
@@ -110,14 +110,17 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 		[Test]
 		public void read_all_forward_should_return_all_stream_records_except_uncommited() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(1, events.Length);
 			Assert.AreEqual(_deleteTombstone, events[0]);
 		}
 
 		[Test]
 		public void read_all_backward_should_return_all_stream_records_except_uncommited() {
-			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records.Select(r => r.Event)
+			var events = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords()
+				.Select(r => r.Event)
 				.ToArray();
 			Assert.AreEqual(1, events.Length);
 			Assert.AreEqual(_deleteTombstone, events[0]);

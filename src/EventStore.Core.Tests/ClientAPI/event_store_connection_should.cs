@@ -8,9 +8,9 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Normal)]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Normal)]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Normal)]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Ssl)]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Ssl)]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Ssl)]
 	public class event_store_connection_should<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType;
 		private MiniNode<TLogFormat, TStreamId> _node;
@@ -35,14 +35,14 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		[Category("Network")]
 		public void not_throw_on_close_if_connect_was_not_called() {
-			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
+			var connection = TestConnection.To(_node, _tcpType);
 			Assert.DoesNotThrow(connection.Close);
 		}
 
 		[Test]
 		[Category("Network")]
 		public async Task not_throw_on_close_if_called_multiple_times() {
-			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
+			var connection = TestConnection.To(_node, _tcpType);
 			await connection.ConnectAsync();
 			connection.Close();
 			Assert.DoesNotThrow(connection.Close);
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		[Category("Network")]
 		public async Task throw_invalid_operation_on_every_api_call_if_connect_was_not_called() {
-			var connection = TestConnection<TLogFormat, TStreamId>.To(_node, _tcpType);
+			var connection = TestConnection.To(_node, _tcpType);
 
 			const string s = "stream";
 			var events = new[] { TestEvent.NewTestEvent() };

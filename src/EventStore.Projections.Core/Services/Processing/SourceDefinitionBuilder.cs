@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private List<string> _events;
 		private bool _byStream;
 		private bool _byCustomPartitions;
-		private long? _limitingCommitPosotion;
+		private long? _limitingCommitPosition;
 
 		public SourceDefinitionBuilder() {
 			_options.DefinesFold = true;
@@ -38,6 +38,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void AllEvents() {
 			_allEvents = true;
+		}
+
+		public void NotAllEvents() {
+			_allEvents = false;
 		}
 
 		public void SetIncludeLinks(bool includeLinks = true) {
@@ -69,6 +73,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void NoWhen() {
 			_options.DefinesFold = false;
+		}
+
+		public void SetDefinesFold() {
+			_options.DefinesFold = true;
 		}
 
 		public void SetResultStreamNameOption(string resultStreamName) {
@@ -126,7 +134,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public long? LimitingCommitPosition {
-			get { return _limitingCommitPosotion; }
+			get { return _limitingCommitPosition; }
 		}
 
 		public bool DefinesStateTransform {
@@ -180,7 +188,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void SetLimitingCommitPosition(long limitingCommitPosition) {
-			_limitingCommitPosotion = limitingCommitPosition;
+			_limitingCommitPosition = limitingCommitPosition;
 		}
 	}
 

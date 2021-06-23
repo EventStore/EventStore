@@ -29,7 +29,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly ITFChunkScavengerLog _scavengerLog;
 		private readonly ITableIndex<TStreamId> _tableIndex;
 		private readonly IReadIndex<TStreamId> _readIndex;
-		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
+		private readonly IMetastreamLookup<TStreamId> _metastreams;
 		private readonly long _maxChunkDataSize;
 		private readonly bool _unsafeIgnoreHardDeletes;
 		private readonly int _threads;
@@ -37,13 +37,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk
 
 		public TFChunkScavenger(TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex<TStreamId> tableIndex,
-			IReadIndex<TStreamId> readIndex, ISystemStreamLookup<TStreamId> systemStreams, long? maxChunkDataSize = null,
+			IReadIndex<TStreamId> readIndex, IMetastreamLookup<TStreamId> metastreams, long? maxChunkDataSize = null,
 			bool unsafeIgnoreHardDeletes = false, int threads = 1) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(scavengerLog, "scavengerLog");
 			Ensure.NotNull(tableIndex, "tableIndex");
 			Ensure.NotNull(readIndex, "readIndex");
-			Ensure.NotNull(systemStreams, nameof(systemStreams));
+			Ensure.NotNull(metastreams, nameof(metastreams));
 			Ensure.Positive(threads, "threads");
 
 			if (threads > MaxThreadCount) {
@@ -57,7 +57,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_scavengerLog = scavengerLog;
 			_tableIndex = tableIndex;
 			_readIndex = readIndex;
-			_systemStreams = systemStreams;
+			_metastreams = metastreams;
 			_maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 			_threads = threads;
@@ -510,7 +510,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					if (ShouldKeepCommit(commit, commits))
 						return true;
 					break;
+				case LogRecordType.ContentType:
+				case LogRecordType.EventType:
+				case LogRecordType.Partition:
+				case LogRecordType.PartitionType:
+				case LogRecordType.Stream:
+				case LogRecordType.StreamType:
+				case LogRecordType.StreamWrite:
 				case LogRecordType.System:
+				case LogRecordType.TransactionEnd:
+				case LogRecordType.TransactionStart:
 					return true;
 			}
 
@@ -635,8 +644,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private bool IsSoftDeletedTempStreamWithinSameChunk(TStreamId eventStreamId, long chunkStart, long chunkEnd) {
 			TStreamId sh;
 			TStreamId msh;
-			if (_systemStreams.IsMetaStream(eventStreamId)) {
-				var originalStreamId = _systemStreams.OriginalStreamOf(eventStreamId);
+			if (_metastreams.IsMetaStream(eventStreamId)) {
+				var originalStreamId = _metastreams.OriginalStreamOf(eventStreamId);
 				var meta = _readIndex.GetStreamMetadata(originalStreamId);
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
@@ -647,7 +656,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
 					return false;
 				sh = eventStreamId;
-				msh = _systemStreams.MetaStreamOf(eventStreamId);
+				msh = _metastreams.MetaStreamOf(eventStreamId);
 			}
 
 			IndexEntry e;

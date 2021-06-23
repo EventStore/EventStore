@@ -7,7 +7,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_building_an_index_off_tfile_with_multiple_events_in_a_stream<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private Guid _id1;
 		private Guid _id2;
@@ -15,14 +15,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		protected override void WriteTestScenario() {
 			_id1 = Guid.NewGuid();
 			_id2 = Guid.NewGuid();
-			long pos1, pos2, pos3, pos4;
-			_streamNameIndex.GetOrAddId("test1", out var streamId, out _, out _);
+			long pos0, pos1, pos2, pos3, pos4;
+			GetOrReserve("test1", out var streamId, out pos0);
 
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, 0, _id1, _id1, streamId, ExpectedVersion.NoStream, "type", new byte[0],
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId, ExpectedVersion.NoStream, "type", new byte[0],
 				new byte[0], DateTime.UtcNow), out pos1);
 			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId, 0, "type", new byte[0],
 					new byte[0]), out pos2);
-			Writer.Write(new CommitLogRecord(pos2, _id1, 0, DateTime.UtcNow, 0), out pos3);
+			Writer.Write(new CommitLogRecord(pos2, _id1, pos0, DateTime.UtcNow, 0), out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id2, pos1, DateTime.UtcNow, 1), out pos4);
 		}
 
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_forward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
 
 			Assert.AreEqual(2, records.Count);
 			Assert.AreEqual(_id1, records[0].Event.EventId);
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
 
 			Assert.AreEqual(2, records.Count);
 			Assert.AreEqual(_id1, records[1].Event.EventId);

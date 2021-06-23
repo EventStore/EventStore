@@ -6,37 +6,35 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_writing_a_second_batch_of_events_after_the_first_batch_has_been_replicated<TLogFormat, TStreamId> : WriteEventsToIndexScenario<TLogFormat, TStreamId>{
 		private const int _numEvents = 10;
 		private List<Guid> _eventIds = new List<Guid>();
-		private TStreamId _streamId;
+		private TStreamId _streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
-        public override void WriteEvents()
-        {
+		public override void WriteEvents() {
 			var expectedEventNumber = -1;
 			var transactionPosition = 1000;
 			var eventTypes = new List<string>();
-			
-			for(var i=0;i<_numEvents;i++){
+
+			for (var i = 0; i < _numEvents; i++) {
 				_eventIds.Add(Guid.NewGuid());
 				eventTypes.Add("type");
 			}
 
-			_logFormat.StreamNameIndex.GetOrAddId("stream", out _streamId, out _, out _);
-			var prepares = CreatePrepareLogRecords("stream", expectedEventNumber, eventTypes, _eventIds, transactionPosition);
+			var prepares = CreatePrepareLogRecords(_streamId, expectedEventNumber, eventTypes, _eventIds, transactionPosition);
 			var commit = CreateCommitLogRecord(transactionPosition + 1000 * _numEvents, transactionPosition, expectedEventNumber + _numEvents);
-			
+
 			/*First batch write: committed to db and index*/
 			WriteToDB(prepares);
 			PreCommitToIndex(prepares);
-			
+
 			WriteToDB(commit);
 			PreCommitToIndex(commit);
-			
+
 			CommitToIndex(prepares);
 			CommitToIndex(commit);
-        }
+		}
 
 		[Test]
 		public void check_commit_with_same_expectedversion_should_return_idempotent_decision() {

@@ -21,7 +21,7 @@ using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public sealed class when_starting_having_TFLog_with_no_epochs<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture, IDisposable {
 		private TFChunkDb _db;
 		private EpochManager _epochManager;
@@ -31,9 +31,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private IBus _mainBus;
 		private readonly Guid _instanceId = Guid.NewGuid();
 		private readonly List<Message> _published = new List<Message>();
-		private readonly LogFormatAbstractor<TStreamId> _logFormat;
 		public when_starting_having_TFLog_with_no_epochs() {
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 		}
 
 		private static int GetNextEpoch() {
@@ -49,22 +47,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				_logFormat.RecordFactory,
+				LogFormatHelper<TLogFormat, TStreamId>.RecordFactory,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager manager) {
 			return (LinkedList<EpochRecord>)typeof(EpochManager).GetField("_epochs", BindingFlags.NonPublic | BindingFlags.Instance)
 				.GetValue(_epochManager);
 		}
-		private EpochRecord WriteEpoch(int epochNumber, long lastPos, Guid instanceId) {
-			long pos = _writer.Checkpoint.ReadNonFlushed();
-			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
-			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
-				SystemRecordSerialization.Json, epoch.AsSerialized());
-			_writer.Write(rec, out _);
-			_writer.Flush();
-			return epoch;
-		}
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();

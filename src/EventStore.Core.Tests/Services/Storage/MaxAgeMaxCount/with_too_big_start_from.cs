@@ -6,7 +6,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_too_big_truncatebefore<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _r1;
 		private EventRecord _r2;
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void read_all_forward_returns_all_records() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords();
 			Assert.AreEqual(6, records.Count);
 			Assert.AreEqual(_r1, records[0].Event);
 			Assert.AreEqual(_r2, records[1].Event);
@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void read_all_backward_returns_all_records() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords();
 			Assert.AreEqual(6, records.Count);
 			Assert.AreEqual(_r6, records[0].Event);
 			Assert.AreEqual(_r5, records[1].Event);

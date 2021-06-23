@@ -12,7 +12,6 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Histograms;
-using EventStore.Core.Util;
 using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
@@ -179,6 +178,7 @@ namespace EventStore.Core.Services.Storage {
 
 		private void ProcessLogRecord(SeqReadResult result) {
 			switch (result.LogRecord.RecordType) {
+				case LogRecordType.Stream:
 				case LogRecordType.Prepare: {
 					var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					ProcessPrepareRecord(record, result.RecordPostPosition);
@@ -195,6 +195,9 @@ namespace EventStore.Core.Services.Storage {
 					ProcessSystemRecord(record);
 					break;
 				}
+				case LogRecordType.Partition:
+				case LogRecordType.PartitionType:
+					break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}

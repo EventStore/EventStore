@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class
 		when_having_two_intermingled_transactions_and_some_uncommited_prepares_in_the_end_read_index_should<TLogFormat, TStreamId> :
 			ReadIndexTestScenario<TLogFormat, TStreamId> {
@@ -44,8 +44,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			_t2CommitPos = WriteCommit(t2.CorrelationId, t2.TransactionPosition, streamId2, _p2.EventNumber);
 			_t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, streamId1, _p1.EventNumber);
 
-			_pos6 = Db.Config.WriterCheckpoint.ReadNonFlushed();
-			_streamNameIndex.GetOrAddId("t1", out var t1StreamId, out _, out _);
+			GetOrReserve("t1", out var t1StreamId, out _pos6);
 			var r6 = LogRecord.Prepare(_recordFactory, _pos6, Guid.NewGuid(), Guid.NewGuid(), _pos6, 0, t1StreamId, -1,
 				PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
 			Writer.Write(r6, out _pos7);

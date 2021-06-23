@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 	namespace basic {
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_requesting_a_single_event_in_the_stream_as_atom_json<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId>  {
@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_requesting_a_single_event_in_the_stream_as_atom_xml<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId>  {
@@ -69,7 +69,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_as_raw_json_without_eventtype<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_to_idempotent_uri_as_events_array<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_as_json_to_idempotent_uri_without_event_type<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -127,7 +127,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_in_json_to_idempotent_uri_without_event_id<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -163,7 +163,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_as_raw_json_without_eventid<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -198,7 +198,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_as_array_with_no_event_type<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -218,7 +218,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_as_array<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -249,7 +249,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_as_array_to_stream_with_slash<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -289,7 +289,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_deleting_to_stream_with_slash<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -318,7 +318,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_getting_from_stream_with_slash<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -347,7 +347,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_getting_from_all_stream_with_slash<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -376,7 +376,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_getting_from_encoded_all_stream_with_slash<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -407,7 +407,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_as_array_to_metadata_stream_with_slash<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -442,7 +442,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_getting_from_metadata_stream_with_slash<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -474,7 +474,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_without_EventId_as_array<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -494,7 +494,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_without_EventType_as_array<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -513,7 +513,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 		
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_with_type<TLogFormat, TStreamId>  : with_admin_user<TLogFormat, TStreamId>  {
 			private HttpResponseMessage _response;
 			private readonly JArray _data = JArray.Parse(@"[{
@@ -556,7 +556,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_event_with_date_time<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -593,7 +593,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_posting_an_events_as_array<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			private HttpResponseMessage _response;
 
@@ -639,7 +639,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_requesting_a_single_event_that_is_deleted_linkto<TLogFormat, TStreamId>
 			: HttpSpecificationWithLinkToToDeletedEvents<TLogFormat, TStreamId> {
@@ -655,7 +655,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_requesting_a_single_event_that_is_maxcount_deleted_linkto<TLogFormat, TStreamId> :
 				SpecificationWithLinkToToMaxCountDeletedEvents<TLogFormat, TStreamId> {
@@ -672,7 +672,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_requesting_a_single_event_in_the_stream_without_an_accept_header<TLogFormat, TStreamId>  :
 				HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId>  {
@@ -695,7 +695,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_requesting_a_single_event_in_the_stream_as_event_json<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId>  {
@@ -718,7 +718,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_requesting_a_single_event_in_the_stream_as_json<TLogFormat, TStreamId> :
 			HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId>  {
 			private JObject _json;
@@ -740,7 +740,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
 			when_requesting_a_single_event_in_the_stream_as_event_xml<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId>  {
@@ -756,7 +756,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		[Category("LongRunning")]
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_requesting_a_single_event_in_the_stream_as_xml<TLogFormat, TStreamId>
 			: HttpBehaviorSpecificationWithSingleEvent<TLogFormat, TStreamId> {
 			protected override Task When() {
@@ -770,7 +770,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class when_requesting_a_single_raw_event_in_the_stream_as_raw<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 			protected HttpResponseMessage _response;
 			protected byte[] _data;

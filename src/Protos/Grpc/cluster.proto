@@ -6,19 +6,19 @@ import "shared.proto";
 
 service Gossip {
 	rpc Update (GossipRequest) returns (ClusterInfo);
-	rpc Read (event_store.client.shared.Empty) returns (ClusterInfo);
+	rpc Read (event_store.client.Empty) returns (ClusterInfo);
 }
 
 service Elections {	
-	rpc ViewChange (ViewChangeRequest) returns (event_store.client.shared.Empty);
-	rpc ViewChangeProof (ViewChangeProofRequest) returns (event_store.client.shared.Empty);
-	rpc Prepare (PrepareRequest) returns (event_store.client.shared.Empty);
-	rpc PrepareOk (PrepareOkRequest) returns (event_store.client.shared.Empty);
-	rpc Proposal (ProposalRequest) returns (event_store.client.shared.Empty);
-	rpc Accept (AcceptRequest) returns (event_store.client.shared.Empty);
+	rpc ViewChange (ViewChangeRequest) returns (event_store.client.Empty);
+	rpc ViewChangeProof (ViewChangeProofRequest) returns (event_store.client.Empty);
+	rpc Prepare (PrepareRequest) returns (event_store.client.Empty);
+	rpc PrepareOk (PrepareOkRequest) returns (event_store.client.Empty);
+	rpc Proposal (ProposalRequest) returns (event_store.client.Empty);
+	rpc Accept (AcceptRequest) returns (event_store.client.Empty);
 	
-	rpc LeaderIsResigning (LeaderIsResigningRequest) returns (event_store.client.shared.Empty);
-	rpc LeaderIsResigningOk (LeaderIsResigningOkRequest) returns (event_store.client.shared.Empty);
+	rpc LeaderIsResigning (LeaderIsResigningRequest) returns (event_store.client.Empty);
+	rpc LeaderIsResigningOk (LeaderIsResigningOkRequest) returns (event_store.client.Empty);
 }
 
 message GossipRequest {
@@ -27,31 +27,31 @@ message GossipRequest {
 }
 
 message ViewChangeRequest {
-	event_store.client.shared.UUID server_id = 1;
+	event_store.client.UUID server_id = 1;
 	EndPoint server_http = 2;
 	int32 attempted_view = 3;
 }
 
 message ViewChangeProofRequest {
-	event_store.client.shared.UUID server_id = 1;
+	event_store.client.UUID server_id = 1;
 	EndPoint server_http = 2;
 	int32 installed_view = 3;
 }
 
 message PrepareRequest {
-	event_store.client.shared.UUID server_id = 1;
+	event_store.client.UUID server_id = 1;
 	EndPoint server_http = 2;
 	int32 view = 3;
 }
 
 message PrepareOkRequest {
 	int32 view = 1;
-	event_store.client.shared.UUID server_id = 2;
+	event_store.client.UUID server_id = 2;
 	EndPoint server_http = 3;
 	int32 epoch_number = 4;
 	int64 epoch_position = 5;
-	event_store.client.shared.UUID epoch_id = 6;
-	event_store.client.shared.UUID epoch_leader_instance_id = 7;
+	event_store.client.UUID epoch_id = 6;
+	event_store.client.UUID epoch_leader_instance_id = 7;
 	int64 last_commit_position = 8;
 	int64 writer_checkpoint = 9;
 	int64 chaser_checkpoint = 10;
@@ -60,15 +60,15 @@ message PrepareOkRequest {
 }
 
 message ProposalRequest {
-	event_store.client.shared.UUID server_id = 1;
+	event_store.client.UUID server_id = 1;
 	EndPoint server_http = 2;
-	event_store.client.shared.UUID leader_id = 3;
+	event_store.client.UUID leader_id = 3;
 	EndPoint leader_http = 4;
 	int32 view = 5;
 	int32 epoch_number = 6;
 	int64 epoch_position = 7;
-	event_store.client.shared.UUID epoch_id = 8;
-	event_store.client.shared.UUID epoch_leader_instance_id = 9;
+	event_store.client.UUID epoch_id = 8;
+	event_store.client.UUID epoch_leader_instance_id = 9;
 	int64 last_commit_position = 10;
 	int64 writer_checkpoint = 11;
 	int64 chaser_checkpoint = 12;
@@ -76,22 +76,22 @@ message ProposalRequest {
 }
 
 message AcceptRequest {
-	event_store.client.shared.UUID server_id = 1;
+	event_store.client.UUID server_id = 1;
 	EndPoint server_http = 2;
-	event_store.client.shared.UUID leader_id = 3;
+	event_store.client.UUID leader_id = 3;
 	EndPoint leader_http = 4;
 	int32 view = 5;
 }
 
 message LeaderIsResigningRequest {
-	event_store.client.shared.UUID leader_id = 1;
+	event_store.client.UUID leader_id = 1;
 	EndPoint leader_http = 2;
 }
 
 message LeaderIsResigningOkRequest {
-	event_store.client.shared.UUID leader_id = 1;
+	event_store.client.UUID leader_id = 1;
 	EndPoint leader_http = 2;
-	event_store.client.shared.UUID server_id = 3;
+	event_store.client.UUID server_id = 3;
 	EndPoint server_http = 4;
 }
 
@@ -123,7 +123,7 @@ message MemberInfo {
 		ReadOnlyReplica = 14;
 		ResigningLeader = 15;
 	}
-	event_store.client.shared.UUID instance_id = 1;
+	event_store.client.UUID instance_id = 1;
 	int64 time_stamp = 2;
 	VNodeState state = 3;
 	bool is_alive = 4;
@@ -138,7 +138,7 @@ message MemberInfo {
 	int64 chaser_checkpoint = 12;
     int64 epoch_position = 13;
     int32 epoch_number = 14;
-    event_store.client.shared.UUID epoch_id = 15;
+    event_store.client.UUID epoch_id = 15;
 
     int32 node_priority = 16;
     bool is_read_only_replica = 17;

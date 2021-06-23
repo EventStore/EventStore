@@ -168,8 +168,8 @@ namespace EventStore.Core.Tests.Helpers {
 				ExternalTcpEndPoint, "ExHTTP ENDPOINT:",
 				HttpEndPoint);
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			Node = new ClusterVNode<TStreamId>(options, logFormat, new AuthenticationProviderFactory(components =>
+			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
+			Node = new ClusterVNode<TStreamId>(options, logFormatFactory, new AuthenticationProviderFactory(components =>
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),

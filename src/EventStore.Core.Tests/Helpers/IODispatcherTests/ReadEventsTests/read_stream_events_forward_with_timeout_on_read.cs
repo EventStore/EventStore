@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class async_read_stream_events_forward_with_timeout_on_read<TLogFormat, TStreamId> : with_read_io_dispatcher<TLogFormat, TStreamId> {
 		private bool _didTimeout;
 		private bool _didReceiveRead;
@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.ReadEventsTests {
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class read_stream_events_forward_with_timeout_on_read<TLogFormat, TStreamId> : with_read_io_dispatcher<TLogFormat, TStreamId> {
 		private bool _didTimeout;
 		private bool _didReceiveRead;

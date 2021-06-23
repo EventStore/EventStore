@@ -10,9 +10,9 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Normal)]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Normal)]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Normal)]
 	[TestFixture(typeof(LogFormat.V2), typeof(string), TcpType.Ssl)]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), TcpType.Ssl)]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), TcpType.Ssl)]
 	public class connect<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private readonly TcpType _tcpType;
 
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		public async Task should_not_throw_exception_when_server_is_down() {
 			var ip = IPAddress.Loopback;
 			int port = PortsHelper.GetAvailablePort(ip);
-			using var connection = TestConnection<TLogFormat, TStreamId>.Create(new IPEndPoint(ip, port), _tcpType);
+			using var connection = TestConnection.Create(new IPEndPoint(ip, port), _tcpType);
 			await connection.ConnectAsync();
 		}
 

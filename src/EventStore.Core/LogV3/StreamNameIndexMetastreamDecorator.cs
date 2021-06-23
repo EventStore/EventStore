@@ -1,26 +1,31 @@
 using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
 	// Decorates a StreamNameIndex, intercepting Metastream (and VirtualStream) calls
-	public class StreamNameIndexMetastreamDecorator : IStreamNameIndex<long> {
-		private readonly IStreamNameIndex<long> _wrapped;
-		private readonly IMetastreamLookup<long> _metastreams;
+	public class StreamNameIndexMetastreamDecorator : INameIndex<StreamId> {
+		private readonly INameIndex<StreamId> _wrapped;
+		private readonly IMetastreamLookup<StreamId> _metastreams;
 
 		public StreamNameIndexMetastreamDecorator(
-			IStreamNameIndex<long> wrapped,
-			IMetastreamLookup<long> metastreams) {
+			INameIndex<StreamId> wrapped,
+			IMetastreamLookup<StreamId> metastreams) {
 
 			_wrapped = wrapped;
 			_metastreams = metastreams;
 		}
 
-		public bool GetOrAddId(string streamName, out long streamId, out long createdId, out string createdName) {
+		public void CancelReservations() {
+			_wrapped.CancelReservations();
+		}
+
+		public bool GetOrReserve(string streamName, out StreamId streamId, out StreamId createdId, out string createdName) {
 			Ensure.NotNullOrEmpty(streamName, "streamName");
 			if (SystemStreams.IsMetastream(streamName)) {
 				streamName = SystemStreams.OriginalStreamOf(streamName);
-				var ret = GetOrAddId(streamName, out streamId, out createdId, out createdName);
+				var ret = GetOrReserve(streamName, out streamId, out createdId, out createdName);
 				streamId = _metastreams.MetaStreamOf(streamId);
 				return ret;
 			}
@@ -31,7 +36,7 @@ namespace EventStore.Core.LogV3 {
 				return true;
 			}
 
-			return _wrapped.GetOrAddId(streamName, out streamId, out createdId, out createdName);
+			return _wrapped.GetOrReserve(streamName, out streamId, out createdId, out createdName);
 		}
 	}
 }

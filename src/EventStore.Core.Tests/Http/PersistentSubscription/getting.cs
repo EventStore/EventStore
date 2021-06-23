@@ -18,7 +18,7 @@ using EventStore.ClientAPI.Common;
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class with_subscription_having_events<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected List<object> Events;
 		protected string SubscriptionPath;
@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override async Task Given() {
 			await base.Given();
@@ -98,7 +98,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 
 	[Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_an_empty_subscription<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		private JObject _response;
 		protected List<object> Events;
@@ -154,7 +154,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_n_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
@@ -173,7 +173,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_more_than_n_messages<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
@@ -192,7 +192,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_less_than_n_messags<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
@@ -211,7 +211,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_unspecified_count<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		private JObject _response;
 
@@ -230,7 +230,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_a_negative_count<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override Task When() {
 			return Get(SubscriptionPath + "/-1",
@@ -246,7 +246,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_a_count_of_0<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override async Task When() {
 			await Get(SubscriptionPath + "/0",
@@ -262,7 +262,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_count_more_than_100<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override async Task When() {
 			await Get(SubscriptionPath + "/101",
@@ -278,7 +278,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_count_not_an_integer<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override Task When() {
 			return Get(SubscriptionPath + "/10.1",
@@ -294,7 +294,7 @@ class when_getting_messages_without_permission<TLogFormat, TStreamId> : with_sub
 	}
 
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	class when_getting_messages_from_a_subscription_with_count_not_a_number<TLogFormat, TStreamId> : with_subscription_having_events<TLogFormat, TStreamId> {
 		protected override Task When() {
 			return Get(SubscriptionPath + "/one",

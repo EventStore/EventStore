@@ -15,7 +15,7 @@ using EventStore.Core.Services;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("LongRunning"), Category("ClientAPI")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class catchup_filtered_subscription<TLogFormat, TStreamId> : SpecificationWithDirectory {
 		private MiniNode<TLogFormat, TStreamId> _node;
 		private IEventStoreConnection _conn;
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
+			return TestConnection.Create(node.TcpEndPoint);
 		}
 
 		[Test]
@@ -95,7 +95,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 				Assert.Fail("Checkpoint reached not called enough times within time limit.");
 			}
 
-			Assert.AreEqual(10, eventsSeen);
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				Assert.AreEqual(10, eventsSeen);
+			} else {
+				// accounting for stream records
+				Assert.AreEqual(7, eventsSeen);
+			}
 		}
 
 		[Test]

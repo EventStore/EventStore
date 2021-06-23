@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Storage.Chaser {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_chaser_reads_prepare_event<TLogFormat, TStreamId> : with_storage_chaser_service<TLogFormat, TStreamId> {
 		private Guid _eventId;
 		private Guid _transactionId;
@@ -13,11 +13,11 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 			_eventId = Guid.NewGuid();
 			_transactionId = Guid.NewGuid();
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("WorldEnding", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			var record = LogRecord.Prepare(
-				factory: logFormat.RecordFactory,
+				factory: recordFactory,
 				logPosition: 0,
 				eventId: _eventId,
 				correlationId: _transactionId,
@@ -30,8 +30,6 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				eventType: "type",
 				data: new byte[] { 1, 2, 3, 4, 5 },
 				metadata: new byte[] { 7, 17 });
-
-
 
 			Assert.True(Writer.Write(record, out _));
 			Writer.Flush();

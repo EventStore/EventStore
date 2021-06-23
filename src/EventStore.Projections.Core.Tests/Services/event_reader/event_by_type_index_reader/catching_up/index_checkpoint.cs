@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_index_checkpoint_is_written_while_idle<TLogFormat, TStreamId> : with_some_indexed_events<TLogFormat, TStreamId> {
 			protected override void GivenInitialIndexState() {
 				ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");
@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.event_by_type_
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_the_index_checkpoint_is_read_last<TLogFormat, TStreamId> : with_some_indexed_events<TLogFormat, TStreamId> {
 			protected override void GivenInitialIndexState() {
 				ExistingEvent("$et-type1", "$>", TFPosToMetadata(_tfPos1), "0@test-stream");

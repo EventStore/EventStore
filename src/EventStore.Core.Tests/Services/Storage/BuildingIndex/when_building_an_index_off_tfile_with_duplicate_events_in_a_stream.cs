@@ -23,7 +23,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_building_an_index_off_tfile_with_duplicate_events_in_a_stream<TLogFormat, TStreamId>
 		: DuplicateReadIndexTestScenario<TLogFormat, TStreamId> {
 		private Guid _id1;
@@ -31,9 +31,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		private Guid _id3;
 		private Guid _id4;
 
-		private long pos1, pos2, pos3, pos4, pos5, pos6, pos7;
-
-		private LogFormatAbstractor<TStreamId> _logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+		private long pos0, pos1, pos2, pos3, pos4, pos5, pos6, pos7;
 
 		public when_building_an_index_off_tfile_with_duplicate_events_in_a_stream() : base(maxEntriesInMemTable: 3) {
 		}
@@ -43,13 +41,17 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
 
-			_logFormat.StreamNameIndex.GetOrAddId("duplicate_stream", out var streamId, out _, out _);
+			_logFormat.StreamNameIndex.GetOrReserve(_logFormat.RecordFactory, "duplicate_stream", 0, out var streamId, out var streamRecord);
+			if (streamRecord != null) {
+				Writer.Write(streamRecord, out pos0);
+			}
+
 			var expectedVersion = ExpectedVersion.NoStream;
 
 			//stream id: duplicate_stream at version: 0
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, 0, _id1, _id1, 0, 0, streamId, expectedVersion++,
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos0, _id1, _id1, pos0, 0, streamId, expectedVersion++,
 				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos1);
-			Writer.Write(new CommitLogRecord(pos1, _id1, 0, DateTime.UtcNow, 0), out pos2);
+			Writer.Write(new CommitLogRecord(pos1, _id1, pos0, DateTime.UtcNow, 0), out pos2);
 
 			//stream id: duplicate_stream at version: 1
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, expectedVersion++,
@@ -66,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id4 = Guid.NewGuid();
 			long pos8;
 
-			_logFormat.StreamNameIndex.GetOrAddId("duplicate_stream", out var streamId, out _, out _);
+			var streamId = _logFormat.StreamIds.LookupValue("duplicate_stream");
 
 			//stream id: duplicate_stream at version: 0 (duplicate event/index entry)
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.NoStream,
@@ -86,8 +88,9 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		protected readonly int MetastreamMaxCount;
 		protected readonly bool PerformAdditionalCommitChecks;
 		protected readonly byte IndexBitnessVersion;
+		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected TFChunkWriter Writer;
-		protected ITestReadIndex<TStreamId> ReadIndex;
+		protected IReadIndex<TStreamId> ReadIndex;
 
 		private TFChunkDb _db;
 		private TableIndex<TStreamId> _tableIndex;
@@ -103,6 +106,11 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
+
+			var indexDirectory = GetFilePathFor("index");
+			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+				IndexDirectory = indexDirectory,
+			});
 
 			var writerCheckpoint = new InMemoryCheckpoint(0);
 			var chaserCheckpoint = new InMemoryCheckpoint(0);
@@ -124,13 +132,12 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			chaserCheckpoint.Write(writerCheckpoint.Read());
 			chaserCheckpoint.Flush();
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 			var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 				() => new TFChunkReader(_db, _db.Config.WriterCheckpoint));
-			var lowHasher = logFormat.LowHasher;
-			var highHasher = logFormat.HighHasher;
-			var emptyStreamId = logFormat.EmptyStreamId;
-			_tableIndex = new TableIndex<TStreamId>(GetFilePathFor("index"), lowHasher, highHasher, emptyStreamId,
+			var lowHasher = _logFormat.LowHasher;
+			var highHasher = _logFormat.HighHasher;
+			var emptyStreamId = _logFormat.EmptyStreamId;
+			_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
@@ -141,12 +148,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				_tableIndex,
-				logFormat.StreamIds,
-				logFormat.StreamNamesProvider,
-				logFormat.EmptyStreamId,
-				logFormat.StreamIdValidator,
-				logFormat.StreamIdSizer,
-				EventStore.Core.Settings.ESConsts.StreamInfoCacheCapacity,
+				_logFormat.StreamNameIndexConfirmer,
+				_logFormat.StreamIds,
+				_logFormat.StreamNamesProvider,
+				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdConverter,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamIdSizer,
+				100_000,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
@@ -156,7 +165,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 
 			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
-			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
+			ReadIndex = readIndex;
 
 			_tableIndex.Close(false);
 
@@ -170,7 +179,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			chaserCheckpoint.Write(writerCheckpoint.Read());
 			chaserCheckpoint.Flush();
 
-			_tableIndex = new TableIndex<TStreamId>(GetFilePathFor("index"), lowHasher, highHasher, emptyStreamId,
+			_tableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
@@ -181,12 +190,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				_tableIndex,
-				logFormat.StreamIds,
-				logFormat.StreamNamesProvider,
-				logFormat.EmptyStreamId,
-				logFormat.StreamIdValidator,
-				logFormat.StreamIdSizer,
-				EventStore.Core.Settings.ESConsts.StreamInfoCacheCapacity,
+				_logFormat.StreamNameIndexConfirmer,
+				_logFormat.StreamIds,
+				_logFormat.StreamNamesProvider,
+				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdConverter,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamIdSizer,
+				100_000,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
@@ -195,10 +206,11 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				indexCheckpoint: _db.Config.IndexCheckpoint);
 
 			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
-			ReadIndex = new TestReadIndex<TStreamId>(readIndex, logFormat.StreamNameIndex);
+			ReadIndex = readIndex;
 		}
 
 		public override Task TestFixtureTearDown() {
+			_logFormat?.Dispose();
 			ReadIndex.Close();
 			ReadIndex.Dispose();
 

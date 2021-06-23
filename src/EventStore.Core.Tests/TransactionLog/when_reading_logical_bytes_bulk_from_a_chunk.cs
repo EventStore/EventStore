@@ -7,12 +7,9 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_reading_logical_bytes_bulk_from_a_chunk<TLogFormat, TStreamId> : SpecificationWithDirectory {
-		private LogFormatAbstractor<TStreamId> _logFormat;
-
 		public when_reading_logical_bytes_bulk_from_a_chunk() {
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
 		}
 
 		[Test]
@@ -77,8 +74,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void if_asked_for_more_than_buffer_size_will_only_read_buffer_size() {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
-			_logFormat.StreamNameIndex.GetOrAddId("ES", out var streamId, out _, out _);
-			var rec = LogRecord.Prepare(_logFormat.RecordFactory, 0, Guid.NewGuid(),
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var rec = LogRecord.Prepare(recordFactory, 0, Guid.NewGuid(),
 				Guid.NewGuid(), 0, 0, streamId, -1, PrepareFlags.None, "ET",
 				new byte[2000], null);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");

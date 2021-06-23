@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class deleting_stream<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private MiniNode<TLogFormat, TStreamId> _node;
 
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 		}
 
 		virtual protected IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.Create(node.TcpEndPoint);
+			return TestConnection.Create(node.TcpEndPoint);
 		}
 
 		[Test]

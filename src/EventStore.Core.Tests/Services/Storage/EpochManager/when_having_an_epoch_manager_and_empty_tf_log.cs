@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Bus;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.TransactionLog;
@@ -20,7 +19,7 @@ using System.Threading;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture, IDisposable {
 		private TFChunkDb _db;
 		private EpochManager _epochManager;
@@ -36,7 +35,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 		private long _currentEpoch = -1;
 		private EpochManager GetManager() {
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 
 			return new EpochManager(_mainBus,
 				10,
@@ -46,7 +45,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				logFormat.RecordFactory,
+				recordFactory,
 				_instanceId);
 		}
 		private LinkedList<EpochRecord> GetCache(EpochManager manager) {

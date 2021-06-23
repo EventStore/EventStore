@@ -15,7 +15,7 @@ using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long), Ignore = "Explicit transactions are not supported yet by Log V3")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class when_rebuilding_index_for_partially_persisted_transaction<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		public when_rebuilding_index_for_partially_persisted_transaction() : base(maxEntriesInMemTable: 10) {
 		}
@@ -41,9 +41,11 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				TableIndex,
+				_logFormat.StreamNameIndexConfirmer,
 				_logFormat.StreamIds,
 				_logFormat.StreamNamesProvider,
 				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
 				0,
@@ -54,7 +56,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint);
 			readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
-			ReadIndex = new TestReadIndex<TStreamId>(readIndex, _streamNameIndex);
+			ReadIndex = readIndex;
 		}
 
 		protected override void WriteTestScenario() {

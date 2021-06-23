@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_deleted_stream_with_metadata_is_scavenged<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator
@@ -21,9 +21,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
-			return new[] {
-				dbResult.Recs[0].Where((x, i) => i >= 3).ToArray()
-			};
+			return LogFormatHelper<TLogFormat, TStreamId>.IsV2
+				? new[] { dbResult.Recs[0].Where((x, i) => i >= 3).ToArray() }
+				: new[] { dbResult.Recs[0].Where((x, i) => i == 0 || i >= 4).ToArray() };
 		}
 
 		[Test]

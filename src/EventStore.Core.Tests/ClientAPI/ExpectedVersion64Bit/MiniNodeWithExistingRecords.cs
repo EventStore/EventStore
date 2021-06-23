@@ -18,6 +18,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using System.IO;
 using System.Threading.Tasks;
+using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	public abstract class MiniNodeWithExistingRecords<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
@@ -28,6 +29,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		protected readonly long MetastreamMaxCount = 1;
 		protected readonly bool PerformAdditionalCommitChecks = true;
 		protected readonly byte IndexBitnessVersion = Opts.IndexBitnessVersionDefault;
+		protected LogFormatAbstractor<TStreamId> _logFormatFactory;
 		protected TableIndex<TStreamId> TableIndex;
 		protected IReadIndex<TStreamId> ReadIndex;
 
@@ -41,13 +43,17 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		protected IEventStoreConnection _store;
 
 		protected virtual IEventStoreConnection BuildConnection(MiniNode<TLogFormat, TStreamId> node) {
-			return TestConnection<TLogFormat, TStreamId>.To(node, _tcpType);
+			return TestConnection.To(node, _tcpType);
 		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 			string dbPath = Path.Combine(PathName, string.Format("mini-node-db-{0}", Guid.NewGuid()));
+
+			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+				IndexDirectory = GetFilePathFor("index"),
+			});
 
 			Bus = new InMemoryBus("bus");
 			IODispatcher = new IODispatcher(Bus, new PublishEnvelope(Bus));
@@ -67,6 +73,12 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			// create DB
 			Writer = new TFChunkWriter(Db);
 			Writer.Open();
+
+			var pm = _logFormatFactory.CreatePartitionManager(
+				reader: new TFChunkReader(Db, WriterCheckpoint),
+				writer: Writer);
+			pm.Initialize();
+
 			WriteTestScenario();
 
 			Writer.Close();
@@ -90,6 +102,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
 			_store?.Dispose();
+			_logFormatFactory?.Dispose();
 
 			await Node.Shutdown();
 			await base.TestFixtureTearDown();
@@ -104,11 +117,22 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			DateTime? timestamp = null,
 			Guid eventId = default(Guid),
 			string eventType = "some-type") {
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId(eventStreamName, out var eventStreamId, out _, out _);
+
+			long pos = WriterCheckpoint.ReadNonFlushed();
+			_logFormatFactory.StreamNameIndex.GetOrReserve(
+				_logFormatFactory.RecordFactory,
+				eventStreamName,
+				pos,
+				out var eventStreamId,
+				out var streamRecord);
+
+			if (streamRecord != null) {
+				Writer.Write(streamRecord, out pos);
+			}
+
 			var prepare = LogRecord.SingleWrite(
-				logFormat.RecordFactory,
-				WriterCheckpoint.ReadNonFlushed(),
+				_logFormatFactory.RecordFactory,
+				pos,
 				eventId == default(Guid) ? Guid.NewGuid() : eventId,
 				Guid.NewGuid(),
 				eventStreamId,
@@ -117,9 +141,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				Helper.UTF8NoBom.GetBytes(data),
 				null,
 				timestamp);
-			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
+			var commit = LogRecord.Commit(pos, prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);

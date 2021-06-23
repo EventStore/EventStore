@@ -6,7 +6,7 @@ using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation DisableOperation = new Operation(Operations.Projections.Disable);
 		public override async Task<DisableResp> Disable(DisableReq request, ServerCallContext context) {
 			var disableSource = new TaskCompletionSource<bool>();

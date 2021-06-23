@@ -9,6 +9,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Tests;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Messages;
+using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_reading_registered_projections {
 	[TestFixture, TestFixtureSource(typeof(SystemProjectionNames))]
@@ -58,7 +59,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.when_re
 				.Where(x => x.IsLiteral && !x.IsInitOnly)
 				.Select(x => x.GetRawConstantValue())) {
 				yield return new[] { typeof(LogFormat.V2), typeof(string), projection };
-				yield return new[] { typeof(LogFormat.V3), typeof(long), projection };
+				yield return new[] { typeof(LogFormat.V3), typeof(LogV3StreamId), projection };
 			}
 		}
 	}

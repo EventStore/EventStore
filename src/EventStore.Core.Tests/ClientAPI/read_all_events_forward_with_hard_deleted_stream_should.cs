@@ -13,7 +13,7 @@ using StreamMetadata = EventStore.ClientAPI.StreamMetadata;
 namespace EventStore.Core.Tests.ClientAPI {
 	[Category("ClientAPI"), Category("LongRunning")]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class read_all_events_forward_with_hard_deleted_stream_should<TLogFormat, TStreamId>
 		: SpecificationWithMiniNode<TLogFormat, TStreamId> {
 		private EventData[] _testEvents;
@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task returns_all_events_including_tombstone() {
-			AllEventsSlice read = await _conn.ReadAllEventsForwardAsync(Position.Start, _testEvents.Length + 10, false)
+			AllEventsSlice read = await _conn.ReadAllEventsForwardAsync(Position.Start, _testEvents.Length + 20, false)
 ;
 			Assert.That(
 				EventDataComparer.Equal(

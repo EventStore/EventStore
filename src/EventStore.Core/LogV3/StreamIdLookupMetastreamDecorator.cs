@@ -1,32 +1,37 @@
-﻿using EventStore.Core.LogAbstraction;
+﻿using System;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
+using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
 	// Decorates a StreamIdLookup, intercepting Metastream (and VirtualStream) calls
-	public class StreamIdLookupMetastreamDecorator : IStreamIdLookup<long> {
-		private readonly IStreamIdLookup<long> _wrapped;
-		private readonly IMetastreamLookup<long> _metastreams;
+	public class StreamIdLookupMetastreamDecorator : IValueLookup<StreamId> {
+		private readonly IValueLookup<StreamId> _wrapped;
+		private readonly IMetastreamLookup<StreamId> _metastreams;
 
 		public StreamIdLookupMetastreamDecorator(
-			IStreamIdLookup<long> wrapped,
-			IMetastreamLookup<long> metastreams) {
+			IValueLookup<StreamId> wrapped,
+			IMetastreamLookup<StreamId> metastreams) {
 
 			_wrapped = wrapped;
 			_metastreams = metastreams;
 		}
 
-		public long LookupId(string streamName) {
-			long streamId;
+		public StreamId LookupValue(string streamName) {
+			if (string.IsNullOrEmpty(streamName))
+				throw new ArgumentNullException(nameof(streamName));
+
+			StreamId streamId;
 			if (SystemStreams.IsMetastream(streamName)) {
 				streamName = SystemStreams.OriginalStreamOf(streamName);
-				streamId = LookupId(streamName);
+				streamId = LookupValue(streamName);
 				return _metastreams.MetaStreamOf(streamId);
 			}
 
 			if (LogV3SystemStreams.TryGetVirtualStreamId(streamName, out streamId))
 				return streamId;
 
-			var result = _wrapped.LookupId(streamName);
+			var result = _wrapped.LookupValue(streamName);
 
 			return result == default
 				? SystemStreams.IsSystemStream(streamName)

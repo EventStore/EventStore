@@ -64,8 +64,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private readonly IIndexBackend _indexBackend;
 		private readonly IIndexReader<TStreamId> _indexReader;
-		private readonly IStreamIdLookup<TStreamId> _streamIds;
-		private readonly IStreamNameLookup<TStreamId> _streamNames;
+		private readonly IValueLookup<TStreamId> _streamIds;
+		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly TStreamId _emptyStreamId;
 		private readonly IStickyLRUCache<long, TransactionInfo<TStreamId>> _transactionInfoCache =
@@ -76,7 +76,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly BoundedCache<Guid, EventInfo> _committedEvents;
 
 		private readonly IStickyLRUCache<TStreamId, long> _streamVersions =
-			new StickyLRUCache<TStreamId, long>(ESConsts.StreamInfoCacheCapacity);
+			new StickyLRUCache<TStreamId, long>(ESConsts.IndexWriterCacheCapacity);
 
 		private readonly IStickyLRUCache<TStreamId, StreamMeta>
 			_streamRawMetas =
@@ -90,8 +90,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public IndexWriter(
 			IIndexBackend indexBackend,
 			IIndexReader<TStreamId> indexReader,
-			IStreamIdLookup<TStreamId> streamIds,
-			IStreamNameLookup<TStreamId> streamNames,
+			IValueLookup<TStreamId> streamIds,
+			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			TStreamId emptyStreamId,
 			ISizer<TStreamId> inMemorySizer) {
@@ -430,7 +430,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public TStreamId GetStreamId(string streamName) {
-			return _streamIds.LookupId(streamName);
+			return _streamIds.LookupValue(streamName);
 		}
 
 		public string GetStreamName(TStreamId streamId) {

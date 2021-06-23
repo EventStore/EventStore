@@ -3,12 +3,16 @@ package event_store.client.streams;
 option java_package = "com.eventstore.dbclient.proto.streams";
 
 import "shared.proto";
+import "status.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 
 service Streams {
 	rpc Read (ReadReq) returns (stream ReadResp);
 	rpc Append (stream AppendReq) returns (AppendResp);
 	rpc Delete (DeleteReq) returns (DeleteResp);
 	rpc Tombstone (TombstoneReq) returns (TombstoneResp);
+	rpc BatchAppend (stream BatchAppendReq) returns (stream BatchAppendResp);
 }
 
 message ReadReq {
@@ -27,7 +31,7 @@ message ReadReq {
 		}
 		oneof filter_option {
 			FilterOptions filter = 7;
-			event_store.client.shared.Empty no_filter = 8;
+			event_store.client.Empty no_filter = 8;
 		}
 		UUIDOption uuid_option = 9;
 
@@ -36,18 +40,18 @@ message ReadReq {
 			Backwards = 1;
 		}
 		message StreamOptions {
-			event_store.client.shared.StreamIdentifier stream_identifier = 1;
+			event_store.client.StreamIdentifier stream_identifier = 1;
 			oneof revision_option {
 				uint64 revision = 2;
-				event_store.client.shared.Empty start = 3;
-				event_store.client.shared.Empty end = 4;
+				event_store.client.Empty start = 3;
+				event_store.client.Empty end = 4;
 			}
 		}
 		message AllOptions {
 			oneof all_option {
 				Position position = 1;
-				event_store.client.shared.Empty start = 2;
-				event_store.client.shared.Empty end = 3;
+				event_store.client.Empty start = 2;
+				event_store.client.Empty end = 3;
 			}
 		}
 		message SubscriptionOptions {
@@ -63,7 +67,7 @@ message ReadReq {
 			}
 			oneof window {
 				uint32 max = 3;
-				event_store.client.shared.Empty count = 4;
+				event_store.client.Empty count = 4;
 			}
 			uint32 checkpointIntervalMultiplier = 5;
 
@@ -74,8 +78,8 @@ message ReadReq {
 		}
 		message UUIDOption {
 			oneof content {
-				event_store.client.shared.Empty structured = 1;
-				event_store.client.shared.Empty string = 2;
+				event_store.client.Empty structured = 1;
+				event_store.client.Empty string = 2;
 			}
 		}
 	}
@@ -94,12 +98,12 @@ message ReadResp {
 		RecordedEvent link = 2;
 		oneof position {
 			uint64 commit_position = 3;
-			event_store.client.shared.Empty no_position = 4;
+			event_store.client.Empty no_position = 4;
 		}
 
 		message RecordedEvent {
-			event_store.client.shared.UUID id = 1;
-			event_store.client.shared.StreamIdentifier stream_identifier = 2;
+			event_store.client.UUID id = 1;
+			event_store.client.StreamIdentifier stream_identifier = 2;
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
 			uint64 commit_position = 5;
@@ -116,7 +120,7 @@ message ReadResp {
 		uint64 prepare_position = 2;
 	}
 	message StreamNotFound {
-		event_store.client.shared.StreamIdentifier stream_identifier = 1;
+		event_store.client.StreamIdentifier stream_identifier = 1;
 	}
 }
 
@@ -127,16 +131,16 @@ message AppendReq {
 	}
 
 	message Options {
-		event_store.client.shared.StreamIdentifier stream_identifier = 1;
+		event_store.client.StreamIdentifier stream_identifier = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
-			event_store.client.shared.Empty no_stream = 3;
-			event_store.client.shared.Empty any = 4;
-			event_store.client.shared.Empty stream_exists = 5;
+			event_store.client.Empty no_stream = 3;
+			event_store.client.Empty any = 4;
+			event_store.client.Empty stream_exists = 5;
 		}
 	}
 	message ProposedMessage {
-		event_store.client.shared.UUID id = 1;
+		event_store.client.UUID id = 1;
 		map<string, string> metadata = 2;
 		bytes custom_metadata = 3;
 		bytes data = 4;
@@ -157,35 +161,88 @@ message AppendResp {
 	message Success {
 		oneof current_revision_option {
 			uint64 current_revision = 1;
-			event_store.client.shared.Empty no_stream = 2;
+			event_store.client.Empty no_stream = 2;
 		}
 		oneof position_option {
 			Position position = 3;
-			event_store.client.shared.Empty no_position = 4;
+			event_store.client.Empty no_position = 4;
 		}
 	}
 
 	message WrongExpectedVersion {
 		oneof current_revision_option_20_6_0 {
 			uint64 current_revision_20_6_0 = 1;
-			event_store.client.shared.Empty no_stream_20_6_0 = 2;
+			event_store.client.Empty no_stream_20_6_0 = 2;
 		}
 		oneof expected_revision_option_20_6_0 {
 			uint64 expected_revision_20_6_0 = 3;
-			event_store.client.shared.Empty any_20_6_0 = 4;
-			event_store.client.shared.Empty stream_exists_20_6_0 = 5;
+			event_store.client.Empty any_20_6_0 = 4;
+			event_store.client.Empty stream_exists_20_6_0 = 5;
 		}
 		oneof current_revision_option {
 			uint64 current_revision = 6;
-			event_store.client.shared.Empty current_no_stream = 7;
+			event_store.client.Empty current_no_stream = 7;
 		}
 		oneof expected_revision_option {
 			uint64 expected_revision = 8;
-			event_store.client.shared.Empty expected_any = 9;
-			event_store.client.shared.Empty expected_stream_exists = 10;
-			event_store.client.shared.Empty expected_no_stream = 11;
+			event_store.client.Empty expected_any = 9;
+			event_store.client.Empty expected_stream_exists = 10;
+			event_store.client.Empty expected_no_stream = 11;
 		}
 
+	}
+}
+
+message BatchAppendReq {
+	event_store.client.UUID correlation_id = 1;
+	Options options = 2;
+	repeated ProposedMessage proposed_messages = 3;
+	bool is_final = 4;
+
+	message Options {
+		event_store.client.StreamIdentifier stream_identifier = 1;
+		oneof expected_stream_position {
+			uint64 stream_position = 2;
+			google.protobuf.Empty no_stream = 3;
+			google.protobuf.Empty any = 4;
+			google.protobuf.Empty stream_exists = 5;
+		}
+		google.protobuf.Timestamp deadline = 6;
+	}
+
+	message ProposedMessage {
+		event_store.client.UUID id = 1;
+		map<string, string> metadata = 2;
+		bytes custom_metadata = 3;
+		bytes data = 4;
+	}
+}
+
+message BatchAppendResp {
+	event_store.client.UUID correlation_id = 1;
+	oneof result {
+		google.rpc.Status error = 2;
+		Success success = 3;
+	}
+
+	event_store.client.StreamIdentifier stream_identifier = 4;
+
+	oneof expected_stream_position {
+		uint64 stream_position = 5;
+		google.protobuf.Empty no_stream = 6;
+		google.protobuf.Empty any = 7;
+		google.protobuf.Empty stream_exists = 8;
+	}
+
+	message Success {
+		oneof current_revision_option {
+			uint64 current_revision = 1;
+			google.protobuf.Empty no_stream = 2;
+		}
+		oneof position_option {
+			event_store.client.AllStreamPosition position = 3;
+			google.protobuf.Empty no_position = 4;
+		}
 	}
 }
 
@@ -193,12 +250,12 @@ message DeleteReq {
 	Options options = 1;
 
 	message Options {
-		event_store.client.shared.StreamIdentifier stream_identifier = 1;
+		event_store.client.StreamIdentifier stream_identifier = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
-			event_store.client.shared.Empty no_stream = 3;
-			event_store.client.shared.Empty any = 4;
-			event_store.client.shared.Empty stream_exists = 5;
+			event_store.client.Empty no_stream = 3;
+			event_store.client.Empty any = 4;
+			event_store.client.Empty stream_exists = 5;
 		}
 	}
 }
@@ -206,7 +263,7 @@ message DeleteReq {
 message DeleteResp {
 	oneof position_option {
 		Position position = 1;
-		event_store.client.shared.Empty no_position = 2;
+		event_store.client.Empty no_position = 2;
 	}
 
 	message Position {
@@ -219,12 +276,12 @@ message TombstoneReq {
 	Options options = 1;
 
 	message Options {
-		event_store.client.shared.StreamIdentifier stream_identifier = 1;
+		event_store.client.StreamIdentifier stream_identifier = 1;
 		oneof expected_stream_revision {
 			uint64 revision = 2;
-			event_store.client.shared.Empty no_stream = 3;
-			event_store.client.shared.Empty any = 4;
-			event_store.client.shared.Empty stream_exists = 5;
+			event_store.client.Empty no_stream = 3;
+			event_store.client.Empty any = 4;
+			event_store.client.Empty stream_exists = 5;
 		}
 	}
 }
@@ -232,7 +289,7 @@ message TombstoneReq {
 message TombstoneResp {
 	oneof position_option {
 		Position position = 1;
-		event_store.client.shared.Empty no_position = 2;
+		event_store.client.Empty no_position = 2;
 	}
 
 	message Position {
@@ -240,3 +297,4 @@ message TombstoneResp {
 		uint64 prepare_position = 2;
 	}
 }
+

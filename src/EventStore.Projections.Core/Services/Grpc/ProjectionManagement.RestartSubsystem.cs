@@ -1,12 +1,12 @@
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
-using EventStore.Client.Shared;
+using EventStore.Client;
 using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation RestartOperation = new Operation(Operations.Projections.Restart);
 
 		public override async Task<Empty> RestartSubsystem(Empty empty, ServerCallContext context) {

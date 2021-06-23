@@ -16,7 +16,7 @@ namespace EventStore.TestClient.Commands {
 			var package = new TcpPackage(TcpCommand.ScavengeDatabase, Guid.NewGuid(), null);
 			context.Log.Information("Sending SCAVENGE request...");
 
-			var connection = context.Client.CreateTcpConnection(
+			var connection = context._tcpTestClient.CreateTcpConnection(
 				context,
 				(conn, pkg) => { },
 				null,

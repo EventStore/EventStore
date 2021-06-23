@@ -1,52 +1,43 @@
+using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 
 namespace EventStore.Projections.Core {
 	public class ProjectionsStandardComponents {
-		private readonly int _projectionWorkerThreadCount;
-		private readonly ProjectionType _runProjections;
-		private readonly InMemoryBus _leaderOutputBus;
-		private readonly IQueuedHandler _leaderInputQueue;
-		private readonly InMemoryBus _leaderMainBus;
-		private readonly bool _faultOutOfOrderProjections;
-
 		public ProjectionsStandardComponents(
 			int projectionWorkerThreadCount,
 			ProjectionType runProjections,
-			InMemoryBus leaderOutputBus,
+			IBus leaderOutputBus,
 			IQueuedHandler leaderInputQueue,
-			InMemoryBus leaderMainBus,
-			bool faultOutOfOrderProjections) {
-			_projectionWorkerThreadCount = projectionWorkerThreadCount;
-			_runProjections = runProjections;
-			_leaderOutputBus = leaderOutputBus;
-			_leaderInputQueue = leaderInputQueue;
-			_leaderMainBus = leaderMainBus;
-			_faultOutOfOrderProjections = faultOutOfOrderProjections;
+			IBus leaderMainBus,
+			bool faultOutOfOrderProjections, JavascriptProjectionRuntime projectionRuntime, int projectionCompilationTimeout, int projectionExecutionTimeout) {
+			ProjectionWorkerThreadCount = projectionWorkerThreadCount;
+			RunProjections = runProjections;
+			LeaderOutputBus = leaderOutputBus;
+			LeaderInputQueue = leaderInputQueue;
+			LeaderMainBus = leaderMainBus;
+			FaultOutOfOrderProjections = faultOutOfOrderProjections;
+			ProjectionRuntime = projectionRuntime;
+			ProjectionCompilationTimeout = projectionCompilationTimeout;
+			ProjectionExecutionTimeout = projectionExecutionTimeout;
 		}
 
-		public int ProjectionWorkerThreadCount {
-			get { return _projectionWorkerThreadCount; }
-		}
+		public int ProjectionWorkerThreadCount { get; }
 
-		public ProjectionType RunProjections {
-			get { return _runProjections; }
-		}
+		public ProjectionType RunProjections { get; }
 
-		public InMemoryBus LeaderOutputBus {
-			get { return _leaderOutputBus; }
-		}
+		public IBus LeaderOutputBus { get; }
 
-		public IQueuedHandler LeaderInputQueue {
-			get { return _leaderInputQueue; }
-		}
+		public IQueuedHandler LeaderInputQueue { get; }
 
-		public InMemoryBus LeaderMainBus {
-			get { return _leaderMainBus; }
-		}
+		public IBus LeaderMainBus { get; }
 
-		public bool FaultOutOfOrderProjections {
-			get { return _faultOutOfOrderProjections; }
-		}
+		public bool FaultOutOfOrderProjections { get; }
+
+		public JavascriptProjectionRuntime ProjectionRuntime { get; }
+
+		public int ProjectionCompilationTimeout { get; }
+
+		public int ProjectionExecutionTimeout { get; }
 	}
 }

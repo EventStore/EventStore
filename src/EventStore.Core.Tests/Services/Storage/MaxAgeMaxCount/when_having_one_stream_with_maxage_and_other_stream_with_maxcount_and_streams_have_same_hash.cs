@@ -6,7 +6,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_having_one_stream_with_maxage_and_other_stream_with_maxcount_and_streams_have_same_hash<TLogFormat, TStreamId> :
 			ReadIndexTestScenario<TLogFormat, TStreamId> {
@@ -148,7 +148,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void read_all_forward_returns_all_records_including_expired_ones() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords();
 			Assert.AreEqual(12, records.Count);
 			Assert.AreEqual(_r11, records[0].Event);
 			Assert.AreEqual(_r21, records[1].Event);
@@ -171,7 +171,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 
 		[Test]
 		public void read_all_backward_returns_all_records_including_expired_ones() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).EventRecords();
 			Assert.AreEqual(12, records.Count);
 			Assert.AreEqual(_r11, records[11].Event);
 			Assert.AreEqual(_r21, records[10].Event);

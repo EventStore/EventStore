@@ -11,7 +11,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_scavenging_tfchunk_with_deleted_records<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private const string _eventStreamId = "ES";
 		private const string _deletedEventStreamId = "Deleted-ES";
@@ -38,7 +38,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		[Test]
 		public void should_be_able_to_read_the_all_stream() {
-			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records.Select(r => r.Event).ToArray();
+			var events = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(5, events.Count());
 			Assert.AreEqual(_event1.EventId, events[0].EventId);
 			Assert.AreEqual(_event2.EventId, events[1].EventId);
@@ -57,7 +59,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				result = chunk.TryReadClosestForward(result.NextPosition);
 			}
 
-			_streamNameIndex.GetOrAddId(_deletedEventStreamId, out var id, out _, out _);
+			var id = _logFormat.StreamIds.LookupValue(_deletedEventStreamId);
 			var deletedRecord = (IPrepareLogRecord<TStreamId>)chunkRecords.First(
 				x => x.RecordType == LogRecordType.Prepare
 				     && EqualityComparer<TStreamId>.Default.Equals(((IPrepareLogRecord<TStreamId>)x).EventStreamId, id));

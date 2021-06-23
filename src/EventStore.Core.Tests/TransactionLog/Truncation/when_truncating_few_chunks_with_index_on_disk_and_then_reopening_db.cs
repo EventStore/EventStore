@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_truncating_few_chunks_with_index_on_disk_and_then_reopening_db<TLogFormat, TStreamId> : TruncateAndReOpenDbScenario<TLogFormat, TStreamId> {
 		private EventRecord _event1;
 		private EventRecord _event2;
@@ -122,7 +122,9 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		[Test]
 		public void read_all_returns_only_survived_events() {
 			var res = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100);
-			var records = res.Records.Select(r => r.Event).ToArray();
+			var records = res.EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 
 			Assert.AreEqual(3, records.Length);
 			Assert.AreEqual(_event1, records[0]);
@@ -133,7 +135,9 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		[Test]
 		public void read_all_backward_doesnt_return_truncated_records() {
 			var res = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100);
-			var records = res.Records.Select(r => r.Event).ToArray();
+			var records = res.EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(3, records.Length);
 			Assert.AreEqual(_event1, records[2]);
 			Assert.AreEqual(_event2, records[1]);
@@ -144,7 +148,9 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		public void read_all_backward_from_last_truncated_record_returns_no_records() {
 			var pos = new TFPos(_event7.LogPosition, _event3.LogPosition);
 			var res = ReadIndex.ReadAllEventsForward(pos, 100);
-			var records = res.Records.Select(r => r.Event).ToArray();
+			var records = res.EventRecords()
+				.Select(r => r.Event)
+				.ToArray();
 			Assert.AreEqual(0, records.Length);
 		}
 	}

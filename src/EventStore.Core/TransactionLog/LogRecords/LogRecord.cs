@@ -46,6 +46,15 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				case LogRecordType.StreamWrite:
 					return new LogV3StreamWriteRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
 
+				case LogRecordType.Stream:
+					return new LogV3StreamRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+
+				case LogRecordType.PartitionType:
+					return new PartitionTypeLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+				
+				case LogRecordType.Partition:
+					return new PartitionLogRecord(LogV3Reader.ReadBytes(recordType, version, reader, length));
+				
 				default:
 					throw new ArgumentOutOfRangeException("recordType");
 			}

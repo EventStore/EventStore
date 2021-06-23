@@ -40,8 +40,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly IIndexBackend<TStreamId> _backend;
 		private readonly IIndexReader<TStreamId> _indexReader;
 		private readonly ITableIndex<TStreamId> _tableIndex;
-		private readonly IStreamNameLookup<TStreamId> _streamNames;
+		private readonly INameIndexConfirmer<TStreamId> _streamNameIndex;
+		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
+		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -53,16 +55,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IIndexBackend<TStreamId> backend,
 			IIndexReader<TStreamId> indexReader,
 			ITableIndex<TStreamId> tableIndex,
-			IStreamNameLookup<TStreamId> streamNames,
+			INameIndexConfirmer<TStreamId> streamNameIndex,
+			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
+			IStreamIdConverter<TStreamId> streamIdConverter,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
 			_indexReader = indexReader;
 			_tableIndex = tableIndex;
+			_streamNameIndex = streamNameIndex;
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
+			_streamIdConverter = streamIdConverter;
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
@@ -87,6 +93,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			Log.Information("ReadIndex building...");
 
+			// V2 index:
+			// right now its possible for entries to get into the main index before being replicated
+			// (because we catch up to the chaser position)
+			// when we join the cluster it may turn out that some of what we indexed needs truncating.
+			// this is dealt with by adjusting the checkpoints and restarting. usually
+			// the unwanted index entries were only in memory so restarting will discard them.
+			// if they do happen to have been persisted, the above will delete the whole index.
+			//
+			// V3 index:
+			// the upshot for the stream name index is that here we must initialise the stream
+			// name index with the main index before we catch it up, even though it will likely
+			// mean entries need to be removed only to be readded.
+			// 
+			// after we only allow replicated entries into the index we can be sure that
+			// neither index will need truncating and this will become more elegant.
+			_streamNameIndex.InitializeWithConfirmed(_streamNames);
+
 			_indexRebuild = true;
 			using (var reader = _backend.BorrowReader()) {
 				var startPosition = Math.Max(0, _persistedCommitPos);
@@ -99,6 +122,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
 					switch (result.LogRecord.RecordType) {
+						case LogRecordType.Stream:
 						case LogRecordType.Prepare: {
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {
@@ -122,6 +146,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							Commit((CommitLogRecord)result.LogRecord, result.Eof, false);
 							break;
 						case LogRecordType.System:
+						case LogRecordType.Partition:
+						case LogRecordType.PartitionType:
 							break;
 						default:
 							throw new Exception(string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));
@@ -155,6 +181,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public void Dispose() {
+			_streamNameIndex.Dispose();
 			try {
 				_tableIndex.Close(removeFiles: false);
 			} catch (TimeoutException exc) {
@@ -324,6 +351,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (_additionalCommitChecks && cacheLastEventNumber) {
 					CheckStreamVersion(streamId, indexEntries[0].Version, null); // TODO AN: bad passing null commit
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
+				}
+
+				for (int i = 0; i < prepares.Count; i++) {
+					var prepare = prepares[i];
+					if (prepare.RecordType == LogRecordType.Stream &&
+						prepare is LogV3StreamRecord streamRecord) {
+						_streamNameIndex.Confirm(
+							name: streamRecord.StreamName,
+							value: _streamIdConverter.ToStreamId(streamRecord.StreamNumber));
+						// initialisation of the stream name index caused an entry to be populated in
+						// the last event number cache, now we need to keep it up to date even on initialisation
+						cacheLastEventNumber = true;
+					}
 				}
 
 				_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries

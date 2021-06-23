@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI.query_result.with_long_from_all_query {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_getting_result<TLogFormat, TStreamId>
 		: specification_with_standard_projections_runnning<TLogFormat, TStreamId> {
 		protected override async Task Given() {

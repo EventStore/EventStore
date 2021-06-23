@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using EventStore.Core.Data;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionAllStreamPosition : IPersistentSubscriptionStreamPosition {

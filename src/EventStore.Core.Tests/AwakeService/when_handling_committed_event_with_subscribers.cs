@@ -11,7 +11,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.AwakeService {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_handling_committed_event_with_subscribers<TLogFormat, TStreamId> {
 		private Core.Services.AwakeReaderService.AwakeService _it;
 		private EventRecord _eventRecord;
@@ -36,13 +36,13 @@ namespace EventStore.Core.Tests.AwakeService {
 		private void Given() {
 			_it = new Core.Services.AwakeReaderService.AwakeService();
 
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("Stream", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
 			_eventRecord = new EventRecord(
 				100,
 				LogRecord.Prepare(
-					logFormat.RecordFactory, 1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, streamId, 99, PrepareFlags.Data,
+					recordFactory, 1500, Guid.NewGuid(), Guid.NewGuid(), 1500, 0, streamId, 99, PrepareFlags.Data,
 					"event", new byte[0], null, DateTime.UtcNow), "Stream");
 			_eventCommitted = new StorageMessage.EventCommitted(2000, _eventRecord, isTfEof: true);
 			_publisher = new InMemoryBus("bus");

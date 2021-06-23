@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			var creds = DefaultData.AdminCredentials;
 			DeletedStreamName = Guid.NewGuid().ToString();
 			LinkedStreamName = Guid.NewGuid().ToString();
-			using (var conn = TestConnection<TLogFormat, TStreamId>.Create(_node.TcpEndPoint)) {
+			using (var conn = TestConnection.Create(_node.TcpEndPoint)) {
 				await conn.ConnectAsync();
 				await conn.AppendToStreamAsync(DeletedStreamName, ExpectedVersion.Any, creds,
 						new EventData(Guid.NewGuid(), "testing1", true, Encoding.UTF8.GetBytes("{'foo' : 4}"),

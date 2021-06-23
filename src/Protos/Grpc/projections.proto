@@ -15,7 +15,7 @@ service Projections {
 	rpc Reset (ResetReq) returns (ResetResp);
 	rpc State (StateReq) returns (StateResp);
 	rpc Result (ResultReq) returns (ResultResp);
-	rpc RestartSubsystem (event_store.client.shared.Empty) returns (event_store.client.shared.Empty);
+	rpc RestartSubsystem (event_store.client.Empty) returns (event_store.client.Empty);
 }
 
 message CreateReq {
@@ -23,7 +23,7 @@ message CreateReq {
 
 	message Options {
 		oneof mode {
-			event_store.client.shared.Empty one_time = 1;
+			event_store.client.Empty one_time = 1;
 			Transient transient = 2;
 			Continuous continuous = 3;
 		}
@@ -50,7 +50,7 @@ message UpdateReq {
 		string query = 2;
 		oneof emit_option {
 			bool emit_enabled = 3;
-			event_store.client.shared.Empty no_emit_options = 4;
+			event_store.client.Empty no_emit_options = 4;
 		}
 	}
 }
@@ -77,10 +77,10 @@ message StatisticsReq {
 	message Options {
 		oneof mode {
 			string name = 1;
-			event_store.client.shared.Empty all = 2;
-			event_store.client.shared.Empty transient = 3;
-			event_store.client.shared.Empty continuous = 4;
-			event_store.client.shared.Empty one_time = 5;
+			event_store.client.Empty all = 2;
+			event_store.client.Empty transient = 3;
+			event_store.client.Empty continuous = 4;
+			event_store.client.Empty one_time = 5;
 		}
 	}
 }

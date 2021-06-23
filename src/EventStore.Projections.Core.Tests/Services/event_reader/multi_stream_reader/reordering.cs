@@ -79,7 +79,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.multi_stream_r
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
-		[TestFixture(typeof(LogFormat.V3), typeof(long))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		class when_event_commit_is_delayed<TLogFormat, TStreamId> : with_multi_stream_reader<TLogFormat, TStreamId> {
 			protected override void GivenOtherEvents() {
 			}

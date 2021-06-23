@@ -140,6 +140,22 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 		}
 
+		public IPrepareLogRecord<string> CopyForRetry(long logPosition, long transactionPosition) {
+			return new PrepareLogRecord(
+				logPosition: logPosition,
+				correlationId: CorrelationId,
+				eventId: EventId,
+				transactionPosition: transactionPosition,
+				transactionOffset: TransactionOffset,
+				eventStreamId: EventStreamId,
+				expectedVersion: ExpectedVersion,
+				timeStamp: TimeStamp,
+				flags: Flags,
+				eventType: EventType,
+				data: Data,
+				metadata: Metadata);
+		}
+
 		public override void WriteTo(BinaryWriter writer) {
 			base.WriteTo(writer);
 

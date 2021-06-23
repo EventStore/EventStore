@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_reading_from_a_cached_tfchunk<TLogFormat, TStreamId> : SpecificationWithFilePerTestFixture {
 		private TFChunk _chunk;
 		private readonly Guid _corrId = Guid.NewGuid();
@@ -18,10 +18,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[OneTimeSetUp]
 		public override void TestFixtureSetUp() {
 			base.TestFixtureSetUp();
-			var logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormat;
-			logFormat.StreamNameIndex.GetOrAddId("test", out var streamId, out _, out _);
+			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 
-			_record = LogRecord.Prepare(logFormat.RecordFactory, 0, _corrId, _eventId, 0, 0, streamId, 1,
+			_record = LogRecord.Prepare(recordFactory, 0, _corrId, _eventId, 0, 0, streamId, 1,
 				PrepareFlags.None, "Foo", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 			_result = _chunk.TryAppend(_record);

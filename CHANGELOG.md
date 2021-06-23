@@ -18,6 +18,13 @@ All notable changes to this project will be documented in this file.
 - TransactionStart and TransactionEnd structs for LogV3. [EventStore#2953](https://github.com/EventStore/EventStore/pull/2953)
 - Implement Monitoring gRPC API. [EventStore#2932](https://github.com/EventStore/EventStore/pull/2932)
 - Add the ability to configure kestrel with kestrelsettings.json [EventStore#2949](https://github.com/EventStore/EventStore/pull/2949)
+- Option to switch between v2 & v3 log format [EventStore#2972](https://github.com/EventStore/EventStore/pull/2972)
+- Stream Records and Stream Name Index [EventStore#2959](https://github.com/EventStore/EventStore/pull/2959)
+- Faster seek for first non-expired events in long streams with $max-age set  [EventStore#2981](https://github.com/EventStore/EventStore/pull/2981)
+- auto configuration for stream cache, reader threads and worker threads. [EventStore#2902](https://github.com/EventStore/EventStore/pull/2902)
+- Interpreter runtime for user projections [EventStore#2951](https://github.com/EventStore/EventStore/pull/2951)
+- Options to switch user runtime back to legacy v8 [EventStore#2951](https://github.com/EventStore/EventStore/pull/2951)
+- Initial creation of the LogV3 root partition. [EventStore#2982](https://github.com/EventStore/EventStore/pull/2982)
 
 ### Fixed
 - Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
@@ -31,6 +38,12 @@ All notable changes to this project will be documented in this file.
 - Handle missing case for UpdatePersistentSubscriptionTo{Stream,All}Result.DoesNotExist [EventStore#2941](https://github.com/EventStore/EventStore/pull/2941)
 - In gRPC projection management, disable a projection when writing a checkpoint, and abort it if not writing a checkpoint. [EventStore#2944](https://github.com/EventStore/EventStore/pull/2944)
 - Parameter count mismatch when loading the dashboard in the UI [EventStore#2964](https://github.com/EventStore/EventStore/pull/2964)
+- Tests failing with empty error message in `EventStore.Core.Tests.Http.Cluster.when_requesting_from_follower.*`. [EventStore#2969](https://github.com/EventStore/EventStore/pull/2969)
+- Tests failing with `already exists` error because same initial values were being re-used in `EventStore.Core.Tests.ClientAPI.when_connection_drops_messages_that_have_run_out_of_retries_are_not_retried`. [EventStore#2969](https://github.com/EventStore/EventStore/pull/2969)
+- Fix projections getting stuck when reading from truncated streams [EventStore#2979](https://github.com/EventStore/EventStore/pull/2979)
+- Only return nodes in Follower state. [EventStore#2974](https://github.com/EventStore/EventStore/pull/2974)
+- Wait for node to become a leader/follower. [EventStore#2974](https://github.com/EventStore/EventStore/pull/2974)
+- HTTP port parameter in docker-compose.yaml  [EventStore#2995](https://github.com/EventStore/EventStore/pull/2995)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
@@ -41,6 +54,7 @@ All notable changes to this project will be documented in this file.
 - internal configuration system now based on `Microsoft.Extensions.Configuration` [EventStore#2833](https://github.com/EventStore/EventStore/pull/2833)
 - TCP client moved from main repo to https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy [EventStore#2863](https://github.com/EventStore/EventStore/pull/2863)
 - Generalized TF and Index in preparation for LogV3 [EventStore#2889](https://github.com/EventStore/EventStore/pull/2889)
+- Change the user projection runtime to use an interpreter rather than v8 [EventStore#2951](https://github.com/EventStore/EventStore/pull/2951)
 
 ### changed
 - minver prefix for tcp clients [EventStore#2846](https://github.com/EventStore/EventStore/pull/2846)
@@ -50,6 +64,8 @@ All notable changes to this project will be documented in this file.
 
 ### Removed the job check from cherry-pick-pr-for-label action. It was moved to the action itself
 - https://github.com/EventStore/Automations/pull/30. [EventStore#2903](https://github.com/EventStore/EventStore/pull/2903)
+- Custom kestrel default settings [EventStore#2984](https://github.com/EventStore/EventStore/pull/2984)
+- differential backup from documentation. [EventStore#2997](https://github.com/EventStore/EventStore/pull/2997)
 
 ### Dotnet-retire is [being deprecated](https
 - //github.com/RetireNet/dotnet-retire/issues/75). The suggestion is now to use `dotnet list packages --vulnerable`. [EventStore#2927](https://github.com/EventStore/EventStore/pull/2927)
@@ -61,6 +77,9 @@ All notable changes to this project will be documented in this file.
 - Visibility and gRPC generation changes to better support testing without needing clients to be referenced [EventStore#2942](https://github.com/EventStore/EventStore/pull/2942)
 - Merge sequential checks in && or || expressions [EventStore#2961](https://github.com/EventStore/EventStore/pull/2961)
 - Assorted minor adjustments to V3 schema following discussions [EventStore#2958](https://github.com/EventStore/EventStore/pull/2958)
+- Test names to fit the existing pattern [EventStore#2978](https://github.com/EventStore/EventStore/pull/2978)
+- V3 StreamNumbers are now 32bit instead of 64bit [EventStore#2976](https://github.com/EventStore/EventStore/pull/2976)
+- Allow specifying a filter when creating a persistent subscription to $all [EventStore#2970](https://github.com/EventStore/EventStore/pull/2970)
 
 ### hello!
 - wave: [EventStore#2939](https://github.com/EventStore/EventStore/pull/2939)

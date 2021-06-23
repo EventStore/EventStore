@@ -7,7 +7,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(long))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
 		when_building_an_index_off_tfile_with_prepares_and_commits_for_events_with_version_numbers_greater_than_int_maxvalue<TLogFormat, TStreamId>
 		: ReadIndexTestScenario<TLogFormat, TStreamId> {
@@ -23,18 +23,18 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id1 = Guid.NewGuid();
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
-			long pos1, pos2, pos3, pos4, pos5, pos6;
+			long pos0, pos1, pos2, pos3, pos4, pos5, pos6;
 
-			_streamNameIndex.GetOrAddId("test1", out var test1StreamId, out _, out _);
-			_streamNameIndex.GetOrAddId("test2", out var test2StreamId, out _, out _);
+			GetOrReserve("test1", out var test1StreamId, out _);
+			GetOrReserve("test2", out var test2StreamId, out pos0);
 
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, 0, _id1, _id1, test1StreamId, firstEventNumber, "type", new byte[0],
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, test1StreamId, firstEventNumber, "type", new byte[0],
 					new byte[0], DateTime.UtcNow), out pos1);
 			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, test2StreamId, secondEventNumber, "type", new byte[0],
 					new byte[0], DateTime.UtcNow), out pos2);
 			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, test2StreamId, thirdEventNumber, "type", new byte[0],
 					new byte[0], DateTime.UtcNow), out pos3);
-			Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, firstEventNumber), out pos4);
+			Writer.Write(new CommitLogRecord(pos3, _id1, pos0, DateTime.UtcNow, firstEventNumber), out pos4);
 			Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, secondEventNumber), out pos5);
 			Writer.Write(new CommitLogRecord(pos5, _id3, pos2, DateTime.UtcNow, thirdEventNumber), out pos6);
 		}
@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_forward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).Records;
+			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 10).EventRecords();
 
 			Assert.AreEqual(3, records.Count);
 			Assert.AreEqual(_id1, records[0].Event.EventId);
@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 		[Test]
 		public void read_all_events_backward_returns_all_events_in_correct_order() {
-			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).Records;
+			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 10).EventRecords();
 
 			Assert.AreEqual(3, records.Count);
 			Assert.AreEqual(_id1, records[2].Event.EventId);
