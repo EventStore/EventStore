@@ -38,7 +38,8 @@ namespace EventStore.ClusterNode {
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Application.Log)
 					? Locations.DefaultLogDirectory
 					: options.Application.Log;
-				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName());
+				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
+					options.Application.LogConfig);
 
 				if (options.Application.Help) {
 					await Console.Out.WriteLineAsync(ClusterVNodeOptions.HelpText);
