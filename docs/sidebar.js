@@ -92,6 +92,14 @@ module.exports = [
         ]
     },
     {
+        title: "Persistent Subscriptions",
+        collapsable: true,
+        path: "persistent-subscriptions/",
+        children: [
+            "persistent-subscriptions/",
+        ]
+    },
+    {
         title: "Operations",
         collapsable: true,
         path: "operations/",
