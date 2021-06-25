@@ -371,6 +371,9 @@ namespace EventStore.Core.Util {
 			"Makes index merges faster and reduces disk pressure during merges.";
 
 		public static readonly bool OptimizeIndexMergeDefault = false;
+		
+		public const string SetPooledConnectionLifetimeDescr = "Used to make sure secure gRPC cluster connection have a limited lifetime for certificate rotation purposes";
+		public const bool SetPooledConnectionLifetime = true;
 
 		/*
 		 * Authentication/Authorization Options

@@ -216,12 +216,11 @@ namespace EventStore.Core {
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
-
 			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
 						new UriBuilder(!_vNodeSettings.DisableHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
-							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificateSelector));
+							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator, _certificateSelector, _vNodeSettings.SetPooledConnectionLifetime));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);

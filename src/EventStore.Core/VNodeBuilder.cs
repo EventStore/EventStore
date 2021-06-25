@@ -155,6 +155,7 @@ namespace EventStore.Core {
 		private AuthorizationProviderFactory _authorizationProviderFactory;
 		private TimeSpan _keepAliveInterval;
 		private TimeSpan _keepAliveTimeout;
+		private bool _setPooledConnectionLifetime;
 
 		// ReSharper restore FieldCanBeMadeReadOnly.Local
 
@@ -265,6 +266,7 @@ namespace EventStore.Core {
 
 			_keepAliveInterval = TimeSpan.FromMilliseconds(Opts.KeepAliveIntervalDefault);
 			_keepAliveTimeout = TimeSpan.FromMilliseconds(Opts.KeepAliveTimeoutDefault);
+			_setPooledConnectionLifetime = Opts.SetPooledConnectionLifetime;
 		}
 
 		protected VNodeBuilder WithSingleNodeSettings() {
@@ -1314,6 +1316,16 @@ namespace EventStore.Core {
 			_keepAliveTimeout = keepAliveTimeout;
 			return this;
 		}
+		
+		/// <summary>
+		/// Used to make sure secure gRPC cluster connection have a limited lifetime for certificate rotation purposes
+		/// </summary>
+		/// <param name="setPooledConnectionLifetime">Whether to set maximum lifetime.</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithSetPooledConnectionLifetime(Boolean setPooledConnectionLifetime) {
+			_setPooledConnectionLifetime = setPooledConnectionLifetime;
+			return this;
+		}
 
 		private GossipAdvertiseInfo EnsureGossipAdvertiseInfo() {
 			if (_gossipAdvertiseInfo == null) {
@@ -1492,7 +1504,8 @@ namespace EventStore.Core {
 				unsafeAllowSurplusNodes: _unsafeAllowSurplusNodes,
 				enableExternalTCP: _enableExternalTCP,
 				enableAtomPubOverHTTP: _enableAtomPubOverHTTP,
-				disableHttps: _disableHttps);
+				disableHttps: _disableHttps,
+				setPooledConnectionLifetime: _setPooledConnectionLifetime);
 
 			var infoControllerBuilder = new InfoControllerBuilder()
 				.WithOptions(options)

@@ -97,6 +97,7 @@ namespace EventStore.Core.Cluster.Settings {
 
 		public readonly TimeSpan KeepAliveInterval;
 		public readonly TimeSpan KeepAliveTimeout;
+		public readonly bool SetPooledConnectionLifetime;
 
 		public ClusterVNodeSettings(Guid instanceId, int debugIndex,
 			Func<ClusterNodeOptions> loadConfigFunc,
@@ -175,7 +176,8 @@ namespace EventStore.Core.Cluster.Settings {
 			bool unsafeAllowSurplusNodes = false,
 			bool enableExternalTCP = false,
 			bool enableAtomPubOverHTTP = true,
-			bool disableHttps = false) {
+			bool disableHttps = false,
+			bool setPooledConnectionLifetime = false) {
 			Ensure.NotEmptyGuid(instanceId, "instanceId");
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 
@@ -295,6 +297,7 @@ namespace EventStore.Core.Cluster.Settings {
 			MaxTruncation = maxTruncation;
 			KeepAliveInterval = keepAliveInterval;
 			KeepAliveTimeout = keepAliveTimeout;
+			SetPooledConnectionLifetime = setPooledConnectionLifetime;
 		}
 
 		public override string ToString() =>
@@ -331,6 +334,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"DeadMemberRemovalPeriod: {DeadMemberRemovalPeriod}\n" +
 			$"MaxTruncation: {MaxTruncation}\n" +
 			$"KeepAliveInterval: {KeepAliveInterval}\n" +
-			$"KeepAliveTimeout: {KeepAliveTimeout}";
+			$"KeepAliveTimeout: {KeepAliveTimeout}"+
+			$"SetPooledConnectionLifetime: {SetPooledConnectionLifetime}";
 	}
 }

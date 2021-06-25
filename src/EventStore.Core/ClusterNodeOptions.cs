@@ -326,6 +326,9 @@ namespace EventStore.Core {
 
 		[ArgDescription(Opts.KeepAliveTimeoutDescr, Opts.GrpcGroup)]
 		public int KeepAliveTimeout { get; set; }
+
+		[ArgDescription(Opts.SetPooledConnectionLifetimeDescr, Opts.GrpcGroup)]
+		public bool SetPooledConnectionLifetime { get; set; }
 		
 		public ClusterNodeOptions() {
 			Config = "";
@@ -454,6 +457,7 @@ namespace EventStore.Core {
 
 			KeepAliveInterval = Opts.KeepAliveIntervalDefault;
 			KeepAliveTimeout = Opts.KeepAliveTimeoutDefault;
+			SetPooledConnectionLifetime = Opts.SetPooledConnectionLifetime;
 
 			WriteStatsToDb = Opts.WriteStatsToDbDefault;
 			MaxTruncation = Opts.MaxTruncationDefault;
