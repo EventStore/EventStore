@@ -91,6 +91,7 @@ All notable changes to this project will be documented in this file.
 
 ### Cherry picked from https
 - //github.com/thefringeninja/EventStore/pull/3002 [EventStore#3008](https://github.com/EventStore/EventStore/pull/3008)
+- //github.com/thefringeninja/EventStore/pull/2991 [EventStore#3007](https://github.com/EventStore/EventStore/pull/3007)
 
 ## [21.2.0] Server - 2021-02-26
 
