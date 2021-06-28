@@ -44,6 +44,8 @@ All notable changes to this project will be documented in this file.
 - Only return nodes in Follower state. [EventStore#2974](https://github.com/EventStore/EventStore/pull/2974)
 - Wait for node to become a leader/follower. [EventStore#2974](https://github.com/EventStore/EventStore/pull/2974)
 - HTTP port parameter in docker-compose.yaml  [EventStore#2995](https://github.com/EventStore/EventStore/pull/2995)
+- --version printing [EventStore#3004](https://github.com/EventStore/EventStore/pull/3004)
+- Aborted http requests are no longer logged in the authentication middleware [EventStore#3006](https://github.com/EventStore/EventStore/pull/3006)
 
 ### Based on the agreement made with @jageall (see notes here https
 - //github.com/EventStore/advocacy/issues/89). I'm sending the first PR moving PR docs for the database. [EventStore#2831](https://github.com/EventStore/EventStore/pull/2831)
@@ -86,6 +88,10 @@ All notable changes to this project will be documented in this file.
 
 ### Reverted solution-wide formatting https
 - //github.com/EventStore/EventStore/pull/2947 [EventStore#2966](https://github.com/EventStore/EventStore/pull/2966)
+
+### Cherry picked from https
+- //github.com/thefringeninja/EventStore/pull/3002 [EventStore#3008](https://github.com/EventStore/EventStore/pull/3008)
+- //github.com/thefringeninja/EventStore/pull/2991 [EventStore#3007](https://github.com/EventStore/EventStore/pull/3007)
 
 ## [21.2.0] Server - 2021-02-26
 

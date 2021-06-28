@@ -86,6 +86,9 @@ namespace EventStore.Core {
 			[Description("Path where to keep log files.")]
 			public string Log { get; init; } = Locations.DefaultLogDirectory;
 
+			[Description("The name of the log configuration file.")]
+			public string LogConfig { get; init; } = "logconfig.json";
+
 			[Description("Sets the minimum log level. For more granular settings, please edit logconfig.json.")]
 			public LogLevel LogLevel { get; init; } = LogLevel.Default;
 
@@ -129,6 +132,7 @@ namespace EventStore.Core {
 
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				Log = configurationRoot.GetValue<string>(nameof(Log)),
+				LogConfig = configurationRoot.GetValue<string>(nameof(LogConfig)),
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
 				Version = configurationRoot.GetValue<bool>(nameof(Version)),

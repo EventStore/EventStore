@@ -38,10 +38,16 @@ namespace EventStore.ClusterNode {
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Application.Log)
 					? Locations.DefaultLogDirectory
 					: options.Application.Log;
-				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName());
+				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
+					options.Application.LogConfig);
 
 				if (options.Application.Help) {
 					await Console.Out.WriteLineAsync(ClusterVNodeOptions.HelpText);
+					return 0;
+				}
+
+				if (options.Application.Version) {
+					await Console.Out.WriteLineAsync(VersionInfo.Text);
 					return 0;
 				}
 
@@ -80,9 +86,7 @@ namespace EventStore.ClusterNode {
 						+ "using the `GossipSeed` option.");
 				}
 
-				if (options.Application.Version || options.Application.WhatIf) {
-					await Console.Out.WriteLineAsync(VersionInfo.Text);
-
+				if (options.Application.WhatIf) {
 					return 0;
 				}
 
