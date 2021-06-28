@@ -324,8 +324,11 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (!_projectionsStarted)
 				return;
 			var projection = GetProjection(message.Name);
-			if (projection == null)
+			if (projection == null) {
 				message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
+				return;
+			}
+
 			if (IsSystemProjection(message.Name)) {
 				message.Envelope.ReplyWith(
 					new ProjectionManagementMessage.OperationFailed(
@@ -614,6 +617,9 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		public void Handle(ProjectionManagementMessage.Internal.Deleted message) {
 			var projection = GetProjection(message.Name);
+
+			if (projection == null) return;
+
 			if (projection.Mode == ProjectionMode.Transient) {
 					// We don't need to write a delete, as transient projections don't write creations
 					_projections.Remove(message.Name);
