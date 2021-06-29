@@ -3,7 +3,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
-using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 
 namespace EventStore.Core.Tests.Integration {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -13,6 +12,8 @@ namespace EventStore.Core.Tests.Integration {
 			await base.Given();
 
 			for (int i = 0; i < 9; i++) {
+				await Task.Delay(2000); //flaky: temporary fix for getting stable cluster
+				
 				await _nodes[i % 3].Shutdown(keepDb: true);
 				await Task.Delay(2000);
 				

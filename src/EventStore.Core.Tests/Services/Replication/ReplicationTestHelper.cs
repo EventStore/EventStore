@@ -11,7 +11,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Replication.ReadStream {
 	public static class ReplicationTestHelper {
-		private static TimeSpan _timeout = TimeSpan.FromSeconds(8);
+		private static TimeSpan _timeout = TimeSpan.FromSeconds(20);
 
 		public static ClientMessage.WriteEventsCompleted WriteEvent<TLogFormat, TStreamId>(
 			MiniClusterNode<TLogFormat, TStreamId> node, Event[] events,

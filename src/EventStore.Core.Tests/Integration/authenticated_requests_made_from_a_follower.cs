@@ -14,7 +14,6 @@ using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
 using NUnit.Framework;
-using Position = EventStore.ClientAPI.Position;
 using StatusCode = Grpc.Core.StatusCode;
 
 namespace EventStore.Core.Tests.Integration {
@@ -63,6 +62,7 @@ namespace EventStore.Core.Tests.Integration {
 			}
 
 			[Test]
+			[Retry(5)]
 			public void work() => Assert.AreEqual(HttpStatusCode.Created, _statusCode);
 		}
 
@@ -84,12 +84,12 @@ namespace EventStore.Core.Tests.Integration {
 						}, true)
 					});
 				var streamClient = new Streams.StreamsClient(channel);
-				var call = streamClient.Append(new CallOptions(credentials: CallCredentials.FromInterceptor(
-					(_, metadata) => {
+				var call = streamClient.Append(new CallOptions(
+					credentials: CallCredentials.FromInterceptor((_, metadata) => {
 						metadata.Add("authorization", AuthorizationHeaderValue);
 						return Task.CompletedTask;
-					})));
-				
+					}),
+					deadline: DateTime.UtcNow.AddSeconds(10)));
 
 				await call.RequestStream.WriteAsync(new AppendReq {
 					Options = new AppendReq.Types.Options {
@@ -124,6 +124,7 @@ namespace EventStore.Core.Tests.Integration {
 			}
 
 			[Test]
+			[Retry(5)]
 			public void work() => Assert.AreEqual(StatusCode.OK, _status.StatusCode);
 		}
 
@@ -154,8 +155,8 @@ namespace EventStore.Core.Tests.Integration {
 			}
 
 			[Test]
+			[Retry(5)]
 			public void work() => Assert.Null(_caughtException);
-
 		}
 	}
 }

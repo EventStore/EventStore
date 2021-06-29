@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				await _conn.AppendToStreamAsync(streamName, ExpectedVersion.Any, DefaultData.AdminCredentials, eventData);
 			}
 
-			if (!_eventsReceived.WaitOne(TimeSpan.FromSeconds(5))) {
+			if (!_eventsReceived.WaitOne(TimeSpan.FromSeconds(15))) {
 				throw new Exception("Timed out waiting for events.");
 			}
 		}
@@ -373,16 +373,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		protected override Task When() => Task.WhenAll(_node.Started, _node.AdminUserCreated);
 
-		static int _attempts = 0;
 		[Test]
 		[Retry(10)]
 		public void Test() => Assert.DoesNotThrowAsync(async () => {
-			_attempts++;
-			if (_attempts == 1)
-				throw new Exception("throw on first attempt to ensure retry is working");
-
-			_conn.Close();
+			await CloseConnectionAndWait(_conn);
 			_conn = BuildConnection(_node);
+			AddLogging(_conn);
 			await _conn.ConnectAsync();
 			
 			var streamName = Guid.NewGuid().ToString();
@@ -394,13 +390,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.Build();
 
 			await _conn.CreatePersistentSubscriptionAsync(streamName, groupName, settings, DefaultData.AdminCredentials);
-			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName,
-				(subscription, resolvedEvent) => {
-					_conn.Close();
-					return Task.CompletedTask;
+			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName, async (subscription, resolvedEvent) => {
+					await CloseConnectionAndWait(_conn);
 				},
 				(sub, reason, exception) => {
-					Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}).", reason, exception);
+					Console.WriteLine("Subscription dropped (reason:{0}, exception:{1}). @ {2}", reason, exception, DateTime.Now);
 					_subscriptionDropped.TrySetResult(true);
 				},
 				bufferSize: 10, autoAck: false, userCredentials: DefaultData.AdminCredentials);
@@ -411,6 +405,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await _subscriptionDropped.Task.WithTimeout();
 
 			_conn = BuildConnection(_node);
+			AddLogging(_conn);
 			await _conn.ConnectAsync();
 
 			await _conn.ConnectToPersistentSubscriptionAsync(streamName, groupName, (subscription, resolvedEvent) => {
@@ -427,6 +422,16 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 			await _eventReceived.Task.WithTimeout();
 			Assert.AreEqual(newEventData.EventId, _receivedEvent.Event.EventId);
+			
+			//flaky: temporarily added for debugging
+			void AddLogging(IEventStoreConnection conn) {
+				conn.AuthenticationFailed += (_, args) => Console.WriteLine($"_conn.AuthenticationFailed: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
+				conn.Closed += (_, args) => Console.WriteLine($"_conn.Closed: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
+				conn.Connected += (_, args) => Console.WriteLine($"_conn.Connected: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
+				conn.Disconnected += (_, args) => Console.WriteLine($"_conn.Disconnected: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
+				conn.ErrorOccurred += (_, args) => Console.WriteLine($"_conn.ErrorOccurred: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
+				conn.Reconnecting += (_, args) => Console.WriteLine($"_conn.Reconnecting: {args.Connection.ConnectionName} @ {DateTime.Now} {TestContext.CurrentContext.CurrentRepeatCount}");
+			}
 		});
 	}
 }

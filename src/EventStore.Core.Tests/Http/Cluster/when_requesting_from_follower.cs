@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Integration;
 using NUnit.Framework;
 
@@ -14,8 +15,8 @@ namespace EventStore.Core.Tests.Http.Cluster {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_requesting_from_follower<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
-		const int Retries = 5;
 		private const string TestStream = "test-stream";
+		private const string TestDeleteStream = "test-stream-to-be-deleted";
 		private IPEndPoint _followerEndPoint;
 		private IPEndPoint _leaderEndPoint;
 		private HttpClient _client;
@@ -23,23 +24,38 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		protected override async Task Given() {
 			var leader = GetLeader();
 			_leaderEndPoint = leader.HttpEndPoint;
+			var follower = GetFollowers().First();
+			_followerEndPoint = follower.HttpEndPoint;
+			_client = follower.CreateHttpClient();
 			
 			// Wait for the admin user to be created
 			await leader.AdminUserCreated;
-			var replica = GetFollowers().First();
-			_followerEndPoint = replica.HttpEndPoint;
-			_client = replica.CreateHttpClient();
 			// Wait for the admin user created event to be replicated before starting our tests
-			var leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() >= leaderIndex, 
-				msg: $"Waiting for replica to reach index checkpoint timed out! ({leaderIndex})");
+			var leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
+			AssertEx.IsOrBecomesTrue(()=> follower.Db.Config.IndexCheckpoint.Read() >= leaderIndex, 
+				timeout: TimeSpan.FromSeconds(10),
+				msg: $"Waiting for follower to reach index checkpoint timed out! (LeaderIndex={leaderIndex},FollowerState={follower.NodeState})");
 
-			var path = $"streams/{TestStream}";
-			var response = await PostEvent(_followerEndPoint, path, requireLeader: false);
+			await AddStreamAndWait(leader, follower, TestDeleteStream);
+			await AddStreamAndWait(leader, follower, TestStream);
+		}
+
+		private async Task AddStreamAndWait(MiniClusterNode<TLogFormat, TStreamId> leader,
+			MiniClusterNode<TLogFormat, TStreamId> follower, string streamName)
+		{
+			var leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
+
+			var response = await PostEvent(_followerEndPoint, $"streams/{streamName}", requireLeader: false);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-			leaderIndex = GetLeader().Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> replica.Db.Config.IndexCheckpoint.Read() >= leaderIndex,
-				msg: $"Waiting for test stream to be synced with follower timed out! ({leaderIndex})");
+
+			AssertEx.IsOrBecomesTrue(() => leader.Db.Config.IndexCheckpoint.Read() > leaderIndex,
+				timeout: TimeSpan.FromSeconds(10),
+				msg: "Waiting for event to be processed on leader timed out!");
+			
+			leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
+			AssertEx.IsOrBecomesTrue(() => follower.Db.Config.IndexCheckpoint.Read() >= leaderIndex,
+				timeout: TimeSpan.FromSeconds(10),
+				msg: $"Waiting for event to be synced with follower timed out! ({leaderIndex})");
 		}
 
 		public override Task TestFixtureTearDown() {
@@ -48,7 +64,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task post_events_should_succeed_when_leader_not_required() {
 			var path = $"streams/{TestStream}";
 			var response = await PostEvent(_followerEndPoint, path, requireLeader: false);
@@ -57,16 +72,14 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task delete_stream_should_succeed_when_leader_not_required() {
-			var path = $"streams/{TestStream}";
+			var path = $"streams/{TestDeleteStream}";
 			var response = await DeleteStream(_followerEndPoint, path, requireLeader: false);
 
 			Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task read_from_stream_forward_should_succeed_when_leader_not_required() {
 			var path = $"streams/{TestStream}/0/forward/1";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: false);
@@ -74,14 +87,8 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 		}
 
-		static int _attempts = 0;
 		[Test]
-		[Retry(Retries)]
 		public async Task read_from_stream_backward_should_succeed_when_leader_not_required() {
-			_attempts++;
-			if (_attempts == 1)
-				Assert.IsTrue(false, "throw on first attempt to ensure retry is working");
-
 			var path = $"streams/{TestStream}";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: false);
 
@@ -89,7 +96,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task read_from_all_forward_should_succeed_when_leader_not_required() {
 			var path = $"streams/$all/00000000000000000000000000000000/forward/1";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: false);
@@ -98,7 +104,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task read_from_all_backward_should_succeed_when_leader_not_required() {
 			var path = $"streams/$all";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: false);
@@ -107,7 +112,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task should_redirect_to_leader_when_writing_with_requires_leader() {
 			var path = $"streams/{TestStream}";
 			var response = await PostEvent(_followerEndPoint, path);
@@ -118,9 +122,8 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task should_redirect_to_leader_when_deleting_with_requires_leader() {
-			var path = $"streams/{TestStream}";
+			var path = $"streams/{TestDeleteStream}";
 			var response = await DeleteStream(_followerEndPoint, path, requireLeader: true);
 
 			Assert.AreEqual(HttpStatusCode.TemporaryRedirect, response.StatusCode);
@@ -129,7 +132,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task should_redirect_to_leader_when_reading_from_stream_backwards_with_requires_leader() {
 			var path = $"streams/{TestStream}";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: true);
@@ -140,7 +142,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task should_redirect_to_leader_when_reading_from_stream_forwards_with_requires_leader() {
 			var path = $"streams/{TestStream}/0/forward/1";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: true);
@@ -151,7 +152,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task should_redirect_to_leader_when_reading_from_all_backwards_with_requires_leader() {
 			var path = $"streams/$all";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: true);
@@ -162,7 +162,6 @@ namespace EventStore.Core.Tests.Http.Cluster {
 		}
 
 		[Test]
-		[Retry(Retries)]
 		public async Task should_redirect_to_leader_when_reading_from_all_forwards_with_requires_leader() {
 			var path = $"streams/$all/00000000000000000000000000000000/forward/1";
 			var response = await ReadStream(_followerEndPoint, path, requireLeader: true);

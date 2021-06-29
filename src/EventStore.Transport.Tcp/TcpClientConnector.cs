@@ -23,7 +23,9 @@ namespace EventStore.Transport.Tcp {
 				TcpConfiguration.ConnectPoolSize,
 				CreateConnectSocketArgs);
 			_pendingConections = new ConcurrentDictionary<Guid, PendingConnection>();
-			_timer = new Timer(TimerCallback, null, CheckPeriodMs, Timeout.Infinite);
+			_timer = new Timer(TimerCallback);
+			// prevent possible null reference exceptions in case of slow initialization
+			_timer.Change(CheckPeriodMs, Timeout.Infinite);
 		}
 
 		private SocketAsyncEventArgs CreateConnectSocketArgs() {
@@ -142,7 +144,11 @@ namespace EventStore.Transport.Tcp {
 					Helper.EatException(() => pendingConnection.Connection.Close("Connection establishment timeout."));
 			}
 
-			_timer.Change(CheckPeriodMs, Timeout.Infinite);
+			try {
+				_timer.Change(CheckPeriodMs, Timeout.Infinite);
+			} catch (ObjectDisposedException) {
+				// ignore
+			}
 		}
 
 		private void AddToConnecting(PendingConnection pendingConnection) {

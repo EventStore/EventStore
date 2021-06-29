@@ -197,6 +197,8 @@ namespace EventStore.Core.Tests.Helpers {
 			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60))
 				.ConfigureAwait(false); //starts the node
 
+			await Started.WithTimeout();
+			
 			StartingTime.Stop();
 			Log.Information("MiniNode successfully started!");
 		}
