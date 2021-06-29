@@ -10,7 +10,7 @@ Server-side projections impact the performance of the EventStoreDB server. For e
 
 An Interpreted runtime was introduced in 21.6.0 to replace the existing V8 runtime.
 
-The `ProjectionRuntime` option can be used to select which runtime the Projection Subsystem should use. We only recommend changing this setting if you observe a difference in behaviour between running an existing projection on the Legacy runtime verses the Interpreted runtime.
+The `ProjectionRuntime` option can be used to select which runtime the Projection Subsystem should use. We only recommend changing this setting if you observe a difference in behaviour between running an existing projection on the Legacy runtime versus the Interpreted runtime.
 
 | Format               | Syntax |
 | :------------------- | :----- |
