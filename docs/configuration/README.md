@@ -10,7 +10,7 @@ You can check what version of EventStoreDB you have installed by using the `--ve
 
 ```bash
 $ eventstore --version
-EventStoreDB version v21.6.0 (tags/oss-v21.6.0/bc30009, Unknown)
+EventStoreDB version v21.6.0 (tags/oss-v21.6.0/1f713a407, Unknown)
 ```
 
 The full list of available options is available from the currently installed server by using the `--help` option in the command line.
@@ -70,7 +70,7 @@ When you run EventStoreDB with this option, it will print out the effective conf
 ```
 $ eventstore --what-if
 [1085525, 1,09:19:40.884,INF]
-"ES VERSION:"             "21.6.0.0" ("configuration"/"10b6de53a", "Unknown")
+"ES VERSION:"             "21.6.0.0" ("tags/oss-v21.6.0"/"1f713a407", "Thu, 24 Jun 2021 11:49:23 +0400")
 [1085525, 1,09:19:40.902,INF] "OS:"                     Linux ("Unix 5.4.0.66")
 [1085525, 1,09:19:40.905,INF] "RUNTIME:"                ".NET 5.0.3" (64-bit)
 [1085525, 1,09:19:40.905,INF] "GC:"                     "3 GENERATIONS"
