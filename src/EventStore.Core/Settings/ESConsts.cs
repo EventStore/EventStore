@@ -20,5 +20,7 @@ namespace EventStore.Core.Settings {
 
 		public const int UnrestrictedPendingSendBytes = 0;
 		public const int MaxConnectionQueueSize = 50000;
+
+		public const string DefaultIndexDirectoryName = "index";
 	}
 }

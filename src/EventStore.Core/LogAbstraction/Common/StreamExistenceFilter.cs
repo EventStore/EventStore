@@ -37,7 +37,6 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_filterName = filterName;
 			_checkpoint = checkpoint;
 
-			//qq maybe this should be in the bloom filter itself
 			if (!Directory.Exists(directory)) {
 				Directory.CreateDirectory(directory);
 			}

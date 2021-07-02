@@ -263,6 +263,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				}
 
 				_tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
+				//qq probably need to add to the bloom filter here too
 			}
 
 			if (eventNumber != EventNumber.Invalid) {
@@ -372,6 +373,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					catchingUp: _indexRebuild,
 					backend: _backend);
 
+				//qq can put this ahead of the confirmation? otherwise it's possible for the
+				// stream name index to return a number for a stream we we can't find the name of.
 				_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
 			}
 

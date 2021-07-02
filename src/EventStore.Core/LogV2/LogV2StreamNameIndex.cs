@@ -49,6 +49,9 @@ namespace EventStore.Core.LogV2 {
 			streamId = streamName;
 			createdId = default;
 			createdName = default;
+
+			// not adding the stream to the filter here, but this is safe because returning
+			// true indicates that the stream might exist and no shortcut may be taken.
 			return true;
 		}
 

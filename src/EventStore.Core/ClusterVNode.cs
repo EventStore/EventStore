@@ -405,7 +405,7 @@ namespace EventStore.Core {
 						}
 					}
 
-					var indexPath = options.Database.Index ?? Path.Combine(dbPath, "index");
+					var indexPath = options.Database.Index ?? Path.Combine(dbPath, ESConsts.DefaultIndexDirectoryName);
 					var streamExistencePath = Path.Combine(indexPath, "stream-name-existence");
 					if (!Directory.Exists(streamExistencePath)) {
 						Directory.CreateDirectory(streamExistencePath);
@@ -610,7 +610,7 @@ namespace EventStore.Core {
 
 			// STORAGE SUBSYSTEM
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
-			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, "index");
+			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
 
 			var pTableMaxReaderCount = ClusterVNodeOptions.DatabaseOptions.GetPTableMaxReaderCount(readerThreadsCount);
 			var readerPool = new ObjectPool<ITransactionFileReader>(
