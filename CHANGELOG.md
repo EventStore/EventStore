@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - HTTP port parameter in docker-compose.yaml  [EventStore#2995](https://github.com/EventStore/EventStore/pull/2995)
 
+### Cherry picked from https
+- //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
+- //github.com/EventStore/EventStore/pull/3015 [EventStore#3019](https://github.com/EventStore/EventStore/pull/3019)
+
 ## [21.6.0] - 2021-06-24
 
 ### Added
