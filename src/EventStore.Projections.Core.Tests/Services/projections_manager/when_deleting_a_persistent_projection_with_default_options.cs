@@ -27,7 +27,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				new ProjectionManagementMessage.Command.Post(
 					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
 					ProjectionManagementMessage.RunAs.System, "JS", @"fromAll().when({$any:function(s,e){return s;}});",
-					enabled: true, checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: false);
+					enabled: true, checkpointsEnabled: true, emitEnabled: false, trackEmittedStreams: true);
 			yield return
 				new ProjectionManagementMessage.Command.Disable(
 					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System);
@@ -39,6 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 		[Test, Category("v8")]
 		public void a_projection_deleted_event_is_written() {
+			var deletedStreamEvents =_consumer.HandledMessages.OfType<ClientMessage.DeleteStream>().ToList();
 			Assert.AreEqual(true, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == ProjectionEventTypes.ProjectionDeleted && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _projectionName));
 		}
 	}
