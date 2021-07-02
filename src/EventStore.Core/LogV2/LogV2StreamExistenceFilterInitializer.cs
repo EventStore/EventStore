@@ -10,16 +10,16 @@ using StreamId = System.String;
 
 namespace EventStore.Core.LogV2 {
 	/// <summary>
-	/// Stream name existence filter initializer for Log V2
-	/// Reads the index and transaction log to populate the stream name existence filter from the last checkpoint.
+	/// Stream existence filter initializer for Log V2
+	/// Reads the index and transaction log to populate the stream existence filter from the last checkpoint.
 	/// May add a stream hash more than once.
 	/// </summary>
-	public class LogV2StreamNameExistenceFilterInitializer : INameExistenceFilterInitializer {
+	public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
 		private readonly ITableIndex _tableIndex;
 
-		public LogV2StreamNameExistenceFilterInitializer(
+		public LogV2StreamExistenceFilterInitializer(
 			Func<TFReaderLease> tfReaderFactory,
 			IReadOnlyCheckpoint chaserCheckpoint,
 			ITableIndex tableIndex) {

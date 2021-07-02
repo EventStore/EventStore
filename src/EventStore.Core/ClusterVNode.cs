@@ -627,8 +627,8 @@ namespace EventStore.Core {
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
 				MaxReaderCount = pTableMaxReaderCount,
-				StreamNameExistenceFilterSize = options.Database.StreamExistenceFilterSize,
-				StreamNameExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
+				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
+				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
 				ChaserCheckpoint = Db.Config.ChaserCheckpoint,
 				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
 			});
@@ -661,8 +661,8 @@ namespace EventStore.Core {
 				logFormat.EmptyStreamId,
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,
-				logFormat.StreamNameExistenceFilter,
-				logFormat.StreamNameExistenceFilterReader,
+				logFormat.StreamExistenceFilter,
+				logFormat.StreamExistenceFilterReader,
 				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,

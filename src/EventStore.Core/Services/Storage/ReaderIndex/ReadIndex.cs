@@ -43,8 +43,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			TStreamId emptyStreamName,
 			IValidator<TStreamId> streamIdValidator,
 			ISizer<TStreamId> sizer,
-			INameExistenceFilter streamNameExistenceFilter,
-			IExistenceFilterReader<TStreamId> streamNameExistenceFilterReader,
+			INameExistenceFilter streamExistenceFilter,
+			IExistenceFilterReader<TStreamId> streamExistenceFilterReader,
 			int streamInfoCacheCapacity,
 			bool additionalCommitChecks,
 			long metastreamMaxCount,
@@ -59,8 +59,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.NotNull(streamNamesProvider, nameof(streamNamesProvider));
 			Ensure.NotNull(streamIdValidator, nameof(streamIdValidator));
 			Ensure.NotNull(sizer, nameof(sizer));
-			Ensure.NotNull(streamNameExistenceFilter, nameof(streamNameExistenceFilter));
-			Ensure.NotNull(streamNameExistenceFilterReader, nameof(streamNameExistenceFilterReader));
+			Ensure.NotNull(streamExistenceFilter, nameof(streamExistenceFilter));
+			Ensure.NotNull(streamExistenceFilterReader, nameof(streamExistenceFilterReader));
 
 			Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
 			Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
@@ -71,18 +71,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			var indexBackend = new IndexBackend<TStreamId>(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
 
-			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator, streamNameExistenceFilterReader,
+			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator, streamExistenceFilterReader,
 				metastreamMetadata, hashCollisionReadLimit,
 				skipIndexScanOnReads);
 
 			_streamIds = streamIds;
 			_streamNames = streamNamesProvider.StreamNames;
 			var systemStreams = streamNamesProvider.SystemStreams;
-			var streamNameExistenceFilterInitializer = streamNamesProvider.StreamNameExistenceFilterInitializer;
+			var streamExistenceFilterInitializer = streamNamesProvider.StreamExistenceFilterInitializer;
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames,
-				systemStreams, streamNameExistenceFilter, streamNameExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks);
+				systemStreams, streamExistenceFilter, streamExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames);
 		}
 

@@ -43,8 +43,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameIndexConfirmer<TStreamId> _streamNameIndex;
 		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
-		private readonly INameExistenceFilter _streamNameExistenceFilter;
-		private INameExistenceFilterInitializer _streamNameExistenceFilterInitializer;
+		private readonly INameExistenceFilter _streamExistenceFilter;
+		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -59,8 +59,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameIndexConfirmer<TStreamId> streamNameIndex,
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
-			INameExistenceFilter streamNameExistenceFilter,
-			INameExistenceFilterInitializer streamNameExistenceFilterInitializer,
+			INameExistenceFilter streamExistenceFilter,
+			INameExistenceFilterInitializer streamExistenceFilterInitializer,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
@@ -70,8 +70,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamNameIndex = streamNameIndex;
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
-			_streamNameExistenceFilter = streamNameExistenceFilter;
-			_streamNameExistenceFilterInitializer = streamNameExistenceFilterInitializer;
+			_streamExistenceFilter = streamExistenceFilter;
+			_streamExistenceFilterInitializer = streamExistenceFilterInitializer;
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
@@ -180,7 +180,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 			_indexRebuild = false;
 
-			// once the index has caught up, we initialize the stream name existence filter to add any missing entries.
+			// now that the main index has caught up, we initialize the stream existence filter to add any missing entries.
 			// V2:
 			// reads the index and transaction file forward from the last checkpoint (a log position) and adds stream names to the filter, possibly multiple times
 			// but it's not an issue since it's idempotent
@@ -190,12 +190,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			//
 			// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
 			// the cluster but false positives are not a problem since it's a probabilistic filter
-			_streamNameExistenceFilter.Initialize(_streamNameExistenceFilterInitializer);
+			_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer);
 		}
 
 		public void Dispose() {
 			_streamNameIndex?.Dispose();
-			_streamNameExistenceFilter?.Dispose();
+			_streamExistenceFilter?.Dispose();
 			try {
 				_tableIndex.Close(removeFiles: false);
 			} catch (TimeoutException exc) {

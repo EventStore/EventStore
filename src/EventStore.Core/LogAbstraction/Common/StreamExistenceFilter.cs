@@ -10,7 +10,7 @@ using Serilog;
 namespace EventStore.Core.LogAbstraction.Common {
 	// This connects a bloom filter datastructure to the rest of the system by
 	// adding catchup and checkpointing.
-	public class StreamNameExistenceFilter :
+	public class StreamExistenceFilter :
 		INameExistenceFilter {
 		private readonly string _filterName;
 		private readonly MemoryMappedFileStreamBloomFilter _mmfStreamBloomFilter;
@@ -21,11 +21,11 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private bool _rebuilding;
 		private long _addedSinceLoad;
 
-		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamNameExistenceFilter>();
+		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamExistenceFilter>();
 
 		public long CurrentCheckpoint => _checkpoint.Read();
 
-		public StreamNameExistenceFilter(
+		public StreamExistenceFilter(
 			string directory,
 			ICheckpoint checkpoint,
 			string filterName,

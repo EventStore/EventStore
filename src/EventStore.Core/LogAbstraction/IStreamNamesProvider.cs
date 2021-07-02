@@ -9,6 +9,6 @@ namespace EventStore.Core.LogAbstraction {
 		void SetTableIndex(ITableIndex reader);
 		ISystemStreamLookup<TStreamId> SystemStreams { get; }
 		INameLookup<TStreamId> StreamNames { get; }
-		INameExistenceFilterInitializer StreamNameExistenceFilterInitializer { get; }
+		INameExistenceFilterInitializer StreamExistenceFilterInitializer { get; }
 	}
 }

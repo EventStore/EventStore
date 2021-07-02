@@ -5,12 +5,12 @@ using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
-	public class LogV3StreamNameExistenceFilterInitializer : INameExistenceFilterInitializer {
+	public class LogV3StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly INameLookup<StreamId> _streamNames;
 
 		//qq possibly this doesn't have to be a member, in which case we can
 		// constrct this earlier in the abstractor
-		public LogV3StreamNameExistenceFilterInitializer(INameLookup<StreamId> streamNames) {
+		public LogV3StreamExistenceFilterInitializer(INameLookup<StreamId> streamNames) {
 			_streamNames = streamNames;
 		}
 

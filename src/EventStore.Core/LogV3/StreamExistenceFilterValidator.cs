@@ -3,10 +3,10 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
 
 namespace EventStore.Core.LogV3 {
-	public class StreamNameExistenceFilterValidator : INameExistenceFilter {
+	public class StreamExistenceFilterValidator : INameExistenceFilter {
 		private readonly INameExistenceFilter _wrapped;
 
-		public StreamNameExistenceFilterValidator(INameExistenceFilter wrapped) {
+		public StreamExistenceFilterValidator(INameExistenceFilter wrapped) {
 			_wrapped = wrapped;
 		}
 

@@ -49,7 +49,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_indexReader = new IndexReader<string>(_indexBackend, _tableIndex,
 				logFormat.StreamNamesProvider,
 				logFormat.StreamIdValidator,
-				logFormat.StreamNameExistenceFilterReader,
+				logFormat.StreamExistenceFilterReader,
 				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 
@@ -242,7 +242,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				_indexBackend, _tableIndex,
 				LogFormatHelper.V2.StreamNamesProvider,
 				LogFormatHelper.V2.StreamIdValidator,
-				LogFormatHelper.V2.StreamNameExistenceFilterReader,
+				LogFormatHelper.V2.StreamExistenceFilterReader,
 				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 			//memtable with 64bit indexes
