@@ -5,16 +5,22 @@ using EventStore.Core.Services;
 namespace EventStore.Core.LogV3 {
 	public class StreamNameExistenceFilterValidator : INameExistenceFilter {
 		private readonly INameExistenceFilter _wrapped;
+
 		public StreamNameExistenceFilterValidator(INameExistenceFilter wrapped) {
 			_wrapped = wrapped;
 		}
+
 		public long CurrentCheckpoint => _wrapped.CurrentCheckpoint;
+
 		public void Initialize(INameExistenceFilterInitializer source) => _wrapped.Initialize(source);
+
 		public void Add(string streamName, long checkpoint) {
 			ValidateStreamName(streamName);
 			_wrapped.Add(streamName, checkpoint);
 		}
+
 		public void Add(ulong hash, long checkpoint) => throw new NotSupportedException();
+
 		public bool MightContain(string streamName) {
 			ValidateStreamName(streamName);
 			return _wrapped.MightContain(streamName);

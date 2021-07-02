@@ -1,7 +1,7 @@
 using System;
 
 namespace EventStore.Core.LogAbstraction.Common {
-	public class NoStreamNameExistenceFilter : INameExistenceFilter {
+	public class NoNameExistenceFilter : INameExistenceFilter {
 		public void Initialize(INameExistenceFilterInitializer source) { }
 		public long CurrentCheckpoint => throw new NotImplementedException(); //qq
 

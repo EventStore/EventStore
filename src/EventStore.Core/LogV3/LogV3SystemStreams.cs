@@ -80,12 +80,14 @@ namespace EventStore.Core.LogV3 {
 			}
 		}
 
+		//qq need?
 		public static IEnumerable<string> EnumerateVirtualStreamNames() {
 			yield return SystemStreams.AllStream;
 			yield return SystemStreams.StreamsCreatedStream;
 			yield return SystemStreams.SettingsStream;
 		}
 
+		//qq need?
 		public static IEnumerable<StreamId> EnumerateVirtualStreamIds() {
 			yield return AllStreamNumber;
 			yield return StreamsCreatedStreamNumber;

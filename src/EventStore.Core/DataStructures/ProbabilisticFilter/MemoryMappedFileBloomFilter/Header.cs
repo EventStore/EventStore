@@ -10,6 +10,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		[FieldOffset(0)] private byte _version;
 		[FieldOffset(1)] private long _numBits;
+
 		public byte Version {
 			get => _version;
 			set => _version = value;
@@ -53,6 +54,5 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			headerAccessor.Write(headerBytes);
 			headerAccessor.Flush();
 		}
-
 	}
 }

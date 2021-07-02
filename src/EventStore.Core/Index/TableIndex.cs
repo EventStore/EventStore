@@ -11,7 +11,6 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
@@ -735,8 +734,7 @@ namespace EventStore.Core.Index {
 		}
 
 		public IEnumerable<IndexEntry> IterateAll() {
-			foreach(var table in _indexMap.InOrder())
-			{
+			foreach (var table in _indexMap.InOrder()) {
 				foreach (var indexEntry in table.IterateAllInOrder()) {
 					yield return indexEntry;
 				}

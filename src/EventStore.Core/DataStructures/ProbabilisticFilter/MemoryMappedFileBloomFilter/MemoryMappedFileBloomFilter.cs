@@ -94,6 +94,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			)));
 		}
 
+		//qq would there be benefit to having a bulk add that just obtains the lock once
 		public void Add(ReadOnlySpan<byte> bytes) {
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
@@ -101,6 +102,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			_readerWriterLock.EnterWriteLock();
 			try {
 				long hash = hash1;
+				// possible SIMD optimisation?
 				for (int i = 0; i < NumHashFunctions; i++) {
 					hash += hash2;
 					hash &= long.MaxValue; //make non-negative

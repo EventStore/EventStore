@@ -14,8 +14,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		public MemoryMappedFileStreamBloomFilter(string path, long size, int initialReaderCount, int maxReaderCount,
 			ILongHasher<string> hasher) :
-			base(path, size, initialReaderCount, maxReaderCount)
-		{
+			base(path, size, initialReaderCount, maxReaderCount) {
 			_hasher = hasher;
 		}
 
@@ -29,7 +28,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		public bool MightContain(string stream) =>
 			MightContain(SerializeString(stream));
-
 
 		private ReadOnlySpan<byte> SerializeString(string stream) {
 			if (_hasher != null)

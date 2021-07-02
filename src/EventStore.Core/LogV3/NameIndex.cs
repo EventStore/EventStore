@@ -10,7 +10,7 @@ using Serilog;
 using Value = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
-	// There are two components injected NameIndex. Ther existenceFilter and the persistence.
+	// There are two components injected NameIndex. The existenceFilter and the persistence.
 	//
 	// The NameIndex itself allows for reservation of entries, which generates the numbering and holds them
 	// in memory. This is similar to the purpose of the 'IndexWriter' class.
@@ -103,7 +103,7 @@ namespace EventStore.Core.LogV3 {
 		// this is stream specific and will need to be generalised for eventtypes
 		// not terribly happy with the 'catchingUp' mechanism here because it couples
 		// the IndexCommitter behaviour to this method. but the intention is to remove
-		// the use of the old indexes by logv3
+		// the use of the old indexes for logv3
 		public void Confirm(IList<IPrepareLogRecord<Value>> prepares, bool catchingUp, IIndexBackend<Value> backend) {
 			for (int i = 0; i < prepares.Count; i++) {
 				var prepare = prepares[i];

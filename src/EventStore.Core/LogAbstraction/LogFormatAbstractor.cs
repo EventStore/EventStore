@@ -1,6 +1,5 @@
 using System;
 using EventStore.Common.Utils;
-using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.LogV2;
@@ -65,7 +64,7 @@ namespace EventStore.Core.LogAbstraction {
 			ILongHasher<string> longHasher) {
 
 			if (options.InMemory || options.StreamNameExistenceFilterSize == 0) {
-				return new NoStreamNameExistenceFilter();
+				return new NoNameExistenceFilter();
 			}
 
 			var nameExistenceFilter = new StreamNameExistenceFilter(
@@ -116,7 +115,8 @@ namespace EventStore.Core.LogAbstraction {
 				emptyStreamId: 0,
 				streamIdSizer: new LogV3Sizer(),
 				streamNameExistenceFilter: streamNameExistenceFilter,
-				streamNameExistenceFilterReader: new LogV3ExistenceFilterReader(),
+				//qq explain why v3 doesn't need this
+				streamNameExistenceFilterReader: new NoExistenceFilterReader(),
 				recordFactory: new LogV3RecordFactory(),
 				supportsExplicitTransactions: false);
 			return abstractor;
@@ -171,7 +171,7 @@ namespace EventStore.Core.LogAbstraction {
 
 		public static INameExistenceFilter GenStreamNameExistenceFilter(LogFormatAbstractorOptions options) {
 			if (options.InMemory || options.StreamNameExistenceFilterSize == 0) {
-				return new NoStreamNameExistenceFilter();
+				return new NoNameExistenceFilter();
 			}
 
 			var nameExistenceFilter = new StreamNameExistenceFilter(

@@ -36,7 +36,9 @@ namespace EventStore.Core.LogV2 {
 
 			var lastPrepare = prepares[prepares.Count - 1];
 
-			if (!catchingUp) {
+			if (catchingUp) {
+				//qq comment to explain why nothing to do when catching up
+			} else {
 				_existenceFilter.Add(lastPrepare.EventStreamId, lastPrepare.LogPosition);
 			}
 		}

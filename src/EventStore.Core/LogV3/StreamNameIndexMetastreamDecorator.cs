@@ -1,4 +1,3 @@
-using System;
 using EventStore.Common.Utils;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;

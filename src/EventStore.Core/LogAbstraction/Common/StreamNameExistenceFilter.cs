@@ -8,6 +8,8 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using Serilog;
 
 namespace EventStore.Core.LogAbstraction.Common {
+	// This connects a bloom filter datastructure to the rest of the system by
+	// adding catchup and checkpointing.
 	public class StreamNameExistenceFilter :
 		INameExistenceFilter {
 		private readonly string _filterName;
@@ -35,6 +37,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_filterName = filterName;
 			_checkpoint = checkpoint;
 
+			//qq maybe this should be in the bloom filter itself
 			if (!Directory.Exists(directory)) {
 				Directory.CreateDirectory(directory);
 			}
@@ -72,7 +75,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_ => {
 					TakeCheckpoint();
 					return Task.CompletedTask;
-				}, _cancellationTokenSource.Token);
+				},
+				_cancellationTokenSource.Token);
 		}
 
 		private void TakeCheckpoint() {
@@ -112,11 +116,17 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private void OnAdded(long checkpoint) {
 			_addedSinceLoad++;
 			if (_rebuilding) {
-				if (_addedSinceLoad % 500000 == 0) {
+				_checkpoint.Write(checkpoint);
+				//qq consider if we want to take checkpoint from time to time too to save having to start
+				// from the beginning if we stop during the initial build
+				if (_addedSinceLoad % 500_000 == 0) {
 					Log.Debug("{_filterName} rebuilding: processed {processed} records.", _filterName, _addedSinceLoad);
 				}
-				_checkpoint.Write(checkpoint);
 			} else {
+				//qq its weird that we write a 'checkpoint' and then trigger the 'checkpointer'
+				// maybe the checkpointer should be called Flusher or similar
+				// and rename TakeCheckpoint() to Flush() or similar
+				// (note its a bit different to the FASTER code cause faster has a concept called checkpointing)
 				_checkpoint.Write(checkpoint);
 				_checkpointer.Trigger();
 			}
