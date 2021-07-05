@@ -140,6 +140,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		public void Flush() {
 			_readerWriterLock.EnterWriteLock();
 			try {
+				//qq we might need to flush (incl FlushFileBuffers) the underlying filestream too
+				// consider if there is a reasonable way to test that it really flushed
+				// consider if we should in fact add a delay before writing the checkpoint
 				_mmfWriteAccessor.Flush();
 			} finally {
 				_readerWriterLock.ExitWriteLock();

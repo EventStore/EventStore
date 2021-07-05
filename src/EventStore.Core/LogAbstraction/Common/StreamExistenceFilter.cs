@@ -81,6 +81,11 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private void TakeCheckpoint() {
 			try {
 				_mmfStreamBloomFilter.Flush();
+				//qq what if Add gets called here between the two flushes
+				// the checkpoint seems to be designed assuming the thread that writes also flushes.
+				// i think we either need to lock when we add & checkpoint or
+				// we need to read what the checkpoint is before we flush the bloom filter
+				// then flush the bloom filter, then flush the checkpoint _at the previously read value_
 				_checkpoint.Flush();
 				Log.Debug("{filterName} took checkpoint at position: {position}", _filterName, _checkpoint.Read());
 			} catch (Exception ex) {
