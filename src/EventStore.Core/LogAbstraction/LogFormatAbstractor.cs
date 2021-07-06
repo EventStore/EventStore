@@ -227,6 +227,7 @@ namespace EventStore.Core.LogAbstraction {
 
 		public void Dispose() {
 			StreamNameIndexConfirmer?.Dispose();
+			StreamExistenceFilter?.Dispose();
 		}
 
 		public IHasher<TStreamId> LowHasher { get; }

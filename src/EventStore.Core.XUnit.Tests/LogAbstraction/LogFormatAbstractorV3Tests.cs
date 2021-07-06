@@ -6,6 +6,8 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogV3;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 using StreamId = System.UInt32;
@@ -18,6 +20,8 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		readonly LogFormatAbstractor<StreamId> _sut = new LogV3FormatAbstractorFactory().Create(new() {
 			IndexDirectory = _outputDir,
 			InMemory = false,
+			StreamExistenceFilterSize = 1_000_000,
+			StreamExistenceFilterCheckpoint = new InMemoryCheckpoint(),
 		});
 
 		readonly string _stream = "account-abc";
@@ -36,6 +40,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		}
 
 		public void Dispose() {
+			_sut.Dispose();
 			TryDeleteDirectory();
 		}
 
@@ -59,7 +64,10 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 				createdId = streamRecord.Record.SubHeader.ReferenceNumber;
 				createdName = streamRecord.StreamName;
 				_mockIndexReader.Add(streamRecord.ExpectedVersion + 1, streamRecord);
-				_sut.StreamNameIndexConfirmer.Confirm(new[] { streamRecord }, false, null); //qq null
+				_sut.StreamNameIndexConfirmer.Confirm(
+					replicatedPrepares: new[] { streamRecord },
+					catchingUp: false,
+					backend: new MockIndexBackend<StreamId>());
 				return false;
 			} else {
 				createdId = default;
@@ -137,6 +145,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			Assert.Equal(_stream, _sut.StreamNames.LookupName(_streamId));
 			Assert.False(_sut.SystemStreams.IsMetaStream(streamId));
 			Assert.False(_sut.SystemStreams.IsSystemStream(streamId));
+			Assert.True(_sut.StreamExistenceFilter.MightContain(_stream));
 		}
 
 		[Fact]
@@ -212,6 +221,14 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			Assert.Equal(expectedIsSystem, _sut.SystemStreams.IsSystemStream(expectedId));
 		}
 
+		[Theory]
+		[InlineData("")]
+		[InlineData("$$new-user-stream")]
+		[InlineData("$all")]
+		public void cannot_add_certain_kinds_of_streams_to_filter(string name) {
+			Assert.Throws<ArgumentException>(() => _sut.StreamExistenceFilter.Add(name, 0));
+		}
+
 		class MockIndexReader : IIndexReader<StreamId> {
 			private readonly Dictionary<long, IPrepareLogRecord<StreamId>> _streamsStream = new();
 
@@ -250,6 +267,44 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 			public IndexReadStreamResult ReadStreamEventsForward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
 				throw new NotImplementedException();
+		}
+	}
+
+	public class MockIndexBackend<TStreamId> : IIndexBackend<TStreamId> {
+		public TFReaderLease BorrowReader() {
+			throw new NotImplementedException();
+		}
+
+		public SystemSettings GetSystemSettings() {
+			throw new NotImplementedException();
+		}
+
+		public long? SetStreamLastEventNumber(TStreamId streamId, long lastEventNumber) {
+			return null;
+		}
+
+		public StreamMetadata SetStreamMetadata(TStreamId streamId, StreamMetadata metadata) {
+			throw new NotImplementedException();
+		}
+
+		public void SetSystemSettings(SystemSettings systemSettings) {
+			throw new NotImplementedException();
+		}
+
+		public IndexBackend<TStreamId>.EventNumberCached TryGetStreamLastEventNumber(TStreamId streamId) {
+			throw new NotImplementedException();
+		}
+
+		public IndexBackend<TStreamId>.MetadataCached TryGetStreamMetadata(TStreamId streamId) {
+			throw new NotImplementedException();
+		}
+
+		public long? UpdateStreamLastEventNumber(int cacheVersion, TStreamId streamId, long? lastEventNumber) {
+			throw new NotImplementedException();
+		}
+
+		public StreamMetadata UpdateStreamMetadata(int cacheVersion, TStreamId streamId, StreamMetadata metadata) {
+			throw new NotImplementedException();
 		}
 	}
 }

@@ -6,6 +6,7 @@ using StreamId = System.UInt32;
 namespace EventStore.Core.LogV3 {
 	public class LogV3SystemStreams : ISystemStreamLookup<StreamId> {
 		// Virtual streams are streams that exist without requiring a stream record.
+		// Essentially, they are hard coded.
 		// Reserving a thousand. Doubtful we will need many, but just in case.
 		// As an alternative to reserving virtual streams, we could add their stream records as part
 		// of the database bootstrapping. This would be odd for the AllStream

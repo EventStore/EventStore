@@ -26,7 +26,7 @@ namespace EventStore.Core.LogV3 {
 			return _wrapped.MightContain(streamName);
 		}
 
-		private void ValidateStreamName(string streamName) {
+		private static void ValidateStreamName(string streamName) {
 			if (string.IsNullOrEmpty(streamName))
 				throw new ArgumentException($"{nameof(streamName)} must not be null or empty", nameof(streamName));
 

@@ -9,7 +9,7 @@
 		}
 
 		public ulong Hash(T x) {
-			//qq this is the wrong way round, but so is the one in tableindex
+			// same way around as Tableindex for consistency.
 			return (ulong)_lowHasher.Hash(x) << 32 | _highHasher.Hash(x);
 		}
 	}
