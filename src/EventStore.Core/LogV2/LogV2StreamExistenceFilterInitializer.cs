@@ -14,6 +14,8 @@ namespace EventStore.Core.LogV2 {
 	/// Reads the index and transaction log to populate the stream existence filter from the last checkpoint.
 	/// May add a stream hash more than once.
 	/// </summary>
+	/// In V2 the the bloom filter checkpoint is the commit position of the last processed
+	/// log record.
 	public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
@@ -28,6 +30,7 @@ namespace EventStore.Core.LogV2 {
 			_tableIndex = tableIndex;
 		}
 
+		//qq hopefully we can get rid of this by having the index iterate through the inmemory parts.
 		private IEnumerable<(string streamName, long checkpoint)> EnumerateStreamsInLog(long lastCheckpoint) {
 			using var reader = _tfReaderFactory();
 			var buildToPosition = _chaserCheckpoint.Read();

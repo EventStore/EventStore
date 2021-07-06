@@ -8,12 +8,6 @@ namespace EventStore.Core.Tests {
 		public class V3{}
 	}
 
-	internal static class LogFormatHelper {
-		//qqq this is no longer true!
-		// v2 contains no state
-		public static LogFormatAbstractor<string> V2 { get; } = new LogV2FormatAbstractorFactory().Create(new());
-	}
-
 	internal static class LogFormatHelper<TLogFormat, TStreamId> {
 		public static bool IsV2 => typeof(TLogFormat) == typeof(LogFormat.V2);
 		public static bool IsV3 => typeof(TLogFormat) == typeof(LogFormat.V3);
@@ -22,6 +16,10 @@ namespace EventStore.Core.Tests {
 		readonly static LogFormatAbstractor<LogV3StreamId> _v3 = new LogV3FormatAbstractorFactory().Create(new() {
 			InMemory = true,
 		});
+
+		readonly static LogFormatAbstractor<string> _v2 = new LogV2FormatAbstractorFactory().Create(new() {
+			InMemory = true,
+		});		
 
 		public static T Choose<T>(object v2, object v3) {
 			if (typeof(TLogFormat) == typeof(LogFormat.V2)) {
@@ -36,7 +34,7 @@ namespace EventStore.Core.Tests {
 		}
 
 		private static LogFormatAbstractor<TStreamId> _staticLogFormat =
-			Choose<LogFormatAbstractor<TStreamId>>(LogFormatHelper.V2, _v3);
+			Choose<LogFormatAbstractor<TStreamId>>(_v2, _v3);
 
 		public static ILogFormatAbstractorFactory<TStreamId> LogFormatFactory { get; } =
 			Choose<ILogFormatAbstractorFactory<TStreamId>>(new LogV2FormatAbstractorFactory(), new LogV3FormatAbstractorFactory());
