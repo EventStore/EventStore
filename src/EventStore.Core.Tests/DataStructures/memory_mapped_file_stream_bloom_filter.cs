@@ -148,6 +148,7 @@ namespace EventStore.Core.Tests.DataStructures {
 					n, p, falsePositives, expectedFalsePositives, standardDeviation);
 
 			Assert.LessOrEqual(falsePositives, expectedFalsePositives + threeStandardDeviations);
+			Assert.GreaterOrEqual(falsePositives, Math.Max(0, expectedFalsePositives - threeStandardDeviations));
 		}
 
 		[Test, Category("LongRunning")]
