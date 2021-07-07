@@ -45,6 +45,13 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				throw new ArgumentOutOfRangeException(nameof(size), $"size should be between {MinSizeKB:N0} and {MaxSizeKB:N0} KB inclusive");
 			}
 
+			Ensure.Nonnegative(initialReaderCount, nameof(initialReaderCount));
+			Ensure.Positive(maxReaderCount, nameof(maxReaderCount));
+			if (maxReaderCount < initialReaderCount) {
+				throw new ArgumentOutOfRangeException(
+					$"{nameof(maxReaderCount)} ({maxReaderCount}) should be greater than or equal to {nameof(initialReaderCount)} ({initialReaderCount})");
+			}
+
 			_numBits = size * 8;
 
 			var newFile = !File.Exists(path);
