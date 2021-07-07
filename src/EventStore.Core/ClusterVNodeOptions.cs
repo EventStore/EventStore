@@ -423,7 +423,6 @@ namespace EventStore.Core {
 			             "V3 is currently in development and should only be used for testing purposes.")]
 			public DbLogFormat DbLogFormat { get; init; } = DbLogFormat.V2;
 
-			//qq maybe megabytes?
 			//qq we are sure we want it on by default, might cause a long startup time, not sure what a good default would be
 			[Description("The amount of memory & disk space, in bytes, to use for the stream existence filter. " +
 			             "This should be set to roughly the maximum number of streams you expect to have in your database, " +
