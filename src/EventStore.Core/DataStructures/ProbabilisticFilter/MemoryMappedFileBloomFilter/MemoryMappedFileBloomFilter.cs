@@ -36,7 +36,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		/// </summary>
 		/// <param name="path">Path to the bloom filter file</param>
 		/// <param name="size">Size of the bloom filter in bytes</param>
-		/// <param name="serializer">Function to serialize an item to a byte array</param>
+		/// <param name="initialReaderCount">Initial number of readers</param>
+		/// <param name="maxReaderCount">Maximum number of readers</param>
 		public MemoryMappedFileBloomFilter(string path, long size, int initialReaderCount, int maxReaderCount) {
 			Ensure.NotNull(path, nameof(path));
 
