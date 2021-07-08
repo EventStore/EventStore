@@ -86,9 +86,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 					var header = Header.ReadFrom(_mmf);
 					if (header.NumBits != _numBits) {
 						throw new SizeMismatchException(
-							$"Calculated number of bits ({_numBits}) does not match with number of bits in file ({header.NumBits}).");
+							$"The configured number of bytes ({(_numBits / 8):N0}) does not match the number of bytes in file ({(header.NumBits / 8):N0}).");
 					}
-				} catch (CorruptedFileException) {
+				} catch {
 					_mmf?.Dispose();
 					throw;
 				}
