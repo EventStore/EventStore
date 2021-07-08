@@ -26,25 +26,22 @@ We also host native packages for Linux on [Package Cloud](https://packagecloud.i
 
 ## Building EventStoreDB
 
-EventStoreDB is written in a mixture of C#, C++ and JavaScript. It can run on Windows, Linux and macOS using the .NET Core runtime. However, the projections library (which uses the V8 javascript engine) contains platform specific code and it must be built for the platform on which you intend to run it.
+EventStoreDB is written in a mixture of C#, C++ and JavaScript. It can run on Windows, Linux and macOS (using Docker) using the .NET Core runtime. However, the projections library (which uses the V8 javascript engine) contains platform specific code and it must be built for the platform on which you intend to run it.
 
-### Windows / Linux / macOS
+### Windows / Linux
 **Prerequisites**
 - [.NET Core SDK 5.0] (https://dotnet.microsoft.com/download/dotnet/5.0)
 
 ### Build EventStoreDB
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
 ```
-dotnet build -c Release src/EventStore.sln -f netcoreapp5.0 -r <runtime identifier>
+dotnet build -c Release src
 ```
-
-where `<runtime identifier>` needs to be replaced by the [RID of the platform you want to build for](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).
-
-The build scripts: `build.sh` and `build.ps1` are also available for Linux/macOS and Windows respectively to simplify the build process.
+The build scripts: `build.sh` and `build.ps1` are also available for Linux and Windows respectively to simplify the build process.
 
 To start a single node, you can then run:
 ```
-dotnet bin/Release/EventStore.ClusterNode/netcoreapp3.1/<runtime identifier>/EventStore.ClusterNode.dll --db /path/to/db --log /path/to/logs
+dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net5.0/EventStore.ClusterNode.dll --insecure --db ./tmp/data --index ./tmp/index --log ./tmp/log -runprojections all --startstandardprojections --EnableAtomPubOverHttp
 ```
 
 _Note: The build system has changed after version `5.0.5`, therefore the above instructions will not work for older releases._
@@ -56,23 +53,23 @@ You can launch the tests as follows:
 dotnet test src/EventStore.sln
 ```
 
-## Building the EventStoreDB Client / Grpc Client / Embedded Client
-You can build the different clients by following the steps below. This will generate a nuget package file (.nupkg) that you can include in your project.
-#### Client
-```
-dotnet pack -c Release src/EventStore.ClientAPI/EventStore.ClientAPI.csproj /p:Version=6.0.0
-```
+## Building the EventStoreDB Clients 
 
-#### Grpc Client
-```
-dotnet pack -c Release src/EventStore.Grpc/EventStore.Grpc.csproj /p:Version=6.0.0
-```
+The client libraries are located in their own repositories, refer to their specific instructions.  
 
-#### Embedded Client
-```
-dotnet pack -c Release src/EventStore.ClientAPI.Embedded/EventStore.ClientAPI.Embedded.csproj /p:Version=6.0.0
-```
+gRPC clients: 
+* Go: [EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
+* .Net: [EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet) 
+* Java: [EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
+* Node.js: [EventStore-Client-NodeJS](https://github.com/EventStore/EventStore-Client-NodeJS)
+* Rust: [EventStoreDB-Client-Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
 
+TCP clients:
+* .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
+* JVM: [EventStore.JVM](https://github.com/EventStore/EventStore.JVM)
+* Haskell: [EventStoreDB-Client-Haskell](https://github.com/EventStore/EventStoreDB-Client-Haskell)
+
+Note: the TCP protocol is being phased out.
 
 ## Building the EventStoreDB web UI
 The [web UI repository](https://github.com/EventStore/EventStore.UI) is a git submodule of the current repository located under `src/EventStore.UI`.

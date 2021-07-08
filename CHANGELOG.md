@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - HTTP port parameter in docker-compose.yaml  [EventStore#2995](https://github.com/EventStore/EventStore/pull/2995)
+- WrongExpectedVersion when deleting a projection with all delete options  [EventStore#3014](https://github.com/EventStore/EventStore/pull/3014)
+- Build instructions [EventStore#3021](https://github.com/EventStore/EventStore/pull/3021)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
 - //github.com/EventStore/EventStore/pull/3015 [EventStore#3019](https://github.com/EventStore/EventStore/pull/3019)
+- //github.com/EventStore/EventStore/pull/2989 [EventStore#3020](https://github.com/EventStore/EventStore/pull/3020)
 
 ## [21.6.0] - 2021-06-24
 

@@ -12,7 +12,7 @@ exit /B %errorlevel%
 :help
 
 echo Usage:
-echo build.cmd ^[-Version=0.0.0.0^] ^[-Configuration=Debug^|Release^] ^[-Runtime=win10-x64] ^[-BuildUI=yes^|no^]
+echo build.cmd ^[-Version=0.0.0.0^] ^[-Configuration=Debug^|Release^] ^[-BuildUI=yes^|no^]
 echo.
 echo Prerequisites:
 echo Building EventStore database requires .NET Core SDK 5.0.4
