@@ -173,24 +173,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
+				// now that the main index has caught up, we initialize the stream existence filter to add any missing entries.
+				// V2:
+				// reads the index and transaction file forward from the last checkpoint (a log position) and adds stream names to the filter, possibly multiple times
+				// but it's not an issue since it's idempotent
+				//
+				// V3:
+				// reads the stream created stream forward from the last checkpoint (a stream number) and adds stream names to the filter
+				//
+				// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
+				// the cluster but false positives are not a problem since it's a probabilistic filter
+				_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer);
+
 				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 					processed, DateTime.UtcNow - startTime);
 				_bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
 				_backend.SetSystemSettings(GetSystemSettings());
 			}
 			_indexRebuild = false;
-
-			// now that the main index has caught up, we initialize the stream existence filter to add any missing entries.
-			// V2:
-			// reads the index and transaction file forward from the last checkpoint (a log position) and adds stream names to the filter, possibly multiple times
-			// but it's not an issue since it's idempotent
-			//
-			// V3:
-			// reads the stream created stream forward from the last checkpoint (a stream number) and adds stream names to the filter
-			//
-			// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
-			// the cluster but false positives are not a problem since it's a probabilistic filter
-			_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer);
 		}
 
 		public void Dispose() {

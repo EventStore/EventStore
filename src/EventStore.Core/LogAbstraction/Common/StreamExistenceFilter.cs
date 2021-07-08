@@ -19,6 +19,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private long _lastNonFlushedCheckpoint;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
+		private bool _initialized;
 		private bool _rebuilding;
 		private long _addedSinceLoad;
 
@@ -103,6 +104,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 			_rebuilding = false;
+			_initialized = true; //qq needs to be interlocked? whats the threading approach in this class
 		}
 
 		public void Add(string name, long checkpoint) {
@@ -137,6 +139,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public bool MightContain(string name) {
+			if (!_initialized)
+				throw new InvalidOperationException("Initialize the filter before querying");
 			return _mmfStreamBloomFilter.MightContain(name);
 		}
 
