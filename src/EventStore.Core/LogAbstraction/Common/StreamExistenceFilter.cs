@@ -16,6 +16,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private readonly MemoryMappedFileStreamBloomFilter _mmfStreamBloomFilter;
 		private readonly ICheckpoint _checkpoint;
 		private readonly Debouncer _checkpointer;
+		private long _lastNonFlushedCheckpoint;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
 		private bool _rebuilding;
@@ -36,6 +37,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 			ILongHasher<string> hasher) {
 			_filterName = filterName;
 			_checkpoint = checkpoint;
+			_lastNonFlushedCheckpoint = _checkpoint.Read();
 
 			if (!Directory.Exists(directory)) {
 				Directory.CreateDirectory(directory);
@@ -53,6 +55,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 				}
 
 				File.Delete(bloomFilterFilePath);
+				_lastNonFlushedCheckpoint = -1L;
 				_checkpoint.Write(-1L);
 				_checkpoint.Flush();
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount, hasher);
@@ -80,12 +83,9 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		private void TakeCheckpoint() {
 			try {
+				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
 				_mmfStreamBloomFilter.Flush();
-				//qq what if Add gets called here between the two flushes
-				// the checkpoint seems to be designed assuming the thread that writes also flushes.
-				// i think we either need to lock when we add & checkpoint or
-				// we need to read what the checkpoint is before we flush the bloom filter
-				// then flush the bloom filter, then flush the checkpoint _at the previously read value_
+				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();
 				Log.Debug("{filterName} took checkpoint at position: {position}", _filterName, _checkpoint.Read());
 			} catch (Exception ex) {
@@ -120,7 +120,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private void OnAdded(long checkpoint) {
 			_addedSinceLoad++;
 			if (_rebuilding) {
-				_checkpoint.Write(checkpoint);
+				Interlocked.Exchange(ref _lastNonFlushedCheckpoint, checkpoint);
 				//qq consider if we want to take checkpoint from time to time too to save having to start
 				// from the beginning if we stop during the initial build
 				if (_addedSinceLoad % 500_000 == 0) {
@@ -131,7 +131,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 				// maybe the checkpointer should be called Flusher or similar
 				// and rename TakeCheckpoint() to Flush() or similar
 				// (note its a bit different to the FASTER code cause faster has a concept called checkpointing)
-				_checkpoint.Write(checkpoint);
+				Interlocked.Exchange(ref _lastNonFlushedCheckpoint, checkpoint);
 				_checkpointer.Trigger();
 			}
 		}
