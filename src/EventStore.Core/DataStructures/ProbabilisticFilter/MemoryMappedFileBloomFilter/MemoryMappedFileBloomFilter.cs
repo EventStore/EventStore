@@ -26,6 +26,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			new XXHashUnsafe(seed: 0x13375EEDU),
 			new Murmur3AUnsafe(seed: 0x13375EEDU)
 		};
+
+		private readonly FileStream _fileStream;
 		private readonly MemoryMappedFile _mmf;
 		private readonly ObjectPool<MemoryMappedViewAccessor> _mmfReadersPool;
 		private readonly MemoryMappedViewAccessor _mmfWriteAccessor;
@@ -55,15 +57,31 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			_numBits = size * 8;
 
 			var newFile = !File.Exists(path);
+
+			_fileStream = new FileStream(
+				path,
+				FileMode.OpenOrCreate,
+				FileAccess.ReadWrite,
+				FileShare.Read);
+
+			_fileStream.SetLength(Header.Size + _numBits / 8);
+
+			_mmf = MemoryMappedFile.CreateFromFile(
+				fileStream: _fileStream,
+				mapName: null,
+				capacity: 0,
+				access: MemoryMappedFileAccess.ReadWrite,
+				inheritability: HandleInheritability.None,
+				leaveOpen: false);
+
 			if (newFile) {
-				_mmf = MemoryMappedFile.CreateFromFile(path, FileMode.CreateNew, null, Header.Size + _numBits / 8, MemoryMappedFileAccess.ReadWrite);
 				Header header = new() {
 					Version = Header.CurrentVersion,
 					NumBits = _numBits
 				};
+
 				header.WriteTo(_mmf);
 			} else {
-				_mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open, null, 0, MemoryMappedFileAccess.ReadWrite);
 				try {
 					var header = Header.ReadFrom(_mmf);
 					if (header.NumBits != _numBits) {
@@ -148,10 +166,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		public void Flush() {
 			_readerWriterLock.EnterWriteLock();
 			try {
-				//qq we might need to flush (incl FlushFileBuffers) the underlying filestream too
-				// consider if there is a reasonable way to test that it really flushed
-				// consider if we should in fact add a delay before writing the checkpoint
 				_mmfWriteAccessor.Flush();
+				_fileStream.FlushToDisk();
 			} finally {
 				_readerWriterLock.ExitWriteLock();
 			}
