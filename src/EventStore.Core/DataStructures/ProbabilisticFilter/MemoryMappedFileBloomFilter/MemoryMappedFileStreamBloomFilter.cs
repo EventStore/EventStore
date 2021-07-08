@@ -18,25 +18,30 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			_hasher = hasher;
 		}
 
-		public void Add(string stream) =>
-			Add(SerializeString(stream));
+		public void Add(string stream) {
+			if (_hasher != null) {
+				var hash = _hasher.Hash(stream);
+				Add(GetSpan(ref hash));
+			} else {
+				Add(MemoryMarshal.AsBytes(stream.AsSpan()));
+			}
+		}
 
 		public void Add(ulong streamHash) {
 			Ensure.NotNull(_hasher, "Hasher");
-			Add(SerializeHash(streamHash));
+			Add(GetSpan(ref streamHash));
 		}
 
-		public bool MightContain(string stream) =>
-			MightContain(SerializeString(stream));
-
-		private ReadOnlySpan<byte> SerializeString(string stream) {
-			if (_hasher != null)
-				return SerializeHash(_hasher.Hash(stream));
-
-			return MemoryMarshal.AsBytes(stream.AsSpan());
+		public bool MightContain(string stream) {
+			if (_hasher != null) {
+				var hash = _hasher.Hash(stream);
+				return MightContain(GetSpan(ref hash));
+			} else {
+				return MightContain(MemoryMarshal.AsBytes(stream.AsSpan()));
+			}
 		}
 
-		private static ReadOnlySpan<byte> SerializeHash(ulong streamHash) =>
+		private static ReadOnlySpan<byte> GetSpan(ref ulong streamHash) =>
 			MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref streamHash, 1));
 	}
 }
