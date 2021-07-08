@@ -186,6 +186,7 @@ namespace EventStore.Core {
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
+		private readonly LogFormatAbstractor<TStreamId> _logFormat;
 
 		private int _stopCalled;
 		private int _reloadingConfig;
@@ -622,7 +623,7 @@ namespace EventStore.Core {
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache));
 
-			var logFormat = logFormatAbstractorFactory.Create(new() {
+			_logFormat = logFormatAbstractorFactory.Create(new() {
 				InMemory = options.Database.MemDb,
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
@@ -634,9 +635,9 @@ namespace EventStore.Core {
 			});
 
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
-				logFormat.LowHasher,
-				logFormat.HighHasher,
-				logFormat.EmptyStreamId,
+				_logFormat.LowHasher,
+				_logFormat.HighHasher,
+				_logFormat.EmptyStreamId,
 				() => new HashListMemTable(options.IndexBitnessVersion,
 					maxSize: options.Database.MaxMemTableSize * 2),
 				() => new TFReaderLease(readerPool),
@@ -650,19 +651,19 @@ namespace EventStore.Core {
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
 				pTableMaxReaderCount: pTableMaxReaderCount);
-			logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
+			_logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
 
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
 				tableIndex,
-				logFormat.StreamNameIndexConfirmer,
-				logFormat.StreamIds,
-				logFormat.StreamNamesProvider,
-				logFormat.EmptyStreamId,
-				logFormat.StreamIdValidator,
-				logFormat.StreamIdSizer,
-				logFormat.StreamExistenceFilter,
-				logFormat.StreamExistenceFilterReader,
+				_logFormat.StreamNameIndexConfirmer,
+				_logFormat.StreamIds,
+				_logFormat.StreamNamesProvider,
+				_logFormat.EmptyStreamId,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamIdSizer,
+				_logFormat.StreamExistenceFilter,
+				_logFormat.StreamExistenceFilterReader,
 				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
@@ -682,22 +683,22 @@ namespace EventStore.Core {
 					Db,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
-				logFormat.RecordFactory,
+				_logFormat.RecordFactory,
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
 			var storageWriter = new ClusterStorageWriterService<TStreamId>(_mainQueue, _mainBus,
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
-				logFormat.RecordFactory,
-				logFormat.StreamNameIndex,
-				logFormat.SystemStreams,
+				_logFormat.RecordFactory,
+				_logFormat.StreamNameIndex,
+				_logFormat.SystemStreams,
 				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
-				logFormat.SystemStreams,
+				_logFormat.SystemStreams,
 				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
@@ -1024,7 +1025,7 @@ namespace EventStore.Core {
 				_mainQueue,
 				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
 				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs),
-				logFormat.SupportsExplicitTransactions);
+				_logFormat.SupportsExplicitTransactions);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(requestManagement);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
@@ -1146,7 +1147,7 @@ namespace EventStore.Core {
 			var storageScavenger = new StorageScavenger<TStreamId>(Db,
 				tableIndex,
 				readIndex,
-				logFormat.SystemStreams,
+				_logFormat.SystemStreams,
 				scavengerLogManager,
 				options.Database.AlwaysKeepScavenged,
 				!options.Database.DisableScavengeMerging,
@@ -1324,6 +1325,8 @@ namespace EventStore.Core {
 					subsystem.Stop();
 				}
 			}
+
+			_logFormat.Dispose();
 
 			var cts = new CancellationTokenSource();
 
