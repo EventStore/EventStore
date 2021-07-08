@@ -185,7 +185,6 @@ namespace EventStore.Core {
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
-
 		private int _stopCalled;
 		private int _reloadingConfig;
 
@@ -372,6 +371,7 @@ namespace EventStore.Core {
 				ICheckpoint epochChk;
 				ICheckpoint proposalChk;
 				ICheckpoint truncateChk;
+				ICheckpoint streamExistenceFilterChk;
 				//todo(clc) : promote these to file backed checkpoints re:project-io
 				ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
 				ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
@@ -383,6 +383,7 @@ namespace EventStore.Core {
 					epochChk = new InMemoryCheckpoint(Checkpoint.Epoch, initValue: -1);
 					proposalChk = new InMemoryCheckpoint(Checkpoint.Proposal, initValue: -1);
 					truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
+					streamExistenceFilterChk = new InMemoryCheckpoint(Checkpoint.StreamExistenceFilter, initValue: -1);
 				} else {
 					try {
 						if (!Directory.Exists(dbPath)) // mono crashes without this check
@@ -402,11 +403,19 @@ namespace EventStore.Core {
 						}
 					}
 
+					var indexPath = options.Database.Index ?? Path.Combine(dbPath, ESConsts.DefaultIndexDirectoryName);
+					var streamExistencePath = Path.Combine(indexPath, "stream-existence");
+					if (!Directory.Exists(streamExistencePath)) {
+						Directory.CreateDirectory(streamExistencePath);
+					}
+
 					var writerCheckFilename = Path.Combine(dbPath, Checkpoint.Writer + ".chk");
 					var chaserCheckFilename = Path.Combine(dbPath, Checkpoint.Chaser + ".chk");
 					var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 					var proposalCheckFilename = Path.Combine(dbPath, Checkpoint.Proposal + ".chk");
 					var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
+					var streamExistenceFilterCheckFilename = Path.Combine(streamExistencePath, Checkpoint.StreamExistenceFilter + ".chk");
+
 					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
 					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
 					epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
@@ -415,6 +424,8 @@ namespace EventStore.Core {
 						cached: true,
 						initValue: -1);
 					truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
+						cached: true, initValue: -1);
+					streamExistenceFilterChk = new MemoryMappedFileCheckpoint(streamExistenceFilterCheckFilename, Checkpoint.StreamExistenceFilter,
 						cached: true, initValue: -1);
 				}
 
@@ -463,6 +474,7 @@ namespace EventStore.Core {
 					truncateChk,
 					replicationChk,
 					indexChk,
+					streamExistenceFilterChk,
 					options.Database.ChunkInitialReaderCount,
 					ClusterVNodeOptions.DatabaseOptions.GetTFChunkMaxReaderCount(
 						readerThreadsCount: readerThreadsCount,
@@ -479,6 +491,7 @@ namespace EventStore.Core {
 			var chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
 			var epochCheckpoint = Db.Config.EpochCheckpoint.Read();
 			var truncateCheckpoint = Db.Config.TruncateCheckpoint.Read();
+			var streamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint.Read();
 
 			Log.Information("{description,-25} {instanceId}", "INSTANCE ID:", NodeInfo.InstanceId);
 			Log.Information("{description,-25} {path}", "DATABASE:", Db.Config.Path);
@@ -490,6 +503,8 @@ namespace EventStore.Core {
 				epochCheckpoint, epochCheckpoint);
 			Log.Information("{description,-25} {truncateCheckpoint} (0x{truncateCheckpoint:X})", "TRUNCATE CHECKPOINT:",
 				truncateCheckpoint, truncateCheckpoint);
+			Log.Information("{description,-25} {streamExistenceFilterCheckpoint} (0x{streamExistenceFilterCheckpoint:X})", "STREAM EXISTENCE FILTER CHECKPOINT:",
+				streamExistenceFilterCheckpoint, streamExistenceFilterCheckpoint);
 
 			var isSingleNode = options.Cluster.ClusterSize == 1;
 			_disableHttps = options.Application.Insecure;
@@ -593,7 +608,7 @@ namespace EventStore.Core {
 
 			// STORAGE SUBSYSTEM
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
-			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, "index");
+			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
 
 			var pTableMaxReaderCount = ClusterVNodeOptions.DatabaseOptions.GetPTableMaxReaderCount(readerThreadsCount);
 			var readerPool = new ObjectPool<ITransactionFileReader>(
@@ -609,7 +624,10 @@ namespace EventStore.Core {
 				InMemory = options.Database.MemDb,
 				IndexDirectory = indexPath,
 				InitialReaderCount = ESConsts.PTableInitialReaderCount,
-				MaxReaderCount = pTableMaxReaderCount
+				MaxReaderCount = pTableMaxReaderCount,
+				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
+				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
+				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
 			});
 
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
@@ -629,6 +647,8 @@ namespace EventStore.Core {
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
 				pTableMaxReaderCount: pTableMaxReaderCount);
+			logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
+
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
 				readerPool,
 				tableIndex,
@@ -636,9 +656,10 @@ namespace EventStore.Core {
 				logFormat.StreamIds,
 				logFormat.StreamNamesProvider,
 				logFormat.EmptyStreamId,
-				logFormat.StreamIdConverter,
 				logFormat.StreamIdValidator,
 				logFormat.StreamIdSizer,
+				logFormat.StreamExistenceFilter,
+				logFormat.StreamExistenceFilterReader,
 				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,

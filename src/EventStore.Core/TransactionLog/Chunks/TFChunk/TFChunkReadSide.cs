@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.DataStructures;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.LogRecords;
 using Serilog;
@@ -108,7 +108,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private class TFChunkReadSideScavenged : TFChunkReadSide, IChunkReadSide {
 			private Midpoint[] _midpoints;
 			private bool _optimizeCache;
-			private BloomFilter _logPositionsBloomFilter;
+			private InMemoryBloomFilter _logPositionsBloomFilter;
 
 			private bool CacheIsOptimized {
 				get { return _optimizeCache && _logPositionsBloomFilter != null; }
@@ -139,17 +139,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					_logPositionsBloomFilter = null;
 			}
 
-			private BloomFilter PopulateBloomFilter() {
+			private InMemoryBloomFilter PopulateBloomFilter() {
 				var mapCount = Chunk.ChunkFooter.MapCount;
 				if (mapCount <= 0)
 					return null;
 
-				BloomFilter bf = null;
+				InMemoryBloomFilter bf = null;
 				double p = 1e-4; //false positive probability
 
 				while (p < 1.0) {
 					try {
-						bf = new BloomFilter(mapCount, p);
+						bf = new InMemoryBloomFilter(mapCount, p);
 						//Log.Debug("Created bloom filter with {numBits} bits and {numHashFunctions} hash functions for chunk {chunk} with map count: {mapCount}", bf.NumBits, bf.NumHashFunctions, Chunk.FileName, mapCount);
 						break;
 					} catch (ArgumentOutOfRangeException) {
@@ -260,7 +260,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			public bool MayExistAt(long logicalPosition) {
 				/* This function is much faster than ExistsAt. However, it may return false positives (with a very low probability) but never false negatives */
-				return _logPositionsBloomFilter.MayExist(logicalPosition);
+				return _logPositionsBloomFilter.MightContain(logicalPosition);
 			}
 
 			public RecordReadResult TryReadAt(long logicalPosition) {

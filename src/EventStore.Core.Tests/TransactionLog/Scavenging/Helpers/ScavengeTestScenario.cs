@@ -68,14 +68,16 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 100,
 				maxTablesPerLevel: 2);
+			_logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(), readerPool, tableIndex,
 				_logFormat.StreamNameIndexConfirmer,
 				_logFormat.StreamIds,
 				_logFormat.StreamNamesProvider,
 				_logFormat.EmptyStreamId,
-				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
+				_logFormat.StreamExistenceFilter,
+				_logFormat.StreamExistenceFilterReader,
 				100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);

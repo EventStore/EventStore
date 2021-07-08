@@ -28,24 +28,9 @@ namespace EventStore.Core.Tests {
 		}
 
 		[OneTimeTearDown]
-		public virtual Task TestFixtureTearDown() {
-			//kill whole tree
-			try {
-				ForceDeleteDirectory(PathName);
-			} catch {
-
-			}
-
-			return Task.CompletedTask;
-		}
-
-		private static void ForceDeleteDirectory(string path) {
-			var directory = new DirectoryInfo(path) { Attributes = FileAttributes.Normal };
-			foreach (var info in directory.GetFileSystemInfos("*", SearchOption.AllDirectories)) {
-				info.Attributes = FileAttributes.Normal;
-			}
-
-			directory.Delete(true);
+		public virtual async Task TestFixtureTearDown() {
+			// kill whole tree
+			await DirectoryDeleter.TryForceDeleteDirectoryAsync(PathName, retries: 10);
 		}
 	}
 }

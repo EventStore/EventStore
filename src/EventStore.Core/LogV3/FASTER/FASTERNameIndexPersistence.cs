@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Core.DataStructures;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.LogAbstraction.Common;
 using FASTER.core;
 using Serilog;
 using Value = System.UInt32;
