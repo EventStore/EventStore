@@ -34,6 +34,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		public LogFormatAbstractorV3Tests() {
 			TryDeleteDirectory();
 			_sut.StreamNamesProvider.SetReader(_mockIndexReader);
+			_sut.StreamExistenceFilter.Initialize(_sut.StreamExistenceFilterInitializer);
 			Assert.False(GetOrReserve(_stream, out _streamId, out _, out _));
 			Assert.False(GetOrReserve(_systemStream, out _systemStreamId, out _, out _));
 			_numStreams = 2;
@@ -232,7 +233,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		class MockIndexReader : IIndexReader<StreamId> {
 			private readonly Dictionary<long, IPrepareLogRecord<StreamId>> _streamsStream = new();
 
-			public void Add(long streamId, IPrepareLogRecord<StreamId> streamRecord) => _streamsStream.Add(streamId, streamRecord);
+			public void Add(long eventNumber, IPrepareLogRecord<StreamId> streamRecord) => _streamsStream.Add(eventNumber, streamRecord);
 
 			public int Count => _streamsStream.Count;
 
@@ -253,8 +254,11 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			public StreamId GetEventStreamIdByTransactionId(long transactionId) =>
 				throw new NotImplementedException();
 
-			public long GetStreamLastEventNumber(StreamId streamId) =>
+			public long GetStreamLastEventNumber(StreamId streamId) {
+				if (streamId == LogV3SystemStreams.StreamsCreatedStreamNumber)
+					return _streamsStream.Count - 1;
 				throw new NotImplementedException();
+			}
 
 			public StreamMetadata GetStreamMetadata(StreamId streamId) =>
 				throw new NotImplementedException();

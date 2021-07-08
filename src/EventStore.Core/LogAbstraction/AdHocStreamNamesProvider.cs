@@ -21,12 +21,12 @@ namespace EventStore.Core.LogAbstraction {
 		}
 
 		public INameLookup<TStreamId> StreamNames {
-			get => _streamNames ?? throw new InvalidOperationException("Call SetReader first");
+			get => _streamNames ?? throw new InvalidOperationException("Call SetReader or SetTableIndex first");
 			set => _streamNames = value;
 		}
 
 		public ISystemStreamLookup<TStreamId> SystemStreams {
-			get => _systemStreams ?? throw new InvalidOperationException("Call SetReader first");
+			get => _systemStreams ?? throw new InvalidOperationException("Call SetReader or SetTableIndex first");
 			set => _systemStreams = value;
 		}
 

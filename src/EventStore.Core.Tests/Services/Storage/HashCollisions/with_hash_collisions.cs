@@ -50,6 +50,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: _maxMemTableSize,
 				maxTablesPerLevel: 2);
+			_logFormat.StreamNamesProvider.SetTableIndex(_tableIndex);
 			_tableIndex.Initialize(long.MaxValue);
 			_indexReader = new IndexReader<string>(_indexBackend, _tableIndex,
 				_logFormat.StreamNamesProvider,

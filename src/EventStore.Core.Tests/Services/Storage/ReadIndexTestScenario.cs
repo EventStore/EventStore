@@ -99,6 +99,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
+			_logFormat.StreamNamesProvider.SetTableIndex(TableIndex);
 
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,

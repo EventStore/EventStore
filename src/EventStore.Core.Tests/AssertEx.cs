@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests {
 			var expected = default(TException);
 			try {
 				await code();
-				Assert.Fail($"Expected exception of type: {typeof(TException)}");
+				Assert.Fail($"Expected exception of type: {typeof(TException)} but no exception was thrown");
 			} catch (TException ex) {
 				expected = ex;
 			} catch (Exception ex) {
