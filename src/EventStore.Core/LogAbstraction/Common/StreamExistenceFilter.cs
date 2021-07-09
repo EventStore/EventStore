@@ -19,8 +19,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private long _lastNonFlushedCheckpoint;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
-		private bool _initialized;
-		private bool _rebuilding;
+		private volatile bool _initialized;
+		private bool _initializing;
 		private long _addedSinceLoad;
 
 		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamExistenceFilter>();
@@ -95,7 +95,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public void Initialize(INameExistenceFilterInitializer source) {
-			_rebuilding = true;
+			_initializing = true;
 			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint} (0x{checkpoint:X}).",
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
@@ -103,8 +103,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 			TakeCheckpoint();
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
-			_rebuilding = false;
-			_initialized = true; //qq needs to be interlocked? whats the threading approach in this class
+			_initializing = false;
+			_initialized = true;
 		}
 
 		public void Add(string name, long checkpoint) {
@@ -121,20 +121,11 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		private void OnAdded(long checkpoint) {
 			_addedSinceLoad++;
-			if (_rebuilding) {
-				Interlocked.Exchange(ref _lastNonFlushedCheckpoint, checkpoint);
-				//qq consider if we want to take checkpoint from time to time too to save having to start
-				// from the beginning if we stop during the initial build
-				if (_addedSinceLoad % 500_000 == 0) {
-					Log.Debug("{_filterName} rebuilding: processed {processed} records.", _filterName, _addedSinceLoad);
-				}
-			} else {
-				//qq its weird that we write a 'checkpoint' and then trigger the 'checkpointer'
-				// maybe the checkpointer should be called Flusher or similar
-				// and rename TakeCheckpoint() to Flush() or similar
-				// (note its a bit different to the FASTER code cause faster has a concept called checkpointing)
-				Interlocked.Exchange(ref _lastNonFlushedCheckpoint, checkpoint);
-				_checkpointer.Trigger();
+			Interlocked.Exchange(ref _lastNonFlushedCheckpoint, checkpoint);
+			_checkpointer.Trigger();
+
+			if (_initializing && _addedSinceLoad % 500_000 == 0) {
+				Log.Debug("{_filterName} rebuilding: processed {processed} new streams.", _filterName, _addedSinceLoad);
 			}
 		}
 
