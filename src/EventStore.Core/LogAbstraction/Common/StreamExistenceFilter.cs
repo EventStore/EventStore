@@ -85,6 +85,15 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private void TakeCheckpoint() {
 			try {
 				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
+				var flushedCheckpoint = _checkpoint.Read();
+
+				if (checkpoint == flushedCheckpoint) {
+					// e.g. logV2 rebuilds from index only and therefore does not update the checkpoint
+					// until it has finished rebuilding
+					Log.Debug("{filterName} skipped taking checkpoint at position: {position}", _filterName, _checkpoint.Read());
+					return;
+				}
+
 				_mmfStreamBloomFilter.Flush();
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();
@@ -100,7 +109,6 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
 			source.Initialize(this);
-			TakeCheckpoint();
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 			_initializing = false;
