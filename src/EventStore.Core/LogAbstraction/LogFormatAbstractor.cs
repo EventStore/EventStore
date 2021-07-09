@@ -26,14 +26,6 @@ namespace EventStore.Core.LogAbstraction {
 		LogFormatAbstractor<TStreamId> Create(LogFormatAbstractorOptions options);
 	}
 
-	//qq important thing remaining is to check if we are populating the appropriate caches
-	// when we are given the opportunity, or if we are going to have an unnecessary
-	// cache miss the first time we read a stream we we just populated...
-	// consider carefully what happens if we do a read just as the first prepares of a
-	// stream are getting added to the index. we want it to atomically switch from
-	//   1. shortcutting to a nostream to
-	//   2. finding the correct value in the lru
-	// without any 'uncached' lookups in v2 or v3.
 	public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
 		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
 			var lowHasher = new XXHashUnsafe();

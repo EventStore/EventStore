@@ -368,13 +368,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
 				}
 
-				_streamNameIndex.Confirm(
-					replicatedPrepares: prepares,
-					catchingUp: _indexRebuild,
-					backend: _backend);
-
-				//qq can put this ahead of the confirmation? otherwise it's possible for the
-				// stream name index to return a number for a stream we we can't find the name of.
 				_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
 			}
 
@@ -393,6 +386,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (StreamIdComparer.Equals(streamId, _systemStreams.SettingsStream))
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
+
+			_streamNameIndex.Confirm(
+				replicatedPrepares: prepares,
+				catchingUp: _indexRebuild,
+				backend: _backend);
 
 			var newLastIndexedPosition = Math.Max(lastPrepare.LogPosition, lastIndexedPosition);
 			if (_indexChk.Read() != lastIndexedPosition) {
