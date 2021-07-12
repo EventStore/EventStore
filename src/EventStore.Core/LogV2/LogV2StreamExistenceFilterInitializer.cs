@@ -60,49 +60,25 @@ namespace EventStore.Core.LogV2 {
 		}
 
 		private void InitializeFromLog(INameExistenceFilter filter) {
-			using var reader = _tfReaderFactory();
-
 			// if we have a checkpoint, start from that position in the log. this will work
 			// whether the checkpoint is the pre or post position of the last processed record.
 			var startPosition = filter.CurrentCheckpoint == -1 ? 0 : filter.CurrentCheckpoint;
+			using var reader = _tfReaderFactory();
 			reader.Reposition(startPosition);
 
-			while (TryReadNextLogRecord(reader, out var record, out var postPosition)) {
-				switch (record.RecordType) {
+			while (TryReadNextLogRecord(reader, out var result)) {
+				switch (result.LogRecord.RecordType) {
 					case LogRecordType.Prepare:
-						var prepare = (IPrepareLogRecord<string>)record;
-						if (prepare.Flags.HasFlag(PrepareFlags.IsCommitted)) {
-							filter.Add(prepare.EventStreamId, postPosition);
-						}
-						break;
-					case LogRecordType.Commit:
-						var commit = (CommitLogRecord)record;
-						reader.Reposition(commit.TransactionPosition);
-						if (TryReadNextLogRecord(reader, out var transactionRecord, out _)) {
-							var transactionPrepare = (IPrepareLogRecord<string>)transactionRecord;
-							filter.Add(transactionPrepare.EventStreamId, postPosition);
-						} else {
-							// nothing to do - may have been scavenged
-							//qqq yehbut prepares later in this transaction may not have been scavenged, would have to scan
-							// the log until the commit position like the allreader does.
-							// may be better to just add the prepares even when not committed.
-						}
-						reader.Reposition(postPosition);
+						var prepare = (IPrepareLogRecord<string>)result.LogRecord;
+						filter.Add(prepare.EventStreamId, result.RecordPostPosition);
 						break;
 				}
 			}
 		}
 
-		private static bool TryReadNextLogRecord(TFReaderLease reader, out ILogRecord record, out long postPosition) {
-			var result = reader.TryReadNext();
-			if (!result.Success) {
-				record = default;
-				postPosition = default;
-				return false;
-			}
-			record = result.LogRecord;
-			postPosition = result.RecordPostPosition;
-			return true;
+		private static bool TryReadNextLogRecord(TFReaderLease reader, out SeqReadResult result) {
+			result = reader.TryReadNext();
+			return result.Success;
 		}
 	}
 }
