@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using EventStore.Core.LogAbstraction;
 using StreamId = System.UInt32;
 
@@ -13,26 +12,15 @@ namespace EventStore.Core.LogV3 {
 			_streamNames = streamNames;
 		}
 
-		private IEnumerable<(string name, long checkpoint)> EnumerateNames(long lastCheckpoint) {
-			var source = _streamNames;
-
-			if (!source.TryGetLastValue(out var sourceLastStreamId)) {
-				yield break;
-			}
-
-			var startStreamId = Math.Max(LogV3SystemStreams.FirstRealStream, (uint)lastCheckpoint);
-
-			for (var streamId = startStreamId; streamId <= sourceLastStreamId; streamId += LogV3SystemStreams.StreamInterval) {
-				if (!source.TryGetName(streamId, out var name))
-					throw new Exception($"NameExistenceFilter: this should never happen. could not find {streamId} in source");
-				yield return (name, streamId);
-			}
-		}
-
 		public void Initialize(INameExistenceFilter filter) {
-			var lastCheckpoint = filter.CurrentCheckpoint;
-			foreach (var (name, checkpoint) in EnumerateNames(lastCheckpoint)) {
-				filter.Add(name, checkpoint);
+			if (!_streamNames.TryGetLastValue(out var sourceLastStreamId))
+				return;
+
+			var startStreamId = Math.Max(LogV3SystemStreams.FirstRealStream, (uint)filter.CurrentCheckpoint);
+			for (var streamId = startStreamId; streamId <= sourceLastStreamId; streamId += LogV3SystemStreams.StreamInterval) {
+				if (!_streamNames.TryGetName(streamId, out var name))
+					throw new Exception($"NameExistenceFilter: this should never happen. could not find {streamId} in source");
+				filter.Add(name, streamId);
 			}
 		}
 	}

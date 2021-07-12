@@ -733,7 +733,16 @@ namespace EventStore.Core.Index {
 			return (ulong)_lowHasher.Hash(streamId) << 32 | _highHasher.Hash(streamId);
 		}
 
-		public IEnumerable<IndexEntry> IterateAll() {
+		/// newest to oldest
+		public IEnumerable<IndexEntry> IterateAllInOrder() {
+			var awaiting = _awaitingMemTables;
+			for (var index = awaiting.Count - 1; index >= 0; index--) {
+				var table = awaiting[index].Table;
+				foreach (var indexEntry in table.IterateAllInOrder()) {
+					yield return indexEntry;
+				}
+			}
+
 			foreach (var table in _indexMap.InOrder()) {
 				foreach (var indexEntry in table.IterateAllInOrder()) {
 					yield return indexEntry;

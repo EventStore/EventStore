@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		{
 		}
 
-		public IEnumerable<IndexEntry> IterateAll() => throw new NotImplementedException();
+		public IEnumerable<IndexEntry> IterateAllInOrder() => throw new NotImplementedException();
 
 		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null)
 		{

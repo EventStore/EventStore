@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
+using EventStore.Common.Utils;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
-using StreamId = System.String;
 
 namespace EventStore.Core.LogV2 {
 	/// <summary>
@@ -18,93 +16,93 @@ namespace EventStore.Core.LogV2 {
 	/// log record.
 	public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
-		private readonly IReadOnlyCheckpoint _chaserCheckpoint;
 		private readonly ITableIndex _tableIndex;
 
 		public LogV2StreamExistenceFilterInitializer(
 			Func<TFReaderLease> tfReaderFactory,
-			IReadOnlyCheckpoint chaserCheckpoint,
 			ITableIndex tableIndex) {
+
+			Ensure.NotNull(tableIndex, nameof(tableIndex));
+
 			_tfReaderFactory = tfReaderFactory;
-			_chaserCheckpoint = chaserCheckpoint;
 			_tableIndex = tableIndex;
 		}
 
-		//qq hopefully we can get rid of this by having the index iterate through the inmemory parts.
-		private IEnumerable<(string streamName, long checkpoint)> EnumerateStreamsInLog(long lastCheckpoint) {
-			using var reader = _tfReaderFactory();
-			var buildToPosition = _chaserCheckpoint.Read();
+		public void Initialize(INameExistenceFilter filter) {
+			InitializeFromIndex(filter);
+			InitializeFromLog(filter);
+		}
 
-			reader.Reposition(lastCheckpoint);
-			while (true) {
-				if (!TryReadNextLogRecord(reader, buildToPosition, out var record, out var postPosition)) {
-					break;
-				}
+		private void InitializeFromIndex(INameExistenceFilter filter) {
+			if (filter.CurrentCheckpoint != -1L) {
+				// can only use the index to build from scratch. if we have a checkpoint
+				// we need to build from the log in order to make use of it.
+				return;
+			}
+
+			// we have no checkpoint, build from the index. unfortunately there isn't
+			// a simple way to checkpoint in the middle of the index.
+			ulong? previousHash = null;
+			foreach (var entry in _tableIndex.IterateAllInOrder()) {
+				if (entry.Stream == previousHash)
+					continue;
+
+				// add regardless of version because event 0 may be scavenged
+				filter.Add(entry.Stream, -1);
+				previousHash = entry.Stream;
+			}
+
+			// checkpoint at the end of the index.
+			if (previousHash != null) {
+				var checkpoint = _tableIndex.CommitCheckpoint;
+				filter.Add(previousHash.Value, checkpoint);
+			}
+		}
+
+		private void InitializeFromLog(INameExistenceFilter filter) {
+			using var reader = _tfReaderFactory();
+
+			// if we have a checkpoint, start from that position in the log. this will work
+			// whether the checkpoint is the pre or post position of the last processed record.
+			var startPosition = filter.CurrentCheckpoint == -1 ? 0 : filter.CurrentCheckpoint;
+			reader.Reposition(startPosition);
+
+			while (TryReadNextLogRecord(reader, out var record, out var postPosition)) {
 				switch (record.RecordType) {
 					case LogRecordType.Prepare:
-						var prepare = (IPrepareLogRecord<StreamId>) record;
+						var prepare = (IPrepareLogRecord<string>)record;
 						if (prepare.Flags.HasFlag(PrepareFlags.IsCommitted)) {
-							yield return (prepare.EventStreamId, postPosition);
+							filter.Add(prepare.EventStreamId, postPosition);
 						}
 						break;
 					case LogRecordType.Commit:
 						var commit = (CommitLogRecord)record;
 						reader.Reposition(commit.TransactionPosition);
-						if (TryReadNextLogRecord(reader, buildToPosition, out var transactionRecord, out _)) {
-							var transactionPrepare = (IPrepareLogRecord<StreamId>) transactionRecord;
-							yield return (transactionPrepare.EventStreamId, postPosition);
+						if (TryReadNextLogRecord(reader, out var transactionRecord, out _)) {
+							var transactionPrepare = (IPrepareLogRecord<string>)transactionRecord;
+							filter.Add(transactionPrepare.EventStreamId, postPosition);
 						} else {
 							// nothing to do - may have been scavenged
+							//qqq yehbut prepares later in this transaction may not have been scavenged, would have to scan
+							// the log until the commit position like the allreader does.
+							// may be better to just add the prepares even when not committed.
 						}
 						reader.Reposition(postPosition);
 						break;
 				}
-
 			}
 		}
 
-		private IEnumerable<(ulong streamHash, long checkpoint)> EnumerateStreamsInIndex() {
-			ulong previousHash = ulong.MaxValue;
-			foreach (var entry in _tableIndex.IterateAll()) {
-				if (entry.Stream == previousHash) {
-					continue;
-				}
-				yield return (entry.Stream, -1L);
-				previousHash = entry.Stream;
-			}
-			if (previousHash != ulong.MaxValue) { // send a checkpoint with the last stream hash
-				yield return (previousHash, Math.Max(_tableIndex.PrepareCheckpoint, _tableIndex.CommitCheckpoint));
-			}
-		}
-
-		public static bool TryReadNextLogRecord(TFReaderLease reader, long maxPosition, out ILogRecord record, out long postPosition) {
+		private static bool TryReadNextLogRecord(TFReaderLease reader, out ILogRecord record, out long postPosition) {
 			var result = reader.TryReadNext();
-			if (!result.Success || result.LogRecord.LogPosition >= maxPosition) {
-				record = null;
-				postPosition = 0L;
+			if (!result.Success) {
+				record = default;
+				postPosition = default;
 				return false;
 			}
 			record = result.LogRecord;
 			postPosition = result.RecordPostPosition;
 			return true;
-		}
-
-		public void Initialize(INameExistenceFilter filter) {
-			if (_tableIndex == null) throw new Exception("Call SetTableIndex first");
-
-			var lastCheckpoint = filter.CurrentCheckpoint;
-			if (lastCheckpoint == -1L) { //if we do not have a checkpoint, populate the filter from the index first
-				foreach (var (hash, checkpoint) in EnumerateStreamsInIndex()) {
-					filter.Add(hash, checkpoint);
-					lastCheckpoint = Math.Max(lastCheckpoint, checkpoint);
-				}
-				lastCheckpoint = Math.Max(lastCheckpoint, 0L); //empty table index
-			}
-
-			//then populate the filter with remaining stream names from the log
-			foreach (var (name, checkpoint) in EnumerateStreamsInLog(lastCheckpoint)) {
-				filter.Add(name, checkpoint);
-			}
 		}
 	}
 }

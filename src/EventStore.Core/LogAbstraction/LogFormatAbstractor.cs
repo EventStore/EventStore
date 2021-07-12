@@ -19,7 +19,6 @@ namespace EventStore.Core.LogAbstraction {
 		public long StreamExistenceFilterSize { get; init; }
 		public ICheckpoint StreamExistenceFilterCheckpoint { get; init; }
 		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
-		public IReadOnlyCheckpoint ChaserCheckpoint { get; init; }
 	}
 
 	public interface ILogFormatAbstractorFactory<TStreamId> {
@@ -81,7 +80,6 @@ namespace EventStore.Core.LogAbstraction {
 				self.StreamNames = streamNameIndex;
 				self.StreamExistenceFilterInitializer = new LogV2StreamExistenceFilterInitializer(
 					options.TFReaderLeaseFactory,
-					options.ChaserCheckpoint,
 					tableIndex);
 			});
 	}

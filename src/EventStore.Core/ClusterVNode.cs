@@ -630,7 +630,6 @@ namespace EventStore.Core {
 				MaxReaderCount = pTableMaxReaderCount,
 				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
-				ChaserCheckpoint = Db.Config.ChaserCheckpoint,
 				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
 			});
 
