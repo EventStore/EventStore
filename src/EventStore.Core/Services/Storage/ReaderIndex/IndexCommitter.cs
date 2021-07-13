@@ -263,7 +263,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				}
 
 				_tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
-				//qq probably need to add to the bloom filter here too
 			}
 
 			if (eventNumber != EventNumber.Invalid) {
@@ -281,6 +280,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (StreamIdComparer.Equals(streamId, _systemStreams.SettingsStream))
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
+
+			_streamNameIndex.Confirm(
+				commit: commit,
+				replicatedPrepares: prepares,
+				catchingUp: _indexRebuild,
+				backend: _backend);
 
 			var newLastIndexedPosition = Math.Max(commit.LogPosition, lastIndexedPosition);
 			if (_indexChk.Read() != lastIndexedPosition) {

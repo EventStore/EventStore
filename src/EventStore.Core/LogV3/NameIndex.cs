@@ -136,6 +136,13 @@ namespace EventStore.Core.LogV3 {
 			}
 		}
 
+		public void Confirm(
+			IList<IPrepareLogRecord<Value>> prepares,
+			CommitLogRecord commit,
+			bool catchingUp,
+			IIndexBackend<Value> backend) {
+		}
+
 		public bool GetOrReserve(string name, out Value value, out Value addedValue, out string addedName) {
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException(nameof(name));

@@ -28,20 +28,36 @@ namespace EventStore.Core.LogV2 {
 		}
 
 		public void Confirm(IList<IPrepareLogRecord<string>> prepares, bool catchingUp, IIndexBackend<string> backend) {
-			if (prepares.Count == 0)
+			if (catchingUp) {
+				// after the main index is caught up we will initialize the stream existence filter
 				return;
+			}
 
-			if (prepares[0].ExpectedVersion != ExpectedVersion.NoStream)
+			if (prepares.Count == 0 || prepares[0].ExpectedVersion != ExpectedVersion.NoStream)
 				return;
 
 			var lastPrepare = prepares[prepares.Count - 1];
+			_existenceFilter.Add(lastPrepare.EventStreamId, lastPrepare.LogPosition);
+		}
+
+		// must use the commit to see if these are the first events in the stream
+		// and for checkpointing.
+		public void Confirm(
+			IList<IPrepareLogRecord<string>> prepares,
+			CommitLogRecord commit,
+			bool catchingUp,
+			IIndexBackend<string> backend) {
 
 			if (catchingUp) {
-				// nothing to do here
 				// after the main index is caught up we will initialize the stream existence filter
-			} else {
-				_existenceFilter.Add(lastPrepare.EventStreamId, lastPrepare.LogPosition);
+				return;
 			}
+
+			if (prepares.Count == 0 || commit.FirstEventNumber != 0)
+				return;
+
+			var lastPrepare = prepares[prepares.Count - 1];
+			_existenceFilter.Add(lastPrepare.EventStreamId, commit.LogPosition);
 		}
 
 		public bool GetOrReserve(string streamName, out string streamId, out string createdId, out string createdName) {

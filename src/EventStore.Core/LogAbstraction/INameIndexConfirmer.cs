@@ -14,5 +14,11 @@ namespace EventStore.Core.LogAbstraction {
 			IList<IPrepareLogRecord<TValue>> replicatedPrepares,
 			bool catchingUp,
 			IIndexBackend<TValue> backend);
+
+		void Confirm(
+			IList<IPrepareLogRecord<TValue>> replicatedPrepares,
+			CommitLogRecord commit,
+			bool catchingUp,
+			IIndexBackend<TValue> backend);
 	}
 }
