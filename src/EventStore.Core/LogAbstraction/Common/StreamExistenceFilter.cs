@@ -25,7 +25,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamExistenceFilter>();
 
-		public long CurrentCheckpoint => _checkpoint.Read();
+		public long CurrentCheckpoint => _lastNonFlushedCheckpoint;
 
 		public StreamExistenceFilter(
 			string directory,
@@ -45,21 +45,40 @@ namespace EventStore.Core.LogAbstraction.Common {
 			}
 
 			var bloomFilterFilePath = $"{directory}/{_filterName}.dat";
+			var create = _lastNonFlushedCheckpoint == -1;
 
 			try {
-				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount, hasher);
-			} catch (Exception exc) when (exc is CorruptedFileException || exc is SizeMismatchException) {
+				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
+					path: bloomFilterFilePath,
+					create: create,
+					size: size,
+					initialReaderCount: initialReaderCount,
+					maxReaderCount: maxReaderCount,
+					hasher: hasher);
+			} catch (Exception exc) when (
+					exc is CorruptedFileException ||
+					exc is SizeMismatchException ||
+					exc is FileNotFoundException) {
+
 				if (exc is CorruptedFileException) {
 					Log.Error(exc, "{filterName} is corrupted. Rebuilding...", _filterName);
 				} else if (exc is SizeMismatchException) {
 					Log.Error(exc, "{filterName} does not have the expected size. Rebuilding...", _filterName);
+				} else if (exc is FileNotFoundException) {
+					Log.Error(exc, "{filterName} does not exist even though the checkpoint does. Rebuilding...", _filterName);
 				}
 
 				File.Delete(bloomFilterFilePath);
 				_lastNonFlushedCheckpoint = -1L;
 				_checkpoint.Write(-1L);
 				_checkpoint.Flush();
-				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(bloomFilterFilePath, size, initialReaderCount, maxReaderCount, hasher);
+				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
+					path: bloomFilterFilePath,
+					create: true,
+					size: size,
+					initialReaderCount: initialReaderCount,
+					maxReaderCount: maxReaderCount,
+					hasher: hasher);
 			}
 
 			Log.Information("{filterName} has successfully loaded.", _filterName);
@@ -90,22 +109,22 @@ namespace EventStore.Core.LogAbstraction.Common {
 				if (checkpoint == flushedCheckpoint) {
 					// e.g. logV2 rebuilds from index only and therefore does not update the checkpoint
 					// until it has finished rebuilding
-					Log.Debug("{filterName} skipped taking checkpoint at position: {position}", _filterName, _checkpoint.Read());
+					Log.Debug("{filterName} skipped taking checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
 					return;
 				}
 
 				_mmfStreamBloomFilter.Flush();
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();
-				Log.Debug("{filterName} took checkpoint at position: {position}", _filterName, _checkpoint.Read());
+				Log.Debug("{filterName} took checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
 			} catch (Exception ex) {
-				Log.Error(ex, "{filterName} could not take checkpoint at position: {position}", _filterName, _checkpoint.Read());
+				Log.Error(ex, "{filterName} could not take checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
 			}
 		}
 
 		public void Initialize(INameExistenceFilterInitializer source) {
 			_initializing = true;
-			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint} (0x{checkpoint:X}).",
+			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint:N0} (0x{checkpoint:X}).",
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
 			source.Initialize(this);
@@ -133,7 +152,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_checkpointer.Trigger();
 
 			if (_initializing && _addedSinceLoad % 500_000 == 0) {
-				Log.Debug("{_filterName} rebuilding: processed {processed} new streams.", _filterName, _addedSinceLoad);
+				Log.Debug("{_filterName} rebuilding: processed {processed:N0} records.", _filterName, _addedSinceLoad);
 			}
 		}
 

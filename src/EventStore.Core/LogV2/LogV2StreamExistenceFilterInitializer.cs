@@ -5,6 +5,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
+using Serilog;
 
 namespace EventStore.Core.LogV2 {
 	/// <summary>
@@ -17,6 +18,8 @@ namespace EventStore.Core.LogV2 {
 	public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly ITableIndex _tableIndex;
+
+		protected static readonly ILogger Log = Serilog.Log.ForContext<LogV2StreamExistenceFilterInitializer>();
 
 		public LogV2StreamExistenceFilterInitializer(
 			Func<TFReaderLease> tfReaderFactory,
@@ -39,6 +42,8 @@ namespace EventStore.Core.LogV2 {
 				// we need to build from the log in order to make use of it.
 				return;
 			}
+
+			Log.Information("Initializing from index");
 
 			// we have no checkpoint, build from the index. unfortunately there isn't
 			// a simple way to checkpoint in the middle of the index.
@@ -63,6 +68,7 @@ namespace EventStore.Core.LogV2 {
 			// if we have a checkpoint, start from that position in the log. this will work
 			// whether the checkpoint is the pre or post position of the last processed record.
 			var startPosition = filter.CurrentCheckpoint == -1 ? 0 : filter.CurrentCheckpoint;
+			Log.Information("Initializing from log starting at {startPosition:N0}", startPosition);
 			using var reader = _tfReaderFactory();
 			reader.Reposition(startPosition);
 

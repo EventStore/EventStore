@@ -40,7 +40,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		/// <param name="size">Size of the bloom filter in bytes</param>
 		/// <param name="initialReaderCount">Initial number of readers</param>
 		/// <param name="maxReaderCount">Maximum number of readers</param>
-		public MemoryMappedFileBloomFilter(string path, long size, int initialReaderCount, int maxReaderCount) {
+		public MemoryMappedFileBloomFilter(string path, bool create, long size, int initialReaderCount, int maxReaderCount) {
 			Ensure.NotNull(path, nameof(path));
 
 			if (size < MinSizeKB * 1000 || size > MaxSizeKB * 1000) {
@@ -56,11 +56,10 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 			_numBits = size * 8;
 
-			var newFile = !File.Exists(path);
-
 			_fileStream = new FileStream(
 				path,
-				FileMode.OpenOrCreate,
+				// todo: OpenOrCreate can be CreateNew if the mininode closed the file before declaring itself 'stopped'
+				create ? FileMode.OpenOrCreate : FileMode.Open,
 				FileAccess.ReadWrite,
 				FileShare.ReadWrite);
 
@@ -74,7 +73,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				inheritability: HandleInheritability.None,
 				leaveOpen: false);
 
-			if (newFile) {
+			if (create) {
 				Header header = new() {
 					Version = Header.CurrentVersion,
 					NumBits = _numBits
@@ -120,7 +119,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			)));
 		}
 
-		//qq would there be benefit to having a bulk add that just obtains the lock once
 		public void Add(ReadOnlySpan<byte> bytes) {
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);

@@ -18,7 +18,7 @@ namespace EventStore.Core.LogAbstraction {
 		public int MaxReaderCount { get; init; } = 100;
 		public long StreamExistenceFilterSize { get; init; }
 		public ICheckpoint StreamExistenceFilterCheckpoint { get; init; }
-		public TimeSpan StreamExistenceFilterCheckpointInterval { get; init; } = TimeSpan.FromSeconds(60);
+		public TimeSpan StreamExistenceFilterCheckpointInterval { get; init; } = TimeSpan.FromSeconds(30);
 		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
 	}
 
