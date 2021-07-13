@@ -97,7 +97,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			[Values(MemoryMappedFileBloomFilter.MinSizeKB*1000,2*MemoryMappedFileBloomFilter.MinSizeKB*1000)] long size,
 			[Values(0.001,0.02,0.05,0.1,0.2)] double p
 		) {
-			var filter = new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), size, 1, 1, hasher: null);
+			using var filter = new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), size, 1, 1, hasher: null);
 			var n = (int) filter.CalculateOptimalNumItems(p);
 
 			var random = new Random(123);
