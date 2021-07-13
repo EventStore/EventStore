@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
 using NUnit.Framework;
 
@@ -32,7 +31,7 @@ namespace EventStore.Core.Tests.DataStructures {
 		}
 
 		private static string[] GenerateRandomStrings(int count, int maxLength) {
-			var random = new Random();
+			var random = new Random(123);
 			var strings = new List<string>();
 			var charset = GenerateCharset();
 
@@ -84,7 +83,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			[Test]
 			public void supports_adding_long_strings() {
 				var charset = GenerateCharset();
-				var random = new Random();
+				var random = new Random(123);
 				var longString = GenerateRandomString(10000, charset, random);
 
 				Assert.IsFalse(_filter.MightContain(longString));
@@ -101,7 +100,7 @@ namespace EventStore.Core.Tests.DataStructures {
 			var filter = new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), size, 1, 1, hasher: null);
 			var n = (int) filter.CalculateOptimalNumItems(p);
 
-			var random = new Random();
+			var random = new Random(123);
 			var charset = GenerateCharset();
 
 			var list = new List<string>();
