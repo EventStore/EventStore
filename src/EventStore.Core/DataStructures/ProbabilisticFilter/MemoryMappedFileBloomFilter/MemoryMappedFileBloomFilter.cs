@@ -62,7 +62,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				path,
 				FileMode.OpenOrCreate,
 				FileAccess.ReadWrite,
-				FileShare.Read);
+				FileShare.ReadWrite);
 
 			_fileStream.SetLength(Header.Size + _numBits / 8);
 
