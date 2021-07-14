@@ -10,16 +10,19 @@ namespace EventStore.Core.LogV3 {
 			_wrapped = wrapped;
 		}
 
-		public long CurrentCheckpoint => _wrapped.CurrentCheckpoint;
+		public long CurrentCheckpoint {
+			get => _wrapped.CurrentCheckpoint;
+			set => _wrapped.CurrentCheckpoint = value;
+		}
 
 		public void Initialize(INameExistenceFilterInitializer source) => _wrapped.Initialize(source);
 
-		public void Add(string streamName, long checkpoint) {
+		public void Add(string streamName) {
 			ValidateStreamName(streamName);
-			_wrapped.Add(streamName, checkpoint);
+			_wrapped.Add(streamName);
 		}
 
-		public void Add(ulong hash, long checkpoint) => throw new NotSupportedException();
+		public void Add(ulong hash) => throw new NotSupportedException();
 
 		public bool MightContain(string streamName) {
 			ValidateStreamName(streamName);

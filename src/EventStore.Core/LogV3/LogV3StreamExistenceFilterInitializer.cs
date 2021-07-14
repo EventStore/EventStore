@@ -20,7 +20,9 @@ namespace EventStore.Core.LogV3 {
 			for (var streamId = startStreamId; streamId <= sourceLastStreamId; streamId += LogV3SystemStreams.StreamInterval) {
 				if (!_streamNames.TryGetName(streamId, out var name))
 					throw new Exception($"NameExistenceFilter: this should never happen. could not find {streamId} in source");
-				filter.Add(name, streamId);
+
+				filter.Add(name);
+				filter.CurrentCheckpoint = streamId;
 			}
 		}
 	}

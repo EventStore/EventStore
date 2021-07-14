@@ -3,10 +3,13 @@ using System;
 namespace EventStore.Core.LogAbstraction.Common {
 	public class NoNameExistenceFilter : INameExistenceFilter {
 		public void Initialize(INameExistenceFilterInitializer source) { }
-		public long CurrentCheckpoint => throw new NotSupportedException();
+		public long CurrentCheckpoint {
+			get => throw new NotSupportedException();
+			set { }
+		}
 
-		public void Add(string name, long value) { }
-		public void Add(ulong hash, long checkpoint) { }
+		public void Add(string name) { }
+		public void Add(ulong hash) { }
 		public bool MightContain(string name) => true;
 		public void Dispose() { }
 	}

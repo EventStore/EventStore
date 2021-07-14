@@ -83,7 +83,8 @@ namespace EventStore.Core.LogV3 {
 		}
 
 		public void Confirm(string name, Value value) {
-			_existenceFilter.Add(name, value);
+			_existenceFilter.Add(name);
+			_existenceFilter.CurrentCheckpoint = value;
 			_persistence.Add(name, value);
 			if (_reservations.TryRemove(name, out var reservedValue)) {
 				if (reservedValue != value) {

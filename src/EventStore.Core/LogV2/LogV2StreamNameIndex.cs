@@ -33,11 +33,16 @@ namespace EventStore.Core.LogV2 {
 				return;
 			}
 
-			if (prepares.Count == 0 || prepares[0].ExpectedVersion != ExpectedVersion.NoStream)
+			if (prepares.Count == 0)
 				return;
 
 			var lastPrepare = prepares[prepares.Count - 1];
-			_existenceFilter.Add(lastPrepare.EventStreamId, lastPrepare.LogPosition);
+
+			if (prepares[0].ExpectedVersion == ExpectedVersion.NoStream) {
+				_existenceFilter.Add(lastPrepare.EventStreamId);
+			}
+
+			_existenceFilter.CurrentCheckpoint = lastPrepare.LogPosition;
 		}
 
 		// must use the commit to see if these are the first events in the stream
@@ -53,11 +58,12 @@ namespace EventStore.Core.LogV2 {
 				return;
 			}
 
-			if (prepares.Count == 0 || commit.FirstEventNumber != 0)
-				return;
+			if (prepares.Count != 0 && commit.FirstEventNumber == 0) {
+				var lastPrepare = prepares[prepares.Count - 1];
+				_existenceFilter.Add(lastPrepare.EventStreamId);
+			}
 
-			var lastPrepare = prepares[prepares.Count - 1];
-			_existenceFilter.Add(lastPrepare.EventStreamId, commit.LogPosition);
+			_existenceFilter.CurrentCheckpoint = commit.LogPosition;
 		}
 
 		public bool GetOrReserve(string streamName, out string streamId, out string createdId, out string createdName) {

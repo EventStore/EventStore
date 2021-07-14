@@ -53,14 +53,13 @@ namespace EventStore.Core.LogV2 {
 					continue;
 
 				// add regardless of version because event 0 may be scavenged
-				filter.Add(entry.Stream, -1);
+				filter.Add(entry.Stream);
 				previousHash = entry.Stream;
 			}
 
 			// checkpoint at the end of the index.
 			if (previousHash != null) {
-				var checkpoint = _tableIndex.CommitCheckpoint;
-				filter.Add(previousHash.Value, checkpoint);
+				filter.CurrentCheckpoint = _tableIndex.CommitCheckpoint;
 			}
 		}
 
@@ -76,7 +75,8 @@ namespace EventStore.Core.LogV2 {
 				switch (result.LogRecord.RecordType) {
 					case LogRecordType.Prepare:
 						var prepare = (IPrepareLogRecord<string>)result.LogRecord;
-						filter.Add(prepare.EventStreamId, result.RecordPostPosition);
+						filter.Add(prepare.EventStreamId);
+						filter.CurrentCheckpoint = result.RecordPostPosition;
 						break;
 				}
 			}

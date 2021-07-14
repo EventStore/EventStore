@@ -227,7 +227,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		[InlineData("$$new-user-stream")]
 		[InlineData("$all")]
 		public void cannot_add_certain_kinds_of_streams_to_filter(string name) {
-			Assert.Throws<ArgumentException>(() => _sut.StreamExistenceFilter.Add(name, 0));
+			Assert.Throws<ArgumentException>(() => _sut.StreamExistenceFilter.Add(name));
 		}
 
 		class MockIndexReader : IIndexReader<StreamId> {

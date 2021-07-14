@@ -25,7 +25,13 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamExistenceFilter>();
 
-		public long CurrentCheckpoint => _lastNonFlushedCheckpoint;
+		public long CurrentCheckpoint {
+			get => Interlocked.Read(ref _lastNonFlushedCheckpoint);
+			set {
+				Interlocked.Exchange(ref _lastNonFlushedCheckpoint, value);
+				_checkpointer.Trigger();
+			}
+		}
 
 		public StreamExistenceFilter(
 			string directory,
@@ -104,15 +110,6 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private void TakeCheckpoint() {
 			try {
 				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
-				var flushedCheckpoint = _checkpoint.Read();
-
-				if (checkpoint == flushedCheckpoint) {
-					// e.g. logV2 rebuilds from index only and therefore does not update the checkpoint
-					// until it has finished rebuilding
-					Log.Debug("{filterName} skipped taking checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
-					return;
-				}
-
 				_mmfStreamBloomFilter.Flush();
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();
@@ -134,22 +131,20 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_initialized = true;
 		}
 
-		public void Add(string name, long checkpoint) {
+		public void Add(string name) {
 			_mmfStreamBloomFilter.Add(name);
 			Log.Verbose("{filterName} added new entry: {name}", _filterName, name);
-			OnAdded(checkpoint);
+			OnAdded();
 		}
 
-		public void Add(ulong hash, long checkpoint) {
+		public void Add(ulong hash) {
 			_mmfStreamBloomFilter.Add(hash);
 			Log.Verbose("{filterName} added new entry from hash: {name}", _filterName, hash);
-			OnAdded(checkpoint);
+			OnAdded();
 		}
 
-		private void OnAdded(long checkpoint) {
+		private void OnAdded() {
 			_addedSinceLoad++;
-			Interlocked.Exchange(ref _lastNonFlushedCheckpoint, checkpoint);
-			_checkpointer.Trigger();
 
 			if (_initializing && _addedSinceLoad % 500_000 == 0) {
 				Log.Debug("{_filterName} rebuilding: processed {processed:N0} records.", _filterName, _addedSinceLoad);
