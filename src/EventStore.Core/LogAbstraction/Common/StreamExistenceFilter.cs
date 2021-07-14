@@ -100,20 +100,31 @@ namespace EventStore.Core.LogAbstraction.Common {
 			_cancellationTokenSource = new();
 			_checkpointer = new Debouncer(
 				checkpointInterval,
-				_ => {
-					TakeCheckpoint();
-					return Task.CompletedTask;
+				async _ => {
+					await TakeCheckpointAsync().ConfigureAwait(false);
 				},
 				_cancellationTokenSource.Token);
 		}
 
-		private void TakeCheckpoint() {
+		private async Task TakeCheckpointAsync() {
 			try {
 				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
+
+
+				var startTime = DateTime.UtcNow;
 				_mmfStreamBloomFilter.Flush();
+				var endTime = DateTime.UtcNow;
+
+				// safety precaution against anything in the stack lying about the data
+				// truly being on disk.
+				await Task.Delay(5000).ConfigureAwait(false);
+
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();
-				Log.Debug("{filterName} took checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
+				Log.Debug("{filterName} took checkpoint at position: {position:N0}. Flush took {flushLength}",
+					_filterName,
+					_checkpoint.Read(),
+					endTime - startTime);
 			} catch (Exception ex) {
 				Log.Error(ex, "{filterName} could not take checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
 			}
