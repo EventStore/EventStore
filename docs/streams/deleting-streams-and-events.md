@@ -53,3 +53,4 @@ If you are intending on using projections and deleting streams, there are some t
 
 - Due to the nature of `$all`, projections using `fromAll` read any deleted events that have not been scavenged. They also receive any tombstone events from hard deletes.
 - Projections that read from a specific stream receive that stream's metadata events. You can filter these out by ignoring events with an event type `$metadata`.
+- System projections like [by category](../projections/system-projections.md#by-category) or [by event type](../projections/system-projections.md#by-event-type) projections produce new (link) events that are stored in the database in addition to the original event. When you delete the original events, then link events will remain in the projected streams, but their links won't be resolved (will have undefined value). You can ignore those events in the code logic.
