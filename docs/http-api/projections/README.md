@@ -35,7 +35,7 @@ The second part of a projection is a set of filters. There is a special filter c
 
 Here is the projection code:
 
-<<< @/samples/http-api/xbox-one-s-counter.json
+<<< @/samples/http-api/xbox-one-s-counter.js
 
 You create a projection by calling the projection API and providing it with the definition of the projection. Here you decide how to run the projection, declaring that you want the projection to start from the beginning and keep running. You can create a projection using the Admin UI by opening the _Projections_ tab, clicking the _New Projection_ button and filling in the details of your projection.
 
@@ -71,7 +71,7 @@ Update the projection to output the state to a stream by calling the `outputStat
 
 Below is the updated projection:
 
-<<< @/samples/http-api/xbox-one-s-counter-outputState.json
+<<< @/samples/http-api/xbox-one-s-counter-outputState.js
 
 To update the projection, edit the projection definition in the Admin UI, or issue the following request:
 
@@ -97,7 +97,7 @@ And you'll get a response like this:
 
 You can configure properties of the projection by updating values of the `options` object. For example, the following projection changes the name of the results stream:
 
-<<< @/samples/http-api/projections/update-projection-options.json{2}
+<<< @/samples/http-api/projections/update-projection-options.js{2}
 
 Then send the update to the projection:
 
