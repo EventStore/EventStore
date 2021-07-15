@@ -19,6 +19,7 @@ namespace EventStore.Core.LogAbstraction {
 		public long StreamExistenceFilterSize { get; init; }
 		public ICheckpoint StreamExistenceFilterCheckpoint { get; init; }
 		public TimeSpan StreamExistenceFilterCheckpointInterval { get; init; } = TimeSpan.FromSeconds(30);
+		public TimeSpan StreamExistenceFilterCheckpointDelay { get; init; } = TimeSpan.FromSeconds(5);
 		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
 	}
 
@@ -51,7 +52,7 @@ namespace EventStore.Core.LogAbstraction {
 				supportsExplicitTransactions: true);
 		}
 
-		public static INameExistenceFilter GenStreamExistenceFilter(
+		private static INameExistenceFilter GenStreamExistenceFilter(
 			LogFormatAbstractorOptions options,
 			ILongHasher<string> longHasher) {
 
@@ -67,6 +68,7 @@ namespace EventStore.Core.LogAbstraction {
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: options.StreamExistenceFilterCheckpointInterval,
+				checkpointDelay: options.StreamExistenceFilterCheckpointDelay,
 				hasher: longHasher);
 
 			return nameExistenceFilter;
@@ -176,6 +178,7 @@ namespace EventStore.Core.LogAbstraction {
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: options.StreamExistenceFilterCheckpointInterval,
+				checkpointDelay: options.StreamExistenceFilterCheckpointDelay,
 				hasher: null)
 			.Wrap(x => new StreamExistenceFilterValidator(x));
 

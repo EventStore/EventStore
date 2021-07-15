@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests {
 		[TearDown]
 		public virtual async Task TearDown() {
 			// kill whole tree
-			await DirectoryDeleter.TryForceDeleteDirectory(PathName, retries: 10);
+			await DirectoryDeleter.TryForceDeleteDirectoryAsync(PathName, retries: 10);
 		}
 	}
 }

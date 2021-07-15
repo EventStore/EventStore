@@ -5,7 +5,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 	public class MockExistenceFilter : INameExistenceFilter {
 		public HashSet<string> Streams { get; } = new();
 
-		public long CurrentCheckpoint { get; set; }
+		public long CurrentCheckpoint { get; set; } = -1;
 
 		public void Add(string name) {
 			Streams.Add(name);

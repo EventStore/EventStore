@@ -12,7 +12,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			var filter = new MockExistenceFilter();
 			filter.Initialize(sut);
 
-			Assert.Equal(0, filter.CurrentCheckpoint);
+			Assert.Equal(-1, filter.CurrentCheckpoint);
 			Assert.Empty(filter.Streams);
 		}
 

@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests {
 		[OneTimeTearDown]
 		public virtual async Task TestFixtureTearDown() {
 			// kill whole tree
-			await DirectoryDeleter.TryForceDeleteDirectory(PathName, retries: 10);
+			await DirectoryDeleter.TryForceDeleteDirectoryAsync(PathName, retries: 10);
 		}
 	}
 }

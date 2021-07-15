@@ -16,7 +16,7 @@ namespace EventStore.Core.LogV3 {
 			if (!_streamNames.TryGetLastValue(out var sourceLastStreamId))
 				return;
 
-			var startStreamId = Math.Max(LogV3SystemStreams.FirstRealStream, (uint)filter.CurrentCheckpoint);
+			var startStreamId = (uint)Math.Max(LogV3SystemStreams.FirstRealStream, filter.CurrentCheckpoint);
 			for (var streamId = startStreamId; streamId <= sourceLastStreamId; streamId += LogV3SystemStreams.StreamInterval) {
 				if (!_streamNames.TryGetName(streamId, out var name))
 					throw new Exception($"NameExistenceFilter: this should never happen. could not find {streamId} in source");

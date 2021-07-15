@@ -1,12 +1,7 @@
-using System;
-
 namespace EventStore.Core.LogAbstraction.Common {
 	public class NoNameExistenceFilter : INameExistenceFilter {
 		public void Initialize(INameExistenceFilterInitializer source) { }
-		public long CurrentCheckpoint {
-			get => throw new NotSupportedException();
-			set { }
-		}
+		public long CurrentCheckpoint { get; set; } = -1;
 
 		public void Add(string name) { }
 		public void Add(ulong hash) { }

@@ -74,6 +74,8 @@ namespace EventStore.Core.LogV2 {
 			while (TryReadNextLogRecord(reader, out var result)) {
 				switch (result.LogRecord.RecordType) {
 					case LogRecordType.Prepare:
+						// add regardless of expectedVersion because event 0 may be scavenged
+						// add regardless of committed or not because waiting for the commit is expensive
 						var prepare = (IPrepareLogRecord<string>)result.LogRecord;
 						filter.Add(prepare.EventStreamId);
 						filter.CurrentCheckpoint = result.RecordPostPosition;

@@ -13,6 +13,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 	public class StreamExistenceFilter :
 		INameExistenceFilter {
 		private readonly string _filterName;
+		private readonly TimeSpan _checkpointDelay;
 		private readonly MemoryMappedFileStreamBloomFilter _mmfStreamBloomFilter;
 		private readonly ICheckpoint _checkpoint;
 		private readonly Debouncer _checkpointer;
@@ -33,6 +34,10 @@ namespace EventStore.Core.LogAbstraction.Common {
 			}
 		}
 
+		public long CurrentCheckpointFlushed => _checkpoint.Read();
+
+		public string DataFilePath { get; }
+
 		public StreamExistenceFilter(
 			string directory,
 			ICheckpoint checkpoint,
@@ -41,8 +46,10 @@ namespace EventStore.Core.LogAbstraction.Common {
 			int initialReaderCount,
 			int maxReaderCount,
 			TimeSpan checkpointInterval,
+			TimeSpan checkpointDelay,
 			ILongHasher<string> hasher) {
 			_filterName = filterName;
+			_checkpointDelay = checkpointDelay;
 			_checkpoint = checkpoint;
 			_lastNonFlushedCheckpoint = _checkpoint.Read();
 
@@ -50,12 +57,12 @@ namespace EventStore.Core.LogAbstraction.Common {
 				Directory.CreateDirectory(directory);
 			}
 
-			var bloomFilterFilePath = $"{directory}/{_filterName}.dat";
+			DataFilePath = $"{directory}/{_filterName}.dat";
 			var create = _lastNonFlushedCheckpoint == -1;
 
 			try {
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
-					path: bloomFilterFilePath,
+					path: DataFilePath,
 					create: create,
 					size: size,
 					initialReaderCount: initialReaderCount,
@@ -74,12 +81,12 @@ namespace EventStore.Core.LogAbstraction.Common {
 					Log.Error(exc, "{filterName} does not exist even though the checkpoint does. Rebuilding...", _filterName);
 				}
 
-				File.Delete(bloomFilterFilePath);
+				File.Delete(DataFilePath);
 				_lastNonFlushedCheckpoint = -1L;
 				_checkpoint.Write(-1L);
 				_checkpoint.Flush();
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
-					path: bloomFilterFilePath,
+					path: DataFilePath,
 					create: true,
 					size: size,
 					initialReaderCount: initialReaderCount,
@@ -110,14 +117,13 @@ namespace EventStore.Core.LogAbstraction.Common {
 			try {
 				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
 
-
 				var startTime = DateTime.UtcNow;
 				_mmfStreamBloomFilter.Flush();
 				var endTime = DateTime.UtcNow;
 
 				// safety precaution against anything in the stack lying about the data
 				// truly being on disk.
-				await Task.Delay(5000).ConfigureAwait(false);
+				await Task.Delay(_checkpointDelay).ConfigureAwait(false);
 
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();

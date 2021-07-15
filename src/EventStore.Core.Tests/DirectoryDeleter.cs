@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests {
 	public static class DirectoryDeleter {
-		public static async Task TryForceDeleteDirectory(string path, int retries) {
+		public static async Task TryForceDeleteDirectoryAsync(string path, int retries = 10) {
 			// retry because ClusterNode.StopAsync completes immediately on receiving BecomeShutdown
 			// but BecomeShutdown also causes the StorageReaderService to close the index.
 			for (var i = 0; i < retries; i++) {
