@@ -133,7 +133,7 @@ You want to define a projection that produces a count per stream for a category,
 
 Below is the projection:
 
-<<< @/samples/http-api/projections/shopping-cart-counter.json
+<<< @/samples/http-api/projections/shopping-cart-counter.js
 
 Create the projection with the following request:
 
