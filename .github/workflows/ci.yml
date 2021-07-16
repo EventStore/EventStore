@@ -176,7 +176,9 @@ jobs:
     - name: Run Tests
       shell: bash
       run: |
-        find ./src -maxdepth 1 -type d -name "*.Tests"  -print0 | xargs -I{} -0 -n1 bash -c 'dotnet test --configuration ${{ matrix.configuration }} --blame --settings ./ci/ci.runsettings --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=$(pwd)/test-results/$1 $1' - '{}'
+        find ./src -maxdepth 1 -type d -name "*.Tests"  -print0 \
+          | xargs -I{} -0 -n1 bash -c \
+          'dotnet test --configuration ${{ matrix.configuration }} --blame --settings ./ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=$(pwd)/test-results/$1 $1' - '{}'
     - name: Collect Test Results
       shell: bash
       if: always()

@@ -8,11 +8,12 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
+		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0"/>
 		<PackageReference Include="Grpc.Core" Version="2.34.0" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.34.0" />
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="5.0.6" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="CompareNETObjects" Version="4.65.0" />
