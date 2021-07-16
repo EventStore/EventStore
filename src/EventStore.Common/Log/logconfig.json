@@ -1,10 +1,22 @@
 {
-  "Logging": {
-	"LogLevel": {
-	  "Default": "Debug",
-	  "System": "Warning",
-	  "Microsoft": "Warning",
-	  "Grpc": "Fatal"
+	"Logging": {
+		"LogLevel": {
+			"Default": "Debug",
+			"System": "Warning",
+			"Microsoft": "Warning",
+			"Grpc": "Fatal"
+		}
+	},
+	"Serilog": {
+		"WriteTo": [
+			{
+				"Name": "File",
+				"Args": {
+					"formatter": "Serilog.Formattting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact",
+					"path": "log.json",
+					"rollingInterval": "Day"
+				}
+			}
+		]
 	}
-  }
 }
