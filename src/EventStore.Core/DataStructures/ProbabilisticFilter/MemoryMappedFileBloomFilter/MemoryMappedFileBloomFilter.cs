@@ -1,12 +1,13 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter {
-	public class MemoryMappedFileBloomFilter : IProbabilisticFilter, IDisposable {
+	public unsafe class MemoryMappedFileBloomFilter : IProbabilisticFilter, IDisposable {
 		/*
 		    Bloom filter implementation based on the following paper by Adam Kirsch and Michael Mitzenmacher:
 		    "Less Hashing, Same Performance: Building a Better Bloom Filter"
@@ -19,6 +20,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		public const double RecommendedFalsePositiveProbability = 0.02;
 		private const int NumHashFunctions = 6;
 		private readonly long _numBits;
+		private readonly byte* _pointer = null;
 
 		private readonly IHasher[] _hashers = {
 			new XXHashUnsafe(seed: 0xC0015EEDU),
@@ -29,29 +31,21 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		private readonly FileStream _fileStream;
 		private readonly MemoryMappedFile _mmf;
-		private readonly ObjectPool<MemoryMappedViewAccessor> _mmfReadersPool;
 		private readonly MemoryMappedViewAccessor _mmfWriteAccessor;
-		private readonly ReaderWriterLockSlim _readerWriterLock;
+		private readonly object _writeLock = new();
+
+		private bool _disposed;
 
 		/// <summary>
 		/// Bloom filter implementation which uses a memory-mapped file for persistence.
 		/// </summary>
 		/// <param name="path">Path to the bloom filter file</param>
 		/// <param name="size">Size of the bloom filter in bytes</param>
-		/// <param name="initialReaderCount">Initial number of readers</param>
-		/// <param name="maxReaderCount">Maximum number of readers</param>
-		public MemoryMappedFileBloomFilter(string path, bool create, long size, int initialReaderCount, int maxReaderCount) {
+		public MemoryMappedFileBloomFilter(string path, bool create, long size) {
 			Ensure.NotNull(path, nameof(path));
 
 			if (size < MinSizeKB * 1000 || size > MaxSizeKB * 1000) {
 				throw new ArgumentOutOfRangeException(nameof(size), $"size should be between {MinSizeKB:N0} and {MaxSizeKB:N0} KB inclusive");
-			}
-
-			Ensure.Nonnegative(initialReaderCount, nameof(initialReaderCount));
-			Ensure.Positive(maxReaderCount, nameof(maxReaderCount));
-			if (maxReaderCount < initialReaderCount) {
-				throw new ArgumentOutOfRangeException(
-					$"{nameof(maxReaderCount)} ({maxReaderCount}) should be greater than or equal to {nameof(initialReaderCount)} ({initialReaderCount})");
 			}
 
 			_numBits = size * 8;
@@ -63,7 +57,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				FileAccess.ReadWrite,
 				FileShare.ReadWrite);
 
-			_fileStream.SetLength(Header.Size + _numBits / 8);
+			var fileSize = Header.Size + _numBits / 8;
+			_fileStream.SetLength(fileSize);
 
 			_mmf = MemoryMappedFile.CreateFromFile(
 				fileStream: _fileStream,
@@ -73,7 +68,20 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				inheritability: HandleInheritability.None,
 				leaveOpen: false);
 
+			_mmfWriteAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.ReadWrite);
+			_mmfWriteAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _pointer);
+
 			if (create) {
+				// fill with zeros
+				var bytesToClear = fileSize;
+				var startAddress = _pointer;
+				while (bytesToClear > 0) {
+					uint bytesToClearInBlock = bytesToClear > uint.MaxValue ? uint.MaxValue : (uint)bytesToClear;
+					Unsafe.InitBlock(ref *startAddress, 0, bytesToClearInBlock);
+					startAddress += bytesToClearInBlock;
+					bytesToClear -= bytesToClearInBlock;
+				}
+
 				Header header = new() {
 					Version = Header.CurrentVersion,
 					NumBits = _numBits
@@ -88,23 +96,10 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 							$"The configured number of bytes ({(_numBits / 8):N0}) does not match the number of bytes in file ({(header.NumBits / 8):N0}).");
 					}
 				} catch {
-					_mmf?.Dispose();
+					Dispose();
 					throw;
 				}
 			}
-
-			// the shared working set figure will be large because the memory for the file
-			// will be counted against each accessor. they are all sharing the same physical
-			// memory though so don't be alarmed
-			_mmfReadersPool = new ObjectPool<MemoryMappedViewAccessor>(
-				objectPoolName: $"{nameof(MemoryMappedFileBloomFilter)} readers pool",
-				initialCount: initialReaderCount,
-				maxCount: maxReaderCount,
-				factory: () => _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.Read),
-				dispose: mmfAccessor => mmfAccessor?.Dispose());
-
-			_mmfWriteAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.ReadWrite);
-			_readerWriterLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 		}
 
 		/// <summary>
@@ -123,18 +118,16 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 
-			_readerWriterLock.EnterWriteLock();
-			try {
+			// guarantee only one writer
+			lock (_writeLock) {
 				long hash = hash1;
 				// possible SIMD optimisation?
 				for (int i = 0; i < NumHashFunctions; i++) {
 					hash += hash2;
-					hash &= long.MaxValue; //make non-negative
+					hash &= long.MaxValue; // make non-negative
 					long bitPosition = hash % _numBits;
-					SetBit(bitPosition, _mmfWriteAccessor);
+					SetBit(bitPosition);
 				}
-			} finally {
-				_readerWriterLock.ExitWriteLock();
 			}
 		}
 
@@ -142,51 +135,50 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 
-			_readerWriterLock.EnterReadLock();
-			var readAccessor = _mmfReadersPool.Get();
-			try {
-				long hash = hash1;
-				for (int i = 0; i < NumHashFunctions; i++) {
-					hash += hash2;
-					hash &= long.MaxValue; //make non-negative
-					long bitPosition = hash % _numBits;
-					if (!IsBitSet(bitPosition, readAccessor))
-						return false;
-				}
+			Thread.MemoryBarrier();
 
-				return true;
-			} finally {
-				_mmfReadersPool.Return(readAccessor);
-				_readerWriterLock.ExitReadLock();
+			long hash = hash1;
+			for (int i = 0; i < NumHashFunctions; i++) {
+				hash += hash2;
+				hash &= long.MaxValue; // make non-negative
+				long bitPosition = hash % _numBits;
+				if (!IsBitSet(bitPosition))
+					return false;
 			}
+
+			return true;
 		}
 
 		public void Flush() {
-			_readerWriterLock.EnterWriteLock();
-			try {
-				_mmfWriteAccessor.Flush();
-				_fileStream.FlushToDisk();
-			} finally {
-				_readerWriterLock.ExitWriteLock();
-			}
+			Thread.MemoryBarrier();
+			_mmfWriteAccessor.Flush();
+			_fileStream.FlushToDisk();
+			Thread.MemoryBarrier();
 		}
 
-		private static void SetBit(long position, MemoryMappedViewAccessor readWriteAccessor) {
-			var bytePosition = position / 8;
-			var byteValue = readWriteAccessor.ReadByte(bytePosition);
-			byteValue = (byte) (byteValue | (1 << (int)(7 - position % 8)));
-			readWriteAccessor.Write(bytePosition, byteValue);
+		private void SetBit(long bitPosition) {
+			var bytePosition = bitPosition / 8;
+			ref var byteValue = ref *(_pointer + Header.Size + bytePosition);
+			byteValue = (byte) (byteValue | (1 << (int)(7 - bitPosition % 8)));
 		}
 
-		private static bool IsBitSet(long position, MemoryMappedViewAccessor readAccessor) {
-			var bytePosition = position / 8;
-			var byteValue = readAccessor.ReadByte(bytePosition);
-			return (byteValue & (1 << (int)(7 - position % 8))) != 0;
+		private bool IsBitSet(long bitPosition) {
+			var bytePosition = bitPosition / 8;
+			var byteValue = *(_pointer + Header.Size + bytePosition);
+			return (byteValue & (1 << (int)(7 - bitPosition % 8))) != 0;
 		}
 
 		public void Dispose() {
+			if (_disposed)
+				return;
+
+			_disposed = true;
+
+			if (_pointer != null) {
+				_mmfWriteAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
+			}
+
 			_mmfWriteAccessor?.Dispose();
-			_mmfReadersPool?.Dispose();
 			_mmf?.Dispose();
 		}
 	}

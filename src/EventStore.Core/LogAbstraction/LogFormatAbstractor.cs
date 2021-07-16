@@ -65,8 +65,6 @@ namespace EventStore.Core.LogAbstraction {
 				filterName: "StreamExistenceFilter",
 				size: options.StreamExistenceFilterSize,
 				checkpoint: options.StreamExistenceFilterCheckpoint,
-				initialReaderCount: options.InitialReaderCount,
-				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: options.StreamExistenceFilterCheckpointInterval,
 				checkpointDelay: options.StreamExistenceFilterCheckpointDelay,
 				hasher: longHasher);
@@ -175,8 +173,6 @@ namespace EventStore.Core.LogAbstraction {
 				filterName: "StreamExistenceFilter",
 				size: options.StreamExistenceFilterSize,
 				checkpoint: options.StreamExistenceFilterCheckpoint,
-				initialReaderCount: options.InitialReaderCount,
-				maxReaderCount: options.MaxReaderCount,
 				checkpointInterval: options.StreamExistenceFilterCheckpointInterval,
 				checkpointDelay: options.StreamExistenceFilterCheckpointDelay,
 				hasher: null)

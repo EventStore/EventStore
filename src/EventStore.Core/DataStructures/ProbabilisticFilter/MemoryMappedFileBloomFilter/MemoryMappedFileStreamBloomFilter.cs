@@ -12,9 +12,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 	public class MemoryMappedFileStreamBloomFilter : MemoryMappedFileBloomFilter {
 		private readonly ILongHasher<string> _hasher;
 
-		public MemoryMappedFileStreamBloomFilter(string path, bool create, long size, int initialReaderCount, int maxReaderCount,
+		public MemoryMappedFileStreamBloomFilter(string path, bool create, long size,
 			ILongHasher<string> hasher) :
-			base(path, create, size, initialReaderCount, maxReaderCount) {
+			base(path, create, size) {
 			_hasher = hasher;
 		}
 

@@ -43,8 +43,6 @@ namespace EventStore.Core.LogAbstraction.Common {
 			ICheckpoint checkpoint,
 			string filterName,
 			long size,
-			int initialReaderCount,
-			int maxReaderCount,
 			TimeSpan checkpointInterval,
 			TimeSpan checkpointDelay,
 			ILongHasher<string> hasher) {
@@ -60,13 +58,14 @@ namespace EventStore.Core.LogAbstraction.Common {
 			DataFilePath = $"{directory}/{_filterName}.dat";
 			var create = _lastNonFlushedCheckpoint == -1;
 
+			Log.Information("{filterName}: {creatingOrOpening} {dataFilePath}",
+				_filterName, create ? "Creating" : "Opening", DataFilePath);
+
 			try {
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
 					path: DataFilePath,
 					create: create,
 					size: size,
-					initialReaderCount: initialReaderCount,
-					maxReaderCount: maxReaderCount,
 					hasher: hasher);
 			} catch (Exception exc) when (
 					exc is CorruptedFileException ||
@@ -89,8 +88,6 @@ namespace EventStore.Core.LogAbstraction.Common {
 					path: DataFilePath,
 					create: true,
 					size: size,
-					initialReaderCount: initialReaderCount,
-					maxReaderCount: maxReaderCount,
 					hasher: hasher);
 			}
 
@@ -116,10 +113,15 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private async Task TakeCheckpointAsync() {
 			try {
 				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
+				var prevCheckpoint = _checkpoint.Read();
+				var diff = checkpoint - prevCheckpoint;
 
 				var startTime = DateTime.UtcNow;
+				Log.Debug("{filterName} is flushing at {checkpoint:N0}. Diff {diff:N0} ...", _filterName, checkpoint, diff);
 				_mmfStreamBloomFilter.Flush();
 				var endTime = DateTime.UtcNow;
+				Log.Debug("{filterName} has flushed at {checkpoint:N0}. Diff {diff:N0}. Took {flushLength}",
+					       _filterName, checkpoint, diff, endTime - startTime);
 
 				// safety precaution against anything in the stack lying about the data
 				// truly being on disk.
@@ -127,10 +129,9 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();
-				Log.Debug("{filterName} took checkpoint at position: {position:N0}. Flush took {flushLength}",
+				Log.Debug("{filterName} took checkpoint at position: {position:N0}.",
 					_filterName,
-					_checkpoint.Read(),
-					endTime - startTime);
+					_checkpoint.Read());
 			} catch (Exception ex) {
 				Log.Error(ex, "{filterName} could not take checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
 			}

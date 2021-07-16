@@ -34,8 +34,6 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 				checkpoint: checkpoint,
 				filterName: name,
 				size: size,
-				initialReaderCount: 1,
-				maxReaderCount: 1,
 				checkpointInterval: checkpointInterval.Value,
 				checkpointDelay: TimeSpan.Zero,
 				hasher: useHasher ? Hasher : null);
