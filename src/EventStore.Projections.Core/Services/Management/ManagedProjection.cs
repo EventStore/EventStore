@@ -20,10 +20,21 @@ using FastSerialization;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Projections.Core.Services.Management {
-	/// <summary>
-	/// managed projection controls start/stop/create/update/delete lifecycle of the projection. 
-	/// </summary>
-	public class ManagedProjection : IDisposable {
+
+	public static class PersistedStateExtensions {
+		public static Boolean CheckpointStreamNeedsDeleted(this ManagedProjection.PersistedState persistedState) {
+			return persistedState.DeleteCheckpointStream && persistedState.CheckpointsDisabled.GetValueOrDefault() == false;
+		}
+
+		public static Boolean EmitStreamNeedsDeleted(this ManagedProjection.PersistedState persistedState) {
+			return (persistedState.DeleteEmittedStreams && persistedState.EmitEnabled.GetValueOrDefault());
+		}
+	}
+
+		/// <summary>
+		/// managed projection controls start/stop/create/update/delete lifecycle of the projection. 
+		/// </summary>
+		public class ManagedProjection : IDisposable {
 		public class PersistedState {
 			public string HandlerType { get; set; }
 			public string Query { get; set; }
@@ -422,7 +433,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			PersistedProjectionState.DeleteStateStream = message.DeleteStateStream;
 			PersistedProjectionState.DeleteEmittedStreams = message.DeleteEmittedStreams;
 
-			if (PersistedProjectionState.DeleteCheckpointStream) {
+			if (PersistedProjectionState.CheckpointStreamNeedsDeleted()) {
 				PersistedProjectionState.NumberOfPrequisitesMetForDeletion++;
 			}
 
@@ -485,27 +496,25 @@ namespace EventStore.Projections.Core.Services.Management {
 		public void DeleteProjectionStreams() {
 			var sourceDefinition = PersistedProjectionState.SourceDefinition ?? new ProjectionSourceDefinition();
 			var projectionNamesBuilder = new ProjectionNamesBuilder(_name, sourceDefinition);
-			if ((PersistedProjectionState.EmitEnabled ?? false) && IsMultiStream) {
+
+			if (PersistedProjectionState.EmitStreamNeedsDeleted()  && IsMultiStream) {
 				DeleteStream(projectionNamesBuilder.GetOrderStreamName(), DeleteIfConditionsAreMet);
 			}
 
-			if (PersistedProjectionState.DeleteCheckpointStream) {
-				DeleteStream(projectionNamesBuilder.MakeCheckpointStreamName(), DeleteIfConditionsAreMet);
+			if(PersistedProjectionState.CheckpointStreamNeedsDeleted()){
+				 DeleteStream(projectionNamesBuilder.MakeCheckpointStreamName(), DeleteIfConditionsAreMet);
 			}
 
-			if (PersistedProjectionState.DeleteEmittedStreams) {
+			if (PersistedProjectionState.EmitStreamNeedsDeleted()) {
 				if (_emittedStreamsDeleter == null) {
-					_emittedStreamsDeleter = new EmittedStreamsDeleter(
-						_ioDispatcher,
-						projectionNamesBuilder.GetEmittedStreamsName(),
-						projectionNamesBuilder.GetEmittedStreamsCheckpointName());
+					_emittedStreamsDeleter = new EmittedStreamsDeleter(_ioDispatcher, projectionNamesBuilder.GetEmittedStreamsName(), projectionNamesBuilder.GetEmittedStreamsCheckpointName());
 				}
 
 				_emittedStreamsDeleter.DeleteEmittedStreams(DeleteIfConditionsAreMet);
 			}
 
-			if (!PersistedProjectionState.DeleteCheckpointStream &&
-			    !PersistedProjectionState.DeleteEmittedStreams) {
+			if (!PersistedProjectionState.CheckpointStreamNeedsDeleted() &&
+				!PersistedProjectionState.EmitStreamNeedsDeleted()) {
 				DeleteIfConditionsAreMet();
 			}
 		}
