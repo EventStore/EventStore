@@ -26,6 +26,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected readonly long MetastreamMaxCount;
 		protected readonly bool PerformAdditionalCommitChecks;
 		protected readonly byte IndexBitnessVersion;
+		private readonly int _chunkSize;
 		protected TableIndex TableIndex;
 		protected IReadIndex ReadIndex;
 
@@ -40,12 +41,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private bool _mergeChunks;
 
 		protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, long metastreamMaxCount = 1,
-			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true) {
+			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true,
+			int chunkSize = 10000) {
 			Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
 			MaxEntriesInMemTable = maxEntriesInMemTable;
 			MetastreamMaxCount = metastreamMaxCount;
 			IndexBitnessVersion = indexBitnessVersion;
 			PerformAdditionalCommitChecks = performAdditionalChecks;
+			_chunkSize = chunkSize;
 		}
 
 		public override async Task TestFixtureSetUp() {
@@ -55,7 +58,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			ChaserCheckpoint = new InMemoryCheckpoint(0);
 
 			Db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, WriterCheckpoint, ChaserCheckpoint,
-				replicationCheckpoint: new InMemoryCheckpoint(-1)));
+				replicationCheckpoint: new InMemoryCheckpoint(-1), chunkSize: _chunkSize));
 
 			Db.Open();
 			// create db
@@ -104,13 +107,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		public override Task TestFixtureTearDown() {
-			ReadIndex.Close();
-			ReadIndex.Dispose();
+			ReadIndex?.Close();
+			ReadIndex?.Dispose();
 
-			TableIndex.Close();
+			TableIndex?.Close();
 
-			Db.Close();
-			Db.Dispose();
+			Db?.Close();
+			Db?.Dispose();
 
 			return base.TestFixtureTearDown();
 		}
@@ -157,7 +160,19 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
-			Assert.IsTrue(Writer.Write(commit, out pos));
+
+			if (!retryOnFail) {
+				Assert.IsTrue(Writer.Write(commit, out pos));
+			} else {
+				var firstPos = commit.LogPosition;
+				if (!Writer.Write(commit, out pos)) {
+					commit = LogRecord.Commit(pos, prepare.CorrelationId, prepare.LogPosition,
+						eventNumber);
+					if (!Writer.Write(commit, out pos))
+						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
+							prepare.LogPosition);
+				}
+			}
 
 			var eventRecord = new EventRecord(eventNumber, prepare);
 			return eventRecord;

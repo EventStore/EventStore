@@ -46,9 +46,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return false;
 		}
 
-		public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion,
+		public IReadOnlyList<IndexEntry> GetRange(string streamId, long startVersion, long endVersion,
 			int? limit = null) {
-			yield break;
+			return Array.Empty<IndexEntry>();
 		}
 
 		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
