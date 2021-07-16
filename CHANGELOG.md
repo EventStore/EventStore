@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
 - //github.com/EventStore/EventStore/pull/3015 [EventStore#3019](https://github.com/EventStore/EventStore/pull/3019)
 - //github.com/EventStore/EventStore/pull/2989 [EventStore#3020](https://github.com/EventStore/EventStore/pull/3020)
+- //github.com/EventStore/EventStore/pull/3035 [EventStore#3040](https://github.com/EventStore/EventStore/pull/3040)
 
 ## [21.6.0] - 2021-06-24
 
