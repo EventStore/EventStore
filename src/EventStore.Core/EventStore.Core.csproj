@@ -5,6 +5,7 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Platforms>x64</Platforms>
+		<LangVersion>9</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
 			<FrameworkReference Include="Microsoft.AspNetCore.App" />

@@ -17,7 +17,7 @@ namespace EventStore.Core.Index {
 		bool TryGetLatestEntry(string streamId, out IndexEntry entry);
 		bool TryGetOldestEntry(string streamId, out IndexEntry entry);
 
-		IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null);
+		IReadOnlyList<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null);
 
 		void Scavenge(IIndexScavengerLog log, CancellationToken ct);
 		Task MergeIndexes();

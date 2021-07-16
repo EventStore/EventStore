@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		{
 		}
 
-		public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null)
+		public IReadOnlyList<IndexEntry> GetRange(string streamId, long startVersion, long endVersion, int? limit = null)
 		{
 			var entries = new List<IndexEntry>();
 			if(_indexEntries.ContainsKey(streamId)){
