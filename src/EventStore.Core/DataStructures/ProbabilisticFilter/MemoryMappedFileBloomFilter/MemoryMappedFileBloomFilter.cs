@@ -30,6 +30,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		};
 
 		private readonly FileStream _fileStream;
+		private readonly long _fileSize;
 		private readonly MemoryMappedFile _mmf;
 		private readonly MemoryMappedViewAccessor _mmfWriteAccessor;
 		private readonly object _writeLock = new();
@@ -41,6 +42,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		/// </summary>
 		/// <param name="path">Path to the bloom filter file</param>
 		/// <param name="size">Size of the bloom filter in bytes</param>
+		///
+		/// Add and MightContain can be called concurrently on different threads.
+		/// If the call to Add is complete then a call to MightContain will find the added value
 		public MemoryMappedFileBloomFilter(string path, bool create, long size) {
 			Ensure.NotNull(path, nameof(path));
 
@@ -57,8 +61,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				FileAccess.ReadWrite,
 				FileShare.ReadWrite);
 
-			var fileSize = Header.Size + _numBits / 8;
-			_fileStream.SetLength(fileSize);
+			_fileSize = Header.Size + _numBits / 8;
+			_fileStream.SetLength(_fileSize);
 
 			_mmf = MemoryMappedFile.CreateFromFile(
 				fileStream: _fileStream,
@@ -73,7 +77,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 			if (create) {
 				// fill with zeros
-				var bytesToClear = fileSize;
+				var bytesToClear = _fileSize;
 				var startAddress = _pointer;
 				while (bytesToClear > 0) {
 					uint bytesToClearInBlock = bytesToClear > uint.MaxValue ? uint.MaxValue : (uint)bytesToClear;
@@ -114,7 +118,20 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			)));
 		}
 
+		private void EnsureBounds(long bytePosition) {
+			if (bytePosition >= _fileSize)
+				throw new ArgumentOutOfRangeException(nameof(bytePosition), bytePosition, null);
+		}
+
 		public void Add(ReadOnlySpan<byte> bytes) {
+			void SetBit(long bitPosition) {
+				var bytePosition = bitPosition / 8;
+				var bytePositionInFile = Header.Size + bytePosition;
+				EnsureBounds(bytePositionInFile);
+				ref var byteValue = ref *(_pointer + bytePositionInFile);
+				byteValue = (byte)(byteValue | (1 << (int)(7 - bitPosition % 8)));
+			}
+
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 
@@ -128,13 +145,24 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 					long bitPosition = hash % _numBits;
 					SetBit(bitPosition);
 				}
+				// lock release guarantees our STOREs are executed before we return
 			}
 		}
 
 		public bool MightContain(ReadOnlySpan<byte> bytes) {
+			bool IsBitSet(long bitPosition) {
+				var bytePosition = bitPosition / 8;
+				var bytePositionInFile = Header.Size + bytePosition;
+				EnsureBounds(bytePositionInFile);
+				var byteValue = *(_pointer + bytePositionInFile);
+				return (byteValue & (1 << (int)(7 - bitPosition % 8))) != 0;
+			}
+
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
 			long hash2 = ((long)_hashers[2].Hash(bytes) << 32) | _hashers[3].Hash(bytes);
 
+			// guarantee our LOADs are executed now and not prior.
+			// dual with the memory barrier implicit in the Add(...) method
 			Thread.MemoryBarrier();
 
 			long hash = hash1;
@@ -150,22 +178,11 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		}
 
 		public void Flush() {
+			// need to be sure the read operations were not done in advance of this point
+			// not 100% sure, however, that the barrier is required.
 			Thread.MemoryBarrier();
 			_mmfWriteAccessor.Flush();
 			_fileStream.FlushToDisk();
-			Thread.MemoryBarrier();
-		}
-
-		private void SetBit(long bitPosition) {
-			var bytePosition = bitPosition / 8;
-			ref var byteValue = ref *(_pointer + Header.Size + bytePosition);
-			byteValue = (byte) (byteValue | (1 << (int)(7 - bitPosition % 8)));
-		}
-
-		private bool IsBitSet(long bitPosition) {
-			var bytePosition = bitPosition / 8;
-			var byteValue = *(_pointer + Header.Size + bytePosition);
-			return (byteValue & (1 << (int)(7 - bitPosition % 8))) != 0;
 		}
 
 		public void Dispose() {
@@ -174,10 +191,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 			_disposed = true;
 
-			if (_pointer != null) {
-				_mmfWriteAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
-			}
-
+			_mmfWriteAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
 			_mmfWriteAccessor?.Dispose();
 			_mmf?.Dispose();
 		}
