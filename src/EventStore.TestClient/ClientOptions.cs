@@ -26,6 +26,10 @@ namespace EventStore.TestClient {
 		/// </summary>
 		[ArgDescription(Opts.LogsDescr)] public string Log { get; set; }
 		/// <summary>
+		/// The name of the log config file.
+		/// </summary>	
+		[ArgDescription(Opts.LogConfigDescr)] public string LogConfig { get; set; }
+		/// <summary>
 		/// Path to the config file.
 		/// </summary>
 		[ArgDescription(Opts.ConfigsDescr)] public string Config { get; set; }
@@ -96,6 +100,7 @@ namespace EventStore.TestClient {
 			Help = Opts.ShowHelpDefault;
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultTestClientLogDirectory;
+			LogConfig = Opts.LogConfigDefault;
 			WhatIf = Opts.WhatIfDefault;
 			Host = IPAddress.Loopback.ToString();
 			TcpPort = 1113;
