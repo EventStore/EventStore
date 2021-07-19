@@ -20,7 +20,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private long _lastNonFlushedCheckpoint;
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
-		private volatile bool _initialized;
+		private int _initialized;
 		private bool _initializing;
 		private long _addedSinceLoad;
 
@@ -146,7 +146,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 			_initializing = false;
-			_initialized = true;
+			Interlocked.Exchange(ref _initialized, 1);
 		}
 
 		public void Add(string name) {
@@ -170,7 +170,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public bool MightContain(string name) {
-			if (!_initialized)
+			if (Interlocked.CompareExchange(ref _initialized, 0, 0) == 0)
 				throw new InvalidOperationException("Initialize the filter before querying");
 			return _mmfStreamBloomFilter.MightContain(name);
 		}
