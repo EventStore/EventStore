@@ -17,7 +17,7 @@ services:
       - ./certs:/certs
 
   node1.eventstore: &template
-    image: eventstore/eventstore:20.10.1-buster-slim
+    image: eventstore/eventstore:20.10.2-buster-slim
     container_name: node1.eventstore
     env_file:
       - vars.env
