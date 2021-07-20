@@ -125,7 +125,14 @@ namespace EventStore.Projections.Core.Services.v8 {
 		public string GetStatePartition(
 			CheckpointTag eventPosition, string category, ResolvedEvent @event) {
 			CheckDisposed();
+
 			if (@event == null) throw new ArgumentNullException("event");
+
+			if (string.IsNullOrEmpty(@event.EventType)) {
+				//Nothing to actually process
+				return null;
+			}
+
 			var partition = _query.GetPartition(
 				GetEventData(@event),
 				new string[] {
@@ -148,7 +155,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			Tuple<string, string> newStates = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) {
+			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
 				newStates = _query.Push(
 					"",
 					new string[] { });
@@ -164,22 +171,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 
 			newState = newStates.Item1;
 			newSharedState = newStates.Item2;
-/*            try
-            {
-                if (!string.IsNullOrEmpty(newState))
-                {
-                    var jo = newState.ParseJson<JObject>();
-                }
 
-            }
-            catch (InvalidCastException)
-            {
-                Console.Error.WriteLine(newState);
-            }
-            catch (JsonException)
-            {
-                Console.Error.WriteLine(newState);
-            }*/
 			emittedEvents = _emittedEvents == null ? null : _emittedEvents.ToArray();
 			return true;
 		}
@@ -191,7 +183,7 @@ namespace EventStore.Projections.Core.Services.v8 {
 			_emittedEvents = null;
 
 			var data = GetEventData(@event);
-			if (@event == null || data == null) {
+			if (@event == null || data == null || string.IsNullOrEmpty(@event.EventType)) {
 				emittedEvents = null;
 				return true;
 			}
