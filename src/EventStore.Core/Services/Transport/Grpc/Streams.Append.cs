@@ -132,7 +132,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					case OperationResult.PrepareTimeout:
 					case OperationResult.CommitTimeout:
 					case OperationResult.ForwardTimeout:
-						appendResponseSource.TrySetException(RpcExceptions.Timeout());
+						appendResponseSource.TrySetException(RpcExceptions.Timeout(completed.Message));
 						return;
 					case OperationResult.WrongExpectedVersion:
 						response.WrongExpectedVersion = new AppendResp.Types.WrongExpectedVersion();
