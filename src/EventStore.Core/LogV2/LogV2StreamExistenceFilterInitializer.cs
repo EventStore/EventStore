@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
@@ -47,14 +48,23 @@ namespace EventStore.Core.LogV2 {
 
 			// we have no checkpoint, build from the index. unfortunately there isn't
 			// a simple way to checkpoint in the middle of the index.
-			ulong? previousHash = null;
-			foreach (var entry in _tableIndex.IterateAllInOrder()) {
-				if (entry.Stream == previousHash)
-					continue;
+			var tables = _tableIndex.IterateAllInOrder().ToList();
+			foreach (var table in tables) {
+				if (table.Version == PTableVersions.IndexV1) {
+					throw new NotSupportedException("The Stream Existence Filter is not supported with V1 index files. Please disable the filter by setting StreamExistenceFilterSize to 0, or rebuild the indexes.");
+				}
+			}
 
-				// add regardless of version because event 0 may be scavenged
-				filter.Add(entry.Stream);
-				previousHash = entry.Stream;
+			ulong? previousHash = null;
+			foreach (var table in tables) {
+				foreach (var entry in table.IterateAllInOrder()) {
+					if (entry.Stream == previousHash)
+						continue;
+
+					// add regardless of version because event 0 may be scavenged
+					filter.Add(entry.Stream);
+					previousHash = entry.Stream;
+				}
 			}
 
 			// checkpoint at the end of the index.

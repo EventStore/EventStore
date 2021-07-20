@@ -61,7 +61,8 @@ namespace EventStore.Core.Tests.Helpers {
 			string advertisedExtHostAddress = null, int advertisedHttpPort = 0,
 			int hashCollisionReadLimit = Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = Util.Opts.IndexBitnessVersionDefault,
-			string dbPath = "", bool isReadOnlyReplica = false) {
+			string dbPath = "", bool isReadOnlyReplica = false,
+			long streamExistenceFilterSize = Util.Opts.StreamExistenceFilterSizeDefault) {
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -111,7 +112,8 @@ namespace EventStore.Core.Tests.Helpers {
 						HashCollisionReadLimit = hashCollisionReadLimit,
 						CommitTimeoutMs = 10_000,
 						PrepareTimeoutMs = 10_000,
-						UnsafeDisableFlushToDisk = disableFlushToDisk
+						UnsafeDisableFlushToDisk = disableFlushToDisk,
+						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
 					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
 				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),

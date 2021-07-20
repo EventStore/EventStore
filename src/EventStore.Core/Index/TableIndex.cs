@@ -734,20 +734,15 @@ namespace EventStore.Core.Index {
 		}
 
 		/// newest to oldest
-		public IEnumerable<IndexEntry> IterateAllInOrder() {
+		public IEnumerable<ISearchTable> IterateAllInOrder() {
 			var awaiting = _awaitingMemTables;
-			for (var index = awaiting.Count - 1; index >= 0; index--) {
-				var table = awaiting[index].Table;
-				foreach (var indexEntry in table.IterateAllInOrder()) {
-					yield return indexEntry;
-				}
-			}
+			var map = _indexMap;
 
-			foreach (var table in _indexMap.InOrder()) {
-				foreach (var indexEntry in table.IterateAllInOrder()) {
-					yield return indexEntry;
-				}
-			}
+			for (var index = awaiting.Count - 1; index >= 0; index--)
+				yield return awaiting[index].Table;
+
+			foreach (var table in map.InOrder())
+				yield return table;
 		}
 
 		private IndexKey<TStreamId> CreateIndexKey(TStreamId streamId, long version, long position) {

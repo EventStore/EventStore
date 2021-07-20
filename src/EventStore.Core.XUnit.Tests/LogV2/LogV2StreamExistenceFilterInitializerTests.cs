@@ -103,5 +103,36 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			Assert.Equal(600, _filter.CurrentCheckpoint);
 			Assert.Equal(3, _filter.Hashes.Count);
 		}
+
+		[Fact]
+		public void cannot_initialize_with_v1_indexes() {
+			var tableIndex = new TableIndex<string>(
+				directory: Fixture.Directory,
+				lowHasher: new XXHashUnsafe(),
+				highHasher: new Murmur3AUnsafe(),
+				emptyStreamId: string.Empty,
+				memTableFactory: () => new HashListMemTable(
+					version: PTableVersions.IndexV1,
+					maxSize: 1_000_000 * 2),
+				tfReaderFactory: () => throw new Exception("index tried to read the log"),
+				ptableVersion: PTableVersions.IndexV1,
+				maxAutoMergeIndexLevel: int.MaxValue,
+				pTableMaxReaderCount: 5);
+			tableIndex.Initialize(0);
+
+			var sut = new LogV2StreamExistenceFilterInitializer(
+				tfReaderFactory: () => throw new Exception("initializer tried to read the log"),
+				tableIndex: tableIndex);
+
+			var filter = new MockExistenceFilter(hasher: null);
+
+			var ex = Assert.Throws<NotSupportedException>(() => {
+				sut.Initialize(filter);
+			});
+			Assert.Equal(
+				"The Stream Existence Filter is not supported with V1 index files. " +
+				"Please disable the filter by setting StreamExistenceFilterSize to 0, or rebuild the indexes.",
+				ex.Message);
+		}
 	}
 }

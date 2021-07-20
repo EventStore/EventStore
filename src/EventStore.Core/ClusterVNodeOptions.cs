@@ -423,13 +423,12 @@ namespace EventStore.Core {
 			             "V3 is currently in development and should only be used for testing purposes.")]
 			public DbLogFormat DbLogFormat { get; init; } = DbLogFormat.V2;
 
-			//qq we are sure we want it on by default, might cause a long startup time, not sure what a good default would be
 			[Description("The amount of memory & disk space, in bytes, to use for the stream existence filter. " +
 			             "This should be set to roughly the maximum number of streams you expect to have in your database, " +
 			             "i.e if you expect to have a max of 500 million streams, use a value of 500 megabytes. " +
 			             "The value you select should also fit entirely in memory to avoid any performance degradation. " +
 			             "Use 0 to disable the filter.")]
-			public long StreamExistenceFilterSize { get; init; } = 256_000_000L;
+			public long StreamExistenceFilterSize { get; init; } = Opts.StreamExistenceFilterSizeDefault;
 
 			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
