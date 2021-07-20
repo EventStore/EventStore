@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return;
 			}
 
-			var eof = message.Events.Length == 0;
+			var eof = message.Events.Length == 0 && message.IsEndOfStream;
 			_eof = eof;
 			var willDispose = _stopOnEof && eof;
 			var oldFrom = _from;
