@@ -146,6 +146,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 					SetBit(bitPosition);
 				}
 				// lock release guarantees our STOREs are executed before we return
+				// todo: confirm is this is true on ARM
 			}
 		}
 
