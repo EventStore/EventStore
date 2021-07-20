@@ -8,7 +8,7 @@ using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal static class RpcExceptions {
-		public static Exception Timeout() => new RpcException(new Status(StatusCode.Aborted, "Operation timed out"));
+		public static Exception Timeout(string message) => new RpcException(new Status(StatusCode.Aborted, $"Operation timed out: {message}"));
 
 		public static Exception ServerNotReady() =>
 			new RpcException(new Status(StatusCode.Unavailable, "Server Is Not Ready"));
