@@ -43,6 +43,9 @@ namespace EventStore.Core.Util {
 		public const string LogLevelDescr = "Sets the minimum log level. For more granular settings, please edit logconfig.json.";
 		public const LogLevel LogLevelDefault = LogLevel.Default;
 
+		public const string LogConfigDescr = "The name of the log configuration file.";
+		public const string LogConfigDefault = "logconfig.json";
+
 		public const string ConfigsDescr = "Configuration files.";
 		public static readonly string[] ConfigsDefault = new string[0];
 

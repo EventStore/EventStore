@@ -18,6 +18,9 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.LogLevelDescr, Opts.AppGroup)]
 		public LogLevel LogLevel { get; set; }
 
+		[ArgDescription(Opts.LogConfigDescr, Opts.AppGroup)]
+		public string LogConfig { get; set; }
+
 		[ArgDescription(Opts.ConfigsDescr, Opts.AppGroup)]
 		public string Config { get; set; }
 
@@ -336,6 +339,7 @@ namespace EventStore.Core {
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultLogDirectory;
 			LogLevel = Opts.LogLevelDefault;
+			LogConfig = Opts.LogConfigDefault;
 			WhatIf = Opts.WhatIfDefault;
 
 			IntIp = Opts.InternalIpDefault;

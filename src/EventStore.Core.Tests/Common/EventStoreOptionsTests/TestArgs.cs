@@ -7,6 +7,7 @@ namespace EventStore.Core.Tests.Common {
 		public bool Version { get; set; }
 		public string Config { get; set; }
 		public string Log { get; set; }
+		public string LogConfig { get; set; }
 		public IPEndPoint[] GossipSeed { get; set; }
 		public bool WhatIf { get; set; }
 		public ProjectionType RunProjections { get; set; }
