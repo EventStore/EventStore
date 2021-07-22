@@ -30,17 +30,18 @@ namespace EventStore.Common.Utils {
 		}
 
 		public static string GetRuntimeVersion() {
-			var type = Type.GetType("Mono.Runtime");
-			if (type != null) {
-				MethodInfo getDisplayNameMethod =
-					type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
-				return getDisplayNameMethod != null
-					? (string)getDisplayNameMethod.Invoke(null, null)
-					: "Mono <UNKNOWN>";
+			var informationalVersion = typeof(object).Assembly
+				.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+			if (informationalVersion == null) {
+				return "Unknown";
 			}
 
-			// must be .NET
-			return ".NET " + Environment.Version;
+			var separatorIndex = informationalVersion.IndexOf('+');
+
+			return ".NET " + (separatorIndex == -1
+				? informationalVersion
+				: informationalVersion[..separatorIndex] + "/" + informationalVersion.Substring(separatorIndex+1, 9));
 		}
 
 		private static OsFlavor DetermineOSFlavor() {
