@@ -29,7 +29,8 @@ ARG RUNTIME=linux-x64
 RUN echo '#!/usr/bin/env sh\n\
 cp /build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_certificates/ca/ca.pem /usr/local/share/ca-certificates/ca_eventstore_test.crt\n\
 update-ca-certificates\n\
-exit_code=find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 bash -c '"'"'dotnet test --runtime=${RUNTIME} --configuration Release --blame --settings /build/ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=/build/test-results/$1 $1'"'"' - '"'"'{}'"'"'\n\
+find /build/src -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 bash -c '"'"'dotnet test --runtime=${RUNTIME} --configuration Release --blame --settings /build/ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=/build/test-results/$1 $1'"'"' - '"'"'{}'"'"'\n\
+exit_code=$?\n\
 echo $(find /build/test-results -name "*.html" | xargs cat) > /build/test-results/test-results.html\n\
 exit $exit_code' \
     >> /build/test.sh && \
@@ -47,7 +48,7 @@ ARG RUNTIME=linux-x64
 ARG UID=1000
 ARG GID=1000
 
-RUN if [ "${RUNTIME}" = "alpine-x64" ];\
+RUN if [[ "${RUNTIME}" = "alpine-x64" ]];\
     then \
         apk update && \
         apk add --no-cache \
