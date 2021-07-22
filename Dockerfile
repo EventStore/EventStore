@@ -70,12 +70,12 @@ RUN addgroup --gid ${GID} "eventstore" && \
     --uid ${UID} \
     "eventstore"
 
-COPY --from=publish /publish ./
+COPY --chown=eventstore:eventstore --from=publish /publish ./
 
 RUN mkdir -p /var/lib/eventstore && \
     mkdir -p /var/log/eventstore && \
     mkdir -p /etc/eventstore && \
-    chown -R eventstore:eventstore /opt/eventstore /var/lib/eventstore /var/log/eventstore /etc/eventstore
+    chown -R eventstore:eventstore /var/lib/eventstore /var/log/eventstore /etc/eventstore
 
 USER eventstore
 
