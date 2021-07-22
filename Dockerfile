@@ -43,13 +43,21 @@ RUN dotnet publish --configuration=Release --runtime=${RUNTIME} --self-contained
      --framework=net5.0 --output /publish EventStore.ClusterNode
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:5.0-${CONTAINER_RUNTIME} AS runtime
+ARG RUNTIME=linux-x64
 ARG UID=1000
 ARG GID=1000
 
-RUN apt update && \
-    apt install -y \
-    curl && \
-    rm -rf /var/lib/apt/lists/*
+RUN if [ "${RUNTIME}" = "alpine-x64" ];\
+    then \
+        apk update && \
+        apk add --no-cache \
+        curl; \
+    else \
+        apt update && \
+        apt install -y \
+        curl && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
 
 WORKDIR /opt/eventstore
 
@@ -71,7 +79,7 @@ RUN mkdir -p /var/lib/eventstore && \
 
 USER eventstore
 
-RUN echo "ExtIp: 0.0.0.0\n\
+RUN printf "ExtIp: 0.0.0.0\n\
 IntIp: 0.0.0.0" >> /etc/eventstore/eventstore.conf
 
 VOLUME /var/lib/eventstore /var/log/eventstore

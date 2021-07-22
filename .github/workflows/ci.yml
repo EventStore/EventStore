@@ -62,8 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container-runtime: [focal, buster-slim]
-        runtime: [linux-x64]
+        container-runtime: [focal, buster-slim, alpine]
     runs-on: ubuntu-latest
     name: ci/github/build-${{ matrix.container-runtime }}
     steps:
@@ -81,11 +80,29 @@ jobs:
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
         echo "VERSION=${version}" >> $GITHUB_ENV
+    - name: Setup Variables
+      id: variables
+      uses: kanga333/variable-mapper@master
+      with:
+        key: "${{ matrix.container-runtime }}"
+        map: |
+          {
+            "focal": {
+              "runtime": "linux-x64"
+            },
+            "buster-slim": {
+              "runtime": "linux-x64"
+            },
+            "alpine": {
+              "runtime": "alpine-x64"
+            }
+          }
+        export_to: output
     - name: Build
       run: |
         docker build \
           --tag eventstore \
-          --build-arg RUNTIME=${{ matrix.runtime }} \
+          --build-arg RUNTIME=${{ steps.variables.outputs.runtime }} \
           --build-arg CONTAINER_RUNTIME=${{ matrix.container-runtime }} \
           .
     - name: Verify Build
@@ -96,7 +113,7 @@ jobs:
         docker build \
           --target test \
           --tag eventstore-test \
-          --build-arg RUNTIME=${{ matrix.runtime }} \
+          --build-arg RUNTIME=${{ steps.variables.outputs.runtime }} \
           --build-arg CONTAINER_RUNTIME=${{ matrix.container-runtime }} \
           . && \
           docker run \
