@@ -62,7 +62,7 @@ namespace EventStore.Core.LogAbstraction {
 
 			var nameExistenceFilter = new StreamExistenceFilter(
 				directory: $"{options.IndexDirectory}/stream-existence",
-				filterName: "StreamExistenceFilter",
+				filterName: "streamExistenceFilter",
 				size: options.StreamExistenceFilterSize,
 				checkpoint: options.StreamExistenceFilterCheckpoint,
 				checkpointInterval: options.StreamExistenceFilterCheckpointInterval,
@@ -170,7 +170,7 @@ namespace EventStore.Core.LogAbstraction {
 
 			var nameExistenceFilter = new StreamExistenceFilter(
 				directory: $"{options.IndexDirectory}/stream-existence",
-				filterName: "StreamExistenceFilter",
+				filterName: "streamExistenceFilter",
 				size: options.StreamExistenceFilterSize,
 				checkpoint: options.StreamExistenceFilterCheckpoint,
 				checkpointInterval: options.StreamExistenceFilterCheckpointInterval,
