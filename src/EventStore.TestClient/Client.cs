@@ -12,6 +12,7 @@ using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
 	public class Client {
+		public static readonly TimeSpan ConnectionTimeout = TimeSpan.FromMilliseconds(1000);
 		private static readonly ILogger Log = Serilog.Log.ForContext<Client>();
 
 		public readonly bool InteractiveMode;

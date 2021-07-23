@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using EventStore.Common;
+using EventStore.Common.Options;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
@@ -21,7 +23,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_projection = null;
 			Given();
 			_logged = new List<string>();
-			_stateHandlerFactory = new ProjectionStateHandlerFactory();
+			_stateHandlerFactory = new ProjectionStateHandlerFactory(TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(500), JavascriptProjectionRuntime.Legacy);
 			_stateHandler = CreateStateHandler();
 			_source = _stateHandler.GetSourceDefinition();
 

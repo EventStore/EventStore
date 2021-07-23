@@ -6,6 +6,22 @@ Settings in this section concern projections that are running on the server. Rea
 Server-side projections impact the performance of the EventStoreDB server. For example, some standard [system projections](../projections/system-projections.md) like Category or Event Type projections produce new (link) events that are stored in the database in addition to the original event. This effectively doubles or triples the number of events appended and therefore creates pressure on the IO of the server node. We often call this effect "write amplification".
 :::
 
+## Projection Runtime
+
+An Interpreted runtime was introduced in 21.6.0 to replace the existing V8 runtime.
+
+The `ProjectionRuntime` option can be used to select which runtime the Projection Subsystem should use. We only recommend changing this setting if you observe a difference in behaviour between running an existing projection on the Legacy runtime versus the Interpreted runtime.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--projection-runtime` |
+| YAML                 | `ProjectionRuntime` |
+| Environment variable | `EVENTSTORE_PROJECTION_RUNTIME` |
+
+**Default**: `Interpreted`, use the new Interpreted runtime by default.
+
+Accepted values are `Interpreted` and `Legacy`.
+
 ## Run projections
 
 The `RunProjections` option tells the server if you want to run all projections, only system projections or no projections at all. Hence that the `StartSystemProjections` setting has no effect on custom projections.

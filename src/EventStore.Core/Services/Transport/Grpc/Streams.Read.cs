@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
-using EventStore.Core.Util;
 using EventStore.Client;
-using EventStore.Client.Shared;
 using EventStore.Client.Streams;
-using EventStore.Core.Exceptions;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using Google.Protobuf;
 using Grpc.Core;

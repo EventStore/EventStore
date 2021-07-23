@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Bus;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.LogV2;
@@ -49,7 +50,8 @@ namespace EventStore.Core.LogAbstraction {
 				streamExistenceFilter: streamExistenceFilter,
 				streamExistenceFilterReader: streamExistenceFilter,
 				recordFactory: new LogV2RecordFactory(),
-				supportsExplicitTransactions: true);
+				supportsExplicitTransactions: true,
+				partitionManagerFactory: (r, w) => new LogV2PartitionManager());
 		}
 
 		private static INameExistenceFilter GenStreamExistenceFilter(
@@ -88,6 +90,7 @@ namespace EventStore.Core.LogAbstraction {
 	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
 		public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
 			var metastreams = new LogV3Metastreams();
+			var recordFactory = new LogV3RecordFactory();
 			var streamNamesProvider = GenStreamNamesProvider(metastreams);
 
 			var streamNameIndexPersistence = GenStreamNameIndexPersistence(options);
@@ -116,8 +119,9 @@ namespace EventStore.Core.LogAbstraction {
 				// its important for LogV2 (because it has no stream name index)
 				// but not applicable to LogV3 (because you need a streamName not id to check the filter)
 				streamExistenceFilterReader: new NoExistenceFilterReader(),
-				recordFactory: new LogV3RecordFactory(),
-				supportsExplicitTransactions: false);
+				recordFactory: recordFactory,
+				supportsExplicitTransactions: false,
+				partitionManagerFactory: (r,w) => new PartitionManager(r, w, recordFactory));
 			return abstractor;
 		}
 
@@ -158,7 +162,7 @@ namespace EventStore.Core.LogAbstraction {
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
-				enableReadCache: false,
+				enableReadCache: true,
 				checkpointInterval: TimeSpan.FromSeconds(60));
 			return persistence;
 		}
@@ -183,6 +187,8 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public class LogFormatAbstractor<TStreamId> : IDisposable {
+		private readonly Func<ITransactionFileReader,ITransactionFileWriter,IPartitionManager> _partitionManagerFactory;
+
 		public LogFormatAbstractor(
 			IHasher<TStreamId> lowHasher,
 			IHasher<TStreamId> highHasher,
@@ -197,7 +203,10 @@ namespace EventStore.Core.LogAbstraction {
 			INameExistenceFilter streamExistenceFilter,
 			IExistenceFilterReader<TStreamId> streamExistenceFilterReader,
 			IRecordFactory<TStreamId> recordFactory,
-			bool supportsExplicitTransactions) {
+			bool supportsExplicitTransactions,
+			Func<ITransactionFileReader,ITransactionFileWriter,IPartitionManager> partitionManagerFactory) {
+			
+			_partitionManagerFactory = partitionManagerFactory;
 
 			LowHasher = lowHasher;
 			HighHasher = highHasher;
@@ -239,5 +248,9 @@ namespace EventStore.Core.LogAbstraction {
 		public ISystemStreamLookup<TStreamId> SystemStreams => StreamNamesProvider.SystemStreams;
 		public INameExistenceFilterInitializer StreamExistenceFilterInitializer => StreamNamesProvider.StreamExistenceFilterInitializer;
 		public bool SupportsExplicitTransactions { get; }
+		
+		public IPartitionManager CreatePartitionManager(ITransactionFileReader reader, ITransactionFileWriter writer) {
+			return _partitionManagerFactory(reader, writer);
+		}
 	}
 }

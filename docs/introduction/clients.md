@@ -57,6 +57,16 @@ EventStoreDB also offers an HTTP-based interface, based specifically on the [Ato
 
 Find out more about configuring the HTTP protocol on the [HTTP configuration](../networking/http.md) page.
 
+::: warning "Deprecation note"
+The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](../networking/http.md#atompub) to the server configuration.
+:::
+
+As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](/server/generated/v5/docs/http-api/) for it.
+
+::: note
+Although we plan to remove AtomPub support from the future server versions, the server management HTTP API will still be available.
+:::
+
 ### Community developed clients
 
 - [PHP (prooph/event-store-http-client)](https://github.com/prooph/event-store-http-client/)

@@ -256,6 +256,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_config.UpdatedBy = user;
 			_config.Entries.Add(new PersistentSubscriptionEntry {
 				Stream = eventSource.ToString(), //'Stream' name kept for backward compatibility
+				Filter = EventFilter.ParseToDto(eventSource.EventFilter),
 				Group = groupName,
 				ResolveLinkTos = resolveLinkTos,
 				CheckPointAfter = checkPointAfterMilliseconds,
@@ -333,7 +334,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void Handle(ClientMessage.CreatePersistentSubscriptionToAll message) {
 			CreatePersistentSubscription(
-				new PersistentSubscriptionAllStreamEventSource(),
+				new PersistentSubscriptionAllStreamEventSource(message.EventFilter),
 				message.GroupName,
 				new PersistentSubscriptionAllStreamPosition(message.StartFrom.CommitPosition, message.StartFrom.PreparePosition),
 				message.MessageTimeoutMilliseconds,
@@ -443,6 +444,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			_config.Entries.Add(new PersistentSubscriptionEntry {
 				Stream = eventSource.ToString(), //'Stream' name kept for backward compatibility
 				Group = groupName,
+				Filter = EventFilter.ParseToDto(eventSource.EventFilter),
 				ResolveLinkTos = resolveLinkTos,
 				CheckPointAfter = checkPointAfterMilliseconds,
 				ExtraStatistics = recordStatistics,
@@ -462,7 +464,6 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			});
 			SaveConfiguration(() => onSuccess(""));
 		}
-
 
 		public void Handle(ClientMessage.UpdatePersistentSubscriptionToStream message) {
 			if (string.IsNullOrEmpty(message.EventStreamId) || message.EventStreamId == SystemStreams.AllStream) {
@@ -1006,7 +1007,18 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 							IPersistentSubscriptionEventSource eventSource;
 							if (entry.Stream == SystemStreams.AllStream) {
-								eventSource = new PersistentSubscriptionAllStreamEventSource();
+								IEventFilter filter = null;
+								if (entry.Filter != null) {
+									var (success, reason) = EventFilter.TryParse(entry.Filter, out filter);
+									if (!success) {
+										Log.Error(
+											"Could not load filtered persistent subscription to $all for group {group}. The filter could not be parsed: '{reason}",
+											entry.Group, reason);
+										continue;
+									}
+								}
+
+								eventSource = new PersistentSubscriptionAllStreamEventSource(filter);
 							} else {
 								eventSource = new PersistentSubscriptionSingleStreamEventSource(entry.Stream);
 							}

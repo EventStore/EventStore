@@ -1,5 +1,7 @@
 using System;
 using System.Threading;
+using EventStore.Common;
+using EventStore.Common.Options;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Management;
 using EventStore.Projections.Core.Services.Processing;
@@ -13,7 +15,8 @@ namespace EventStore.Projections.Core.Tests.Services.v8 {
 
 		[SetUp]
 		public void Setup() {
-			_stateHandlerFactory = new ProjectionStateHandlerFactory();
+			_stateHandlerFactory = new ProjectionStateHandlerFactory(TimeSpan.FromMilliseconds(1000),
+				TimeSpan.FromMilliseconds(500), JavascriptProjectionRuntime.Legacy);
 		}
 
 		[Test, Category("v8")]

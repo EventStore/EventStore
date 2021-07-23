@@ -149,6 +149,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							Commit((CommitLogRecord)result.LogRecord, result.Eof, false);
 							break;
 						case LogRecordType.System:
+						case LogRecordType.Partition:
+						case LogRecordType.PartitionType:
 							break;
 						default:
 							throw new Exception(string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));

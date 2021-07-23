@@ -22,7 +22,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
-		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.1" />
+		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.5" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
 		<PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
 		<PackageReference Include="System.Linq.Async" Version="5.0.0" />
@@ -43,6 +43,9 @@
 		<ProjectReference Include="..\EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj" />
 	</ItemGroup>
 	<ItemGroup>
+		<Protobuf Include="..\Protos\Grpc\code.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+			<Link>Services\Transport\Grpc\Protos\code.proto</Link>
+		</Protobuf>
 		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
 			<Link>Services\Transport\Grpc\Protos\cluster.proto</Link>
 		</Protobuf>
@@ -58,6 +61,9 @@
 	  <Protobuf Include="..\Protos\Grpc\shared.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
 	    <Link>Services\Transport\Grpc\Protos\shared.proto</Link>
 	  </Protobuf>
+		<Protobuf Include="..\Protos\Grpc\status.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
+			<Link>Services\Transport\Grpc\Protos\status.proto</Link>
+		</Protobuf>
 	  <Protobuf Include="..\Protos\Grpc\streams.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
 	    <Link>Services\Transport\Grpc\Protos\streams.proto</Link>
 	  </Protobuf>

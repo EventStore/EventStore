@@ -8,7 +8,7 @@ using Grpc.Core;
 using static EventStore.Client.Projections.UpdateReq.Types.Options;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation UpdateOperation = new Operation(Operations.Projections.Update);
 		public override async Task<UpdateResp> Update(UpdateReq request, ServerCallContext context) {
 			var updatedSource = new TaskCompletionSource<bool>();

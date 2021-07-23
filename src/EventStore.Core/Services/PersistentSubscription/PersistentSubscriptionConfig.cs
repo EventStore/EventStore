@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionConfig {
@@ -54,6 +55,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionEntry {
 		public string Stream;
 		public string Group;
+		public EventFilter.EventFilterDto Filter;
 		public bool ResolveLinkTos;
 		public bool ExtraStatistics;
 		public int MessageTimeout;

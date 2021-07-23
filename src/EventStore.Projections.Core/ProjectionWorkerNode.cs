@@ -33,7 +33,8 @@ namespace EventStore.Projections.Core {
 			ISingletonTimeoutScheduler timeoutScheduler,
 			ProjectionType runProjections,
 			bool faultOutOfOrderProjections,
-			IPublisher leaderOutputBus) {
+			IPublisher leaderOutputBus,
+			ProjectionsStandardComponents configuration) {
 			_runProjections = runProjections;
 			Ensure.NotNull(db, "db");
 
@@ -61,7 +62,8 @@ namespace EventStore.Projections.Core {
 					_subscriptionDispatcher,
 					timeProvider,
 					_ioDispatcher,
-					timeoutScheduler);
+					timeoutScheduler, 
+					configuration);
 			}
 		}
 

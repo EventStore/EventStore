@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -44,7 +45,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		public void SetUp() {
 			_standardComponents = CreateStandardComponents();
 
-			Subsystem = new ProjectionsSubsystem(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true);
+			Subsystem = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, true, TimeSpan.FromSeconds(3), true, JavascriptProjectionRuntime.Interpreted, 500, 250));
 			Subsystem.Register(_standardComponents);
 
 			// Unsubscribe from the actual components so we can test in isolation

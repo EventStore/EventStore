@@ -4,10 +4,9 @@ using System.Threading.Tasks;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client.Shared;
 using EventStore.Client.Streams;
-using Google.Protobuf;
 using Grpc.Core;
+using Empty = EventStore.Client.Empty;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal partial class Streams<TStreamId> {
@@ -22,20 +21,23 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var options = requestStream.Current.Options;
 			var streamName = options.StreamIdentifier;
-			
+
 			var expectedVersion = options.ExpectedStreamRevisionCase switch {
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Revision => new StreamRevision(
 					options.Revision).ToInt64(),
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
-				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
-				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
+				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists => AnyStreamRevision.StreamExists
+					.ToInt64(),
+				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream =>
+					AnyStreamRevision.NoStream.ToInt64(),
 				_ => throw new InvalidOperationException()
 			};
 
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
 			var user = context.GetHttpContext().User;
-			var op = WriteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
+			var op = WriteOperation.WithParameter(
+				Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
 				throw AccessDenied();
 			}
@@ -93,7 +95,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			return await appendResponseSource.Task.ConfigureAwait(false);
 
 			void HandleWriteEventsCompleted(Message message) {
-				if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+				if (message is ClientMessage.NotHandled notHandled &&
+				    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 					appendResponseSource.TrySetException(ex);
 					return;
 				}

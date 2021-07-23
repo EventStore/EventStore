@@ -16,7 +16,7 @@ namespace EventStore.Client.Projections {
 }
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement : EventStore.Client.Projections.Projections.ProjectionsBase {
+	internal partial class ProjectionManagement : EventStore.Client.Projections.Projections.ProjectionsBase {
 		private readonly IQueuedHandler _queue;
 		private readonly IAuthorizationProvider _authorizationProvider;
 

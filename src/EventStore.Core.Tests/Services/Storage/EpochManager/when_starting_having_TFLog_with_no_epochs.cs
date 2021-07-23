@@ -54,15 +54,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return (LinkedList<EpochRecord>)typeof(EpochManager).GetField("_epochs", BindingFlags.NonPublic | BindingFlags.Instance)
 				.GetValue(_epochManager);
 		}
-		private EpochRecord WriteEpoch(int epochNumber, long lastPos, Guid instanceId) {
-			long pos = _writer.Checkpoint.ReadNonFlushed();
-			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
-			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
-				SystemRecordSerialization.Json, epoch.AsSerialized());
-			_writer.Write(rec, out _);
-			_writer.Flush();
-			return epoch;
-		}
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();

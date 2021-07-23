@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using EventStore.Core.Services.PersistentSubscription;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services {
@@ -33,6 +34,48 @@ namespace EventStore.Core.Tests.Services {
 		public void random_bad_data_causes_bad_config_data_exception() {
 			var bunkdata = Encoding.UTF8.GetBytes("This ain't even valid json");
 			Assert.Throws<BadConfigDataException>(() => PersistentSubscriptionConfig.FromSerializedForm(bunkdata));
+		}
+
+		[Test]
+		public void event_filter_is_parsed_correctly() {
+			var config = new PersistentSubscriptionConfig();
+			config.Updated = new DateTime(2014, 08, 14);
+			config.UpdatedBy = "admin";
+			config.Version = "1";
+
+			var filter = EventFilter.StreamName.Prefixes(true, "test", "blah");
+			var entry = new PersistentSubscriptionEntry {
+				Group = "foo",
+				Stream = "$all",
+				Filter = EventFilter.ParseToDto(filter)
+			};
+			config.Entries = new List<PersistentSubscriptionEntry>{entry};
+			var data = config.GetSerializedForm();
+			var config2 = PersistentSubscriptionConfig.FromSerializedForm(data);
+			var newFilterDto = config2.Entries[0].Filter;
+			var (success, reason) = EventFilter.TryParse(newFilterDto, out var newFilter);
+			Assert.AreEqual(1, config2.Entries.Count);
+			Assert.IsTrue(success);
+			Assert.AreEqual(filter.ToString(), newFilter.ToString());
+		}
+
+		[Test]
+		public void no_event_filter_is_parsed_correctly() {
+			var config = new PersistentSubscriptionConfig();
+			config.Updated = new DateTime(2014, 08, 14);
+			config.UpdatedBy = "admin";
+			config.Version = "1";
+
+			var entry = new PersistentSubscriptionEntry {
+				Group = "foo",
+				Stream = "$all",
+				Filter = null
+			};
+			config.Entries = new List<PersistentSubscriptionEntry>{entry};
+			var data = config.GetSerializedForm();
+			var config2 = PersistentSubscriptionConfig.FromSerializedForm(data);
+			Assert.AreEqual(1, config2.Entries.Count);
+			Assert.IsNull(config2.Entries[0].Filter);
 		}
 	}
 }

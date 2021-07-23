@@ -36,10 +36,16 @@ namespace EventStore.ClusterNode {
 		public ClusterVNodeHostedService(ClusterVNodeOptions options) {
 			if (options == null) throw new ArgumentNullException(nameof(options));
 			_options = options.Projections.RunProjections >= ProjectionType.System
-				? options.WithSubsystem(new ProjectionsSubsystem(options.Projections.ProjectionThreads,
-					options.Projections.RunProjections, options.Application.StartStandardProjections,
-					TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry),
-					options.Projections.FaultOutOfOrderProjections))
+				? options.WithSubsystem(new ProjectionsSubsystem(
+					new ProjectionSubsystemOptions(
+						options.Projections.ProjectionThreads, 
+						options.Projections.RunProjections, 
+						options.Application.StartStandardProjections, 
+						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
+						options.Projections.FaultOutOfOrderProjections,
+						options.Projections.ProjectionRuntime,
+						options.Projections.ProjectionCompilationTimeout,
+						options.Projections.ProjectionExecutionTimeout)))
 				: options;
 
 			if (!_options.Database.MemDb) {
@@ -56,13 +62,13 @@ namespace EventStore.ClusterNode {
 			if (!_clusterNodeMutex.Acquire())
 				throw new InvalidConfigurationException($"Couldn't acquire exclusive Cluster Node mutex '{_clusterNodeMutex.MutexName}'.");
 
-			var authorizationConfig = string.IsNullOrEmpty(_options.Auth.AuthorizationConfig)
+			var authorizationConfig = Path.GetFullPath(string.IsNullOrEmpty(_options.Auth.AuthorizationConfig)
 				? _options.Application.Config
-				: _options.Auth.AuthorizationConfig;
+				: _options.Auth.AuthorizationConfig);
 
-			var authenticationConfig = string.IsNullOrEmpty(_options.Auth.AuthenticationConfig)
+			var authenticationConfig = Path.GetFullPath(string.IsNullOrEmpty(_options.Auth.AuthenticationConfig)
 				? _options.Application.Config
-				: _options.Auth.AuthenticationConfig;
+				: _options.Auth.AuthenticationConfig);
 
 			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
 

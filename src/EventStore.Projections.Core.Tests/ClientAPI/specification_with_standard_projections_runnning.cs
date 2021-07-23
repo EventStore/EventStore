@@ -17,6 +17,7 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
+using EventStore.Common;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
@@ -37,10 +38,16 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
             Assert.Ignore("These tests require DEBUG conditional");
 #else
 			var projectionWorkerThreadCount = GivenWorkerThreadCount();
-			_projections = new ProjectionsSubsystem(projectionWorkerThreadCount, runProjections: ProjectionType.All,
-				startStandardProjections: false,
-				projectionQueryExpiry: TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
-				faultOutOfOrderProjections: Opts.FaultOutOfOrderProjectionsDefault);
+			var configuration = new ProjectionSubsystemOptions(
+				projectionWorkerThreadCount,
+				ProjectionType.All,
+				false,
+				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
+				Opts.FaultOutOfOrderProjectionsDefault,
+				JavascriptProjectionRuntime.Interpreted,
+				500,
+				250);
+			_projections = new ProjectionsSubsystem(configuration);
 			_node = new MiniNode<TLogFormat, TStreamId>(
 				PathName, inMemDb: true,
 				subsystems: new ISubsystem[] {_projections});

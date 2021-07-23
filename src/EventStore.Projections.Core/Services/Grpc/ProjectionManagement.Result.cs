@@ -8,7 +8,7 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
 namespace EventStore.Projections.Core.Services.Grpc {
-	public partial class ProjectionManagement {
+	internal partial class ProjectionManagement {
 		private static readonly Operation ResultOperation = new Operation(Operations.Projections.Result);
 		private static readonly Operation StateOperation = new Operation(Operations.Projections.State);
 		public override async Task<ResultResp> Result(ResultReq request, ServerCallContext context) {

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common;
 using EventStore.Common.Configuration;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -50,7 +51,7 @@ namespace EventStore.Core {
 			if (environment == null) throw new ArgumentNullException(nameof(environment));
 
 			var configurationRoot = new ConfigurationBuilder()
-				.AddEventStore(args, environment, DefaultValues)
+				.AddEventStore(args, environment, DefaultValues, Default.Application.Config)
 				.Build();
 
 			return FromConfiguration(configurationRoot);
@@ -84,6 +85,9 @@ namespace EventStore.Core {
 
 			[Description("Path where to keep log files.")]
 			public string Log { get; init; } = Locations.DefaultLogDirectory;
+
+			[Description("The name of the log configuration file.")]
+			public string LogConfig { get; init; } = "logconfig.json";
 
 			[Description("Sets the minimum log level. For more granular settings, please edit logconfig.json.")]
 			public LogLevel LogLevel { get; init; } = LogLevel.Default;
@@ -128,6 +132,7 @@ namespace EventStore.Core {
 
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				Log = configurationRoot.GetValue<string>(nameof(Log)),
+				LogConfig = configurationRoot.GetValue<string>(nameof(LogConfig)),
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
 				Version = configurationRoot.GetValue<bool>(nameof(Version)),
@@ -646,11 +651,25 @@ namespace EventStore.Core {
 			             "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
+			[Description(
+				"The runtime used for executing user projections. Legacy will run v8, Interpreted will run the new interpreted runtime"),
+			Deprecated("The Legacy ProjectionRuntime option is for compatibility with the v8 projection engine and should only be set if problems are encountered running the interpreted runtime")]
+			public JavascriptProjectionRuntime ProjectionRuntime { get; init; } =
+				JavascriptProjectionRuntime.Interpreted;
+
+			[Description("The time in milliseconds allowed for the compilation phase of user projections")] 
+			public int ProjectionCompilationTimeout { get; set; } = 500;
+			[Description("The time in milliseconds allowed for the executing a handler in a user projection")] 
+			public int ProjectionExecutionTimeout { get; set; } = 250;
+
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
 				ProjectionThreads = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
 				ProjectionsQueryExpiry = configurationRoot.GetValue<int>(nameof(ProjectionsQueryExpiry)),
-				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections))
+				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections)),
+				ProjectionRuntime = configurationRoot.GetValue<JavascriptProjectionRuntime>(nameof(ProjectionRuntime)),
+				ProjectionCompilationTimeout = configurationRoot.GetValue<int>(nameof(ProjectionCompilationTimeout)),
+				ProjectionExecutionTimeout = configurationRoot.GetValue<int>(nameof(ProjectionExecutionTimeout))
 			};
 		}
 	}

@@ -10,7 +10,7 @@
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
 		<PackageReference Include="Grpc.Core" Version="2.34.0" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.34.0" />
-		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="3.1.5" />
+		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="5.0.6" />
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
@@ -46,9 +46,11 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
+		<Protobuf Include="..\Protos\Grpc\code.proto" Link="Protos\gossip.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\gossip.proto" Link="Protos\gossip.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\operations.proto" Link="Protos\operations.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\persistent.proto" Link="Protos\persistent.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\status.proto" Link="Protos\status.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\streams.proto" Link="Protos\streams.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\users.proto" Link="Protos\users.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\monitoring.proto" Link="Protos\monitoring.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />

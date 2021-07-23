@@ -12,11 +12,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public static Uuid Parse(string value) => new Uuid(value);
 		public static Uuid FromInt64(long msb, long lsb) => new Uuid(msb, lsb);
 
-		internal static Uuid FromDto(Client.Shared.UUID dto) {
+		internal static Uuid FromDto(Client.UUID dto) {
 			if (dto == null) throw new ArgumentNullException(nameof(dto));
 			return dto.ValueCase switch {
-				Client.Shared.UUID.ValueOneofCase.String => new Uuid(dto.String),
-				Client.Shared.UUID.ValueOneofCase.Structured => new Uuid(dto.Structured.MostSignificantBits,
+				Client.UUID.ValueOneofCase.String => new Uuid(dto.String),
+				Client.UUID.ValueOneofCase.Structured => new Uuid(dto.Structured.MostSignificantBits,
 					dto.Structured.LeastSignificantBits),
 				_ => throw new ArgumentException($"Invalid argument: {dto.ValueCase}", nameof(dto))
 			};
@@ -52,9 +52,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_lsb = lsb;
 		}
 
-		public readonly Client.Shared.UUID ToDto() =>
-			new Client.Shared.UUID {
-				Structured = new Client.Shared.UUID.Types.Structured {
+		public readonly Client.UUID ToDto() =>
+			new Client.UUID {
+				Structured = new Client.UUID.Types.Structured {
 					LeastSignificantBits = _lsb,
 					MostSignificantBits = _msb
 				}

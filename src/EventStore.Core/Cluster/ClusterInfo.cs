@@ -46,7 +46,7 @@ namespace EventStore.Core.Cluster {
 			return false;
 		}
 		
-		public static ClusterInfo FromGrpcClusterInfo(EventStore.Cluster.ClusterInfo grpcCluster) {
+		internal static ClusterInfo FromGrpcClusterInfo(EventStore.Cluster.ClusterInfo grpcCluster) {
 			var receivedMembers = Array.ConvertAll(grpcCluster.Members.ToArray(), x =>
 				new MemberInfo(
 					Uuid.FromDto(x.InstanceId).ToGuid(), x.TimeStamp.FromTicksSinceEpoch(), (VNodeState)x.State,
@@ -68,7 +68,7 @@ namespace EventStore.Core.Cluster {
 			return new ClusterInfo(receivedMembers);
 		}
 
-		public static EventStore.Cluster.ClusterInfo ToGrpcClusterInfo(ClusterInfo cluster) {
+		internal static EventStore.Cluster.ClusterInfo ToGrpcClusterInfo(ClusterInfo cluster) {
 			var members = Array.ConvertAll(cluster.Members, x => new EventStore.Cluster.MemberInfo {
 				InstanceId = Uuid.FromGuid(x.InstanceId).ToDto(),
 				TimeStamp = x.TimeStamp.ToTicksSinceEpoch(),

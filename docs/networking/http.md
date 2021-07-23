@@ -48,11 +48,11 @@ To disable the Keepalive ping, you need to set the `keepAliveInterval` value to 
 | YAML                 | `KeepAliveInterval` |
 | Environment variable | `KEEP_ALIVE_INTERVAL` |
 
-**Default**: `10000`
+**Default**: `10000` (ms, 10 sec)
 
 ### KeepAliveTimeout
 
-After having pinged for keepalive check, the server waits for a duration of `keepAliveTimeout` (in milliseconds). If no activity is seen even after that, the connection is closed.
+After having pinged for keepalive check, the server waits for a duration of `keepAliveTimeout` (in milliseconds). If the connection doesn't have any activity even after that, it gets closed.
 
 | Format               | Syntax |
 | :------------------- | :----- |
@@ -60,15 +60,29 @@ After having pinged for keepalive check, the server waits for a duration of `kee
 | YAML                 | `KeepAliveTimeout` |
 | Environment variable | `KEEP_ALIVE_TIMEOUT` |
 
-**Default**: `10000`
+**Default**: `10000` (ms, 10 sec)
 
 As a general rule, we do not recommend putting EventStoreDB behind a load balancer. However, if you are using it and want to benefit from the Keepalive feature, then you should make sure if the compatible settings are properly set. Some load balancers may also override the Keepalive settings. Most of them require setting the idle timeout larger/longer than the `keepAliveTimeout`. We suggest checking the load balancer documentation before using Keepalive pings. 
 
+## AtomPub
+
+The AtomPub application protocol over HTTP is disabled by default since v20. We plan to deprecate the AtomPub support in the future versions, but we aim to provide a replacement before we finally deprecate AtomPub.
+
+In Event Store Cloud, the AtomPub protocol is enabled. For self-hosted instances, use the configuration setting to enable AtomPub.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--enable-atom-pub-over-http` |
+| YAML                 | `EnableAtomPubOverHttp` |
+| Environment variable | `ENABLE_ATOM_PUB_OVER_HTTP` |
+
+**Default**: `false` (AtomPub is disabled)
+
 ## Kestrel Settings
 
-It's generally not expected that you'll need to update the kestrel configuration that EventStoreDB has set by default, but it's good to know that you can update the following settings if needed.
+It's generally not expected that you'll need to update the Kestrel configuration that EventStoreDB has set by default, but it's good to know that you can update the following settings if needed.
 
-The Kestrel Settings are configured in the `kestrelsettings.json` file. This file is expected to be found in the [default onfiguration directory](/configuration/).
+Kestrel uses the `kestrelsettings.json` configuration file. This file should be located in the [default configuration directory](/configuration/#configuration-file).
 
 ### MaxConcurrentConnections
 
@@ -76,15 +90,11 @@ Sets the maximum number of open connections. See the docs [here](https://docs.mi
 
 This is configured with `Kestrel.Limits.MaxConcurrentConnections` in the settings file.
 
-**Default**: `5000`
-
 ### MaxConcurrentUpgradedConnections
 
 Sets the maximum number of open, upgraded connections. An upgraded connection is one that has been switched from HTTP to another protocol, such as WebSockets. See the docs [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.server.kestrel.core.kestrelserverlimits.maxconcurrentupgradedconnections?view=aspnetcore-5.0).
 
 This is configured with `Kestrel.Limits.MaxConcurrentUpgradedConnections` in the settings file.
-
-**Default**: `5000`
 
 ### Http2 InitialConnectionWindowSize
 
@@ -94,8 +104,6 @@ The value must be greater than or equal to 65,535 and less than 2^31. See the do
 
 This is configured with `Kestrel.Limits.Http2.InitialConnectionWindowSize` in the settings file.
 
-**Default**: `131072 * 1024`
-
 ### Http2 InitialStreamWindowSize
 
 Sets how much request body data the server is willing to receive and buffer at a time per stream. Note connections are also limited by `KestrelInitialConnectionWindowSize`
@@ -103,5 +111,3 @@ Sets how much request body data the server is willing to receive and buffer at a
 Value must be greater than or equal to 65,535 and less than 2^31. See the docs [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.server.kestrel.core.http2limits.initialstreamwindowsize?view=aspnetcore-5.0).
 
 This is configured with `Kestrel.Limits.Http2.InitialStreamWindowSize` in the settings file.
-
-**Default**: `98304 * 1024`

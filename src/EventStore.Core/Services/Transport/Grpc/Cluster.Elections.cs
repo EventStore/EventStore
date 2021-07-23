@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.Client.Shared;
+using EventStore.Client;
 using EventStore.Cluster;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;

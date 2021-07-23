@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,6 +8,11 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public static class EventFilter {
+		public const string StreamIdContext = "streamid";
+		public const string EventTypeContext = "eventtype";
+		public const string RegexType = "regex";
+		public const string PrefixType = "prefix";
+
 		public static IEventFilter DefaultAllFilter => new DefaultAllFilterStrategy();
 		public static IEventFilter DefaultStreamFilter => new DefaultStreamFilterStrategy();
 
@@ -83,7 +87,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			public override string ToString() => nameof(DefaultAllFilterStrategy);
 
 			private class NonSystemStreamStrategy : IEventFilter {
-
 				[MethodImpl(MethodImplOptions.AggressiveInlining|MethodImplOptions.AggressiveOptimization)]
 				public bool IsEventAllowed(EventRecord eventRecord) =>
 					eventRecord.EventStreamId[0] != '$';
@@ -113,8 +116,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private sealed class StreamIdPrefixStrategy : IEventFilter {
-			private readonly bool _isAllStream;
-			private readonly string[] _expectedPrefixes;
+			internal readonly bool _isAllStream;
+			internal readonly string[] _expectedPrefixes;
 
 			public StreamIdPrefixStrategy(bool isAllStream, string[] expectedPrefixes) {
 				_isAllStream = isAllStream;
@@ -130,8 +133,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private sealed class EventTypePrefixStrategy : IEventFilter {
-			private readonly bool _isAllStream;
-			private readonly string[] _expectedPrefixes;
+			internal readonly bool _isAllStream;
+			internal readonly string[] _expectedPrefixes;
 
 			public EventTypePrefixStrategy(bool isAllStream, string[] expectedPrefixes) {
 				_isAllStream = isAllStream;
@@ -147,8 +150,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private sealed class EventTypeRegexStrategy : IEventFilter {
-			private readonly bool _isAllStream;
-			private readonly Regex _expectedRegex;
+			internal readonly bool _isAllStream;
+			internal readonly Regex _expectedRegex;
 
 			public EventTypeRegexStrategy(bool isAllStream, string expectedRegex) {
 				_isAllStream = isAllStream;
@@ -164,8 +167,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		private sealed class StreamIdRegexStrategy : IEventFilter {
-			private readonly bool _isAllStream;
-			private readonly Regex _expectedRegex;
+			internal readonly bool _isAllStream;
+			internal readonly Regex _expectedRegex;
 
 			public StreamIdRegexStrategy(bool isAllStream, string expectedRegex) {
 				_isAllStream = isAllStream;
@@ -180,14 +183,60 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				$"{nameof(StreamIdRegexStrategy)}: ({string.Join(", ", _expectedRegex)})";
 		}
 
+		public class EventFilterDto {
+			public string Context;
+			public string Type;
+			public string Data;
+			public bool IsAllStream;
+		}
+
+		public static EventFilterDto ParseToDto(IEventFilter filter) {
+			switch (filter) {
+				case StreamIdPrefixStrategy sips:
+					return new EventFilterDto {
+						Context = StreamIdContext,
+						Type = PrefixType,
+						Data = string.Join(",", sips._expectedPrefixes.Select(x => $"{x}")),
+						IsAllStream = sips._isAllStream
+					};
+				case StreamIdRegexStrategy sirs:
+					return new EventFilterDto {
+						Context = StreamIdContext,
+						Type = RegexType,
+						Data = sirs._expectedRegex.ToString(),
+						IsAllStream = sirs._isAllStream
+					};
+				case EventTypePrefixStrategy etps:
+					return new EventFilterDto {
+						Context = EventTypeContext,
+						Type = PrefixType,
+						Data = string.Join(",", etps._expectedPrefixes.Select(x => $"{x}")),
+						IsAllStream = etps._isAllStream
+					};
+				case EventTypeRegexStrategy etrs:
+					return new EventFilterDto {
+						Context = EventTypeContext,
+						Type = RegexType,
+						Data = etrs._expectedRegex.ToString(),
+						IsAllStream = etrs._isAllStream
+					};
+			}
+
+			return null;
+		}
+
+		public static (bool success, string reason) TryParse(EventFilterDto dto, out IEventFilter filter) {
+			return TryParse(dto.Context, dto.IsAllStream, dto.Type, dto.Data, out filter);
+		}
+
 		public static (bool Success, string Reason) TryParse(string context, bool isAllStream, string type, string data,
 			out IEventFilter filter) {
 			TcpClientMessageDto.Filter.FilterContext parsedContext;
 			switch (context) {
-				case "eventtype":
+				case EventTypeContext:
 					parsedContext = TcpClientMessageDto.Filter.FilterContext.EventType;
 					break;
-				case "streamid":
+				case StreamIdContext:
 					parsedContext = TcpClientMessageDto.Filter.FilterContext.StreamId;
 					break;
 				default:
@@ -198,10 +247,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			TcpClientMessageDto.Filter.FilterType parsedType;
 			switch (type) {
-				case "regex":
+				case RegexType:
 					parsedType = TcpClientMessageDto.Filter.FilterType.Regex;
 					break;
-				case "prefix":
+				case PrefixType:
 					parsedType = TcpClientMessageDto.Filter.FilterType.Prefix;
 					break;
 				default:

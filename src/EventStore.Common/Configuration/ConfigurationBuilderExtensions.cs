@@ -1,12 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Extensions.Configuration;
 
 #nullable enable
 namespace EventStore.Common.Configuration {
 	public static class ConfigurationBuilderExtensions {
 		public static IConfigurationBuilder AddEventStore(this IConfigurationBuilder configurationBuilder,
-			string[] args, IDictionary environment, IEnumerable<KeyValuePair<string, object?>> defaultValues) {
+			string[] args, IDictionary environment, IEnumerable<KeyValuePair<string, object?>> defaultValues,
+			string defaultConfigurationPath) {
 			var builder = configurationBuilder
 				.Add(new DefaultSource(defaultValues))
 				.Add(new EnvironmentVariablesSource(environment))
@@ -18,7 +20,7 @@ namespace EventStore.Common.Configuration {
 
 			var yamlSource = new YamlSource {
 				Path = configurationPath,
-				Optional = true,
+				Optional = configurationPath == defaultConfigurationPath,
 				ReloadOnChange = true
 			};
 			yamlSource.ResolveFileProvider();

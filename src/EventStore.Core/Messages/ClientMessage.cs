@@ -1198,6 +1198,8 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
+			public readonly IEventFilter EventFilter;
+
 			public readonly TFPos StartFrom;
 			public readonly int MessageTimeoutMilliseconds;
 			public readonly bool RecordStatistics;
@@ -1216,7 +1218,7 @@ namespace EventStore.Core.Messages {
 			public readonly int CheckPointAfterMilliseconds;
 
 			public CreatePersistentSubscriptionToAll(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				string groupName, bool resolveLinkTos, TFPos startFrom,
+				string groupName, IEventFilter eventFilter, bool resolveLinkTos, TFPos startFrom,
 				int messageTimeoutMilliseconds, bool recordStatistics, int maxRetryCount, int bufferSize,
 				int liveBufferSize, int readbatchSize,
 				int checkPointAfterMilliseconds, int minCheckPointCount, int maxCheckPointCount,
@@ -1224,6 +1226,7 @@ namespace EventStore.Core.Messages {
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				ResolveLinkTos = resolveLinkTos;
 				GroupName = groupName;
+				EventFilter = eventFilter;
 				StartFrom = startFrom;
 				MessageTimeoutMilliseconds = messageTimeoutMilliseconds;
 				RecordStatistics = recordStatistics;
