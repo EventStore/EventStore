@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				Connections = connections,
 				AveragePerSecond = avgItemsPerSecond,
 				LastCheckpointedEventPosition = _lastCheckpointedEventPosition?.ToString(),
-				LastKnownMessage = _lastKnownEventPosition?.ToString(),
+				LastKnownEventPosition = _lastKnownEventPosition?.ToString(),
 				TotalItems = totalItems,
 				CountSinceLastMeasurement = lastItems,
 				CheckPointAfterMilliseconds = (int)_settings.CheckPointAfter.TotalMilliseconds,

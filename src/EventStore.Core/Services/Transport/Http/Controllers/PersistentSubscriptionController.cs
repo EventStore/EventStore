@@ -875,9 +875,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					TotalItemsProcessed = stat.TotalItems,
 					CountSinceLastMeasurement = stat.CountSinceLastMeasurement,
 					#pragma warning disable 612
-					LastKnownEventNumber = long.TryParse(stat.LastKnownMessage, out var lastKnownMsg) ? lastKnownMsg : 0,
+					LastKnownEventNumber = long.TryParse(stat.LastKnownEventPosition, out var lastKnownMsg) ? lastKnownMsg : 0,
 					#pragma warning restore 612
-					LastKnownEventPosition = stat.LastKnownMessage,
+					LastKnownEventPosition = stat.LastKnownEventPosition,
 					#pragma warning disable 612
 					LastProcessedEventNumber = long.TryParse(stat.LastCheckpointedEventPosition, out var lastProcessedPos) ? lastProcessedPos : 0,
 					#pragma warning restore 612
@@ -955,9 +955,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					AverageItemsPerSecond = stat.AveragePerSecond,
 					TotalItemsProcessed = stat.TotalItems,
 					#pragma warning disable 612
-					LastKnownEventNumber = long.TryParse(stat.LastKnownMessage, out var lastKnownMsg) ? lastKnownMsg : 0,
+					LastKnownEventNumber = long.TryParse(stat.LastKnownEventPosition, out var lastKnownMsg) ? lastKnownMsg : 0,
 					#pragma warning restore 612
-					LastKnownEventPosition = stat.LastKnownMessage,
+					LastKnownEventPosition = stat.LastKnownEventPosition,
 					#pragma warning disable 612
 					LastProcessedEventNumber = long.TryParse(stat.LastCheckpointedEventPosition, out var lastEventPos) ? lastEventPos : 0,
 					#pragma warning restore 612
