@@ -879,9 +879,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					#pragma warning restore 612
 					LastKnownEventPosition = stat.LastKnownMessage,
 					#pragma warning disable 612
-					LastProcessedEventNumber = long.TryParse(stat.LastProcessedEventPosition, out var lastProcessedPos) ? lastProcessedPos : 0,
+					LastProcessedEventNumber = long.TryParse(stat.LastCheckpointedEventPosition, out var lastProcessedPos) ? lastProcessedPos : 0,
 					#pragma warning restore 612
-					LastProcessedEventPosition = stat.LastProcessedEventPosition,
+					LastCheckpointedEventPosition = stat.LastCheckpointedEventPosition,
 					ReadBufferCount = stat.ReadBufferCount,
 					LiveBufferCount = stat.LiveBufferCount,
 					RetryBufferCount = stat.RetryBufferCount,
@@ -959,9 +959,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					#pragma warning restore 612
 					LastKnownEventPosition = stat.LastKnownMessage,
 					#pragma warning disable 612
-					LastProcessedEventNumber = long.TryParse(stat.LastProcessedEventPosition, out var lastEventPos) ? lastEventPos : 0,
+					LastProcessedEventNumber = long.TryParse(stat.LastCheckpointedEventPosition, out var lastEventPos) ? lastEventPos : 0,
 					#pragma warning restore 612
-					LastProcessedEventPosition = stat.LastProcessedEventPosition,
+					LastCheckpointedEventPosition = stat.LastCheckpointedEventPosition,
 					ParkedMessageUri = MakeUrl(manager,
 						string.Format(parkedMessageUriTemplate, escapedStreamId, escapedGroupName)),
 					GetMessagesUri = MakeUrl(manager,
@@ -1023,7 +1023,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public decimal AverageItemsPerSecond { get; set; }
 			public long TotalItemsProcessed { get; set; }
 			[Obsolete] public long LastProcessedEventNumber { get; set; }
-			public string LastProcessedEventPosition { get; set; }
+			public string LastCheckpointedEventPosition { get; set; }
 			[Obsolete] public long LastKnownEventNumber { get; set; }
 			public string LastKnownEventPosition { get; set; }
 			public int ConnectionCount { get; set; }
@@ -1042,7 +1042,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public long TotalItemsProcessed { get; set; }
 			public long CountSinceLastMeasurement { get; set; }
 			[Obsolete] public long LastProcessedEventNumber { get; set; }
-			public string LastProcessedEventPosition { get; set; }
+			public string LastCheckpointedEventPosition { get; set; }
 			[Obsolete] public long LastKnownEventNumber { get; set; }
 			public string LastKnownEventPosition { get; set; }
 			public int ReadBufferCount { get; set; }
