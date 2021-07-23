@@ -22,6 +22,8 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			source.Initialize(this);
 		}
 
+		public void Verify() { }
+
 		public bool MightContain(string item) {
 			return Streams.Contains(item);
 		}

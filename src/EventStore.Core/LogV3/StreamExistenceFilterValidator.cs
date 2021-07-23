@@ -17,6 +17,8 @@ namespace EventStore.Core.LogV3 {
 
 		public void Initialize(INameExistenceFilterInitializer source) => _wrapped.Initialize(source);
 
+		public void Verify() => _wrapped.Verify();
+
 		public void Add(string streamName) {
 			ValidateStreamName(streamName);
 			_wrapped.Add(streamName);

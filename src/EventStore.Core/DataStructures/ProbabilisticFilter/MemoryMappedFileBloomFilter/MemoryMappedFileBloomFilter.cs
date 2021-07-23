@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
+using Serilog;
 
 namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter {
 	public unsafe class MemoryMappedFileBloomFilter : IProbabilisticFilter, IDisposable {
@@ -14,12 +15,18 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		    https://www.eecs.harvard.edu/~michaelm/postscripts/rsa2008.pdf
 
 		    Only two 32-bit hash functions can be used to simulate additional hash functions of the form g(x) = h1(x) + i*h2(x)
+
+		    First cache line (64 bytes) contains the header and nothing else
+		    Subsequent cachelines contain 60 bytes of bloom filter bits then a 4 byte hash of those bits.
 		*/
+		protected static readonly ILogger Log = Serilog.Log.ForContext<MemoryMappedFileBloomFilter>();
 		public const long MinSizeKB = 10;
 		public const long MaxSizeKB = 4_000_000;
 		public const double RecommendedFalsePositiveProbability = 0.02;
+		private const int CacheLineSize = BloomFilterIntegrity.CacheLineSize;
 		private const int NumHashFunctions = 6;
 		private readonly long _numBits;
+		private readonly Header _header;
 		private readonly byte* _pointer = null;
 
 		private readonly IHasher[] _hashers = {
@@ -37,6 +44,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		private bool _disposed;
 
+		public int CorruptionRebuildCount => _header.CorruptionRebuildCount;
+
 		/// <summary>
 		/// Bloom filter implementation which uses a memory-mapped file for persistence.
 		/// </summary>
@@ -44,8 +53,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		/// <param name="size">Size of the bloom filter in bytes</param>
 		///
 		/// Add and MightContain can be called concurrently on different threads.
-		/// If the call to Add is complete then a call to MightContain will find the added value
-		public MemoryMappedFileBloomFilter(string path, bool create, long size) {
+		/// If the call to Add is complete then a call to MightContain will find the added value.
+		public MemoryMappedFileBloomFilter(string path, bool create, long size, int corruptionRebuildCount = 0) {
 			Ensure.NotNull(path, nameof(path));
 
 			if (size < MinSizeKB * 1000 || size > MaxSizeKB * 1000) {
@@ -61,7 +70,14 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				FileAccess.ReadWrite,
 				FileShare.ReadWrite);
 
-			_fileSize = Header.Size + _numBits / 8;
+			if (Header.Size > CacheLineSize)
+				throw new Exception("header needs to fit in a cache line");
+
+			// line for header
+			_fileSize = CacheLineSize;
+			// add room for filter bits, rounded up to nearest cacheline
+			_fileSize += _numBits / 8 / CacheLineSize * CacheLineSize;
+			_fileSize += CacheLineSize;
 			_fileStream.SetLength(_fileSize);
 
 			_mmf = MemoryMappedFile.CreateFromFile(
@@ -72,33 +88,27 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				inheritability: HandleInheritability.None,
 				leaveOpen: false);
 
-			_mmfWriteAccessor = _mmf.CreateViewAccessor(Header.Size, 0, MemoryMappedFileAccess.ReadWrite);
+			_mmfWriteAccessor = _mmf.CreateViewAccessor(CacheLineSize, 0, MemoryMappedFileAccess.ReadWrite);
 			_mmfWriteAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _pointer);
 
 			if (create) {
-				// fill with zeros
-				var bytesToClear = _fileSize;
-				var startAddress = _pointer;
-				while (bytesToClear > 0) {
-					uint bytesToClearInBlock = bytesToClear > uint.MaxValue ? uint.MaxValue : (uint)bytesToClear;
-					Unsafe.InitBlock(ref *startAddress, 0, bytesToClearInBlock);
-					startAddress += bytesToClearInBlock;
-					bytesToClear -= bytesToClearInBlock;
-				}
+				FillWithZeros();
 
-				Header header = new() {
+				_header = new Header() {
 					Version = Header.CurrentVersion,
+					CorruptionRebuildCount = corruptionRebuildCount,
 					NumBits = _numBits
 				};
 
-				header.WriteTo(_mmf);
+				_header.WriteTo(_mmf);
 			} else {
 				try {
-					var header = Header.ReadFrom(_mmf);
-					if (header.NumBits != _numBits) {
+					_header = Header.ReadFrom(_mmf);
+					if (_header.NumBits != _numBits) {
 						throw new SizeMismatchException(
-							$"The configured number of bytes ({(_numBits / 8):N0}) does not match the number of bytes in file ({(header.NumBits / 8):N0}).");
+							$"The configured number of bytes ({(_numBits / 8):N0}) does not match the number of bytes in file ({(_header.NumBits / 8):N0}).");
 					}
+					Verify(0.05);
 				} catch {
 					Dispose();
 					throw;
@@ -118,18 +128,13 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			)));
 		}
 
-		private void EnsureBounds(long bytePosition) {
-			if (bytePosition >= _fileSize)
-				throw new ArgumentOutOfRangeException(nameof(bytePosition), bytePosition, null);
-		}
-
 		public void Add(ReadOnlySpan<byte> bytes) {
 			void SetBit(long bitPosition) {
-				var bytePosition = bitPosition / 8;
-				var bytePositionInFile = Header.Size + bytePosition;
-				EnsureBounds(bytePositionInFile);
-				ref var byteValue = ref *(_pointer + bytePositionInFile);
-				byteValue = (byte)(byteValue | (1 << (int)(7 - bitPosition % 8)));
+				var bytePositionInFile = GetBytePositionInFile(bitPosition);
+				ref var byteValue = ref ReadByte(bytePositionInFile);
+				byteValue = byteValue.SetBit(bitPosition % 8);
+				var cacheLine = ReadCacheLineFor(bytePositionInFile);
+				BloomFilterIntegrity.WriteHash(cacheLine);
 			}
 
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
@@ -152,11 +157,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 		public bool MightContain(ReadOnlySpan<byte> bytes) {
 			bool IsBitSet(long bitPosition) {
-				var bytePosition = bitPosition / 8;
-				var bytePositionInFile = Header.Size + bytePosition;
-				EnsureBounds(bytePositionInFile);
-				var byteValue = *(_pointer + bytePositionInFile);
-				return (byteValue & (1 << (int)(7 - bitPosition % 8))) != 0;
+				var bytePositionInFile = GetBytePositionInFile(bitPosition);
+				var byteValue = ReadByte(bytePositionInFile);
+				return byteValue.IsBitSet(bitPosition % 8);
 			}
 
 			long hash1 = ((long)_hashers[0].Hash(bytes) << 32) | _hashers[1].Hash(bytes);
@@ -178,6 +181,37 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			return true;
 		}
 
+		private static long GetBytePositionInFile(long bitPosition) {
+			// first cache line is reserved for the header
+			var bytePositionInFile = CacheLineSize + bitPosition / 8;
+
+			// bits in the last 4 bytes of the cache line are used for the hash
+			// shuffle down so bloom filter uses the previous 4 bytes twice.
+			if (bytePositionInFile % CacheLineSize >= CacheLineSize - BloomFilterIntegrity.HashSize)
+				bytePositionInFile -= BloomFilterIntegrity.HashSize;
+
+			return bytePositionInFile;
+		}
+
+		private ref byte ReadByte(long bytePositionInFile) {
+			EnsureBounds(bytePositionInFile, length: 1);
+			return ref *(_pointer + bytePositionInFile);
+		}
+
+		private Span<byte> ReadCacheLineFor(long bytePositionInFile) {
+			bytePositionInFile = bytePositionInFile / CacheLineSize * CacheLineSize;
+			EnsureBounds(bytePositionInFile, CacheLineSize);
+			return new Span<byte>(_pointer + bytePositionInFile, CacheLineSize);
+		}
+
+		private void EnsureBounds(long bytePosition, int length) {
+			if (bytePosition > _fileSize - length)
+				throw new ArgumentOutOfRangeException(
+					nameof(bytePosition),
+					bytePosition,
+					$"{bytePosition:N0}/{_fileSize:N0}");
+		}
+
 		public void Flush() {
 			// need to be sure the read operations were not done in advance of this point
 			// not 100% sure, however, that the barrier is required.
@@ -195,6 +229,49 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			_mmfWriteAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
 			_mmfWriteAccessor?.Dispose();
 			_mmf?.Dispose();
+		}
+
+		private void FillWithZeros() {
+			Log.Debug("Zeroing bloom filter...");
+			var bytesToClear = _fileSize;
+			var startAddress = _pointer;
+			while (bytesToClear > 0) {
+				uint bytesToClearInBlock = bytesToClear > uint.MaxValue ? uint.MaxValue : (uint)bytesToClear;
+				Unsafe.InitBlock(ref *startAddress, 0, bytesToClearInBlock);
+				startAddress += bytesToClearInBlock;
+				bytesToClear -= bytesToClearInBlock;
+			}
+			Log.Debug("Done zeroing bloom filter");
+		}
+
+		// corruptionThreshold = 0.05 => tolerate up to 5% corruption
+		public void Verify(double corruptionThreshold = 0) {
+			Log.Debug("Verifying bloom filter...");
+			var corruptedCacheLines = 0;
+
+			for (int i = CacheLineSize; i < _fileSize; i += CacheLineSize) {
+				var cacheLine = ReadCacheLineFor(i);
+				if (!BloomFilterIntegrity.ValidateHash(cacheLine)) {
+					corruptedCacheLines++;
+					Log.Verbose("Invalid cacheline starting at {i:N0} / {fileSize:N0}", i, _fileSize);
+				}
+			}
+
+			var totalCacheLines = _fileSize / CacheLineSize;
+
+			var corruptedPercent = (double)corruptedCacheLines / totalCacheLines * 100;
+			if (corruptedPercent > corruptionThreshold * 100)
+				throw new CorruptedHashException(
+					_header.CorruptionRebuildCount,
+					$"{corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%)");
+
+			if (corruptedCacheLines == 0) {
+				Log.Debug("Done verifying bloom filter");
+			} else {
+				Log.Warning("Done verifying bloom filter: {corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%)",
+					corruptedCacheLines,
+					corruptedPercent);
+			}
 		}
 	}
 }

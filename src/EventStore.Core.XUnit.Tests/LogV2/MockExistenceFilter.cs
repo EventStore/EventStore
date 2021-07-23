@@ -28,6 +28,8 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			source.Initialize(this);
 		}
 
+		public void Verify() { }
+
 		public bool MightContain(string name) {
 			return Hashes.Contains(_hasher.Hash(name));
 		}

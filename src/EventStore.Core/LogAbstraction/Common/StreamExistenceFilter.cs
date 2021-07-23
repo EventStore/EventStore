@@ -65,15 +65,22 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
 					path: DataFilePath,
 					create: create,
+					corruptionRebuildCount: 0,
 					size: size,
 					hasher: hasher);
 			} catch (Exception exc) when (
 					exc is CorruptedFileException ||
+					exc is CorruptedHashException ||
 					exc is SizeMismatchException ||
 					exc is FileNotFoundException) {
 
+				var corruptionRebuildCount = 0;
+
 				if (exc is CorruptedFileException) {
 					Log.Error(exc, "{filterName} is corrupted. Rebuilding...", _filterName);
+				} else if (exc is CorruptedHashException corruptedHashException) {
+					corruptionRebuildCount = corruptedHashException.RebuildCount + 1;
+					Log.Error(exc, "{filterName} has too many corrupted hashes. Rebuilding...", _filterName);
 				} else if (exc is SizeMismatchException) {
 					Log.Error(exc, "{filterName} does not have the expected size. Rebuilding...", _filterName);
 				} else if (exc is FileNotFoundException) {
@@ -88,10 +95,15 @@ namespace EventStore.Core.LogAbstraction.Common {
 					path: DataFilePath,
 					create: true,
 					size: size,
+					corruptionRebuildCount: corruptionRebuildCount,
 					hasher: hasher);
 			}
 
-			Log.Information("{filterName} has successfully loaded.", _filterName);
+			if (_mmfStreamBloomFilter.CorruptionRebuildCount == 0)
+				Log.Information("{filterName} has successfully loaded.", _filterName);
+			else
+				Log.Information("{filterName} has successfully loaded. Filter has been rebuilt due to hash corruption {count} times.",
+					_filterName, _mmfStreamBloomFilter.CorruptionRebuildCount);
 
 			const double p = MemoryMappedFileBloomFilter.RecommendedFalsePositiveProbability;
 			Log.Debug("Optimal number of items for a {filterName} with a configured size of " +
@@ -109,6 +121,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 				},
 				_cancellationTokenSource.Token);
 		}
+
+		public void Verify() => _mmfStreamBloomFilter.Verify();
 
 		private async Task TakeCheckpointAsync() {
 			try {
@@ -151,13 +165,11 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		public void Add(string name) {
 			_mmfStreamBloomFilter.Add(name);
-			Log.Verbose("{filterName} added new entry: {name}", _filterName, name);
 			OnAdded();
 		}
 
 		public void Add(ulong hash) {
 			_mmfStreamBloomFilter.Add(hash);
-			Log.Verbose("{filterName} added new entry from hash: {name}", _filterName, hash);
 			OnAdded();
 		}
 
