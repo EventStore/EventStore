@@ -28,7 +28,7 @@ namespace EventStore.Transport.Http.Codecs {
 		public static readonly JsonSerializerSettings ToSettings = new JsonSerializerSettings {
 			ContractResolver = new CamelCasePropertyNamesContractResolver(),
 			DateFormatHandling = DateFormatHandling.IsoDateFormat,
-			NullValueHandling = NullValueHandling.Ignore,
+			NullValueHandling = NullValueHandling.Include,
 			DefaultValueHandling = DefaultValueHandling.Include,
 			MissingMemberHandling = MissingMemberHandling.Ignore,
 			TypeNameHandling = TypeNameHandling.None,
