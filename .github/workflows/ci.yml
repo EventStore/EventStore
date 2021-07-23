@@ -123,12 +123,6 @@ jobs:
         load: true
         target: test
         tags: eventstore-test
-    - name: Run Tests
-      run: |
-          docker run \
-          --volume $(pwd)/test-results:/build/test-results \
-          --rm \
-          eventstore-test
     - name: Publish Test Results (HTML)
       uses: actions/upload-artifact@v1
       if: always()
@@ -148,7 +142,7 @@ jobs:
         docker tag eventstore ghcr.io/eventstore/eventstore:${{ env.VERSION }}
         docker push ghcr.io/eventstore/eventstore:${{ env.VERSION }}
     - name: Push GitHub Container Registry (CI)
-      if: always()  && github.event_name == 'push' && matrix.container-runtime == 'focal'
+      if: always() && matrix.container-runtime == 'focal'
       shell: bash
       run: |
         docker tag eventstore ghcr.io/eventstore/eventstore:ci
