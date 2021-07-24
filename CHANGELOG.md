@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - GitHubActionsTestLogger to Buffer Management Tests [EventStore#3061](https://github.com/EventStore/EventStore/pull/3061)
 
+### Changed
+- added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
+
 ## [21.6.0] - 2021-06-24
 
 ### Added
