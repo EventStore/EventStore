@@ -62,7 +62,9 @@ namespace EventStore.Core.Tests.Helpers {
 			int hashCollisionReadLimit = Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false,
-			long streamExistenceFilterSize = Util.Opts.StreamExistenceFilterSizeDefault) {
+			long streamExistenceFilterSize = Util.Opts.StreamExistenceFilterSizeDefault,
+			int streamExistenceFilterCheckpointIntervalMs = 30_000,
+			int streamExistenceFilterCheckpointDelayMs = 5_000) {
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -148,7 +150,11 @@ namespace EventStore.Core.Tests.Helpers {
 				"TCP ENDPOINT:", TcpEndPoint,
 				"HTTP ENDPOINT:", HttpEndPoint);
 
-			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
+			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory
+				.Wrap(x => new AbstractorFactoryTimingDecorator<TStreamId>(
+					wrapped: x,
+					streamExistenceFilterCheckpointIntervalMs: streamExistenceFilterCheckpointIntervalMs,
+					streamExistenceFilterCheckpointDelayMs: streamExistenceFilterCheckpointDelayMs));
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));

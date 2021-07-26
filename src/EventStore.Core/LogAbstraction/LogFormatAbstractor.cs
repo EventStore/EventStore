@@ -1,6 +1,5 @@
 using System;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.LogV2;
@@ -12,7 +11,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.LogAbstraction {
-	public class LogFormatAbstractorOptions {
+	public record LogFormatAbstractorOptions {
 		public string IndexDirectory { get; init; }
 		public bool InMemory { get; init; }
 		public int InitialReaderCount { get; init; } = ESConsts.PTableInitialReaderCount;
