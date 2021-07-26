@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.DataStructures {
 		}
 
 		[TestCase]
-		public void rehash_when_one_too_many_bits_are_set() {
+		public void rehash_when_exactly_one_too_many_bits_are_set() {
 			// some data with hash
 			var cacheLine = NewCacheLine(0x01).WithHash();
 
