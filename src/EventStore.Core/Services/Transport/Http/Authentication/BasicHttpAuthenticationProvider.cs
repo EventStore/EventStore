@@ -12,10 +12,9 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		}
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
-			if (context.Request.Headers.TryGetValue("authorization", out var values) && values.Count == 1 && AuthenticationHeaderValue.TryParse(
-				    values[0], out var authenticationHeader) && 
-			    authenticationHeader.Scheme == "Basic"
-			    && TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
+			if (context.Request.Headers.TryGetValue("authorization", out var values) && values.Count == 1 && 
+			    AuthenticationHeaderValue.TryParse(values[0], out var authenticationHeader) && authenticationHeader.Scheme == "Basic" && 
+			    TryDecodeCredential(authenticationHeader.Parameter, out var username, out var password)) {
 				request = new HttpAuthenticationRequest(context, username, password);
 				_internalAuthenticationProvider.Authenticate(request);
 				return true;
@@ -28,8 +27,8 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		private static bool TryDecodeCredential(string value, out string username, out string password) {
 			username = password = default;
 
-			var parts = Encoding.ASCII.GetString(System.Convert.FromBase64String(value)).Split(':');
-			if (parts.Length != 2) {
+			var parts = Encoding.ASCII.GetString(System.Convert.FromBase64String(value)).Split(':', 2);
+			if (parts.Length < 2) {
 				return false;
 			}
 

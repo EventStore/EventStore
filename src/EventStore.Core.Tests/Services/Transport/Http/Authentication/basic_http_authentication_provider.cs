@@ -120,5 +120,44 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 				Assert.IsEmpty(_context.User.Claims);
 			}
 		}
+
+
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+		public class
+			when_handling_a_request_with_correct_user_name_and_pass_with_single_colon_character<TLogFormat, TStreamId> :
+				TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
+			private bool _authenticateResult;
+			private HttpAuthenticationRequest _request;
+			private HttpContext _context;
+
+			protected override void Given() {
+				base.Given();
+				ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:':drowssap',Hash:'password:'}");
+			}
+
+			[SetUp]
+			public void SetUp() {
+				SetUpProvider();
+				_context = CreateTestEntityWithCredentials("user", "password:");
+				_authenticateResult = _provider.Authenticate(_context, out _request);
+			}
+
+			[Test]
+			public void returns_true() {
+				Assert.IsTrue(_authenticateResult);
+				Assert.NotNull(_request);
+
+				Assert.IsTrue(_request.Name == "user");
+				Assert.IsTrue(_request.SuppliedPassword == "password:");
+			}
+
+			[Test]
+			public async Task ShouldAuthenticateUser() {
+				Assert.True(await _request.AuthenticateAsync());
+				Assert.NotNull(_context.User);
+				Assert.AreEqual("user", _context?.User?.Identity?.Name);
+			}
+		}
 	}
 }
