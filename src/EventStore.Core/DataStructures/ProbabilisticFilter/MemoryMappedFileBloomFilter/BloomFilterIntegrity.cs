@@ -55,7 +55,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			// corrupt, try to recover.
 			if (CanRehash(cacheToHash, targetHash)) {
 				WriteHash(cacheLine);
-				Log.Warning("Corrected a hash");
+				Log.Verbose("Corrected a hash");
 				return true;
 			}
 
