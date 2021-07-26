@@ -30,7 +30,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 			foreach (var name in names)
 				Assert.True(Sut.MightContain(name));
-			Sut.Verify();
+			Sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -38,7 +38,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			var name = "can_add_name";
 			Sut.Add(name);
 			Assert.True(Sut.MightContain(name));
-			Sut.Verify();
+			Sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -46,7 +46,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			var name = "can_add_hash";
 			Sut.Add(Hasher.Hash(name));
 			Assert.True(Sut.MightContain(name));
-			Sut.Verify();
+			Sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -55,7 +55,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 				Sut.Add($"{i}");
 			for (int i = 0; i < 1000; i++)
 				Assert.True(Sut.MightContain($"{i}"));
-			Sut.Verify();
+			Sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -63,7 +63,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			Assert.Equal(-1L, Sut.CurrentCheckpoint);
 			Sut.CurrentCheckpoint = 5;
 			Assert.Equal(5, Sut.CurrentCheckpoint);
-			Sut.Verify();
+			Sut.Verify(corruptionThreshold: 0);
 		}
 	}
 }

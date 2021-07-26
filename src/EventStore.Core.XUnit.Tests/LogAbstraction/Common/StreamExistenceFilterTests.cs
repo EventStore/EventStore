@@ -49,7 +49,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			Assert.False(Sut.MightContain(name));
 			Sut.Add(name);
 			Assert.True(Sut.MightContain(name));
-			Sut.Verify();
+			Sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -60,7 +60,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			Assert.False(sut.MightContain(name));
 			sut.Add(name);
 			Assert.True(sut.MightContain(name));
-			sut.Verify();
+			sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -69,7 +69,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			Assert.Throws<InvalidOperationException>(() => {
 				sut.MightContain("something");
 			});
-			sut.Verify();
+			sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -110,7 +110,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			Assert.True(sut.MightContain("0"));
 			// "1" will have been flushed when disposing
 			// Assert.False(sut.MightContain("1"));
-			sut.Verify();
+			sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -125,7 +125,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			// reopen, checkpoint should still be the same
 			sut = GenSut();
 			Assert.Equal(2L, sut.CurrentCheckpoint);
-			sut.Verify();
+			sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -141,7 +141,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			File.Delete(sut.DataFilePath);
 			sut = GenSut();
 			Assert.Equal(-1L, sut.CurrentCheckpoint);
-			sut.Verify();
+			sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]
@@ -156,7 +156,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			// change size. on reopening checkpoint must be reset
 			sut = GenSut(size: 20_000);
 			Assert.Equal(-1L, sut.CurrentCheckpoint);
-			sut.Verify();
+			sut.Verify(corruptionThreshold: 0);
 		}
 
 		[Fact]

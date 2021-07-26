@@ -122,7 +122,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_cancellationTokenSource.Token);
 		}
 
-		public void Verify() => _mmfStreamBloomFilter.Verify();
+		public void Verify(double corruptionThreshold) => _mmfStreamBloomFilter.Verify(corruptionThreshold);
 
 		private async Task TakeCheckpointAsync() {
 			try {

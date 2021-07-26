@@ -1,7 +1,7 @@
 namespace EventStore.Core.LogAbstraction.Common {
 	public class NoNameExistenceFilter : INameExistenceFilter {
 		public void Initialize(INameExistenceFilterInitializer source) { }
-		public void Verify() { }
+		public void Verify(double corruptionThreshold) { }
 		public long CurrentCheckpoint { get; set; } = -1;
 
 		public void Add(string name) { }

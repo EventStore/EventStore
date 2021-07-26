@@ -243,7 +243,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 		}
 
 		// corruptionThreshold = 0.05 => tolerate up to 5% corruption
-		public void Verify(double corruptionThreshold = 0) {
+		public void Verify(double corruptionThreshold) {
+			Ensure.Nonnegative(corruptionThreshold, nameof(corruptionThreshold));
+
 			Log.Debug("Verifying bloom filter...");
 			var corruptedCacheLines = 0;
 
@@ -257,18 +259,20 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 
 			var totalCacheLines = _fileSize / CacheLineSize;
 
+			var corruptionThresholdPercent = corruptionThreshold * 100;
 			var corruptedPercent = (double)corruptedCacheLines / totalCacheLines * 100;
 			if (corruptedPercent > corruptionThreshold * 100)
 				throw new CorruptedHashException(
 					_header.CorruptionRebuildCount,
-					$"{corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%)");
+					$"{corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%). Threshold {corruptionThresholdPercent:N2}%");
 
 			if (corruptedCacheLines == 0) {
 				Log.Debug("Done verifying bloom filter");
 			} else {
-				Log.Warning("Done verifying bloom filter: {corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%)",
+				Log.Warning("Done verifying bloom filter: {corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%). Threshold {corruptionThresholdPercent:N2}%",
 					corruptedCacheLines,
-					corruptedPercent);
+					corruptedPercent,
+					corruptionThresholdPercent);
 			}
 		}
 	}
