@@ -253,7 +253,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 				var cacheLine = ReadCacheLineFor(i);
 				if (!BloomFilterIntegrity.ValidateHash(cacheLine)) {
 					corruptedCacheLines++;
-					Log.Verbose("Invalid cacheline starting at {i:N0} / {fileSize:N0}", i, _fileSize);
+					Log.Verbose("Invalid cache line starting at {i:N0} / {fileSize:N0}", i, _fileSize);
 				}
 			}
 
