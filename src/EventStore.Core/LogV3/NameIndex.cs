@@ -122,7 +122,7 @@ namespace EventStore.Core.LogV3 {
 					if (catchingUp) {
 						// we are catching up, do not set the last event numbers because they will not be
 						// updated during the catchup if we do write some events to those streams.
-						// thesefore leave the entry blank so it will be (cheaply because in mem) be
+						// therefore leave the entry blank so it will be (cheaply because in mem) be
 						// populated on miss.
 					}
 					else {
