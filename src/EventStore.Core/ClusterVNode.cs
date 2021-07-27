@@ -404,7 +404,7 @@ namespace EventStore.Core {
 					}
 
 					var indexPath = options.Database.Index ?? Path.Combine(dbPath, ESConsts.DefaultIndexDirectoryName);
-					var streamExistencePath = Path.Combine(indexPath, "stream-existence");
+					var streamExistencePath = Path.Combine(indexPath, ESConsts.StreamExistenceFilterDirectoryName);
 					if (!Directory.Exists(streamExistencePath)) {
 						Directory.CreateDirectory(streamExistencePath);
 					}

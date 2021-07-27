@@ -22,5 +22,6 @@ namespace EventStore.Core.Settings {
 		public const int MaxConnectionQueueSize = 50000;
 
 		public const string DefaultIndexDirectoryName = "index";
+		public const string StreamExistenceFilterDirectoryName = "stream-existence";
 	}
 }
