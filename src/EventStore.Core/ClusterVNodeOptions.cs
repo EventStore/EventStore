@@ -432,7 +432,7 @@ namespace EventStore.Core {
 			             "This should be set to roughly the maximum number of streams you expect to have in your database, " +
 			             "i.e if you expect to have a max of 500 million streams, use a value of 500 megabytes. " +
 			             "The value you select should also fit entirely in memory to avoid any performance degradation. " +
-			             "Use 0 to disable the filter.")]
+			             "Use 0 to disable the filter. Resizing the filter will cause a full rebuild.")]
 			public long StreamExistenceFilterSize { get; init; } = Opts.StreamExistenceFilterSizeDefault;
 
 			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
