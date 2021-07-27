@@ -269,7 +269,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			if (corruptedCacheLines == 0) {
 				Log.Debug("Done verifying bloom filter");
 			} else {
-				Log.Warning("Done verifying bloom filter: {corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%). Threshold {corruptionThresholdPercent:N2}%",
+				Log.Warning("Done verifying bloom filter: {corruptedCacheLines:N0} corruption(s) detected ({corruptedPercent:N2}%). Threshold {corruptionThresholdPercent:N2}%",
 					corruptedCacheLines,
 					corruptedPercent,
 					corruptionThresholdPercent);
