@@ -249,7 +249,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			Log.Debug("Verifying bloom filter...");
 			var corruptedCacheLines = 0;
 
-			for (int i = CacheLineSize; i < _fileSize; i += CacheLineSize) {
+			for (long i = CacheLineSize; i < _fileSize; i += CacheLineSize) {
 				var cacheLine = ReadCacheLineFor(i);
 				if (!BloomFilterIntegrity.ValidateHash(cacheLine)) {
 					corruptedCacheLines++;
