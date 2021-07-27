@@ -264,7 +264,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			if (corruptedPercent > corruptionThreshold * 100)
 				throw new CorruptedHashException(
 					_header.CorruptionRebuildCount,
-					$"{corruptedCacheLines:N0} corruptions detected ({corruptedPercent:N2}%). Threshold {corruptionThresholdPercent:N2}%");
+					$"{corruptedCacheLines:N0} corruption(s) detected ({corruptedPercent:N2}%). Threshold {corruptionThresholdPercent:N2}%");
 
 			if (corruptedCacheLines == 0) {
 				Log.Debug("Done verifying bloom filter");
