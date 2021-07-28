@@ -58,7 +58,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBlo
 			Ensure.NotNull(path, nameof(path));
 
 			if (size < MinSizeKB * 1000 || size > MaxSizeKB * 1000) {
-				throw new ArgumentOutOfRangeException(nameof(size), $"size should be between {MinSizeKB:N0} and {MaxSizeKB:N0} KB inclusive");
+				throw new ArgumentOutOfRangeException(nameof(size), $"size should be between {MinSizeKB:N0} KB and {MaxSizeKB:N0} KB inclusive");
 			}
 
 			_numBits = size * 8;
