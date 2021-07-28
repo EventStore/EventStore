@@ -103,8 +103,8 @@ namespace EventStore.Core.Messages {
 			public int AveragePerSecond { get; set; }
 			public long TotalItems { get; set; }
 			public long CountSinceLastMeasurement { get; set; }
-			public string LastProcessedEventPosition { get; set; }
-			public string LastKnownMessage { get; set; }
+			public string LastCheckpointedEventPosition { get; set; }
+			public string LastKnownEventPosition { get; set; }
 			public bool ResolveLinktos { get; set; }
 			public string StartFrom { get; set; }
 			public int MessageTimeoutMilliseconds { get; set; }

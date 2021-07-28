@@ -9,7 +9,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private long _totalItems;
 		private TimeSpan _lastTotalTime;
 		private long _lastTotalItems;
-		private IPersistentSubscriptionStreamPosition _lastEventPosition;
+		private IPersistentSubscriptionStreamPosition _lastCheckpointedEventPosition;
 		private IPersistentSubscriptionStreamPosition _lastKnownEventPosition;
 		private readonly PersistentSubscription _parent;
 		private readonly Stopwatch _totalTimeWatch;
@@ -26,8 +26,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			Interlocked.Increment(ref _totalItems);
 		}
 
-		public void SetLastCheckPoint(IPersistentSubscriptionStreamPosition lastEventPosition) {
-			_lastEventPosition = lastEventPosition;
+		public void SetLastCheckPoint(IPersistentSubscriptionStreamPosition lastCheckpointedEventPosition) {
+			_lastCheckpointedEventPosition = lastCheckpointedEventPosition;
 		}
 
 		public void SetLastKnownEventPosition(IPersistentSubscriptionStreamPosition knownEventPosition) {
@@ -81,8 +81,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				Status = _parent.State.ToString(),
 				Connections = connections,
 				AveragePerSecond = avgItemsPerSecond,
-				LastProcessedEventPosition = _lastEventPosition?.ToString(),
-				LastKnownMessage = _lastKnownEventPosition?.ToString(),
+				LastCheckpointedEventPosition = _lastCheckpointedEventPosition?.ToString(),
+				LastKnownEventPosition = _lastKnownEventPosition?.ToString(),
 				TotalItems = totalItems,
 				CountSinceLastMeasurement = lastItems,
 				CheckPointAfterMilliseconds = (int)_settings.CheckPointAfter.TotalMilliseconds,
