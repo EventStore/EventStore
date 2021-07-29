@@ -185,7 +185,7 @@ namespace EventStore.ClientAPI.Internal {
 			var gossipCandidates = failedTcpEndPoint == null
 				? oldGossip.ToArray()
 				: oldGossip.Where(x => !(x.ExternalTcpPort == failedTcpEndPoint.Port
-				                         && IPAddress.Parse(x.ExternalTcpIp).Equals(failedTcpEndPoint.Address)))
+				                         && Resolution.Resolve(x.ExternalTcpIp).Equals(failedTcpEndPoint.Address)))
 					.ToArray();
 			return ArrangeGossipCandidates(gossipCandidates);
 		}
@@ -196,10 +196,10 @@ namespace EventStore.ClientAPI.Internal {
 			int j = members.Length;
 			for (int k = 0; k < members.Length; ++k) {
 				if (members[k].State == ClusterMessages.VNodeState.Manager)
-					result[--j] = new GossipSeed(new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp),
+					result[--j] = new GossipSeed(new IPEndPoint(Resolution.Resolve(members[k].ExternalHttpIp),
 						members[k].ExternalHttpPort));
 				else
-					result[++i] = new GossipSeed(new IPEndPoint(IPAddress.Parse(members[k].ExternalHttpIp),
+					result[++i] = new GossipSeed(new IPEndPoint(Resolution.Resolve(members[k].ExternalHttpIp),
 						members[k].ExternalHttpPort));
 			}
 
