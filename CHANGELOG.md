@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Build instructions [EventStore#3021](https://github.com/EventStore/EventStore/pull/3021)
 - Prevent emitted checkpoint streams from being deleted when not enabled. [EventStore#3030](https://github.com/EventStore/EventStore/pull/3030)
 - Http authentication when a `:` is present in the user's password [EventStore#3070](https://github.com/EventStore/EventStore/pull/3070)
+- Persistent subscriptions: Rename LastProcessedEventPosition to LastCheckpointedEventPosition [EventStore#3073](https://github.com/EventStore/EventStore/pull/3073)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
