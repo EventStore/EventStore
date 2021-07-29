@@ -179,15 +179,42 @@ namespace EventStore.ClientAPI.Internal {
 			return addresses;
 		}
 
-		private GossipSeed[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip,
+		private IGossipSeed[] GetGossipCandidatesFromOldGossip(IEnumerable<ClusterMessages.MemberInfoDto> oldGossip,
 			IPEndPoint failedTcpEndPoint) {
 			//_log.Debug("ClusterDnsEndPointDiscoverer: GetGossipCandidatesFromOldGossip, failedTcpEndPoint: {0}.", failedTcpEndPoint);
 			var gossipCandidates = failedTcpEndPoint == null
 				? oldGossip.ToArray()
-				: oldGossip.Where(x => !(x.ExternalTcpPort == failedTcpEndPoint.Port
+				: oldGossip.Where(x => !((x.ExternalTcpPort == failedTcpEndPoint.Port || x.ExternalSecureTcpPort == failedTcpEndPoint.Port)
 				                         && Resolution.Resolve(x.ExternalTcpIp).Equals(failedTcpEndPoint.Address)))
 					.ToArray();
-			return ArrangeGossipCandidates(gossipCandidates);
+			
+			var result = ArrangeGossipCandidates(gossipCandidates);
+			
+			if (_compatibilityMode.IsAutoCompatibilityModeEnabled()) {
+				var tmp = new List<IGossipSeed>();
+				for (var i = 0; i < result.Length; i++) {
+					var current = result[i];
+						
+					// We try v20 first
+					tmp.Add(new GossipSeed(current.EndPoint, current.HostHeader, seedOverTls: true, v20Compatibility: true));
+					// Then v5
+					tmp.Add(current);
+				}
+
+				return tmp.ToArray();
+			}
+
+			// If version 5 compatibility mode is not enable, it means we need to convert
+			// gossip seeds to v20 format.
+			if (!_compatibilityMode.IsVersion5CompatibilityModeEnabled()) {
+				for (var i = 0; i < result.Length; i++) {
+					var current = result[i];
+					result[i] = new GossipSeed(current.EndPoint, current.HostHeader, true,
+						v20Compatibility: true);
+				}
+			}
+
+			return result;
 		}
 
 		private GossipSeed[] ArrangeGossipCandidates(ClusterMessages.MemberInfoDto[] members) {
