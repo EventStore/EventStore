@@ -144,6 +144,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
+			_logFormat.StreamNamesProvider.SetTableIndex(_tableIndex);
 
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
@@ -152,9 +153,10 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				_logFormat.StreamIds,
 				_logFormat.StreamNamesProvider,
 				_logFormat.EmptyStreamId,
-				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
+				_logFormat.StreamExistenceFilter,
+				_logFormat.StreamExistenceFilterReader,
 				100_000,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
@@ -194,9 +196,10 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				_logFormat.StreamIds,
 				_logFormat.StreamNamesProvider,
 				_logFormat.EmptyStreamId,
-				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
+				_logFormat.StreamExistenceFilter,
+				_logFormat.StreamExistenceFilterReader,
 				100_000,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,

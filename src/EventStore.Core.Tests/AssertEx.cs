@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests {
 			var expected = default(TException);
 			try {
 				await code();
-				Assert.Fail($"Expected exception of type: {typeof(TException)}");
+				Assert.Fail($"Expected exception of type: {typeof(TException)} but no exception was thrown");
 			} catch (TException ex) {
 				expected = ex;
 			} catch (Exception ex) {
@@ -72,9 +72,21 @@ namespace EventStore.Core.Tests {
 			[CallerMemberName] string memberName = "",
 			[CallerFilePath] string sourceFilePath = "",
 			[CallerLineNumber] int sourceLineNumber = 0) {
+
+			if (IsOrBecomesTrueImpl(func, timeout, yieldThread))
+				return;
+
+			Assert.Fail($"{msg} in {memberName} {sourceFilePath}:{sourceLineNumber}");
+		}
+
+		// shared between xunit and nunit
+		public static bool IsOrBecomesTrueImpl(
+			Func<bool> func,
+			TimeSpan? timeout = null,
+			bool yieldThread = false) {
 			
 			if (func()) {
-				return; 
+				return true; 
 			}
 
 			var expire = DateTime.UtcNow + (timeout ?? TimeSpan.FromMilliseconds(1000));
@@ -90,13 +102,13 @@ namespace EventStore.Core.Tests {
 				}
 
 				if (func()) {
-					return; 
+					return true; 
 				}
 
 				spin = new SpinWait();
 			}
 
-			Assert.Fail($"{msg} in {memberName} {sourceFilePath}:{sourceLineNumber}");
+			return false;
 		}
 	}
 }

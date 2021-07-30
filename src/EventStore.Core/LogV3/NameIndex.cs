@@ -1,15 +1,22 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
+using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 using Serilog;
 using Value = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
-	// There are two components to the NameIndex. The NameIndex class and the INameIndexPersistence
-	// implementation which is injected.
+	// There are two components injected NameIndex. The existenceFilter and the persistence.
 	//
-	// The NameIndex allows for reservation of entries, which generates the numbering and holds them
+	// The NameIndex itself allows for reservation of entries, which generates the numbering and holds them
 	// in memory. This is similar to the purpose of the 'IndexWriter' class.
+	//
+	// To do this it makes use of the existence filter which can quickly tell if a name
+	// might exist or definitely does not exist.
 	//
 	// The entries can then be confirmed, which transfers them to the INameIndexPersistence
 	// object which is allowed to persist them to disk. This is similar to the IndexCommiter class.
@@ -21,7 +28,9 @@ namespace EventStore.Core.LogV3 {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<NameIndex>();
 		private readonly ConcurrentDictionary<string, Value> _reservations = new();
+		private readonly INameExistenceFilter _existenceFilter;
 		private readonly INameIndexPersistence<Value> _persistence;
+		private readonly IMetastreamLookup<uint> _metastreams;
 		private readonly string _indexName;
 		private readonly Value _firstValue;
 		private readonly Value _valueInterval;
@@ -32,13 +41,17 @@ namespace EventStore.Core.LogV3 {
 			string indexName,
 			Value firstValue,
 			Value valueInterval,
-			INameIndexPersistence<Value> persistence) {
+			INameExistenceFilter existenceFilter,
+			INameIndexPersistence<Value> persistence,
+			IMetastreamLookup<Value> metastreams) {
 
 			_indexName = indexName;
 			_firstValue = firstValue;
 			_valueInterval = valueInterval;
 			_nextValue = firstValue;
+			_existenceFilter = existenceFilter;
 			_persistence = persistence;
+			_metastreams = metastreams;
 		}
 
 		public void Dispose() {
@@ -70,6 +83,8 @@ namespace EventStore.Core.LogV3 {
 		}
 
 		public void Confirm(string name, Value value) {
+			_existenceFilter.Add(name);
+			_existenceFilter.CurrentCheckpoint = value;
 			_persistence.Add(name, value);
 			if (_reservations.TryRemove(name, out var reservedValue)) {
 				if (reservedValue != value) {
@@ -86,19 +101,76 @@ namespace EventStore.Core.LogV3 {
 			}
 		}
 
+		// this is stream specific and will need to be generalised for eventtypes
+		// not terribly happy with the 'catchingUp' mechanism here because it couples
+		// the IndexCommitter behaviour to this method. but the intention is to remove
+		// the use of the old indexes for logv3
+		public void Confirm(IList<IPrepareLogRecord<Value>> prepares, bool catchingUp, IIndexBackend<Value> backend) {
+			for (int i = 0; i < prepares.Count; i++) {
+				var prepare = prepares[i];
+				if (prepare.RecordType == LogRecordType.Stream &&
+					prepare is LogV3StreamRecord streamRecord) {
+					Confirm(
+						name: streamRecord.StreamName,
+						value: streamRecord.StreamNumber);
+
+					// update the streams stream
+					// initialisation of the stream name index caused an entry to be populated in
+					// the last event number cache, now we need to keep it up to date even on initialisation
+					backend.SetStreamLastEventNumber(prepare.EventStreamId, prepare.ExpectedVersion + 1);
+
+					if (catchingUp) {
+						// we are catching up, do not set the last event numbers because they will not be
+						// updated during the catchup if we do write some events to those streams.
+						// therefore leave the entry blank so it will be (cheaply because in mem) be
+						// populated on miss.
+					}
+					else {
+						// we just created the stream so we know that no events exist in either
+						// the stream itself or its metastream.
+						var createdStreamNumber = streamRecord.StreamNumber;
+						var createdMetaStreamNumber = _metastreams.MetaStreamOf(streamRecord.StreamNumber);
+						backend.SetStreamLastEventNumber(createdStreamNumber, ExpectedVersion.NoStream);
+						backend.SetStreamLastEventNumber(createdMetaStreamNumber, ExpectedVersion.NoStream);
+					}
+				}
+			}
+		}
+
+		public void Confirm(
+			IList<IPrepareLogRecord<Value>> prepares,
+			CommitLogRecord commit,
+			bool catchingUp,
+			IIndexBackend<Value> backend) {
+		}
+
 		public bool GetOrReserve(string name, out Value value, out Value addedValue, out string addedName) {
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException(nameof(name));
 
-			if (_reservations.TryGetValue(name, out value) ||
-				_persistence.TryGetValue(name, out value)) {
-
+			if (_reservations.TryGetValue(name, out value)) {
 				addedValue = default;
 				addedName = default;
 				return true;
 			}
 
-			// adding
+			if (!_existenceFilter.MightContain(name)) {
+				// stream definitely does not exist, we can jump straight to reserving it.
+				Reserve(name, out value, out addedValue, out addedName);
+				return false;
+			}
+
+			if (!_persistence.TryGetValue(name, out value)) {
+				Reserve(name, out value, out addedValue, out addedName);
+				return false;
+			}
+
+			addedValue = default;
+			addedName = default;
+			return true;
+		}
+
+		private void Reserve(string name, out Value value, out Value addedValue, out string addedName) {
 			lock (_nextValueLock) {
 				value = _nextValue;
 				_nextValue += _valueInterval;
@@ -106,7 +178,6 @@ namespace EventStore.Core.LogV3 {
 				addedName = name;
 				_reservations[name] = value;
 				Log.Debug("{indexName} reserved new entry: {key}:{value}", _indexName, name, value);
-				return false;
 			}
 		}
 	}

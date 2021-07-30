@@ -2,7 +2,7 @@ using System;
 
 namespace EventStore.Core.Index.Hashes {
 	public class XXHashUnsafe : IHasher, IHasher<string> {
-		private const uint Seed = 0xc58f1a7b;
+		private readonly uint _seed;
 
 		private const uint PRIME1 = 2654435761U;
 		private const uint PRIME2 = 2246822519U;
@@ -10,21 +10,31 @@ namespace EventStore.Core.Index.Hashes {
 		private const uint PRIME4 = 668265263U;
 		private const int PRIME5 = 0x165667b1;
 
+		public XXHashUnsafe(uint seed = 0xc58f1a7b) {
+			_seed = seed;
+		}
+
 		public unsafe UInt32 Hash(string s) {
 			fixed (char* input = s) {
-				return Hash((byte*)input, (uint)s.Length * sizeof(char), Seed);
+				return Hash((byte*)input, (uint)s.Length * sizeof(char), _seed);
 			}
 		}
 
 		public unsafe uint Hash(byte[] data) {
 			fixed (byte* input = &data[0]) {
-				return Hash(input, (uint)data.Length, Seed);
+				return Hash(input, (uint)data.Length, _seed);
 			}
 		}
 
 		public unsafe uint Hash(byte[] data, int offset, uint len, uint seed) {
 			fixed (byte* input = &data[offset]) {
 				return Hash(input, len, seed);
+			}
+		}
+
+		public unsafe uint Hash(ReadOnlySpan<byte> data) {
+			fixed (byte* input = data) {
+				return Hash(input, (uint)data.Length, _seed);
 			}
 		}
 

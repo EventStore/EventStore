@@ -2,26 +2,36 @@ using System;
 
 namespace EventStore.Core.Index.Hashes {
 	public class Murmur3AUnsafe : IHasher, IHasher<string> {
-		private const uint Seed = 0xc58f1a7b;
+		private readonly uint _seed;
 
 		private const UInt32 c1 = 0xcc9e2d51;
 		private const UInt32 c2 = 0x1b873593;
 
+		public Murmur3AUnsafe(uint seed = 0xc58f1a7b) {
+			_seed = seed;
+		}
+
 		public unsafe UInt32 Hash(string s) {
 			fixed (char* input = s) {
-				return Hash((byte*)input, (uint)s.Length * sizeof(char), Seed);
+				return Hash((byte*)input, (uint)s.Length * sizeof(char), _seed);
 			}
 		}
 
 		public unsafe uint Hash(byte[] data) {
 			fixed (byte* input = &data[0]) {
-				return Hash(input, (uint)data.Length, Seed);
+				return Hash(input, (uint)data.Length, _seed);
 			}
 		}
 
 		public unsafe uint Hash(byte[] data, int offset, uint len, uint seed) {
 			fixed (byte* input = &data[offset]) {
 				return Hash(input, len, seed);
+			}
+		}
+
+		public unsafe uint Hash(ReadOnlySpan<byte> data) {
+			fixed (byte* input = data) {
+				return Hash(input, (uint)data.Length, _seed);
 			}
 		}
 

@@ -10,7 +10,6 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
-using EventStore.Core.LogV3;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Histograms;
@@ -50,6 +49,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IRecordFactory<TStreamId> _recordFactory;
 		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
+
 		protected readonly IEpochManager EpochManager;
 		private readonly IPartitionManager _partitionManager;
 
@@ -257,19 +257,21 @@ namespace EventStore.Core.Services.Storage {
 					return;
 
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				_streamNameIndex.GetOrReserve(
+
+				var preExisting = _streamNameIndex.GetOrReserve(
 					recordFactory: _recordFactory,
 					streamName: msg.EventStreamId,
 					logPosition: logPosition,
 					streamId: out var streamId,
 					streamRecord: out var streamRecord);
+
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
-					msg.Events.Select(x => x.EventId));
+					msg.Events.Select(x => x.EventId), streamMightExist: preExisting);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
 					return;
@@ -380,19 +382,21 @@ namespace EventStore.Core.Services.Storage {
 				var eventId = Guid.NewGuid();
 
 				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				_streamNameIndex.GetOrReserve(
+
+				var preExisting = _streamNameIndex.GetOrReserve(
 					recordFactory: _recordFactory,
 					streamName: message.EventStreamId,
 					logPosition: logPosition,
 					streamId: out var streamId,
 					streamRecord: out var streamRecord);
+
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
-					new[] { eventId });
+					new[] { eventId }, streamMightExist: preExisting);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
 					return;
