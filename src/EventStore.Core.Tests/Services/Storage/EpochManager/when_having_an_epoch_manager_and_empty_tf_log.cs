@@ -20,7 +20,7 @@ using System.Threading;
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture, IDisposable {
+	public class when_having_an_epoch_manager_and_empty_tf_log<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private TFChunkDb _db;
 		private EpochManager _epochManager;
 		private LinkedList<EpochRecord> _cache;
@@ -78,7 +78,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		[OneTimeTearDown]
-		public override Task TestFixtureTearDown() => base.TestFixtureTearDown();
+		public override async Task TestFixtureTearDown() {
+			_writer?.Dispose();
+			_db?.Dispose();
+			await base.TestFixtureTearDown();
+		}
 
 		// epoch manager is stateful with TFLog,
 		// and TFLog is expesive to build fresh for each test
@@ -134,13 +138,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 				epoch = epoch.Next;
 			}
 			CollectionAssert.IsOrdered(epochs);
-		}
-
-		public void Dispose() {
-			//epochManager?.Dispose();
-			//reader?.Dispose();
-			_writer?.Dispose();
-			_db?.Dispose();
 		}
 	}
 }

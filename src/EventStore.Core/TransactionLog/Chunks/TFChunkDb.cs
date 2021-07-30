@@ -292,6 +292,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			Config.EpochCheckpoint.Close();
 			Config.TruncateCheckpoint.Close();
 			Config.ProposalCheckpoint.Close();
+			Config.StreamExistenceFilterCheckpoint.Close();
 		}
 	}
 }

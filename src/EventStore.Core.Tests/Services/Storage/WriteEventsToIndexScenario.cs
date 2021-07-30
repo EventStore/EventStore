@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected IValueLookup<TStreamId> _streamIds;
 		protected INameLookup<TStreamId> _streamNames;
 		protected ISystemStreamLookup<TStreamId> _systemStreams;
-		protected IStreamNamesProvider<TStreamId> _factory;
+		protected IStreamNamesProvider<TStreamId> _provider;
 		protected IValidator<TStreamId> _validator;
 		protected ISizer<TStreamId> _sizer;
 		protected IIndexReader<TStreamId> _indexReader;
@@ -126,24 +126,25 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
 				IndexDirectory = GetFilePathFor("index"),
 			});
+			_provider = _logFormat.StreamNamesProvider;
 			_publisher = new InMemoryBus("publisher");
 			_tfReader = new FakeInMemoryTfReader(RecordOffset);
 			_tableIndex = new FakeInMemoryTableIndex<TStreamId>();
+			_provider.SetTableIndex(_tableIndex);
 			_readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool", 5, 100,
 				() => _tfReader);
 			_indexBackend = new IndexBackend<TStreamId>(_readerPool, 100000, 100000);
 			_streamIds = _logFormat.StreamIds;
-			_factory = _logFormat.StreamNamesProvider;
-			var converter = _logFormat.StreamIdConverter;
 			_validator = _logFormat.StreamIdValidator;
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			_sizer = _logFormat.StreamIdSizer;
-			_indexReader = new IndexReader<TStreamId>(_indexBackend, _tableIndex, _factory, _validator, new StreamMetadata(maxCount: 100000), 100, false);
+			_indexReader = new IndexReader<TStreamId>(_indexBackend, _tableIndex, _provider, _validator, _logFormat.StreamExistenceFilterReader, new StreamMetadata(maxCount: 100000), 100, false);
 			_streamNames = _logFormat.StreamNames;
 			_systemStreams = _logFormat.SystemStreams;
 			_indexWriter = new IndexWriter<TStreamId>(_indexBackend, _indexReader, _streamIds, _streamNames, _systemStreams, emptyStreamId, _sizer);
-			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex, _logFormat.StreamNameIndexConfirmer, _streamNames, _systemStreams, converter, new InMemoryCheckpoint(-1),  false);
+			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex, _logFormat.StreamNameIndexConfirmer, _streamNames, _systemStreams,
+				_logFormat.StreamExistenceFilter, _logFormat.StreamExistenceFilterInitializer, new InMemoryCheckpoint(-1),  false);
 
 			WriteEvents();
 		}

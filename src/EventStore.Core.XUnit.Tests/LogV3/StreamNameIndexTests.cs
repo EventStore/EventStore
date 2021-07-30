@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.LogV3;
 using EventStore.Core.LogV3.FASTER;
 using Xunit;
@@ -44,7 +45,9 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				indexName: "StreamNameIndex",
 				firstValue: LogV3SystemStreams.FirstRealStream,
 				valueInterval: LogV3SystemStreams.StreamInterval,
-				persistence: _persistence);
+				existenceFilter: new NoNameExistenceFilter(),
+				persistence: _persistence,
+				metastreams: new LogV3Metastreams());
 		}
 
 		public void Dispose() {

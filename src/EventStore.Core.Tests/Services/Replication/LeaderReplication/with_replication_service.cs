@@ -129,6 +129,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			ICheckpoint truncateChk = new InMemoryCheckpoint(Checkpoint.Truncate, initValue: -1);
 			ICheckpoint replicationCheckpoint = new InMemoryCheckpoint(-1);
 			ICheckpoint indexCheckpoint = new InMemoryCheckpoint(-1);
+			ICheckpoint streamExistenceFilterCheckpoint = new InMemoryCheckpoint(-1);
 			var nodeConfig = new TFChunkDbConfig(
 				PathName, 
 				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
@@ -141,6 +142,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				truncateChk,
 				replicationCheckpoint,
 				indexCheckpoint,
+				streamExistenceFilterCheckpoint,
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
 				true);
