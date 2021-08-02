@@ -162,6 +162,6 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected MiniClusterNode GetLeader() => _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
 
-		protected MiniClusterNode[] GetFollowers() => _nodes.Where(x => x.NodeState != Data.VNodeState.Leader).ToArray();
+		protected MiniClusterNode[] GetFollowers() => _nodes.Where(x => x.NodeState == Data.VNodeState.Follower).ToArray();
 	}
 }

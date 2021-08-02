@@ -3,7 +3,6 @@
 		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
 		<DebugType Condition=" '$(Configuration)' == 'Debug' ">full</DebugType>
 		<DebugType Condition=" '$(Configuration)' == 'Release' ">pdbonly</DebugType>
-		<OutputPath>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
 		<Authors>Event Store Ltd</Authors>
 		<PackageIconUrl>ouro.png</PackageIconUrl>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
