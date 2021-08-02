@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
+using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
@@ -15,7 +16,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, StatisticsOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			var statsSource = new TaskCompletionSource<ProjectionStatistics[]>();

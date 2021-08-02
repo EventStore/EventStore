@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
+using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Grpc.Core;
@@ -18,7 +19,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, CreateOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			const string handlerType = "JS";
 			var name = options.ModeCase switch {

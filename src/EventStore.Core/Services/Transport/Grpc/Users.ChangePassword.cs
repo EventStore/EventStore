@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						Plugins.Authorization.Operations.Users.Parameters.User(user.Identity.Name));
 			}
 			if (!await _authorizationProvider.CheckAccessAsync(user, changePasswordOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var changePasswordSource = new TaskCompletionSource<bool>();
 

@@ -23,7 +23,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 		public override async Task<ClusterInfo> Update(GossipRequest request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, UpdateOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var clusterInfo = EventStore.Core.Cluster.ClusterInfo.FromGrpcClusterInfo(request.Info);
 			var tcs = new TaskCompletionSource<ClusterInfo>();
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 		public override async Task<ClusterInfo> Read(Empty request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ReadOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			_bus.Publish(new GossipMessage.ReadGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs))));

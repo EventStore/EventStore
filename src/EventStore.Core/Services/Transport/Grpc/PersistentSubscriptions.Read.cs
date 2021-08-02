@@ -50,7 +50,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
 				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(streamId)), context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var connectionName =
 				context.RequestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.ConnectionName)?.Value ??
@@ -97,10 +97,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							ReadReq.Types.Nack.Types.Action.Retry => NakAction.Retry,
 							ReadReq.Types.Nack.Types.Action.Skip => NakAction.Skip,
 							ReadReq.Types.Nack.Types.Action.Stop => NakAction.Stop,
-							_ => throw new InvalidOperationException()
+							_ => throw RpcExceptions.InvalidArgument(request.Nack.Action)
 						},
 						request.Nack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
-					_ => throw new InvalidOperationException()
+					_ => throw RpcExceptions.InvalidArgument(request.ContentCase)
 				});
 
 				return new ValueTask(Task.CompletedTask);

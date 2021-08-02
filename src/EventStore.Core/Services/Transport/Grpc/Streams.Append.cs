@@ -30,7 +30,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					.ToInt64(),
 				AppendReq.Types.Options.ExpectedStreamRevisionOneofCase.NoStream =>
 					AnyStreamRevision.NoStream.ToInt64(),
-				_ => throw new InvalidOperationException()
+				_ => throw RpcExceptions.InvalidArgument(options.ExpectedStreamRevisionCase)
 			};
 
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var op = WriteOperation.WithParameter(
 				Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			var correlationId = Guid.NewGuid(); // TODO: JPB use request id?

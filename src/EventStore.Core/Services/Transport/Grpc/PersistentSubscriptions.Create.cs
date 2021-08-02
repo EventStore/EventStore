@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			
 			if (!await _authorizationProvider.CheckAccessAsync(user,
 				CreateOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			string streamId = null;
@@ -45,7 +45,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							RevisionOptionOneofCase.Revision => new StreamRevision(request.Options.Stream.Revision),
 							RevisionOptionOneofCase.Start => StreamRevision.Start,
 							RevisionOptionOneofCase.End => StreamRevision.End,
-							_ => throw new InvalidOperationException()
+							_ => throw RpcExceptions.InvalidArgument(request.Options.Stream.RevisionOptionCase)
 						};
 					} else { /*for backwards compatibility*/
 						#pragma warning disable 612
@@ -95,14 +95,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							request.Options.All.Position.PreparePosition),
 						AllOptionOneofCase.Start => Position.Start,
 						AllOptionOneofCase.End => Position.End,
-						_ => throw new InvalidOperationException()
+						_ => throw RpcExceptions.InvalidArgument(request.Options.All.AllOptionCase)
 					};
 					var filter = request.Options.All.FilterOptionCase switch {
 						CreateReq.Types.AllOptions.FilterOptionOneofCase.NoFilter => null,
 						CreateReq.Types.AllOptions.FilterOptionOneofCase.Filter => ConvertToEventFilter(true,
 							request.Options.All.Filter),
 						CreateReq.Types.AllOptions.FilterOptionOneofCase.None => null,
-						_ => throw new ArgumentOutOfRangeException()
+						_ => throw RpcExceptions.InvalidArgument(request.Options.All.FilterOptionCase)
 					};
 
 					streamId = SystemStreams.AllStream;
@@ -156,7 +156,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						string.IsNullOrEmpty(filter.StreamIdentifier.Regex)
 							? EventFilter.StreamName.Prefixes(isAllStream, filter.StreamIdentifier.Prefix.ToArray())
 							: EventFilter.StreamName.Regex(isAllStream, filter.StreamIdentifier.Regex)),
-					_ => throw new InvalidOperationException()
+					_ => throw RpcExceptions.InvalidArgument(filter.FilterCase)
 				};
 
 			return await createPersistentSubscriptionSource.Task.ConfigureAwait(false);

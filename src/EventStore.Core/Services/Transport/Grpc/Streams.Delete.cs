@@ -22,13 +22,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				AnyStreamRevision.NoStream.ToInt64(),
 				DeleteReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists =>
 				AnyStreamRevision.StreamExists.ToInt64(),
-				_ => throw new InvalidOperationException()
+				_ => throw RpcExceptions.InvalidArgument(options.ExpectedStreamRevisionCase)
 			};
 
 			var user = context.GetHttpContext().User;
 			var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
 
@@ -60,7 +60,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				AnyStreamRevision.NoStream.ToInt64(),
 				TombstoneReq.Types.Options.ExpectedStreamRevisionOneofCase.StreamExists =>
 				AnyStreamRevision.StreamExists.ToInt64(),
-				_ => throw new InvalidOperationException()
+				_ => throw RpcExceptions.InvalidArgument(options.ExpectedStreamRevisionCase)
 			};
 
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
@@ -68,7 +68,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 			var op = DeleteOperation.WithParameter(Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamName));
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			var position = await DeleteInternal(streamName, expectedVersion, user, true, requiresLeader,

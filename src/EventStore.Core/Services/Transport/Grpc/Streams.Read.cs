@@ -32,11 +32,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						request.Options.Stream.StreamIdentifier)),
 				StreamOptionOneofCase.All => ReadOperation.WithParameter(
 					Plugins.Authorization.Operations.Streams.Parameters.StreamId(SystemStreams.AllStream)),
-				_ => throw new InvalidOperationException()
+				_ => throw RpcExceptions.InvalidArgument(streamOptionsCase)
 			};
 
 			if (!await _provider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			await using var enumerator =
@@ -135,12 +135,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
 								ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
 									.Max,
-								_ => throw new InvalidOperationException()
+								_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
 							},
 							request.Options.Filter.CheckpointIntervalMultiplier,
 							options.UuidOption,
 							context.CancellationToken),
-					_ => throw InvalidCombination((streamOptionsCase, countOptionsCase, readDirection,
+					_ => throw RpcExceptions.InvalidCombination((streamOptionsCase, countOptionsCase, readDirection,
 						filterOptionsCase))
 				};
 
@@ -160,7 +160,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						string.IsNullOrEmpty(filter.StreamIdentifier.Regex)
 							? EventFilter.StreamName.Prefixes(isAllStream, filter.StreamIdentifier.Prefix.ToArray())
 							: EventFilter.StreamName.Regex(isAllStream, filter.StreamIdentifier.Regex)),
-					_ => throw new InvalidOperationException()
+					_ => throw RpcExceptions.InvalidArgument(filter)
 				};
 		}
 	}

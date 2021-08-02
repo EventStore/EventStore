@@ -257,7 +257,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ExpectedStreamPositionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
 						ExpectedStreamPositionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
 						ExpectedStreamPositionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
-						_ => throw new InvalidOperationException()
+						_ => throw RpcExceptions.InvalidArgument(options.ExpectedStreamPositionCase)
 					}, Min(GetRequestedTimeout(options), _writeTimeout), () =>
 						pendingWrites.TryRemove(correlationId, out var pendingWrite)
 							? writer.WriteAsync(new BatchAppendResp {
