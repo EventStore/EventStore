@@ -32,6 +32,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				return logPosition;
 			}
 
+			//TODO(multi-events): nothing to do here
 			switch (recordType) {
 				case LogRecordType.Prepare:
 					return new PrepareLogRecord(reader, version, ReadPosition(reader));
@@ -60,6 +61,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			}
 		}
 
+		//TODO(multi-events): Make this method take in an array of events instead of a single event
 		public static IPrepareLogRecord<TStreamId> Prepare<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId, long transactionPos,
 			int transactionOffset,
 			TStreamId eventStreamId, long expectedVersion, PrepareFlags flags, string eventType,

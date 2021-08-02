@@ -16,6 +16,7 @@ namespace EventStore.Core.LogAbstraction {
 			TStreamId streamNumber,
 			string streamName);
 
+		//TODO(multi-events): Generalize this method to take in multiple events
 		IPrepareLogRecord<TStreamId> CreatePrepare(
 			long logPosition,
 			Guid correlationId,

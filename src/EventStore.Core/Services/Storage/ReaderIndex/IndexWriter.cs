@@ -326,6 +326,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId,
 						prepare.EventStreamId));
 
+				//TODO(multi-events): handle multiple events in prepare
 				eventNumber =
 					prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
 				_committedEvents.PutRecord(prepare.EventId, new EventInfo(streamId, eventNumber),
@@ -368,7 +369,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				while ((result = reader.TryReadPrev()).Success) {
 					if (result.LogRecord.LogPosition < transactionId)
 						break;
-					if (result.LogRecord.RecordType != LogRecordType.Prepare)
+					if (result.LogRecord.RecordType != LogRecordType.Prepare) //TODO(multi-events): nothing to do
 						continue;
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					if (prepare.TransactionPosition == transactionId) {
@@ -430,7 +431,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.RecordPrePosition <= commitPos) {
-					if (result.LogRecord.RecordType != LogRecordType.Prepare)
+					if (result.LogRecord.RecordType != LogRecordType.Prepare) //TODO(multi-events): nothing to do
 						continue;
 
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;

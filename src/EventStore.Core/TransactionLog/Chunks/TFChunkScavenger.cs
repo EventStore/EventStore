@@ -497,6 +497,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
+		//TODO(multi-events): Refactor this method to return an optional new log record if returning true
 		private bool ShouldKeep(CandidateRecord result, Dictionary<long, CommitInfo> commits, long chunkStartPos,
 			long chunkEndPos) {
 			switch (result.LogRecord.RecordType) {
@@ -536,6 +537,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return commitInfo.KeepCommit != false;
 		}
 
+		//TODO(multi-events): Refactor this method to return an optional new prepare log record if returning true
 		private bool ShouldKeepPrepare(IPrepareLogRecord<TStreamId> prepare, Dictionary<long, CommitInfo> commits, long chunkStart,
 			long chunkEnd) {
 			CommitInfo commitInfo;
@@ -602,6 +604,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return false;
 			}
 
+			//TODO(multi-events): handle multiple events in prepare
 			var eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
 				? prepare.ExpectedVersion + 1 // IsCommitted prepares always have explicit expected version
 				: commitInfo.EventNumber + prepare.TransactionOffset;

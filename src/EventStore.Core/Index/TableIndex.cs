@@ -472,6 +472,7 @@ namespace EventStore.Core.Index {
 			RecordReadResult result = reader.TryReadAt(position);
 			if (!result.Success)
 				return new Tuple<TStreamId, bool>(_emptyStreamId, false);
+
 			if (result.LogRecord.RecordType != LogRecordType.Prepare)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));

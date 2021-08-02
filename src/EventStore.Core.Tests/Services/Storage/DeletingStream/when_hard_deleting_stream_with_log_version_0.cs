@@ -48,6 +48,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 			Assert.That(chunkRecords.Any(x =>
 				x.RecordType == LogRecordType.Commit && ((CommitLogRecord)x).FirstEventNumber == long.MaxValue));
+			//TODO(multi-events): ((IPrepareLogRecord<TStreamId>)x).Events.First...
 			Assert.That(chunkRecords.Any(x =>
 				x.RecordType == LogRecordType.Prepare && ((PrepareLogRecord)x).ExpectedVersion == long.MaxValue - 1));
 		}

@@ -481,7 +481,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return false;
 				}
 
-				length = workItem.Reader.ReadInt32();
+				length = workItem.Reader.ReadInt32(); //TODO(multi-events): Handle negative lengths as sub records
 				if (length <= 0) {
 					throw new InvalidReadException(
 						string.Format("Log record at actual pos {0} has non-positive length: {1}. "
@@ -532,7 +532,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				var realPos = GetRawPosition(actualPosition);
 				workItem.Stream.Position = realPos - sizeof(int);
 
-				length = workItem.Reader.ReadInt32();
+				length = workItem.Reader.ReadInt32(); //TODO(multi-events): Handle negative lengths as sub records
 				if (length <= 0) {
 					throw new InvalidReadException(
 						string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "

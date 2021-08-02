@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using EventStore.Common.Utils;
 using EventStore.Core.LogV3;
 using EventStore.LogCommon;
@@ -9,11 +9,13 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 	// implements iprepare because currently the strem write contains exactly one event
 	// but when we generalise it to contain muliple events i exect we will be able to remove
 	// implementing iprepare here.
+
 	public class LogV3StreamWriteRecord : LogV3Record<StreamWriteRecord>, IEquatable<LogV3StreamWriteRecord>, IPrepareLogRecord<StreamId> {
 		public LogV3StreamWriteRecord(ReadOnlyMemory<byte> bytes) : base() {
 			Record = new StreamWriteRecord(new RecordView<Raw.StreamWriteHeader>(bytes));
 		}
 
+		//TODO(multi-events): Make constructor take in multiple events, then call RecordCreator.CreateStreamWriteRecord()
 		public LogV3StreamWriteRecord(
 			long logPosition,
 			long transactionPosition,

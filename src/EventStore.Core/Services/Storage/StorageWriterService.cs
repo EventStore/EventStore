@@ -277,6 +277,8 @@ namespace EventStore.Core.Services.Storage {
 					return;
 				}
 
+				//TODO(multi-events): Create single prepare with multiple events
+
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 				if (msg.Events.Length > 0) {
 					var transactionPosition = logPosition;
@@ -603,6 +605,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
+		//TODO(multi-events): nothing to do
 		private WriteResult WritePrepareWithRetry(IPrepareLogRecord<TStreamId> prepare) {
 			long writtenPos = prepare.LogPosition;
 			long newPos;
@@ -700,6 +703,7 @@ namespace EventStore.Core.Services.Storage {
 			public readonly long NewPos;
 			public readonly IPrepareLogRecord<TStreamId> Prepare;
 
+			//TODO(multi-events): nothing to do
 			public WriteResult(long writtenPos, long newPos, IPrepareLogRecord<TStreamId> prepare) {
 				WrittenPos = writtenPos;
 				NewPos = newPos;

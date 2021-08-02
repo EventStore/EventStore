@@ -24,6 +24,7 @@ namespace EventStore.Core.Data {
 		public readonly ReadOnlyMemory<byte> Data;
 		public readonly ReadOnlyMemory<byte> Metadata;
 
+		//TODO(multi-events): remove this method and create one which takes in a prepare and returns EventRecord[]
 		public EventRecord(long eventNumber, IPrepareLogRecord prepare, string eventStreamName) {
 			Ensure.Nonnegative(eventNumber, "eventNumber");
 

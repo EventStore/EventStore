@@ -232,6 +232,7 @@ namespace EventStore.LogV3 {
 			return StringPayloadRecord.Create(record);
 		}
 
+		//TODO(multi-events): Generalize this method to take in multiple events and rename to CreateStreamWriteRecord()
 		public static StreamWriteRecord CreateStreamWriteRecordForSingleEvent(
 			DateTime timeStamp,
 			Guid correlationId,

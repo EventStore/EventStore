@@ -1,6 +1,7 @@
 ﻿using System;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
+	//TODO(multi-events): add a new interface: IPreparesLogRecord<TStreamId> which contains an IEnumerable<IPrepareLogRecord<TStreamId>>
 	// This interface specifies what the Storage, TF and Index machinery requires
 	// in order to handle a prepare (i.e. data) record.
 	// The V2 prepare implements it trivially

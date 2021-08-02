@@ -202,6 +202,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				result.LogRecord.RecordType != LogRecordType.Stream)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
+
 			return (IPrepareLogRecord<TStreamId>)result.LogRecord;
 		}
 
@@ -254,7 +255,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
 						.GroupBy(x => x.Version).Select(x => x.Last());
 				}
-				
+
+				//TODO(multi-events): call a different EventRecord static method which returns EventRecord[]
 				var records = recordsQuery.Reverse().Select(x => new EventRecord(x.Version, x.Prepare, streamName)).ToArray();
 
 				long nextEventNumber = Math.Min(endEventNumber + 1, lastEventNumber + 1);
@@ -352,7 +354,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					var lowPrepare = LowPrepare(reader, indexEntries, streamId);
 					if (lowPrepare?.TimeStamp >= ageThreshold) {
 						high = mid - 1;
-						nextEventNumber = lowPrepare.ExpectedVersion + 1;
+						nextEventNumber = lowPrepare.ExpectedVersion + 1; //TODO(multi-events): handle multiple events in prepare
 						continue;
 					}
 
@@ -499,6 +501,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					recordsQuery = recordsQuery.Where(x => x.Prepare.TimeStamp >= ageThreshold);
 				}
 
+				//TODO(multi-events): call a different EventRecord static method which returns EventRecord[]
 				var records = recordsQuery.Select(x => new EventRecord(x.Version, x.Prepare, streamName)).ToArray();
 
 				isEndOfStream = isEndOfStream

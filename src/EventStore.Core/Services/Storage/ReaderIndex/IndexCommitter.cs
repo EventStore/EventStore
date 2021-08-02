@@ -125,6 +125,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
 					switch (result.LogRecord.RecordType) {
+						//TODO(multi-events): Handle multiple events
 						case LogRecordType.Stream:
 						case LogRecordType.Prepare: {
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
@@ -359,6 +360,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					(prepare.LogPosition == lastIndexedPosition && !_indexRebuild))
 					continue; // already committed
 
+				//TODO(multi-events): handle multiple events in prepare
 				eventNumber =
 					prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
 
@@ -428,7 +430,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.RecordPrePosition <= commitPos) {
-					if (result.LogRecord.RecordType != LogRecordType.Prepare)
+					if (result.LogRecord.RecordType != LogRecordType.Prepare) //TODO(multi-events): nothing to do
 						continue;
 
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
@@ -498,7 +500,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			RecordReadResult result = reader.TryReadAt(logPosition);
 			if (!result.Success)
 				return null;
-			if (result.LogRecord.RecordType != LogRecordType.Prepare)
+			if (result.LogRecord.RecordType != LogRecordType.Prepare)  //TODO(multi-events): nothing to do
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
 			return (IPrepareLogRecord<TStreamId>)result.LogRecord;

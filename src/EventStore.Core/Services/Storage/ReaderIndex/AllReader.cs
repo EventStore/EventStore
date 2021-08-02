@@ -91,6 +91,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 					nextCommitPos = result.RecordPostPosition;
 
+					//TODO(multi-events): Handle Prepare events in a loop here
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare:
 						case LogRecordType.Stream: {
@@ -103,7 +104,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
-								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
+								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1, //TODO(multi-events): handle multiple events in prepare
 									prepare, streamName);
 								consideredEventsCount++;
 								if (eventFilter.IsEventAllowed(eventRecord)) {
@@ -137,7 +138,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (result.LogRecord.RecordType != LogRecordType.Prepare)
 									continue;
 
-								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;  //TODO(multi-events): Handle multiple events
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 
@@ -217,6 +218,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						continue;
 					}
 
+					//TODO(multi-events): Handle multiple events
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare:
 						case LogRecordType.Stream: {
@@ -229,7 +231,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && new TFPos(result.RecordPostPosition, result.RecordPostPosition) <= pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
-								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
+								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1, //TODO(multi-events): handle multiple events in prepare
 									prepare, streamName);
 								consideredEventsCount++;
 
@@ -270,7 +272,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (result.LogRecord.RecordType != LogRecordType.Prepare)
 									continue;
 
-								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord; //TODO(multi-events): Handle multiple events
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 

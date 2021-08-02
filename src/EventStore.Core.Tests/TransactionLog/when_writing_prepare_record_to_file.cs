@@ -56,6 +56,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Close();
 		}
 
+		//TODO(multi-events): fix this test
 		[Test]
 		public void the_data_is_written() {
 			//TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE

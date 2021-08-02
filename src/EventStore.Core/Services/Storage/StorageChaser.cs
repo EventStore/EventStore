@@ -179,7 +179,7 @@ namespace EventStore.Core.Services.Storage {
 		private void ProcessLogRecord(SeqReadResult result) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Stream:
-				case LogRecordType.Prepare: {
+				case LogRecordType.Prepare: { //TODO(multi-events): nothing to do
 					var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					ProcessPrepareRecord(record, result.RecordPostPosition);
 					break;
@@ -208,6 +208,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
+		//TODO(multi-events): update firstEventNumber/lastEventNumber to take multiple events into consideration
 		private void ProcessPrepareRecord(IPrepareLogRecord<TStreamId> record, long postPosition) {
 			if (_transaction.Count > 0 && _transaction[0].TransactionPosition != record.TransactionPosition)
 				CommitPendingTransaction(_transaction, postPosition);
