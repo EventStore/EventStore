@@ -11,14 +11,17 @@ namespace EventStore.LogV3 {
 
 	public struct MemorySlicer<T> {
 		public Memory<T> Remaining { get; private set; }
+		public int Offset { get; private set; }
 
 		public MemorySlicer(Memory<T> source) {
 			Remaining = source;
+			Offset = 0;
 		}
 
 		public Memory<T> Slice(int length) {
 			var toReturn = Remaining[..length];
 			Remaining = Remaining[length..];
+			Offset += length;
 			return toReturn;
 		}
 	}

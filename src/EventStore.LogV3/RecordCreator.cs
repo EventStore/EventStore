@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
 using EventStore.LogCommon;
@@ -232,8 +234,7 @@ namespace EventStore.LogV3 {
 			return StringPayloadRecord.Create(record);
 		}
 
-		//TODO(multi-events): Generalize this method to take in multiple events and rename to CreateStreamWriteRecord()
-		public static StreamWriteRecord CreateStreamWriteRecordForSingleEvent(
+		public static StreamWriteRecord CreateStreamWriteRecord(
 			DateTime timeStamp,
 			Guid correlationId,
 			long logPosition,
@@ -241,12 +242,7 @@ namespace EventStore.LogV3 {
 			int transactionOffset,
 			long streamNumber,
 			long startingEventNumber,
-			Guid eventId,
-			string eventType,
-			ReadOnlySpan<byte> eventData,
-			ReadOnlySpan<byte> eventMetadata,
-			Raw.EventFlags eventFlags) {
-
+			IEventRecord[] events) {
 			var writeSystemMetadata = new StreamWriteSystemMetadata {
 				CorrelationId = correlationId,
 				TransactionPosition = transactionPosition,
@@ -254,21 +250,17 @@ namespace EventStore.LogV3 {
 				StartingEventNumberRoot = 0,
 				StartingEventNumberCategory = 0,
 			};
-
-			var eventSystemMetadata = new EventSystemMetadata {
-				EventId = eventId,
-				EventType = eventType,
-			};
-
 			var writeSystemMetadataSize = writeSystemMetadata.CalculateSize();
-			var eventSystemMetadataSize = eventSystemMetadata.CalculateSize();
 
-			var payloadLength = MeasureWritePayload(
-				recordMetadataSize: writeSystemMetadataSize,
-				eventSystemMetadataSize: eventSystemMetadataSize,
-				userData: eventData,
-				userMetadata: eventMetadata);
+			var eventSystemMetadata = new EventSystemMetadata[events.Length];
+			for (var i = 0; i < events.Length; i++) {
+				eventSystemMetadata[i] = new EventSystemMetadata {
+					EventId = events[i].EventId,
+					EventType = events[i].EventType
+				};
+			}
 
+			var payloadLength = MeasureWritePayload(writeSystemMetadataSize, events, eventSystemMetadata);
 			var record = MutableRecordView<Raw.StreamWriteHeader>.Create(payloadLength);
 			ref var header = ref record.Header;
 			ref var recordId = ref record.RecordId<Raw.StreamWriteId>();
@@ -285,48 +277,80 @@ namespace EventStore.LogV3 {
 			recordId.StreamNumber = (uint)streamNumber; // todo: remove cast
 			recordId.StartingEventNumber = startingEventNumber;
 
-			subHeader.Count = 1;
+			subHeader.Count = (short) events.Length;
 			subHeader.Flags = 0;
 			subHeader.MetadataSize = writeSystemMetadataSize;
 
 			var slicer = record.Payload.Slicer();
 			writeSystemMetadata.WriteTo(slicer.Slice(subHeader.MetadataSize).Span);
 
-			PopulateEventSubRecord(
-				flags: eventFlags,
-				systemMetadataSize: eventSystemMetadataSize,
-				systemMetadata: eventSystemMetadata,
-				data: eventData,
-				metadata: eventMetadata,
-				target: slicer.Remaining);
+			for (var i = 0; i < events.Length; i++) {
+				PopulateEventSubRecordOffsets(
+					eventIndex: i,
+					slicer: ref slicer);
+				PopulateEventSubRecord(
+					flags: (Raw.EventFlags) events[i].EventFlags,
+					systemMetadataSize: eventSystemMetadata[i].CalculateSize(),
+					systemMetadata: eventSystemMetadata[i],
+					data: events[i].Data.Span,
+					metadata: events[i].Metadata.Span,
+					slicer: ref slicer);
+			}
 
 			return new StreamWriteRecord(record);
 
-			static int MeasureWritePayload(
-				int recordMetadataSize,
-				int eventSystemMetadataSize,
-				ReadOnlySpan<byte> userData,
-				ReadOnlySpan<byte> userMetadata) {
-
-				var result =
-					recordMetadataSize +
-					MeasureForEventSubRecord(
-						systemMetadataSize: eventSystemMetadataSize,
-						data: userData,
-						metadata: userMetadata);
+			static int MeasureWritePayload(int writeSystemMetadataSize,
+				IEventRecord[] events,
+				EventSystemMetadata[] eventSystemMetadata) {
+				var result = writeSystemMetadataSize;
+				for (var i = 0; i < events.Length; i++) {
+					result += MeasureEventSubRecordOffsets(i);
+					result += MeasureEventSubRecord(
+						systemMetadataSize: eventSystemMetadata[i].CalculateSize(),
+						data: events[i].Data.Span,
+						metadata: events[i].Metadata.Span);
+				}
 				return result;
 			}
 
-			static int MeasureForEventSubRecord(
+			static int MeasureEventSubRecordOffsets(int eventIndex) {
+				return eventIndex == 0 ? 0 : 2 * sizeof(int);
+			}
+
+			static int MeasureEventSubRecord(
 				int systemMetadataSize,
 				ReadOnlySpan<byte> data,
 				ReadOnlySpan<byte> metadata) {
 
-				return
-					Raw.EventHeader.Size +
-					systemMetadataSize +
-					data.Length +
-					metadata.Length;
+				return Raw.EventHeader.Size +
+				       systemMetadataSize +
+				       data.Length +
+				       metadata.Length;
+			}
+
+			static void PopulateEventSubRecordOffsets(int eventIndex, ref MemorySlicer<byte> slicer) {
+				if (eventIndex == 0) {
+					return;
+				}
+
+				int forwardOffset = sizeof(int) /* log record length (prefix) */
+									+ Raw.RecordHeader.Size /* log record header */
+									+ Raw.StreamWriteHeader.Size /* stream write header */
+									+ slicer.Offset /* current offset within payload */
+									+ sizeof(int) /* first of the two event sub record offsets */;
+				int backwardOffset = slicer.Remaining.Length /* remaining bytes till end of payload */
+				                     - sizeof(int) /* exclude forward offset */
+				                     + sizeof(int); /* log record length (suffix) */
+
+				/* negate the offsets so that they are distinguishable from standard log record lengths */
+				forwardOffset = -forwardOffset;
+				backwardOffset = -backwardOffset;
+
+				if (!BitConverter.IsLittleEndian) throw new NotSupportedException();
+				var span = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref backwardOffset, 1));
+				span.CopyTo(slicer.Slice(sizeof(int)).Span);
+				span = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref forwardOffset, 1));
+				span.CopyTo(slicer.Slice(sizeof(int)).Span);
 			}
 
 			static void PopulateEventSubRecord(
@@ -335,19 +359,17 @@ namespace EventStore.LogV3 {
 				EventSystemMetadata systemMetadata,
 				ReadOnlySpan<byte> data,
 				ReadOnlySpan<byte> metadata,
-				Memory<byte> target) {
-
-				var slicer = target.Slicer();
+				ref MemorySlicer<byte> slicer) {
 				ref var header = ref slicer.SliceAs<Raw.EventHeader>();
 				header.EventTypeNumber = default;
 				header.Flags = flags;
-				header.EventSize = MeasureForEventSubRecord(systemMetadataSize, data, metadata);
+				header.EventSize = MeasureEventSubRecord(systemMetadataSize, data, metadata);
 				header.SystemMetadataSize = systemMetadataSize;
 				header.DataSize = data.Length;
 
 				systemMetadata.WriteTo(slicer.Slice(systemMetadataSize).Span);
 				data.CopyTo(slicer.Slice(header.DataSize).Span);
-				metadata.CopyTo(slicer.Remaining.Span);
+				metadata.CopyTo(slicer.Slice(metadata.Length).Span);
 			}
 		}
 
