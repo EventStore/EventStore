@@ -1,7 +1,7 @@
 ﻿using System;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
-	//TODO(multi-events): add a new interface: IPreparesLogRecord<TStreamId> which contains an IEnumerable<IPrepareLogRecord<TStreamId>>
 	// This interface specifies what the Storage, TF and Index machinery requires
 	// in order to handle a prepare (i.e. data) record.
 	// The V2 prepare implements it trivially
@@ -10,12 +10,9 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		long TransactionPosition { get; }
 		int TransactionOffset { get; }
 		long ExpectedVersion { get; }
-		Guid EventId { get; }
 		Guid CorrelationId { get; }
 		DateTime TimeStamp { get; }
-		string EventType { get; }
-		ReadOnlyMemory<byte> Data { get; }
-		ReadOnlyMemory<byte> Metadata { get; }
+		IEventRecord[] Events { get; }
 	}
 
 	public interface IPrepareLogRecord<TStreamId> : IPrepareLogRecord {
