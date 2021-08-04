@@ -25,6 +25,21 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
 
+## [20.10.4] - 2021-07-22
+
+### Added
+
+- Configure kestrel with kestrelsettings.json [EventStore#3039](https://github.com/EventStore/EventStore/pull/3039)
+- Make logconfig.json location fully configurable [EventStore#3053](https://github.com/EventStore/EventStore/pull/3053)
+- Add Commit Hash to .NET Version Info At Startup [EventStore#3060](https://github.com/EventStore/EventStore/pull/3060)
+
+### Fixed
+
+- Improve lookup of first non-expired events in long stream with maxage [EventStore#3046](https://github.com/EventStore/EventStore/pull/3046)
+- Aborted http requests are no longer logged in the authentication middleware [EventStore#3044](https://github.com/EventStore/EventStore/pull/3056)
+- Fix projections getting stuck when reading from truncated streams [EventStore#3056](https://github.com/EventStore/EventStore/pull/3056)
+- Prevent scavenged events from being passed to ExecuteHandler [EventStore#3055](https://github.com/EventStore/EventStore/pull/3055)
+
 ## [21.6.0] - 2021-06-24
 
 ### Added
