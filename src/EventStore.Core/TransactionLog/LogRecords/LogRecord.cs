@@ -97,8 +97,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 
 		public static IPrepareLogRecord<TStreamId> TransactionWrite<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId,
-			long transactionPos, int transactionOffset, TStreamId eventStreamId, string eventType, byte[] data,
-			byte[] metadata, bool isJson) {
+			long transactionPos, int transactionOffset, TStreamId eventStreamId, string eventType, ReadOnlyMemory<byte> data,
+			ReadOnlyMemory<byte> metadata, bool isJson) {
 			return Prepare(factory, logPosition, correlationId, eventId, transactionPos, transactionOffset,
 				eventStreamId, ExpectedVersion.Any, PrepareFlags.Data | (isJson ? PrepareFlags.IsJson : PrepareFlags.None),
 				eventType, data, metadata, DateTime.UtcNow);

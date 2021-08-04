@@ -18,6 +18,7 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
@@ -277,32 +278,47 @@ namespace EventStore.Core.Services.Storage {
 					return;
 				}
 
-				//TODO(multi-events): Create single prepare with multiple events
-
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 				if (msg.Events.Length > 0) {
-					var transactionPosition = logPosition;
-					for (int i = 0; i < msg.Events.Length; ++i) {
-						var evnt = msg.Events[i];
-						var flags = PrepareFlags.Data | PrepareFlags.IsCommitted;
-						if (i == 0)
-							flags |= PrepareFlags.TransactionBegin;
-						if (i == msg.Events.Length - 1)
-							flags |= PrepareFlags.TransactionEnd;
-						if (evnt.IsJson)
-							flags |= PrepareFlags.IsJson;
+					if (_recordFactory.MultipleEventsPerPrepare) {
+						var prepare = LogRecord.Prepare(
+							factory: _recordFactory,
+							logPosition: logPosition,
+							correlationId: msg.CorrelationId,
+							transactionPos: logPosition,
+							transactionOffset: 0,
+							eventStreamId: streamId,
+							expectedVersion: commitCheck.CurrentVersion,
+							events: msg.Events,
+							timeStamp: null,
+							flags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted
+							);
+						WritePrepareWithRetry(prepare);
+						prepares.Add(prepare);
+					} else {
+						var transactionPosition = logPosition;
+						for (int i = 0; i < msg.Events.Length; ++i) {
+							var evnt = msg.Events[i];
+							var flags = PrepareFlags.Data | PrepareFlags.IsCommitted;
+							if (i == 0)
+								flags |= PrepareFlags.TransactionBegin;
+							if (i == msg.Events.Length - 1)
+								flags |= PrepareFlags.TransactionEnd;
+							if ((evnt.EventFlags & EventFlags.IsJson) != 0)
+								flags |= PrepareFlags.IsJson;
 
-						// when IsCommitted ExpectedVersion is always explicit
-						var expectedVersion = commitCheck.CurrentVersion + i;
-						var res = WritePrepareWithRetry(
-							LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, evnt.EventId,
-								transactionPosition, i, streamId,
-								expectedVersion, flags, evnt.EventType, evnt.Data, evnt.Metadata));
-						logPosition = res.NewPos;
-						if (i == 0)
-							transactionPosition = res.WrittenPos;
-						// transaction position could be changed due to switching to new chunk
-						prepares.Add(res.Prepare);
+							// when IsCommitted ExpectedVersion is always explicit
+							var expectedVersion = commitCheck.CurrentVersion + i;
+							var res = WritePrepareWithRetry(
+								LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, evnt.EventId,
+									transactionPosition, i, streamId,
+									expectedVersion, flags, evnt.EventType, evnt.Data, evnt.Metadata));
+							logPosition = res.NewPos;
+							if (i == 0)
+								transactionPosition = res.WrittenPos;
+							// transaction position could be changed due to switching to new chunk
+							prepares.Add(res.Prepare);
+						}
 					}
 				} else {
 					WritePrepareWithRetry(
@@ -605,7 +621,6 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		//TODO(multi-events): nothing to do
 		private WriteResult WritePrepareWithRetry(IPrepareLogRecord<TStreamId> prepare) {
 			long writtenPos = prepare.LogPosition;
 			long newPos;
@@ -703,7 +718,6 @@ namespace EventStore.Core.Services.Storage {
 			public readonly long NewPos;
 			public readonly IPrepareLogRecord<TStreamId> Prepare;
 
-			//TODO(multi-events): nothing to do
 			public WriteResult(long writtenPos, long newPos, IPrepareLogRecord<TStreamId> prepare) {
 				WrittenPos = writtenPos;
 				NewPos = newPos;
