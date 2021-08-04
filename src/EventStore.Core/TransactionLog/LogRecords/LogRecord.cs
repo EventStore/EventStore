@@ -32,7 +32,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				return logPosition;
 			}
 
-			//TODO(multi-events): nothing to do here
 			switch (recordType) {
 				case LogRecordType.Prepare:
 					return new PrepareLogRecord(reader, version, ReadPosition(reader));
@@ -61,14 +60,19 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			}
 		}
 
-		//TODO(multi-events): Make this method take in an array of events instead of a single event
+		public static IPrepareLogRecord<TStreamId> Prepare<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, long transactionPos,
+			int transactionOffset, TStreamId eventStreamId, long expectedVersion, PrepareFlags flags, IEventRecord[] events, DateTime? timeStamp = null) {
+			return factory.CreatePrepare(logPosition, correlationId, transactionPos, transactionOffset,
+				eventStreamId, expectedVersion, timeStamp ?? DateTime.UtcNow, flags, events);
+		}
+
 		public static IPrepareLogRecord<TStreamId> Prepare<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId, long transactionPos,
 			int transactionOffset,
 			TStreamId eventStreamId, long expectedVersion, PrepareFlags flags, string eventType,
 			ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata, DateTime? timeStamp = null) {
-			return factory.CreatePrepare(logPosition, correlationId, eventId, transactionPos, transactionOffset,
-				eventStreamId, expectedVersion, timeStamp ?? DateTime.UtcNow, flags, eventType,
-				data, metadata);
+			return Prepare(factory, logPosition, correlationId, transactionPos, transactionOffset, eventStreamId,
+				expectedVersion,
+				flags, new[] {new Event(eventId, eventType, (flags & PrepareFlags.IsJson) != 0, data, metadata, allowEmptyEventType: true)}, timeStamp);
 		}
 
 		public static CommitLogRecord Commit(long logPosition, Guid correlationId, long startPosition,
@@ -80,44 +84,37 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			TStreamId eventStreamId,
 			long expectedVersion, string eventType, ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata,
 			DateTime? timestamp = null, PrepareFlags? additionalFlags = null) {
-			return factory.CreatePrepare(logPosition, correlationId, eventId, logPosition, 0, eventStreamId,
-				expectedVersion,
-				timestamp ?? DateTime.UtcNow,
+			return Prepare(factory, logPosition, correlationId, eventId, logPosition, 0, eventStreamId, expectedVersion,
 				PrepareFlags.Data | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd |
-				(additionalFlags ?? PrepareFlags.None),
-				eventType, data, metadata);
+				(additionalFlags ?? PrepareFlags.None),eventType, data, metadata, timestamp ?? DateTime.UtcNow
+			);
 		}
 
 		public static IPrepareLogRecord<TStreamId> TransactionBegin<TStreamId>(IRecordFactory<TStreamId> factory, long logPos, Guid correlationId, TStreamId eventStreamId,
 			long expectedVersion) {
-			return factory.CreatePrepare(logPos, correlationId, Guid.NewGuid(), logPos, -1, eventStreamId,
-				expectedVersion,
-				DateTime.UtcNow, PrepareFlags.TransactionBegin, string.Empty, NoData, NoData);
+			return Prepare(factory, logPos, correlationId, Guid.NewGuid(), logPos, -1, eventStreamId,
+				expectedVersion,PrepareFlags.TransactionBegin,string.Empty,NoData, NoData, DateTime.UtcNow);
 		}
 
 		public static IPrepareLogRecord<TStreamId> TransactionWrite<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId,
 			long transactionPos, int transactionOffset, TStreamId eventStreamId, string eventType, byte[] data,
 			byte[] metadata, bool isJson) {
-			return factory.CreatePrepare(logPosition, correlationId, eventId, transactionPos, transactionOffset,
-				eventStreamId, ExpectedVersion.Any, DateTime.UtcNow,
-				PrepareFlags.Data | (isJson ? PrepareFlags.IsJson : PrepareFlags.None),
-				eventType, data, metadata);
+			return Prepare(factory, logPosition, correlationId, eventId, transactionPos, transactionOffset,
+				eventStreamId, ExpectedVersion.Any, PrepareFlags.Data | (isJson ? PrepareFlags.IsJson : PrepareFlags.None),
+				eventType, data, metadata, DateTime.UtcNow);
 		}
 
 		public static IPrepareLogRecord<TStreamId> TransactionEnd<TStreamId>(IRecordFactory<TStreamId> factory, long logPos, Guid correlationId, Guid eventId,
 			long transactionPos, TStreamId eventStreamId) {
-			return factory.CreatePrepare(logPos, correlationId, eventId, transactionPos, -1, eventStreamId,
-				ExpectedVersion.Any,
-				DateTime.UtcNow, PrepareFlags.TransactionEnd, string.Empty, NoData, NoData);
+			return Prepare(factory, logPos, correlationId, eventId, transactionPos, -1, eventStreamId,
+				ExpectedVersion.Any, PrepareFlags.TransactionEnd, string.Empty, NoData, NoData, DateTime.UtcNow);
 		}
 
 		public static IPrepareLogRecord<TStreamId> DeleteTombstone<TStreamId>(IRecordFactory<TStreamId> factory, long logPosition, Guid correlationId, Guid eventId,
 			TStreamId eventStreamId, long expectedVersion, PrepareFlags additionalFlags = PrepareFlags.None) {
-			return factory.CreatePrepare(logPosition, correlationId, eventId, logPosition, 0, eventStreamId,
-				expectedVersion, DateTime.UtcNow,
-				PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd |
-				additionalFlags,
-				SystemEventTypes.StreamDeleted, NoData, NoData);
+			return Prepare(factory, logPosition, correlationId, eventId, logPosition, 0, eventStreamId,
+				expectedVersion, PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | additionalFlags,
+			SystemEventTypes.StreamDeleted, NoData, NoData, DateTime.UtcNow);
 		}
 
 		protected LogRecord(LogRecordType recordType, byte version, long logPosition) {
