@@ -192,7 +192,7 @@ DEFAULT OPTIONS:
 :::
 
 ::: note
-Version 21.6 introduced a stricter configuration checks: the server will _not start_ when an unknown configuration options is passed in either the configuration file, environment variable or command line.
+Version 21.6 introduced a stricter configuration check: the server will _not start_ when an unknown configuration options is passed in either the configuration file, environment variable or command line.
 
 E.g: the following will prevent the server from starting:
 * `--UnknownConfig` on the command line
