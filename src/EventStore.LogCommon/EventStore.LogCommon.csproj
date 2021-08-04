@@ -3,6 +3,6 @@
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 </Project>

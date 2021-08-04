@@ -5,7 +5,7 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<OutputType>Exe</OutputType>
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
 		<NoWarn>1701;1702;1591</NoWarn>
