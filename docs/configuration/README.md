@@ -190,3 +190,8 @@ DEFAULT OPTIONS:
      FAULT OUT OF ORDER PROJECTIONS:          False (<DEFAULT>)
 ```
 :::
+
+::: warning
+As of version 21.6 the server will _not start_ when an unknown configuration options is passed in either the configuration file, environment variable or command line.
+The fatal error shown on start up looks like `Error while parsing options: The option UnknownConfig is not a known option. (Parameter 'UnknownConfig')` where `UnknownConfig` is the wrong option name.
+:::
