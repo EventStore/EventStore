@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.LogAbstraction {
 	public interface IRecordFactory {
@@ -16,19 +17,15 @@ namespace EventStore.Core.LogAbstraction {
 			TStreamId streamNumber,
 			string streamName);
 
-		//TODO(multi-events): Generalize this method to take in multiple events
 		IPrepareLogRecord<TStreamId> CreatePrepare(
 			long logPosition,
 			Guid correlationId,
-			Guid eventId,
 			long transactionPosition,
 			int transactionOffset,
 			TStreamId eventStreamId,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
-			string eventType,
-			ReadOnlyMemory<byte> data,
-			ReadOnlyMemory<byte> metadata);
+			IEventRecord[] eventRecords);
 	}
 }
