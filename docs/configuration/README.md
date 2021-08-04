@@ -198,5 +198,6 @@ E.g: the following will prevent the server from starting:
 * `--UnknownConfig` on the command line
 * `EVENTSTORE_UnknownConfig` through environment variable 
 * `UnknownConfig: value` in the config file
-And will output on `stdout`: `Error while parsing options: The option UnknownConfig is not a known option. (Parameter 'UnknownConfig')`.
+
+And will output on `stdout` only: `Error while parsing options: The option UnknownConfig is not a known option. (Parameter 'UnknownConfig')`.
 :::
