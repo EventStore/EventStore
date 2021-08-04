@@ -100,7 +100,7 @@ namespace EventStore.Core.Index {
 			_indexCacheDepth = indexCacheDepth;
 			_initializationThreads = initializationThreads;
 			_ptableVersion = ptableVersion;
-			_awaitingMemTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+			_awaitingMemTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0, false)};
 
 			_lowHasher = lowHasher;
 			_highHasher = highHasher;
@@ -234,9 +234,9 @@ namespace EventStore.Core.Index {
 		//Automerge only
 		private void TryProcessAwaitingTables(long commitPos, long prepareCheckpoint) {
 			lock (_awaitingTablesLock) {
-				var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
+				var newTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0, false)};
 				newTables.AddRange(_awaitingMemTables.Select(
-					(x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level) : x));
+					(x, i) => i == 0 ? new TableItem(x.Table, prepareCheckpoint, commitPos, x.Level, x.IsFromIndexMap) : x));
 
 				Log.Trace("Switching MemTable, currently: {awaitingMemTables} awaiting tables.", newTables.Count);
 
@@ -260,7 +260,7 @@ namespace EventStore.Core.Index {
 				var prepare = _indexMap.PrepareCheckpoint;
 				var commit = _indexMap.CommitCheckpoint;
 				var newTables = new List<TableItem>(_awaitingMemTables) {
-					new TableItem(highest, prepare, commit, maxLevel)
+					new TableItem(highest, prepare, commit, maxLevel, true)
 				};
 				_awaitingMemTables = newTables;
 				TryProcessAwaitingTables();
@@ -466,7 +466,7 @@ namespace EventStore.Core.Index {
 						_awaitingMemTables[j] = new TableItem(ptable,
 							tableItem.PrepareCheckpoint,
 							tableItem.CommitCheckpoint,
-							tableItem.Level);
+							tableItem.Level, false);
 						break;
 					}
 				}
@@ -501,6 +501,7 @@ namespace EventStore.Core.Index {
 
 			var awaiting = _awaitingMemTables;
 			foreach (var tableItem in awaiting) {
+				if(tableItem.IsFromIndexMap) continue;
 				if (tableItem.Table.TryGetOneValue(stream, version, out position))
 					return true;
 			}
@@ -535,7 +536,9 @@ namespace EventStore.Core.Index {
 
 		private bool TryGetLatestEntryInternal(ulong stream, out IndexEntry entry) {
 			var awaiting = _awaitingMemTables;
+			
 			foreach (var t in awaiting) {
+				if(t.IsFromIndexMap) continue;
 				if (t.Table.TryGetLatestEntry(stream, out entry))
 					return true;
 			}
@@ -577,6 +580,7 @@ namespace EventStore.Core.Index {
 
 			var awaiting = _awaitingMemTables;
 			for (var index = awaiting.Count - 1; index >= 0; index--) {
+				if(awaiting[index].IsFromIndexMap) continue;
 				if (awaiting[index].Table.TryGetOldestEntry(stream, out entry))
 					return true;
 			}
@@ -615,6 +619,7 @@ namespace EventStore.Core.Index {
 
 			var awaiting = _awaitingMemTables;
 			for (int index = 0; index < awaiting.Count; index++) {
+				if(awaiting[index].IsFromIndexMap) continue;
 				var range = awaiting[index].Table.GetRange(hash, startVersion, endVersion, limit).GetEnumerator();
 				if (range.MoveNext())
 					candidates.Add(range);
@@ -706,12 +711,13 @@ namespace EventStore.Core.Index {
 			public readonly long PrepareCheckpoint;
 			public readonly long CommitCheckpoint;
 			public readonly int Level;
-
-			public TableItem(ISearchTable table, long prepareCheckpoint, long commitCheckpoint, int level) {
+			public readonly bool IsFromIndexMap;
+			public TableItem(ISearchTable table, long prepareCheckpoint, long commitCheckpoint, int level, bool isFromIndexMap) {
 				Table = table;
 				PrepareCheckpoint = prepareCheckpoint;
 				CommitCheckpoint = commitCheckpoint;
 				Level = level;
+				IsFromIndexMap = isFromIndexMap;
 			}
 		}
 
