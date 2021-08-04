@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - GitHubActionsTestLogger to Buffer Management Tests [EventStore#3061](https://github.com/EventStore/EventStore/pull/3061)
+- Alpine Docker Image [EventStore#3069](https://github.com/EventStore/EventStore/pull/3069)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
