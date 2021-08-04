@@ -191,7 +191,12 @@ DEFAULT OPTIONS:
 ```
 :::
 
-::: warning
-As of version 21.6 the server will _not start_ when an unknown configuration options is passed in either the configuration file, environment variable or command line.
-The fatal error shown on start up looks like `Error while parsing options: The option UnknownConfig is not a known option. (Parameter 'UnknownConfig')` where `UnknownConfig` is the wrong option name.
+::: note
+Version 21.6 introduced a stricter configuration checks: the server will _not start_ when an unknown configuration options is passed in either the configuration file, environment variable or command line.
+
+E.g: the following will prevent the server from starting:
+* `--UnknownConfig` on the command line
+* `EVENTSTORE_UnknownConfig` through environment variable 
+* `UnknownConfig: value` in the config file
+will output on `stdout`: `Error while parsing options: The option UnknownConfig is not a known option. (Parameter 'UnknownConfig')`.
 :::
