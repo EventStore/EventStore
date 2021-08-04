@@ -256,7 +256,7 @@ namespace EventStore.LogV3 {
 			for (var i = 0; i < events.Length; i++) {
 				eventSystemMetadata[i] = new EventSystemMetadata {
 					EventId = events[i].EventId,
-					EventType = events[i].EventType
+					EventType = events[i].EventType ?? string.Empty
 				};
 			}
 

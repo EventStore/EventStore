@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
+using EventStore.LogCommon;
 
 namespace EventStore.LogV3 {
 	// View of an event in a stream write record
-	public struct EventRecord {
+	public struct EventRecord : IEventRecord {
 		private readonly ReadOnlyMemory<byte> _headerMemory;
 		private readonly ReadOnlyMemory<byte> _data;
 		private readonly ReadOnlyMemory<byte> _metadata;
@@ -13,9 +14,13 @@ namespace EventStore.LogV3 {
 		public ReadOnlyMemory<byte> Data => _data;
 		public ReadOnlyMemory<byte> Metadata => _metadata;
 		public EventSystemMetadata SystemMetadata { get; }
+		public Guid EventId => SystemMetadata.EventId;
+		public string EventType => SystemMetadata.EventType;
+		public EventFlags EventFlags => (EventFlags) Header.Flags;
+		public long? LogPosition { get; }
 
 		// bytes already populated with a event record to read
-		public EventRecord(ReadOnlyMemory<byte> bytes) {
+		public EventRecord(ReadOnlyMemory<byte> bytes, long logPosition) {
 			var slicer = bytes.Slicer();
 			_headerMemory = slicer.Slice(Raw.EventHeader.Size);
 
@@ -26,6 +31,7 @@ namespace EventStore.LogV3 {
 			_metadata = slicer.Remaining;
 
 			SystemMetadata = EventSystemMetadata.Parser.ParseFrom(new ReadOnlySequence<byte>(systemMetadata));
+			LogPosition = logPosition;
 		}
 	}
 }

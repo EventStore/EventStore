@@ -1,12 +1,13 @@
 using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
+using EventStore.LogCommon;
 
 namespace EventStore.LogV3 {
 	// View of a stream write record
 	// interprets the payload
 	public struct StreamWriteRecord : IRecordView {
-		private readonly ReadOnlyMemory<byte> _event;
+		private readonly ReadOnlyMemory<byte> _events;
 
 		public ReadOnlyMemory<byte> Bytes => Record.Bytes;
 		public RecordView<Raw.StreamWriteHeader> Record { get; }
@@ -15,24 +16,49 @@ namespace EventStore.LogV3 {
 		public ref readonly Raw.StreamWriteHeader SubHeader => ref Record.SubHeader;
 		public ReadOnlyMemory<byte> Payload => Record.Payload;
 		public StreamWriteSystemMetadata SystemMetadata { get; }
+		public IEventRecord[] Events { get; }
 
 		public StreamWriteRecord(RecordView<Raw.StreamWriteHeader> record) {
 			Record = record;
 
 			var slicer = Record.Payload.Slicer();
 			var systemMetadata = slicer.Slice(Record.SubHeader.MetadataSize);
-			_event = slicer.Remaining;
+			_events = slicer.Remaining;
 
 			SystemMetadata = StreamWriteSystemMetadata.Parser.ParseFrom(new ReadOnlySequence<byte>(systemMetadata));
+			Events = GenerateEventRecords(Record, _events);
 		}
 
-		public EventRecord Event {
-			get {
-				var slicer = _event.Slicer();
+		private static IEventRecord[] GenerateEventRecords(RecordView<Raw.StreamWriteHeader> record, ReadOnlyMemory<byte> events) {
+			var slicer = events.Slicer();
+			var eventRecords = new IEventRecord[record.SubHeader.Count];
+			for (var i = 0; i < eventRecords.Length; i++) {
+				long logPosition;
+				if (i == 0) {
+					logPosition = record.Header.LogPosition;
+				} else {
+					var backwardOffset = MemoryMarshal.AsRef<int>(slicer.Slice(sizeof(int)).Span);
+					var forwardOffset = MemoryMarshal.AsRef<int>(slicer.Slice(sizeof(int)).Span);
+					if (backwardOffset >= 0) {
+						throw new Exception($"backward offset should be negative but was: {backwardOffset}");
+					}
+					if (forwardOffset >= 0) {
+						throw new Exception($"forward offset should be negative but was: {forwardOffset}");
+					}
+					var logRecordLength = record.Bytes.Length + 2 * sizeof(int);
+					if (- (forwardOffset + backwardOffset) != logRecordLength) {
+						throw new Exception($"sum of offsets does not match log record length: "
+						                    +$" backward offset: {-backwardOffset}, forward offset: {-forwardOffset}, log record length: {logRecordLength}");
+					}
+					logPosition = record.Header.LogPosition + -forwardOffset;
+				}
+
 				ref readonly var eventHeader = ref MemoryMarshal.AsRef<Raw.EventHeader>(slicer.Remaining.Span);
 				var eventBytes = slicer.Slice(eventHeader.EventSize);
-				return new EventRecord(eventBytes);
+
+				eventRecords[i] = new EventRecord(eventBytes, logPosition);
 			}
+			return eventRecords;
 		}
 	}
 }
