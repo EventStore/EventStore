@@ -4,7 +4,7 @@
 		<TargetFramework>net5.0</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
 			<FrameworkReference Include="Microsoft.AspNetCore.App" />

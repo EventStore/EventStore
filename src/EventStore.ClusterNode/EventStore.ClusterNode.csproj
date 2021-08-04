@@ -6,7 +6,7 @@
 				<OutputType>Exe</OutputType>
 				<ApplicationIcon>app2.ico</ApplicationIcon>
 				<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-				<Platforms>x64</Platforms>
+				<Platforms>x64;ARM64</Platforms>
 		</PropertyGroup>
 		<ItemGroup>
 				<PackageReference Include="System.ComponentModel.Composition" Version="4.7.0" />
