@@ -6,6 +6,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.Messages {
 	public static class StorageMessage {
@@ -35,10 +36,10 @@ namespace EventStore.Core.Messages {
 			public string EventStreamId { get; private set; }
 			public long ExpectedVersion { get; private set; }
 			public CancellationToken CancellationToken { get; }
-			public readonly Event[] Events;
+			public readonly IEventRecord[] Events;
 
 			public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				Event[] events, CancellationToken cancellationToken) {
+				IEventRecord[] events, CancellationToken cancellationToken) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				EventStreamId = eventStreamId;
