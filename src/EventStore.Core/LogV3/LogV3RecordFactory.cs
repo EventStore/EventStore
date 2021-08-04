@@ -1,6 +1,7 @@
 using System;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 using EventStore.LogV3;
 using StreamId = System.UInt32;
 
@@ -51,30 +52,24 @@ namespace EventStore.Core.LogV3 {
 		public IPrepareLogRecord<StreamId> CreatePrepare(
 			long logPosition,
 			Guid correlationId,
-			Guid eventId,
 			long transactionPosition,
 			int transactionOffset,
 			StreamId eventStreamId,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
-			string eventType,
-			ReadOnlyMemory<byte> data,
-			ReadOnlyMemory<byte> metadata) {
+			IEventRecord[] events) {
 
 			var result = new LogV3StreamWriteRecord(
 				logPosition: logPosition,
 				transactionPosition: transactionPosition,
 				transactionOffset: transactionOffset,
 				correlationId: correlationId,
-				eventId: eventId,
 				eventStreamId: eventStreamId,
 				expectedVersion: expectedVersion,
 				timeStamp: timeStamp,
-				flags: flags,
-				eventType: eventType,
-				data: data.Span,
-				metadata: metadata.Span);
+				prepareFlags: flags,
+				events: events);
 			return result;
 		}
 
