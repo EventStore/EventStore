@@ -240,6 +240,7 @@ namespace EventStore.LogV3 {
 			long logPosition,
 			long transactionPosition,
 			int transactionOffset,
+			ushort prepareFlags,
 			long streamNumber,
 			long startingEventNumber,
 			IEventRecord[] events) {
@@ -249,6 +250,7 @@ namespace EventStore.LogV3 {
 				TransactionOffset = transactionOffset,
 				StartingEventNumberRoot = 0,
 				StartingEventNumberCategory = 0,
+				PrepareFlags = ByteString.CopyFrom(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref prepareFlags, 1)))
 			};
 			var writeSystemMetadataSize = writeSystemMetadata.CalculateSize();
 

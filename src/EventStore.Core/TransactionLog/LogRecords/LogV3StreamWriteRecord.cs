@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
 using EventStore.Core.LogV3;
 using EventStore.LogCommon;
@@ -19,7 +20,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			StreamId eventStreamId,
 			long expectedVersion,
 			DateTime timeStamp,
-			PrepareFlags flags,
+			PrepareFlags prepareFlags,
 			IEventRecord[] events) {
 
 			Ensure.Nonnegative(logPosition, "logPosition");
@@ -42,6 +43,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				logPosition: logPosition,
 				transactionPosition: transactionPosition,
 				transactionOffset: transactionOffset,
+				prepareFlags: (ushort) prepareFlags,
 				streamNumber: eventStreamId,
 				startingEventNumber: expectedVersion + 1,
 				events: events);
@@ -50,7 +52,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public override LogRecordType RecordType => LogRecordType.Prepare;
 
 		// todo: translate
-		public PrepareFlags Flags => (PrepareFlags)Record.Event.Header.Flags; //TODO(multi-events): ?
+		public PrepareFlags Flags => (PrepareFlags)MemoryMarshal.AsRef<ushort>(Record.SystemMetadata.PrepareFlags.Span);
 		public long TransactionPosition => Record.SystemMetadata.TransactionPosition;
 		public int TransactionOffset => Record.SystemMetadata.TransactionOffset;
 		public long ExpectedVersion => Record.WriteId.StartingEventNumber - 1;
@@ -67,7 +69,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				eventStreamId: EventStreamId,
 				expectedVersion: ExpectedVersion,
 				timeStamp: TimeStamp,
-				flags: Flags,
+				prepareFlags: Flags,
 				events: Record.Events);
 		}
 

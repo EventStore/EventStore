@@ -9,4 +9,5 @@ message StreamWriteSystemMetadata {
 	ProtoGuid correlation_id = 3;
 	int64 starting_event_number_root = 4;
 	int64 starting_event_number_category = 5;
+	bytes prepare_flags = 6;
 }
