@@ -20,11 +20,11 @@ namespace EventStore.Core.LogV3 {
 
 			// we divided by two when calculating the position in the stream, since we dont
 			// explicitly create metastreams.
-			var record = _indexReader.ReadPrepare(
+			if (!_indexReader.TryReadPrepare(
 				streamId: LogV3SystemStreams.StreamsCreatedStreamNumber,
-				eventNumber: StreamIdConverter.ToEventNumber(streamId));
-
-			if (record is null) {
+				eventNumber: StreamIdConverter.ToEventNumber(streamId),
+				out var record,
+				out _, out _, out _)) {
 				name = null;
 				return false;
 			}

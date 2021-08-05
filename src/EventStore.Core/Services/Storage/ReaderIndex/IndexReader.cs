@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		/// <summary>
 		/// Doesn't filter $maxAge, $maxCount, $tb(truncate before), doesn't check stream deletion, etc.
 		/// </summary>
-		IPrepareLogRecord<TStreamId> ReadPrepare(TStreamId streamId, long eventNumber);
+		bool TryReadPrepare(TStreamId streamId, long eventNumber, out IPrepareLogRecord<TStreamId> prepare, out long startEventNumber, out long endEventNumber, out int eventIndex);
 
 		TStreamId GetEventStreamIdByTransactionId(long transactionId);
 

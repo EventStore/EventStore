@@ -147,7 +147,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			// though we have to check deletes, otherwise they always will be considered idempotent :)
 			var eventIds = from prepare in GetTransactionPrepares(transactionPosition, commitPosition)
 				where prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-				select prepare.EventId;
+				from eventRecord in prepare.Events select eventRecord.EventId;
 			return CheckCommit(streamId, expectedVersion, eventIds, streamMightExist: true);
 		}
 
@@ -229,6 +229,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			if (expectedVersion < curVersion) {
 				var eventNumber = expectedVersion;
+				IPrepareLogRecord currentPrepare = null;
+				long currentPrepareStartEventNumber = -1;
+				long currentPrepareEndEventNumber = -1;
 				foreach (var eventId in eventIds) {
 					eventNumber += 1;
 
@@ -238,8 +241,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					    && prepInfo.EventNumber == eventNumber)
 						continue;
 
-					var res = _indexReader.ReadPrepare(streamId, eventNumber);
-					if (res != null && res.EventId == eventId)
+					if (currentPrepare == null || eventNumber < currentPrepareStartEventNumber || eventNumber > currentPrepareEndEventNumber) {
+						if (_indexReader.TryReadPrepare(streamId, eventNumber, out var prepare, out var startEventNumber, out var endEventNumber, out _)) {
+							currentPrepare = prepare;
+							currentPrepareStartEventNumber = startEventNumber;
+							currentPrepareEndEventNumber = endEventNumber;
+						} else {
+							currentPrepare = null;
+							currentPrepareStartEventNumber = -1;
+							currentPrepareEndEventNumber = -1;
+						}
+					}
+
+					if (currentPrepare != null && currentPrepare.Events[eventNumber - currentPrepareStartEventNumber].EventId == eventId)
 						continue;
 
 					var first = eventNumber == expectedVersion + 1;
@@ -296,17 +310,22 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 				eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete)
 					? EventNumber.DeletedStream
-					: commit.FirstEventNumber + prepare.TransactionOffset;
+					: commit.FirstEventNumber + prepare.TransactionOffset - 1;
 				lastPrepare = prepare;
-				_committedEvents.PutRecord(prepare.EventId, new EventInfo(streamId, eventNumber),
-					throwOnDuplicate: false);
+				foreach (var eventRecord in prepare.Events) {
+					if (eventNumber != EventNumber.DeletedStream) {
+						eventNumber++;
+					}
+					_committedEvents.PutRecord(eventRecord.EventId, new EventInfo(streamId, eventNumber),
+						throwOnDuplicate: false);
+				}
 			}
 
 			if (eventNumber != EventNumber.Invalid)
 				_streamVersions.Put(streamId, eventNumber, +1);
 
 			if (lastPrepare != null && _systemStreams.IsMetaStream(streamId)) {
-				var rawMeta = lastPrepare.Data;
+				var rawMeta = lastPrepare.Events[^1].Data;
 				_streamRawMetas.Put(_systemStreams.OriginalStreamOf(streamId), new StreamMeta(rawMeta, null), +1);
 			}
 		}
@@ -326,17 +345,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					throw new Exception(string.Format("Expected stream: {0}, actual: {1}.", streamId,
 						prepare.EventStreamId));
 
-				//TODO(multi-events): handle multiple events in prepare
 				eventNumber =
-					prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
-				_committedEvents.PutRecord(prepare.EventId, new EventInfo(streamId, eventNumber),
-					throwOnDuplicate: false);
+					prepare.ExpectedVersion; /* for committed prepare expected version is always explicit */
+				foreach (var eventRecord in prepare.Events) {
+					eventNumber++;
+					_committedEvents.PutRecord(eventRecord.EventId, new EventInfo(streamId, eventNumber),
+						throwOnDuplicate: false);
+				}
 			}
 
 			_notProcessedCommits.Enqueue(new CommitInfo(streamId, lastPrepare.LogPosition));
 			_streamVersions.Put(streamId, eventNumber, 1);
 			if (_systemStreams.IsMetaStream(streamId)) {
-				var rawMeta = lastPrepare.Data;
+				var rawMeta = lastPrepare.Events[^1].Data;
 				_streamRawMetas.Put(_systemStreams.OriginalStreamOf(streamId), new StreamMeta(rawMeta, null), +1);
 			}
 		}
@@ -369,7 +390,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				while ((result = reader.TryReadPrev()).Success) {
 					if (result.LogRecord.LogPosition < transactionId)
 						break;
-					if (result.LogRecord.RecordType != LogRecordType.Prepare) //TODO(multi-events): nothing to do
+					if (result.LogRecord.RecordType != LogRecordType.Prepare)
 						continue;
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					if (prepare.TransactionPosition == transactionId) {
@@ -431,7 +452,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.RecordPrePosition <= commitPos) {
-					if (result.LogRecord.RecordType != LogRecordType.Prepare) //TODO(multi-events): nothing to do
+					if (result.LogRecord.RecordType != LogRecordType.Prepare)
 						continue;
 
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
@@ -482,8 +503,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			StreamMeta meta;
 			if (!_streamRawMetas.TryGet(streamId, out meta))
-				meta = new StreamMeta(_indexReader.ReadPrepare(metastreamId, metaLastEventNumber).Data, null);
-
+				if (_indexReader.TryReadPrepare(metastreamId, metaLastEventNumber, out var prepare, out _, out _, out var eventIndex)) {
+					meta = new StreamMeta(prepare.Events[eventIndex].Data, null);
+				} else {
+					throw new Exception(
+						$"Failed to read event for metadata stream: {metastreamId}, event number: {metaLastEventNumber}");
+				}
 			return new RawMetaInfo(metaLastEventNumber, meta.RawMeta);
 		}
 
