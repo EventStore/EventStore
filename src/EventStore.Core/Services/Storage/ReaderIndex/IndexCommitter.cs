@@ -125,7 +125,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
 					switch (result.LogRecord.RecordType) {
-						//TODO(multi-events): Handle multiple events
 						case LogRecordType.Stream:
 						case LogRecordType.Prepare: {
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
@@ -281,7 +280,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						null); // invalidate cached metadata
 
 				if (StreamIdComparer.Equals(streamId, _systemStreams.SettingsStream))
-					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
+					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[^1].Events[^1].Data));
 			}
 
 			_streamNameIndex.Confirm(
@@ -301,10 +300,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (!_indexRebuild) {
 				var streamName = _streamNames.LookupName(streamId);
 				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
+					// only Log V3 supports multiple events per prepare but it does not support explicit transactions
+					Debug.Assert(prepares[i].Events.Length == 1);
 					_bus.Publish(
 						new StorageMessage.EventCommitted(
 							commit.LogPosition,
-							new EventRecord(indexEntries[i].Version, prepares[i], streamName),
+							new EventRecord(streamName, prepares[i], 0),
 							isTfEof && i == n - 1));
 				}
 			}
@@ -319,8 +320,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return eventNumber;
 
 			var lastIndexedPosition = _indexChk.Read();
-			var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
-
+			var lastPrepare = commitedPrepares[^1];
+			long lastLogPosition = -1;
 			var streamId = lastPrepare.EventStreamId;
 			var indexEntries = new List<IndexKey<TStreamId>>();
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
@@ -345,31 +346,43 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						sb.Append(Environment.NewLine);
 						sb.Append("Flags: " + p.Flags);
 						sb.Append(Environment.NewLine);
-						sb.Append("Type: " + p.EventType);
-						sb.Append(Environment.NewLine);
-						sb.Append("MetaData: " + Encoding.UTF8.GetString(p.Metadata.Span));
-						sb.Append(Environment.NewLine);
-						sb.Append("Data: " + Encoding.UTF8.GetString(p.Data.Span));
-						sb.Append(Environment.NewLine);
+						for (int j = 0; j < p.Events.Length; j++) {
+							sb.Append("-- Event " + (j+1) + " --" );
+							sb.Append("Type: " + p.Events[j].EventType);
+							sb.Append(Environment.NewLine);
+							sb.Append("MetaData: " + Encoding.UTF8.GetString(p.Events[j].Metadata.Span));
+							sb.Append(Environment.NewLine);
+							sb.Append("Data: " + Encoding.UTF8.GetString(p.Events[j].Data.Span));
+							sb.Append(Environment.NewLine);
+							sb.Append("-------------" );
+						}
 					}
 
 					throw new Exception(sb.ToString());
 				}
 
-				if (prepare.LogPosition < lastIndexedPosition ||
-					(prepare.LogPosition == lastIndexedPosition && !_indexRebuild))
+				lastLogPosition = prepare.LogPosition;
+				if (prepare.Events.Length > 0) {
+					lastLogPosition = prepare.Events[^1].EventLogPosition!.Value;
+				}
+
+				if (lastLogPosition < lastIndexedPosition ||
+				    (lastLogPosition == lastIndexedPosition && !_indexRebuild))
 					continue; // already committed
 
-				//TODO(multi-events): handle multiple events in prepare
-				eventNumber =
-					prepare.ExpectedVersion + 1; /* for committed prepare expected version is always explicit */
-
-				if (new TFPos(prepare.LogPosition, prepare.LogPosition) >
+				if (new TFPos(lastLogPosition, lastLogPosition) >
 					new TFPos(_persistedCommitPos, _persistedPreparePos)) {
-					indexEntries.Add(new IndexKey<TStreamId>(streamId, eventNumber, prepare.LogPosition));
+					eventNumber = prepare.ExpectedVersion; /* for committed prepare expected version is always explicit */
+					foreach (var eventRecord in prepare.Events) {
+						eventNumber++;
+						indexEntries.Add(new IndexKey<TStreamId>(streamId, eventNumber, eventRecord.LogPosition!.Value));
+					}
+
 					prepares.Add(prepare);
 				}
 			}
+
+			Debug.Assert(lastLogPosition != -1);
 
 			if (indexEntries.Count > 0) {
 				if (_additionalCommitChecks && cacheLastEventNumber) {
@@ -377,7 +390,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
 				}
 
-				_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
+				_tableIndex.AddEntries(lastLogPosition, indexEntries); // atomically add a whole bulk of entries
 			}
 
 			if (eventNumber != EventNumber.Invalid) {
@@ -393,7 +406,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						null); // invalidate cached metadata
 
 				if (StreamIdComparer.Equals(streamId, _systemStreams.SettingsStream))
-					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
+					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[^1].Events[^1].Data));
 			}
 
 			_streamNameIndex.Confirm(
@@ -401,7 +414,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				catchingUp: _indexRebuild,
 				backend: _backend);
 
-			var newLastIndexedPosition = Math.Max(lastPrepare.LogPosition, lastIndexedPosition);
+			var newLastIndexedPosition = Math.Max(lastLogPosition, lastIndexedPosition);
 			if (_indexChk.Read() != lastIndexedPosition) {
 				throw new Exception(
 					"Concurrency error in ReadIndex.Commit: _lastCommitPosition was modified during Commit execution!");
@@ -411,12 +424,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			if (!_indexRebuild) {
 				var streamName = _streamNames.LookupName(streamId);
-				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
-					_bus.Publish(
-						new StorageMessage.EventCommitted(
-							prepares[i].LogPosition,
-							new EventRecord(indexEntries[i].Version, prepares[i], streamName),
-							isTfEof && i == n - 1));
+				for (int i = 0, n = prepares.Count; i < n; ++i) {
+					for (int j = 0; j < prepares[i].Events.Length; j++) {
+						_bus.Publish(
+							new StorageMessage.EventCommitted(
+								prepares[i].Events[j].EventLogPosition!.Value,
+								new EventRecord(streamName, prepares[i], j),
+								isTfEof
+								&& i == prepares.Count - 1
+								&& j == prepares[i].Events.Length - 1));
+					}
 				}
 			}
 
@@ -430,7 +447,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				// in case all prepares were scavenged, we should not read past Commit LogPosition
 				SeqReadResult result;
 				while ((result = reader.TryReadNext()).Success && result.RecordPrePosition <= commitPos) {
-					if (result.LogRecord.RecordType != LogRecordType.Prepare) //TODO(multi-events): nothing to do
+					if (result.LogRecord.RecordType != LogRecordType.Prepare)
 						continue;
 
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
@@ -500,7 +517,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			RecordReadResult result = reader.TryReadAt(logPosition);
 			if (!result.Success)
 				return null;
-			if (result.LogRecord.RecordType != LogRecordType.Prepare)  //TODO(multi-events): nothing to do
+			if (result.LogRecord.RecordType != LogRecordType.Prepare)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
 			return (IPrepareLogRecord<TStreamId>)result.LogRecord;
