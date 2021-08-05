@@ -481,11 +481,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return false;
 				}
 
-				length = workItem.Reader.ReadInt32(); //TODO(multi-events): Handle negative lengths as sub records
+				length = workItem.Reader.ReadInt32();
 				if (length <= 0) {
-					throw new InvalidReadException(
-						string.Format("Log record at actual pos {0} has non-positive length: {1}. "
-									  + " in chunk {2}.", actualPosition, length, Chunk));
+					//negative lengths implicitly mean sub record offsets in LogV3
+					return TryReadForwardInternal(workItem, actualPosition + length, out length, out record);
 				}
 
 				if (length > TFConsts.MaxLogRecordSize) {
@@ -532,12 +531,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				var realPos = GetRawPosition(actualPosition);
 				workItem.Stream.Position = realPos - sizeof(int);
 
-				length = workItem.Reader.ReadInt32(); //TODO(multi-events): Handle negative lengths as sub records
+				length = workItem.Reader.ReadInt32();
 				if (length <= 0) {
-					throw new InvalidReadException(
-						string.Format("Log record that ends at actual pos {0} has non-positive length: {1}. "
-									  + "In chunk {2}.",
-							actualPosition, length, Chunk));
+					//negative lengths implicitly mean sub record offsets in LogV3
+					return TryReadBackwardInternal(workItem, actualPosition - length, out length, out record);
 				}
 
 				if (length > TFConsts.MaxLogRecordSize) {
