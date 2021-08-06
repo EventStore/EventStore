@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.Data {
 	public class EventRecord : IEquatable<EventRecord> {
@@ -24,24 +25,33 @@ namespace EventStore.Core.Data {
 		public readonly ReadOnlyMemory<byte> Data;
 		public readonly ReadOnlyMemory<byte> Metadata;
 
-		//TODO(multi-events): remove this method and create one which takes in a prepare and returns EventRecord[]
-		public EventRecord(long eventNumber, IPrepareLogRecord prepare, string eventStreamName) {
-			Ensure.Nonnegative(eventNumber, "eventNumber");
+		public EventRecord(string eventStreamName, IPrepareLogRecord prepare, int eventIndex) {
+			if (eventIndex < 0 || eventIndex >= prepare.Events.Length) {
+				throw new ArgumentOutOfRangeException(nameof(eventIndex),
+					$"Index out of bounds: {nameof(eventIndex)}: {eventIndex}, array length: {prepare.Events.Length}");
+			}
 
-			EventNumber = eventNumber;
-			LogPosition = prepare.LogPosition;
+			if (!prepare.Events[eventIndex].EventLogPosition.HasValue) {
+				throw new ArgumentException("Event's log position should not be null");
+			}
+
 			CorrelationId = prepare.CorrelationId;
-			EventId = prepare.EventId;
 			TransactionPosition = prepare.TransactionPosition;
 			TransactionOffset = prepare.TransactionOffset;
 			EventStreamId = eventStreamName;
-			ExpectedVersion = prepare.ExpectedVersion;
 			TimeStamp = prepare.TimeStamp;
-
 			Flags = prepare.Flags;
-			EventType = prepare.EventType ?? string.Empty;
-			Data = prepare.Data;
-			Metadata = prepare.Metadata;
+
+			ExpectedVersion = prepare.ExpectedVersion + eventIndex;
+			EventNumber = prepare.ExpectedVersion + 1 + eventIndex;
+			LogPosition = prepare.Events[eventIndex].EventLogPosition!.Value;
+			EventId = prepare.Events[eventIndex].EventId;
+			EventType = prepare.Events[eventIndex].EventType ?? string.Empty;
+			Data = prepare.Events[eventIndex].Data;
+			Metadata = prepare.Events[eventIndex].Metadata;
+			if (prepare.Events[eventIndex].EventFlags.HasFlag(EventFlags.IsJson)) {
+				Flags |= PrepareFlags.IsJson;
+			}
 		}
 
 		// called from tests only

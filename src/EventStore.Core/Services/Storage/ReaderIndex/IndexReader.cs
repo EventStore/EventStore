@@ -132,12 +132,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber,
 					originalStreamExists);
 
-			var prepare = ReadPrepareInternal(reader, streamId, eventNumber);
+			var prepare = ReadPrepareInternal(reader, streamId, eventNumber, out _, out _, out var eventIndex);
 			if (prepare != null) {
 				if (metadata.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
 					return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber,
 						originalStreamExists);
-				return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(eventNumber, prepare, streamName),
+				return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(streamName, prepare, eventIndex),
 					metadata, lastEventNumber, originalStreamExists);
 			}
 
@@ -145,65 +145,127 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				originalStreamExists: originalStreamExists);
 		}
 
-		IPrepareLogRecord<TStreamId> IIndexReader<TStreamId>.ReadPrepare(TStreamId streamId, long eventNumber) {
+		bool IIndexReader<TStreamId>.TryReadPrepare(TStreamId streamId, long eventNumber, out IPrepareLogRecord<TStreamId> prepare,
+			out long startEventNumber, out long endEventNumber, out int eventIndex) {
+			prepare = ReadPrepare(streamId, eventNumber, out startEventNumber, out endEventNumber, out eventIndex);
+			return prepare is not null;
+		}
+
+		private IPrepareLogRecord<TStreamId> ReadPrepare(TStreamId streamId, long eventNumber, out long startEventNumber, out long endEventNumber, out int eventIndex) {
 			using (var reader = _backend.BorrowReader()) {
-				return ReadPrepareInternal(reader, streamId, eventNumber);
+				return ReadPrepareInternal(reader, streamId, eventNumber, out startEventNumber, out endEventNumber, out eventIndex);
 			}
 		}
 
-		private IPrepareLogRecord<TStreamId> ReadPrepareInternal(TFReaderLease reader, TStreamId streamId, long eventNumber) {
+		private IPrepareLogRecord<TStreamId> ReadPrepareInternal(TFReaderLease reader, TStreamId streamId, long eventNumber,
+			out long startEventNumber, out long endEventNumber, out int eventIndex) {
 			// we assume that you already did check for stream deletion
 			Ensure.Valid(streamId, _validator);
 			Ensure.Nonnegative(eventNumber, "eventNumber");
 
 			return _skipIndexScanOnRead
-				? ReadPrepareSkipScan(reader, streamId, eventNumber)
-				: ReadPrepare(reader, streamId, eventNumber);
+				? ReadPrepareSkipScan(reader, streamId, eventNumber, out startEventNumber, out endEventNumber, out eventIndex)
+				: ReadPrepare(reader, streamId, eventNumber, out startEventNumber, out endEventNumber, out eventIndex);
 		}
 
-		private IPrepareLogRecord<TStreamId> ReadPrepare(TFReaderLease reader, TStreamId streamId, long eventNumber) {
+		private IPrepareLogRecord<TStreamId> ReadPrepare(TFReaderLease reader, TStreamId streamId, long eventNumber,
+			out long startEventNumber, out long endEventNumber, out int eventIndex) {
 			var recordsQuery = _tableIndex.GetRange(streamId, eventNumber, eventNumber)
-				.Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
+				.Select(x => {
+					var prepare = ReadPrepareInternal(reader, x.Position, out var startEventNumber, out var endEventNumber);
+					return new {x.Version, Prepare = prepare, StartEventNumber = startEventNumber,
+						EndEventNumber = endEventNumber, EventIndex = (int) (eventNumber - startEventNumber)};
+				})
 				.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId))
 				.GroupBy(x => x.Version).Select(x => x.Last()).ToList();
 			if (recordsQuery.Count() == 1) {
-				return recordsQuery.First().Prepare;
+				var record = recordsQuery.First();
+				startEventNumber = record.StartEventNumber;
+				endEventNumber = record.EndEventNumber;
+				eventIndex = record.EventIndex;
+				return record.Prepare;
 			}
 
+			startEventNumber = -1;
+			endEventNumber = -1;
+			eventIndex = -1;
 			return null;
 		}
 
-		private IPrepareLogRecord<TStreamId> ReadPrepareSkipScan(TFReaderLease reader, TStreamId streamId, long eventNumber) {
+		private IPrepareLogRecord<TStreamId> ReadPrepareSkipScan(TFReaderLease reader, TStreamId streamId, long eventNumber,
+			out long startEventNumber, out long endEventNumber, out int eventIndex) {
 			long position;
 			if (_tableIndex.TryGetOneValue(streamId, eventNumber, out position)) {
-				var rec = ReadPrepareInternal(reader, position);
-				if (rec != null && StreamIdComparer.Equals(rec.EventStreamId, streamId))
+				var rec = ReadPrepareInternal(reader, position, out startEventNumber, out endEventNumber);
+				if (rec != null && StreamIdComparer.Equals(rec.EventStreamId, streamId)) {
+					eventIndex = (int)(eventNumber - startEventNumber);
 					return rec;
+				}
 
 				foreach (var indexEntry in _tableIndex.GetRange(streamId, eventNumber, eventNumber)) {
 					Interlocked.Increment(ref _hashCollisions);
 					if (indexEntry.Position == position)
 						continue;
-					rec = ReadPrepareInternal(reader, indexEntry.Position);
-					if (rec != null && StreamIdComparer.Equals(rec.EventStreamId, streamId))
+					rec = ReadPrepareInternal(reader, indexEntry.Position, out startEventNumber, out endEventNumber);
+					if (rec != null && StreamIdComparer.Equals(rec.EventStreamId, streamId)) {
+						eventIndex = (int)(eventNumber - startEventNumber);
 						return rec;
+					}
 				}
 			}
 
+			startEventNumber = -1;
+			endEventNumber = -1;
+			eventIndex = -1;
 			return null;
 		}
 
-		protected static IPrepareLogRecord<TStreamId> ReadPrepareInternal(TFReaderLease reader, long logPosition) {
+		private static void ReadPrepareIfDifferent(
+			TStreamId streamId,
+			long eventNumber,
+			TFReaderLease reader,
+			long eventLogPosition,
+			IPrepareLogRecord<TStreamId> currentPrepare,
+			out IPrepareLogRecord<TStreamId> prepare,
+			out long startEventNumber,
+			out long endEventNumber,
+			out int eventIndex) {
+			if (currentPrepare == null
+			    || !StreamIdComparer.Equals(currentPrepare.EventStreamId, streamId)
+			    || eventNumber < currentPrepare.ExpectedVersion + 1
+			    || eventNumber > currentPrepare.ExpectedVersion + currentPrepare.Events.Length) {
+				prepare = ReadPrepareInternal(reader, eventLogPosition, out startEventNumber, out endEventNumber);
+			} else {
+				prepare = currentPrepare;
+				startEventNumber = currentPrepare.ExpectedVersion + 1;
+				endEventNumber = currentPrepare.ExpectedVersion + currentPrepare.Events.Length;
+			}
+
+			if (prepare != null) {
+				eventIndex = (int)(eventNumber - startEventNumber);
+			} else {
+				eventIndex = -1;
+			}
+		}
+
+		protected static IPrepareLogRecord<TStreamId> ReadPrepareInternal(TFReaderLease reader, long logPosition,
+			out long startEventNumber, out long endEventNumber) {
 			RecordReadResult result = reader.TryReadAt(logPosition);
-			if (!result.Success)
+			if (!result.Success) {
+				startEventNumber = -1;
+				endEventNumber = -1;
 				return null;
+			}
 
 			if (result.LogRecord.RecordType != LogRecordType.Prepare &&
-				result.LogRecord.RecordType != LogRecordType.Stream)
+			    result.LogRecord.RecordType != LogRecordType.Stream)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
 
-			return (IPrepareLogRecord<TStreamId>)result.LogRecord;
+			var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+			startEventNumber = prepare.ExpectedVersion + 1;
+			endEventNumber = prepare.ExpectedVersion + prepare.Events.Length;
+			return prepare;
 		}
 
 		IndexReadStreamResult IIndexReader<TStreamId>.
@@ -248,16 +310,36 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						startEventNumber, endEventNumber, lastEventNumber,
 						metadata.MaxAge.Value, metadata, _tableIndex, reader, skipIndexScanOnRead);
 				}
-				var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
-					.Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
-					.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
-				if (!skipIndexScanOnRead) {
-					recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
-						.GroupBy(x => x.Version).Select(x => x.Last());
+
+				IEnumerable <(long EventNumber, IPrepareLogRecord<TStreamId> Prepare, int EventIndex)> recordsQuery
+					= new List<(long EventNumber, IPrepareLogRecord<TStreamId> Prepare, int EventIndex)>();
+
+				var indexEntries = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
+
+				IPrepareLogRecord<TStreamId> prepare = null;
+				foreach(var indexEntry in indexEntries) {
+					ReadPrepareIfDifferent(
+						streamId,
+						indexEntry.Version,
+						reader,
+						indexEntry.Position,
+						prepare,
+						out prepare,
+						out _,
+						out _,
+						out var eventIndex);
+					if (prepare != null) {
+						((List<(long EventNumber, IPrepareLogRecord<TStreamId> Prepare, int EventIndex)>) recordsQuery)
+							.Add((indexEntry.Version, prepare, eventIndex));
+					}
 				}
 
-				//TODO(multi-events): call a different EventRecord static method which returns EventRecord[]
-				var records = recordsQuery.Reverse().Select(x => new EventRecord(x.Version, x.Prepare, streamName)).ToArray();
+				if (!skipIndexScanOnRead) {
+					recordsQuery = recordsQuery.OrderByDescending(x => x.EventNumber)
+						.GroupBy(x => x.EventNumber).Select(x => x.Last());
+				}
+
+				var records = recordsQuery.Reverse().Select(x => new EventRecord(streamName, x.Prepare, x.EventIndex)).ToArray();
 
 				long nextEventNumber = Math.Min(endEventNumber + 1, lastEventNumber + 1);
 				if (records.Length > 0)
@@ -297,8 +379,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				}
 
 				var results = new List<EventRecord>();
+				IPrepareLogRecord<TStreamId> prepare = null;
 				for (int i = 0; i < indexEntries.Count; i++) {
-					var prepare = ReadPrepareInternal(reader, indexEntries[i].Position);
+					ReadPrepareIfDifferent(
+						streamId,
+						indexEntries[i].Version,
+						reader,
+						indexEntries[i].Position,
+						prepare,
+						out prepare,
+						out _,
+						out _,
+						out var eventIndex);
 
 					//LOGV2
 					if (typeof(TStreamId) == typeof(string) &&
@@ -307,7 +399,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					if (prepare?.TimeStamp >= ageThreshold) {
-						results.Add(new EventRecord(indexEntries[i].Version, prepare, streamName));
+						results.Add(new EventRecord(streamName, prepare, eventIndex));
 					} else {
 						break;
 					}
@@ -328,11 +420,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 				//check high value will be valid
 				if (tableIndex.TryGetLatestEntry(streamId, out var latest)) {
-					var end = ReadPrepareInternal(reader, latest.Position);
+					var end = ReadPrepareInternal(reader, latest.Position, out _, out _);
 					if (end.TimeStamp < ageThreshold || latest.Version < fromEventNumber) {
 						//No events in the stream are < max age, so return an empty set
 						return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
-							metadata, latest.Version + 1, latest.Version, isEndOfStream: true);
+							metadata, latest.Version + end.Events.Length, latest.Version + end.Events.Length - 1, isEndOfStream: true);
 					}
 				} else {
 					//For some reason there is no last event in this stream, maybe a scavenge completed and deleted the stream, send back for retry
@@ -354,7 +446,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					var lowPrepare = LowPrepare(reader, indexEntries, streamId);
 					if (lowPrepare?.TimeStamp >= ageThreshold) {
 						high = mid - 1;
-						nextEventNumber = lowPrepare.ExpectedVersion + 1; //TODO(multi-events): handle multiple events in prepare
+						nextEventNumber = lowPrepare.ExpectedVersion + lowPrepare.Events.Length;
 						continue;
 					}
 
@@ -365,16 +457,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					//ok, some entries must match, if not (due to time moving forwards) we can just reissue based on the current mid
+					prepare = null;
 					for (int i = 0; i < indexEntries.Count; i++) {
-						var prepare = ReadPrepareInternal(reader, indexEntries[i].Position);
-						
+						ReadPrepareIfDifferent(
+							streamId,
+							indexEntries[i].Version,
+							reader,
+							indexEntries[i].Position,
+							prepare,
+							out prepare,
+							out _,
+							out _,
+							out var eventIndex);
 						//LOGV2
 						if (typeof(TStreamId) == typeof(string) &&
 						    (prepare == null || !StreamIdComparer.Equals(prepare.EventStreamId, streamId))) {
 							continue;
 						}
 						if (prepare?.TimeStamp >= ageThreshold) {
-							results.Add(new EventRecord(indexEntries[i].Version, prepare, streamName));
+							results.Add(new EventRecord(streamName, prepare, eventIndex));
 						} else {
 							break;
 						}
@@ -410,14 +511,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					
 					if (typeof(TStreamId) == typeof(string)) {
 						for (int i = entries.Count - 1; i >= 0; i--) {
-							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position);
+							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, out _, out _);
 							if (prepare != null && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 								return prepare;
 						}
 					}
 
 					for (int i = entries.Count - 1; i >= 0; i--) {
-						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position);
+						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position,  out _, out _);
 						if (prepare != null) return prepare;
 					}
 
@@ -430,14 +531,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					
 					if (typeof(TStreamId) == typeof(string)) {
 						for (int i = 0; i < entries.Count; i++) {
-							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position);
+							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, out _, out _);
 							if (prepare != null && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 								return prepare;
 						}
 					}
 
 					for (int i = 0; i < entries.Count; i++) {
-						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position);
+						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, out _, out _);
 						if (prepare != null) return prepare;
 					}
 
@@ -487,13 +588,32 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					startEventNumber = minEventNumber;
 				}
 
-				var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
-					.Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
-					.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId));
+				IEnumerable <(long EventNumber, IPrepareLogRecord<TStreamId> Prepare, int EventIndex)> recordsQuery
+					= new List<(long EventNumber, IPrepareLogRecord<TStreamId> Prepare, int EventIndex)>();
+
+				var indexEntries = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
+
+				IPrepareLogRecord<TStreamId> prepare = null;
+				foreach(var indexEntry in indexEntries) {
+					ReadPrepareIfDifferent(
+						streamId,
+						indexEntry.Version,
+						reader,
+						indexEntry.Position,
+						prepare,
+						out prepare,
+						out _,
+						out _,
+						out var eventIndex);
+					if (prepare != null) {
+						((List<(long EventNumber, IPrepareLogRecord<TStreamId> Prepare, int EventIndex)>) recordsQuery)
+							.Add((indexEntry.Version, prepare, eventIndex));
+					}
+				}
+
 				if (!skipIndexScanOnRead) {
-					recordsQuery = recordsQuery.OrderByDescending(x => x.Version)
-						.GroupBy(x => x.Version).Select(x => x.Last());
-					;
+					recordsQuery = recordsQuery.OrderByDescending(x => x.EventNumber)
+						.GroupBy(x => x.EventNumber).Select(x => x.Last());
 				}
 
 				if (metadata.MaxAge.HasValue) {
@@ -501,14 +621,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					recordsQuery = recordsQuery.Where(x => x.Prepare.TimeStamp >= ageThreshold);
 				}
 
-				//TODO(multi-events): call a different EventRecord static method which returns EventRecord[]
-				var records = recordsQuery.Select(x => new EventRecord(x.Version, x.Prepare, streamName)).ToArray();
+				var records = recordsQuery.Select(x => new EventRecord(streamName, x.Prepare, x.EventIndex)).ToArray();
 
 				isEndOfStream = isEndOfStream
 								|| startEventNumber == 0
 								|| (startEventNumber <= lastEventNumber
 									&& (records.Length == 0 ||
-										records[records.Length - 1].EventNumber != startEventNumber));
+										records[^1].EventNumber != startEventNumber));
 				long nextEventNumber = isEndOfStream ? -1 : Math.Min(startEventNumber - 1, lastEventNumber);
 				return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
 					nextEventNumber, lastEventNumber, isEndOfStream);
@@ -518,7 +637,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public TStreamId GetEventStreamIdByTransactionId(long transactionId) {
 			Ensure.Nonnegative(transactionId, "transactionId");
 			using (var reader = _backend.BorrowReader()) {
-				var res = ReadPrepareInternal(reader, transactionId);
+				var res = ReadPrepareInternal(reader, transactionId, out _, out _);
 				return res == null ? default : res.EventStreamId;
 			}
 		}
@@ -589,7 +708,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (!_tableIndex.TryGetLatestEntry(streamId, out latestEntry))
 				return ExpectedVersion.NoStream;
 
-			var rec = ReadPrepareInternal(reader, latestEntry.Position);
+			var rec = ReadPrepareInternal(reader, latestEntry.Position, out _, out _);
 			if (rec == null)
 				throw new Exception(
 					$"Could not read latest stream's prepare for stream '{streamId}' at position {latestEntry.Position}");
@@ -602,9 +721,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				latestVersion = latestEntry.Version;
 			}
 
+			IPrepareLogRecord<TStreamId> r = null;
 			foreach (var indexEntry in _tableIndex.GetRange(streamId, startVersion, long.MaxValue,
 				limit: _hashCollisionReadLimit + 1)) {
-				var r = ReadPrepareInternal(reader, indexEntry.Position);
+				ReadPrepareIfDifferent(streamId, indexEntry.Version, reader, indexEntry.Position,
+					r, out r, out _, out _, out _);
 				if (r != null && StreamIdComparer.Equals(r.EventStreamId, streamId)) {
 					if (latestVersion == long.MinValue) {
 						latestVersion = indexEntry.Version;
@@ -666,17 +787,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (metaEventNumber == ExpectedVersion.NoStream || metaEventNumber == EventNumber.DeletedStream)
 				return StreamMetadata.Empty;
 
-			IPrepareLogRecord prepare = ReadPrepareInternal(reader, metastreamId, metaEventNumber);
+			IPrepareLogRecord prepare = ReadPrepareInternal(reader, metastreamId, metaEventNumber,
+				out _, out _, out var eventIndex);
 			if (prepare == null)
 				throw new Exception(string.Format(
 					"ReadPrepareInternal could not find metaevent #{0} on metastream '{1}'. "
 					+ "That should never happen.", metaEventNumber, metastreamId));
 
-			if (prepare.Data.Length == 0 || prepare.Flags.HasNoneOf(PrepareFlags.IsJson))
+			if (prepare.Events[eventIndex].Data.Length == 0 || (prepare.Events[eventIndex].EventFlags & EventFlags.IsJson) == 0)
 				return StreamMetadata.Empty;
 
 			try {
-				var metadata = StreamMetadata.FromJsonBytes(prepare.Data);
+				var metadata = StreamMetadata.FromJsonBytes(prepare.Events[eventIndex].Data);
 				if (prepare.Version == LogRecordVersion.LogRecordV0 && metadata.TruncateBefore == int.MaxValue) {
 					metadata = new StreamMetadata(metadata.MaxCount, metadata.MaxAge, EventNumber.DeletedStream,
 						metadata.TempStream, metadata.CacheControl, metadata.Acl);
