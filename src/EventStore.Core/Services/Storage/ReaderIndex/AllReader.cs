@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
@@ -91,27 +92,45 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 					nextCommitPos = result.RecordPostPosition;
 
-					//TODO(multi-events): Handle Prepare events in a loop here
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare:
 						case LogRecordType.Stream: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-							if (firstCommit) {
-								firstCommit = false;
-								prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
-							}
-
+							prepare.PopulateExpectedVersion(prepare.ExpectedVersion); //already final
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-							    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos) {
+							    && prepare.Events.Length > 0
+							    && new TFPos(prepare.Events[^1].LogPosition!.Value, prepare.Events[^1].LogPosition!.Value) >= pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
-								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1, //TODO(multi-events): handle multiple events in prepare
-									prepare, streamName);
-								consideredEventsCount++;
-								if (eventFilter.IsEventAllowed(eventRecord)) {
-									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
+								var anyRecordConsidered = false;
+								for (int i = 0; i < prepare.Events.Length; i++) {
+									if (new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value) < pos) continue;
+									if (records.Count >= maxCount || consideredEventsCount >= maxSearchWindow) break;
+									var eventRecord = new EventRecord(
+										eventStreamName: streamName,
+										prepare: prepare,
+										eventIndex: i);
+									if (eventFilter.IsEventAllowed(eventRecord)) {
+										records.Add(new CommitEventRecord(eventRecord, eventRecord.LogPosition));
+									}
+									consideredEventsCount++;
+									anyRecordConsidered = true;
+									var isLast = i == prepare.Events.Length - 1;
+									nextPos = isLast
+										? new TFPos(result.RecordPostPosition, 0)
+										: new TFPos(prepare.Events[i + 1].LogPosition!.Value, prepare.Events[i + 1].LogPosition!.Value);
+									if (firstCommit) {
+										firstCommit = false;
+										prevPos = new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value);
+									}
 								}
 
-								nextPos = new TFPos(result.RecordPostPosition, 0);
+								if (!anyRecordConsidered) {
+									nextPos = new TFPos(result.RecordPostPosition, 0);
+									if (firstCommit) {
+										firstCommit = false;
+										prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+									}
+								}
 							}
 
 							break;
@@ -121,7 +140,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							var commit = (CommitLogRecord)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
-								// for backward pass we want to allow read the same commit and skip read prepares, 
+								// for backward pass we want to allow read the same commit and skip read prepares,
 								// so we put post-position of commit and post-position of prepare as TFPos for backward pass
 								prevPos = new TFPos(result.RecordPostPosition, pos.PreparePosition);
 							}
@@ -138,23 +157,23 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (result.LogRecord.RecordType != LogRecordType.Prepare)
 									continue;
 
-								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;  //TODO(multi-events): Handle multiple events
+								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 
 								// prepare with useful data or delete tombstone
 								if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 								    && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos) {
+									// only Log V3 supports multiple events per prepare but it does not support explicit transactions
+									Debug.Assert(prepare.Events.Length == 1);
 									var streamName = _streamNames.LookupName(prepare.EventStreamId);
-									var eventRecord =
-										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
-											prepare, streamName);
+									var eventRecord = new EventRecord(streamName, prepare, 0);
 									consideredEventsCount++;
 									if (eventFilter.IsEventAllowed(eventRecord)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
 									}
 
-									// for forward pass position is inclusive, 
+									// for forward pass position is inclusive,
 									// so we put pre-position of commit and post-position of prepare
 									nextPos = new TFPos(commit.LogPosition, result.RecordPostPosition);
 								}
@@ -218,34 +237,56 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						continue;
 					}
 
-					//TODO(multi-events): Handle multiple events
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare:
 						case LogRecordType.Stream: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-							if (firstCommit) {
-								firstCommit = false;
-								prevPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);
-							}
-
+							prepare.PopulateExpectedVersion(prepare.ExpectedVersion); //already final
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
-							    && new TFPos(result.RecordPostPosition, result.RecordPostPosition) <= pos) {
+							    && prepare.Events.Length > 0
+							    && new TFPos(prepare.Events[0].LogPosition!.Value,prepare.Events[0].LogPosition!.Value) < pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
-								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1, //TODO(multi-events): handle multiple events in prepare
-									prepare, streamName);
-								consideredEventsCount++;
+								var anyRecordConsidered = false;
 
-								if (eventFilter.IsEventAllowed(eventRecord)) {
-									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
+								for (int i = prepare.Events.Length - 1; i >= 0; i--) {
+									if (new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value) >= pos) continue;
+									if (records.Count >= maxCount || consideredEventsCount >= maxSearchWindow) break;
+									var eventRecord = new EventRecord(
+										eventStreamName: streamName,
+										prepare: prepare,
+										eventIndex: i);
+									if (eventFilter.IsEventAllowed(eventRecord)) {
+										records.Add(new CommitEventRecord(eventRecord, eventRecord.LogPosition));
+									}
+									consideredEventsCount++;
+									anyRecordConsidered = true;
+									// for backward pass we allow read the same commit, but force to skip last read prepare
+									// so if it's the first event in the prepare, we put post-position of commit and pre-position of prepare
+									// otherwise we put pre-position of commit and pre-position of prepare
+									var isFirst = i == 0;
+									nextPos = isFirst ? new TFPos(result.RecordPrePosition, result.RecordPrePosition)
+										: new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value);
+
+									if (firstCommit) {
+										firstCommit = false;
+										var isLast = i == prepare.Events.Length - 1;
+										prevPos = isLast ? new TFPos(result.RecordPostPosition, result.RecordPostPosition) :
+											new TFPos(prepare.Events[i+1].LogPosition!.Value, prepare.Events[i+1].LogPosition!.Value);
+									}
 								}
 
-								// for backward pass we allow read the same commit, but force to skip last read prepare
-								// so we put post-position of commit and pre-position of prepare
-								nextPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+								if (!anyRecordConsidered) {
+									nextPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+									if (firstCommit) {
+										firstCommit = false;
+										prevPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);
+									}
+								}
 							}
 
 							break;
 						}
+
 
 						case LogRecordType.Commit: {
 							var commit = (CommitLogRecord)result.LogRecord;
@@ -272,17 +313,19 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (result.LogRecord.RecordType != LogRecordType.Prepare)
 									continue;
 
-								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord; //TODO(multi-events): Handle multiple events
+								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+								prepare.PopulateExpectedVersionFromCommit(commit.FirstEventNumber);
+
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 
 								// prepare with useful data or delete tombstone
 								if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 								    && new TFPos(commitPostPos, result.RecordPostPosition) <= pos) {
+									// only Log V3 supports multiple events per prepare but it does not support explicit transactions
+									Debug.Assert(prepare.Events.Length == 1);
 									var streamName = _streamNames.LookupName(prepare.EventStreamId);
-									var eventRecord =
-										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
-											prepare, streamName);
+									var eventRecord = new EventRecord(streamName, prepare, 0);
 									consideredEventsCount++;
 
 									if (eventFilter.IsEventAllowed(eventRecord)) {
