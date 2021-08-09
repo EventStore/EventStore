@@ -132,7 +132,11 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		}
 
 		public void Dispose() {
-			_session?.Stop();
+			try {
+				_session?.Stop();
+			} catch (ServerNotAvailableException) {
+			}
+
 			_session?.Dispose();
 		}
 	}
