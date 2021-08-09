@@ -233,8 +233,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (currentPrepare == null
 			    || !StreamIdComparer.Equals(currentPrepare.EventStreamId, streamId)
 			    || eventNumber < currentPrepare.ExpectedVersion + 1
-			    || eventNumber > currentPrepare.ExpectedVersion + currentPrepare.Events.Length) {
-				prepare = ReadPrepareInternal(reader, eventLogPosition, out startEventNumber, out endEventNumber);
+			    || eventNumber > currentPrepare.ExpectedVersion + currentPrepare.Events.Length
+			    || currentPrepare.Events[eventNumber - (currentPrepare.ExpectedVersion + 1)].LogPosition != eventLogPosition) {
+				prepare = ReadPrepareInternal(reader, eventLogPosition, eventNumber, out startEventNumber, out endEventNumber);
 			} else {
 				prepare = currentPrepare;
 				startEventNumber = currentPrepare.ExpectedVersion + 1;
@@ -515,6 +516,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							if (prepare != null && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 								return prepare;
 						}
+
+						return null;
 					}
 
 					for (int i = entries.Count - 1; i >= 0; i--) {
@@ -535,6 +538,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							if (prepare != null && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 								return prepare;
 						}
+
+						return null;
 					}
 
 					for (int i = 0; i < entries.Count; i++) {
