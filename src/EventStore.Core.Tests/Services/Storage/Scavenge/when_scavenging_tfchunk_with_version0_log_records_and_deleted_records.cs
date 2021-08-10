@@ -65,7 +65,6 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				result = chunk.TryReadClosestForward(result.NextPosition);
 			}
 
-			//TODO(multi-events): fix this
 			var deletedRecord = (PrepareLogRecord)chunkRecords.First(x => x.RecordType == LogRecordType.Prepare
 																		  && ((PrepareLogRecord)x).EventStreamId ==
 																		  _deletedEventStreamId);

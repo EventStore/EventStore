@@ -50,8 +50,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 				filestream.Position = ChunkHeader.Size;
 
 				var reader = new BinaryReader(filestream);
-				reader.ReadInt32();
-				var read = LogRecord.ReadFrom(reader, (int)reader.BaseStream.Length);
+				var length = reader.ReadInt32();
+				var read = LogRecord.ReadFrom(reader, length);
 				Assert.AreEqual(record, read);
 			}
 		}

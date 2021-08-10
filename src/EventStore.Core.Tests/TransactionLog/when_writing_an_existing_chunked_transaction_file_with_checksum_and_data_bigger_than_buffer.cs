@@ -60,11 +60,12 @@ namespace EventStore.Core.Tests.TransactionLog {
 			writer.Close();
 			db.Dispose();
 
-			Assert.AreEqual(record.GetSizeWithLengthPrefixAndSuffix() + 137, _checkpoint.Read());
+			var fullRecordLength = record.GetSizeWithLengthPrefixAndSuffix();
+			Assert.AreEqual( fullRecordLength + 137, _checkpoint.Read());
 			using (var filestream = File.Open(filename, FileMode.Open, FileAccess.Read)) {
 				filestream.Seek(ChunkHeader.Size + 137 + sizeof(int), SeekOrigin.Begin);
 				var reader = new BinaryReader(filestream);
-				var read = LogRecord.ReadFrom(reader, (int)reader.BaseStream.Length);
+				var read = LogRecord.ReadFrom(reader, fullRecordLength - 2 * sizeof(int));
 				Assert.AreEqual(record, read);
 			}
 		}

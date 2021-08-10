@@ -60,7 +60,6 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			}
 
 			var id = _logFormat.StreamIds.LookupValue(_deletedEventStreamId);
-			//TODO(multi-events): ((IPrepareLogRecord<TStreamId>)x).Events.First
 			var deletedRecord = (IPrepareLogRecord<TStreamId>)chunkRecords.First(
 				x => x.RecordType == LogRecordType.Prepare
 				     && EqualityComparer<TStreamId>.Default.Equals(((IPrepareLogRecord<TStreamId>)x).EventStreamId, id));

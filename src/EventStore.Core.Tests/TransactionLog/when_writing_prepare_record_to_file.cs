@@ -56,7 +56,6 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Close();
 		}
 
-		//TODO(multi-events): fix this test
 		[Test]
 		public void the_data_is_written() {
 			//TODO MAKE THIS ACTUALLY ASSERT OFF THE FILE AND READER FROM KNOWN FILE
@@ -74,14 +73,14 @@ namespace EventStore.Core.Tests.TransactionLog {
 				Assert.AreEqual(p.TransactionPosition, 0xDEAD);
 				Assert.AreEqual(p.TransactionOffset, 0xBEEF);
 				Assert.AreEqual(p.CorrelationId, _correlationId);
-				Assert.AreEqual(p.EventId, _eventId);
+				Assert.AreEqual(p.Events[0].EventId, _eventId);
 				Assert.AreEqual(p.EventStreamId, streamId);
 				Assert.AreEqual(p.ExpectedVersion, 1234);
 				Assert.That(p.TimeStamp, Is.EqualTo(new DateTime(2012, 12, 21)).Within(7).Milliseconds);
 				Assert.AreEqual(p.Flags, PrepareFlags.SingleWrite);
-				Assert.AreEqual(p.EventType, "type");
-				Assert.AreEqual(p.Data.Length, 5);
-				Assert.AreEqual(p.Metadata.Length, 2);
+				Assert.AreEqual(p.Events[0].EventType, "type");
+				Assert.AreEqual(p.Events[0].Data.Length, 5);
+				Assert.AreEqual(p.Events[0].Metadata.Length, 2);
 			}
 		}
 

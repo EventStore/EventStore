@@ -237,11 +237,6 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 			public int Count => _streamsStream.Count;
 
-			public IPrepareLogRecord<StreamId> ReadPrepare(StreamId streamId, long eventNumber) {
-				// simulates what would be in the index.
-				return _streamsStream[eventNumber];
-			}
-
 			public long CachedStreamInfo => throw new NotImplementedException();
 
 			public long NotCachedStreamInfo => throw new NotImplementedException();
@@ -250,6 +245,21 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 			public StorageMessage.EffectiveAcl GetEffectiveAcl(StreamId streamId) =>
 				throw new NotImplementedException();
+
+			public bool TryReadPrepare(uint streamId, long eventNumber, out IPrepareLogRecord<uint> prepare, out long startEventNumber,
+				out long endEventNumber, out int eventIndex) {
+				if (_streamsStream.TryGetValue(eventNumber, out prepare)) {
+					startEventNumber = prepare.ExpectedVersion + 1;
+					endEventNumber = prepare.ExpectedVersion + prepare.Events.Length;
+					eventIndex = (int)(eventNumber - startEventNumber);
+					return true;
+				}
+
+				startEventNumber = -1;
+				endEventNumber = -1;
+				eventIndex = -1;
+				return false;
+			}
 
 			public StreamId GetEventStreamIdByTransactionId(long transactionId) =>
 				throw new NotImplementedException();
