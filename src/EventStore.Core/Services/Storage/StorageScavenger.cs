@@ -33,11 +33,13 @@ namespace EventStore.Core.Services.Storage {
 
 		private TFChunkScavenger<TStreamId> _currentScavenge;
 		private CancellationTokenSource _cancellationTokenSource;
+		private readonly IRecordFactory<TStreamId> _recordFactory;
 
 		public StorageScavenger(TFChunkDb db, ITableIndex<TStreamId> tableIndex, IReadIndex<TStreamId> readIndex,
 			IMetastreamLookup<TStreamId> metastreams,
 			ITFChunkScavengerLogManager logManager, bool alwaysKeepScavenged, bool mergeChunks,
-			bool unsafeIgnoreHardDeletes) {
+			bool unsafeIgnoreHardDeletes,
+			IRecordFactory<TStreamId> recordFactory) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(logManager, "logManager");
 			Ensure.NotNull(tableIndex, "tableIndex");
@@ -52,6 +54,7 @@ namespace EventStore.Core.Services.Storage {
 			_mergeChunks = mergeChunks;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 			_logManager = logManager;
+			_recordFactory = recordFactory;
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -72,7 +75,7 @@ namespace EventStore.Core.Services.Storage {
 
 						_cancellationTokenSource = new CancellationTokenSource();
 						var newScavenge = _currentScavenge = new TFChunkScavenger<TStreamId>(_db, tfChunkScavengerLog, _tableIndex,
-							_readIndex, _metastreams, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads);
+							_readIndex, _metastreams, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads, recordFactory: _recordFactory);
 						var newScavengeTask = _currentScavenge.Scavenge(_alwaysKeepScavenged, _mergeChunks,
 							message.StartFromChunk, _cancellationTokenSource.Token);
 

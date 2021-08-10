@@ -33,12 +33,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly long _maxChunkDataSize;
 		private readonly bool _unsafeIgnoreHardDeletes;
 		private readonly int _threads;
+		private readonly IRecordFactory<TStreamId> _recordFactory;
 		private const int MaxRetryCount = 5;
 		private const int FlushPageInterval = 32; // max 65536 pages to write resulting in 2048 flushes per chunk
 
 		public TFChunkScavenger(TFChunkDb db, ITFChunkScavengerLog scavengerLog, ITableIndex<TStreamId> tableIndex,
-			IReadIndex<TStreamId> readIndex, IMetastreamLookup<TStreamId> metastreams, long? maxChunkDataSize = null,
-			bool unsafeIgnoreHardDeletes = false, int threads = 1) {
+			IReadIndex<TStreamId> readIndex, IMetastreamLookup<TStreamId> metastreams, IRecordFactory<TStreamId> recordFactory,
+			long? maxChunkDataSize = null, bool unsafeIgnoreHardDeletes = false, int threads = 1) {
 			Ensure.NotNull(db, "db");
 			Ensure.NotNull(scavengerLog, "scavengerLog");
 			Ensure.NotNull(tableIndex, "tableIndex");
@@ -61,6 +62,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_maxChunkDataSize = maxChunkDataSize ?? db.Config.ChunkSize;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 			_threads = threads;
+			_recordFactory = recordFactory;
 		}
 
 		public string ScavengeId => _scavengerLog.ScavengeId;
@@ -245,8 +247,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					ct.ThrowIfCancellationRequested();
 
 					var recordReadResult = threadLocalCache.Records[i];
-					if (ShouldKeep(recordReadResult, threadLocalCache.Commits, chunkStartPos, chunkEndPos)) {
-						newSize += recordReadResult.RecordLength + 2 * sizeof(int);
+					if (ShouldKeep(recordReadResult, threadLocalCache.Commits, chunkStartPos, chunkEndPos, out var newRecord)) {
+						threadLocalCache.Records[i] = newRecord;
+						newSize += newRecord.RecordLength + 2 * sizeof(int);
 						filteredCount++;
 					} else {
 						// We don't need this record any more.
@@ -497,19 +500,28 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		//TODO(multi-events): Refactor this method to return an optional new log record if returning true
 		private bool ShouldKeep(CandidateRecord result, Dictionary<long, CommitInfo> commits, long chunkStartPos,
-			long chunkEndPos) {
+			long chunkEndPos, out CandidateRecord newRecord) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Prepare:
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-					if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos))
+					if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos, out var newPrepare)) {
+						if (ReferenceEquals(prepare, newPrepare)) {
+							newRecord = result;
+						} else {
+							newRecord = new CandidateRecord(newPrepare,
+								newPrepare.GetSizeWithLengthPrefixAndSuffix() - 2 * sizeof(int));
+						}
 						return true;
+					}
+
 					break;
 				case LogRecordType.Commit:
 					var commit = (CommitLogRecord)result.LogRecord;
-					if (ShouldKeepCommit(commit, commits))
+					if (ShouldKeepCommit(commit, commits)) {
+						newRecord = result;
 						return true;
+					}
 					break;
 				case LogRecordType.ContentType:
 				case LogRecordType.EventType:
@@ -521,9 +533,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				case LogRecordType.System:
 				case LogRecordType.TransactionEnd:
 				case LogRecordType.TransactionStart:
+					newRecord = result;
 					return true;
 			}
 
+			newRecord = default;
 			return false;
 		}
 
@@ -537,12 +551,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return commitInfo.KeepCommit != false;
 		}
 
-		//TODO(multi-events): Refactor this method to return an optional new prepare log record if returning true
 		private bool ShouldKeepPrepare(IPrepareLogRecord<TStreamId> prepare, Dictionary<long, CommitInfo> commits, long chunkStart,
-			long chunkEnd) {
+			long chunkEnd, out IPrepareLogRecord<TStreamId> newPrepare) {
 			CommitInfo commitInfo;
 			bool hasSeenCommit = commits.TryGetValue(prepare.TransactionPosition, out commitInfo);
 			bool isCommitted = hasSeenCommit || prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted);
+			newPrepare = prepare;
 
 			if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete)) {
 				if (_unsafeIgnoreHardDeletes) {
@@ -604,36 +618,78 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return false;
 			}
 
-			//TODO(multi-events): handle multiple events in prepare
-			var eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
+			var startEventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
 				? prepare.ExpectedVersion + 1 // IsCommitted prepares always have explicit expected version
 				: commitInfo.EventNumber + prepare.TransactionOffset;
+			var endEventNumber = startEventNumber + prepare.Events.Length - 1;
 
-			if (!KeepOnlyFirstEventOfDuplicate(_tableIndex, prepare, eventNumber)) {
-				commitInfo.TryNotToKeep();
-				return false;
+			if (startEventNumber == endEventNumber) {
+				//do this legacy check only if there's a single event in the prepare
+				//this was required due to exhaustion of hash collisions read limit causing duplicate entries - see PR #1078
+				if (!KeepOnlyFirstEventOfDuplicate(_tableIndex, prepare, startEventNumber)) {
+					commitInfo.TryNotToKeep();
+					return false;
+				}
+
+				//if there's a single event in the prepare and it's the last event in the stream,
+				//we definitely need to keep the whole record, so just take a shortcut
+				if (startEventNumber >= lastEventNumber) {
+					commitInfo.ForciblyKeep();
+					return true;
+				}
 			}
 
-			// We should always physically keep the very last prepare in the stream.
-			// Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
-			// That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
-			// that needs TableIndex, we have to make sure we have prepare records in TFChunks when we need them.
-			if (eventNumber >= lastEventNumber) {
-				// Definitely keep commit, otherwise current prepare wouldn't be discoverable.
+			var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId);
+			long minEventNumberToKeep = startEventNumber;
+			if (meta.MaxCount.HasValue) {
+				minEventNumberToKeep = Math.Max(minEventNumberToKeep, lastEventNumber - meta.MaxCount.Value + 1);
+			}
+
+			if (meta.TruncateBefore.HasValue) {
+				minEventNumberToKeep = Math.Max(minEventNumberToKeep, meta.TruncateBefore.Value);
+			}
+
+			if (meta.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - meta.MaxAge.Value) {
+				minEventNumberToKeep = endEventNumber + 1;
+			}
+
+			if (endEventNumber >= lastEventNumber) {
+				// We should always physically keep the very last prepare in the stream.
+				// Otherwise we get into trouble when trying to resolve LastStreamEventNumber, for instance.
+				// That is because our TableIndex doesn't keep EventStreamId, only hash of it, so on doing some operations
+				// that needs TableIndex, we have to make sure we have prepare records in TFChunks when we need them.
+				minEventNumberToKeep = Math.Min(minEventNumberToKeep, endEventNumber);
+			}
+
+			if (startEventNumber < minEventNumberToKeep && minEventNumberToKeep <= endEventNumber) { //partial record must be kept
+				newPrepare = _recordFactory.CreatePrepare(
+					logPosition: prepare.LogPosition,
+					correlationId: prepare.CorrelationId,
+					transactionPosition: prepare.TransactionPosition,
+					transactionOffset: prepare.TransactionOffset, //TODO(multi-events): removing events makes this offset invalid
+					eventStreamId: prepare.EventStreamId,
+					expectedVersion: minEventNumberToKeep - 1,
+					timeStamp: prepare.TimeStamp,
+					flags: prepare.Flags,
+					eventRecords: prepare.Events.Skip((int)(minEventNumberToKeep - startEventNumber))
+						.Select(x => (IEventRecord) new Event(
+							x.EventId,
+							x.EventType,
+							(x.EventFlags & EventFlags.IsJson) != 0,
+							x.Data,
+							x.Metadata)
+						)
+						.ToArray()
+				);
+			}
+
+			if (minEventNumberToKeep <= endEventNumber) {
 				commitInfo.ForciblyKeep();
 				return true;
 			}
 
-			var meta = _readIndex.GetStreamMetadata(prepare.EventStreamId);
-			bool canRemove = (meta.MaxCount.HasValue && eventNumber < lastEventNumber - meta.MaxCount.Value + 1)
-			                 || (meta.TruncateBefore.HasValue && eventNumber < meta.TruncateBefore.Value)
-			                 || (meta.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - meta.MaxAge.Value);
-
-			if (canRemove)
-				commitInfo.TryNotToKeep();
-			else
-				commitInfo.ForciblyKeep();
-			return !canRemove;
+			commitInfo.TryNotToKeep();
+			return false;
 		}
 
 		private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, IPrepareLogRecord<TStreamId> prepare, long eventNumber) {

@@ -1155,7 +1155,8 @@ namespace EventStore.Core {
 				scavengerLogManager,
 				options.Database.AlwaysKeepScavenged,
 				!options.Database.DisableScavengeMerging,
-				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete);
+				unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete,
+				logFormat.RecordFactory);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
