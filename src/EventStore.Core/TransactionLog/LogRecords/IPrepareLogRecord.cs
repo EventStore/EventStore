@@ -10,6 +10,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		long TransactionPosition { get; }
 		int TransactionOffset { get; }
 		long ExpectedVersion { get; }
+		void PopulateExpectedVersionFromCommit(long commitFirstEventNumber);
+		void PopulateExpectedVersion(long expectedVersion);
 		Guid CorrelationId { get; }
 		DateTime TimeStamp { get; }
 		IEventRecord[] Events { get; }

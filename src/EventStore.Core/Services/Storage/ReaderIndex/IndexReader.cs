@@ -172,7 +172,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			out long startEventNumber, out long endEventNumber, out int eventIndex) {
 			var recordsQuery = _tableIndex.GetRange(streamId, eventNumber, eventNumber)
 				.Select(x => {
-					var prepare = ReadPrepareInternal(reader, x.Position, out var startEventNumber, out var endEventNumber);
+					var prepare = ReadPrepareInternal(reader, x.Position, x.Version, out var startEventNumber, out var endEventNumber);
 					return new {x.Version, Prepare = prepare, StartEventNumber = startEventNumber,
 						EndEventNumber = endEventNumber, EventIndex = (int) (eventNumber - startEventNumber)};
 				})
@@ -196,7 +196,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			out long startEventNumber, out long endEventNumber, out int eventIndex) {
 			long position;
 			if (_tableIndex.TryGetOneValue(streamId, eventNumber, out position)) {
-				var rec = ReadPrepareInternal(reader, position, out startEventNumber, out endEventNumber);
+				var rec = ReadPrepareInternal(reader, position, eventNumber, out startEventNumber, out endEventNumber);
 				if (rec != null && StreamIdComparer.Equals(rec.EventStreamId, streamId)) {
 					eventIndex = (int)(eventNumber - startEventNumber);
 					return rec;
@@ -206,7 +206,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					Interlocked.Increment(ref _hashCollisions);
 					if (indexEntry.Position == position)
 						continue;
-					rec = ReadPrepareInternal(reader, indexEntry.Position, out startEventNumber, out endEventNumber);
+					rec = ReadPrepareInternal(reader, indexEntry.Position, indexEntry.Version, out startEventNumber, out endEventNumber);
 					if (rec != null && StreamIdComparer.Equals(rec.EventStreamId, streamId)) {
 						eventIndex = (int)(eventNumber - startEventNumber);
 						return rec;
@@ -250,7 +250,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		protected static IPrepareLogRecord<TStreamId> ReadPrepareInternal(TFReaderLease reader, long logPosition,
-			out long startEventNumber, out long endEventNumber) {
+			long? eventNumber, out long startEventNumber, out long endEventNumber) {
 			RecordReadResult result = reader.TryReadAt(logPosition);
 			if (!result.Success) {
 				startEventNumber = -1;
@@ -264,6 +264,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					result.LogRecord.RecordType));
 
 			var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+			if (eventNumber.HasValue) {
+				prepare.PopulateExpectedVersion(eventNumber.Value - 1);
+			}
+
 			startEventNumber = prepare.ExpectedVersion + 1;
 			endEventNumber = prepare.ExpectedVersion + prepare.Events.Length;
 			return prepare;
@@ -421,7 +425,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 				//check high value will be valid
 				if (tableIndex.TryGetLatestEntry(streamId, out var latest)) {
-					var end = ReadPrepareInternal(reader, latest.Position, out _, out _);
+					var end = ReadPrepareInternal(reader, latest.Position, latest.Version, out _, out _);
 					if (end.TimeStamp < ageThreshold || latest.Version < fromEventNumber) {
 						//No events in the stream are < max age, so return an empty set
 						return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
@@ -512,7 +516,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					
 					if (typeof(TStreamId) == typeof(string)) {
 						for (int i = entries.Count - 1; i >= 0; i--) {
-							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, out _, out _);
+							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, entries[i].Version, out _, out _);
 							if (prepare != null && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 								return prepare;
 						}
@@ -521,7 +525,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					for (int i = entries.Count - 1; i >= 0; i--) {
-						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position,  out _, out _);
+						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, entries[i].Version,  out _, out _);
 						if (prepare != null) return prepare;
 					}
 
@@ -534,7 +538,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					
 					if (typeof(TStreamId) == typeof(string)) {
 						for (int i = 0; i < entries.Count; i++) {
-							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, out _, out _);
+							var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, entries[i].Version, out _, out _);
 							if (prepare != null && StreamIdComparer.Equals(prepare.EventStreamId, streamId))
 								return prepare;
 						}
@@ -543,7 +547,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					for (int i = 0; i < entries.Count; i++) {
-						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, out _, out _);
+						var prepare = ReadPrepareInternal(tfReaderLease, entries[i].Position, entries[i].Version, out _, out _);
 						if (prepare != null) return prepare;
 					}
 
@@ -642,7 +646,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public TStreamId GetEventStreamIdByTransactionId(long transactionId) {
 			Ensure.Nonnegative(transactionId, "transactionId");
 			using (var reader = _backend.BorrowReader()) {
-				var res = ReadPrepareInternal(reader, transactionId, out _, out _);
+				var res = ReadPrepareInternal(reader, transactionId, null, out _, out _);
 				return res == null ? default : res.EventStreamId;
 			}
 		}
@@ -713,7 +717,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (!_tableIndex.TryGetLatestEntry(streamId, out latestEntry))
 				return ExpectedVersion.NoStream;
 
-			var rec = ReadPrepareInternal(reader, latestEntry.Position, out _, out _);
+			var rec = ReadPrepareInternal(reader, latestEntry.Position, latestEntry.Version, out _, out _);
 			if (rec == null)
 				throw new Exception(
 					$"Could not read latest stream's prepare for stream '{streamId}' at position {latestEntry.Position}");

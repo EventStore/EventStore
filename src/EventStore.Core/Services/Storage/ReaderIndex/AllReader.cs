@@ -158,6 +158,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									continue;
 
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+								prepare.PopulateExpectedVersionFromCommit(commit.FirstEventNumber);
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 
@@ -315,7 +316,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								prepare.PopulateExpectedVersionFromCommit(commit.FirstEventNumber);
+<<<<<<< HEAD
 
+=======
+>>>>>>> a9c87daa9... Add two methods to IPrepareLogRecord to populate the prepare's final expected version:
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 
