@@ -20,6 +20,7 @@ namespace EventStore.Core.Services.Storage {
 		void Init(long checkpointPosition);
 		void Stop();
 		long GetCommitLastEventNumber(CommitLogRecord record);
+		bool TryGetFirstEventNumberForPendingTransaction(long transactionPosition, out long firstEventNumber);
 		void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition);
 		void AddPendingCommit(CommitLogRecord commit, long postPosition);
 	}
@@ -170,6 +171,18 @@ namespace EventStore.Core.Services.Storage {
 
 		public long GetCommitLastEventNumber(CommitLogRecord commit) {
 			return _indexCommitter.GetCommitLastEventNumber(commit);
+		}
+
+		public bool TryGetFirstEventNumberForPendingTransaction(long transactionPosition, out long firstEventNumber) {
+			if (!_pendingTransactions.TryGetValue(transactionPosition, out var pendingTransaction)) {
+				firstEventNumber = -1;
+				return false;
+			}
+			//LogV2: first prepare in transaction contains correct expected version, others contain ExpectedVersion.Any
+			//LogV3: all stream write records contain the correct expected version
+			//so, this works for both V2 & V3:
+			firstEventNumber = pendingTransaction.Prepares[0].ExpectedVersion + 1;
+			return true;
 		}
 
 		public void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition) {

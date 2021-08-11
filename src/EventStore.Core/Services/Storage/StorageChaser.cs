@@ -222,10 +222,17 @@ namespace EventStore.Core.Services.Storage {
 					long firstEventNumber;
 					long lastEventNumber;
 					if (record.Flags.HasAnyOf(PrepareFlags.Data)) {
-						firstEventNumber = record.ExpectedVersion + 1 - record.TransactionOffset;
+						if (!_indexCommitterService.TryGetFirstEventNumberForPendingTransaction(
+							record.TransactionPosition, out firstEventNumber)) {
+							//there is no pending transaction yet - this is the first prepare in the transaction
+							firstEventNumber = record.ExpectedVersion + 1;
+						}
+						Debug.Assert(firstEventNumber <= record.ExpectedVersion + 1);
 						lastEventNumber = record.ExpectedVersion + record.Events.Length;
+						Debug.Assert(firstEventNumber <= lastEventNumber);
 					} else {
-						firstEventNumber = record.ExpectedVersion + 1; //TODO(multi-events): is this correct? why is the offset ignored?
+						//TODO(multi-events): is this correct? what is this code for?
+						firstEventNumber = record.ExpectedVersion + 1;
 						lastEventNumber = record.ExpectedVersion;
 					}
 
