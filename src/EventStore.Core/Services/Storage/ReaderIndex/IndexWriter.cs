@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			// we should skip prepares without data, as they don't mean anything for idempotency
 			// though we have to check deletes, otherwise they always will be considered idempotent :)
-			var eventIds = from prepare in GetTransactionPrepares(transactionPosition, commitPosition)
+			var eventIds = from prepare in GetTransactionPrepares(transactionPosition, commitPosition, null)
 				where prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 				from eventRecord in prepare.Events select eventRecord.EventId;
 			return CheckCommit(streamId, expectedVersion, eventIds, streamMightExist: true);
@@ -297,7 +297,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			long eventNumber = EventNumber.Invalid;
 			IPrepareLogRecord<TStreamId> lastPrepare = null;
 
-			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition)) {
+			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition, commit.FirstEventNumber)) {
 				if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
 					continue;
 
@@ -310,7 +310,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 				eventNumber = prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete)
 					? EventNumber.DeletedStream
-					: commit.FirstEventNumber + prepare.TransactionOffset - 1;
+					: prepare.ExpectedVersion;
 				lastPrepare = prepare;
 				foreach (var eventRecord in prepare.Events) {
 					if (eventNumber != EventNumber.DeletedStream) {
@@ -445,7 +445,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 		}
 
-		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos) {
+		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos, long? commitFirstEventNumber) {
 			using (var reader = _indexBackend.BorrowReader()) {
 				reader.Reposition(transactionPos);
 
@@ -456,6 +456,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						continue;
 
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+					if (commitFirstEventNumber.HasValue) {
+						prepare.PopulateExpectedVersionFromCommit(commitFirstEventNumber.Value);
+					}
+
 					if (prepare.TransactionPosition == transactionPos) {
 						yield return prepare;
 						if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))

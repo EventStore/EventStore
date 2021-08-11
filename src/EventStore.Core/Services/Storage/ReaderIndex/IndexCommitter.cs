@@ -213,12 +213,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber;
 
-			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition)) {
+			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition, commit.FirstEventNumber)) {
 				if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
 					continue;
 				eventNumber = prepare.Flags.HasAllOf(PrepareFlags.StreamDelete)
 					? EventNumber.DeletedStream
-					: commit.FirstEventNumber + prepare.TransactionOffset;
+					: prepare.ExpectedVersion + 1;
 			}
 
 			return eventNumber;
@@ -235,7 +235,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var indexEntries = new List<IndexKey<TStreamId>>();
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
 
-			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition)) {
+			foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition, commit.FirstEventNumber)) {
 				if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
 					continue;
 
@@ -249,7 +249,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 				eventNumber = prepare.Flags.HasAllOf(PrepareFlags.StreamDelete)
 					? EventNumber.DeletedStream
-					: commit.FirstEventNumber + prepare.TransactionOffset;
+					: prepare.ExpectedVersion + 1;
 
 				if (new TFPos(commit.LogPosition, prepare.LogPosition) >
 					new TFPos(_persistedCommitPos, _persistedPreparePos)) {
@@ -440,7 +440,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return eventNumber;
 		}
 
-		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos) {
+		private IEnumerable<IPrepareLogRecord<TStreamId>> GetTransactionPrepares(long transactionPos, long commitPos, long commitFirstEventNumber) {
 			using (var reader = _backend.BorrowReader()) {
 				reader.Reposition(transactionPos);
 
@@ -451,6 +451,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						continue;
 
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+					prepare.PopulateExpectedVersionFromCommit(commitFirstEventNumber);
 					if (prepare.TransactionPosition == transactionPos) {
 						yield return prepare;
 						if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))

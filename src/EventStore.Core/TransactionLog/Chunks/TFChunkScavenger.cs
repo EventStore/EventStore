@@ -618,9 +618,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return false;
 			}
 
-			var startEventNumber = prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)
-				? prepare.ExpectedVersion + 1 // IsCommitted prepares always have explicit expected version
-				: commitInfo.EventNumber + prepare.TransactionOffset;
+			Debug.Assert(isCommitted);
+			if(hasSeenCommit) prepare.PopulateExpectedVersionFromCommit(commitInfo.EventNumber);
+			else prepare.PopulateExpectedVersion(prepare.ExpectedVersion);
+
+			var startEventNumber = prepare.ExpectedVersion + 1;
 			var endEventNumber = startEventNumber + prepare.Events.Length - 1;
 
 			if (startEventNumber == endEventNumber) {

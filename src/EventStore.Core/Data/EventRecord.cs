@@ -37,7 +37,6 @@ namespace EventStore.Core.Data {
 
 			CorrelationId = prepare.CorrelationId;
 			TransactionPosition = prepare.TransactionPosition;
-			TransactionOffset = prepare.TransactionOffset;
 			EventStreamId = eventStreamName;
 			TimeStamp = prepare.TimeStamp;
 			Flags = prepare.Flags;

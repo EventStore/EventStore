@@ -71,7 +71,6 @@ namespace EventStore.Core.Tests.TransactionLog {
 				Assert.AreEqual(p.RecordType, LogRecordType.Prepare);
 				Assert.AreEqual(p.LogPosition, 0);
 				Assert.AreEqual(p.TransactionPosition, 0xDEAD);
-				Assert.AreEqual(p.TransactionOffset, 0xBEEF);
 				Assert.AreEqual(p.CorrelationId, _correlationId);
 				Assert.AreEqual(p.Events[0].EventId, _eventId);
 				Assert.AreEqual(p.EventStreamId, streamId);
