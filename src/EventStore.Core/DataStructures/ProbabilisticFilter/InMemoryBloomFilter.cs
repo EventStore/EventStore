@@ -2,8 +2,8 @@ using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
 
-namespace EventStore.Core.DataStructures {
-	public class BloomFilter {
+namespace EventStore.Core.DataStructures.ProbabilisticFilter {
+	public class InMemoryBloomFilter : IProbabilisticFilter<long> {
 		/*
 		    Bloom filter implementation based on the following paper by Adam Kirsch and Michael Mitzenmacher:
 		    "Less Hashing, Same Performance: Building a Better Bloom Filter"
@@ -26,7 +26,7 @@ namespace EventStore.Core.DataStructures {
 
 		private static IHasher hasher1 = new XXHashUnsafe(), hasher2 = new Murmur3AUnsafe();
 
-		public BloomFilter(int n, double p) {
+		public InMemoryBloomFilter(int n, double p) {
 			Ensure.Positive(n, "n");
 			if (p <= 0.0 || p >= 0.5)
 				throw new ArgumentOutOfRangeException("p", "p should be between 0 and 0.5 exclusive");
@@ -62,7 +62,7 @@ namespace EventStore.Core.DataStructures {
 			}
 		}
 
-		public bool MayExist(long item) {
+		public bool MightContain(long item) {
 			byte[] bytes = toBytes(item);
 			int hash1 = (int)hasher1.Hash(bytes);
 			int hash2 = (int)hasher2.Hash(bytes);

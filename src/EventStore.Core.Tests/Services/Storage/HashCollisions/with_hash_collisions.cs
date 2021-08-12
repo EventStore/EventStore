@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		protected IHasher<string> _highHasher;
 		protected string _indexDir;
 		protected TFReaderLease _fakeReader;
+		protected LogFormatAbstractor<string> _logFormat;
 
 		protected virtual void given() {
 		}
@@ -35,20 +36,26 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_indexDir = PathName;
 			_fakeReader = new TFReaderLease(new FakeReader());
 			_indexBackend = new FakeIndexBackend<string>(_fakeReader);
-			var logFormat = LogFormatHelper.V2;
-			_lowHasher = logFormat.LowHasher;
-			_highHasher = logFormat.HighHasher;
-			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, logFormat.EmptyStreamId,
+
+			_logFormat = LogFormatHelper<LogFormat.V2, string>.LogFormatFactory.Create(new() {
+				InMemory = true,
+			});
+
+			_lowHasher = _logFormat.LowHasher;
+			_highHasher = _logFormat.HighHasher;
+			_tableIndex = new TableIndex<string>(_indexDir, _lowHasher, _highHasher, _logFormat.EmptyStreamId,
 				() => new HashListMemTable(PTableVersions.IndexV1, maxSize: _maxMemTableSize),
 				() => _fakeReader,
 				PTableVersions.IndexV1,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: _maxMemTableSize,
 				maxTablesPerLevel: 2);
+			_logFormat.StreamNamesProvider.SetTableIndex(_tableIndex);
 			_tableIndex.Initialize(long.MaxValue);
 			_indexReader = new IndexReader<string>(_indexBackend, _tableIndex,
-				logFormat.StreamNamesProvider,
-				logFormat.StreamIdValidator,
+				_logFormat.StreamNamesProvider,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamExistenceFilterReader,
 				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 
@@ -58,6 +65,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		}
 
 		public override Task TestFixtureTearDown() {
+			_logFormat.Dispose();
 			_tableIndex.Close();
 			return base.TestFixtureTearDown();
 		}
@@ -239,8 +247,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 			_tableIndex.Initialize(long.MaxValue);
 			_indexReader = new IndexReader<string>(
 				_indexBackend, _tableIndex,
-				LogFormatHelper.V2.StreamNamesProvider,
-				LogFormatHelper.V2.StreamIdValidator,
+				_logFormat.StreamNamesProvider,
+				_logFormat.StreamIdValidator,
+				_logFormat.StreamExistenceFilterReader,
 				new EventStore.Core.Data.StreamMetadata(),
 				_hashCollisionReadLimit, skipIndexScanOnRead: false);
 			//memtable with 64bit indexes

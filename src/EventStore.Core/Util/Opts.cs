@@ -24,5 +24,7 @@ namespace EventStore.Core.Util {
 		public static readonly string AuthenticationTypeDefault = "internal";
 
 		public const bool SkipIndexScanOnReadsDefault = false;
+
+		public const long StreamExistenceFilterSizeDefault = 256_000_000;
 	}
 }

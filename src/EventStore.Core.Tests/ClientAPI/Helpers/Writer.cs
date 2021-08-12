@@ -53,11 +53,17 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 		public async Task<OngoingTransaction> StartTransaction(long expectedVersion) {
 			return new OngoingTransaction(await _store.StartTransactionAsync(_stream, expectedVersion));
 		}
+
+		public OngoingTransaction ContinueTransaction(long transactionId) {
+			return new OngoingTransaction(_store.ContinueTransaction(transactionId));
+		}
 	}
 
 	//TODO GFY this should be removed and merged with the public idea of a transaction.
 	internal class OngoingTransaction {
 		private readonly EventStoreTransaction _transaction;
+
+		public long TransactionId => _transaction.TransactionId;
 
 		public OngoingTransaction(EventStoreTransaction transaction) {
 			_transaction = transaction;

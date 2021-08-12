@@ -43,7 +43,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameIndexConfirmer<TStreamId> _streamNameIndex;
 		private readonly INameLookup<TStreamId> _streamNames;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
-		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
+		private readonly INameExistenceFilter _streamExistenceFilter;
+		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
 		private long _persistedCommitPos = -1;
@@ -58,7 +59,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameIndexConfirmer<TStreamId> streamNameIndex,
 			INameLookup<TStreamId> streamNames,
 			ISystemStreamLookup<TStreamId> systemStreams,
-			IStreamIdConverter<TStreamId> streamIdConverter,
+			INameExistenceFilter streamExistenceFilter,
+			INameExistenceFilterInitializer streamExistenceFilterInitializer,
 			ICheckpoint indexChk,
 			bool additionalCommitChecks) {
 			_bus = bus;
@@ -68,7 +70,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamNameIndex = streamNameIndex;
 			_streamNames = streamNames;
 			_systemStreams = systemStreams;
-			_streamIdConverter = streamIdConverter;
+			_streamExistenceFilter = streamExistenceFilter;
+			_streamExistenceFilterInitializer = streamExistenceFilterInitializer;
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
@@ -172,6 +175,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
+				// now that the main index has caught up, we initialize the stream existence filter to add any missing entries.
+				// V2:
+				// reads the index and transaction file forward from the last checkpoint (a log position) and adds stream names to the filter, possibly multiple times
+				// but it's not an issue since it's idempotent
+				//
+				// V3:
+				// reads the stream created stream forward from the last checkpoint (a stream number) and adds stream names to the filter
+				//
+				// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
+				// the cluster but false positives are not a problem since it's a probabilistic filter
+				_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer);
+
 				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 					processed, DateTime.UtcNow - startTime);
 				_bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
@@ -181,7 +196,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		public void Dispose() {
-			_streamNameIndex.Dispose();
+			_streamNameIndex?.Dispose();
+			_streamExistenceFilter?.Dispose();
 			try {
 				_tableIndex.Close(removeFiles: false);
 			} catch (TimeoutException exc) {
@@ -266,6 +282,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (StreamIdComparer.Equals(streamId, _systemStreams.SettingsStream))
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
+
+			_streamNameIndex.Confirm(
+				commit: commit,
+				replicatedPrepares: prepares,
+				catchingUp: _indexRebuild,
+				backend: _backend);
 
 			var newLastIndexedPosition = Math.Max(commit.LogPosition, lastIndexedPosition);
 			if (_indexChk.Read() != lastIndexedPosition) {
@@ -353,19 +375,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
 				}
 
-				for (int i = 0; i < prepares.Count; i++) {
-					var prepare = prepares[i];
-					if (prepare.RecordType == LogRecordType.Stream &&
-						prepare is LogV3StreamRecord streamRecord) {
-						_streamNameIndex.Confirm(
-							name: streamRecord.StreamName,
-							value: _streamIdConverter.ToStreamId(streamRecord.StreamNumber));
-						// initialisation of the stream name index caused an entry to be populated in
-						// the last event number cache, now we need to keep it up to date even on initialisation
-						cacheLastEventNumber = true;
-					}
-				}
-
 				_tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
 			}
 
@@ -384,6 +393,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (StreamIdComparer.Equals(streamId, _systemStreams.SettingsStream))
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
+
+			_streamNameIndex.Confirm(
+				replicatedPrepares: prepares,
+				catchingUp: _indexRebuild,
+				backend: _backend);
 
 			var newLastIndexedPosition = Math.Max(lastPrepare.LogPosition, lastIndexedPosition);
 			if (_indexChk.Read() != lastIndexedPosition) {

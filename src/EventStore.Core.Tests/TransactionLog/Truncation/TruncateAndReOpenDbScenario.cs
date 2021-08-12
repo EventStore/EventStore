@@ -46,6 +46,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
 				MaxEntriesInMemTable);
+			_logFormat.StreamNamesProvider.SetTableIndex(TableIndex);
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
 				readers,
 				TableIndex,
@@ -53,9 +54,10 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				_logFormat.StreamIds,
 				_logFormat.StreamNamesProvider,
 				_logFormat.EmptyStreamId,
-				_logFormat.StreamIdConverter,
 				_logFormat.StreamIdValidator,
 				_logFormat.StreamIdSizer,
+				_logFormat.StreamExistenceFilter,
+				_logFormat.StreamExistenceFilterReader,
 				0,
 				additionalCommitChecks: true,
 				metastreamMaxCount: MetastreamMaxCount,

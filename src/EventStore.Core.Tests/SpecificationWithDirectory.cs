@@ -25,20 +25,9 @@ namespace EventStore.Core.Tests {
 		}
 
 		[TearDown]
-		public virtual Task TearDown() {
-			//kill whole tree
-			ForceDeleteDirectory(PathName);
-
-			return Task.CompletedTask;
-		}
-
-		private static void ForceDeleteDirectory(string path) {
-			var directory = new DirectoryInfo(path) { Attributes = FileAttributes.Normal };
-			foreach (var info in directory.GetFileSystemInfos("*", SearchOption.AllDirectories)) {
-				info.Attributes = FileAttributes.Normal;
-			}
-
-			directory.Delete(true);
+		public virtual async Task TearDown() {
+			// kill whole tree
+			await DirectoryDeleter.TryForceDeleteDirectoryAsync(PathName, retries: 10);
 		}
 	}
 }

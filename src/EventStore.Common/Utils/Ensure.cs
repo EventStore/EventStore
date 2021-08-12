@@ -36,6 +36,11 @@ namespace EventStore.Common.Utils {
 				throw new ArgumentOutOfRangeException(argumentName, argumentName + " should be non negative.");
 		}
 
+		public static void Nonnegative(double number, string argumentName) {
+			if (number < 0)
+				throw new ArgumentOutOfRangeException(argumentName, argumentName + " should be non negative.");
+		}
+
 		public static void NotEmptyGuid(Guid guid, string argumentName) {
 			if (Guid.Empty == guid)
 				throw new ArgumentException(argumentName, argumentName + " should be non-empty GUID.");
