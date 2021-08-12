@@ -38,13 +38,20 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		}
 	}
 
-	public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string> {
+	public class PrepareLogRecord : LogRecord, IEquatable<PrepareLogRecord>, IPrepareLogRecord<string>, IEventRecord {
 		public const byte PrepareRecordVersion = 1;
 
 		public PrepareFlags Flags { get; }
 		public long TransactionPosition { get; }
 		public int TransactionOffset { get; }
-		public long ExpectedVersion { get; } // if IsCommitted is set, this is final EventNumber
+		public long ExpectedVersion { get; private set; } // if IsCommitted is set, this is final EventNumber
+		public void PopulateExpectedVersionFromCommit(long commitFirstEventNumber) {
+			ExpectedVersion = commitFirstEventNumber + TransactionOffset - 1;
+		}
+		public void PopulateExpectedVersion(long expectedVersion) {
+			ExpectedVersion = expectedVersion;
+		}
+
 		public string EventStreamId { get; }
 
 		public Guid EventId { get; }
@@ -53,6 +60,10 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public string EventType { get; }
 		public ReadOnlyMemory<byte> Data { get; }
 		public ReadOnlyMemory<byte> Metadata { get; }
+		public EventFlags EventFlags => (Flags & PrepareFlags.IsJson) != 0 ? EventFlags.IsJson : EventFlags.None;
+		public long? EventLogPosition => LogPosition;
+		public int? EventOffset => 0;
+		public IEventRecord[] Events { get; }
 
 		public long InMemorySize {
 			get {
@@ -109,6 +120,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			Data = data;
 			Metadata = metadata;
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
+			Events = new IEventRecord[] {this};
 		}
 
 		internal PrepareLogRecord(BinaryReader reader, byte version, long logPosition) : base(LogRecordType.Prepare,
@@ -138,6 +150,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			var metadataCount = reader.ReadInt32();
 			Metadata = metadataCount == 0 ? NoData : reader.ReadBytes(metadataCount);
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
+			Events = new IEventRecord[] {this};
 		}
 
 		public IPrepareLogRecord<string> CopyForRetry(long logPosition, long transactionPosition) {

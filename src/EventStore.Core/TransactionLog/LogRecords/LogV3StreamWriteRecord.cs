@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
 using EventStore.Core.LogV3;
@@ -56,6 +57,9 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public long TransactionPosition => Record.SystemMetadata.TransactionPosition;
 		public int TransactionOffset => Record.SystemMetadata.TransactionOffset;
 		public long ExpectedVersion => Record.WriteId.StartingEventNumber - 1;
+		public void PopulateExpectedVersionFromCommit(long commitFirstEventNumber) => Debug.Assert(false); //should not be executed for Log V3
+		public void PopulateExpectedVersion(long expectedVersion) => Debug.Assert(expectedVersion == ExpectedVersion);
+
 		public StreamId EventStreamId => Record.WriteId.StreamNumber;
 		public Guid CorrelationId => Record.SystemMetadata.CorrelationId;
 		public IEventRecord[] Events => Record.Events;
