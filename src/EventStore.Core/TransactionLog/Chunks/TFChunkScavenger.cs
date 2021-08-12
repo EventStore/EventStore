@@ -242,23 +242,25 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				long newSize = 0;
 				int filteredCount = 0;
+				int totalCount = 0;
 
 				for (int i = 0; i < threadLocalCache.Records.Count; i++) {
 					ct.ThrowIfCancellationRequested();
 
 					var recordReadResult = threadLocalCache.Records[i];
-					if (ShouldKeep(recordReadResult, threadLocalCache.Commits, chunkStartPos, chunkEndPos, out var newRecord)) {
+					if (ShouldKeep(recordReadResult, threadLocalCache.Commits, chunkStartPos, chunkEndPos, out var newRecord, out var recordCount)) {
 						threadLocalCache.Records[i] = newRecord;
 						newSize += newRecord.RecordLength + 2 * sizeof(int);
-						filteredCount++;
+						filteredCount += recordCount;
 					} else {
 						// We don't need this record any more.
 						threadLocalCache.Records[i] = default(CandidateRecord);
 					}
+					totalCount += recordCount;
 				}
 
 				Log.Debug("Scavenging {oldChunkName} traversed {recordsCount} including {filteredCount}.", oldChunkName,
-					threadLocalCache.Records.Count, filteredCount);
+					totalCount, filteredCount);
 
 				newSize += filteredCount * PosMap.FullSize + ChunkHeader.Size + ChunkFooter.Size;
 				if (newChunk.ChunkHeader.Version >= (byte)TFChunk.TFChunk.ChunkVersions.Aligned)
@@ -289,8 +291,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						var recordReadResult = threadLocalCache.Records[i];
 
 						// Check log record, if not present then assume we can skip. 
-						if (recordReadResult.LogRecord != null)
-							positionMapping.Add(WriteRecord(newChunk, recordReadResult.LogRecord));
+						if (recordReadResult.LogRecord != null) {
+							positionMapping.AddRange(WriteRecord(newChunk, recordReadResult.LogRecord));
+						}
 
 						var currentPage = newChunk.RawWriterPosition / 4096;
 						if (currentPage - lastFlushedPage > FlushPageInterval) {
@@ -404,8 +407,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					var lastFlushedPage = -1;
 					TraverseChunkBasic(oldChunk, ct,
 						result => {
-
-							positionMapping.Add(WriteRecord(newChunk, result.LogRecord));
+							positionMapping.AddRange(WriteRecord(newChunk, result.LogRecord));
 
 							var currentPage = newChunk.RawWriterPosition / 4096;
 							if (currentPage - lastFlushedPage > FlushPageInterval) {
@@ -501,10 +503,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private bool ShouldKeep(CandidateRecord result, Dictionary<long, CommitInfo> commits, long chunkStartPos,
-			long chunkEndPos, out CandidateRecord newRecord) {
+			long chunkEndPos, out CandidateRecord newRecord, out int recordCount) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Prepare:
 					var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+					recordCount = 1 + prepare.Events.Length;
 					if (ShouldKeepPrepare(prepare, commits, chunkStartPos, chunkEndPos, out var newPrepare)) {
 						if (ReferenceEquals(prepare, newPrepare)) {
 							newRecord = result;
@@ -518,6 +521,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					break;
 				case LogRecordType.Commit:
 					var commit = (CommitLogRecord)result.LogRecord;
+					recordCount = 1;
 					if (ShouldKeepCommit(commit, commits)) {
 						newRecord = result;
 						return true;
@@ -533,11 +537,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				case LogRecordType.System:
 				case LogRecordType.TransactionEnd:
 				case LogRecordType.TransactionStart:
+					recordCount = 1;
 					newRecord = result;
 					return true;
 			}
 
 			newRecord = default;
+			recordCount = 0;
 			return false;
 		}
 
@@ -673,15 +679,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					expectedVersion: minEventNumberToKeep - 1,
 					timeStamp: prepare.TimeStamp,
 					flags: prepare.Flags,
-					eventRecords: prepare.Events.Skip((int)(minEventNumberToKeep - startEventNumber))
-						.Select(x => (IEventRecord) new Event(
-							x.EventId,
-							x.EventType,
-							(x.EventFlags & EventFlags.IsJson) != 0,
-							x.Data,
-							x.Metadata)
-						)
-						.ToArray()
+					eventRecords: prepare.Events.Skip((int)(minEventNumberToKeep - startEventNumber)).ToArray()
 				);
 			}
 
@@ -744,7 +742,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		private static PosMap WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record) {
+		private static IEnumerable<PosMap> WriteRecord(TFChunk.TFChunk newChunk, ILogRecord record) {
 			var writeResult = newChunk.TryAppend(record);
 			if (!writeResult.Success) {
 				throw new Exception(string.Format(
@@ -755,7 +753,17 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			long logPos = newChunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
 			int actualPos = (int)writeResult.OldPosition;
-			return new PosMap(logPos, actualPos);
+			yield return new PosMap(logPos, actualPos);
+
+			if (record is IPrepareLogRecord<TStreamId> prepare) {
+				foreach (var eventRecord in prepare.Events) {
+					var eventLogPosition = eventRecord.LogPosition!.Value;
+					if (eventLogPosition == record.LogPosition) continue; //to prevent duplicate pos map entries if event's position matches record's position
+					logPos = newChunk.ChunkHeader.GetLocalLogPosition(eventLogPosition);
+					actualPos = (int)writeResult.OldPosition + eventRecord.EventOffset!.Value;
+					yield return new PosMap(logPos, actualPos);
+				}
+			}
 		}
 
 		internal class CommitInfo {
