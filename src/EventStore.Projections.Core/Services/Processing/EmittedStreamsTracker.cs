@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private void WriteEvent(Event evnt, int retryCount) {
 			_ioDispatcher.WriteEvent(_projectionNamesBuilder.GetEmittedStreamsName(), ExpectedVersion.Any, evnt,
 				SystemAccounts.System,
-				x => OnWriteComplete(x, evnt, Helper.UTF8NoBom.GetString(evnt.Data), retryCount));
+				x => OnWriteComplete(x, evnt, Helper.UTF8NoBom.GetString(evnt.Data.Span), retryCount));
 		}
 
 		private void OnWriteComplete(ClientMessage.WriteEventsCompleted completed, Event evnt, string streamId,

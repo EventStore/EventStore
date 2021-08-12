@@ -20,6 +20,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 		//readonly string _string2 = "two";
 		readonly LogV3RecordFactory _sut = new();
 		readonly PrepareFlags _prepareflags = PrepareFlags.SingleWrite;
+		private readonly EventFlags _eventFlags = EventFlags.IsJson;
 		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 }; 
 		readonly ReadOnlyMemory<byte> _bytes2 = new byte[] { 0x20, 0x01 };
 
@@ -53,10 +54,19 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 
 		[Fact]
 		public void can_create_prepare() {
+			var eventRecord = new MockEventRecord(
+				eventId: _guid2,
+				eventType: _string1,
+				data: _bytes1,
+				metadata: _bytes2,
+				eventFlags:_eventFlags,
+				eventLogPosition: null,
+				eventOffset: null
+			);
+
 			var prepare = _sut.CreatePrepare(
 				logPosition: _long1,
 				correlationId: _guid1,
-				eventId: _guid2,
 				// must be same as logPosition
 				transactionPosition: _long1,
 				// must be 0 since only one event is supported at the moment
@@ -65,22 +75,21 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				expectedVersion: _long4,
 				timeStamp: _dateTime1,
 				flags: _prepareflags,
-				eventType: _string1,
-				data: _bytes1,
-				metadata: _bytes2);
+				new IEventRecord[]{eventRecord});
 
 			Assert.Equal(_long1, prepare.LogPosition);
 			Assert.Equal(_guid1, prepare.CorrelationId);
-			Assert.Equal(_guid2, prepare.EventId);
+			Assert.Equal(_guid2, prepare.Events[0].EventId);
 			Assert.Equal(_long1, prepare.TransactionPosition);
 			Assert.Equal(0, prepare.TransactionOffset);
 			Assert.Equal(_uint3000, prepare.EventStreamId);
 			Assert.Equal(_long4, prepare.ExpectedVersion);
 			Assert.Equal(_dateTime1, prepare.TimeStamp);
 			Assert.Equal(_prepareflags, prepare.Flags);
-			Assert.Equal(_string1, prepare.EventType);
-			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes1), MemoryMarshal.ToEnumerable(prepare.Data));
-			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes2), MemoryMarshal.ToEnumerable(prepare.Metadata));
+			Assert.Equal(_string1, prepare.Events[0].EventType);
+			Assert.Equal(_eventFlags, prepare.Events[0].EventFlags);
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes1), MemoryMarshal.ToEnumerable(prepare.Events[0].Data));
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes2), MemoryMarshal.ToEnumerable(prepare.Events[0].Metadata));
 		}
 	}
 }

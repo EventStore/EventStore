@@ -12,8 +12,8 @@ using Newtonsoft.Json;
 
 namespace EventStore.Core.Tests.Services.Transport.Http {
 	internal static class ByteArrayExtensions {
-		public static string AsString(this byte[] data) {
-			return Helper.UTF8NoBom.GetString(data ?? new byte[0]);
+		public static string AsString(this ReadOnlyMemory<byte> data) {
+			return Helper.UTF8NoBom.GetString(data.Span);
 		}
 	}
 
@@ -462,7 +462,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			Assert.That(converted, Is.EqualTo(expected));
 		}
 
-		private ResolvedEvent GenerateResolvedEvent(byte[] data, byte[] metadata) {
+		private ResolvedEvent GenerateResolvedEvent(ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata) {
 			return ResolvedEvent.ForUnresolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				"stream", 0,
 				DateTime.MinValue, PrepareFlags.IsJson, "type", data, metadata));
@@ -581,7 +581,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 			Assert.That(converted, Is.EqualTo(expected));
 		}
 
-		private ResolvedEvent GenerateResolvedEvent(byte[] data, byte[] metadata) {
+		private ResolvedEvent GenerateResolvedEvent(ReadOnlyMemory<byte> data, ReadOnlyMemory<byte> metadata) {
 			return ResolvedEvent.ForUnresolvedEvent(new EventRecord(0, 0, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				"stream", 0,
 				DateTime.MinValue, PrepareFlags.IsJson, "type", data, metadata));

@@ -72,8 +72,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			Assert.AreEqual(2, writeEvents.Count);
 			Assert.AreEqual("$projections-projection-result", writeEvents[0].EventStreamId);
 			Assert.AreEqual("$projections-projection-result", writeEvents[1].EventStreamId);
-			Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[0].Events[0].Data));
-			Assert.AreEqual("data2", Encoding.UTF8.GetString(writeEvents[1].Events[0].Data));
+			Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[0].Events[0].Data.Span));
+			Assert.AreEqual("data2", Encoding.UTF8.GetString(writeEvents[1].Events[0].Data.Span));
 		}
 	}
 
@@ -105,8 +105,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			Assert.AreEqual(2, writeEvents.Count);
 			Assert.AreEqual("$projections-projection-result", writeEvents[0].EventStreamId);
 			Assert.AreEqual("$projections-projection-result", writeEvents[1].EventStreamId);
-			Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[0].Events[0].Data));
-			Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[1].Events[0].Data));
+			Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[0].Events[0].Data.Span));
+			Assert.AreEqual("data1", Encoding.UTF8.GetString(writeEvents[1].Events[0].Data.Span));
 		}
 
 		[Test]

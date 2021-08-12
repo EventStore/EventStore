@@ -60,7 +60,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 			Assert.AreEqual(1, writeEvents.Length);
 			var writeEvent = writeEvents.Single();
 			Assert.NotNull(writeEvent.Metadata);
-			var metadata = Helper.UTF8NoBom.GetString(writeEvent.Metadata);
+			var metadata = Helper.UTF8NoBom.GetString(writeEvent.Metadata.Span);
 			HelperExtensions.AssertJson(
 				new {___causedBy = _causedBy, ___correlationId = _correlationId}, metadata.ParseJson<JObject>());
 		}

@@ -51,7 +51,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			Assert.AreEqual(
 				_projectionName,
 				Helper.UTF8NoBom.GetString(_consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().First()
-					.Events[0].Data));
+					.Events[0].Data.Span));
 		}
 
 		[Test, Category("v8")]

@@ -65,8 +65,8 @@ namespace EventStore.Core.Data {
 			DateTime timeStamp,
 			PrepareFlags flags,
 			string eventType,
-			byte[] data,
-			byte[] metadata) {
+			ReadOnlyMemory<byte> data,
+			ReadOnlyMemory<byte> metadata) {
 			Ensure.Nonnegative(logPosition, "logPosition");
 			Ensure.Nonnegative(transactionPosition, "transactionPosition");
 			if (transactionOffset < -1)
@@ -74,7 +74,6 @@ namespace EventStore.Core.Data {
 			Ensure.NotNull(eventStreamId, "eventStreamId");
 			Ensure.Nonnegative(eventNumber, "eventNumber");
 			Ensure.NotEmptyGuid(eventId, "eventId");
-			Ensure.NotNull(data, "data");
 
 			EventNumber = eventNumber;
 			LogPosition = logPosition;
@@ -87,8 +86,8 @@ namespace EventStore.Core.Data {
 			TimeStamp = timeStamp;
 			Flags = flags;
 			EventType = eventType ?? string.Empty;
-			Data = data ?? Empty.ByteArray;
-			Metadata = metadata ?? Empty.ByteArray;
+			Data = data;
+			Metadata = metadata;
 		}
 
 		public bool Equals(EventRecord other) {

@@ -51,11 +51,11 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			Assert.AreEqual(
 				FakeProjectionStateHandler._emit1Data,
 				Helper.UTF8NoBom.GetString(
-					_writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[0].Data));
+					_writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[0].Data.Span));
 			Assert.AreEqual(
 				FakeProjectionStateHandler._emit2Data,
 				Helper.UTF8NoBom.GetString(
-					_writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[1].Data));
+					_writeEventHandler.HandledMessages.Single(v => v.EventStreamId == "/emit2").Events[1].Data.Span));
 		}
 	}
 }

@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		public void write_the_new_state_snapshot() {
 			Assert.AreEqual(1, _writeEventHandler.HandledMessages.OfEventType("Result").Count);
 
-			var data = Helper.UTF8NoBom.GetString(_writeEventHandler.HandledMessages.OfEventType("Result")[0].Data);
+			var data = Helper.UTF8NoBom.GetString(_writeEventHandler.HandledMessages.OfEventType("Result")[0].Data.Span);
 			Assert.AreEqual("data", data);
 		}
 

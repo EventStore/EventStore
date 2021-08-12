@@ -23,13 +23,25 @@ namespace EventStore.Core.Tests.Services.Storage {
 			PostPosition = postPosition;
 		}
 
+		public bool TryGetFirstEventNumberForPendingTransaction(long transactionPosition, out long firstEventNumber) {
+			foreach (var kvp in Transactions) {
+				if (kvp.Value.Prepares.Count > 0 && kvp.Value.Prepares[0].LogPosition == transactionPosition) {
+					firstEventNumber = kvp.Value.FirstEventNumber;
+					return true;
+				}
+			}
+
+			firstEventNumber = -1;
+			return false;
+		}
+
 		public void AddPendingPrepare(IPrepareLogRecord<TStreamId>[] prepares, long postPosition) {
 			if (prepares == null)
 				throw new InvalidOperationException("Cannot commit a null transaction");
 			if (prepares.Length <= 0)
 				return;
 			if (!Transactions.TryGetValue(prepares[0].CorrelationId, out var transaction)) {
-				transaction = new Transaction(prepares[0].CorrelationId);
+				transaction = new Transaction(prepares[0].CorrelationId, prepares[0].ExpectedVersion + 1);
 				Transactions.Add(prepares[0].CorrelationId, transaction);
 				Records.AddRange(prepares);
 			}
@@ -55,9 +67,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 			public CommitLogRecord Commit { get; private set; }
 			public ReadOnlyCollection<IPrepareLogRecord<TStreamId>> Prepares => _prepares.AsReadOnly();
 			private List<IPrepareLogRecord<TStreamId>> _prepares = new List<IPrepareLogRecord<TStreamId>>();
+			public long FirstEventNumber { get; }
 
-			public Transaction(Guid id, ICollection<IPrepareLogRecord<TStreamId>> prepares = null) {
+			public Transaction(Guid id, long firstEventNumber, ICollection<IPrepareLogRecord<TStreamId>> prepares = null) {
 				Id = id;
+				FirstEventNumber = firstEventNumber;
 				if (prepares != null) { AddPrepares(prepares); }
 			}
 			public void CommitTransaction(CommitLogRecord commit) {

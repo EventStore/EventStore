@@ -86,6 +86,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			var scavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 				_logFormat.Metastreams,
+				_logFormat.RecordFactory,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
 		}

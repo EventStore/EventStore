@@ -98,14 +98,14 @@ namespace EventStore.Core.Tests.Helpers {
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamIdIgnored = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var eventRecord = new EventRecord(
-				list.Count,
+				streamName,
 				LogRecord.Prepare(
 					recordFactory,
 					_fakePosition, Guid.NewGuid(), Guid.NewGuid(), _fakePosition, 0, streamIdIgnored, list.Count - 1,
 					PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | (isJson ? PrepareFlags.IsJson : 0),
 					eventType, eventData is null ? null : Helper.UTF8NoBom.GetBytes(eventData),
 					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata),
-					_timeProvider.UtcNow), streamName);
+					_timeProvider.UtcNow), 0);
 			list.Add(eventRecord);
 			var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
 			_all.Add(eventPosition, eventRecord);

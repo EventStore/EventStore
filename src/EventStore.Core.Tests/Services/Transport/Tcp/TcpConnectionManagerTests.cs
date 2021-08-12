@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				ExpectedVersion.Any,
 				new[] {
 					new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson ? 1 : 0, 0,
-						evnt.Data, evnt.Metadata)
+						evnt.Data.ToArray(), evnt.Metadata.ToArray())
 				},
 				false);
 

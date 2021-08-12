@@ -96,7 +96,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 
 			var @event = write.Events[0];
 
-			Assert.AreEqual("account-01", Helper.UTF8NoBom.GetString(@event.Data));
+			Assert.AreEqual("account-01", Helper.UTF8NoBom.GetString(@event.Data.Span));
 		}
 	}
 }

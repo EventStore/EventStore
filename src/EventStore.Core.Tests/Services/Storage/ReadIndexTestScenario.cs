@@ -127,7 +127,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			if (_scavenge) {
 				if (_completeLastChunkOnScavenge)
 					Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
-				_scavenger = new TFChunkScavenger<TStreamId>(Db, new FakeTFScavengerLog(), TableIndex, ReadIndex, _logFormat.Metastreams);
+				_scavenger = new TFChunkScavenger<TStreamId>(Db, new FakeTFScavengerLog(), TableIndex, ReadIndex, _logFormat.Metastreams, _logFormat.RecordFactory);
 				await _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
 			}
 		}
@@ -180,12 +180,12 @@ namespace EventStore.Core.Tests.Services.Storage {
 				if (!Writer.Write(prepare, out pos)) {
 					prepare = LogRecord.SingleWrite(_recordFactory, pos,
 						prepare.CorrelationId,
-						prepare.EventId,
+						prepare.Events[0].EventId,
 						prepare.EventStreamId,
 						prepare.ExpectedVersion,
-						prepare.EventType,
-						prepare.Data,
-						prepare.Metadata,
+						prepare.Events[0].EventType,
+						prepare.Events[0].Data,
+						prepare.Events[0].Metadata,
 						prepare.TimeStamp);
 					if (!Writer.Write(prepare, out pos))
 						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
@@ -210,7 +210,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName);
+			var eventRecord = new EventRecord(eventStreamName, prepare, 0);
 			return eventRecord;
 		}
 
@@ -234,7 +234,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			var eventRecord = new EventRecord(eventNumber, prepare, SystemStreams.MetastreamOf(eventStreamName));
+			var eventRecord = new EventRecord(SystemStreams.MetastreamOf(eventStreamName), prepare, 0);
 			return eventRecord;
 		}
 
@@ -256,7 +256,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			return new EventRecord(eventNumber, prepare, eventStreamName);
+			prepare.PopulateExpectedVersion(eventNumber - 1);
+			return new EventRecord(eventStreamName, prepare, 0);
 		}
 
 		protected IPrepareLogRecord<TStreamId> WriteTransactionBegin(string eventStreamName, long expectedVersion) {
@@ -308,13 +309,15 @@ namespace EventStore.Core.Tests.Services.Storage {
 				}
 
 				Assert.AreEqual(eventStreamId, prepare.EventStreamId);
-				return new EventRecord(eventNumber, prepare, eventStreamName);
+				prepare.PopulateExpectedVersion(eventNumber - 1);
+				return new EventRecord(eventStreamName, prepare, 0);
 			}
 
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
-			return new EventRecord(eventNumber, prepare, eventStreamName);
+			prepare.PopulateExpectedVersion(eventNumber - 1);
+			return new EventRecord(eventStreamName, prepare, 0);
 		}
 
 		protected IPrepareLogRecord<TStreamId> WriteTransactionEnd(Guid correlationId, long transactionId, string eventStreamName) {
@@ -391,7 +394,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			return new EventRecord(EventNumber.DeletedStream, prepare, eventStreamName);
+			return new EventRecord(eventStreamName, prepare, 0);
 		}
 
 		protected IPrepareLogRecord<TStreamId> WriteDeletePrepare(string eventStreamName) {

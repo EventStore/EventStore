@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			Assert.AreEqual(1, _writeEventHandler.HandledMessages.ToStream("state-stream").Count);
 
 			var message = _writeEventHandler.HandledMessages.ToStream("state-stream")[0];
-			var data = Helper.UTF8NoBom.GetString(message.Events[0].Data);
+			var data = Helper.UTF8NoBom.GetString(message.Events[0].Data.Span);
 			Assert.AreEqual("data", data);
 			Assert.AreEqual("state-stream", message.EventStreamId);
 		}

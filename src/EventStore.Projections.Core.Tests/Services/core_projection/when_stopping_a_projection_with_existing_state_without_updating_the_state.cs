@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				_writeEventHandler.HandledMessages.Count(
 					v => v.Events.Any(
 						e => e.EventType == ProjectionEventTypes.ProjectionCheckpoint
-						     && Helper.UTF8NoBom.GetString(e.Data).Equals("[" + _testProjectionState + "]")
+						     && Helper.UTF8NoBom.GetString(e.Data.Span).Equals("[" + _testProjectionState + "]")
 					)
 				)
 			);

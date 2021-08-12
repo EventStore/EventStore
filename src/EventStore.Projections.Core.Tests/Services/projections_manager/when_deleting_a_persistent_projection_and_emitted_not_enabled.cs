@@ -46,7 +46,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager{
 
 			Assert.AreEqual(deletedStreamEvents.First().EventStreamId,$"$projections-{_projectionName}-checkpoint");
 
-			Assert.AreEqual(true, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == ProjectionEventTypes.ProjectionDeleted && Helper.UTF8NoBom.GetString(x.Events[0].Data) == _projectionName));
+			Assert.AreEqual(true, _consumer.HandledMessages.OfType<ClientMessage.WriteEvents>().Any(x => x.Events[0].EventType == ProjectionEventTypes.ProjectionDeleted && Helper.UTF8NoBom.GetString(x.Events[0].Data.Span) == _projectionName));
 		}
 	}
 }

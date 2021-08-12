@@ -65,8 +65,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection.checkpoint_
 					.Where(v => v.EventType == SystemEventTypes.LinkTo)
 					.ToArray();
 			Assert.AreEqual(2, writeEvents.Length);
-			Assert.AreEqual("1@pa", Helper.UTF8NoBom.GetString(writeEvents[0].Data));
-			Assert.AreEqual("1@pb", Helper.UTF8NoBom.GetString(writeEvents[1].Data));
+			Assert.AreEqual("1@pa", Helper.UTF8NoBom.GetString(writeEvents[0].Data.Span));
+			Assert.AreEqual("1@pb", Helper.UTF8NoBom.GetString(writeEvents[1].Data.Span));
 		}
 	}
 }

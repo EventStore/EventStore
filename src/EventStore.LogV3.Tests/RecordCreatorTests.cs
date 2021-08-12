@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using EventStore.LogCommon;
+using Google.Protobuf;
 using Xunit;
 
 namespace EventStore.LogV3.Tests {
@@ -17,7 +18,8 @@ namespace EventStore.LogV3.Tests {
 		readonly uint _uint1 = 5;
 		readonly ushort _ushort1 = 6;
 		readonly string _string1 = "one";
-		readonly Raw.EventFlags _prepareflags = (Raw.EventFlags)3;
+		readonly EventFlags _eventFlags = EventFlags.IsJson;
+		readonly ushort _prepareflags = 3;
 		readonly Raw.PartitionFlags _partitionFlags = (Raw.PartitionFlags)4;
 		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 };
 		readonly ReadOnlyMemory<byte> _bytes2 = new byte[] { 0x20, 0x01 };
@@ -175,19 +177,25 @@ namespace EventStore.LogV3.Tests {
 
 		[Fact]
 		public void can_create_stream_write_record_for_single_event() {
-			var record = RecordCreator.CreateStreamWriteRecordForSingleEvent(
+			var eventRecord = new MockEventRecord(eventId: _guid2,
+				eventType: _string1,
+				data: _bytes3,
+				metadata: _bytes4,
+				eventFlags: _eventFlags,
+				eventLogPosition: null,
+				eventOffset: 0);
+
+			var record = RecordCreator.CreateStreamWriteRecord(
 				timeStamp: _dateTime1,
 				correlationId: _guid1,
 				logPosition: _long1,
 				transactionPosition: _long2,
 				transactionOffset: _int1,
+				prepareFlags: _prepareflags,
 				streamNumber: _long3,
 				startingEventNumber: _long4,
-				eventId: _guid2,
-				eventType: _string1,
-				eventData: _bytes3.Span,
-				eventMetadata: _bytes4.Span,
-				eventFlags: _prepareflags);
+				new IEventRecord[] { eventRecord }
+				);
 
 			Assert.Equal(LogRecordType.StreamWrite, record.Header.Type);
 			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
@@ -203,11 +211,12 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(0, record.WriteId.TopicNumber);
 			Assert.Equal(_long3, record.WriteId.StreamNumber);
 			Assert.Equal(_long4, record.WriteId.StartingEventNumber);
-			Assert.Equal<Guid>(_guid2, record.Event.SystemMetadata.EventId);
-			Assert.Equal(_string1, record.Event.SystemMetadata.EventType);
-			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record.Event.Data));
-			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Event.Metadata));
-			Assert.Equal(_prepareflags, record.Event.Header.Flags);
+			Assert.Equal<Guid>(_guid2, record.Events[0].EventId);
+			Assert.Equal(_string1, record.Events[0].EventType);
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record.Events[0].Data));
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Events[0].Metadata));
+			Assert.Equal(_eventFlags, record.Events[0].EventFlags);
+			Assert.Equal(_prepareflags, MemoryMarshal.AsRef<ushort>(record.SystemMetadata.PrepareFlags.ToByteArray()));
 		}
 		
 		[Fact]

@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 		public void write_the_emitted_event() {
 			Assert.IsTrue(
 				_writeEventHandler.HandledMessages.Any(
-					v => Helper.UTF8NoBom.GetString(v.Events[0].Data) == FakeProjectionStateHandler._emit1Data));
+					v => Helper.UTF8NoBom.GetString(v.Events[0].Data.Span) == FakeProjectionStateHandler._emit1Data));
 		}
 
 		[Test]

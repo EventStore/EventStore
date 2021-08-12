@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 
 			Assert.AreEqual(1, writeEvent.Events.Length);
 			var @event = writeEvent.Events[0];
-			var metadata = Helper.UTF8NoBom.GetString(@event.Metadata).ParseJson<JObject>();
+			var metadata = Helper.UTF8NoBom.GetString(@event.Metadata.Span).ParseJson<JObject>();
 
 			HelperExtensions.AssertJson(new {a = 1, b = new { }}, metadata);
 			var checkpoint = @event.Metadata.ParseCheckpointTagJson();

@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			Log = new FakeTFScavengerLog();
 			FakeTableIndex = new FakeTableIndex<TStreamId>();
 			TfChunkScavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, Log, FakeTableIndex, new FakeReadIndex<TLogFormat, TStreamId>(_ => false, _logFormat.Metastreams),
-				_logFormat.Metastreams);
+				_logFormat.Metastreams, _logFormat.RecordFactory);
 
 			try {
 				await When().WithTimeout(TimeSpan.FromMinutes(1));

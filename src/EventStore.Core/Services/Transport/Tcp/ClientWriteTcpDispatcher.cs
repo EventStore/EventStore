@@ -81,8 +81,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				events[i] = new TcpClientMessageDto.NewEvent(e.EventId.ToByteArray(),
 					e.EventType,
 					e.IsJson ? 1 : 0,
-					0, e.Data,
-					e.Metadata);
+					0, e.Data.ToArray(),
+					e.Metadata.ToArray());
 			}
 
 			var dto = new TcpClientMessageDto.WriteEvents(msg.EventStreamId, msg.ExpectedVersion, events,
@@ -202,7 +202,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			for (int i = 0; i < events.Length; ++i) {
 				var e = msg.Events[i];
 				events[i] = new TcpClientMessageDto.NewEvent(e.EventId.ToByteArray(), e.EventType, e.IsJson ? 1 : 0, 0,
-					e.Data, e.Metadata);
+					e.Data.ToArray(), e.Metadata.ToArray());
 			}
 
 			var dto = new TcpClientMessageDto.TransactionWrite(msg.TransactionId, events, msg.RequireLeader);

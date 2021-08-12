@@ -267,7 +267,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 					head,
 					new[] {
 						new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType,
-							evnt.IsJson ? 1 : 0, 0, evnt.Data, evnt.Metadata)
+							evnt.IsJson ? 1 : 0, 0, evnt.Data.ToArray(), evnt.Metadata.ToArray())
 					},
 					false);
 

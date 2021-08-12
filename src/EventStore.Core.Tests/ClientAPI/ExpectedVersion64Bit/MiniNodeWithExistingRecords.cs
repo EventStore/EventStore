@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName);
+			var eventRecord = new EventRecord(eventStreamName, prepare, 0);
 			return eventRecord;
 		}
 	}

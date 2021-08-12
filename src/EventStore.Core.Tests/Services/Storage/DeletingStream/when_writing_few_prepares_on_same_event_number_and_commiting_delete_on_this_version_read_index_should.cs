@@ -43,8 +43,8 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 
 			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, pos, // delete prepare
-				Guid.NewGuid(), Guid.NewGuid(), streamId, -1);
-			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare, stream);
+				Guid.NewGuid(), Guid.NewGuid(), streamId, EventNumber.DeletedStream - 1);
+			_deleteTombstone = new EventRecord(stream, deletePrepare, 0);
 			Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 
 			var prepare3 = LogRecord.SingleWrite(_recordFactory, pos, // prepare3

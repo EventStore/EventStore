@@ -111,12 +111,12 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.bi_stat
 						.OfEventType(ProjectionEventTypes.PartitionCheckpoint).ToArray();
 
 				Assert.AreEqual(1, writeProjectionCheckpoints.Length);
-				Assert.AreEqual(@"[{""data"": 2}]", Encoding.UTF8.GetString(writeProjectionCheckpoints[0].Data));
+				Assert.AreEqual(@"[{""data"": 2}]", Encoding.UTF8.GetString(writeProjectionCheckpoints[0].Data.Span));
 				Assert.AreEqual(2, writeCheckpoints.Length);
 
 				Assert.That(
 					writeCheckpoints.All(
-						v => Encoding.UTF8.GetString(v.Data) == @"[{""data"": 1},{""data"": 1}]"));
+						v => Encoding.UTF8.GetString(v.Data.Span) == @"[{""data"": 1},{""data"": 1}]"));
 			}
 		}
 	}
