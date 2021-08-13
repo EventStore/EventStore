@@ -19,6 +19,7 @@ namespace EventStore.Core.LogV3 {
 		}
 
 		public bool ExplicitStreamCreation => true;
+		public bool MultipleEventsPerPrepare => true;
 
 		public IPrepareLogRecord<StreamId> CreateStreamRecord(
 			Guid streamId,
