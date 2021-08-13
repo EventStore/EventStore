@@ -63,16 +63,18 @@ of the volume containing the `index\ ` directory and then a snapshot of the volu
 
 ### Backup 
 
-1. Copy the indexes to your backup location (the content of the `index\` directory).
-2. Copy all checkpoints (`*.chk`) files to your backup location.
-3. Copy the chunks files (`chk-X.Y`) to your backup location.
+1. Copy any index checkpoint files (`<index directory>\**\*.chk`) to your backup location.
+2. Copy the other index files to your backup location (the rest of `<index directory>`, excluding the checkpoints).
+3. Copy the database checkpoint files (`*.chk`) to your backup location.
+4. Copy the chunk files (`chunk-X.Y`) to your backup location.
 
-For example:
+For example, with a database in `data` and index in `data/index`:
 
 ``` bash
-rsync -a /data/eventstore/db/index /backup/eventstore/db/index
-rsync -a /data/eventstore/db/*.chk /backup/eventstore/db/
-rsync -a /data/eventstore/db/*.0* /backup/eventstore/db/
+rsync -aIR data/./index/**/*.chk backup
+rsync -aI --exclude '*.chk' data/index backup
+rsync -aI data/*.chk backup
+rsync -a data/*.0* backup
 ```
 
 ### Restoring a database
