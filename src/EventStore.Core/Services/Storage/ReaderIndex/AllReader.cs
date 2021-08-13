@@ -99,11 +99,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							prepare.PopulateExpectedVersion(prepare.ExpectedVersion); //already final
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && prepare.Events.Length > 0
-							    && new TFPos(prepare.Events[^1].LogPosition!.Value, prepare.Events[^1].LogPosition!.Value) >= pos) {
+							    && new TFPos(prepare.Events[^1].EventLogPosition!.Value, prepare.Events[^1].EventLogPosition!.Value) >= pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
 								var anyRecordConsidered = false;
 								for (int i = 0; i < prepare.Events.Length; i++) {
-									if (new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value) < pos) continue;
+									if (new TFPos(prepare.Events[i].EventLogPosition!.Value, prepare.Events[i].EventLogPosition!.Value) < pos) continue;
 									if (records.Count >= maxCount || consideredEventsCount >= maxSearchWindow) break;
 									var eventRecord = new EventRecord(
 										eventStreamName: streamName,
@@ -117,10 +117,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									var isLast = i == prepare.Events.Length - 1;
 									nextPos = isLast
 										? new TFPos(result.RecordPostPosition, 0)
-										: new TFPos(prepare.Events[i + 1].LogPosition!.Value, prepare.Events[i + 1].LogPosition!.Value);
+										: new TFPos(prepare.Events[i + 1].EventLogPosition!.Value, prepare.Events[i + 1].EventLogPosition!.Value);
 									if (firstCommit) {
 										firstCommit = false;
-										prevPos = new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value);
+										prevPos = new TFPos(prepare.Events[i].EventLogPosition!.Value, prepare.Events[i].EventLogPosition!.Value);
 									}
 								}
 
@@ -245,12 +245,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							prepare.PopulateExpectedVersion(prepare.ExpectedVersion); //already final
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && prepare.Events.Length > 0
-							    && new TFPos(prepare.Events[0].LogPosition!.Value,prepare.Events[0].LogPosition!.Value) < pos) {
+							    && new TFPos(prepare.Events[0].EventLogPosition!.Value,prepare.Events[0].EventLogPosition!.Value) < pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
 								var anyRecordConsidered = false;
 
 								for (int i = prepare.Events.Length - 1; i >= 0; i--) {
-									if (new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value) >= pos) continue;
+									if (new TFPos(prepare.Events[i].EventLogPosition!.Value, prepare.Events[i].EventLogPosition!.Value) >= pos) continue;
 									if (records.Count >= maxCount || consideredEventsCount >= maxSearchWindow) break;
 									var eventRecord = new EventRecord(
 										eventStreamName: streamName,
@@ -266,13 +266,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									// otherwise we put pre-position of commit and pre-position of prepare
 									var isFirst = i == 0;
 									nextPos = isFirst ? new TFPos(result.RecordPrePosition, result.RecordPrePosition)
-										: new TFPos(prepare.Events[i].LogPosition!.Value, prepare.Events[i].LogPosition!.Value);
+										: new TFPos(prepare.Events[i].EventLogPosition!.Value, prepare.Events[i].EventLogPosition!.Value);
 
 									if (firstCommit) {
 										firstCommit = false;
 										var isLast = i == prepare.Events.Length - 1;
 										prevPos = isLast ? new TFPos(result.RecordPostPosition, result.RecordPostPosition) :
-											new TFPos(prepare.Events[i+1].LogPosition!.Value, prepare.Events[i+1].LogPosition!.Value);
+											new TFPos(prepare.Events[i+1].EventLogPosition!.Value, prepare.Events[i+1].EventLogPosition!.Value);
 									}
 								}
 
@@ -316,10 +316,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								prepare.PopulateExpectedVersionFromCommit(commit.FirstEventNumber);
-<<<<<<< HEAD
-
-=======
->>>>>>> a9c87daa9... Add two methods to IPrepareLogRecord to populate the prepare's final expected version:
 								if (prepare.TransactionPosition != commit.TransactionPosition) // wrong prepare
 									continue;
 

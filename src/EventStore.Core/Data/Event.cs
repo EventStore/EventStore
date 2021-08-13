@@ -5,7 +5,7 @@ using EventStore.LogCommon;
 
 namespace EventStore.Core.Data {
 	public class Event : IEventRecord {
-		public long? LogPosition => null;
+		public long? EventLogPosition => null;
 		public int? EventOffset => null;
 		public Guid EventId { get; }
 		public string EventType { get; }

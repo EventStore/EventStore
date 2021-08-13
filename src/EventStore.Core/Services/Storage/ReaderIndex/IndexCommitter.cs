@@ -375,7 +375,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					eventNumber = prepare.ExpectedVersion; /* for committed prepare expected version is always explicit */
 					foreach (var eventRecord in prepare.Events) {
 						eventNumber++;
-						indexEntries.Add(new IndexKey<TStreamId>(streamId, eventNumber, eventRecord.LogPosition!.Value));
+						indexEntries.Add(new IndexKey<TStreamId>(streamId, eventNumber, eventRecord.EventLogPosition!.Value));
 					}
 
 					prepares.Add(prepare);

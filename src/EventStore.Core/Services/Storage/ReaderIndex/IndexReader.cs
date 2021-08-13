@@ -234,7 +234,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			    || !StreamIdComparer.Equals(currentPrepare.EventStreamId, streamId)
 			    || eventNumber < currentPrepare.ExpectedVersion + 1
 			    || eventNumber > currentPrepare.ExpectedVersion + currentPrepare.Events.Length
-			    || currentPrepare.Events[eventNumber - (currentPrepare.ExpectedVersion + 1)].LogPosition != eventLogPosition) {
+			    || currentPrepare.Events[eventNumber - (currentPrepare.ExpectedVersion + 1)].EventLogPosition != eventLogPosition) {
 				prepare = ReadPrepareInternal(reader, eventLogPosition, eventNumber, out startEventNumber, out endEventNumber);
 			} else {
 				prepare = currentPrepare;

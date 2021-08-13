@@ -757,7 +757,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			if (record is IPrepareLogRecord<TStreamId> prepare) {
 				foreach (var eventRecord in prepare.Events) {
-					var eventLogPosition = eventRecord.LogPosition!.Value;
+					var eventLogPosition = eventRecord.EventLogPosition!.Value;
 					if (eventLogPosition == record.LogPosition) continue; //to prevent duplicate pos map entries if event's position matches record's position
 					logPos = newChunk.ChunkHeader.GetLocalLogPosition(eventLogPosition);
 					actualPos = (int)writeResult.OldPosition + eventRecord.EventOffset!.Value;
