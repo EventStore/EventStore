@@ -6,6 +6,7 @@ using EventStore.LogCommon;
 namespace EventStore.Core.Data {
 	public class Event : IEventRecord {
 		public long? LogPosition => null;
+		public int? EventOffset => null;
 		public Guid EventId { get; }
 		public string EventType { get; }
 		public ReadOnlyMemory<byte> Data { get; }

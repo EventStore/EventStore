@@ -32,12 +32,19 @@ namespace EventStore.LogV3 {
 		private static IEventRecord[] GenerateEventRecords(RecordView<Raw.StreamWriteHeader> record, ReadOnlyMemory<byte> events) {
 			var slicer = events.Slicer();
 			var eventRecords = new IEventRecord[record.SubHeader.Count];
+			var firstEventOffset = sizeof(int) /* log record length (prefix) */
+			                       + Raw.RecordHeader.Size /* log record header */
+			                       + Raw.StreamWriteHeader.Size /* stream write sub header */
+			                       + record.SubHeader.MetadataSize; /* metadata size */
 			for (var i = 0; i < eventRecords.Length; i++) {
 				long logPosition;
+				int eventOffset;
 				if (i == 0) {
 					logPosition = record.Header.LogPosition;
+					eventOffset = 0;
 				} else {
 					var backwardOffset = MemoryMarshal.AsRef<int>(slicer.Slice(sizeof(int)).Span);
+					eventOffset = firstEventOffset + slicer.Offset;
 					var forwardOffset = MemoryMarshal.AsRef<int>(slicer.Slice(sizeof(int)).Span);
 					if (backwardOffset >= 0) {
 						throw new Exception($"backward offset should be negative but was: {backwardOffset}");
@@ -56,7 +63,7 @@ namespace EventStore.LogV3 {
 				ref readonly var eventHeader = ref MemoryMarshal.AsRef<Raw.EventHeader>(slicer.Remaining.Span);
 				var eventBytes = slicer.Slice(eventHeader.EventSize);
 
-				eventRecords[i] = new EventRecord(eventBytes, logPosition);
+				eventRecords[i] = new EventRecord(eventBytes, logPosition, eventOffset);
 			}
 			return eventRecords;
 		}

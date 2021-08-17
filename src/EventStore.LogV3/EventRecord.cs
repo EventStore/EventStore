@@ -18,9 +18,10 @@ namespace EventStore.LogV3 {
 		public string EventType => SystemMetadata.EventType;
 		public EventFlags EventFlags => (EventFlags) Header.Flags;
 		public long? LogPosition { get; }
+		public int? EventOffset { get; }
 
 		// bytes already populated with a event record to read
-		public EventRecord(ReadOnlyMemory<byte> bytes, long logPosition) {
+		public EventRecord(ReadOnlyMemory<byte> bytes, long logPosition, int eventOffset) {
 			var slicer = bytes.Slicer();
 			_headerMemory = slicer.Slice(Raw.EventHeader.Size);
 
@@ -32,6 +33,7 @@ namespace EventStore.LogV3 {
 
 			SystemMetadata = EventSystemMetadata.Parser.ParseFrom(new ReadOnlySequence<byte>(systemMetadata));
 			LogPosition = logPosition;
+			EventOffset = eventOffset;
 		}
 	}
 }

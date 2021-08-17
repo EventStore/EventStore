@@ -9,6 +9,7 @@ namespace EventStore.LogCommon {
 
 	public interface IEventRecord {
 		long? LogPosition { get; }
+		int? EventOffset { get; }
 		Guid EventId { get; }
 		string EventType { get; }
 		ReadOnlyMemory<byte> Data { get; }
