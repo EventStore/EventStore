@@ -1,40 +1,44 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using EventStore.Client.Streams;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
-using Grpc.Core;
 using Serilog;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	public static partial class Enumerators {
-		public abstract class StreamSubscription {
+	static partial class Enumerators {
+		public abstract class StreamSubscription : IAsyncEnumerator<ReadResp> {
 			protected static readonly ILogger Log = Serilog.Log.ForContext<StreamSubscription>();
+			public abstract ValueTask DisposeAsync();
+			public abstract ValueTask<bool> MoveNextAsync();
+			public abstract ReadResp Current { get; }
 		}
 
-		public class StreamSubscription<TStreamId> : StreamSubscription, ISubscriptionEnumerator {
+		public class StreamSubscription<TStreamId> : StreamSubscription {
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
 			private readonly bool _resolveLinks;
 			private readonly ClaimsPrincipal _user;
 			private readonly bool _requiresLeader;
+			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
 			private readonly CancellationToken _cancellationToken;
-			private readonly TaskCompletionSource<bool> _subscriptionStarted;
-			private readonly Channel<ResolvedEvent> _channel;
+			private readonly Channel<ReadResp> _channel;
 			private readonly SemaphoreSlim _semaphore;
 
-			private ResolvedEvent? _current;
+			private int _subscriptionStarted;
+			private ReadResp _current;
 			private bool _disposed;
+			private StreamRevision? _currentRevision;
 
-			public ResolvedEvent Current => _current.GetValueOrDefault();
-			public Task Started => _subscriptionStarted.Task;
+			public override ReadResp Current => _current;
 			public string SubscriptionId { get; }
 
 			public StreamSubscription(
@@ -44,7 +48,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				bool resolveLinks,
 				ClaimsPrincipal user,
 				bool requiresLeader,
-				IReadIndex<TStreamId> readIndex,
+				ReadReq.Types.Options.Types.UUIDOption uuidOption,
 				CancellationToken cancellationToken) {
 				if (bus == null) {
 					throw new ArgumentNullException(nameof(bus));
@@ -54,30 +58,25 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentNullException(nameof(streamName));
 				}
 
-				if (readIndex == null) {
-					throw new ArgumentNullException(nameof(readIndex));
-				}
-
 				_subscriptionId = Guid.NewGuid();
 				_bus = bus;
 				_streamName = streamName;
 				_resolveLinks = resolveLinks;
 				_user = user;
 				_requiresLeader = requiresLeader;
+				_uuidOption = uuidOption;
 				_cancellationToken = cancellationToken;
-				_subscriptionStarted = new TaskCompletionSource<bool>();
-				_channel = Channel.CreateBounded<ResolvedEvent>(BoundedChannelOptions);
+				_subscriptionStarted = 0;
+				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
 				_semaphore = new SemaphoreSlim(1, 1);
+				_currentRevision = null;
 
 				SubscriptionId = _subscriptionId.ToString();
 
-				var streamId = readIndex.GetStreamId(_streamName);
-				Subscribe(startRevision == StreamRevision.End
-					? StreamRevision.FromInt64(readIndex.GetStreamLastEventNumber(streamId) + 1)
-					: startRevision + 1 ?? StreamRevision.Start, startRevision != StreamRevision.End);
+				Subscribe(startRevision);
 			}
 
-			public ValueTask DisposeAsync() {
+			public override ValueTask DisposeAsync() {
 				if (_disposed) {
 					return new ValueTask(Task.CompletedTask);
 				}
@@ -90,46 +89,58 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				return new ValueTask(Task.CompletedTask);
 			}
 
-			public async ValueTask<bool> MoveNextAsync() {
+			public override async ValueTask<bool> MoveNextAsync() {
 				ReadLoop:
 
 				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
 					return false;
 				}
 
-				var @event = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
+				var readResp = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
 
-				if (_current.HasValue && @event.OriginalEvent.EventNumber <= _current.Value.OriginalEvent.EventNumber) {
+				if (readResp.Event != null) {
+					var @event = readResp.Event;
+
+					if (@event.OriginalEvent.Metadata[Constants.Metadata.Type] == SystemEventTypes.StreamDeleted) {
+						Fail(RpcExceptions.StreamDeleted(_streamName));
+					}
+
+					var streamRevision = new StreamRevision(@event.OriginalEvent.StreamRevision);
+					if (_currentRevision.HasValue && streamRevision <= _currentRevision.Value) {
+						Log.Verbose(
+							"Subscription {subscriptionId} to {streamName} skipping event {streamRevision} as it is less than {currentRevision}.",
+							_subscriptionId, _streamName, streamRevision, _currentRevision);
+
+						goto ReadLoop;
+					}
+
+					_currentRevision = streamRevision;
+
 					Log.Verbose(
-						"Subscription {subscriptionId} to {streamName} skipping event {streamRevision}.",
-						_subscriptionId, _streamName, @event.OriginalEvent.EventNumber);
-
-					goto ReadLoop;
+						"Subscription {subscriptionId} to {streamName} seen event {streamRevision}.",
+						_subscriptionId, _streamName, streamRevision);
 				}
 
-				Log.Verbose(
-					"Subscription {subscriptionId} to {streamName} seen event {streamRevision}.",
-					_subscriptionId, _streamName, @event.OriginalEvent.EventNumber);
-
-				_current = @event;
+				_current = readResp;
 
 				return true;
 			}
 
-			private void Subscribe(StreamRevision startRevision, bool catchUp) {
-				if (catchUp) {
-					CatchUp(startRevision);
+			private void Subscribe(StreamRevision? startRevision) {
+				if (startRevision == StreamRevision.End) {
+					GoLive(StreamRevision.End);
 				} else {
-					GoLive(startRevision);
+					_currentRevision = startRevision;
+					CatchUp(startRevision + 1 ?? StreamRevision.Start);
 				}
 			}
 
-			private void CatchUp(StreamRevision startRevision) {
+			private void CatchUp(StreamRevision? startRevision) {
 				Log.Information(
 					"Catch-up subscription {subscriptionId} to {streamName}@{streamRevision} running...",
 					_subscriptionId, _streamName, startRevision);
 
-				ReadPage(startRevision, OnMessage);
+				ReadPage(startRevision ?? StreamRevision.Start, OnMessage);
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&
@@ -146,7 +157,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					switch (completed.Result) {
 						case ReadStreamResult.Success:
-							ConfirmSubscription();
+							await ConfirmSubscription().ConfigureAwait(false);
 							foreach (var @event in completed.Events) {
 								var streamRevision = StreamRevision.FromInt64(@event.OriginalEvent.EventNumber);
 
@@ -154,7 +165,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									"Catch-up subscription {subscriptionId} to {streamName} received event {streamRevision}.",
 									_subscriptionId, _streamName, streamRevision);
 
-								await _channel.Writer.WriteAsync(@event, ct).ConfigureAwait(false);
+								await _channel.Writer.WriteAsync(new ReadResp {
+									Event = ConvertToReadEvent(_uuidOption, @event)
+								}, ct).ConfigureAwait(false);
 							}
 
 							if (completed.IsEndOfStream) {
@@ -165,11 +178,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							ReadPage(StreamRevision.FromInt64(completed.NextEventNumber), OnMessage);
 							return;
 						case ReadStreamResult.NoStream:
-							ConfirmSubscription();
+							await ConfirmSubscription().ConfigureAwait(false);
 							await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(false);
-							ReadPage(startRevision, OnMessage);
+							ReadPage(startRevision ?? StreamRevision.Start, OnMessage);
 							return;
 						case ReadStreamResult.StreamDeleted:
+							Log.Verbose(
+								"Live subscription {subscriptionId} to {streamName} stream deleted.",
+								_subscriptionId, _streamName);
 							Fail(RpcExceptions.StreamDeleted(_streamName));
 							return;
 						case ReadStreamResult.AccessDenied:
@@ -184,7 +200,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			private void GoLive(StreamRevision startRevision) {
 				var liveEvents = Channel.CreateBounded<ResolvedEvent>(BoundedChannelOptions);
-				var caughtUpSource = new TaskCompletionSource<StreamRevision>();
+				var caughtUpSource = new TaskCompletionSource();
 				var liveMessagesCancelled = 0;
 
 				Log.Information(
@@ -201,7 +217,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					await caughtUpSource.Task.ConfigureAwait(false);
 					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)
 						.ConfigureAwait(false)) {
-						await _channel.Writer.WriteAsync(@event, _cancellationToken).ConfigureAwait(false);
+						await _channel.Writer.WriteAsync(new ReadResp {
+							Event = ConvertToReadEvent(_uuidOption, @event)
+						}, _cancellationToken).ConfigureAwait(false);
 					}
 				}
 
@@ -214,12 +232,25 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					switch (message) {
 						case ClientMessage.SubscriptionConfirmation confirmed:
-							ConfirmSubscription();
+							await ConfirmSubscription().ConfigureAwait(false);
+
 							var caughtUp = StreamRevision.FromInt64(confirmed.LastEventNumber.Value);
 							Log.Verbose(
 								"Live subscription {subscriptionId} to {streamName} confirmed at {streamRevision}.",
 								_subscriptionId, _streamName, caughtUp);
-							ReadHistoricalEvents(startRevision);
+
+							if (startRevision != StreamRevision.End) {
+								ReadHistoricalEvents(startRevision);
+							} else {
+								NotifyCaughtUp(startRevision);
+							}
+
+							void NotifyCaughtUp(StreamRevision streamRevision) {
+								Log.Verbose(
+									"Live subscription {subscriptionId} to {streamName} caught up at {streamRevision} because the end of stream was reached.",
+									_subscriptionId, _streamName, streamRevision);
+								caughtUpSource.TrySetResult();
+							}
 
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
 								if (message is ClientMessage.NotHandled notHandled &&
@@ -244,23 +275,21 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 										foreach (var @event in completed.Events) {
 											var streamRevision = StreamRevision.FromInt64(@event.OriginalEventNumber);
+
 											if (streamRevision > caughtUp) {
 												NotifyCaughtUp(streamRevision);
 												return;
 											}
 
-											await _channel.Writer.WriteAsync(@event, _cancellationToken)
-												.ConfigureAwait(false);
+											Log.Verbose(
+												"Live subscription {subscriptionId} to {streamName} enqueuing historical message {streamRevision}.",
+												_subscriptionId, _streamName, streamRevision);
+											await _channel.Writer.WriteAsync(new ReadResp {
+												Event = ConvertToReadEvent(_uuidOption, @event)
+											}, _cancellationToken).ConfigureAwait(false);
 										}
 
 										ReadHistoricalEvents(StreamRevision.FromInt64(completed.NextEventNumber));
-
-										void NotifyCaughtUp(StreamRevision streamRevision) {
-											Log.Verbose(
-												"Live subscription {subscriptionId} to {streamName} caught up at {streamRevision} because the end of stream was reached.",
-												_subscriptionId, _streamName, streamRevision);
-											caughtUpSource.TrySetResult(caughtUp);
-										}
 
 										return;
 									case ReadStreamResult.NoStream:
@@ -307,7 +336,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									Fail(RpcExceptions.AccessDenied());
 									return;
 								case SubscriptionDropReason.NotFound:
-									Fail(RpcExceptions.StreamNotFound(_streamName));
+									await _channel.Writer.WriteAsync(new ReadResp {
+										StreamNotFound = new ReadResp.Types.StreamNotFound {
+											StreamIdentifier = _streamName
+										}
+									}, _cancellationToken).ConfigureAwait(false);
+									_channel.Writer.Complete();
 									return;
 								case SubscriptionDropReason.Unsubscribed:
 									return;
@@ -341,8 +375,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 								liveEvents.Writer.Complete();
 
-								CatchUp(StreamRevision.FromInt64(
-									_current.GetValueOrDefault().OriginalEvent.EventNumber));
+								CatchUp(_currentRevision);
 							}
 
 							return;
@@ -353,20 +386,24 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return;
 					}
 				}
+
 				void Fail(Exception exception) {
 					this.Fail(exception);
 					caughtUpSource.TrySetException(exception);
 				}
 			}
 
-			private void ConfirmSubscription() {
-				if (_subscriptionStarted.Task.IsCompletedSuccessfully) return;
-				_subscriptionStarted.TrySetResult(true);
-			}
+			private ValueTask ConfirmSubscription() => Interlocked.CompareExchange(ref _subscriptionStarted, 1, 0) != 0
+				? new ValueTask(Task.CompletedTask)
+				: _channel.Writer.WriteAsync(new ReadResp {
+					Confirmation = new ReadResp.Types.SubscriptionConfirmation {
+						SubscriptionId = SubscriptionId
+					}
+				}, _cancellationToken);
 
 			private void Fail(Exception exception) {
+				Interlocked.Exchange(ref _subscriptionStarted, 1);
 				_channel.Writer.TryComplete(exception);
-				_subscriptionStarted.TrySetException(exception);
 			}
 
 			private void ReadPage(StreamRevision startRevision, Func<Message, CancellationToken, Task> onMessage) {
@@ -377,7 +414,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.ReadStreamEventsForward(
 					correlationId, correlationId, new ContinuationEnvelope(onMessage, _semaphore, _cancellationToken),
-					_streamName, startRevision.ToInt64(), ReadBatchSize, _resolveLinks, _requiresLeader, default,
+					_streamName, startRevision.ToInt64(), ReadBatchSize, _resolveLinks, _requiresLeader, null,
 					_user));
 			}
 

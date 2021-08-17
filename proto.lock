@@ -4397,6 +4397,16 @@
                 "id": 4,
                 "name": "stream_not_found",
                 "type": "StreamNotFound"
+              },
+              {
+                "id": 5,
+                "name": "stream_position",
+                "type": "StreamPosition"
+              },
+              {
+                "id": 6,
+                "name": "all_stream_position",
+                "type": "AllStreamPosition"
               }
             ],
             "messages": [
@@ -4509,6 +4519,36 @@
                     "id": 1,
                     "name": "stream_identifier",
                     "type": "event_store.client.StreamIdentifier"
+                  }
+                ]
+              },
+              {
+                "name": "StreamPosition",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "last_stream_position",
+                    "type": "uint64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "next_stream_position",
+                    "type": "uint64"
+                  }
+                ]
+              },
+              {
+                "name": "AllStreamPosition",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "last_position",
+                    "type": "event_store.client.AllStreamPosition"
+                  },
+                  {
+                    "id": 2,
+                    "name": "next_position",
+                    "type": "event_store.client.AllStreamPosition"
                   }
                 ]
               }

@@ -16,7 +16,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public override async Task<ClusterInfo> Read(Empty request, ServerCallContext context) {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ReadOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
 			_bus.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs))));;

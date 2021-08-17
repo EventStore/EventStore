@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ShutdownOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			_publisher.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
@@ -42,7 +42,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, MergeIndexesOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			var correlationId = Guid.NewGuid();
@@ -66,7 +66,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ResignOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			_publisher.Publish(new ClientMessage.ResignNode());
@@ -78,7 +78,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			if (!await _authorizationProvider
 				.CheckAccessAsync(user, SetNodePriorityOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			_publisher.Publish(new ClientMessage.SetNodePriority(request.Priority));
@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			if (!await _authorizationProvider.CheckAccessAsync(user, RestartPersistentSubscriptionsOperation,
 					context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			_publisher.Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(envelope));

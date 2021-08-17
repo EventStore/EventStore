@@ -1,29 +1,19 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
-using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Client;
+using EventStore.Client.Streams;
 using EventStore.Core.Services.Transport.Grpc;
-using EventStore.Core.Tests.ClientAPI;
+using Google.Protobuf;
+using Grpc.Core;
 using NUnit.Framework;
-using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 using Position = EventStore.Core.Services.Transport.Grpc.Position;
 using LogV3StreamId = System.UInt32;
+using Empty = Google.Protobuf.WellKnownTypes.Empty;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
 	public class SubscribeToAllFilteredTests {
-		private static ClaimsPrincipal TestUser =>
-			new ClaimsPrincipal(new ClaimsIdentity(new[] {new Claim(ClaimTypes.Name, "admin"),}, "ES-Test"));
-
-		private static IEnumerable<EventData> CreateEvents(int count) => Enumerable.Range(0, count)
-			.Select(i => new EventData(Guid.NewGuid(), i.ToString(), false, Array.Empty<byte>(), null));
-
 		public static IEnumerable<object[]> TestCases() {
 			var checkpointIntervalMultipliers = new uint[] { 2, 4, 8 };
 
@@ -32,26 +22,26 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			var filteredEventCount = checkpointIntervalMultipliers.Max() * maxSearchWindows.Max();
 
 			var logFormats = new[] {
-					(typeof(LogFormat.V2), typeof(string)),
-					(typeof(LogFormat.V3), typeof(LogV3StreamId)),
-				};
+				(typeof(LogFormat.V2), typeof(string)),
+				(typeof(LogFormat.V3), typeof(LogV3StreamId)),
+			};
 
 			return from checkpointInterval in checkpointIntervalMultipliers
-				   from maxSearchWindow in maxSearchWindows
-				   from logFormat in logFormats
-				   select new object[] {
-						logFormat.Item1,
-						logFormat.Item2,
-						checkpointInterval,
-						maxSearchWindow,
-						(int)filteredEventCount
-					};
+				from maxSearchWindow in maxSearchWindows
+				from logFormat in logFormats
+				select new object[] {
+					logFormat.Item1,
+					logFormat.Item2,
+					checkpointInterval,
+					maxSearchWindow,
+					(int)filteredEventCount
+				};
 		}
 
 		[TestFixtureSource(typeof(SubscribeToAllFilteredTests), nameof(TestCases))]
 		public class when_subscribing_to_all_with_a_filter<TLogFormat, TStreamId>
-			: SpecificationWithMiniNode<TLogFormat, TStreamId> {
-			private const string _streamName = "test";
+			: GrpcSpecification<TLogFormat, TStreamId> {
+			private const string StreamName = "test";
 
 			private int CheckpointCount => _positions.Count;
 
@@ -59,7 +49,6 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			private readonly int _filteredEventCount;
 			private readonly uint _checkpointIntervalMultiplier;
 			private readonly List<Position> _positions;
-			private readonly TaskCompletionSource<bool> _complete;
 			private readonly uint _checkpointInterval;
 
 			private Position _position;
@@ -73,39 +62,73 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_filteredEventCount = filteredEventCount;
 				_positions = new List<Position>();
 				_position = Position.End;
-				_complete = new TaskCompletionSource<bool>();
 			}
 
-			protected override Task Given() =>
-				_conn.AppendToStreamAsync("abcd", ExpectedVersion.NoStream, CreateEvents(_filteredEventCount));
+			protected override async Task Given() {
+				await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("abcd") }
+					},
+					IsFinal = true,
+					ProposedMessages = { CreateEvents(_filteredEventCount) },
+					CorrelationId = Uuid.NewUuid().ToDto()
+				});
+			}
 
 			protected override async Task When() {
-				var result = (await _conn.AppendToStreamAsync(_streamName, ExpectedVersion.NoStream, CreateEvents(1))
-					.ConfigureAwait(false)).LogPosition;
+				var success = (await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8(StreamName) }
+					},
+					IsFinal = true,
+					ProposedMessages = { CreateEvents(1) },
+					CorrelationId = Uuid.NewUuid().ToDto()
+				})).Success;
 
-				_position = new Position((ulong)result.CommitPosition, (ulong)result.PreparePosition);
+				_position = new Position(success.Position.CommitPosition, success.Position.PreparePosition);
 
-				var skippedEventCount = (await _conn.ReadAllEventsForwardAsync(EventStore.ClientAPI.Position.Start,
-						4096, false, new UserCredentials("admin", "changeit")).ConfigureAwait(false))
-					.Events.Count(e => new Position((ulong)e.OriginalPosition.Value.CommitPosition,
-						                   (ulong)e.OriginalPosition.Value.PreparePosition) <= _position &&
-					                   e.OriginalEvent.EventStreamId != _streamName);
+				var skippedEventCount = await StreamsClient.Read(new ReadReq {
+					Options = new ReadReq.Types.Options {
+						Count = 4096,
+						All = new() { Start = new() },
+						UuidOption = new() { Structured = new() },
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
+						NoFilter = new()
+					}
+				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().CountAsync(response =>
+					response.Event is not null &&
+					new Position(response.Event.Event.CommitPosition, response.Event.Event.PreparePosition) <=
+					_position &&
+					response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8() != StreamName);
+
 				_expected = skippedEventCount / _checkpointInterval;
 
-				await using var enumerator = new Enumerators.AllSubscriptionFiltered(_node.Node.MainQueue,
-					Position.Start, false, EventFilter.StreamName.Prefixes(true, _streamName), TestUser, false,
-					_node.Node.ReadIndex, _maxSearchWindow, _checkpointIntervalMultiplier, p => {
-						_positions.Add(p);
+				await foreach (var response in StreamsClient.Read(new ReadReq {
+					Options = new ReadReq.Types.Options {
+						Subscription = new(),
+						All = new() { Start = new() },
+						Filter = new() {
+							Max = _maxSearchWindow,
+							CheckpointIntervalMultiplier = _checkpointIntervalMultiplier,
+							StreamIdentifier = new() { Prefix = { StreamName } }
+						},
+						UuidOption = new() { Structured = new() },
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards
+					}
+				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync()) {
+					if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
+						_positions.Add(new Position(response.Checkpoint.CommitPosition,
+							response.Checkpoint.PreparePosition));
+						continue;
+					}
 
-						if (p >= _position) {
-							_complete.TrySetResult(true);
-						}
-
-						return Task.CompletedTask;
-					}, CancellationToken.None);
-
-				Assert.True(await enumerator.MoveNextAsync().ConfigureAwait(false));
-				Assert.AreEqual(_streamName, enumerator.Current.OriginalStreamId);
+					if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
+						Assert.AreEqual(StreamName, response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
+						return;
+					}
+				}
 			}
 
 			[Test]

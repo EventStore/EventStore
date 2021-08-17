@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			if (!await _authorizationProvider.CheckAccessAsync(user,
 				DeleteOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			string streamId = null;

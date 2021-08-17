@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user,
 				UpdateOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			string streamId = null;
@@ -40,7 +40,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							RevisionOptionOneofCase.Revision => new StreamRevision(request.Options.Stream.Revision),
 							RevisionOptionOneofCase.Start => StreamRevision.Start,
 							RevisionOptionOneofCase.End => StreamRevision.End,
-							_ => throw new InvalidOperationException()
+							_ => throw RpcExceptions.InvalidArgument(request.Options.Stream.RevisionOptionCase)
 						};
 					} else { /*for backwards compatibility*/
 						#pragma warning disable 612

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using EventStore.Client;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Core.Tests.Helpers;
@@ -18,6 +17,7 @@ using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using Convert = System.Convert;
 using Streams = EventStore.Client.Streams.Streams;
+using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	public abstract class GrpcSpecification<TLogFormat, TStreamId> : IDisposable {
@@ -96,8 +96,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					Id = Uuid.NewUuid().ToDto(),
 					CustomMetadata = ByteString.Empty,
 					Metadata = {
-						{Core.Services.Transport.Grpc.Constants.Metadata.ContentType, "application/octet-stream"},
-						{Core.Services.Transport.Grpc.Constants.Metadata.Type, "-"}
+						{GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ApplicationOctetStream},
+						{GrpcMetadata.Type, "-"}
 					}
 				});
 

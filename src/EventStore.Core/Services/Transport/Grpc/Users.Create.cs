@@ -14,7 +14,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, CreateOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var createSource = new TaskCompletionSource<bool>();
 

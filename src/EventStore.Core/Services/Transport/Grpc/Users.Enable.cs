@@ -13,7 +13,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, EnableOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var enableSource = new TaskCompletionSource<bool>();
 

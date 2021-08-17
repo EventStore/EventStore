@@ -1,70 +1,67 @@
 using System;
-using System.Net;
+using System.Runtime.CompilerServices;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Client;
-using EventStore.Common.Utils;
 using Grpc.Core;
 
 namespace EventStore.Core.Services.Transport.Grpc {
-	internal static class RpcExceptions {
+	public static class RpcExceptions {
 		public static Exception Timeout(string message) => new RpcException(new Status(StatusCode.Aborted, $"Operation timed out: {message}"));
 
-		public static Exception ServerNotReady() =>
-			new RpcException(new Status(StatusCode.Unavailable, "Server Is Not Ready"));
+		public static RpcException ServerNotReady() =>
+			new(new Status(StatusCode.Unavailable, "Server Is Not Ready"));
 
-		private static Exception ServerBusy() =>
-			new RpcException(new Status(StatusCode.Unavailable, "Server Is Too Busy"));
+		private static RpcException ServerBusy() =>
+			new (new Status(StatusCode.Unavailable, "Server Is Too Busy"));
 
 		private static Exception NoLeaderInfo() =>
 			new RpcException(new Status(StatusCode.Unknown, "No leader info available in response"));
 
-		public static Exception LeaderInfo(string host, int port) =>
-			new RpcException(new Status(StatusCode.NotFound, $"Leader info available"), new Metadata {
+		public static RpcException LeaderInfo(string host, int port) =>
+			new (new Status(StatusCode.NotFound, $"Leader info available"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.NotLeader},
 				{Constants.Exceptions.LeaderEndpointHost, host},
 				{Constants.Exceptions.LeaderEndpointPort, port.ToString()},
 			});
 
 		public static RpcException StreamNotFound(string streamName) =>
-			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' is not found."), new Metadata {
+			new (new Status(StatusCode.NotFound, $"Event stream '{streamName}' is not found."), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.StreamNotFound},
 				{Constants.Exceptions.StreamName, streamName}
 			});
 
-		public static Exception NoStream(string streamName) =>
-			new RpcException(new Status(StatusCode.NotFound, $"Event stream '{streamName}' was not created."));
+		public static RpcException NoStream(string streamName) =>
+			new (new Status(StatusCode.NotFound, $"Event stream '{streamName}' was not created."));
 
 		public static RpcException UnknownMessage<T>(Message message) where T : Message =>
-			new RpcException(
-				new Status(StatusCode.Unknown,
-					$"Envelope callback expected either {typeof(T).Name} or {nameof(ClientMessage.NotHandled)}, received {message.GetType().Name} instead"));
+			new(new Status(StatusCode.Unknown,
+				$"Envelope callback expected either {typeof(T).Name} or {nameof(ClientMessage.NotHandled)}, received {message.GetType().Name} instead"));
 
 		public static RpcException UnknownError<T>(T result) where T : unmanaged =>
-			new RpcException(new Status(StatusCode.Unknown, $"Unexpected {typeof(T).Name}: {result}"));
+			new(new Status(StatusCode.Unknown, $"Unexpected {typeof(T).Name}: {result}"));
 
 		public static RpcException UnknownError(string message) =>
-			new RpcException(new Status(StatusCode.Unknown, message));
+			new(new Status(StatusCode.Unknown, message));
 
 		public static RpcException AccessDenied() =>
-			new RpcException(new Status(StatusCode.PermissionDenied, "Access Denied"), new Metadata {
+			new(new Status(StatusCode.PermissionDenied, "Access Denied"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.AccessDenied}
 			});
 
 		public static RpcException InvalidTransaction() =>
-			new RpcException(new Status(StatusCode.InvalidArgument, "Invalid Transaction"), new Metadata {
+			new(new Status(StatusCode.InvalidArgument, "Invalid Transaction"), new Metadata {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.InvalidTransaction}
 			});
 
 		public static RpcException StreamDeleted(string streamName) =>
-			new RpcException(new Status(StatusCode.FailedPrecondition, $"Event stream '{streamName}' is deleted."),
+			new(new Status(StatusCode.FailedPrecondition, $"Event stream '{streamName}' is deleted."),
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.StreamDeleted},
 					{Constants.Exceptions.StreamName, streamName}
 				});
 
 		public static RpcException ScavengeNotFound(string scavengeId) =>
-			new RpcException(new Status(StatusCode.NotFound, "Scavenge id was invalid."),
+			new(new Status(StatusCode.NotFound, "Scavenge id was invalid."),
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.ScavengeNotFound},
 					{Constants.Exceptions.ScavengeId, scavengeId ?? string.Empty}
@@ -75,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			string streamName,
 			long expectedVersion,
 			long? actualVersion = default) =>
-			new RpcException(
+			new(
 				new Status(
 					StatusCode.FailedPrecondition,
 					$"Append failed due to WrongExpectedVersion. Stream: {streamName}, Expected version: {expectedVersion}, Actual version: {actualVersion}"),
@@ -87,7 +84,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				});
 
 		public static RpcException MaxAppendSizeExceeded(int maxAppendSize) =>
-			new RpcException(
+			new(
 				new Status(StatusCode.InvalidArgument, $"Maximum Append Size of {maxAppendSize} Exceeded."),
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MaximumAppendSizeExceeded},
@@ -95,7 +92,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				});
 
 		public static RpcException RequiredMetadataPropertyMissing(string missingMetadataProperty) =>
-			new RpcException(
+			new(
 				new Status(StatusCode.InvalidArgument, $"Required Metadata Property '{missingMetadataProperty}' is missing"),
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.MissingRequiredMetadataProperty},
@@ -196,5 +193,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				{Constants.Exceptions.ExceptionKey, Constants.Exceptions.UserConflict},
 				{Constants.Exceptions.LoginName, loginName}
 			});
+
+		public static RpcException InvalidArgument<T>(T argument) =>
+			new(new Status(StatusCode.InvalidArgument, $"'{argument}' is not a valid {typeof(T)}"));
+
+		public static RpcException InvalidCombination<T>(T combination) where T : ITuple
+			=> new(new Status(StatusCode.InvalidArgument, $"The combination of {combination} is invalid."));
 	}
 }

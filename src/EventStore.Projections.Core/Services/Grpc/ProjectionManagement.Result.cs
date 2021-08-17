@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using EventStore.Core.Messaging;
 using EventStore.Client.Projections;
+using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core.Messages;
 using Google.Protobuf.WellKnownTypes;
@@ -16,7 +17,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, ResultOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 
 			var resultSource = new TaskCompletionSource<Value>();
@@ -56,7 +57,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, StateOperation, context.CancellationToken)
 				.ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			var resultSource = new TaskCompletionSource<Value>();
 

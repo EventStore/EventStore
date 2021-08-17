@@ -15,7 +15,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, StartOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			_publisher.Publish(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.StartFromChunk, request.Options.ThreadCount));
@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, StopOperation, context.CancellationToken).ConfigureAwait(false)) {
-				throw AccessDenied();
+				throw RpcExceptions.AccessDenied();
 			}
 			_publisher.Publish(new ClientMessage.StopDatabaseScavenge(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
 				request.Options.ScavengeId));
