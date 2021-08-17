@@ -45,6 +45,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ISizer<TStreamId> sizer,
 			INameExistenceFilter streamExistenceFilter,
 			IExistenceFilterReader<TStreamId> streamExistenceFilterReader,
+			INameIndexConfirmer<TStreamId> eventTypeIndex,
 			int streamInfoCacheCapacity,
 			bool additionalCommitChecks,
 			long metastreamMaxCount,
@@ -71,19 +72,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			var indexBackend = new IndexBackend<TStreamId>(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
 
-			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator, streamExistenceFilterReader,
-				metastreamMetadata, hashCollisionReadLimit,
-				skipIndexScanOnReads);
+			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator,
+				streamExistenceFilterReader, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads);
 
 			_streamIds = streamIds;
 			_streamNames = streamNamesProvider.StreamNames;
 			var systemStreams = streamNamesProvider.SystemStreams;
+			var eventTypeNames = streamNamesProvider.EventTypes;
 			var streamExistenceFilterInitializer = streamNamesProvider.StreamExistenceFilterInitializer;
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
-			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames,
-				systemStreams, streamExistenceFilter, streamExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks);
-			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames);
+			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex,
+				_streamNames, eventTypeIndex, eventTypeNames, systemStreams, streamExistenceFilter,
+				streamExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks);
+			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames, eventTypeNames);
 		}
 
 		IndexReadEventResult IReadIndex<TStreamId>.ReadEvent(string streamName, TStreamId streamId, long eventNumber) {

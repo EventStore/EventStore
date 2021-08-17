@@ -182,7 +182,7 @@ namespace EventStore.LogV3 {
 			Guid eventTypeId,
 			Guid parentEventTypeId,
 			Guid partitionId,
-			uint referenceNumber,
+			uint eventTypeNumber,
 			ushort version,
 			string name) {
 
@@ -199,7 +199,7 @@ namespace EventStore.LogV3 {
 
 			subHeader.ParentEventTypeId = parentEventTypeId;
 			subHeader.PartitionId = partitionId;
-			subHeader.ReferenceNumber = referenceNumber;
+			subHeader.ReferenceNumber = eventTypeNumber;
 			subHeader.Version = version;
 			PopulateString(name, record.Payload.Span);
 
@@ -241,7 +241,7 @@ namespace EventStore.LogV3 {
 			long streamNumber,
 			long startingEventNumber,
 			Guid eventId,
-			string eventType,
+			uint eventTypeNumber,
 			ReadOnlySpan<byte> eventData,
 			ReadOnlySpan<byte> eventMetadata,
 			Raw.EventFlags eventFlags) {
@@ -256,7 +256,7 @@ namespace EventStore.LogV3 {
 
 			var eventSystemMetadata = new EventSystemMetadata {
 				EventId = eventId,
-				EventType = eventType,
+				EventType = eventTypeNumber,
 			};
 
 			var writeSystemMetadataSize = writeSystemMetadata.CalculateSize();
@@ -292,6 +292,7 @@ namespace EventStore.LogV3 {
 			writeSystemMetadata.WriteTo(slicer.Slice(subHeader.MetadataSize).Span);
 
 			PopulateEventSubRecord(
+				eventTypeNumber: eventTypeNumber,
 				flags: eventFlags,
 				systemMetadataSize: eventSystemMetadataSize,
 				systemMetadata: eventSystemMetadata,
@@ -329,6 +330,7 @@ namespace EventStore.LogV3 {
 			}
 
 			static void PopulateEventSubRecord(
+				uint eventTypeNumber,
 				Raw.EventFlags flags,
 				int systemMetadataSize,
 				EventSystemMetadata systemMetadata,
@@ -338,7 +340,7 @@ namespace EventStore.LogV3 {
 
 				var slicer = target.Slicer();
 				ref var header = ref slicer.SliceAs<Raw.EventHeader>();
-				header.EventTypeNumber = default;
+				header.EventTypeNumber = eventTypeNumber;
 				header.Flags = flags;
 				header.EventSize = MeasureForEventSubRecord(systemMetadataSize, data, metadata);
 				header.SystemMetadataSize = systemMetadataSize;

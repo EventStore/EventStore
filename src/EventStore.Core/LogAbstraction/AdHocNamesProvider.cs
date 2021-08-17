@@ -10,6 +10,7 @@ namespace EventStore.Core.LogAbstraction {
 
 		private ISystemStreamLookup<TStreamId> _systemStreams;
 		private INameLookup<TStreamId> _streamNames;
+		private INameLookup<TStreamId> _eventTypes;
 		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
 
 		public AdHocStreamNamesProvider(
@@ -23,6 +24,11 @@ namespace EventStore.Core.LogAbstraction {
 		public INameLookup<TStreamId> StreamNames {
 			get => _streamNames ?? throw new InvalidOperationException("Call SetReader or SetTableIndex first");
 			set => _streamNames = value;
+		}
+
+		public INameLookup<TStreamId> EventTypes {
+			get => _eventTypes ?? throw new InvalidOperationException("Call SetReader or SetTableIndex first");
+			set => _eventTypes = value;
 		}
 
 		public ISystemStreamLookup<TStreamId> SystemStreams {

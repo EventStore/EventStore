@@ -19,6 +19,7 @@ namespace EventStore.Core.Services {
 	public static class SystemStreams {
 		public const string PersistentSubscriptionConfig = "$persistentSubscriptionConfig";
 		public const string AllStream = "$all";
+		public const string EventTypesCreatedStream = "$types-created";
 		public const string StreamsStream = "$streams";
 		public const string StreamsCreatedStream = "$streams-created";
 		public const string SettingsStream = "$settings";
@@ -79,6 +80,7 @@ namespace EventStore.Core.Services {
 		public const string ScavengeChunksCompleted = "$scavengeChunksCompleted";
 		public const string ScavengeMergeCompleted = "$scavengeMergeCompleted";
 		public const string ScavengeIndexCompleted = "$scavengeIndexCompleted";
+		public const string EmptyEventType = "";
 
 		public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 			string streamId = null;

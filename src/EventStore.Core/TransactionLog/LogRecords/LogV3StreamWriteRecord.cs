@@ -24,7 +24,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
-			string eventType,
+			uint eventType,
 			ReadOnlySpan<byte> data,
 			ReadOnlySpan<byte> metadata) {
 
@@ -38,7 +38,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				throw new ArgumentOutOfRangeException("eventStreamId", eventStreamId, null);
 			if (expectedVersion < Core.Data.ExpectedVersion.Any)
 				throw new ArgumentOutOfRangeException("expectedVersion");
-			eventType ??= "";
 
 			Record = RecordCreator.CreateStreamWriteRecordForSingleEvent(
 				timeStamp: timeStamp,
@@ -49,8 +48,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				streamNumber: eventStreamId,
 				startingEventNumber: expectedVersion + 1,
 				eventId: eventId,
-				// temporarily storing the event type as the system metadata. later it will have a number.
-				eventType: eventType,
+				eventTypeNumber: eventType,
 				eventData: data,
 				eventMetadata: metadata,
 				// todo: translate
@@ -68,7 +66,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public Guid EventId => Record.Event.SystemMetadata.EventId;
 		public Guid CorrelationId => Record.SystemMetadata.CorrelationId;
 		// temporarily storing the event type as the system metadata. later it will have a number.
-		public string EventType => Record.Event.SystemMetadata.EventType;
+		public uint EventType => Record.Event.SystemMetadata.EventType;
 		public ReadOnlyMemory<byte> Data => Record.Event.Data;
 		public ReadOnlyMemory<byte> Metadata => Record.Event.Metadata;
 

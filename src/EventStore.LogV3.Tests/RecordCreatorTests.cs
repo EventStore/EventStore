@@ -184,7 +184,7 @@ namespace EventStore.LogV3.Tests {
 				streamNumber: _long3,
 				startingEventNumber: _long4,
 				eventId: _guid2,
-				eventType: _string1,
+				eventTypeNumber: _string1,
 				eventData: _bytes3.Span,
 				eventMetadata: _bytes4.Span,
 				eventFlags: _prepareflags);

@@ -44,13 +44,15 @@ namespace EventStore.Core.Services {
 			IIndexWriter<TStreamId> indexWriter,
 			IRecordFactory<TStreamId> recordFactory,
 			INameIndex<TStreamId> streamNameIndex,
+			INameIndex<TStreamId> eventTypeIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
 			Func<long> getLastIndexedPosition,
-			IPartitionManager partitionManager)
+			IPartitionManager partitionManager,
+			TStreamId emptyEventTypeId)
 			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex,
-				systemStreams, epochManager, queueStatsManager, partitionManager) {
+				eventTypeIndex, systemStreams, epochManager, queueStatsManager, partitionManager, emptyEventTypeId) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;

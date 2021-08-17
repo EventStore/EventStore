@@ -17,6 +17,16 @@ namespace EventStore.Core.LogV2 {
 			string streamName) =>
 			throw new NotSupportedException();
 
+		public IPrepareLogRecord<string> CreateEventTypeRecord(
+			Guid eventTypeId,
+			Guid parentEventTypeId,
+			string eventType,
+			string referenceNumber,
+			byte version,
+			long logPosition,
+			DateTime timeStamp) =>
+			throw new NotSupportedException();
+
 		public ISystemLogRecord CreateEpoch(EpochRecord epoch) {
 			var result = new SystemLogRecord(
 				logPosition: epoch.EpochPosition,
@@ -47,7 +57,7 @@ namespace EventStore.Core.LogV2 {
 				eventId: eventId,
 				transactionPosition: transactionPosition,
 				transactionOffset: transactionOffset,
-				eventStreamId: eventStreamId,
+				eventStreamId: eventStreamId ?? string.Empty,
 				expectedVersion: expectedVersion,
 				timeStamp: timeStamp,
 				flags: flags,

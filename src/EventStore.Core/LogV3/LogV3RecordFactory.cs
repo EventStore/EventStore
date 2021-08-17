@@ -37,6 +37,28 @@ namespace EventStore.Core.LogV3 {
 			return result;
 		}
 
+		public IPrepareLogRecord<StreamId> CreateEventTypeRecord(
+			Guid eventTypeId,
+			Guid parentEventTypeId,
+			string eventType,
+			uint eventTypeNumber,
+			byte version,
+			long logPosition,
+			DateTime timeStamp) {
+
+			var result = new LogV3EventTypeRecord(
+				eventTypeId: eventTypeId,
+				parentEventTypeId: parentEventTypeId,
+				eventType: eventType,
+				eventTypeNumber: eventTypeNumber,
+				version: version,
+				logPosition: logPosition,
+				timeStamp: timeStamp,
+				partitionId: _rootPartitionId);
+
+			return result;
+		}
+
 		public ISystemLogRecord CreateEpoch(EpochRecord epoch) {
 			var result = new LogV3EpochLogRecord(
 				logPosition: epoch.EpochPosition,
@@ -58,7 +80,7 @@ namespace EventStore.Core.LogV3 {
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
-			string eventType,
+			StreamId eventType,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata) {
 

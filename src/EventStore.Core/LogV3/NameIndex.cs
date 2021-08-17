@@ -19,7 +19,7 @@ namespace EventStore.Core.LogV3 {
 	// might exist or definitely does not exist.
 	//
 	// The entries can then be confirmed, which transfers them to the INameIndexPersistence
-	// object which is allowed to persist them to disk. This is similar to the IndexCommiter class.
+	// object which is allowed to persist them to disk. This is similar to the IndexCommitter class.
 	//
 	// Components wanting only entries that have been confirmed will read from the INameIndexPersistence.
 	public class NameIndex :
@@ -36,6 +36,7 @@ namespace EventStore.Core.LogV3 {
 		private readonly Value _valueInterval;
 		private readonly object _nextValueLock = new();
 		private Value _nextValue;
+		private Type _recordTypeToHandle;
 
 		public NameIndex(
 			string indexName,
@@ -43,7 +44,8 @@ namespace EventStore.Core.LogV3 {
 			Value valueInterval,
 			INameExistenceFilter existenceFilter,
 			INameIndexPersistence<Value> persistence,
-			IMetastreamLookup<Value> metastreams) {
+			IMetastreamLookup<Value> metastreams,
+			Type recordTypeToHandle) {
 
 			_indexName = indexName;
 			_firstValue = firstValue;
@@ -52,6 +54,7 @@ namespace EventStore.Core.LogV3 {
 			_existenceFilter = existenceFilter;
 			_persistence = persistence;
 			_metastreams = metastreams;
+			_recordTypeToHandle = recordTypeToHandle;
 		}
 
 		public void Dispose() {
@@ -109,7 +112,7 @@ namespace EventStore.Core.LogV3 {
 			for (int i = 0; i < prepares.Count; i++) {
 				var prepare = prepares[i];
 				if (prepare.RecordType == LogRecordType.Stream &&
-					prepare is LogV3StreamRecord streamRecord) {
+					prepare is LogV3StreamRecord streamRecord && prepare.GetType() == _recordTypeToHandle) {
 					Confirm(
 						name: streamRecord.StreamName,
 						value: streamRecord.StreamNumber);
@@ -133,6 +136,19 @@ namespace EventStore.Core.LogV3 {
 						backend.SetStreamLastEventNumber(createdStreamNumber, ExpectedVersion.NoStream);
 						backend.SetStreamLastEventNumber(createdMetaStreamNumber, ExpectedVersion.NoStream);
 					}
+				}
+				else if (prepare.RecordType == LogRecordType.EventType &&
+				         prepare is LogV3EventTypeRecord eventTypeRecord && prepare.GetType() == _recordTypeToHandle) {
+					Confirm(
+						name: eventTypeRecord.EventTypeName,
+						value: eventTypeRecord.EventTypeNumber);
+
+					//qq do we need this?
+					//
+					// update the event types stream
+					// initialisation of the stream name index caused an entry to be populated in
+					// the last event number cache, now we need to keep it up to date even on initialisation
+					backend.SetStreamLastEventNumber(prepare.EventStreamId, prepare.ExpectedVersion + 1);
 				}
 			}
 		}

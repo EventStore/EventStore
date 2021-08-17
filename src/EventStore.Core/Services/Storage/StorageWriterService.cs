@@ -48,6 +48,7 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IIndexWriter<TStreamId> _indexWriter;
 		private readonly IRecordFactory<TStreamId> _recordFactory;
 		private readonly INameIndex<TStreamId> _streamNameIndex;
+		private readonly INameIndex<TStreamId> _eventTypeIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 
 		protected readonly IEpochManager EpochManager;
@@ -79,6 +80,7 @@ namespace EventStore.Core.Services.Storage {
 		private long _maxFlushDelay;
 		private const string _writerFlushHistogram = "writer-flush";
 		private readonly List<Task> _tasks = new List<Task>();
+		private readonly TStreamId _emptyEventTypeId;
 
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
@@ -92,10 +94,12 @@ namespace EventStore.Core.Services.Storage {
 			IIndexWriter<TStreamId> indexWriter,
 			IRecordFactory<TStreamId> recordFactory,
 			INameIndex<TStreamId> streamNameIndex,
+			INameIndex<TStreamId> eventTypeIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
-			IPartitionManager partitionManager) {
+			IPartitionManager partitionManager,
+			TStreamId emptyEventTypeId) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -103,6 +107,7 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(indexWriter, "indexWriter");
 			Ensure.NotNull(recordFactory, nameof(recordFactory));
 			Ensure.NotNull(streamNameIndex, nameof(streamNameIndex));
+			Ensure.NotNull(eventTypeIndex, nameof(eventTypeIndex));
 			Ensure.NotNull(systemStreams, nameof(systemStreams));
 			Ensure.NotNull(epochManager, "epochManager");
 			Ensure.NotNull(partitionManager, "partitionManager");
@@ -113,8 +118,10 @@ namespace EventStore.Core.Services.Storage {
 			_indexWriter = indexWriter;
 			_recordFactory = recordFactory;
 			_streamNameIndex = streamNameIndex;
+			_eventTypeIndex = eventTypeIndex;
 			_systemStreams = systemStreams;
 			_partitionManager = partitionManager;
+			_emptyEventTypeId = emptyEventTypeId;
 			EpochManager = epochManager;
 
 			_minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
@@ -201,6 +208,7 @@ namespace EventStore.Core.Services.Storage {
 				case VNodeState.Leader: {
 						_indexWriter.Reset();
 						_streamNameIndex.CancelReservations();
+						_eventTypeIndex.CancelReservations();
 						EpochManager.WriteNewEpoch(((SystemMessage.BecomeLeader)message).EpochNumber);
 						_partitionManager.Initialize();
 						break;
@@ -279,6 +287,13 @@ namespace EventStore.Core.Services.Storage {
 
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 				if (msg.Events.Length > 0) {
+					//qq consider using stackalloc
+					var eventTypes = new TStreamId[msg.Events.Length];
+					for (int i = 0; i < msg.Events.Length; ++i) {
+						var evnt = msg.Events[i];
+						eventTypes[i] = GetOrWriteEventType(evnt.EventType, ref logPosition);
+					}
+					
 					var transactionPosition = logPosition;
 					for (int i = 0; i < msg.Events.Length; ++i) {
 						var evnt = msg.Events[i];
@@ -292,10 +307,11 @@ namespace EventStore.Core.Services.Storage {
 
 						// when IsCommitted ExpectedVersion is always explicit
 						var expectedVersion = commitCheck.CurrentVersion + i;
+						var eventType = GetOrWriteEventType(evnt.EventType, ref logPosition);
 						var res = WritePrepareWithRetry(
 							LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, evnt.EventId,
 								transactionPosition, i, streamId,
-								expectedVersion, flags, evnt.EventType, evnt.Data, evnt.Metadata));
+								expectedVersion, flags, eventTypes[i], evnt.Data, evnt.Metadata));
 						logPosition = res.NewPos;
 						if (i == 0)
 							transactionPosition = res.WrittenPos;
@@ -307,7 +323,7 @@ namespace EventStore.Core.Services.Storage {
 						LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, Guid.NewGuid(), logPosition, -1,
 							streamId, commitCheck.CurrentVersion,
 							PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
-							string.Empty, Empty.ByteArray, Empty.ByteArray));
+							_emptyEventTypeId, Empty.ByteArray, Empty.ByteArray));
 				}
 
 				bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)
@@ -325,6 +341,24 @@ namespace EventStore.Core.Services.Storage {
 			} finally {
 				Flush();
 			}
+		}
+
+		private TStreamId GetOrWriteEventType(string eventType, ref long logPosition)
+		{
+			var preExistingEventType = _eventTypeIndex.GetOrReserveEventType(
+				recordFactory: _recordFactory,
+				eventType: eventType,
+				logPosition: logPosition,
+				eventTypeId: out var eventTypeId,
+				eventTypeRecord: out var eventTypeRecord);
+
+			if (eventTypeRecord != null)
+			{
+				var result = WritePrepareWithRetry(eventTypeRecord);
+				logPosition = result.NewPos;
+			}
+			
+			return eventTypeId;
 		}
 
 
@@ -346,11 +380,13 @@ namespace EventStore.Core.Services.Storage {
 				return;
 
 			var logPosition = Writer.Checkpoint.ReadNonFlushed();
+			var streamMetadataEventTypeId = GetOrWriteEventType(SystemEventTypes.StreamMetadata, ref logPosition);
+
 			var res = WritePrepareWithRetry(
 				LogRecord.Prepare(_recordFactory, logPosition, Guid.NewGuid(), Guid.NewGuid(), logPosition, 0,
 					_systemStreams.MetaStreamOf(streamId), metaLastEventNumber,
 					PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
-					SystemEventTypes.StreamMetadata, modifiedMeta, Empty.ByteArray));
+					streamMetadataEventTypeId, modifiedMeta, Empty.ByteArray));
 
 			_indexWriter.PreCommit(new[] { res.Prepare });
 		}
@@ -405,8 +441,9 @@ namespace EventStore.Core.Services.Storage {
 				if (message.HardDelete) {
 					// HARD DELETE
 					const long expectedVersion = EventNumber.DeletedStream - 1;
+					var streamDeletedEventType = GetOrWriteEventType(SystemEventTypes.StreamDeleted, ref logPosition);
 					var record = LogRecord.DeleteTombstone(_recordFactory, logPosition, message.CorrelationId,
-						eventId, streamId, expectedVersion, PrepareFlags.IsCommitted);
+						eventId, streamId, streamDeletedEventType, expectedVersion, PrepareFlags.IsCommitted);
 					var res = WritePrepareWithRetry(record);
 					_indexWriter.PreCommit(new[] { res.Prepare });
 				} else {
@@ -416,9 +453,12 @@ namespace EventStore.Core.Services.Storage {
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
 											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();
+					
+					var streamMetadataEventTypeId = GetOrWriteEventType(SystemEventTypes.StreamMetadata, ref logPosition);
+					
 					var res = WritePrepareWithRetry(
 						LogRecord.Prepare(_recordFactory, logPosition, message.CorrelationId, eventId, logPosition, 0,
-							metastreamId, expectedVersion, flags, SystemEventTypes.StreamMetadata,
+							metastreamId, expectedVersion, flags, streamMetadataEventTypeId,
 							data, null));
 					_indexWriter.PreCommit(new[] { res.Prepare });
 				}
@@ -466,6 +506,7 @@ namespace EventStore.Core.Services.Storage {
 					long lastLogPosition = -1;
 					for (int i = 0; i < message.Events.Length; ++i) {
 						var evnt = message.Events[i];
+						var eventType = GetOrWriteEventType(evnt.EventType, ref logPosition);
 						var record = LogRecord.TransactionWrite(
 							_recordFactory,
 							logPosition,
@@ -474,7 +515,7 @@ namespace EventStore.Core.Services.Storage {
 							message.TransactionId,
 							transactionInfo.TransactionOffset + i + 1,
 							transactionInfo.EventStreamId,
-							evnt.EventType,
+							eventType,
 							evnt.Data,
 							evnt.Metadata,
 							evnt.IsJson);

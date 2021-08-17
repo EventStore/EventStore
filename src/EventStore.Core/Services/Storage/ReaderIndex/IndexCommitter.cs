@@ -42,6 +42,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly ITableIndex<TStreamId> _tableIndex;
 		private readonly INameIndexConfirmer<TStreamId> _streamNameIndex;
 		private readonly INameLookup<TStreamId> _streamNames;
+		private readonly INameIndexConfirmer<TStreamId> _eventTypeIndex;
+		private readonly INameLookup<TStreamId> _eventTypes;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly INameExistenceFilter _streamExistenceFilter;
 		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
@@ -51,13 +53,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private bool _indexRebuild = true;
 		private readonly ICheckpoint _indexChk;
 
-		public IndexCommitter(
-			IPublisher bus,
+		public IndexCommitter(IPublisher bus,
 			IIndexBackend<TStreamId> backend,
 			IIndexReader<TStreamId> indexReader,
 			ITableIndex<TStreamId> tableIndex,
 			INameIndexConfirmer<TStreamId> streamNameIndex,
 			INameLookup<TStreamId> streamNames,
+			INameIndexConfirmer<TStreamId> eventTypeIndex,
+			INameLookup<TStreamId> eventTypes,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			INameExistenceFilter streamExistenceFilter,
 			INameExistenceFilterInitializer streamExistenceFilterInitializer,
@@ -69,6 +72,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_tableIndex = tableIndex;
 			_streamNameIndex = streamNameIndex;
 			_streamNames = streamNames;
+			_eventTypeIndex = eventTypeIndex;
+			_eventTypes = eventTypes;
 			_systemStreams = systemStreams;
 			_streamExistenceFilter = streamExistenceFilter;
 			_streamExistenceFilterInitializer = streamExistenceFilterInitializer;
@@ -112,6 +117,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			// after we only allow replicated entries into the index we can be sure that
 			// neither index will need truncating and this will become more elegant.
 			_streamNameIndex.InitializeWithConfirmed(_streamNames);
+			_eventTypeIndex.InitializeWithConfirmed(_eventTypes);
 
 			_indexRebuild = true;
 			using (var reader = _backend.BorrowReader()) {
@@ -126,6 +132,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Stream:
+						case LogRecordType.EventType:
 						case LogRecordType.Prepare: {
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {
@@ -197,6 +204,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		public void Dispose() {
 			_streamNameIndex?.Dispose();
+			_eventTypeIndex?.Dispose();
 			_streamExistenceFilter?.Dispose();
 			try {
 				_tableIndex.Close(removeFiles: false);
@@ -283,11 +291,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
 
-			_streamNameIndex.Confirm(
-				commit: commit,
-				replicatedPrepares: prepares,
-				catchingUp: _indexRebuild,
-				backend: _backend);
+			_streamNameIndex.Confirm(prepares, commit, _indexRebuild, _backend);
+			_eventTypeIndex.Confirm(prepares, commit, _indexRebuild, _backend);
 
 			var newLastIndexedPosition = Math.Max(commit.LogPosition, lastIndexedPosition);
 			if (_indexChk.Read() != lastIndexedPosition) {
@@ -300,10 +305,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (!_indexRebuild) {
 				var streamName = _streamNames.LookupName(streamId);
 				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
+					var eventType = _eventTypes.LookupName(prepares[i].EventType);
 					_bus.Publish(
 						new StorageMessage.EventCommitted(
 							commit.LogPosition,
-							new EventRecord(indexEntries[i].Version, prepares[i], streamName),
+							new EventRecord(indexEntries[i].Version, prepares[i], streamName, eventType),
 							isTfEof && i == n - 1));
 				}
 			}
@@ -394,10 +400,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					_backend.SetSystemSettings(DeserializeSystemSettings(prepares[prepares.Count - 1].Data));
 			}
 
-			_streamNameIndex.Confirm(
-				replicatedPrepares: prepares,
-				catchingUp: _indexRebuild,
-				backend: _backend);
+			_streamNameIndex.Confirm(prepares, _indexRebuild, _backend);
+			_eventTypeIndex.Confirm(prepares, _indexRebuild, _backend);
 
 			var newLastIndexedPosition = Math.Max(lastPrepare.LogPosition, lastIndexedPosition);
 			if (_indexChk.Read() != lastIndexedPosition) {
@@ -410,10 +414,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (!_indexRebuild) {
 				var streamName = _streamNames.LookupName(streamId);
 				for (int i = 0, n = indexEntries.Count; i < n; ++i) {
+					var eventType = _eventTypes.LookupName(prepares[i].EventType);
 					_bus.Publish(
 						new StorageMessage.EventCommitted(
 							prepares[i].LogPosition,
-							new EventRecord(indexEntries[i].Version, prepares[i], streamName),
+							new EventRecord(indexEntries[i].Version, prepares[i], streamName, eventType),
 							isTfEof && i == n - 1));
 				}
 			}
