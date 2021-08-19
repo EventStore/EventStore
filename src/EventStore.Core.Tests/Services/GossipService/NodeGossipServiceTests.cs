@@ -855,9 +855,13 @@ namespace EventStore.Core.Tests.Services.GossipService {
 				0, 0, 0, -1, -1, Guid.Empty, 0, false);
 		}
 
+		private static object[] AllowedNodeRemovalStates => DeadNodeRemoval.AllowedNodeRemovalStates;
+		private static object[] DisallowedNodeRemovalStates => DeadNodeRemoval.DisallowedNodeRemovalStates;
+
 		[Test]
+		[TestCaseSource(nameof(AllowedNodeRemovalStates))]
 		public void
-			should_remove_dead_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout() {
+			should_remove_dead_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout(VNodeState currentRole) {
 			var timeProvider = new FakeTimeProvider();
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 
@@ -868,15 +872,16 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					TestNodeFor(1, isAlive: false, timeProvider.UtcNow),
 					nodeToBeRemoved,
 					TestNodeFor(3, isAlive: false, timeProvider.UtcNow)), info => info,
-				timeProvider, deadMemberRemovalTimeout);
+				timeProvider, deadMemberRemovalTimeout, currentRole);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(2));
 			Assert.IsFalse(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.HttpEndPoint)));
 		}
 
 		[Test]
+		[TestCaseSource(nameof(AllowedNodeRemovalStates))]
 		public void
-			should_not_remove_alive_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout() {
+			should_not_remove_alive_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout(VNodeState currentRole) {
 			var timeProvider = new FakeTimeProvider();
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 
@@ -887,7 +892,27 @@ namespace EventStore.Core.Tests.Services.GossipService {
 					TestNodeFor(1, isAlive: false, timeProvider.UtcNow),
 					nodeToNotBeRemoved,
 					TestNodeFor(3, isAlive: false, timeProvider.UtcNow)), info => info,
-				timeProvider, deadMemberRemovalTimeout);
+				timeProvider, deadMemberRemovalTimeout, currentRole);
+
+			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
+			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToNotBeRemoved.HttpEndPoint)));
+		}
+
+		[Test]
+		[TestCaseSource(nameof(DisallowedNodeRemovalStates))]
+		public void
+			should_not_remove_dead_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout_and_the_current_role_is_unknown(VNodeState currentRole) {
+			var timeProvider = new FakeTimeProvider();
+			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
+
+			var nodeToNotBeRemoved =
+				TestNodeFor(2, isAlive: false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
+
+			var updatedCluster = GossipServiceBase.UpdateCluster(new ClusterInfo(
+					TestNodeFor(1, isAlive: false, timeProvider.UtcNow),
+					nodeToNotBeRemoved,
+					TestNodeFor(3, isAlive: false, timeProvider.UtcNow)), info => info,
+				timeProvider, deadMemberRemovalTimeout, currentRole);
 
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
 			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToNotBeRemoved.HttpEndPoint)));
@@ -895,24 +920,28 @@ namespace EventStore.Core.Tests.Services.GossipService {
 	}
 
 	public class when_merging_clusters {
-		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp) {
+		private static MemberInfo TestNodeFor(int identifier, bool isAlive, DateTime timeStamp, VNodeState nodeState) {
 			var ipEndpoint = new IPEndPoint(IPAddress.Loopback, identifier);
-			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, VNodeState.Initializing, isAlive,
+			return MemberInfo.ForVNode(Guid.NewGuid(), timeStamp, nodeState, isAlive,
 				ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, ipEndpoint, null, 0, 0,
 				0, 0, 0, -1, -1, Guid.Empty, 0, false);
 		}
 
+		private static object[] AllowedNodeRemovalStates => DeadNodeRemoval.AllowedNodeRemovalStates;
+		private static object[] DisallowedNodeRemovalStates => DeadNodeRemoval.DisallowedNodeRemovalStates;
+
 		[Test]
+		[TestCaseSource(nameof(AllowedNodeRemovalStates))]
 		public void
-			should_remove_dead_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout() {
+			should_remove_dead_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout(VNodeState currentRole) {
 			var timeProvider = new FakeTimeProvider();
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 			var allowedTimeDifference = TimeSpan.FromMilliseconds(1000);
 
-			var me = TestNodeFor(1, isAlive: false, timeProvider.UtcNow);
+			var me = TestNodeFor(1, isAlive: false, timeProvider.UtcNow, currentRole);
 			var nodeToBeRemoved =
-				TestNodeFor(2, isAlive: false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
-			var peer = TestNodeFor(3, isAlive: false, timeProvider.UtcNow);
+				TestNodeFor(2, isAlive: false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout), VNodeState.Initializing);
+			var peer = TestNodeFor(3, isAlive: false, timeProvider.UtcNow, VNodeState.Initializing);
 			var cluster = new ClusterInfo(me, nodeToBeRemoved, peer);
 
 			var updatedCluster = GossipServiceBase.MergeClusters(
@@ -925,15 +954,16 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		}
 
 		[Test]
+		[TestCaseSource(nameof(AllowedNodeRemovalStates))]
 		public void
-			should_not_remove_alive_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout() {
+			should_not_remove_alive_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout(VNodeState currentRole) {
 			var timeProvider = new FakeTimeProvider();
 			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
 			var allowedTimeDifference = TimeSpan.FromMilliseconds(1000);
 
-			var me = TestNodeFor(1, isAlive: true, timeProvider.UtcNow);
-			var nodeToBeRemoved = TestNodeFor(2, isAlive: true, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout));
-			var peer = TestNodeFor(3, isAlive: true, timeProvider.UtcNow);
+			var me = TestNodeFor(1, isAlive: true, timeProvider.UtcNow, currentRole);
+			var nodeToBeRemoved = TestNodeFor(2, isAlive: true, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout), VNodeState.Initializing);
+			var peer = TestNodeFor(3, isAlive: true, timeProvider.UtcNow, VNodeState.Initializing);
 			var cluster = new ClusterInfo(me, nodeToBeRemoved, peer);
 
 			var updatedCluster = GossipServiceBase.MergeClusters(
@@ -944,5 +974,52 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
 			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.HttpEndPoint)));
 		}
+
+		[Test]
+		[TestCaseSource(nameof(DisallowedNodeRemovalStates))]
+		public void
+			should_not_remove_dead_members_which_have_timestamps_older_than_the_allowed_dead_member_removal_timeout_and_current_role_is_unknown(
+				VNodeState currentRole) {
+			var timeProvider = new FakeTimeProvider();
+			var deadMemberRemovalTimeout = TimeSpan.FromSeconds(1);
+			var allowedTimeDifference = TimeSpan.FromMilliseconds(1000);
+
+			var me = TestNodeFor(1, isAlive: false, timeProvider.UtcNow, currentRole);
+			var nodeToBeRemoved =
+				TestNodeFor(2, isAlive: false, timeProvider.UtcNow.Subtract(deadMemberRemovalTimeout),
+					VNodeState.Initializing);
+			var peer = TestNodeFor(3, isAlive: false, timeProvider.UtcNow, VNodeState.Initializing);
+			var cluster = new ClusterInfo(me, nodeToBeRemoved, peer);
+
+			var updatedCluster = GossipServiceBase.MergeClusters(
+				cluster, cluster, me.HttpEndPoint,
+				info => info, timeProvider.UtcNow, me, peer.InstanceId,
+				allowedTimeDifference, deadMemberRemovalTimeout);
+
+			Assert.That(updatedCluster.Members, Has.Length.EqualTo(3));
+			Assert.IsTrue(updatedCluster.Members.Any(x => x.Is(nodeToBeRemoved.HttpEndPoint)));
+		}
+	}
+
+	public class DeadNodeRemoval {
+		public static readonly object[] DisallowedNodeRemovalStates = {
+			new object[] {VNodeState.Initializing},
+			new object[] {VNodeState.DiscoverLeader},
+			new object[] {VNodeState.Unknown},
+			new object[] {VNodeState.ReadOnlyLeaderless}
+		};
+		public static readonly object[] AllowedNodeRemovalStates = {
+			new object[] {VNodeState.PreReplica},
+			new object[] {VNodeState.CatchingUp},
+			new object[] {VNodeState.Clone},
+			new object[] {VNodeState.Follower},
+			new object[] {VNodeState.PreLeader},
+			new object[] {VNodeState.Leader},
+			new object[] {VNodeState.ShuttingDown},
+			new object[] {VNodeState.Shutdown},
+			new object[] {VNodeState.PreReadOnlyReplica},
+			new object[] {VNodeState.ReadOnlyReplica},
+			new object[] {VNodeState.ResigningLeader},
+		};
 	}
 }
