@@ -1,118 +1,184 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using EventStore.Client;
 using EventStore.Client.PersistentSubscriptions;
-using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Grpc.Core;
-using Serilog;
+using static EventStore.Client.PersistentSubscriptions.ReadReq;
 using static EventStore.Core.Messages.ClientMessage.PersistentSubscriptionNackEvents;
-using UUID = EventStore.Client.UUID;
+using static EventStore.Core.Messages.ClientMessage;
+using static EventStore.Client.PersistentSubscriptions.ReadReq.Types.Options;
+using Action = EventStore.Client.PersistentSubscriptions.ReadReq.Types.Nack.Types.Action;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal partial class PersistentSubscriptions {
-		private static readonly Operation ProcessMessagesOperation = new Operation(Plugins.Authorization.Operations.Subscriptions.ProcessMessages);
-		public override async Task Read(IAsyncStreamReader<ReadReq> requestStream,
+		private static readonly Operation ProcessMessagesOperation =
+			new(Plugins.Authorization.Operations.Subscriptions.ProcessMessages);
+
+		public override Task Read(IAsyncStreamReader<ReadReq> requestStream,
 			IServerStreamWriter<ReadResp> responseStream, ServerCallContext context) {
+			var channel = Channel.CreateUnbounded<ReadResp>(new() {
+				AllowSynchronousContinuations = false,
+				SingleReader = true,
+				SingleWriter = true
+			});
+			var correlationId = Guid.NewGuid();
+
+			var remaining = 2;
+			var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+			Send(channel.Reader, responseStream, context.CancellationToken)
+				.ContinueWith(HandleCompletion, context.CancellationToken);
+			Receive(channel.Writer, requestStream, correlationId, context, context.CancellationToken)
+				.ContinueWith(HandleCompletion, context.CancellationToken);
+
+			return tcs.Task.ContinueWith(task => {
+				var user = context.GetHttpContext().User;
+
+				_publisher.Publish(new UnsubscribeFromStream(Guid.NewGuid(), correlationId, new NoopEnvelope(), user));
+				channel.Writer.TryComplete();
+
+				task.Wait(context.CancellationToken);
+			});
+
+			async void HandleCompletion(Task task) {
+				try {
+					await task.ConfigureAwait(false);
+					if (Interlocked.Decrement(ref remaining) == 0) {
+						tcs.TrySetResult();
+					}
+				} catch (OperationCanceledException) {
+					tcs.TrySetCanceled(context.CancellationToken);
+				} catch (Exception ex) {
+					tcs.TrySetException(ex);
+				}
+			}
+		}
+
+		private async Task Send(ChannelReader<ReadResp> reader, IAsyncStreamWriter<ReadResp> responseStream,
+			CancellationToken cancellationToken) {
+			await foreach (var response in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
+				await responseStream.WriteAsync(response).ConfigureAwait(false);
+			}
+		}
+
+		private async Task Receive(ChannelWriter<ReadResp> writer, IAsyncStreamReader<ReadReq> requestStream,
+			Guid correlationId, ServerCallContext context, CancellationToken cancellationToken) {
 			if (!await requestStream.MoveNext().ConfigureAwait(false)) {
 				return;
 			}
 
-			if (requestStream.Current.ContentCase != ReadReq.ContentOneofCase.Options) {
-				throw new InvalidOperationException();
-			}
+			var options = requestStream.Current.Options ??
+			              throw RpcExceptions.InvalidArgument(requestStream.Current.ContentCase);
 
-			var options = requestStream.Current.Options;
+			var streamName = options.StreamOptionCase switch {
+				StreamOptionOneofCase.StreamIdentifier => (string)options.StreamIdentifier,
+				StreamOptionOneofCase.All => SystemStreams.AllStream,
+				_ => throw RpcExceptions.InvalidArgument(options.StreamOptionCase)
+			};
+
 			var user = context.GetHttpContext().User;
 
-			string streamId = null;
-			switch (options.StreamOptionCase) {
-				case ReadReq.Types.Options.StreamOptionOneofCase.StreamIdentifier:
-					streamId = options.StreamIdentifier;
-					break;
-				case ReadReq.Types.Options.StreamOptionOneofCase.All:
-					streamId = SystemStreams.AllStream;
-					break;
-				default:
-					throw new InvalidOperationException();
-			}
-
-			if (!await _authorizationProvider.CheckAccessAsync(user,
-				ProcessMessagesOperation.WithParameter(Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(streamId)), context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, ProcessMessagesOperation.WithParameter(
+					Plugins.Authorization.Operations.Subscriptions.Parameters.StreamId(streamName)),
+				cancellationToken).ConfigureAwait(false)) {
 				throw RpcExceptions.AccessDenied();
 			}
+
 			var connectionName =
 				context.RequestHeaders.FirstOrDefault(x => x.Key == Constants.Headers.ConnectionName)?.Value ??
 				"<unknown>";
-			var correlationId = Guid.NewGuid();
 			var uuidOptionsCase = options.UuidOption.ContentCase;
+			var subscriptionIdSource = new TaskCompletionSource<string>();
+			var messageChannel = Channel.CreateUnbounded<Message>(new() {
+				SingleReader = true,
+				SingleWriter = true
+			});
+			var envelope = new ChannelEnvelope(messageChannel.Writer);
+			
+			_ = ReceiveMessages();
 
-			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
-				_publisher, streamId, options.GroupName, options.BufferSize, user, context.CancellationToken);
+			_publisher.Publish(streamName switch {
+				SystemStreams.AllStream => new ConnectToPersistentSubscriptionToAll(correlationId, correlationId,
+					envelope, correlationId, connectionName, options.GroupName, options.BufferSize, string.Empty, user),
+				_ => new ConnectToPersistentSubscriptionToStream(correlationId, correlationId, envelope, correlationId,
+					connectionName, options.GroupName, streamName, options.BufferSize, string.Empty, user)
+			});
 
-			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
+			var subscriptionId = await subscriptionIdSource.Task.ConfigureAwait(false);
 
-			try {
-				var read = requestStream.ForEachAsync(HandleAckNack);
-
-				await responseStream.WriteAsync(new ReadResp {
-					SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
-						SubscriptionId = subscriptionId
-					}
-				}).ConfigureAwait(false);
-
-				while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
-					await responseStream.WriteAsync(new ReadResp {
-						Event = ConvertToReadEvent(enumerator.Current)
-					}).ConfigureAwait(false);
-				}
-
-				await read.ConfigureAwait(false);
-			} catch (IOException) {
-				Log.Information("Subscription {correlationId} to {subscriptionId} disposed. The request stream was closed.", correlationId, subscriptionId);
+			while (await requestStream.MoveNext(cancellationToken).ConfigureAwait(false)) {
+				_publisher.Publish(requestStream.Current.ContentCase switch {
+					ContentOneofCase.Ack => new PersistentSubscriptionAckEvents(correlationId, correlationId,
+						new NoopEnvelope(), subscriptionId,
+						requestStream.Current.Ack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
+					ContentOneofCase.Nack => new PersistentSubscriptionNackEvents(correlationId, correlationId,
+						new NoopEnvelope(), subscriptionId, requestStream.Current.Nack.Reason,
+						requestStream.Current.Nack.Action switch {
+							Action.Unknown => NakAction.Unknown,
+							Action.Park => NakAction.Park,
+							Action.Retry => NakAction.Retry,
+							Action.Skip => NakAction.Skip,
+							Action.Stop => NakAction.Stop,
+							_ => throw RpcExceptions.InvalidArgument(requestStream.Current.Nack.Action)
+						},
+						requestStream.Current.Nack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
+					_ => throw RpcExceptions.InvalidArgument(requestStream.Current.ContentCase)
+				});
 			}
 
-			ValueTask HandleAckNack(ReadReq request) {
-				_publisher.Publish(request.ContentCase switch {
-					ReadReq.ContentOneofCase.Ack => new ClientMessage.PersistentSubscriptionAckEvents(
-						correlationId, correlationId, new NoopEnvelope(), subscriptionId,
-						request.Ack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
-					ReadReq.ContentOneofCase.Nack =>
-					new ClientMessage.PersistentSubscriptionNackEvents(
-						correlationId, correlationId, new NoopEnvelope(), subscriptionId,
-						request.Nack.Reason, request.Nack.Action switch {
-							ReadReq.Types.Nack.Types.Action.Unknown => NakAction.Unknown,
-							ReadReq.Types.Nack.Types.Action.Park => NakAction.Park,
-							ReadReq.Types.Nack.Types.Action.Retry => NakAction.Retry,
-							ReadReq.Types.Nack.Types.Action.Skip => NakAction.Skip,
-							ReadReq.Types.Nack.Types.Action.Stop => NakAction.Stop,
-							_ => throw RpcExceptions.InvalidArgument(request.Nack.Action)
-						},
-						request.Nack.Ids.Select(id => Uuid.FromDto(id).ToGuid()).ToArray(), user),
-					_ => throw RpcExceptions.InvalidArgument(request.ContentCase)
-				});
+			Task OnMessage(Message message, CancellationToken ct) => message switch {
+				SubscriptionDropped dropped => Fail(dropped.Reason switch {
+					SubscriptionDropReason.AccessDenied => RpcExceptions.AccessDenied(),
+					SubscriptionDropReason.NotFound or SubscriptionDropReason.PersistentSubscriptionDeleted =>
+						RpcExceptions.PersistentSubscriptionDoesNotExist(streamName, options.GroupName),
+					SubscriptionDropReason.SubscriberMaxCountReached => RpcExceptions
+						.PersistentSubscriptionMaximumSubscribersReached(streamName, options.GroupName),
+					SubscriptionDropReason.Unsubscribed => RpcExceptions.PersistentSubscriptionDropped(
+						streamName, options.GroupName),
+					_ => RpcExceptions.UnknownError(dropped.Reason)
+				}),
+				PersistentSubscriptionConfirmation confirmation => SubscriptionConfirmed(confirmation.SubscriptionId),
+				PersistentSubscriptionStreamEventAppeared appeared => EventAppeared(appeared, ct),
+				_ => Fail(RpcExceptions.UnknownMessage<PersistentSubscriptionConfirmation>(message))
+			};
 
-				return new ValueTask(Task.CompletedTask);
+			async Task ReceiveMessages() {
+				await foreach (var message in messageChannel.Reader.ReadAllAsync(cancellationToken)
+					.ConfigureAwait(false)) {
+					await OnMessage(message, cancellationToken).ConfigureAwait(false);
+				}
+			}
+
+			Task EventAppeared(PersistentSubscriptionStreamEventAppeared appeared, CancellationToken ct) =>
+				writer.WriteAsync(new() { Event = ConvertToReadEvent(appeared.Event, appeared.RetryCount) }, ct)
+					.AsTask();
+
+			Task SubscriptionConfirmed(string subscriptionId) {
+				subscriptionIdSource.TrySetResult(subscriptionId);
+				return writer.WriteAsync(new() {
+					SubscriptionConfirmation = new() { SubscriptionId = subscriptionId }
+				}, cancellationToken).AsTask();
+			}
+
+			Task Fail(Exception ex) {
+				subscriptionIdSource.TrySetException(ex);
+				writer.TryComplete(ex);
+				return Task.CompletedTask;
 			}
 
 			ReadResp.Types.ReadEvent.Types.RecordedEvent ConvertToRecordedEvent(EventRecord e, long? commitPosition,
 				long? preparePosition) {
 				if (e == null) return null;
 				var position = Position.FromInt64(commitPosition ?? -1, preparePosition ?? -1);
-				return new ReadResp.Types.ReadEvent.Types.RecordedEvent {
+				return new() {
 					Id = uuidOptionsCase switch {
-						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new UUID {
+						ReadReq.Types.Options.Types.UUIDOption.ContentOneofCase.String => new() {
 							String = e.EventId.ToString()
 						},
 						_ => Uuid.FromGuid(e.EventId).ToDto()
@@ -133,8 +199,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				};
 			}
 
-			ReadResp.Types.ReadEvent ConvertToReadEvent((ResolvedEvent, int) _) {
-				var (e, retryCount) = _;
+			ReadResp.Types.ReadEvent ConvertToReadEvent(ResolvedEvent e, int retryCount) {
 				var readEvent = new ReadResp.Types.ReadEvent {
 					Link = ConvertToRecordedEvent(e.Link,
 						e.OriginalPosition?.CommitPosition,
@@ -150,145 +215,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						e.OriginalPosition.Value.PreparePosition);
 					readEvent.CommitPosition = position.CommitPosition;
 				} else {
-					readEvent.NoPosition = new Empty();
+					readEvent.NoPosition = new();
 				}
 
 				return readEvent;
-			}
-		}
-
-		private class PersistentStreamSubscriptionEnumerator
-			: IAsyncEnumerator<(ResolvedEvent resolvedEvent, int retryCount)> {
-			private readonly TaskCompletionSource<string> _subscriptionIdSource;
-			private readonly IPublisher _publisher;
-			private readonly Guid _correlationId;
-			private readonly ClaimsPrincipal _user;
-			private readonly CancellationToken _cancellationToken;
-			private readonly Channel<(ResolvedEvent, int)> _channel;
-
-			private (ResolvedEvent, int) _current;
-
-			public (ResolvedEvent resolvedEvent, int retryCount) Current => _current;
-			public Task<string> Started => _subscriptionIdSource.Task;
-
-			public PersistentStreamSubscriptionEnumerator(Guid correlationId,
-				string connectionName,
-				IPublisher publisher,
-				string streamName,
-				string groupName,
-				int bufferSize,
-				ClaimsPrincipal user,
-				CancellationToken cancellationToken) {
-				if (connectionName == null) {
-					throw new ArgumentNullException(nameof(connectionName));
-				}
-				if (publisher == null) {
-					throw new ArgumentNullException(nameof(publisher));
-				}
-
-				if (streamName == null) {
-					throw new ArgumentNullException(nameof(streamName));
-				}
-
-				if (groupName == null) {
-					throw new ArgumentNullException(nameof(groupName));
-				}
-
-				if (correlationId == Guid.Empty) {
-					throw new ArgumentException($"{nameof(correlationId)} should be non empty.", nameof(correlationId));
-				}
-
-				_correlationId = correlationId;
-				_publisher = publisher;
-				_subscriptionIdSource = new TaskCompletionSource<string>();
-				_user = user;
-				_cancellationToken = cancellationToken;
-				_channel = Channel.CreateBounded<(ResolvedEvent, int)>(new BoundedChannelOptions(bufferSize) {
-					SingleReader = true,
-					SingleWriter = false,
-					FullMode = BoundedChannelFullMode.Wait
-				});
-
-				var semaphore = new SemaphoreSlim(1, 1);
-
-				switch(streamName) {
-					case SystemStreams.AllStream:
-						publisher.Publish(new ClientMessage.ConnectToPersistentSubscriptionToAll(correlationId,
-							correlationId,
-							new ContinuationEnvelope(OnMessage, semaphore, _cancellationToken), correlationId,
-							connectionName,
-							groupName, bufferSize, string.Empty, user));
-						break;
-					default:
-						publisher.Publish(new ClientMessage.ConnectToPersistentSubscriptionToStream(correlationId,
-							correlationId,
-							new ContinuationEnvelope(OnMessage, semaphore, _cancellationToken), correlationId,
-							connectionName,
-							groupName, streamName, bufferSize, string.Empty, user));
-						break;
-				}
-
-				async Task OnMessage(Message message, CancellationToken ct) {
-					if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
-						_subscriptionIdSource.TrySetException(ex);
-						return;
-					}
-					
-					switch (message) {
-						case ClientMessage.SubscriptionDropped dropped:
-							switch (dropped.Reason) {
-								case SubscriptionDropReason.AccessDenied:
-									Fail(RpcExceptions.AccessDenied());
-									return;
-								case SubscriptionDropReason.NotFound:
-								case SubscriptionDropReason.PersistentSubscriptionDeleted:
-									Fail(RpcExceptions.PersistentSubscriptionDoesNotExist(streamName, groupName));
-									return;
-								case SubscriptionDropReason.SubscriberMaxCountReached:
-									Fail(RpcExceptions.PersistentSubscriptionMaximumSubscribersReached(streamName,
-										groupName));
-									return;
-								case SubscriptionDropReason.Unsubscribed:
-									Fail(RpcExceptions.PersistentSubscriptionDropped(streamName, groupName));
-									return;
-								default:
-									Fail(RpcExceptions.UnknownError(dropped.Reason));
-									return;
-							}
-						case ClientMessage.PersistentSubscriptionConfirmation confirmation:
-							_subscriptionIdSource.TrySetResult(confirmation.SubscriptionId);
-							return;
-						case ClientMessage.PersistentSubscriptionStreamEventAppeared appeared:
-							await _channel.Writer.WriteAsync((appeared.Event, appeared.RetryCount), ct)
-								.ConfigureAwait(false);
-							return;
-						default:
-							Fail(RpcExceptions
-								.UnknownMessage<ClientMessage.PersistentSubscriptionConfirmation>(message));
-							return;
-					}
-				}
-
-				void Fail(Exception ex) {
-					_channel.Writer.TryComplete(ex);
-					_subscriptionIdSource.TrySetException(ex);
-				}
-			}
-
-			public ValueTask DisposeAsync() {
-				_publisher.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(), _correlationId,
-					new NoopEnvelope(), _user));
-				_channel.Writer.TryComplete();
-				return new ValueTask(Task.CompletedTask);
-			}
-
-			public async ValueTask<bool> MoveNextAsync() {
-				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
-					return false;
-				}
-
-				_current = await _channel.Reader.ReadAsync(_cancellationToken).ConfigureAwait(false);
-				return true;
 			}
 		}
 	}

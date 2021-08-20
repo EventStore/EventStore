@@ -54,6 +54,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_semaphore = new SemaphoreSlim(1, 1);
 				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
 
+				var envelopeChannel = Channel.CreateUnbounded<Message>(new() {
+					SingleReader = true,
+					SingleWriter = false,
+					AllowSynchronousContinuations = false
+				});
+
 				ReadPage(startRevision);
 			}
 
