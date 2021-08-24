@@ -15,7 +15,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public LogV3StreamWriteRecord(
 			long logPosition,
-			long transactionPosition,
 			Guid correlationId,
 			StreamId eventStreamId,
 			long expectedVersion,
@@ -25,7 +24,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 			Ensure.Nonnegative(logPosition, "logPosition");
 			Ensure.NotEmptyGuid(correlationId, "correlationId");
-			Ensure.Nonnegative(transactionPosition, "transactionPosition");
 			if (eventStreamId < LogV3SystemStreams.FirstVirtualStream)
 				throw new ArgumentOutOfRangeException("eventStreamId", eventStreamId, null);
 			if (expectedVersion < Core.Data.ExpectedVersion.Any)
@@ -39,7 +37,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				timeStamp: timeStamp,
 				correlationId: correlationId,
 				logPosition: logPosition,
-				transactionPosition: transactionPosition,
 				prepareFlags: (ushort) prepareFlags,
 				streamNumber: eventStreamId,
 				startingEventNumber: expectedVersion + 1,
@@ -50,7 +47,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		// todo: translate
 		public PrepareFlags Flags => (PrepareFlags)MemoryMarshal.AsRef<ushort>(Record.SystemMetadata.PrepareFlags.Span);
-		public long TransactionPosition => Record.SystemMetadata.TransactionPosition;
+		public long TransactionPosition => LogPosition;
 		public int TransactionOffset => 0;
 		public long ExpectedVersion => Record.WriteId.StartingEventNumber - 1;
 		public void PopulateExpectedVersionFromCommit(long commitFirstEventNumber) => Debug.Assert(false); //should not be executed for Log V3
@@ -63,7 +60,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public IPrepareLogRecord<StreamId> CopyForRetry(long logPosition, long transactionPosition) {
 			return new LogV3StreamWriteRecord(
 				logPosition: logPosition,
-				transactionPosition: transactionPosition,
 				correlationId: CorrelationId,
 				eventStreamId: EventStreamId,
 				expectedVersion: ExpectedVersion,

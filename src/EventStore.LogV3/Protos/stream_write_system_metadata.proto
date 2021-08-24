@@ -4,9 +4,8 @@ package EventStore.LogV3;
 import "Protos/proto_guid.proto";
 
 message StreamWriteSystemMetadata {
-	int64 transaction_position = 1;
-	ProtoGuid correlation_id = 2;
-	int64 starting_event_number_root = 3;
-	int64 starting_event_number_category = 4;
-	bytes prepare_flags = 5;
+	ProtoGuid correlation_id = 1;
+	int64 starting_event_number_root = 2;
+	int64 starting_event_number_category = 3;
+	bytes prepare_flags = 4;
 }
