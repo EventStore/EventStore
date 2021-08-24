@@ -28,10 +28,10 @@ If you set the `TruncateBefore` or `$tb` value to 3, a read of the stream would 
 3@test-stream
 ```
 
-A **soft delete** makes use of `TruncateBefore` and `$tb`. When you delete a stream, its `TruncateBefore` or `$tb` is set to the streams current last event number. When you read a soft deleted stream, the read returns a `StreamNotFound` or `404` result.
+A **soft delete** makes use of `TruncateBefore` and `$tb`. When you delete a stream, its `TruncateBefore` or `$tb` is set to the [max long/Int64 value](https://docs.microsoft.com/en-us/dotnet/api/system.int64.maxvalue?view=net-5.0): 9223372036854775807. When you read a soft deleted stream, the read returns a `StreamNotFound` or `404` result.
 After deleting the stream, you are able to append to it again, continuing from where it left off.
 
-For example, if you soft deleted the above example stream, the `TruncateBefore` or `$tb` is set to 3 (the stream's current event number). If you were to append to the stream again, the next event is appended with event number 4. Only events from event number 4 onwards are visible when you read this stream.
+For example, if you soft deleted the above example stream, the `TruncateBefore` or `$tb` is set to 9223372036854775807. If you were to append to the stream again, the next event is appended with event number 4. Only events from event number 4 (last stream revision before deleting, incremented by one) onwards are visible when you read this stream.
 
 ## Max count and Max age
 
