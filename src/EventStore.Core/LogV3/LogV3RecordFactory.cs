@@ -67,7 +67,6 @@ namespace EventStore.Core.LogV3 {
 				eventStreamId: eventStreamId,
 				expectedVersion: expectedVersion,
 				timeStamp: timeStamp,
-				prepareFlags: flags,
 				events: events);
 			return result;
 		}

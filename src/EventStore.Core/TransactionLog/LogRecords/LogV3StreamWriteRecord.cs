@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.LogV3;
 using EventStore.LogCommon;
 using EventStore.LogV3;
@@ -11,6 +12,9 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 	public class LogV3StreamWriteRecord : LogV3Record<StreamWriteRecord>, IEquatable<LogV3StreamWriteRecord>, IPrepareLogRecord<StreamId> {
 		public LogV3StreamWriteRecord(ReadOnlyMemory<byte> bytes) : base() {
 			Record = new StreamWriteRecord(new RecordView<Raw.StreamWriteHeader>(bytes));
+			if (Record.WriteId.StartingEventNumber == EventNumber.DeletedStream) {
+				_additionalFlags = PrepareFlags.StreamDelete;
+			}
 		}
 
 		public LogV3StreamWriteRecord(
@@ -19,7 +23,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			StreamId eventStreamId,
 			long expectedVersion,
 			DateTime timeStamp,
-			PrepareFlags prepareFlags,
 			IEventRecord[] events) {
 
 			Ensure.Nonnegative(logPosition, "logPosition");
@@ -33,11 +36,14 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				Ensure.NotEmptyGuid(eventRecord.EventId, "eventId");
 			}
 
+			if (expectedVersion == EventNumber.DeletedStream - 1) {
+				_additionalFlags = PrepareFlags.StreamDelete;
+			}
+
 			Record = RecordCreator.CreateStreamWriteRecord(
 				timeStamp: timeStamp,
 				correlationId: correlationId,
 				logPosition: logPosition,
-				prepareFlags: (ushort) prepareFlags,
 				streamNumber: eventStreamId,
 				startingEventNumber: expectedVersion + 1,
 				events: events);
@@ -45,8 +51,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 		public override LogRecordType RecordType => LogRecordType.Prepare;
 
-		// todo: translate
-		public PrepareFlags Flags => (PrepareFlags)MemoryMarshal.AsRef<ushort>(Record.SystemMetadata.PrepareFlags.Span);
+		private readonly PrepareFlags _additionalFlags;
+		public PrepareFlags Flags => PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | _additionalFlags;
 		public long TransactionPosition => LogPosition;
 		public int TransactionOffset => 0;
 		public long ExpectedVersion => Record.WriteId.StartingEventNumber - 1;
@@ -64,7 +70,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				eventStreamId: EventStreamId,
 				expectedVersion: ExpectedVersion,
 				timeStamp: TimeStamp,
-				prepareFlags: Flags,
 				events: Record.Events);
 		}
 

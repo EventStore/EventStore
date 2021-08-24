@@ -238,7 +238,6 @@ namespace EventStore.LogV3 {
 			DateTime timeStamp,
 			Guid correlationId,
 			long logPosition,
-			ushort prepareFlags,
 			long streamNumber,
 			long startingEventNumber,
 			IEventRecord[] events) {
@@ -246,7 +245,6 @@ namespace EventStore.LogV3 {
 				CorrelationId = correlationId,
 				StartingEventNumberRoot = 0,
 				StartingEventNumberCategory = 0,
-				PrepareFlags = ByteString.CopyFrom(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref prepareFlags, 1)))
 			};
 			var writeSystemMetadataSize = writeSystemMetadata.CalculateSize();
 
