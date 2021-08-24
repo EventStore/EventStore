@@ -16,7 +16,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public LogV3StreamWriteRecord(
 			long logPosition,
 			long transactionPosition,
-			int transactionOffset,
 			Guid correlationId,
 			StreamId eventStreamId,
 			long expectedVersion,
@@ -27,8 +26,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			Ensure.Nonnegative(logPosition, "logPosition");
 			Ensure.NotEmptyGuid(correlationId, "correlationId");
 			Ensure.Nonnegative(transactionPosition, "transactionPosition");
-			if (transactionOffset < -1)
-				throw new ArgumentOutOfRangeException("transactionOffset");
 			if (eventStreamId < LogV3SystemStreams.FirstVirtualStream)
 				throw new ArgumentOutOfRangeException("eventStreamId", eventStreamId, null);
 			if (expectedVersion < Core.Data.ExpectedVersion.Any)
@@ -43,7 +40,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				correlationId: correlationId,
 				logPosition: logPosition,
 				transactionPosition: transactionPosition,
-				transactionOffset: transactionOffset,
 				prepareFlags: (ushort) prepareFlags,
 				streamNumber: eventStreamId,
 				startingEventNumber: expectedVersion + 1,
@@ -55,7 +51,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		// todo: translate
 		public PrepareFlags Flags => (PrepareFlags)MemoryMarshal.AsRef<ushort>(Record.SystemMetadata.PrepareFlags.Span);
 		public long TransactionPosition => Record.SystemMetadata.TransactionPosition;
-		public int TransactionOffset => Record.SystemMetadata.TransactionOffset;
+		public int TransactionOffset => 0;
 		public long ExpectedVersion => Record.WriteId.StartingEventNumber - 1;
 		public void PopulateExpectedVersionFromCommit(long commitFirstEventNumber) => Debug.Assert(false); //should not be executed for Log V3
 		public void PopulateExpectedVersion(long expectedVersion) => Debug.Assert(expectedVersion == ExpectedVersion);
@@ -68,7 +64,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			return new LogV3StreamWriteRecord(
 				logPosition: logPosition,
 				transactionPosition: transactionPosition,
-				transactionOffset: TransactionOffset,
 				correlationId: CorrelationId,
 				eventStreamId: EventStreamId,
 				expectedVersion: ExpectedVersion,

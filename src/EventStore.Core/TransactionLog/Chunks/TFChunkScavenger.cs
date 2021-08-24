@@ -674,7 +674,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					logPosition: prepare.LogPosition,
 					correlationId: prepare.CorrelationId,
 					transactionPosition: prepare.TransactionPosition,
-					transactionOffset: prepare.TransactionOffset, //TODO(multi-events): removing events makes this offset invalid
+					transactionOffset: prepare.TransactionOffset, //always 0 in Log V3
 					eventStreamId: prepare.EventStreamId,
 					expectedVersion: minEventNumberToKeep - 1,
 					timeStamp: prepare.TimeStamp,

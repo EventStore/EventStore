@@ -5,9 +5,8 @@ import "Protos/proto_guid.proto";
 
 message StreamWriteSystemMetadata {
 	int64 transaction_position = 1;
-	int32 transaction_offset = 2;
-	ProtoGuid correlation_id = 3;
-	int64 starting_event_number_root = 4;
-	int64 starting_event_number_category = 5;
-	bytes prepare_flags = 6;
+	ProtoGuid correlation_id = 2;
+	int64 starting_event_number_root = 3;
+	int64 starting_event_number_category = 4;
+	bytes prepare_flags = 5;
 }

@@ -239,7 +239,6 @@ namespace EventStore.LogV3 {
 			Guid correlationId,
 			long logPosition,
 			long transactionPosition,
-			int transactionOffset,
 			ushort prepareFlags,
 			long streamNumber,
 			long startingEventNumber,
@@ -247,7 +246,6 @@ namespace EventStore.LogV3 {
 			var writeSystemMetadata = new StreamWriteSystemMetadata {
 				CorrelationId = correlationId,
 				TransactionPosition = transactionPosition,
-				TransactionOffset = transactionOffset,
 				StartingEventNumberRoot = 0,
 				StartingEventNumberCategory = 0,
 				PrepareFlags = ByteString.CopyFrom(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref prepareFlags, 1)))

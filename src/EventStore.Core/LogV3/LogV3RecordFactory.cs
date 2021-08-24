@@ -64,7 +64,6 @@ namespace EventStore.Core.LogV3 {
 			var result = new LogV3StreamWriteRecord(
 				logPosition: logPosition,
 				transactionPosition: transactionPosition,
-				transactionOffset: transactionOffset,
 				correlationId: correlationId,
 				eventStreamId: eventStreamId,
 				expectedVersion: expectedVersion,
