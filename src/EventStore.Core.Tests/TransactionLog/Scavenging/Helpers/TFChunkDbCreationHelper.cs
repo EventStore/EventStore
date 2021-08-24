@@ -125,23 +125,24 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					ILogRecord record;
 
 					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.NoStream;
+					var actualExpectedVersion = expectedVersion;
+					var isV3 = LogFormatHelper<TLogFormat, TStreamId>.IsV3;
 					switch (rec.Type) {
 						case Rec.RecType.Prepare: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
-
 							if (SystemStreams.IsMetastream(rec.StreamId))
 								transInfo.StreamMetadata = rec.Metadata;
-
 							streamUncommitedVersion[rec.StreamId] += 1;
+							actualExpectedVersion = streamUncommitedVersion[rec.StreamId] - 1;
+							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, isV3 ? actualExpectedVersion : expectedVersion);
 							break;
 						}
 
 						case Rec.RecType.Delete: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
-
 							streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV0
 								? int.MaxValue
 								: EventNumber.DeletedStream;
+							actualExpectedVersion = streamUncommitedVersion[rec.StreamId] - 1;
+							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, actualExpectedVersion);
 							break;
 						}
 
@@ -172,6 +173,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					}
 
 					Write(i, chunk, record, out logPos);
+					if (record is IPrepareLogRecord<TStreamId> prepare) {
+						//populate the actual expected version before adding the record to the results
+						//since the expected version will be populated in records read from chunks
+						prepare.PopulateExpectedVersion(actualExpectedVersion);
+					}
 					records[i].Add(record);
 				}
 
