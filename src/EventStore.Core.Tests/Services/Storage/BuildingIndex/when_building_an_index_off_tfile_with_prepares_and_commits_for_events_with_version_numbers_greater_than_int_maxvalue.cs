@@ -28,11 +28,11 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			GetOrReserve("test1", out var test1StreamId, out _);
 			GetOrReserve("test2", out var test2StreamId, out pos0);
 
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, test1StreamId, firstEventNumber, "type", new byte[0],
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, test1StreamId, firstEventNumber - 1, "type", new byte[0],
 					new byte[0], DateTime.UtcNow), out pos1);
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, test2StreamId, secondEventNumber, "type", new byte[0],
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, test2StreamId, secondEventNumber - 1, "type", new byte[0],
 					new byte[0], DateTime.UtcNow), out pos2);
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, test2StreamId, thirdEventNumber, "type", new byte[0],
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, test2StreamId, thirdEventNumber - 1, "type", new byte[0],
 					new byte[0], DateTime.UtcNow), out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id1, pos0, DateTime.UtcNow, firstEventNumber), out pos4);
 			Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, secondEventNumber), out pos5);
