@@ -171,7 +171,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				eventType,
 				Helper.UTF8NoBom.GetBytes(data),
 				null,
-				timestamp);
+				timestamp,
+				PrepareFlags.IsCommitted);
 
 			if (!retryOnFail) {
 				Assert.IsTrue(Writer.Write(prepare, out pos));
@@ -186,28 +187,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 						prepare.Events[0].EventType,
 						prepare.Events[0].Data,
 						prepare.Events[0].Metadata,
-						prepare.TimeStamp);
+						prepare.TimeStamp,
+						PrepareFlags.IsCommitted);
 					if (!Writer.Write(prepare, out pos))
 						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
 							prepare.LogPosition);
 				}
 			}
 
-			
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
-				eventNumber);
-			if (!retryOnFail) {
-				Assert.IsTrue(Writer.Write(commit, out pos));
-			} else {
-				var firstPos = commit.LogPosition;
-				if (!Writer.Write(commit, out pos)) {
-					commit = LogRecord.Commit(pos, prepare.CorrelationId, prepare.LogPosition,
-						eventNumber);
-					if (!Writer.Write(commit, out pos))
-						Assert.Fail("Second write try failed when first writing prepare at {0}, then at {1}.", firstPos,
-							prepare.LogPosition);
-				}
-			}
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			var eventRecord = new EventRecord(eventStreamName, prepare, 0);
@@ -226,12 +213,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				Helper.UTF8NoBom.GetBytes(metadata),
 				null,
 				timestamp ?? DateTime.UtcNow,
-				PrepareFlags.IsJson);
+				PrepareFlags.IsJson | PrepareFlags.IsCommitted);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
-
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
-				eventNumber);
-			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			var eventRecord = new EventRecord(SystemStreams.MetastreamOf(eventStreamName), prepare, 0);
@@ -385,13 +368,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected EventRecord WriteDelete(string eventStreamName) {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
-				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, EventNumber.DeletedStream - 1);
+				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, EventNumber.DeletedStream - 1, PrepareFlags.IsCommitted);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
-				prepare.CorrelationId,
-				prepare.LogPosition,
-				EventNumber.DeletedStream);
-			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			return new EventRecord(eventStreamName, prepare, 0);
