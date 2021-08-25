@@ -39,9 +39,8 @@ namespace EventStore.Core.Services {
 		IHandle<ClientMessage.ResignNode>,
 		IHandle<ElectionMessage.LeaderIsResigning>,
 		IHandle<ElectionMessage.LeaderIsResigningOk> {
-		public static readonly TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1000);
-		public static readonly TimeSpan LeaderElectionGrpcRequestTimeout = TimeSpan.FromMilliseconds(2000);
 		public static readonly TimeSpan SendViewChangeProofInterval = TimeSpan.FromMilliseconds(5000);
+		private readonly TimeSpan _leaderElectionProgressTimeout;
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<ElectionsService>();
 		private static readonly EndPointComparer IPComparer = new EndPointComparer();
@@ -87,7 +86,8 @@ namespace EventStore.Core.Services {
 			IEpochManager epochManager,
 			Func<long> getLastCommitPosition,
 			int nodePriority,
-			ITimeProvider timeProvider) {
+			ITimeProvider timeProvider,
+			TimeSpan leaderElectionTimeout) {
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(memberInfo, nameof(memberInfo));
 			Ensure.Positive(clusterSize, nameof(clusterSize));
@@ -97,6 +97,10 @@ namespace EventStore.Core.Services {
 			Ensure.NotNull(epochManager, nameof(epochManager));
 			Ensure.NotNull(getLastCommitPosition, nameof(getLastCommitPosition));
 			Ensure.NotNull(timeProvider, nameof(timeProvider));
+			if (leaderElectionTimeout.Seconds < 1) {
+				throw new ArgumentOutOfRangeException(nameof(leaderElectionTimeout),
+					$"{nameof(leaderElectionTimeout)} should be greater than 1 second.");
+			}
 			if (memberInfo.IsReadOnlyReplica) {
 				throw new ArgumentException("Read-only replicas are not allowed to run the Elections service.");
 			}
@@ -112,6 +116,7 @@ namespace EventStore.Core.Services {
 			_getLastCommitPosition = getLastCommitPosition;
 			_nodePriority = nodePriority;
 			_timeProvider = timeProvider;
+			_leaderElectionProgressTimeout = leaderElectionTimeout;
 
 			var lastEpoch = _epochManager.LastEpochNumber;
 			if (_proposalCheckpoint.Read() < lastEpoch) {
@@ -195,8 +200,7 @@ namespace EventStore.Core.Services {
 
 			_resigningLeaderInstanceId = message.LeaderId;
 			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.LeaderHttpEndPoint, leaderIsResigningMessageOk,
-				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
-				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
+				_timeProvider.LocalTime.Add(_leaderElectionProgressTimeout)));
 		}
 
 		public void Handle(ElectionMessage.LeaderIsResigningOk message) {
@@ -264,7 +268,7 @@ namespace EventStore.Core.Services {
 			var viewChangeMsg = new ElectionMessage.ViewChange(_memberInfo.InstanceId, _memberInfo.HttpEndPoint, view);
 			Handle(viewChangeMsg);
 			SendToAllExceptMe(viewChangeMsg);
-			_publisher.Publish(TimerMessage.Schedule.Create(LeaderElectionProgressTimeout,
+			_publisher.Publish(TimerMessage.Schedule.Create(_leaderElectionProgressTimeout,
 				_publisherEnvelope,
 				new ElectionMessage.ElectionsTimedOut(view)));
 		}
@@ -272,8 +276,7 @@ namespace EventStore.Core.Services {
 		private void SendToAllExceptMe(Message message) {
 			foreach (var server in _servers.Where(x => x.InstanceId != _memberInfo.InstanceId)) {
 				_publisher.Publish(new GrpcMessage.SendOverGrpc(server.HttpEndPoint, message,
-					_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
+					_timeProvider.LocalTime.Add(_leaderElectionProgressTimeout)));
 			}
 		}
 
@@ -322,7 +325,7 @@ namespace EventStore.Core.Services {
 
 			_lastAttemptedView = message.InstalledView;
 
-			_publisher.Publish(TimerMessage.Schedule.Create(LeaderElectionProgressTimeout,
+			_publisher.Publish(TimerMessage.Schedule.Create(_leaderElectionProgressTimeout,
 				_publisherEnvelope,
 				new ElectionMessage.ElectionsTimedOut(_lastAttemptedView)));
 
@@ -377,8 +380,7 @@ namespace EventStore.Core.Services {
 
 			var prepareOk = CreatePrepareOk(message.View);
 			_publisher.Publish(new GrpcMessage.SendOverGrpc(message.ServerHttpEndPoint, prepareOk,
-				_timeProvider.LocalTime.Add(LeaderElectionGrpcRequestTimeout),
-				_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)));
+				_timeProvider.LocalTime.Add(_leaderElectionProgressTimeout)));
 		}
 
 		private ElectionMessage.PrepareOk CreatePrepareOk(int view) {

@@ -54,7 +54,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					readerCheckpoint,
 					proposalCheckpoint,
 					epochManager,
-					() => -1, 0, new FakeTimeProvider());
+					() => -1, 0, new FakeTimeProvider(),
+					TimeSpan.FromMilliseconds(1_000));
 				electionsService.SubscribeMessages(inputBus);
 
 				var nodeId = i;

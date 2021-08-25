@@ -1227,7 +1227,8 @@ namespace EventStore.Core {
 					epochManager,
 					() => readIndex.LastIndexedPosition,
 					options.Cluster.NodePriority,
-					_timeProvider);
+					_timeProvider,
+					TimeSpan.FromMilliseconds(options.Cluster.LeaderElectionTimeoutMs));
 				electionsService.SubscribeMessages(_mainBus);
 			}
 
