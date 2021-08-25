@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected ObjectPool<ITransactionFileReader> _readerPool;
 		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected const int RecordOffset = 1000;
-		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecord(TStreamId streamId, int expectedVersion, string eventType, Guid eventId, long transactionPosition){
+		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecord(TStreamId streamId, int expectedVersion, TStreamId eventType, Guid eventId, long transactionPosition){
 			return new[]{
 				PrepareLogRecord.SingleWrite (
 					_logFormat.RecordFactory,
@@ -50,7 +50,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			};
 		}
 
-		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecords(TStreamId streamId, int expectedVersion, IList<string> eventTypes, IList<Guid> eventIds, long transactionPosition){
+		public IList<IPrepareLogRecord<TStreamId>> CreatePrepareLogRecords(TStreamId streamId, int expectedVersion, IList<TStreamId> eventTypes, IList<Guid> eventIds, long transactionPosition){
 			if(eventIds.Count != eventTypes.Count)
 				throw new Exception("eventType and eventIds length mismatch!");
 			if(eventIds.Count == 0)
@@ -139,12 +139,15 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_validator = _logFormat.StreamIdValidator;
 			var emptyStreamId = _logFormat.EmptyStreamId;
 			_sizer = _logFormat.StreamIdSizer;
-			_indexReader = new IndexReader<TStreamId>(_indexBackend, _tableIndex, _provider, _validator, _logFormat.StreamExistenceFilterReader, new StreamMetadata(maxCount: 100000), 100, false);
+			_indexReader = new IndexReader<TStreamId>(_indexBackend, _tableIndex, _provider, _validator,
+				_logFormat.StreamExistenceFilterReader, new StreamMetadata(maxCount: 100000), 100, false);
 			_streamNames = _logFormat.StreamNames;
 			_systemStreams = _logFormat.SystemStreams;
-			_indexWriter = new IndexWriter<TStreamId>(_indexBackend, _indexReader, _streamIds, _streamNames, _systemStreams, emptyStreamId, _sizer);
-			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex, _logFormat.StreamNameIndexConfirmer, _streamNames, _systemStreams,
-				_logFormat.StreamExistenceFilter, _logFormat.StreamExistenceFilterInitializer, new InMemoryCheckpoint(-1),  false);
+			_indexWriter = new IndexWriter<TStreamId>(_indexBackend, _indexReader, _streamIds, _streamNames,
+				_systemStreams, emptyStreamId, _sizer);
+			_indexCommitter = new IndexCommitter<TStreamId>(_publisher, _indexBackend, _indexReader, _tableIndex,
+				_logFormat.StreamNameIndexConfirmer, _streamNames, _logFormat.EventTypeIndexConfirmer, _logFormat.EventTypeNames,
+				_systemStreams, _logFormat.StreamExistenceFilter, _logFormat.StreamExistenceFilterInitializer, new InMemoryCheckpoint(-1),  false);
 
 			WriteEvents();
 		}

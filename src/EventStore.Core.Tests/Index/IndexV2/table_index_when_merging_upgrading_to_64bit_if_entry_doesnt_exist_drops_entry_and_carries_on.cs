@@ -164,8 +164,9 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 				}
 
 				var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+				var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 				var record = LogRecord.Prepare(recordFactory, position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
-					streamId, -1, PrepareFlags.None, "type", new byte[0], null, DateTime.UtcNow);
+					streamId, -1, PrepareFlags.None, eventTypeId, new byte[0], null, DateTime.UtcNow);
 				return new RecordReadResult(true, position + 1, record, 1);
 			}
 

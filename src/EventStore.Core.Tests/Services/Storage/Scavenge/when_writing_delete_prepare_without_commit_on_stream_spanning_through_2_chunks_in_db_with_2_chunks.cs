@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using EventStore.Core.Data;
+using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -15,8 +16,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		protected override void WriteTestScenario() {
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
 			GetOrReserve("ES", out var esStreamId, out var pos);
+			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos, Guid.NewGuid(), Guid.NewGuid(),
-				esStreamId, 2);
+				esStreamId, streamDeletedEventTypeId, 2);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			_event1 = WriteSingleEvent("ES", 1, "bla1");

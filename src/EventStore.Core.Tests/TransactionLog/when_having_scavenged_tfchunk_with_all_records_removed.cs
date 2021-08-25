@@ -42,8 +42,15 @@ namespace EventStore.Core.Tests.TransactionLog {
 				var res = chunk.TryAppend(streamRecord);
 				pos = res.NewPosition;
 			}
+			
+			_logFormat.EventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, "et1", pos, out var eventTypeId, out var eventTypeRecord);
+			if (eventTypeRecord is not null) {
+				var res = chunk.TryAppend(eventTypeRecord);
+				pos = res.NewPosition;
+			}
+			
 			var expectedVersion = ExpectedVersion.NoStream;
-			_p1 = LogRecord.SingleWrite(_logFormat.RecordFactory, pos, Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
+			_p1 = LogRecord.SingleWrite(_logFormat.RecordFactory, pos, Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 				new byte[2048], new byte[] { 5, 7 });
 			_res1 = chunk.TryAppend(_p1);
 
@@ -51,7 +58,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_cres1 = chunk.TryAppend(_c1);
 
 			_p2 = LogRecord.SingleWrite(_logFormat.RecordFactory, _cres1.NewPosition,
-				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
+				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 				new byte[2048], new byte[] { 5, 7 });
 			_res2 = chunk.TryAppend(_p2);
 
@@ -59,7 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_cres2 = chunk.TryAppend(_c2);
 
 			_p3 = LogRecord.SingleWrite(_logFormat.RecordFactory, _cres2.NewPosition,
-				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, "et1",
+				Guid.NewGuid(), Guid.NewGuid(), streamId, expectedVersion++, eventTypeId,
 				new byte[2048], new byte[] { 5, 7 });
 			_res3 = chunk.TryAppend(_p3);
 
@@ -156,7 +163,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				Assert.AreEqual(0, records.Count);
 			}
 			else {
-				Assert.AreEqual(1, records.Count);
+				Assert.AreEqual(2, records.Count);
 			}
 		}
 

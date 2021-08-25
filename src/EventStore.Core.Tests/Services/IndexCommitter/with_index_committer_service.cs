@@ -70,8 +70,9 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 		private IPrepareLogRecord<TStreamId> CreatePrepare(long transactionPosition, long logPosition) {
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 			return LogRecord.Prepare(recordFactory, logPosition, Guid.NewGuid(), Guid.NewGuid(), transactionPosition, 0,
-				streamId, -1, PrepareFlags.None, "testEvent",
+				streamId, -1, PrepareFlags.None, eventTypeId,
 				new byte[10], new byte[0]);
 		}
 

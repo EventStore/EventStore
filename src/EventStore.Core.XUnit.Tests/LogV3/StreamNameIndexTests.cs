@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.LogV3;
 using EventStore.Core.LogV3.FASTER;
+using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 using StreamId = System.UInt32;
 
@@ -47,7 +48,8 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				existenceFilter: new NoNameExistenceFilter(),
 				persistence: _persistence,
-				metastreams: new LogV3Metastreams());
+				metastreams: new LogV3Metastreams(),
+				recordTypeToHandle: typeof(LogV3StreamRecord));
 		}
 
 		public void Dispose() {

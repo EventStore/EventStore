@@ -88,6 +88,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var appeared = new TaskCompletionSource<bool>();
 
 				using (await store.FilteredSubscribeToAllAsync(false, filter, (s, e) => {
+					if (e.OriginalStreamId == SystemStreams.EventTypesCreatedStream)
+						return Task.CompletedTask;
+					
 					foundEvents.Add(e);
 					if (foundEvents.Count == 5) {
 						appeared.TrySetResult(true);
@@ -210,10 +213,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var checkpointsSeen = 0;
 
 				if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
-					// init stream record so it won't affect the test and prevent flakiness
+					// init stream and event type records so they won't affect the test
 					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream);
+					await _conn.AppendToStreamAsync("init-event-types", ExpectedVersion.NoStream, _testEvents);
 				}
-				
+
 				using (await store.FilteredSubscribeToAllAsync(false,
 					filter,
 					(s, e) => {
@@ -227,6 +231,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						return Task.CompletedTask;
 					},
 					checkpointInterval: 2)) {
+					
 					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents);
 
 					await appeared.Task.WithTimeout(Timeout);

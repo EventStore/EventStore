@@ -34,6 +34,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_results = new RecordWriteResult[RecordsCount];
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 			var expectedVersion = ExpectedVersion.NoStream;
 
 			for (int i = 0; i < _records.Length - 1; ++i) {
@@ -44,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 					Guid.NewGuid(),
 					streamId,
 					expectedVersion++,
-					"et1",
+					eventTypeId,
 					new byte[] { 0, 1, 2 },
 					new byte[] { 5, 7 });
 				_results[i] = chunk.TryAppend(_records[i]);
@@ -60,7 +61,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				streamId,
 				expectedVersion++,
 				PrepareFlags.Data,
-				"et1",
+				eventTypeId,
 				new byte[] { 0, 1, 2 },
 				new byte[] { 5, 7 });
 			_results[_records.Length - 1] = chunk.TryAppend(_records[_records.Length - 1]);

@@ -45,14 +45,15 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 			_t1CommitPos = WriteCommit(t1.CorrelationId, t1.TransactionPosition, streamId1, _p1.EventNumber);
 
 			GetOrReserve("t1", out var t1StreamId, out _pos6);
+			GetOrReserveEventType("et", out var eventTypeId, out _pos6);
 			var r6 = LogRecord.Prepare(_recordFactory, _pos6, Guid.NewGuid(), Guid.NewGuid(), _pos6, 0, t1StreamId, -1,
-				PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
+				PrepareFlags.SingleWrite, eventTypeId, LogRecord.NoData, LogRecord.NoData);
 			Writer.Write(r6, out _pos7);
 			var r7 = LogRecord.Prepare(_recordFactory, _pos7, Guid.NewGuid(), Guid.NewGuid(), _pos7, 0, t1StreamId, -1,
-				PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
+				PrepareFlags.SingleWrite, eventTypeId, LogRecord.NoData, LogRecord.NoData);
 			Writer.Write(r7, out _pos8);
 			var r8 = LogRecord.Prepare(_recordFactory, _pos8, Guid.NewGuid(), Guid.NewGuid(), _pos8, 0, t1StreamId, -1,
-				PrepareFlags.SingleWrite, "et", LogRecord.NoData, LogRecord.NoData);
+				PrepareFlags.SingleWrite, eventTypeId, LogRecord.NoData, LogRecord.NoData);
 			long pos9;
 			Writer.Write(r8, out pos9);
 		}

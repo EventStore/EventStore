@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void try_read_returns_record_when_writerchecksum_ahead() {
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
-
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 			var recordToWrite = LogRecord.Prepare(
 				factory: recordFactory,
 				logPosition: 0,
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
-				eventType: "type",
+				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[] {7, 17});
 
@@ -127,6 +127,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			var recordToWrite = LogRecord.Prepare(
 				factory: recordFactory,
@@ -139,7 +140,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
-				eventType: "type",
+				eventType: eventTypeId,
 				data: new byte[9000],
 				metadata: new byte[] {7, 17});
 			var writer = new TFChunkWriter(db);
@@ -173,6 +174,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			var recordToWrite = LogRecord.Prepare(
 				factory: recordFactory,
@@ -185,7 +187,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
-				eventType: "type",
+				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[] {7, 17});
 			var writer = new TFChunkWriter(db);

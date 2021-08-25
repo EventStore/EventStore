@@ -16,8 +16,6 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 		readonly long _long2 = 2;
 		readonly long _long4 = 4;
 		readonly uint _uint3000 = 3000;
-		readonly string _string1 = "one";
-		//readonly string _string2 = "two";
 		readonly LogV3RecordFactory _sut = new();
 		readonly PrepareFlags _prepareflags = PrepareFlags.SingleWrite;
 		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 }; 
@@ -65,7 +63,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				expectedVersion: _long4,
 				timeStamp: _dateTime1,
 				flags: _prepareflags,
-				eventType: _string1,
+				eventType: _uint3000,
 				data: _bytes1,
 				metadata: _bytes2);
 
@@ -78,7 +76,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			Assert.Equal(_long4, prepare.ExpectedVersion);
 			Assert.Equal(_dateTime1, prepare.TimeStamp);
 			Assert.Equal(_prepareflags, prepare.Flags);
-			Assert.Equal(_string1, prepare.EventType);
+			Assert.Equal(_uint3000, prepare.EventType);
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes1), MemoryMarshal.ToEnumerable(prepare.Data));
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes2), MemoryMarshal.ToEnumerable(prepare.Metadata));
 		}

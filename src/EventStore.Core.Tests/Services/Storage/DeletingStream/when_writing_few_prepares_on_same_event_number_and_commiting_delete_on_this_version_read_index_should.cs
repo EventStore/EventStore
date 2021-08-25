@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
@@ -17,14 +17,16 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		protected override void WriteTestScenario() {
 			long pos;
 			string stream = "ES";
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 			GetOrReserve(stream, out var streamId, out pos);
+			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 
 			var prepare1 = LogRecord.SingleWrite(_recordFactory, pos, // prepare1
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				streamId,
 				-1,
-				"some-type",
+				eventTypeId,
 				LogRecord.NoData,
 				null,
 				DateTime.UtcNow);
@@ -35,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				Guid.NewGuid(),
 				streamId,
 				-1,
-				"some-type",
+				eventTypeId,
 				LogRecord.NoData,
 				null,
 				DateTime.UtcNow);
@@ -43,8 +45,8 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 
 			var deletePrepare = LogRecord.DeleteTombstone(_recordFactory, pos, // delete prepare
-				Guid.NewGuid(), Guid.NewGuid(), streamId, -1);
-			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare, stream);
+				Guid.NewGuid(), Guid.NewGuid(), streamId, streamDeletedEventTypeId, -1);
+			_deleteTombstone = new EventRecord(EventNumber.DeletedStream, deletePrepare, stream, SystemEventTypes.StreamDeleted);
 			Assert.IsTrue(Writer.Write(deletePrepare, out pos));
 
 			var prepare3 = LogRecord.SingleWrite(_recordFactory, pos, // prepare3
@@ -52,7 +54,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				Guid.NewGuid(),
 				streamId,
 				-1,
-				"some-type",
+				eventTypeId,
 				LogRecord.NoData,
 				null,
 				DateTime.UtcNow);
