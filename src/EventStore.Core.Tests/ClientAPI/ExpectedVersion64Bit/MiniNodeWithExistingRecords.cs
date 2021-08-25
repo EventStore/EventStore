@@ -140,11 +140,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				eventType,
 				Helper.UTF8NoBom.GetBytes(data),
 				null,
-				timestamp);
+				timestamp,
+				PrepareFlags.IsCommitted);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
-			var commit = LogRecord.Commit(pos, prepare.CorrelationId, prepare.LogPosition,
-				eventNumber);
-			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
 			var eventRecord = new EventRecord(eventStreamName, prepare, 0);
