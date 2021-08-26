@@ -130,7 +130,7 @@ namespace EventStore.Core.Services.Gossip {
 			var node = _getNodeToGossipTo(_cluster.Members);
 			if (node != null) {
 				_cluster = UpdateCluster(_cluster, x => x.InstanceId == _memberInfo.InstanceId ? GetUpdatedMe(x) : x,
-					_timeProvider, DeadMemberRemovalPeriod);
+					_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 				_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
 					new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint),
 					_timeProvider.LocalTime.Add(GossipTimeout),
@@ -198,7 +198,7 @@ namespace EventStore.Core.Services.Gossip {
 			var replicaState = message as SystemMessage.ReplicaStateMessage;
 			CurrentLeader = replicaState == null ? null : replicaState.Leader;
 			_cluster = UpdateCluster(_cluster, x => x.InstanceId == _memberInfo.InstanceId ? GetUpdatedMe(x) : x,
-				_timeProvider, DeadMemberRemovalPeriod);
+				_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
@@ -221,7 +221,7 @@ namespace EventStore.Core.Services.Gossip {
 			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient)
 					? x.Updated(_timeProvider.UtcNow, isAlive: false)
 					: x,
-				_timeProvider, DeadMemberRemovalPeriod);
+				_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, $"gossip send failed to [{message.Recipient}]");
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
@@ -271,7 +271,7 @@ namespace EventStore.Core.Services.Gossip {
 					? x.Updated(
 						_timeProvider.UtcNow, isAlive: false)
 					: x,
-				_timeProvider, DeadMemberRemovalPeriod);
+				_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster,
 					string.Format("TCP connection lost to [{0}]", message.Recipient));
@@ -284,7 +284,7 @@ namespace EventStore.Core.Services.Gossip {
 					? x.Updated(
 						_timeProvider.UtcNow, isAlive: true)
 					: x,
-				_timeProvider, DeadMemberRemovalPeriod);
+				_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster,
 					string.Format("TCP connection established to [{0}]", message.VNodeEndPoint));
@@ -297,7 +297,7 @@ namespace EventStore.Core.Services.Gossip {
 				x => x.InstanceId == message.Leader.InstanceId
 					? x.Updated(_timeProvider.UtcNow, VNodeState.Leader)
 					: x.Updated(_timeProvider.UtcNow, VNodeState.Unknown),
-				_timeProvider, DeadMemberRemovalPeriod);
+				_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, "Elections Done");
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
@@ -339,9 +339,8 @@ namespace EventStore.Core.Services.Gossip {
 				}
 			}
 
-			// update members and remove dead timed-out members, if there are any
 			var newMembers = members.Values.Select(update)
-				.Where(x => x.IsAlive || utcNow - x.TimeStamp < deadMemberRemovalTimeout);
+				.Where(x => KeepNodeInGossip(x, utcNow, deadMemberRemovalTimeout, me.State));
 			return new ClusterInfo(newMembers);
 		}
 
@@ -354,11 +353,17 @@ namespace EventStore.Core.Services.Gossip {
 		}
 
 		public static ClusterInfo UpdateCluster(ClusterInfo cluster, Func<MemberInfo, MemberInfo> update,
-			ITimeProvider timeProvider, TimeSpan deadMemberRemovalTimeout) {
-			// update members and remove dead timed-out members, if there are any
+			ITimeProvider timeProvider, TimeSpan deadMemberRemovalTimeout, VNodeState currentRole) {
+
 			var newMembers = cluster.Members.Select(update)
-				.Where(x => x.IsAlive || timeProvider.UtcNow - x.TimeStamp < deadMemberRemovalTimeout);
+				.Where(x => KeepNodeInGossip(x, timeProvider.UtcNow, deadMemberRemovalTimeout, currentRole));
 			return new ClusterInfo(newMembers);
+		}
+
+		private static bool KeepNodeInGossip(MemberInfo m, DateTime utcNow, TimeSpan deadMemberRemovalTimeout, VNodeState currentRole) {
+			// remove dead timed-out members, if there are any, and if we are not in an unknown/initializing/leaderless state
+			return m.IsAlive || utcNow - m.TimeStamp < deadMemberRemovalTimeout
+				|| currentRole <= VNodeState.Unknown || currentRole == VNodeState.ReadOnlyLeaderless;
 		}
 
 		private static void LogClusterChange(ClusterInfo oldCluster, ClusterInfo newCluster, string source) {
