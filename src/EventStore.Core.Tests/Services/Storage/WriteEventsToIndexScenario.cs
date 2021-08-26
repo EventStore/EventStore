@@ -87,11 +87,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			return prepares;
 		}
-
-		public CommitLogRecord CreateCommitLogRecord(long logPosition, long transactionPosition, long firstEventNumber){
-			return new CommitLogRecord (logPosition, Guid.NewGuid(), transactionPosition, DateTime.Now, 0);
-		}
-
 		public void WriteToDB(IList<IPrepareLogRecord<TStreamId>> prepares){
 			foreach(var prepare in prepares){
 				((FakeInMemoryTfReader)_tfReader).AddRecord(prepare, prepare.LogPosition);

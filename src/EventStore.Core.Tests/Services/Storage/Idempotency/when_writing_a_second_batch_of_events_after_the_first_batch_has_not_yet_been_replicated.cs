@@ -24,14 +24,10 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 			}
 
 			var prepares = CreatePrepareLogRecords(_streamId, expectedEventNumber, eventTypes, _eventIds, transactionPosition);
-			var commit = CreateCommitLogRecord(transactionPosition + 1000 * _numEvents, transactionPosition, expectedEventNumber + _numEvents);
-			
+
 			/*First batch write: committed to db and pre-committed to index but not yet committed to index*/
 			WriteToDB(prepares);
 			PreCommitToIndex(prepares);
-			
-			WriteToDB(commit);
-			PreCommitToIndex(commit);
         }
 
 		[Test]
