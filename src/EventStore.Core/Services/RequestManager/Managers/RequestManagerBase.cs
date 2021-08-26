@@ -135,10 +135,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected virtual void AllPreparesWritten() { }
 		
 		protected virtual void AllEventsWritten() {
-			if (CommitSource.IndexedPosition >= LastEventPosition) {
-				Committed();
-			} else if (!Registered) {
-				CommitSource.NotifyFor(LastEventPosition, Committed);
+			if (!Registered) {
+				CommitSource.RegisterIndexed(LastEventPosition, Committed);
 				Registered = true;
 			}
 		}
@@ -146,8 +144,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (Interlocked.Read(ref _complete) == 1) { return; }
 			Interlocked.Exchange(ref _complete, 1);
 			Result = OperationResult.Success;
-			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
+			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);			
 		}
 		public void Handle(StorageMessage.RequestManagerTimerTick message) {
 			if (_allEventsWritten) { AllEventsWritten(); }

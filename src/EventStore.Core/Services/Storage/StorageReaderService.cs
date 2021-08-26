@@ -61,7 +61,8 @@ namespace EventStore.Core.Services.Storage {
 
 			_workersMultiHandler = new MultiQueuedHandler(
 				_threadCount,
-				queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
+				//queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
+				queueNum => new QueuedHandlerChannel(storageReaderBuses[queueNum],
 					string.Format("StorageReaderQueue #{0}", queueNum + 1),
 					queueStatsManager,
 					groupName: "StorageReaderQueue",
