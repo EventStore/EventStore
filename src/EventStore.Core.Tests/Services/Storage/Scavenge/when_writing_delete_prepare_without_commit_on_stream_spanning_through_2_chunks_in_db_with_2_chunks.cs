@@ -7,7 +7,7 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), Ignore = "Explicit transactions are not supported yet by Log V3")]
 	public class when_writing_delete_prepare_without_commit_and_scavenging<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
 		private EventRecord _event0;
 		private EventRecord _event1;
@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
 			GetOrReserve("ES", out var esStreamId, out var pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos, Guid.NewGuid(), Guid.NewGuid(),
-				esStreamId, 2);
+				esStreamId, EventNumber.DeletedStream - 1);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			_event1 = WriteSingleEvent("ES", 1, "bla1");

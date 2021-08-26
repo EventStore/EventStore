@@ -8,17 +8,29 @@ using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStream
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_stream_is_softdeleted_and_temp_but_some_events_are_in_multiple_chunks_2<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+	public class when_stream_is_softdeleted_and_temp_but_some_events_are_in_multiple_chunks<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				return dbCreator
+					.Chunk(
+						Rec.Prepare(0, "test"),
+						Rec.Commit(0, "test"))
+					.Chunk(
+						Rec.Prepare(1, "test"),
+						Rec.Commit(1, "test"),
+						Rec.Prepare(2, "$$test",
+							metadata: new StreamMetadata(null, null, EventNumber.DeletedStream, true, null, null)),
+						Rec.Commit(2, "$$test"))
+					.CompleteLastChunk()
+					.CreateDb();
+			}
 			return dbCreator
 				.Chunk(
-					Rec.Prepare(0, "test"),
-					Rec.Commit(0, "test"))
+					Rec.Prepare(0, "test"))
 				.Chunk(
 					Rec.Prepare(1, "test"),
-					Rec.Commit(1, "test"),
-					Rec.Prepare(2, "$$test", metadata: new StreamMetadata(null, null, EventNumber.DeletedStream, true, null, null)),
-					Rec.Commit(2, "$$test"))
+					Rec.Prepare(2, "$$test",
+						metadata: new StreamMetadata(null, null, EventNumber.DeletedStream, true, null, null)))
 				.CompleteLastChunk()
 				.CreateDb();
 		}
@@ -42,9 +54,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				},
 				new[] {
 					dbResult.Recs[1][0],
-					dbResult.Recs[1][1],
-					dbResult.Recs[1][2],
-					dbResult.Recs[1][3]
+					dbResult.Recs[1][1]
 				}
 			};
 		}

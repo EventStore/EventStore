@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 				result = chunk.TryReadClosestForward(result.NextPosition);
 			}
 
-			Assert.AreEqual(2, chunkRecords.Count);
+			Assert.AreEqual(1, chunkRecords.Count);
 		}
 
 		public void return_correct_last_event_version_for_larger_stream() {
