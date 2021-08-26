@@ -1,22 +1,20 @@
 ﻿using System;
 using EventStore.Core.Messaging;
 
-namespace EventStore.Core.Bus {
-	// on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
+namespace EventStore.Core.Bus {	
 	public class QueuedHandler :
-		QueuedHandlerMRES,
+		QueuedHandlerChannel,
 		IQueuedHandler {
-		public static IQueuedHandler CreateQueuedHandler(IHandle<Message> consumer, string name,
+		public static IQueuedHandler CreateQueuedHandler(
+			IHandle<Message> consumer, 
+			string name,
 			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
-			TimeSpan? slowMsgThreshold = null, TimeSpan? threadStopWaitTimeout = null, string groupName = null) {
-			//if (IntPtr.Size == 8)
-			//{
-			//    // optimized path, using much faster multi producer single consumer queue
-			//    return new QueueHandlerUsingMpsc(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
-			//        groupName);
-			//}
-			return new QueuedHandler(consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
+			TimeSpan? slowMsgThreshold = null, 
+			TimeSpan? stopWaitTimeout = null, 
+			string groupName = null) {		
+			
+			return new QueuedHandlerChannel(consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, stopWaitTimeout, groupName);
 		}
 
 		public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
@@ -32,22 +30,6 @@ namespace EventStore.Core.Bus {
 			: base(
 				consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
 				groupName) {
-		}
-
-		class QueueHandlerUsingMpsc :
-			QueuedHandlerMresWithMpsc,
-			IQueuedHandler {
-			public QueueHandlerUsingMpsc(IHandle<Message> consumer,
-				string name,
-				QueueStatsManager queueStatsManager,
-				bool watchSlowMsg = true,
-				TimeSpan? slowMsgThreshold = null,
-				TimeSpan? threadStopWaitTimeout = null,
-				string groupName = null)
-				: base(
-					consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
-					groupName) {
-			}
-		}
+		}		
 	}
 }

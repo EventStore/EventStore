@@ -49,7 +49,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 		public void SetUp(Action<IHttpService> bootstrap = null) {
 			_bus = new InMemoryBus($"bus_{_serverEndPoint.Port}");
 			var pipelineBus = InMemoryBus.CreateTest();
-			var queue = new QueuedHandlerThreadPool(pipelineBus, "Test", new QueueStatsManager(), true, TimeSpan.FromMilliseconds(50));
+			//var queue = new QueuedHandlerThreadPool(pipelineBus, "Test", new QueueStatsManager(), true, TimeSpan.FromMilliseconds(50));
+			var queue = new QueuedHandlerChannel(pipelineBus, "Test", new QueueStatsManager(), true, TimeSpan.FromMilliseconds(50));
 			_multiQueuedHandler = new MultiQueuedHandler(new IQueuedHandler[] {queue}, null);
 			_multiQueuedHandler.Start();
 

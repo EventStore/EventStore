@@ -533,7 +533,8 @@ namespace EventStore.Core {
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200))).ToArray();
 			_workersHandler = new MultiQueuedHandler(
 				workerThreadsCount,
-				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
+				//queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
+				queueNum => new QueuedHandlerChannel(_workerBuses[queueNum],
 					$"Worker #{queueNum + 1}",
 					_queueStatsManager,
 					groupName: "Workers",
@@ -568,7 +569,8 @@ namespace EventStore.Core {
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
-			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
+			//var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
+			var monitoringQueue = new QueuedHandlerChannel(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
 				TimeSpan.FromMilliseconds(800));
 
 			var monitoring = new MonitoringService(monitoringQueue,
@@ -1055,7 +1057,8 @@ namespace EventStore.Core {
 
 			// SUBSCRIPTIONS
 			var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager, false);
+			//var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager, false);
+			var subscrQueue = new QueuedHandlerChannel(subscrBus, "Subscriptions", _queueStatsManager, false);
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.SystemStart, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
@@ -1088,7 +1091,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
 			_mainBus.Subscribe(ioDispatcher);
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
+			//var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
+			var perSubscrQueue = new QueuedHandlerChannel(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToStream, Message>());
