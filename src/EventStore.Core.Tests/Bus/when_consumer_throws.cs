@@ -47,19 +47,18 @@ namespace EventStore.Core.Tests.Bus {
 #endif
 		}
 	}
-
 	[TestFixture, Category("bus")]
-	public class when_consumer_throws_mres : when_consumer_throws {
-		public when_consumer_throws_mres()
-			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, new QueueStatsManager(), false, null, timeout)) {
+	public class when_consumer_throws_channel : when_consumer_throws {
+		public when_consumer_throws_channel()
+			: base((consumer, name, timeout) => new QueuedHandlerChannel(consumer, name, new QueueStatsManager(), false, null, timeout)) {
 		}
 	}
 
-	[TestFixture, Category("bus")]
-	public class when_consumer_throws_autoreset : when_consumer_throws {
-		public when_consumer_throws_autoreset()
-			: base((consumer, name, timeout) =>
-				new QueuedHandlerAutoResetWithMpsc(consumer, name, new QueueStatsManager(),false, null, timeout)) {
-		}
-	}
+	//[TestFixture, Category("bus")]
+	//public class when_consumer_throws_threadpool : when_consumer_throws {
+	//	public when_consumer_throws_threadpool()
+	//		: base((consumer, name, timeout) =>
+	//			new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+	//	}
+	//}
 }

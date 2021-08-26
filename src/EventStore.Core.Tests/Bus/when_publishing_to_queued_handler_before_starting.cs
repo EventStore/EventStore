@@ -66,35 +66,20 @@ namespace EventStore.Core.Tests.Bus {
 	}
 
 	[TestFixture]
-	public class when_publishing_to_queued_handler_mres_before_starting :
+	public class when_publishing_to_queued_handler_channel_before_starting :
 		when_publishing_to_queued_handler_before_starting {
-		public when_publishing_to_queued_handler_mres_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+		public when_publishing_to_queued_handler_channel_before_starting()
+			: base((consumer, name, timeout) => new QueuedHandlerChannel(consumer, name, new QueueStatsManager(),false, null, timeout)) {
 		}
 	}
 
-	[TestFixture]
-	public class when_publishing_to_queued_handler_autoreset_before_starting :
-		when_publishing_to_queued_handler_before_starting {
-		public when_publishing_to_queued_handler_autoreset_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, new QueueStatsManager(), false, null, timeout)
-			) {
-		}
-	}
+	//[TestFixture]
+	//public class when_publishing_to_queued_handler_threadpool_before_starting :
+	//	when_publishing_to_queued_handler_before_starting {
+	//	public when_publishing_to_queued_handler_threadpool_before_starting()
+	//		: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(), false, null, timeout)
+	//		) {
+	//	}
+	//}
 
-	[TestFixture]
-	public class when_publishing_to_queued_handler_sleep_before_starting :
-		when_publishing_to_queued_handler_before_starting {
-		public when_publishing_to_queued_handler_sleep_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, new QueueStatsManager(), false, null, timeout)) {
-		}
-	}
-
-	[TestFixture]
-	public class when_publishing_to_queued_handler_pulse_before_starting :
-		when_publishing_to_queued_handler_before_starting {
-		public when_publishing_to_queued_handler_pulse_before_starting()
-			: base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, new QueueStatsManager(), false, null, timeout)) {
-		}
-	}
 }

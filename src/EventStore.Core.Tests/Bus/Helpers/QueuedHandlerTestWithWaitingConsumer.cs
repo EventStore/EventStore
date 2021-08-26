@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Bus.Helpers {
 		}
 
 		[TearDown]
-		public virtual void TearDown() {
+		public virtual void TearDown() {			
 			Queue.Stop();
 			Queue = null;
 			Consumer.Dispose();

@@ -25,38 +25,16 @@ namespace EventStore.Core.Tests.Bus {
 	}
 
 	[TestFixture]
-	public class queued_handler_mres_should : queued_handler_should {
-		public queued_handler_mres_should()
-			: base((consumer, name, timeout) => new QueuedHandlerMresWithMpsc(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+	public class queued_handler_channel_should : queued_handler_should {
+		public queued_handler_channel_should()
+			: base((consumer, name, timeout) => new QueuedHandlerChannel(consumer, name, new QueueStatsManager(),false, null, timeout)) {
 		}
 	}
 
-	[TestFixture]
-	public class queued_handler_autoreset_should : queued_handler_should {
-		public queued_handler_autoreset_should()
-			: base((consumer, name, timeout) => new QueuedHandlerAutoResetWithMpsc(consumer, name, new QueueStatsManager(),false, null, timeout)
-			) {
-		}
-	}
-
-	[TestFixture]
-	public class queued_handler_sleep_should : queued_handler_should {
-		public queued_handler_sleep_should()
-			: base((consumer, name, timeout) => new QueuedHandlerSleep(consumer, name, new QueueStatsManager(),false, null, timeout)) {
-		}
-	}
-
-	[TestFixture]
-	public class queued_handler_pulse_should : queued_handler_should {
-		public queued_handler_pulse_should()
-			: base((consumer, name, timeout) => new QueuedHandlerPulse(consumer, name, new QueueStatsManager(),false, null, timeout)) {
-		}
-	}
-
-	[TestFixture]
-	public class queued_handler_threadpool_should : queued_handler_should {
-		public queued_handler_threadpool_should()
-			: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(),false, null, timeout)) {
-		}
-	}
+	//[TestFixture]
+	//public class queued_handler_threadpool_should : queued_handler_should {
+	//	public queued_handler_threadpool_should()
+	//		: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+	//	}
+	//}
 }
