@@ -12,7 +12,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 	public class LogV3StreamRecord : LogV3Record<StringPayloadRecord<Raw.StreamHeader>>, IEquatable<LogV3StreamRecord>, IPrepareLogRecord<StreamId>, IEventRecord {
 		public StreamId EventStreamId => LogV3SystemStreams.StreamsCreatedStreamNumber;
 		// so we can see the stream name in the webui if we want
-		public PrepareFlags Flags => PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
+		public PrepareFlags Flags => PrepareFlags.SingleWrite | PrepareFlags.IsCommitted;
 		public long TransactionPosition => LogPosition;
 		public int TransactionOffset => 0;
 		public long ExpectedVersion => StreamIdConverter.ToEventNumber(Record.SubHeader.ReferenceNumber) - 1;
@@ -28,7 +28,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		// so we can see the stream name in the webui if we want
 		public ReadOnlyMemory<byte> Data => Record.Payload;
 		public ReadOnlyMemory<byte> Metadata => ReadOnlyMemory<byte>.Empty;
-		public EventFlags EventFlags => (Flags & PrepareFlags.IsCommitted) != 0 ? EventFlags.IsJson : EventFlags.None;
+		public EventFlags EventFlags => EventFlags.None;
 
 		public string StreamName => Record.StringPayload;
 		public StreamId StreamNumber => Record.SubHeader.ReferenceNumber;
