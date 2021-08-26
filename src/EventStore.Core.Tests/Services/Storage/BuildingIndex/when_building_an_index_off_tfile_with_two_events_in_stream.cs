@@ -19,15 +19,12 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id1 = Guid.NewGuid();
 			_id2 = Guid.NewGuid();
 
-			long pos0, pos1, pos2, pos3, pos4;
+			long pos0, pos1, pos2;
 			GetOrReserve("test1", out var streamId1, out pos0);
-			_prepare1 = LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId1, ExpectedVersion.NoStream, "type", new byte[0], new byte[0]);
+			_prepare1 = LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId1, ExpectedVersion.NoStream, "type", new byte[0], new byte[0], additionalFlags: PrepareFlags.IsCommitted);
 			Writer.Write(_prepare1, out pos1);
-			_prepare2 = LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId1, 0, "type", new byte[0], new byte[0]);
-			Writer.Write(_prepare2, out pos2);
-			Writer.Write(new CommitLogRecord(pos2, _id1, pos0, DateTime.UtcNow, 0), out pos3);
-			Writer.Write(new CommitLogRecord(pos3, _id2, pos1, DateTime.UtcNow, 1), out pos4);
-		}
+			_prepare2 = LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId1, 0, "type", new byte[0], new byte[0], additionalFlags: PrepareFlags.IsCommitted);
+			Writer.Write(_prepare2, out pos2);		}
 
 		[Test]
 		public void the_first_event_can_be_read() {

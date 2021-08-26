@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		private Guid _id3;
 		private Guid _id4;
 
-		private long pos0, pos1, pos2, pos3, pos4, pos5, pos6, pos7;
+		private long pos1, pos2, pos3, pos4;
 
 		public when_building_an_index_off_tfile_with_duplicate_events_in_a_stream() : base(maxEntriesInMemTable: 3) {
 		}
@@ -43,37 +43,31 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 			_logFormat.StreamNameIndex.GetOrReserve(_logFormat.RecordFactory, "duplicate_stream", 0, out var streamId, out var streamRecord);
 			if (streamRecord != null) {
-				Writer.Write(streamRecord, out pos0);
+				Writer.Write(streamRecord, out pos1);
 			}
 
 			var expectedVersion = ExpectedVersion.NoStream;
 
 			//stream id: duplicate_stream at version: 0
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos0, _id1, _id1, pos0, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos1);
-			Writer.Write(new CommitLogRecord(pos1, _id1, pos0, DateTime.UtcNow, 0), out pos2);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos1, _id1, _id1, pos1, 0, streamId, expectedVersion++,
+				PrepareFlags.SingleWrite | PrepareFlags.IsCommitted, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos2);
 
 			//stream id: duplicate_stream at version: 1
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos3);
-			Writer.Write(new CommitLogRecord(pos3, _id2, pos2, DateTime.UtcNow, 1), out pos4);
+				PrepareFlags.SingleWrite | PrepareFlags.IsCommitted, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos3);
 
 			//stream id: duplicate_stream at version: 2
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id3, _id3, pos4, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos5);
-			Writer.Write(new CommitLogRecord(pos5, _id3, pos4, DateTime.UtcNow, 2), out pos6);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos3, _id3, _id3, pos3, 0, streamId, expectedVersion++,
+				PrepareFlags.SingleWrite | PrepareFlags.IsCommitted, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos4);
 		}
 
 		protected override void Given() {
 			_id4 = Guid.NewGuid();
-			long pos8;
-
 			var streamId = _logFormat.StreamIds.LookupValue("duplicate_stream");
 
 			//stream id: duplicate_stream at version: 0 (duplicate event/index entry)
-			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.NoStream,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos7);
-			Writer.Write(new CommitLogRecord(pos7, _id4, pos6, DateTime.UtcNow, 0), out pos8);
+			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id4, _id4, pos4, 0, streamId, ExpectedVersion.NoStream,
+				PrepareFlags.SingleWrite | PrepareFlags.IsCommitted, "type", new byte[0], new byte[0], DateTime.UtcNow), out _);
 		}
 
 		[Test]
