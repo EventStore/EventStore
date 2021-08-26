@@ -10,6 +10,14 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		when_having_multiple_metaevents_in_metastream_and_read_index_is_set_to_keep_just_last<TLogFormat, TStreamId>
 		: SimpleDbTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
+				return dbCreator.Chunk(Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(maxCount: 10)),
+						Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(maxCount: 9)),
+						Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(maxCount: 8)),
+						Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(maxCount: 7)),
+						Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(maxCount: 6)))
+					.CreateDb();
+			}
 			return dbCreator.Chunk(Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(maxCount: 10)),
 					Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(maxCount: 9)),
 					Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(maxCount: 8)),

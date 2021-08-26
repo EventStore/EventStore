@@ -10,6 +10,12 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 	public class when_having_deleted_stream_its_metastream_is_deleted_as_well<TLogFormat, TStreamId>
 		: SimpleDbTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
+				return dbCreator.Chunk(Rec.Prepare(0, "test"),
+						Rec.Prepare(1, "$$test", metadata: new StreamMetadata(2, null, null, null, null)),
+						Rec.Delete(2, "test"))
+					.CreateDb();
+			}
 			return dbCreator.Chunk(Rec.Prepare(0, "test"),
 					Rec.Commit(0, "test"),
 					Rec.Prepare(1, "$$test", metadata: new StreamMetadata(2, null, null, null, null)),

@@ -13,6 +13,12 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		: SimpleDbTestScenario<TLogFormat, TStreamId> {
 
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
+				return dbCreator.Chunk(
+					Rec.Prepare(0, "existing_stream"),
+					Rec.Prepare(1, "$existing_stream")
+					).CreateDb();
+			}
 			return dbCreator.Chunk(
 				Rec.Prepare(0, "existing_stream"),
 				Rec.Commit(0, "existing_stream"),

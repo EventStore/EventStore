@@ -14,6 +14,15 @@ namespace EventStore.Core.Tests.Services.Storage.Metastreams {
 		}
 
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
+				return dbCreator.Chunk(
+						Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(10, null, null, null, null)),
+						Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(9, null, null, null, null)),
+						Rec.Prepare(0, "$$test", "2", metadata: new StreamMetadata(8, null, null, null, null)),
+						Rec.Prepare(0, "$$test", "3", metadata: new StreamMetadata(7, null, null, null, null)),
+						Rec.Prepare(0, "$$test", "4", metadata: new StreamMetadata(6, null, null, null, null)))
+					.CreateDb();
+			}
 			return dbCreator.Chunk(
 					Rec.Prepare(0, "$$test", "0", metadata: new StreamMetadata(10, null, null, null, null)),
 					Rec.Prepare(0, "$$test", "1", metadata: new StreamMetadata(9, null, null, null, null)),
