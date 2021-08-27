@@ -10,16 +10,13 @@ namespace EventStore.LogV3.Tests {
 		readonly Guid _guid2 = Guid.Parse("00000000-0000-0000-0000-000000000002");
 		readonly Guid _guid3 = Guid.Parse("00000000-0000-0000-0000-000000000003");
 		readonly DateTime _dateTime1 = new(0x08_D9_15_80_C3_A1_00_00);
-		readonly int _int1 = 1;
 		readonly long _long1 = 1;
 		readonly long _long2 = 2;
 		readonly long _long3 = 3;
-		readonly long _long4 = 4;
 		readonly uint _uint1 = 5;
 		readonly ushort _ushort1 = 6;
 		readonly string _string1 = "one";
 		readonly EventFlags _eventFlags = EventFlags.IsJson;
-		readonly ushort _prepareflags = 3;
 		readonly Raw.PartitionFlags _partitionFlags = (Raw.PartitionFlags)4;
 		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 };
 		readonly ReadOnlyMemory<byte> _bytes2 = new byte[] { 0x20, 0x01 };
@@ -189,11 +186,8 @@ namespace EventStore.LogV3.Tests {
 				timeStamp: _dateTime1,
 				correlationId: _guid1,
 				logPosition: _long1,
-				transactionPosition: _long2,
-				transactionOffset: _int1,
-				prepareFlags: _prepareflags,
-				streamNumber: _long3,
-				startingEventNumber: _long4,
+				streamNumber: _long2,
+				startingEventNumber: _long3,
 				new IEventRecord[] { eventRecord }
 				);
 
@@ -202,21 +196,18 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_dateTime1, record.Header.TimeStamp);
 			Assert.Equal(_long1, record.Header.LogPosition);
 			Assert.Equal<Guid>(_guid1, record.SystemMetadata.CorrelationId);
-			Assert.Equal(_long2, record.SystemMetadata.TransactionPosition);
-			Assert.Equal(_int1, record.SystemMetadata.TransactionOffset);
 			Assert.Equal(0, record.SystemMetadata.StartingEventNumberRoot);
 			Assert.Equal(0, record.SystemMetadata.StartingEventNumberCategory);
 			Assert.Equal(0, record.WriteId.CategoryNumber);
 			Assert.Equal(0, record.WriteId.ParentTopicNumber);
 			Assert.Equal(0, record.WriteId.TopicNumber);
-			Assert.Equal(_long3, record.WriteId.StreamNumber);
-			Assert.Equal(_long4, record.WriteId.StartingEventNumber);
+			Assert.Equal(_long2, record.WriteId.StreamNumber);
+			Assert.Equal(_long3, record.WriteId.StartingEventNumber);
 			Assert.Equal<Guid>(_guid2, record.Events[0].EventId);
 			Assert.Equal(_string1, record.Events[0].EventType);
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record.Events[0].Data));
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Events[0].Metadata));
 			Assert.Equal(_eventFlags, record.Events[0].EventFlags);
-			Assert.Equal(_prepareflags, MemoryMarshal.AsRef<ushort>(record.SystemMetadata.PrepareFlags.ToByteArray()));
 		}
 		
 		[Fact]
