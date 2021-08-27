@@ -18,6 +18,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.RequestManagerTimerTick>,
+		IHandle<StorageMessage.ZeroEventWriteCompleted>,
 		IDisposable {
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<RequestManagerBase>();
@@ -167,6 +168,11 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		public void Handle(StorageMessage.StreamDeleted message) {
 			CompleteFailedRequest(OperationResult.StreamDeleted, "Stream is deleted.");
 		}
+
+		public void Handle(StorageMessage.ZeroEventWriteCompleted message) {
+			ReturnCommitAt(message.CurrentLogPosition, message.CurrentVersion + 1, message.CurrentVersion);
+		}
+
 		public void Handle(StorageMessage.AlreadyCommitted message) {
 			if (Interlocked.Read(ref _complete) == 1 || _allEventsWritten) { return; }
 			Log.Debug("IDEMPOTENT WRITE TO STREAM ClientCorrelationID {clientCorrelationId}, {message}.", ClientCorrId,

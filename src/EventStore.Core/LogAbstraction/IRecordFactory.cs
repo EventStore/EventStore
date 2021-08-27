@@ -10,6 +10,7 @@ namespace EventStore.Core.LogAbstraction {
 	public interface IRecordFactory<TStreamId> : IRecordFactory {
 		bool ExplicitStreamCreation { get; }
 		bool MultipleEventsPerWrite { get; }
+		bool ZeroEventsPerWrite { get; }
 
 		IPrepareLogRecord<TStreamId> CreateStreamRecord(
 			Guid streamId,

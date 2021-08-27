@@ -11,6 +11,7 @@ namespace EventStore.Core.LogV2 {
 
 		public bool ExplicitStreamCreation => false;
 		public bool MultipleEventsPerWrite => false;
+		public bool ZeroEventsPerWrite => true;
 
 		public IPrepareLogRecord<string> CreateStreamRecord(
 			Guid streamId,

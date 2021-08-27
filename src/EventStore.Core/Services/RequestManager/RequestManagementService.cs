@@ -27,6 +27,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.WrongExpectedVersion>,
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
+		IHandle<StorageMessage.ZeroEventWriteCompleted>,
 		IHandle<StorageMessage.RequestManagerTimerTick>,
 		IHandle<SystemMessage.StateChangeMessage> {
 		private readonly IPublisher _bus;
@@ -208,6 +209,7 @@ namespace EventStore.Core.Services.RequestManager {
 		public void Handle(StorageMessage.WrongExpectedVersion message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.InvalidTransaction message)  =>	DispatchInternal(message.CorrelationId, message);
 		public void Handle(StorageMessage.StreamDeleted message)  =>	DispatchInternal(message.CorrelationId, message);
+		public void Handle(StorageMessage.ZeroEventWriteCompleted message)  =>	DispatchInternal(message.CorrelationId, message);
 		
 		private void DispatchInternal<T>(Guid correlationId, T message) where T : Message {
 			if (_currentRequests.TryGetValue(correlationId, out var manager)) {

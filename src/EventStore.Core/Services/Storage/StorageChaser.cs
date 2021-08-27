@@ -231,7 +231,7 @@ namespace EventStore.Core.Services.Storage {
 						lastEventNumber = record.ExpectedVersion + record.Events.Length;
 						Debug.Assert(firstEventNumber <= lastEventNumber);
 					} else {
-						//TODO(multi-events): is this correct? what is this code for?
+						Debug.Assert(record.Events.Length == 0);
 						firstEventNumber = record.ExpectedVersion + 1;
 						lastEventNumber = record.ExpectedVersion;
 					}

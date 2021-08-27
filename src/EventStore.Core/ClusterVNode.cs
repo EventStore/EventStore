@@ -1050,6 +1050,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
 			_mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
+			_mainBus.Subscribe<StorageMessage.ZeroEventWriteCompleted>(requestManagement);
 
 			_mainBus.Subscribe<StorageMessage.RequestManagerTimerTick>(requestManagement);
 

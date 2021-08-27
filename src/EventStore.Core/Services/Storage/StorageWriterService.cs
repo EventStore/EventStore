@@ -321,11 +321,19 @@ namespace EventStore.Core.Services.Storage {
 						}
 					}
 				} else {
-					WritePrepareWithRetry(
-						LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, Guid.NewGuid(), logPosition, -1,
-							streamId, commitCheck.CurrentVersion,
-							PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
-							string.Empty, Empty.ByteArray, Empty.ByteArray));
+					if (_recordFactory.ZeroEventsPerWrite) {
+						WritePrepareWithRetry(
+							LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, Guid.NewGuid(),
+								logPosition, -1,
+								streamId, commitCheck.CurrentVersion,
+								PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
+								string.Empty, Empty.ByteArray, Empty.ByteArray));
+					} else {
+						msg.Envelope.ReplyWith(new StorageMessage.ZeroEventWriteCompleted(
+							msg.CorrelationId,
+							Writer.Checkpoint.ReadNonFlushed(),
+							commitCheck.CurrentVersion));
+					}
 				}
 
 				bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)

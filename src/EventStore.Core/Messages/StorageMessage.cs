@@ -355,6 +355,25 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class ZeroEventWriteCompleted : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly Guid CorrelationId;
+			public readonly long CurrentLogPosition;
+			public readonly long CurrentVersion;
+
+			public ZeroEventWriteCompleted(Guid correlationId, long currentLogPosition, long currentVersion) {
+				Ensure.NotEmptyGuid(correlationId, "correlationId");
+				CorrelationId = correlationId;
+				CurrentLogPosition = currentLogPosition;
+				CurrentVersion = currentVersion;
+			}
+		}
+
 		public class StreamDeleted : Message {
 			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
