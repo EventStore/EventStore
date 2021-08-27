@@ -133,8 +133,8 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			var prepare = LogRecord.SingleWrite(
 				_logFormatFactory.RecordFactory,
 				pos,
-				eventId == default(Guid) ? Guid.NewGuid() : eventId,
 				Guid.NewGuid(),
+				eventId == default(Guid) ? Guid.NewGuid() : eventId,
 				eventStreamId,
 				eventNumber - 1,
 				eventType,
