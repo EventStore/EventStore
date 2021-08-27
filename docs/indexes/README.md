@@ -25,7 +25,7 @@ Assuming the default `MaxMemTableSize` of 1M, the index files by level are:
 | 6     | 32M               | 768MB         |
 | 7     | 64M               | 1536MB        |
 | 8     | 128M              | 3072MB        |
-| n     | (2^n) * 1M        | (2^n-1) * 24Mb|
+| n     | 2^(n-1) * 1M      | 2^(n-1) * 24Mb|
 
 Each index entry is 24 bytes and the index file size is approximately 24Mb per M events.
 
