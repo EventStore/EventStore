@@ -10,12 +10,21 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_metastream_is_scavenged_and_read_index_is_set_to_keep_just_last_metaevent<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				return dbCreator
+					.Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null, null, null, null)),
+						Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(5, null, null, null, null)),
+						Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(3, null, null, null, null)),
+						Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null, null, null, null)),
+						Rec.Commit(0, "$$bla"))
+					.CompleteLastChunk()
+					.CreateDb();
+			}
 			return dbCreator
 				.Chunk(Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(10, null, null, null, null)),
 					Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(5, null, null, null, null)),
 					Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(3, null, null, null, null)),
-					Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null, null, null, null)),
-					Rec.Commit(0, "$$bla"))
+					Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(2, null, null, null, null)))
 				.CompleteLastChunk()
 				.CreateDb();
 		}

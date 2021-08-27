@@ -8,17 +8,15 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class
-		when_having_stream_with_both_max_age_and_max_count_with_stricter_max_count_specified<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
+		when_having_stream_with_both_max_age_and_max_count_with_stricter_max_age_specified_log_v2<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
 			return dbCreator
 				.Chunk(
-					Rec.Prepare(0, "$$bla",
-						metadata: new StreamMetadata(3, TimeSpan.FromMinutes(50), null, null, null)),
-					Rec.Commit(0, "$$bla"),
-					Rec.Prepare(3, "bla"),
-					Rec.Commit(3, "bla"),
+					Rec.Prepare(3, "$$bla", metadata: new StreamMetadata(5, TimeSpan.FromMinutes(5), null, null, null)),
+					Rec.Commit(3, "$$bla"),
+					Rec.Prepare(0, "bla"),
+					Rec.Commit(0, "bla"),
 					Rec.Prepare(1, "bla", timestamp: DateTime.UtcNow - TimeSpan.FromMinutes(100)),
 					Rec.Prepare(1, "bla", timestamp: DateTime.UtcNow - TimeSpan.FromMinutes(90)),
 					Rec.Prepare(1, "bla", timestamp: DateTime.UtcNow - TimeSpan.FromMinutes(60)),
@@ -35,9 +33,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
-			var keep = LogFormatHelper<TLogFormat, TStreamId>.IsV2
-				? new int[] { 0, 1, 11, 12, 13, 14 }
-				: new int[] { 0, 1, 2, 12, 13, 14, 15 };
+			var keep = new int[] { 0, 1, 11, 12, 13, 14 };
 
 			return new[] {
 				dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToArray(),

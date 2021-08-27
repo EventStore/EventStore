@@ -8,9 +8,16 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_stream_is_deleted<TLogFormat, TStreamId> : ScavengeTestScenario<TLogFormat, TStreamId> {
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				return dbCreator
+					.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"), Rec.Commit(0, "bla"))
+					.Chunk(Rec.Delete(1, "bla"), Rec.Commit(1, "bla"))
+					.CompleteLastChunk()
+					.CreateDb();
+			}
 			return dbCreator
-				.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"), Rec.Commit(0, "bla"))
-				.Chunk(Rec.Delete(1, "bla"), Rec.Commit(1, "bla"))
+				.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"))
+				.Chunk(Rec.Delete(1, "bla"))
 				.CompleteLastChunk()
 				.CreateDb();
 		}
@@ -45,9 +52,16 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 		}
 
 		protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				return dbCreator
+					.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"), Rec.Commit(0, "bla"))
+					.Chunk(Rec.Delete(1, "bla"), Rec.Commit(1, "bla"))
+					.CompleteLastChunk()
+					.CreateDb();
+			}
 			return dbCreator
-				.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"), Rec.Commit(0, "bla"))
-				.Chunk(Rec.Delete(1, "bla"), Rec.Commit(1, "bla"))
+				.Chunk(Rec.Prepare(0, "bla"), Rec.Prepare(0, "bla"))
+				.Chunk(Rec.Delete(1, "bla"))
 				.CompleteLastChunk()
 				.CreateDb();
 		}

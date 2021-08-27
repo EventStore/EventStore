@@ -23,18 +23,22 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void throw_argumentoutofrangeexception_when_given_negative_transactionposition() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => {
-				LogRecord.Prepare(_recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), -1, 0, _streamId, 0,
-					PrepareFlags.None, "type", new byte[0], null, DateTime.UtcNow);
-			});
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				Assert.Throws<ArgumentOutOfRangeException>(() => {
+					LogRecord.Prepare(_recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), -1, 0, _streamId, 0,
+						PrepareFlags.None, "type", new byte[0], null, DateTime.UtcNow);
+				});
+			}
 		}
 
 		[Test]
 		public void throw_argumentoutofrangeexception_when_given_transaction_offset_less_than_minus_one() {
-			Assert.Throws<ArgumentOutOfRangeException>(() => {
-				LogRecord.Prepare(_recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, -2, _streamId, 0,
-					PrepareFlags.None, "type", new byte[0], null, DateTime.UtcNow);
-			});
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				Assert.Throws<ArgumentOutOfRangeException>(() => {
+					LogRecord.Prepare(_recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), 0, -2, _streamId, 0,
+						PrepareFlags.None, "type", new byte[0], null, DateTime.UtcNow);
+				});
+			}
 		}
 
 		[Test]

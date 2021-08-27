@@ -70,13 +70,22 @@ namespace EventStore.Core.Tests.TransactionLog {
 				var p = (IPrepareLogRecord<TStreamId>)r;
 				Assert.AreEqual(p.RecordType, LogRecordType.Prepare);
 				Assert.AreEqual(p.LogPosition, 0);
-				Assert.AreEqual(p.TransactionPosition, 0xDEAD);
+				if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+					Assert.AreEqual(p.TransactionPosition, 0xDEAD);
+				} else {
+					Assert.AreEqual(p.TransactionPosition, 0);
+				}
 				Assert.AreEqual(p.CorrelationId, _correlationId);
 				Assert.AreEqual(p.Events[0].EventId, _eventId);
 				Assert.AreEqual(p.EventStreamId, streamId);
 				Assert.AreEqual(p.ExpectedVersion, 1234);
 				Assert.That(p.TimeStamp, Is.EqualTo(new DateTime(2012, 12, 21)).Within(7).Milliseconds);
-				Assert.AreEqual(p.Flags, PrepareFlags.SingleWrite);
+				if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+					Assert.AreEqual(p.Flags, PrepareFlags.SingleWrite);
+				} else {
+					Assert.AreEqual(p.Flags, PrepareFlags.SingleWrite | PrepareFlags.IsCommitted);
+				}
+
 				Assert.AreEqual(p.Events[0].EventType, "type");
 				Assert.AreEqual(p.Events[0].Data.Length, 5);
 				Assert.AreEqual(p.Events[0].Metadata.Length, 2);
