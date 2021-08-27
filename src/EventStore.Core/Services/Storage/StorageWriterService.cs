@@ -280,7 +280,7 @@ namespace EventStore.Core.Services.Storage {
 
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 				if (msg.Events.Length > 0) {
-					if (_recordFactory.MultipleEventsPerPrepare) {
+					if (_recordFactory.MultipleEventsPerWrite) {
 						var prepare = LogRecord.Prepare(
 							factory: _recordFactory,
 							logPosition: logPosition,
