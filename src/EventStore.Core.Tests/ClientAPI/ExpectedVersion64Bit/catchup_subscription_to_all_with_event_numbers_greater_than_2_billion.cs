@@ -19,6 +19,11 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 		private EventRecord _r1, _r2;
 
 		public override void WriteTestScenario() {
+			//append a dummy event since position is exclusive when subscribing to stream,
+			//otherwise first event's position will match Position.Start and it will not be received
+			//by the subscription
+			WriteSingleEvent("dummy", 0, new string('.', 1));
+
 			_r1 = WriteSingleEvent(_streamId, intMaxValue + 1, new string('.', 3000));
 			_r2 = WriteSingleEvent(_streamId, intMaxValue + 2, new string('.', 3000));
 		}
