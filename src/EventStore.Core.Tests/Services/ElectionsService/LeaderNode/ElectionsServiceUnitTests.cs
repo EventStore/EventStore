@@ -372,16 +372,18 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			public int[] NodePriorities { get; set; } = { 1, 1, 1 };
 			public int[] EpochNumbers { get; set; } = { -1, -1, -1 };
 
+			private static int _id = 0;
 			private static string GenerateName(int expectedLeaderCandidateNode, int?[] previousLeader,
 				long[] writerCheckpoints,
 				long[] chaserCheckpoints, int[] nodePriorities, int[] epochNumbers) {
 				var nameBuilder = new StringBuilder();
+				nameBuilder.Append($"{_id++} ");
 				if (writerCheckpoints != null) {
 					if (nameBuilder.Length == 0)
 						nameBuilder.Append("Nodes with ");
 					else
 						nameBuilder.Append(" and ");
-					nameBuilder.AppendFormat("writer checkpoints ( {0} )", string.Join(",",
+					nameBuilder.AppendFormat("writer checkpoints << {0} >>", string.Join(",",
 						writerCheckpoints.Where(x => x != 1).Select((x, i) => $"{i} : wcp {x}")));
 				}
 
@@ -390,7 +392,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						nameBuilder.Append("Nodes with ");
 					else
 						nameBuilder.Append(" and ");
-					nameBuilder.AppendFormat("chaser checkpoints ( {0} )", string.Join(",",
+					nameBuilder.AppendFormat("chaser checkpoints << {0} >>", string.Join(",",
 						chaserCheckpoints.Where(x => x != 1).Select((x, i) => $"{i} : ccp {x}")));
 				}
 
@@ -399,12 +401,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 						nameBuilder.Append("Nodes with ");
 					else
 						nameBuilder.Append(" and ");
-					nameBuilder.AppendFormat("node priorities ( {0} )", string.Join(",",
+					nameBuilder.AppendFormat("node priorities << {0} >>", string.Join(",",
 						nodePriorities.Where(x => x != 0).Select((x, i) => $"{i} : np {x}")));
 				}
 				if (epochNumbers != null) {
 					nameBuilder.Append(nameBuilder.Length == 0 ? "Nodes with " : " and ");
-					nameBuilder.AppendFormat("epoch numbers ( {0} )", string.Join(",",
+					nameBuilder.AppendFormat("epoch numbers << {0} >>", string.Join(",",
 						epochNumbers.Where(x => x != 0).Select((x, i) => $"{i} : en {x}")));
 				}
 
