@@ -78,17 +78,16 @@ namespace EventStore.Core.Tests.Bus {
 		}
 	}
 
-	[TestFixture, Category("LongRunning")]
+	[TestFixture]//, Ignore("threading issues in test")]
 	public class when_publishing_to_queued_handler_channel : when_publishing_to_queued_handler {
 		public when_publishing_to_queued_handler_channel()
-			: base((consumer, name, timeout) => new QueuedHandlerChannel(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerChannel(consumer, name, new QueueStatsManager(), false, null, timeout)) {
 		}
 	}
-
-	//[TestFixture, Category("LongRunning")]
-	//public class when_publishing_to_queued_handler_threadpool : when_publishing_to_queued_handler {
-	//	public when_publishing_to_queued_handler_threadpool()
-	//		: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(),false, null, timeout)) {
-	//	}
-	//}
+	[TestFixture]//, Ignore("threading issues in test")]
+	public class when_publishing_to_queued_handler_channel_threadpool : when_publishing_to_queued_handler {
+		public when_publishing_to_queued_handler_channel_threadpool()
+			: base((consumer, name, timeout) => new QueuedHandlerChannel(consumer, name, new QueueStatsManager(), false, null, timeout, continueOnContext: false)) {
+		}
+	}
 }

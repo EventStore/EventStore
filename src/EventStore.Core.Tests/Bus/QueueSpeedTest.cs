@@ -8,69 +8,48 @@ using EventStore.Core.Tests.Bus.Helpers;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Bus {
-	[TestFixture, Ignore("Long running")]
+	[TestFixture]
 	public class QueueSpeedTest {
-		[Test, Category("LongRunning"), Explicit]
-		public void channel_queued_handler_1_producer_50mln_messages() {
+		[Test]
+		public void channel_queued_handler_1_producer_25mln_messages() {
 			QueuedHandlerChannel queue = null;
 			SpeedTest(consumer => {
 				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false);
 				queue.Start();
 				return queue;
-			}, 1, 50000000);
+			}, 1, 25_000_000);
 			queue.Stop();
 		}
-		[Test, Category("LongRunning"), Explicit]
-		public void channel_queued_handler_2_producers_50mln_messages() {
+		[Test]
+		public void channel_queued_handler_2_producers_25mln_messages() {
 			QueuedHandlerChannel queue = null;
 			SpeedTest(consumer => {
 				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false);
 				queue.Start();
 				return queue;
-			}, 2, 50000000);
+			}, 2, 25_000_000);
 			queue.Stop();
 		}
-		[Test, Category("LongRunning"), Explicit]
-		public void channel_queued_handler_10_producers_50mln_messages() {
+		[Test]
+		public void channel_queued_handler_threadpool_1_producer_25mln_messages() {
 			QueuedHandlerChannel queue = null;
 			SpeedTest(consumer => {
-				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false);
+				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false, continueOnContext: false);
 				queue.Start();
 				return queue;
-			}, 10, 50000000);
+			}, 1, 25_000_000);
 			queue.Stop();
 		}
-		//[Test, Ignore("LongRunning"), Explicit]
-		//public void threadpool_queued_handler_2_producers_50mln_messages() {
-		//	QueuedHandlerThreadPool queue = null;
-		//	SpeedTest(consumer => {
-		//		queue = new QueuedHandlerThreadPool(consumer, "Queue", new QueueStatsManager(), false);
-		//		queue.Start();
-		//		return queue;
-		//	}, 1, 50000000);
-		//	queue.Stop();
-		//}
-		//[Test, Ignore("LongRunning"), Explicit]
-		//public void threadpool_queued_handler_1_producer_50mln_messages() {
-		//	QueuedHandlerThreadPool queue = null;
-		//	SpeedTest(consumer => {
-		//		queue = new QueuedHandlerThreadPool(consumer, "Queue", new QueueStatsManager(), false);
-		//		queue.Start();
-		//		return queue;
-		//	}, 2, 50000000);
-		//	queue.Stop();
-		//}
-		//[Test, Ignore("LongRunning"), Explicit]
-		//public void threadpool_queued_handler_10_producers_50mln_messages() {
-		//	QueuedHandlerThreadPool queue = null;
-		//	SpeedTest(consumer => {
-		//		queue = new QueuedHandlerThreadPool(consumer, "Queue", new QueueStatsManager(), false);
-		//		queue.Start();
-		//		return queue;
-		//	}, 10, 50000000);
-		//	queue.Stop();
-		//}
-
+		[Test]
+		public void channel_queued_handler_threadpool_2_producers_25mln_messages() {
+			QueuedHandlerChannel queue = null;
+			SpeedTest(consumer => {
+				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false, continueOnContext: false);
+				queue.Start();
+				return queue;
+			}, 2, 25_000_000);
+			queue.Stop();
+		}
 
 
 		private void SpeedTest(Func<IHandle<Message>, IPublisher> queueFactory, int producingThreads, int messageCnt) {

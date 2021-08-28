@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Bus {
 
 		[Test]
 		public void and_then_starting_message_should_be_forwarded_to_bus() {
-			Consumer.SetWaitingCount(1);
+			Consumer.SetWaitingCount(2);
 
 			Queue.Publish(new TestMessage());
 			try {
