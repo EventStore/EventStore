@@ -11,6 +11,16 @@ namespace EventStore.Core.Tests.Bus {
 	[TestFixture]
 	public class QueueSpeedTest {
 		[Test]
+		public void channel_queued_handler_1_producer_10mln_messages() {
+			QueuedHandlerChannel queue = null;
+			SpeedTest(consumer => {
+				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false);
+				queue.Start();
+				return queue;
+			}, 1, 10_000_000);
+			queue.Stop();
+		}
+		[Test, Ignore("Log Running")]
 		public void channel_queued_handler_1_producer_25mln_messages() {
 			QueuedHandlerChannel queue = null;
 			SpeedTest(consumer => {
@@ -20,7 +30,7 @@ namespace EventStore.Core.Tests.Bus {
 			}, 1, 25_000_000);
 			queue.Stop();
 		}
-		[Test]
+		[Test, Ignore("Log Running")]
 		public void channel_queued_handler_2_producers_25mln_messages() {
 			QueuedHandlerChannel queue = null;
 			SpeedTest(consumer => {
@@ -30,27 +40,17 @@ namespace EventStore.Core.Tests.Bus {
 			}, 2, 25_000_000);
 			queue.Stop();
 		}
-		[Test]
-		public void channel_queued_handler_threadpool_1_producer_25mln_messages() {
-			QueuedHandlerChannel queue = null;
-			SpeedTest(consumer => {
-				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false, continueOnContext: false);
-				queue.Start();
-				return queue;
-			}, 1, 25_000_000);
-			queue.Stop();
-		}
-		[Test]
-		public void channel_queued_handler_threadpool_2_producers_25mln_messages() {
-			QueuedHandlerChannel queue = null;
-			SpeedTest(consumer => {
-				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false, continueOnContext: false);
-				queue.Start();
-				return queue;
-			}, 2, 25_000_000);
-			queue.Stop();
-		}
 
+		[Test, Ignore("Log Running")]
+		public void channel_queued_handler_10_producers_25mln_messages() {
+			QueuedHandlerChannel queue = null;
+			SpeedTest(consumer => {
+				queue = new QueuedHandlerChannel(consumer, "Queue", new QueueStatsManager(), false);
+				queue.Start();
+				return queue;
+			}, 10, 25_000_000);
+			queue.Stop();
+		}
 
 		private void SpeedTest(Func<IHandle<Message>, IPublisher> queueFactory, int producingThreads, int messageCnt) {
 			var queue = queueFactory(new NoopConsumer());
@@ -82,7 +82,7 @@ namespace EventStore.Core.Tests.Bus {
 					}
 
 					endEvent.Signal();
-				}) {IsBackground = true, Name = "Producer #" + i};
+				}) { IsBackground = true, Name = "Producer #" + i };
 				threads[i].Start();
 			}
 

@@ -36,7 +36,6 @@ namespace EventStore.Core.Bus {
 		private IHandle<Message> _consumer;
 		private readonly bool _watchSlowMsg;
 		private readonly TimeSpan _slowMsgThreshold;
-		private readonly ChannelOptions _config;
 		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
 		private readonly TimeSpan _stopWaitTimeout;
 
@@ -49,7 +48,6 @@ namespace EventStore.Core.Bus {
 		private CancellationTokenSource _tokenSource;
 
 
-		//todo-jgeall: this is currently mapping into existing patterns for queue monitoring that should be reviewed and updated making this far simpler
 		public QueuedHandlerChannel(
 			IHandle<Message> consumer,
 			string name,
@@ -57,44 +55,34 @@ namespace EventStore.Core.Bus {
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null,
 			TimeSpan? stopWaitTimeout = null,
-			string groupName = null,
-			bool continueOnContext = true,
-			ChannelOptions config = null) {
+			string groupName = null) {
 			Ensure.NotNull(consumer, "consumer");
 			Ensure.NotNull(name, "name");
-
-			if (config == null) {
-				config = new UnboundedChannelOptions();
-			}
-			_config = config;
+				
 			_consumer = consumer;
 			_watchSlowMsg = watchSlowMsg;
 			_slowMsgThreshold = slowMsgThreshold ?? InMemoryBus.DefaultSlowMessageThreshold;
 			_stopWaitTimeout = stopWaitTimeout ?? QueuedHandler.DefaultStopWaitTimeout;
+			_channel = Channel.CreateUnbounded<Message>();
 			_queueMonitor = QueueMonitor.Default;
-			_queueStats = queueStatsManager.CreateQueueStatsCollector(name, groupName);
-			_channel = BuildChannel();
-			_tokenSource = new CancellationTokenSource();
+			_queueStats = queueStatsManager.CreateQueueStatsCollector(name, groupName);		
 		}
 
-		private Channel<Message> BuildChannel() {
-			return Channel.CreateUnbounded<Message>((UnboundedChannelOptions)_config);
-		}
+		
 
 		public Task Start() {
-			if (!_stopped.IsSet)
-				throw new InvalidOperationException("Channel already running.");
-			if (_consumer == null) { new InvalidOperationException("Consumer not set, unable to start Queue."); }
-
+			if (!_stopped.IsSet ) { throw new InvalidOperationException("Channel already running."); };
+			if (_consumer == null) {throw  new InvalidOperationException("Consumer not set, unable to start Queue."); }
 			_queueMonitor.Register(this);
-
+			
 			_stopped.Reset();
+			_tokenSource = new CancellationTokenSource();
 			Task.Run(() => ReadFromQueue(_tokenSource.Token));
 			return _tcs.Task;
 		}
 
 		public void Stop() {
-			_tokenSource.Cancel();
+			_tokenSource?.Cancel();
 			if (!_stopped.Wait(_stopWaitTimeout))
 				throw new TimeoutException(string.Format("Unable to stop channel '{0}'.", Name));
 		}
@@ -103,31 +91,27 @@ namespace EventStore.Core.Bus {
 			_tokenSource.Cancel();
 		}
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Code", "CAC002:ConfigureAwaitChecker", Justification = "Dedicated thread processing when true.")]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Code", "CAC001:ConfigureAwaitChecker", Justification = "Dedicated thread processing when true.")]
-		private async void ReadFromQueue(CancellationToken cancelToken) {
-
-			Action<Message> send = _consumer.Handle;
-			if (_watchSlowMsg) { send = MonitoredSend; }
+		private async void ReadFromQueue(CancellationToken cancelToken) {			
 			try {
 				_queueStats.Start();
-				while (await _channel.Reader.WaitToReadAsync(cancelToken).ConfigureAwait(false)) {
-					Message msg = null;
+				var messages = _channel.Reader.ReadAllAsync(cancelToken);
+				await foreach (Message msg in messages.ConfigureAwait(false)) {
 					try {
-						while (_channel.Reader.TryRead(out msg)) {
-							Interlocked.Decrement(ref _queueDepth);
-							_queueStats.EnterBusy();
+						Interlocked.Decrement(ref _queueDepth);						
+						_queueStats.EnterBusy();
 #if DEBUG
-							_queueStats.Dequeued(msg);
+						_queueStats.Dequeued(msg);
 #endif
-							_previousQueueDepth = Interlocked.Read(ref _queueDepth);
-							_queueStats.ProcessingStarted(msg.GetType(), (int)_previousQueueDepth);
-							send(msg);
-							_queueStats.ProcessingEnded(1);
-						}
-						_queueStats.EnterIdle();
-						if (cancelToken.IsCancellationRequested) { break; }
-					
+						_previousQueueDepth = _queueDepth;
+						_queueStats.ProcessingStarted(msg.GetType(), (int)_previousQueueDepth);
+						var start = DateTime.UtcNow;
+
+						_consumer.Handle(msg);						
+						
+						Report(msg, start);
+						_queueStats.ProcessingEnded(1);
+						if (_queueDepth < 1) { _queueStats.EnterIdle(); }
+
 					} catch (Exception ex) {
 						if (cancelToken.IsCancellationRequested) { break; }
 						Log.Error(ex, "Error while processing message {message} in queued handler '{queue}'.",
@@ -137,27 +121,23 @@ namespace EventStore.Core.Bus {
 #endif
 					}
 				}
+
 			} catch (Exception ex) {
 				if (!cancelToken.IsCancellationRequested) {
 					_tcs.TrySetException(ex);
 					throw;
 				}
-			} finally {				
+			} finally {
 				_channel.Writer.TryComplete();
 				_stopped.Set();
 				_queueStats.Stop();
 				_queueMonitor.Unregister(this);
-
 			}
 		}
 
-		private void MonitoredSend(Message msg) {
-			var start = DateTime.UtcNow;
-
-			_consumer.Handle(msg);
-
+		private void Report(Message msg, DateTime start) {
+			if(!_watchSlowMsg) return;
 			var elapsed = DateTime.UtcNow - start;
-
 			if (elapsed > _slowMsgThreshold) {
 				Log.Debug(
 					"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}.",
@@ -169,8 +149,7 @@ namespace EventStore.Core.Bus {
 						Name, _queueStats.InProgressMessage.Name, (int)elapsed.TotalMilliseconds, _previousQueueDepth, Interlocked.Read(ref _queueDepth));
 			}
 		}
-		public void Publish(Message message) {
-			//Ensure.NotNull(message, "message");
+		public void Publish(Message message) {			
 #if DEBUG
 			_queueStats.Enqueued();
 #endif
