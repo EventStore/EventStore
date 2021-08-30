@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -19,6 +20,9 @@ namespace EventStore.Core.Tests.Bus {
 				return queue;
 			}, 1, 10_000_000);
 			queue.Stop();
+			//Task.Run(()=>queue.Stop());
+			//var msg = new SystemMessage.SystemStart();
+			//queue.Publish(msg);
 		}
 		[Test, Ignore("Log Running")]
 		public void channel_queued_handler_1_producer_25mln_messages() {

@@ -95,14 +95,13 @@ namespace EventStore.Core.Bus {
 			try {
 				_queueStats.Start();
 				var messages = _channel.Reader.ReadAllAsync(cancelToken);
-				await foreach (Message msg in messages.ConfigureAwait(false)) {
+				await foreach (Message msg in messages.WithCancellation(cancelToken).ConfigureAwait(false)) {
 					try {
-						Interlocked.Decrement(ref _queueDepth);						
+						_previousQueueDepth = Interlocked.Decrement(ref _queueDepth);						
 						_queueStats.EnterBusy();
 #if DEBUG
 						_queueStats.Dequeued(msg);
 #endif
-						_previousQueueDepth = _queueDepth;
 						_queueStats.ProcessingStarted(msg.GetType(), (int)_previousQueueDepth);
 						var start = DateTime.UtcNow;
 
