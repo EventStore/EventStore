@@ -89,15 +89,15 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		internal ValueTask<BatchAppendResp> AppendToStreamBatch(params BatchAppendReq[] requests) =>
 			_batchAppender.Call(requests);
 
-		internal static IEnumerable<BatchAppendReq.Types.ProposedMessage> CreateEvents(int count) =>
+		internal static IEnumerable<BatchAppendReq.Types.ProposedMessage> CreateEvents(int count, string[] eventTypes = null) =>
 			Enumerable.Range(0, count)
-				.Select(_ => new BatchAppendReq.Types.ProposedMessage {
+				.Select(i => new BatchAppendReq.Types.ProposedMessage {
 					Data = ByteString.Empty,
 					Id = Uuid.NewUuid().ToDto(),
 					CustomMetadata = ByteString.Empty,
 					Metadata = {
 						{GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ApplicationOctetStream},
-						{GrpcMetadata.Type, "-"}
+						{GrpcMetadata.Type, eventTypes == null ? "-" : eventTypes[i]}
 					}
 				});
 
