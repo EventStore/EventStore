@@ -85,7 +85,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			Assert.Equal(_uint3000, prepare.EventStreamId);
 			Assert.Equal(_long4, prepare.ExpectedVersion);
 			Assert.Equal(_dateTime1, prepare.TimeStamp);
-			Assert.Equal(_prepareflags, prepare.Flags);
+			Assert.Equal(PrepareFlags.SingleWrite | PrepareFlags.IsCommitted, prepare.Flags);
 			Assert.Equal(_string1, prepare.Events[0].EventType);
 			Assert.Equal(_eventFlags, prepare.Events[0].EventFlags);
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes1), MemoryMarshal.ToEnumerable(prepare.Events[0].Data));
