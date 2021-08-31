@@ -172,9 +172,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			out long startEventNumber, out long endEventNumber, out int eventIndex) {
 			var recordsQuery = _tableIndex.GetRange(streamId, eventNumber, eventNumber)
 				.Select(x => {
-					var prepare = ReadPrepareInternal(reader, x.Position, x.Version, out var startEventNumber, out var endEventNumber);
-					return new {x.Version, Prepare = prepare, StartEventNumber = startEventNumber,
-						EndEventNumber = endEventNumber, EventIndex = (int) (eventNumber - startEventNumber)};
+					var prepare = ReadPrepareInternal(reader, x.Position, x.Version, out var start, out var end);
+					return new {x.Version, Prepare = prepare, StartEventNumber = start,
+						EndEventNumber = end, EventIndex = (int) (eventNumber - start)};
 				})
 				.Where(x => x.Prepare != null && StreamIdComparer.Equals(x.Prepare.EventStreamId, streamId))
 				.GroupBy(x => x.Version).Select(x => x.Last()).ToList();
