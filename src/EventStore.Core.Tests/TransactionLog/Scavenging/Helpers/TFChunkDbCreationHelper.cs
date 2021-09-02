@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						transInfo.TransactionOffset = 0;
 					}
 
-					ILogRecord record;
+					var curRecords = new List<ILogRecord>();
 
 					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.NoStream;
 					var actualExpectedVersion = expectedVersion;
@@ -131,9 +131,28 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						case Rec.RecType.Prepare: {
 							if (SystemStreams.IsMetastream(rec.StreamId))
 								transInfo.StreamMetadata = rec.Metadata;
-							streamUncommitedVersion[rec.StreamId] += 1;
-							actualExpectedVersion = streamUncommitedVersion[rec.StreamId] - 1;
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, isV3 ? actualExpectedVersion : expectedVersion);
+							if (rec.NumPrepareEvents == 1) {
+								actualExpectedVersion = streamUncommitedVersion[rec.StreamId];
+								streamUncommitedVersion[rec.StreamId] += 1;
+								curRecords.Add(CreateLogRecord(rec, streamNumber, transInfo, logPos,
+									isV3 ? actualExpectedVersion : expectedVersion));
+							} else {
+								if (transInfo.FirstPrepareId != rec.Id) {
+									throw new Exception(
+										"Multiple events per write are not supported with explicit transactions in this test scenario");
+								}
+								actualExpectedVersion = streamUncommitedVersion[rec.StreamId];
+								if (_logFormat.RecordFactory.MultipleEventsPerWrite) {
+									streamUncommitedVersion[rec.StreamId] += rec.NumPrepareEvents;
+									curRecords.Add(CreateLogRecord(rec, streamNumber, transInfo, logPos, actualExpectedVersion, rec.NumPrepareEvents));
+
+								} else {
+									for (int k = 0; k < rec.NumPrepareEvents; k++) {
+										streamUncommitedVersion[rec.StreamId] += 1;
+										curRecords.Add(CreateLogRecord(rec, streamNumber, transInfo, logPos,actualExpectedVersion + k));
+									}
+								}
+							}
 							break;
 						}
 
@@ -142,17 +161,17 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 								? int.MaxValue
 								: EventNumber.DeletedStream;
 							actualExpectedVersion = streamUncommitedVersion[rec.StreamId] - 1;
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, actualExpectedVersion);
+							curRecords.Add(CreateLogRecord(rec, streamNumber, transInfo, logPos, actualExpectedVersion));
 							break;
 						}
 
 						case Rec.RecType.TransStart:
 						case Rec.RecType.TransEnd: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
+							curRecords.Add(CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion));
 							break;
 						}
 						case Rec.RecType.Commit: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
+							curRecords.Add(CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion));
 
 							if (transInfo.StreamMetadata != null) {
 								var streamId = SystemStreams.OriginalStreamOf(rec.StreamId);
@@ -172,13 +191,16 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							throw new ArgumentOutOfRangeException();
 					}
 
-					Write(i, chunk, record, out logPos);
-					if (record is IPrepareLogRecord<TStreamId> prepare) {
-						//populate the actual expected version before adding the record to the results
-						//since the expected version will be populated in records read from chunks
-						prepare.PopulateExpectedVersion(actualExpectedVersion);
+					foreach (var record in curRecords) {
+						Write(i, chunk, record, out logPos);
+						if (record is IPrepareLogRecord<TStreamId> prepare) {
+							//populate the actual expected version before adding the record to the results
+							//since the expected version will be populated in records read from chunks
+							prepare.PopulateExpectedVersion(actualExpectedVersion);
+						}
+
+						records[i].Add(record);
 					}
-					records[i].Add(record);
 				}
 
 				if (i < _chunkRecs.Count - 1 || (_completeLast && i == _chunkRecs.Count - 1))
@@ -205,7 +227,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			return meta.ToJsonBytes();
 		}
 
-		private ILogRecord CreateLogRecord(Rec rec, TStreamId streamId, TransactionInfo transInfo, long logPos, long expectedVersion) {
+		private ILogRecord CreateLogRecord(Rec rec, TStreamId streamId, TransactionInfo transInfo, long logPos, long expectedVersion, int numPrepareEvents = 1) {
 			switch (rec.Type) {
 				case Rec.RecType.Prepare: {
 					int transOffset = transInfo.TransactionOffset;
@@ -220,9 +242,19 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));
 					}
 
+					var eventRecords = new IEventRecord[numPrepareEvents];
+					for (int i = 0; i < numPrepareEvents; i++) {
+						eventRecords[i] = new Event(
+							eventId: rec.Id,
+							eventType: rec.EventType,
+							isJson: (rec.Metadata != null),
+							data: rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
+							metadata: null,
+							allowEmptyEventType: true);
+					}
+
 					return LogRecord.Prepare(_logFormat.RecordFactory, logPos,
 						Guid.NewGuid(),
-						rec.Id,
 						transInfo.TransactionPosition,
 						transOffset,
 						streamId,
@@ -231,9 +263,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
 						| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
-						rec.EventType,
-						rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
-						null,
+						eventRecords,
 						rec.TimeStamp);
 				}
 
@@ -382,10 +412,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public readonly DateTime TimeStamp;
 		public readonly StreamMetadata Metadata;
 		public readonly PrepareFlags PrepareFlags;
+		public readonly int NumPrepareEvents;
 		public readonly byte Version;
 
-		public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version,
-			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data) {
+		private Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version,
+			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data, int numPrepareEvents = 1) {
 			Ensure.NotNullOrEmpty(streamId, "streamId");
 			Ensure.Nonnegative(transaction, "transaction");
 
@@ -398,6 +429,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			Version = version;
 			Metadata = metadata;
 			PrepareFlags = prepareFlags;
+			NumPrepareEvents = numPrepareEvents;
 		}
 
 		public static Rec Delete(int transaction, string stream, DateTime? timestamp = null,
@@ -412,8 +444,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 		public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null,
 			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data,
-			byte version = PrepareLogRecord.PrepareRecordVersion) {
-			return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, metadata, prepareFlags);
+			byte version = PrepareLogRecord.PrepareRecordVersion, int numEvents = 1) {
+			return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, metadata, prepareFlags, numEvents);
 		}
 
 		public static Rec TransEnd(int transaction, string stream, DateTime? timestamp = null,
