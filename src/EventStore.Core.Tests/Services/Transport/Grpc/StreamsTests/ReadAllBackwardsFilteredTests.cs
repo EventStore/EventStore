@@ -9,14 +9,15 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
-	public class ReadAllBackwardsTests {
+	public class ReadAllBackwardsFilteredTests {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class when_reading_all_backwards<TLogFormat, TStreamId> : GrpcSpecification<TLogFormat, TStreamId> {
-			private const string StreamId = nameof(when_reading_all_backwards<TLogFormat, TStreamId>);
+		public class when_reading_all_backwards_filtered<TLogFormat, TStreamId>
+		  : GrpcSpecification<TLogFormat, TStreamId> {
+			private const string StreamId = nameof(when_reading_all_backwards_filtered<TLogFormat, TStreamId>);
 
-			private readonly List<ReadResp> _responses = new();
 			private Position _positionOfLastWrite;
+			private readonly List<ReadResp> _responses = new();
 
 			protected override async Task Given() {
 				var response = await AppendToStreamBatch(new BatchAppendReq {
@@ -39,14 +40,18 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						UuidOption = new() { Structured = new() },
 						Count = 20,
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
-						ResolveLinks = false,
+						ResolveLinks = true,
 						All = new() {
 							Position = new() {
 								CommitPosition = _positionOfLastWrite.CommitPosition,
 								PreparePosition = _positionOfLastWrite.PreparePosition
 							}
 						},
-						NoFilter = new()
+						Filter = new() {
+							Max = 32,
+							CheckpointIntervalMultiplier = 4,
+							StreamIdentifier = new() { Prefix = { StreamId } }
+						}
 					}
 				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().ToArrayAsync());
 			}
@@ -69,18 +74,27 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					.All(x =>
 						new Position(x.Event.Event.CommitPosition, x.Event.Event.PreparePosition) <=
 						_positionOfLastWrite));
+
+				Assert.AreEqual(48, _responses.First(x => x.Event is not null).Event.Event.StreamRevision);
+				Assert.AreEqual(29, _responses.Last(x => x.Event is not null).Event.Event.StreamRevision);
+
+				Assert.True(_responses
+					.Where(x => x.Event is not null)
+					.All(x => x.Event.Event.StreamIdentifier.StreamName.ToStringUtf8() == StreamId));
 			}
 		}
 
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-		public class
-			when_reading_all_backwards_from_end<TLogFormat, TStreamId> : GrpcSpecification<TLogFormat, TStreamId> {
+		public class when_reading_all_backwards_filtered_from_end<TLogFormat, TStreamId>
+		  : GrpcSpecification<TLogFormat, TStreamId> {
+			private const string StreamId = nameof(when_reading_all_backwards_filtered<TLogFormat, TStreamId>);
+
+			private Position _positionOfLastWrite;
 			private readonly List<ReadResp> _responses = new();
-			private const string StreamId = nameof(when_reading_all_backwards_from_end<TLogFormat, TStreamId>);
 
 			protected override async Task Given() {
-				await AppendToStreamBatch(new BatchAppendReq {
+				var response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8(StreamId) },
 						Any = new()
@@ -89,20 +103,26 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					IsFinal = true,
 					ProposedMessages = { CreateEvents(50) }
 				});
+
+				_positionOfLastWrite = new Position(response.Success.Position.CommitPosition,
+					response.Success.Position.PreparePosition);
 			}
 
 			protected override async Task When() {
-				_responses.AddRange(
-					await StreamsClient.Read(new() {
-						Options = new() {
-							UuidOption = new() { Structured = new() },
-							Count = 20,
-							ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
-							ResolveLinks = false,
-							All = new() { End = new() },
-							NoFilter = new()
+				_responses.AddRange(await StreamsClient.Read(new() {
+					Options = new() {
+						UuidOption = new() { Structured = new() },
+						Count = 20,
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
+						ResolveLinks = true,
+						All = new() { End = new() },
+						Filter = new() {
+							Max = 32,
+							CheckpointIntervalMultiplier = 4,
+							StreamIdentifier = new() { Prefix = { StreamId } }
 						}
-					}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().ToArrayAsync());
+					}
+				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().ToArrayAsync());
 			}
 
 			[Test]
@@ -118,8 +138,18 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			[Test]
 			public void should_read_the_correct_events() {
+				Assert.True(_responses
+					.Where(x => x.Event is not null)
+					.All(x =>
+						new Position(x.Event.Event.CommitPosition, x.Event.Event.PreparePosition) <=
+						_positionOfLastWrite));
+
 				Assert.AreEqual(49, _responses.First(x => x.Event is not null).Event.Event.StreamRevision);
 				Assert.AreEqual(30, _responses.Last(x => x.Event is not null).Event.Event.StreamRevision);
+
+				Assert.True(_responses
+					.Where(x => x.Event is not null)
+					.All(x => x.Event.Event.StreamIdentifier.StreamName.ToStringUtf8() == StreamId));
 			}
 		}
 	}

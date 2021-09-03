@@ -85,6 +85,27 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							context.CancellationToken),
 					(StreamOptionOneofCase.All,
 						CountOptionOneofCase.Count,
+						ReadDirection.Forwards,
+						FilterOptionOneofCase.Filter) => new Enumerators.ReadAllForwardsFiltered(
+							_publisher,
+							request.Options.All.ToPosition(),
+							request.Options.Count,
+							request.Options.ResolveLinks,
+							ConvertToEventFilter(true, request.Options.Filter),
+							user,
+							requiresLeader,
+							_readIndex,
+							request.Options.Filter.WindowCase switch {
+								ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
+								ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
+									.Max,
+								_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
+							},
+							context.Deadline,
+							options.UuidOption,
+							context.CancellationToken),
+					(StreamOptionOneofCase.All,
+						CountOptionOneofCase.Count,
 						ReadDirection.Backwards,
 						FilterOptionOneofCase.NoFilter) => new Enumerators.ReadAllBackwards(
 							_publisher,
@@ -93,6 +114,27 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							request.Options.ResolveLinks,
 							user,
 							requiresLeader,
+							context.Deadline,
+							options.UuidOption,
+							context.CancellationToken),
+					(StreamOptionOneofCase.All,
+						CountOptionOneofCase.Count,
+						ReadDirection.Backwards,
+						FilterOptionOneofCase.Filter) => new Enumerators.ReadAllBackwardsFiltered(
+							_publisher,
+							request.Options.All.ToPosition(),
+							request.Options.Count,
+							request.Options.ResolveLinks,
+							ConvertToEventFilter(true, request.Options.Filter),
+							user,
+							requiresLeader,
+							_readIndex,
+							request.Options.Filter.WindowCase switch {
+								ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Count => null,
+								ReadReq.Types.Options.Types.FilterOptions.WindowOneofCase.Max => request.Options.Filter
+									.Max,
+								_ => throw RpcExceptions.InvalidArgument(request.Options.Filter.WindowCase)
+							},
 							context.Deadline,
 							options.UuidOption,
 							context.CancellationToken),
