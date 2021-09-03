@@ -128,7 +128,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									nextPos = new TFPos(result.RecordPostPosition, 0);
 									if (firstCommit) {
 										firstCommit = false;
-										prevPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+										prevPos = new TFPos(prepare.Events[0].EventLogPosition!.Value, prepare.Events[0].EventLogPosition!.Value);
 									}
 								}
 							}
@@ -261,12 +261,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 									}
 									consideredEventsCount++;
 									anyRecordConsidered = true;
-									// for backward pass we allow read the same commit, but force to skip last read prepare
-									// so if it's the first event in the prepare, we put post-position of commit and pre-position of prepare
-									// otherwise we put pre-position of commit and pre-position of prepare
-									var isFirst = i == 0;
-									nextPos = isFirst ? new TFPos(result.RecordPrePosition, result.RecordPrePosition)
-										: new TFPos(prepare.Events[i].EventLogPosition!.Value, prepare.Events[i].EventLogPosition!.Value);
+									nextPos = new TFPos(prepare.Events[i].EventLogPosition!.Value, prepare.Events[i].EventLogPosition!.Value);
 
 									if (firstCommit) {
 										firstCommit = false;
@@ -277,7 +272,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								}
 
 								if (!anyRecordConsidered) {
-									nextPos = new TFPos(result.RecordPrePosition, result.RecordPrePosition);
+									nextPos = new TFPos(prepare.Events[0].EventLogPosition!.Value, prepare.Events[0].EventLogPosition!.Value);
 									if (firstCommit) {
 										firstCommit = false;
 										prevPos = new TFPos(result.RecordPostPosition, result.RecordPostPosition);

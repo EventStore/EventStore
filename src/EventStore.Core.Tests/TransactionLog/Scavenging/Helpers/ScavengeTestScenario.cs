@@ -134,9 +134,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			}
 
 			//check if original log position maps to correct record
+			var keptPositions = new HashSet<long>();
 			for (int i = 0; i < _keptRecords.Length; i++) {
 				for (int j = 0; j < _keptRecords[i].Length; j++) {
 					var keptRecord = _keptRecords[i][j];
+					keptPositions.Add(keptRecord.LogPosition);
 					var recordReadResult = ReadLogRecordAt(keptRecord.LogPosition);
 					Assert.True(recordReadResult.Success, $"Failed to read kept record #{j} from chunk #{i}");
 					Assert.AreEqual(keptRecord, recordReadResult.LogRecord, $"Kept record #{j} from chunk #{i} does not match read record");
@@ -154,6 +156,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							var eventReadResult = ReadLogRecordAt(keptPrepare.Events[k].EventLogPosition!.Value);
 							Assert.True(eventReadResult.Success, $"Failed to read event #{k} for kept record #{j} from chunk #{i}");
 							Assert.AreEqual(keptRecord, eventReadResult.LogRecord, $"Event #{k} for kept record #{j} from chunk #{i} does not match read record");
+							keptPositions.Add(keptPrepare.Events[k].EventLogPosition!.Value);
 						}
 					}
 				}
@@ -163,11 +166,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			for (int i = 0; i < _originalRecords.Length; i++) {
 				for (int j = 0; j < _originalRecords[i].Length; j++) {
 					var originalRecord = _originalRecords[i][j];
-					if (_keptRecords[i].Any(x => Equals(x.LogPosition, originalRecord.LogPosition))) continue;
+					if (keptPositions.Contains(originalRecord.LogPosition)) continue;
 					var recordReadResult = ReadLogRecordAt(originalRecord.LogPosition);
 					Assert.False(recordReadResult.Success, $"Succeeded to read deleted record #{j} from chunk #{i}");
 					if (originalRecord is IPrepareLogRecord<TStreamId> prepare) {
 						for (int k = 0; k < prepare.Events.Length; k++) {
+							if (keptPositions.Contains(prepare.Events[k].EventLogPosition!.Value)) continue;
 							var eventReadResult = ReadLogRecordAt(prepare.Events[k].EventLogPosition!.Value);
 							Assert.False(eventReadResult.Success,  $"Succeeded to read event #{k} for deleted record #{j} from chunk #{i}");
 						}

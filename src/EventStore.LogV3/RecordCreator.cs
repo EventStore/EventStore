@@ -281,9 +281,11 @@ namespace EventStore.LogV3 {
 			writeSystemMetadata.WriteTo(slicer.Slice(subHeader.MetadataSize).Span);
 
 			for (var i = 0; i < events.Length; i++) {
-				PopulateEventSubRecordOffsets(
-					eventIndex: i,
-					slicer: ref slicer);
+				if (events.Length > 1) {
+					PopulateEventSubRecordOffsets(
+						slicer: ref slicer);
+				}
+
 				PopulateEventSubRecord(
 					flags: (Raw.EventFlags) events[i].EventFlags,
 					systemMetadataSize: eventSystemMetadata[i].CalculateSize(),
@@ -300,7 +302,10 @@ namespace EventStore.LogV3 {
 				EventSystemMetadata[] eventSystemMetadata) {
 				var result = writeSystemMetadataSize;
 				for (var i = 0; i < events.Length; i++) {
-					result += MeasureEventSubRecordOffsets(i);
+					if (events.Length > 1) {
+						result += MeasureEventSubRecordOffsets();
+					}
+
 					result += MeasureEventSubRecord(
 						systemMetadataSize: eventSystemMetadata[i].CalculateSize(),
 						data: events[i].Data.Span,
@@ -309,8 +314,8 @@ namespace EventStore.LogV3 {
 				return result;
 			}
 
-			static int MeasureEventSubRecordOffsets(int eventIndex) {
-				return eventIndex == 0 ? 0 : 2 * sizeof(int);
+			static int MeasureEventSubRecordOffsets() {
+				return 2 * sizeof(int);
 			}
 
 			static int MeasureEventSubRecord(
@@ -324,16 +329,12 @@ namespace EventStore.LogV3 {
 				       metadata.Length;
 			}
 
-			static void PopulateEventSubRecordOffsets(int eventIndex, ref MemorySlicer<byte> slicer) {
-				if (eventIndex == 0) {
-					return;
-				}
-
+			static void PopulateEventSubRecordOffsets(ref MemorySlicer<byte> slicer) {
 				int forwardOffset = sizeof(int) /* log record length (prefix) */
-									+ Raw.RecordHeader.Size /* log record header */
-									+ Raw.StreamWriteHeader.Size /* stream write header */
-									+ slicer.Offset /* current offset within payload */
-									+ sizeof(int) /* first of the two event sub record offsets */;
+				                    + Raw.RecordHeader.Size /* log record header */
+				                    + Raw.StreamWriteHeader.Size /* stream write header */
+				                    + slicer.Offset /* current offset within payload */
+				                    + sizeof(int) /* first of the two event sub record offsets */;
 				int backwardOffset = slicer.Remaining.Length /* remaining bytes till end of payload */
 				                     - sizeof(int) /* exclude forward offset */
 				                     + sizeof(int); /* log record length (suffix) */

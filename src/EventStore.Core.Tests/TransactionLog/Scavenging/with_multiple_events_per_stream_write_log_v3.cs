@@ -149,9 +149,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 				var records = dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToList();
 				var modifiedPrepare = (IPrepareLogRecord<TStreamId>) records[^2];
+				var logPosOffset = modifiedPrepare.Events[0].EventLogPosition!.Value - modifiedPrepare.LogPosition;
 				records[^2] = LogRecord.Prepare(
 					LogFormatHelper<TLogFormat,TStreamId>.RecordFactory,
-					modifiedPrepare.Events[2].EventLogPosition!.Value,
+					modifiedPrepare.Events[2].EventLogPosition!.Value - logPosOffset,
 					modifiedPrepare.CorrelationId,
 					modifiedPrepare.TransactionPosition,
 					modifiedPrepare.TransactionOffset,
@@ -251,9 +252,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 				var records = dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToArray();
 				var modifiedPrepare = (IPrepareLogRecord<TStreamId>) records[^3];
+				var logPosOffset = modifiedPrepare.Events[0].EventLogPosition!.Value - modifiedPrepare.LogPosition;
 				records[^3] = LogRecord.Prepare(
 					LogFormatHelper<TLogFormat,TStreamId>.RecordFactory,
-					modifiedPrepare.Events[2].EventLogPosition!.Value,
+					modifiedPrepare.Events[2].EventLogPosition!.Value - logPosOffset,
 					modifiedPrepare.CorrelationId,
 					modifiedPrepare.TransactionPosition,
 					modifiedPrepare.TransactionOffset,
@@ -352,9 +354,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 				var records = dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToArray();
 				var modifiedPrepare = (IPrepareLogRecord<TStreamId>) records[^3];
+				var logPosOffset = modifiedPrepare.Events[0].EventLogPosition!.Value - modifiedPrepare.LogPosition;
 				records[^3] = LogRecord.Prepare(
 					LogFormatHelper<TLogFormat,TStreamId>.RecordFactory,
-					modifiedPrepare.Events[1].EventLogPosition!.Value,
+					modifiedPrepare.Events[1].EventLogPosition!.Value - logPosOffset,
 					modifiedPrepare.CorrelationId,
 					modifiedPrepare.TransactionPosition,
 					modifiedPrepare.TransactionOffset,
@@ -397,6 +400,45 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 
 			[Test]
 			public void truncated_records_are_scavenged_and_kept_records_are_intact() {
+				CheckRecords();
+			}
+		}
+
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+		public class when_exactly_one_event_is_remaining_in_partial_log_record : ScavengeTestScenario<TLogFormat, TStreamId> {
+			protected override DbResult CreateDb(TFChunkDbCreationHelper<TLogFormat, TStreamId> dbCreator) {
+				return dbCreator
+					.Chunk(
+						Rec.Prepare(0, "$$bla", metadata: new StreamMetadata(truncateBefore: 12)),
+						Rec.Prepare(7, "bla", numEvents: 13))
+					.CompleteLastChunk()
+					.CreateDb();
+			}
+
+			protected override ILogRecord[][] KeptRecords(DbResult dbResult) {
+				var keep =  new int[] { 0, 1, 2 };
+
+				var records = dbResult.Recs[0].Where((x, i) => keep.Contains(i)).ToList();
+				var modifiedPrepare = (IPrepareLogRecord<TStreamId>) records.Last();
+				records[^1] = LogRecord.Prepare(
+					LogFormatHelper<TLogFormat,TStreamId>.RecordFactory,
+					//when there is exactly one event, we don't offset the log position
+					//and use the event's log position as the prepare's log position
+					modifiedPrepare.Events[^1].EventLogPosition!.Value,
+					modifiedPrepare.CorrelationId,
+					modifiedPrepare.TransactionPosition,
+					modifiedPrepare.TransactionOffset,
+					modifiedPrepare.EventStreamId,
+					12 - 1,
+					modifiedPrepare.Flags,
+					modifiedPrepare.Events.Skip(12).ToArray(),
+					modifiedPrepare.TimeStamp
+				);
+				return new[] {records.ToArray()};
+			}
+
+			[Test]
+			public void expired_prepares_are_scavenged() {
 				CheckRecords();
 			}
 		}

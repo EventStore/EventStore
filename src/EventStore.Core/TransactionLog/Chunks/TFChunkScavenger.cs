@@ -670,11 +670,26 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			if (startEventNumber < minEventNumberToKeep && minEventNumberToKeep <= endEventNumber) { //partial record must be kept
+				long newLogPosition;
+				if (minEventNumberToKeep == endEventNumber) {
+					//special case: exactly one event to keep - use the event's log position as the prepare's log position
+					//since we don't keep event offsets in the log record
+					newLogPosition = prepare.Events[(int)(minEventNumberToKeep - startEventNumber)].EventLogPosition!.Value;
+				} else {
+					//otherwise: calculate a fictitious new log position for the prepare so that event log positions are preserved
+					var firstEventLogPosition =
+						prepare.Events[(int)(minEventNumberToKeep - startEventNumber)].EventLogPosition!.Value;
+					var logPositionOffset = prepare.Events[0].EventLogPosition!.Value - prepare.LogPosition;
+					// this new prepare log record position (i.e the record's PrePosition) is a fictitious position in
+					// the original transaction log but it should not matter since we do not index it nor return it in the $all reader
+					newLogPosition = firstEventLogPosition - logPositionOffset;
+				}
+
 				newPrepare = _recordFactory.CreatePrepare(
-					logPosition: prepare.LogPosition,
+					logPosition: newLogPosition,
 					correlationId: prepare.CorrelationId,
-					transactionPosition: prepare.TransactionPosition,
-					transactionOffset: prepare.TransactionOffset, //always 0 in Log V3
+					transactionPosition: prepare.TransactionPosition, //not used in Log V3
+					transactionOffset: prepare.TransactionOffset, //not used in Log V3
 					eventStreamId: prepare.EventStreamId,
 					expectedVersion: minEventNumberToKeep - 1,
 					timeStamp: prepare.TimeStamp,
@@ -694,7 +709,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private bool KeepOnlyFirstEventOfDuplicate(ITableIndex tableIndex, IPrepareLogRecord<TStreamId> prepare, long eventNumber) {
 			var result = _readIndex.ReadEvent(IndexReader.UnspecifiedStreamName, prepare.EventStreamId, eventNumber);
-			if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.LogPosition)
+			if (result.Result == ReadEventResult.Success && result.Record.LogPosition != prepare.Events[eventNumber - (prepare.ExpectedVersion + 1)].EventLogPosition!.Value)
 				return false;
 
 			return true;

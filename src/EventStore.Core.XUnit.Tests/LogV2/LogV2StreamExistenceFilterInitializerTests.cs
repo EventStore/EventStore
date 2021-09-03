@@ -11,13 +11,13 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 	public class LogV2StreamExistenceFilterInitializerTests : DirectoryPerTest<LogV2StreamExistenceFilterInitializerTests> {
 		private readonly TableIndex<string> _tableIndex;
 		private readonly LogV2StreamExistenceFilterInitializer _sut;
-		private readonly FakeInMemoryTfReader _log;
+		private readonly FakeInMemoryTfReader<string> _log;
 		private readonly MockExistenceFilter _filter;
 		private readonly int _recordOffset = 100;
 		private long _nextLogPosition = 0;
 
 		public LogV2StreamExistenceFilterInitializerTests() {
-			_log = new FakeInMemoryTfReader(recordOffset: _recordOffset);
+			_log = new FakeInMemoryTfReader<string>(recordOffset: _recordOffset);
 			_tableIndex = new TableIndex<string>(
 				directory: Fixture.Directory,
 				lowHasher: new XXHashUnsafe(),

@@ -107,7 +107,7 @@ namespace EventStore.Core.Tests.Helpers {
 					eventMetadata == null ? new byte[0] : Helper.UTF8NoBom.GetBytes(eventMetadata),
 					_timeProvider.UtcNow), 0);
 			list.Add(eventRecord);
-			var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
+			var eventPosition = new TFPos(eventRecord.LogPosition + 50, eventRecord.LogPosition);
 			_all.Add(eventPosition, eventRecord);
 			_fakePosition += 100;
 			return eventPosition;

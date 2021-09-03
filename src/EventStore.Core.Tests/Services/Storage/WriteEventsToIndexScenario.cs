@@ -89,12 +89,12 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 		public void WriteToDB(IList<IPrepareLogRecord<TStreamId>> prepares){
 			foreach(var prepare in prepares){
-				((FakeInMemoryTfReader)_tfReader).AddRecord(prepare, prepare.LogPosition);
+				((FakeInMemoryTfReader<TStreamId>)_tfReader).AddRecord(prepare, prepare.LogPosition);
 			}
 		}
 
 		public void WriteToDB(CommitLogRecord commit){
-			((FakeInMemoryTfReader)_tfReader).AddRecord(commit, commit.LogPosition);
+			((FakeInMemoryTfReader<TStreamId>)_tfReader).AddRecord(commit, commit.LogPosition);
 		}
 
 		public void PreCommitToIndex(IList<IPrepareLogRecord<TStreamId>> prepares){
@@ -123,7 +123,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			});
 			_provider = _logFormat.StreamNamesProvider;
 			_publisher = new InMemoryBus("publisher");
-			_tfReader = new FakeInMemoryTfReader(RecordOffset);
+			_tfReader = new FakeInMemoryTfReader<TStreamId>(RecordOffset);
 			_tableIndex = new FakeInMemoryTableIndex<TStreamId>();
 			_provider.SetTableIndex(_tableIndex);
 			_readerPool = new ObjectPool<ITransactionFileReader>(
