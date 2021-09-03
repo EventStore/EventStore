@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -27,6 +29,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		private readonly int _metastreamMaxCount;
 		private DbResult _dbResult;
 		private ILogRecord[][] _keptRecords;
+		private ILogRecord[][] _originalRecords;
+
 		private bool _checked;
 		private LogFormatAbstractor<TStreamId> _logFormat;
 
@@ -49,6 +53,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			var dbConfig = TFChunkHelper.CreateSizedDbConfig(PathName, 0, chunkSize: 1024 * 1024);
 			var dbCreationHelper = new TFChunkDbCreationHelper<TLogFormat, TStreamId>(dbConfig, _logFormat);
 			_dbResult = CreateDb(dbCreationHelper);
+			_originalRecords = _dbResult.Recs;
 			_keptRecords = KeptRecords(_dbResult);
 
 			_dbResult.Db.Config.WriterCheckpoint.Flush();
@@ -127,6 +132,56 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						j, i);
 				}
 			}
+
+			//check if original log position maps to correct record
+			for (int i = 0; i < _keptRecords.Length; i++) {
+				for (int j = 0; j < _keptRecords[i].Length; j++) {
+					var keptRecord = _keptRecords[i][j];
+					var recordReadResult = ReadLogRecordAt(keptRecord.LogPosition);
+					Assert.True(recordReadResult.Success, $"Failed to read kept record #{j} from chunk #{i}");
+					Assert.AreEqual(keptRecord, recordReadResult.LogRecord, $"Kept record #{j} from chunk #{i} does not match read record");
+
+					if (keptRecord is IPrepareLogRecord<TStreamId> keptPrepare) {
+						var originalPrepare = _originalRecords[i].First(x => x is IPrepareLogRecord<TStreamId> p
+				                               && EqualityComparer<TStreamId>.Default.Equals(p.EventStreamId, keptPrepare.EventStreamId)
+				                               && p.ExpectedVersion <= keptPrepare.ExpectedVersion
+				                               && keptPrepare.ExpectedVersion < p.ExpectedVersion + p.Events.Length) as IPrepareLogRecord<TStreamId>;
+						var eventOffset = keptPrepare.ExpectedVersion - originalPrepare!.ExpectedVersion;
+						for (int k = 0; k < keptPrepare.Events.Length; k++) {
+							//verify against the original log record that the event log positions are preserved
+							Assert.AreEqual(originalPrepare!.Events[k + eventOffset].EventLogPosition!.Value, keptPrepare.Events[k].EventLogPosition!.Value,
+								$"Original log position of event #{k} for kept record #{j} from chunk #{i} does not match with new log position");
+							var eventReadResult = ReadLogRecordAt(keptPrepare.Events[k].EventLogPosition!.Value);
+							Assert.True(eventReadResult.Success, $"Failed to read event #{k} for kept record #{j} from chunk #{i}");
+							Assert.AreEqual(keptRecord, eventReadResult.LogRecord, $"Event #{k} for kept record #{j} from chunk #{i} does not match read record");
+						}
+					}
+				}
+			}
+
+			//check that deleted records are no longer readable
+			for (int i = 0; i < _originalRecords.Length; i++) {
+				for (int j = 0; j < _originalRecords[i].Length; j++) {
+					var originalRecord = _originalRecords[i][j];
+					if (_keptRecords[i].Any(x => Equals(x.LogPosition, originalRecord.LogPosition))) continue;
+					var recordReadResult = ReadLogRecordAt(originalRecord.LogPosition);
+					Assert.False(recordReadResult.Success, $"Succeeded to read deleted record #{j} from chunk #{i}");
+					if (originalRecord is IPrepareLogRecord<TStreamId> prepare) {
+						for (int k = 0; k < prepare.Events.Length; k++) {
+							var eventReadResult = ReadLogRecordAt(prepare.Events[k].EventLogPosition!.Value);
+							Assert.False(eventReadResult.Success,  $"Succeeded to read event #{k} for deleted record #{j} from chunk #{i}");
+						}
+					}
+				}
+			}
+
+			RecordReadResult ReadLogRecordAt(long logPosition) {
+				var chunk = Db.Manager.GetChunkFor(logPosition);
+				var localPos = chunk.ChunkHeader.GetLocalLogPosition(logPosition);
+				var result = chunk.TryReadAt(localPos);
+				return result;
+			}
+
 		}
 	}
 }
