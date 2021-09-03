@@ -1539,6 +1539,70 @@
       }
     },
     {
+      "protopath": "Grpc:/:clientcapabilities.proto",
+      "def": {
+        "messages": [
+          {
+            "name": "SupportedMethods",
+            "fields": [
+              {
+                "id": 1,
+                "name": "Methods",
+                "type": "SupportedMethod",
+                "is_repeated": true
+              },
+              {
+                "id": 2,
+                "name": "EventStoreServerVersion",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "SupportedMethod",
+            "fields": [
+              {
+                "id": 1,
+                "name": "MethodName",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "ServiceName",
+                "type": "string"
+              }
+            ]
+          }
+        ],
+        "services": [
+          {
+            "name": "ClientCapabilities",
+            "rpcs": [
+              {
+                "name": "GetSupportedMethods",
+                "in_type": "event_store.client.Empty",
+                "out_type": "SupportedMethods"
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.client.client_capabilities"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.clientcapabilities"
+          }
+        ]
+      }
+    },
+    {
       "protopath": "Grpc:/:cluster.proto",
       "def": {
         "enums": [
