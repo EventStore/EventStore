@@ -287,6 +287,9 @@ namespace EventStore.Core {
 			[Description("The number of seconds a dead node will remain in the gossip before being pruned.")]
 			public int DeadMemberRemovalPeriodSec { get; init; } = 1_800;
 
+			[Description("The timeout, in milliseconds, on election messages to other nodes.")]
+			public int LeaderElectionTimeoutMs { get; init; } = 1_000;
+
 			public int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
 			public int PrepareAckCount => PrepareCount > QuorumSize ? PrepareCount : QuorumSize;
 			public int CommitAckCount => CommitCount > QuorumSize ? CommitCount : QuorumSize;
@@ -307,7 +310,8 @@ namespace EventStore.Core {
 				ReadOnlyReplica = configurationRoot.GetValue<bool>(nameof(ReadOnlyReplica)),
 				UnsafeAllowSurplusNodes = configurationRoot.GetValue<bool>(nameof(UnsafeAllowSurplusNodes)),
 				DeadMemberRemovalPeriodSec = configurationRoot.GetValue<int>(nameof(DeadMemberRemovalPeriodSec)),
-				StreamInfoCacheCapacity = configurationRoot.GetValue<int>(nameof(StreamInfoCacheCapacity))
+				StreamInfoCacheCapacity = configurationRoot.GetValue<int>(nameof(StreamInfoCacheCapacity)),
+				LeaderElectionTimeoutMs = configurationRoot.GetValue<int>(nameof(LeaderElectionTimeoutMs))
 			};
 		}
 
