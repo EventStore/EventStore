@@ -120,6 +120,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							var correlationId = Uuid.FromDto(request.CorrelationId).ToGuid();
 
 							if (request.Options != null) {
+								TimeSpan timeout = Min(GetRequestedTimeout(request.Options), _writeTimeout);
+
 								if (!await _authorizationProvider.CheckAccessAsync(user, WriteOperation.WithParameter(
 									Plugins.Authorization.Operations.Streams.Parameters.StreamId(
 										request.Options.StreamIdentifier)), cancellationToken).ConfigureAwait(false)) {
@@ -141,8 +143,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									continue;
 								}
 
+								if (Max(timeout, TimeSpan.Zero) == TimeSpan.Zero) {
+									await writer.WriteAsync(new BatchAppendResp {
+										CorrelationId = request.CorrelationId,
+										StreamIdentifier = request.Options.StreamIdentifier,
+										Error = Status.Timeout
+									}, cancellationToken).ConfigureAwait(false);
+									continue;
+								}
+
 								pendingWrites.AddOrUpdate(correlationId,
-									c => FromOptions(c, request.Options, cancellationToken),
+									c => FromOptions(c, request.Options, timeout, cancellationToken),
 									(_, writeRequest) => writeRequest);
 							}
 
@@ -249,7 +260,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw;
 				}
 
-				ClientWriteRequest FromOptions(Guid correlationId, Options options,
+				ClientWriteRequest FromOptions(Guid correlationId, Options options, TimeSpan timeout,
 					CancellationToken cancellationToken) =>
 					new(correlationId, options.StreamIdentifier, options.ExpectedStreamPositionCase switch {
 						ExpectedStreamPositionOneofCase.StreamPosition => new StreamRevision(options.StreamPosition)
@@ -258,7 +269,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						ExpectedStreamPositionOneofCase.StreamExists => AnyStreamRevision.StreamExists.ToInt64(),
 						ExpectedStreamPositionOneofCase.NoStream => AnyStreamRevision.NoStream.ToInt64(),
 						_ => throw RpcExceptions.InvalidArgument(options.ExpectedStreamPositionCase)
-					}, Min(GetRequestedTimeout(options), _writeTimeout), () =>
+					}, timeout, () =>
 						pendingWrites.TryRemove(correlationId, out var pendingWrite)
 							? writer.WriteAsync(new BatchAppendResp {
 								CorrelationId = Uuid.FromGuid(correlationId).ToDto(),
@@ -285,6 +296,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					(options.Deadline?.ToDateTime() ?? DateTime.MaxValue) - DateTime.UtcNow;
 
 				static TimeSpan Min(TimeSpan a, TimeSpan b) => a > b ? b : a;
+				static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
 			}
 		}
 
@@ -305,13 +317,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_size = 0;
 				ExpectedVersion = expectedVersion;
 
-				if (Max(timeout, TimeSpan.Zero) == TimeSpan.Zero) {
-					onTimeout();
-				} else {
-					Task.Delay(timeout, cancellationToken).ContinueWith(_ => onTimeout(), cancellationToken);
-				}
-
-				static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
+				Task.Delay(timeout, cancellationToken).ContinueWith(_ => onTimeout(), cancellationToken);
 			}
 
 			public ClientWriteRequest AddEvents(IEnumerable<Event> events) {
