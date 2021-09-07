@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			private readonly List<ReadResp> _responses = new();
 
 			protected override async Task Given() {
-				var response = await AppendToStreamBatch(new BatchAppendReq {
+				await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8(StreamId) },
 						Any = new()
@@ -28,6 +28,17 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					CorrelationId = Uuid.NewUuid().ToDto(),
 					IsFinal = true,
 					ProposedMessages = { CreateEvents(50) }
+				});
+
+				//empty batch append just to get post position of last write
+				var response = await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("not_important") },
+						Any = new()
+					},
+					CorrelationId = Uuid.NewUuid().ToDto(),
+					IsFinal = true,
+					ProposedMessages = { CreateEvents(0) }
 				});
 
 				_positionOfLastWrite = new Position(response.Success.Position.CommitPosition,
