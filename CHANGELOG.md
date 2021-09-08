@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Persistent subscriptions: Rename LastProcessedEventPosition to LastCheckpointedEventPosition [EventStore#3073](https://github.com/EventStore/EventStore/pull/3073)
 - off by one error and brackets in docs [EventStore#3135](https://github.com/EventStore/EventStore/pull/3135)
 - test adapter error when running all tests in visual studio [EventStore#3139](https://github.com/EventStore/EventStore/pull/3139)
+- potential race condition in BatchAppend [EventStore#3138](https://github.com/EventStore/EventStore/pull/3138)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
