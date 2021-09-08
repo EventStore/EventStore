@@ -151,7 +151,7 @@ For example:
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
 | `stream`            | The stream to the persistent subscription is on.                                                                                                                                                                                |     |
 | `subscription_name` | The name of the subscription group.                                                                                                                                                                                             |     |
-| `action`            | <ul><li>**Park**: Don't retry the message, park it until a request is sent to reply the parked messages</li><li>**Retry**: Retry the message</li><li>**Skip**: Discard the message<li>**Stop**: Stop the subscription</li></ul> |     |
+| `action`            | <ul><li>**Park**: Don't retry the message, park it until a request is sent to reply the parked messages</li><li>**Retry**: Retry the message</li><li>**Skip**: Discard the message</li><li>**Stop**: Stop the subscription</li></ul> |     |
 | `messageid`         | The id of the message that needs to be acked                                                                                                                                                                                    |     |
 
 ### Nack a single message
