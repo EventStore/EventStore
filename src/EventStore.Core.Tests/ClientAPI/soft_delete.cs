@@ -257,7 +257,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream =
 				"setting_json_metadata_on_empty_soft_deleted_stream_recreates_stream_not_overriding_metadata";
 
-			await _conn.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: false);
+			await _conn.SetStreamMetadataAsync(stream, ExpectedVersion.Any, StreamMetadata.Build()
+				.SetTruncateBefore(long.MaxValue));
 
 			Assert.AreEqual(1, (await _conn.SetStreamMetadataAsync(stream, 0,
 				StreamMetadata.Build().SetMaxCount(100)
@@ -324,7 +325,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			const string stream =
 				"setting_nonjson_metadata_on_empty_soft_deleted_stream_recreates_stream_overriding_metadata";
 
-			await _conn.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: false);
+			await _conn.SetStreamMetadataAsync(stream, ExpectedVersion.Any, StreamMetadata.Build()
+				.SetTruncateBefore(long.MaxValue));
 
 			Assert.AreEqual(1, (await _conn.SetStreamMetadataAsync(stream, 0, new byte[256])).NextExpectedVersion);
 

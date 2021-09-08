@@ -2,12 +2,14 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
-using EventStore.Core.Data;
+using EventStore.ClientAPI;
+using EventStore.Core.Services;
 using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
 using Grpc.Core;
 using NUnit.Framework;
-
+using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
+using Metadata=EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
 	public class DeleteTests {
@@ -111,6 +113,88 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		public class DeleteExistingStreamExists<TLogFormat, TStreamId>
 			: DeleteExistingStreamSpecification<TLogFormat, TStreamId> {
 			public DeleteExistingStreamExists() : base(ExpectedVersion.StreamExists) { }
+		}
+
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+		public class DeleteNoStream<TLogFormat, TStreamId> : GrpcSpecification<TLogFormat, TStreamId> {
+			private Exception _caughtException;
+			protected override Task Given() => Task.CompletedTask;
+
+			protected override async Task When() {
+				using var call = StreamsClient.DeleteAsync(new() {
+					Options = new() {
+						NoStream = new(),
+						StreamIdentifier = new() {
+							StreamName = ByteString.CopyFromUtf8(Guid.NewGuid().ToString())
+						}
+					}
+				}, GetCallOptions());
+
+				try {
+					await call.ResponseAsync;
+				} catch (Exception ex) {
+					_caughtException = ex;
+				}
+			}
+
+			[Test]
+			public void an_exception_is_thrown() {
+				Assert.IsInstanceOf<RpcException>(_caughtException);
+				var ex = _caughtException as RpcException;
+				Assert.AreEqual(StatusCode.FailedPrecondition, ex.StatusCode);
+			}
+		}
+
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+		public class DeleteWithExistingMetadata<TLogFormat, TStreamId> : GrpcSpecification<TLogFormat, TStreamId> {
+			private Exception _caughtException;
+			private readonly string _streamName;
+			private readonly string _metadataStreamName;
+
+			public DeleteWithExistingMetadata() {
+				_streamName = Guid.NewGuid().ToString();
+				_metadataStreamName = SystemStreams.MetastreamOf(_streamName);
+			}
+
+			protected override async Task Given() {
+				using var call = StreamsClient.Append(GetCallOptions());
+				await call.RequestStream.WriteAsync(new() {
+					Options = new() { NoStream = new(), StreamIdentifier = _metadataStreamName }
+				});
+				await call.RequestStream.WriteAsync(new() {
+					ProposedMessage = new() {
+						Id = Uuid.NewUuid().ToDto(),
+						Metadata = {
+							{ Metadata.Type, SystemEventTypes.StreamMetadata },
+							{ Metadata.ContentType, Metadata.ContentTypes.ApplicationJson }
+						},
+						Data = ByteString.CopyFromUtf8(StreamMetadata.Build().Build().AsJsonString())
+					}
+				});
+
+				await call.RequestStream.CompleteAsync();
+
+				await call.ResponseAsync;
+			}
+
+			protected override async Task When() {
+				using var call = StreamsClient.DeleteAsync(new() {
+					Options = new() { NoStream = new(), StreamIdentifier = _streamName }
+				}, GetCallOptions());
+
+				try {
+					await call.ResponseAsync;
+				} catch (Exception ex) {
+					_caughtException = ex;
+				}
+			}
+
+			[Test]
+			public void no_exception_is_thrown() {
+				Assert.Null(_caughtException);
+			}
 		}
 	}
 }

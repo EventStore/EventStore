@@ -37,15 +37,24 @@ namespace EventStore.Core.Tests.Http.Streams {
 				return GetRequestResponse(request);
 			}
 
-			public Task HardDeleteTestStream() {
-				return DeleteTestStream(true);
+			public Task TombstoneTestStream() {
+				var deleteRequest = CreateRequest(TestStream, "", "DELETE", "application/json");
+				deleteRequest.Headers.Add("ES-ExpectedVersion", ExpectedVersion.Any.ToString());
+				deleteRequest.Headers.Add("ES-HardDelete", bool.TrueString);
+				return GetRequestResponse(deleteRequest);
 			}
 
-			public async Task DeleteTestStream(bool hardDelete = false) {
-				var deleteRequest = CreateRequest(TestStream, "", "DELETE", "application/json");
-				deleteRequest.Headers.Add("ES-ExpectedVersion", (ExpectedVersion.Any).ToString());
-				deleteRequest.Headers.Add("ES-HardDelete", hardDelete.ToString());
-				await GetRequestResponse(deleteRequest);
+			public Task SoftDeleteTestStream() {
+				var deleteRequest = CreateRequest(TestMetadataStream, "", "POST", "application/json");
+				deleteRequest.Headers.Add("ES-EventType", SystemEventTypes.StreamMetadata);
+				deleteRequest.Headers.Add("ES-ExpectedVersion", ExpectedVersion.Any.ToString());
+				deleteRequest.Headers.Add("ES-EventId", Guid.NewGuid().ToString());
+				deleteRequest.Content = new ByteArrayContent(StreamMetadata
+					.Create(truncateBefore: long.MaxValue)
+					.AsJsonBytes()) {
+					Headers = { ContentType = new MediaTypeHeaderValue("application/json") }
+				};
+				return GetRequestResponse(deleteRequest);
 			}
 
 			public async Task<List<JToken>> GetTestStream() {
@@ -177,7 +186,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {
-				return HardDeleteTestStream();
+				return TombstoneTestStream();
 			}
 
 			protected override async Task When() {
@@ -295,7 +304,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {
-				return HardDeleteTestStream();
+				return TombstoneTestStream();
 			}
 
 			protected override async Task When() {
@@ -316,7 +325,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {
-				return HardDeleteTestStream();
+				return TombstoneTestStream();
 			}
 
 			protected override async Task When() {
@@ -464,7 +473,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {
-				return HardDeleteTestStream();
+				return TombstoneTestStream();
 			}
 
 			protected override async Task When() {
@@ -486,7 +495,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 			private HttpResponseMessage _response;
 
 			protected override Task Given() {
-				return DeleteTestStream();
+				return SoftDeleteTestStream();
 			}
 
 			protected override async Task When() {
