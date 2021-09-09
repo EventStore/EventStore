@@ -5,38 +5,38 @@ using System.Diagnostics;
 using System.Linq;
 
 namespace EventStore.Core.Services.PersistentSubscription {
-	internal class RequestStatistics {
+	public class RequestStatistics {
+		private readonly Func<long> _getElapsedTicks;
+
 		//TODO CC this can likely be done in a smarter way (though a few thousand ints is still pretty cheap memory wise)
-		private readonly Queue<int> _measurements;
-
-		private readonly ConcurrentDictionary<Guid, Operation>
-			_operations = new ConcurrentDictionary<Guid, Operation>();
-
-		readonly Stopwatch _watch;
+		private readonly Queue<long> _measurements;
+		private readonly ConcurrentDictionary<Guid, Operation> _operations = new();
 		private readonly int _windowSize;
 
-		public RequestStatistics(Stopwatch watch, int windowSize) {
-			_watch = watch;
+		public RequestStatistics(Func<long> getElapsedTicks, int windowSize) {
+			_getElapsedTicks = getElapsedTicks;
 			_windowSize = windowSize;
-			_measurements = new Queue<int>(windowSize);
+			_measurements = new Queue<long>(windowSize);
+		}
+
+		public RequestStatistics(Stopwatch watch, int windowSize) : this(() => watch.ElapsedTicks, windowSize) {
 		}
 
 		public void StartOperation(Guid id) {
-			var record = new Operation {Start = _watch.ElapsedTicks};
-			_operations.AddOrUpdate(id, record, (q, val) => record);
+			var record = new Operation {Start = _getElapsedTicks()};
+			_operations.AddOrUpdate(id, record, (_, _) => record);
 		}
 
 		public void EndOperation(Guid id) {
-			Operation record;
-			if (!_operations.TryRemove(id, out record)) return;
-			var current = _watch.ElapsedTicks;
+			if (!_operations.TryRemove(id, out var record)) return;
+			var current = _getElapsedTicks();
 			var time = current - record.Start;
 			var ms = time / TimeSpan.TicksPerMillisecond;
 			if (_measurements.Count >= _windowSize) {
 				_measurements.Dequeue();
 			}
 
-			_measurements.Enqueue((int)ms);
+			_measurements.Enqueue(ms);
 		}
 
 		public ObservedTimingMeasurement GetMeasurementDetails() {
@@ -57,7 +57,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			ret.Measurements.Add(Measurement.From("99%", items[GetPercentile(99m, items.Length)]));
 			ret.Measurements.Add(Measurement.From("99.5%", items[GetPercentile(99.5m, items.Length)]));
 			ret.Measurements.Add(Measurement.From("99.9%", items[GetPercentile(99.9m, items.Length)]));
-			ret.Measurements.Add(Measurement.From("Highest", items[items.Length - 1]));
+			ret.Measurements.Add(Measurement.From("Highest", items[^1]));
 			return ret;
 		}
 
@@ -83,16 +83,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 	}
 
 	public struct Measurement {
-		public string Key;
-		public int Value;
+		public readonly string Key;
+		public readonly long Value;
 
-		public Measurement(string key, int value) {
-			this.Key = key;
-			this.Value = value;
+		public Measurement(string key, long value) {
+			Key = key;
+			Value = value;
 		}
 
-		public static Measurement From(string key, int value) {
-			return new Measurement(key, value);
-		}
+		public static Measurement From(string key, long value) => new(key, value);
 	}
 }
