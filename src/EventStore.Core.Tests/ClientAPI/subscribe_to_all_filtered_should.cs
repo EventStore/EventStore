@@ -201,7 +201,6 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test, Category("LongRunning")]
 		public async Task calls_checkpoint_reached_according_to_checkpoint_message_count() {
-			var isV3 = LogFormatHelper<TLogFormat, TStreamId>.IsV3;
 			var filter = Filter.ExcludeSystemEvents;
 
 			using (var store = BuildConnection(_node)) {
@@ -210,6 +209,11 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var eventsSeen = new List<ResolvedEvent>();
 				var checkpointsSeen = 0;
 
+				if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
+					// init stream record so it won't affect the test and prevent flakiness
+					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream);
+				}
+				
 				using (await store.FilteredSubscribeToAllAsync(false,
 					filter,
 					(s, e) => {
@@ -222,12 +226,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 						}
 						return Task.CompletedTask;
 					},
-					2)) {
+					checkpointInterval: 2)) {
 					await _conn.AppendToStreamAsync("stream-a", ExpectedVersion.NoStream, _testEvents);
 
 					await appeared.Task.WithTimeout(Timeout);
 
-					Assert.AreEqual(5 /*checkpoints*/ * 2 /*considered events*/ - (isV3 ? 1 : 0) /*filtered out "stream-a" stream record event*/, eventsSeen.Count);
+					Assert.AreEqual(5 /*checkpoints*/ * 2 /*considered events*/, eventsSeen.Count);
 					Assert.True(eventsSeen.All(x => x.Event.EventStreamId == "stream-a"));
 				}
 			}

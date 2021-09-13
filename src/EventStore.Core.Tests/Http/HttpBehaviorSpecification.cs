@@ -50,11 +50,9 @@ namespace EventStore.Core.Tests.Http {
 			_lastResponseBytes = null;
 			_lastJsonException = null;
 
-			await Given().WithTimeout();
+			await Given().WithTimeout(TimeSpan.FromMinutes(5));
 
-
-			await When().WithTimeout();
-
+			await When().WithTimeout(TimeSpan.FromMinutes(5));
 		}
 
 		public string TestStream {

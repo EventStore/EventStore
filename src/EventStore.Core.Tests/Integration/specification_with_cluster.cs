@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class specification_with_cluster<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
@@ -64,7 +65,7 @@ namespace EventStore.Core.Tests.Integration {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-
+			
 			_nodeEndpoints[0] = new Endpoints();
 			_nodeEndpoints[1] = new Endpoints();
 			_nodeEndpoints[2] = new Endpoints();
@@ -103,11 +104,22 @@ namespace EventStore.Core.Tests.Integration {
 			_nodes[2].Start();
 
 			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
-
+			
+			// wait for cluster to be fully operational, tests depend on leader and followers
+			AssertEx.IsOrBecomesTrue(() => _nodes.Any(x => x.NodeState == Data.VNodeState.Leader),
+				timeout: TimeSpan.FromSeconds(30),
+				msg: "Waiting for leader timed out!");
+			
+			//flaky: most tests only need 1 follower, waiting for 2 causes timeouts 
+			AssertEx.IsOrBecomesTrue(() => 
+					_nodes.Any(x => x.NodeState is VNodeState.Follower or VNodeState.ReadOnlyReplica),
+				timeout: TimeSpan.FromSeconds(90),
+				msg: $"Waiting for followers timed out! States={string.Join(", ", _nodes.Select(n => n.NodeState))}");
+			
 			_conn = CreateConnection();
 			await _conn.ConnectAsync();
 
-			await Given();
+			await Given().WithTimeout(TimeSpan.FromMinutes(2));
 		}
 
 		protected virtual IEventStoreConnection CreateConnection() =>
@@ -128,7 +140,7 @@ namespace EventStore.Core.Tests.Integration {
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_conn.Close();
+			_conn?.Close();
 			await Task.WhenAll(
 				_nodes[0].Shutdown(),
 				_nodes[1].Shutdown(),
@@ -139,9 +151,19 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected static void WaitIdle() {
 		}
+		
+		protected MiniClusterNode<TLogFormat, TStreamId> GetLeader() {
+			var leader = _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
+			Assert.NotNull(leader, "Cluster doesn't have a leader available!");
+			
+			return leader;
+		}
 
-		protected MiniClusterNode<TLogFormat, TStreamId> GetLeader() => _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
-
-		protected MiniClusterNode<TLogFormat, TStreamId>[] GetFollowers() => _nodes.Where(x => x.NodeState == Data.VNodeState.Follower).ToArray();
+		protected MiniClusterNode<TLogFormat, TStreamId>[] GetFollowers() {
+			var followers = _nodes.Where(x => x.NodeState == Data.VNodeState.Follower).ToArray();
+			Assert.IsNotEmpty(followers, "Cluster doesn't have followers available!");
+			
+			return followers;
+		}
 	}
 }

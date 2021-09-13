@@ -29,24 +29,23 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				bool closed = false;
 				bool dataReceivedAfterClose = false;
 				var listeningSocket = CreateListeningSocket();
+				TaskCompletionSource<SocketError> connectionResult = new (TaskCreationOptions.RunContinuationsAsynchronously);
 
-				var mre = new ManualResetEventSlim(false);
 				var clientTcpConnection = TcpConnection.CreateConnectingTcpConnection(
 					Guid.NewGuid(),
 					(IPEndPoint)listeningSocket.LocalEndPoint,
 					new TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
-					(conn) => mre.Set(),
-					(conn, error) => {
-						Assert.Fail($"Connection failed: {error}");
-					},
+					(conn) => connectionResult.TrySetResult(SocketError.Success),
+					(conn, error) => connectionResult.TrySetResult(error),
 					false);
 
 				var serverSocket = listeningSocket.Accept();
 				var serverTcpConnection = TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(),
 					(IPEndPoint)serverSocket.RemoteEndPoint, serverSocket, false);
 
-				mre.Wait(TimeSpan.FromSeconds(3));
+				SocketError error = await connectionResult.Task.WithTimeout();
+				Assert.AreEqual(SocketError.Success, error);
 				try {
 					clientTcpConnection.ConnectionClosed += (connection, error) => {
 						Volatile.Write(ref closed, true);

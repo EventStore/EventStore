@@ -26,11 +26,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void returns_ok() {
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void should_reflect_the_known_number_of_events_in_the_stream() {
 			var knownNumberOfEvents = _json[0]["lastKnownEventNumber"].Value<int>() + 1;
 			Assert.AreEqual(Events.Count, knownNumberOfEvents,
@@ -71,9 +73,11 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				_admin);
 
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-
-			var _entries = json != null ? json["entries"].ToList() : new List<JToken>();
-			_nackLink = _entries[0]["links"][3]["uri"] + "?action=park";
+			Assert.DoesNotThrow(() =>
+			{
+				var _entries = json != null ? json["entries"].ToList() : new List<JToken>();
+				_nackLink = _entries[0]["links"][3]["uri"] + "?action=park";
+			});
 
 			//Park the message
 			var response = await MakePost(_nackLink, _admin);
@@ -98,6 +102,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void should_show_one_parked_message() {
 			Assert.AreEqual(1, _json["parkedMessageCount"].Value<int>());
 		}
@@ -114,11 +119,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void returns_ok() {
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void body_contains_valid_json() {
 			Assert.AreEqual(TestStreamName, _json[0]["eventStreamId"].Value<string>());
 		}
@@ -135,11 +142,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void returns_ok() {
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void body_contains_valid_xml() {
 			Assert.AreEqual(TestStreamName, _xml.Descendants("EventStreamId").First().Value);
 		}
@@ -159,6 +168,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void returns_not_found() {
 			Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
 		}
@@ -178,6 +188,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void returns_not_found() {
 			Assert.AreEqual(HttpStatusCode.NotFound, _response.StatusCode);
 		}
@@ -195,11 +206,13 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void returns_ok() {
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void detail_rel_href_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName, _groupName),
@@ -207,53 +220,63 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void has_two_rel_links() {
 			Assert.AreEqual(2,
 				_json["links"].Count());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_view_detail_rel_is_correct() {
 			Assert.AreEqual("detail",
 				_json["links"][0]["rel"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_event_stream_is_correct() {
 			Assert.AreEqual(_streamName, _json["eventStreamId"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_groupname_is_correct() {
 			Assert.AreEqual(_groupName, _json["groupName"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_status_is_live() {
 			Assert.AreEqual("Live", _json["status"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void there_are_two_connections() {
 			Assert.AreEqual(2, _json["connections"].Count());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_connection_has_endpoint() {
 			Assert.IsNotNull(_json["connections"][0]["from"]);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_connection_has_endpoint() {
 			Assert.IsNotNull(_json["connections"][1]["from"]);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_connection_has_user() {
 			Assert.AreEqual("admin", _json["connections"][0]["username"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_connection_has_user() {
 			Assert.AreEqual("admin", _json["connections"][1]["username"].Value<string>());
 		}
@@ -301,21 +324,25 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_response_code_is_ok() {
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_event_stream_is_correct() {
 			Assert.AreEqual(_streamName, _json[0]["eventStreamId"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_groupname_is_correct() {
 			Assert.AreEqual(_groupName, _json[0]["groupName"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName, _groupName),
@@ -323,18 +350,21 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_event_stream_detail_has_one_link() {
 			Assert.AreEqual(1,
 				_json[0]["links"].Count());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_event_stream_detail_rel_is_correct() {
 			Assert.AreEqual("detail",
 				_json[0]["links"][0]["rel"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName,
@@ -343,18 +373,21 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_event_stream_detail_has_one_link() {
 			Assert.AreEqual(1,
 				_json[1]["links"].Count());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_event_stream_detail_rel_is_correct() {
 			Assert.AreEqual("detail",
 				_json[1]["links"][0]["rel"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
@@ -362,6 +395,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
@@ -369,26 +403,31 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_status_is_live() {
 			Assert.AreEqual("Live", _json[0]["status"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void there_are_two_connections() {
 			Assert.AreEqual(2, _json[0]["connectionCount"].Value<int>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_subscription_event_stream_is_correct() {
 			Assert.AreEqual(_streamName, _json[1]["eventStreamId"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_subscription_groupname_is_correct() {
 			Assert.AreEqual("secondgroup", _json[1]["groupName"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void second_subscription_there_are_three_connections() {
 			Assert.AreEqual(3, _json[1]["connectionCount"].Value<int>());
 		}
@@ -442,21 +481,25 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_response_code_is_ok() {
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_event_stream_is_correct() {
 			Assert.AreEqual(_streamName, _json[0]["eventStreamId"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_groupname_is_correct() {
 			Assert.AreEqual(_groupName, _json[0]["groupName"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName, _groupName),
@@ -464,6 +507,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_event_stream_detail_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/subscriptions/{1}/{2}/info", _node.HttpEndPoint, _streamName,
@@ -472,6 +516,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_first_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
@@ -479,6 +524,7 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_parked_message_queue_uri_is_correct() {
 			Assert.AreEqual(
 				string.Format("http://{0}/streams/%24persistentsubscription-{1}::{2}-parked", _node.HttpEndPoint,
@@ -486,26 +532,31 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_status_is_live() {
 			Assert.AreEqual("Live", _json[0]["status"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void there_are_two_connections() {
 			Assert.AreEqual(2, _json[0]["connectionCount"].Value<int>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_subscription_event_stream_is_correct() {
 			Assert.AreEqual(_streamName, _json[1]["eventStreamId"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void the_second_subscription_groupname_is_correct() {
 			Assert.AreEqual("secondgroup", _json[1]["groupName"].Value<string>());
 		}
 
 		[Test]
+		[Retry(5)]
 		public void second_subscription_there_are_three_connections() {
 			Assert.AreEqual(3, _json[1]["connectionCount"].Value<int>());
 		}

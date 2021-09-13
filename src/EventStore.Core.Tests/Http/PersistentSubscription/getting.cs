@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Net;
-using System.Text.RegularExpressions;
 using EventStore.Core.Tests.Http.Users.users;
 using NUnit.Framework;
 using System.Collections.Generic;
-using System.Threading;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,10 +13,7 @@ using EventStore.ClientAPI.Common;
 // ReSharper disable InconsistentNaming
 
 namespace EventStore.Core.Tests.Http.PersistentSubscription {
-	[Category("LongRunning")]
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	class with_subscription_having_events<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
+	abstract class with_subscription_having_events<TLogFormat, TStreamId> : with_admin_user<TLogFormat, TStreamId> {
 		protected List<object> Events;
 		protected string SubscriptionPath;
 		protected string GroupName;
@@ -33,9 +27,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				new {EventId = Guid.NewGuid(), EventType = "event-type", Data = new {D = "4"}}
 			};
 
+			var numberOfEventsToCreate = NumberOfEventsToCreate ?? Events.Count;
 			var response = await MakeArrayEventsPost(
 				TestStream,
-				Events.Take(NumberOfEventsToCreate ?? Events.Count),
+				Events.Take(numberOfEventsToCreate),
 				_admin);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
@@ -48,6 +43,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				},
 				_admin);
 			Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+			AssertEx.IsOrBecomesTrue( () => {
+				var x = GetJson<JObject>(TestStream, accept: ContentType.Json).Result;
+				return x["entries"].Count() == numberOfEventsToCreate;
+			});
 		}
 
 		protected override Task When() => Task.CompletedTask;

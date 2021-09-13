@@ -1,11 +1,4 @@
-﻿using System;
-using System.Net;
-using System.Text.RegularExpressions;
-using EventStore.Core.Tests.Http.Users.users;
-using NUnit.Framework;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
+﻿using NUnit.Framework;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Net.Http;
@@ -29,8 +22,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				ContentType.CompetingJson,
 				_admin);
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-			_nackLink = json["entries"].Children().First()["links"].Children()
-				.First(x => x.Value<string>("relation") == "nack").Value<string>("uri");
+			Assert.DoesNotThrow(() => {
+				_nackLink = json["entries"].Children().First()["links"].Children()
+					.First(x => x.Value<string>("relation") == "nack").Value<string>("uri");
+			});
 		}
 
 		protected override async Task When() {
@@ -56,8 +51,10 @@ namespace EventStore.Core.Tests.Http.PersistentSubscription {
 				ContentType.CompetingJson,
 				_admin);
 			Assert.AreEqual(HttpStatusCode.OK, _lastResponse.StatusCode);
-			_nackAllLink = json["links"].Children().First(x => x.Value<string>("relation") == "nackAll")
-				.Value<string>("uri");
+			Assert.DoesNotThrow(() => {
+				_nackAllLink = json["links"].Children().First(x => x.Value<string>("relation") == "nackAll")
+					.Value<string>("uri");
+			});
 		}
 
 		protected override async Task When() {

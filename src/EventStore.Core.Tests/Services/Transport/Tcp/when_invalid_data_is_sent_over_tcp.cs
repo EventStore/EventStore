@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Tests.ClientAPI;
 using EventStore.Core.Tests.Integration;
 using EventStore.Transport.Tcp;
 using NUnit.Framework;
@@ -17,10 +17,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		[Timeout(5000)]
 		[TestCase("InternalTcpEndPoint", false)]
 		[TestCase("ExternalTcpEndPoint", false)]
-		public void connection_should_be_closed_by_remote_party(string endpointProperty, bool secure) {
+		public async Task connection_should_be_closed_by_remote_party(string endpointProperty, bool secure) {
 			IPEndPoint endpoint = (IPEndPoint)_nodes[0].GetType().GetProperty(endpointProperty).GetValue(_nodes[0], null);
-			var connectedEvent = new ManualResetEvent(false);
-			var closedEvent = new ManualResetEvent(false);
+			var closedEvent = new ManualResetEventSlim();
+			TaskCompletionSource<SocketError> connectionResult = new (TaskCreationOptions.RunContinuationsAsynchronously);
+
 			ITcpConnection connection;
 			if (!secure) {
 				connection = TcpConnection.CreateConnectingTcpConnection(
@@ -28,10 +29,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					endpoint,
 					new TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
-					(conn) => connectedEvent.Set(),
-					(conn, error) => {
-						Assert.Fail($"Connection failed: {error}");
-					},
+					(conn) => connectionResult.TrySetResult(SocketError.Success),
+					(conn, error) => connectionResult.TrySetResult(error),
 					false);
 			} else {
 				connection = TcpConnectionSsl.CreateConnectingConnection(
@@ -42,23 +41,20 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					null,
 					new TcpClientConnector(),
 					TimeSpan.FromSeconds(5),
-					(conn) => connectedEvent.Set(),
-					(conn, error) => {
-						Assert.Fail($"Connection failed: {error}");
-					},
+					(conn) => connectionResult.TrySetResult(SocketError.Success),
+					(conn, error) => connectionResult.TrySetResult(error),
 					false);
 			}
 
-			connection.ConnectionClosed += (conn, error) => {
-				closedEvent.Set();
-			};
+			connection.ConnectionClosed += (conn, error) => closedEvent.Set();
 
-			connectedEvent.WaitOne();
+			SocketError result = await connectionResult.Task.WithTimeout();
+			Assert.AreEqual(SocketError.Success, result);
 			var data = new List<ArraySegment<byte>> {
 				new ArraySegment<byte>(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 			};
 			connection.EnqueueSend(data);
-			closedEvent.WaitOne();
+			Assert.True(closedEvent.Wait(10000));
 			connection.Close("intentional close");
 		}
 	}

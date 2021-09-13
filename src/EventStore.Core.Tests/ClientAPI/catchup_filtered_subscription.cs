@@ -66,12 +66,13 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void calls_checkpoint_delegate_during_catchup() {
 			var filter = Filter.StreamId.Prefix("stream-a");
-			var checkpointReached = new CountdownEvent(10);
+			var isV2 = LogFormatHelper<TLogFormat, TStreamId>.IsV2;
+			var checkpointReached = new CountdownEvent(isV2 ? 10 : 12 /* accounting for stream records */);
 			var eventsSeen = 0;
 
 			var settings = new CatchUpSubscriptionFilteredSettings(
-				10000,
-				2,
+				maxLiveQueueSize: 10000,
+				readBatchSize: 2,
 				verboseLogging: false,
 				resolveLinkTos: true,
 				maxSearchWindow: 2,
@@ -95,12 +96,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				Assert.Fail("Checkpoint reached not called enough times within time limit.");
 			}
 
-			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
-				Assert.AreEqual(10, eventsSeen);
-			} else {
-				// accounting for stream records
-				Assert.AreEqual(7, eventsSeen);
-			}
+			Assert.AreEqual(10, eventsSeen);
 		}
 
 		[Test]
