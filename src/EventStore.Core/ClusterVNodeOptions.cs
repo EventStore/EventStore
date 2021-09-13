@@ -14,6 +14,7 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 #nullable enable
 namespace EventStore.Core {
@@ -22,6 +23,7 @@ namespace EventStore.Core {
 
 		internal IConfigurationRoot? ConfigurationRoot { get; init; }
 		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
+		[OptionGroup] public LoggingOptions Log { get; init; } = new();
 		[OptionGroup] public AuthOptions Auth { get; init; } = new();
 		[OptionGroup] public CertificateOptions Certificate { get; init; } = new();
 		[OptionGroup] public CertificateFileOptions CertificateFile { get; init; } = new();
@@ -62,6 +64,7 @@ namespace EventStore.Core {
 
 			return new ClusterVNodeOptions {
 				Application = ApplicationOptions.FromConfiguration(configurationRoot),
+				Log = LoggingOptions.FromConfiguration(configurationRoot),
 				Auth = AuthOptions.FromConfiguration(configurationRoot),
 				Certificate = CertificateOptions.FromConfiguration(configurationRoot),
 				CertificateFile = CertificateFileOptions.FromConfiguration(configurationRoot),
@@ -82,15 +85,6 @@ namespace EventStore.Core {
 			[Description("Show help.")] public bool Help { get; init; } = false;
 
 			[Description("Show version.")] public bool Version { get; init; } = false;
-
-			[Description("Path where to keep log files.")]
-			public string Log { get; init; } = Locations.DefaultLogDirectory;
-
-			[Description("The name of the log configuration file.")]
-			public string LogConfig { get; init; } = "logconfig.json";
-
-			[Description("Sets the minimum log level. For more granular settings, please edit logconfig.json.")]
-			public LogLevel LogLevel { get; init; } = LogLevel.Default;
 
 			[Description("Configuration files.")]
 			public string Config { get; init; } =
@@ -131,8 +125,6 @@ namespace EventStore.Core {
 			public bool Insecure { get; init; } = false;
 
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
-				Log = configurationRoot.GetValue<string>(nameof(Log)),
-				LogConfig = configurationRoot.GetValue<string>(nameof(LogConfig)),
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
 				Version = configurationRoot.GetValue<bool>(nameof(Version)),
@@ -148,7 +140,44 @@ namespace EventStore.Core {
 					configurationRoot.GetValue<bool>(nameof(LogFailedAuthenticationAttempts)),
 				SkipIndexScanOnReads = configurationRoot.GetValue<bool>(nameof(SkipIndexScanOnReads)),
 				Insecure = configurationRoot.GetValue<bool>(nameof(Insecure)),
-				LogLevel = configurationRoot.GetValue<LogLevel>(nameof(LogLevel))
+			};
+		}
+
+		[Description("Logging Options")]
+		public record LoggingOptions {
+			[Description("Path where to keep log files.")]
+			public string Log { get; init; } = Locations.DefaultLogDirectory;
+
+			[Description("The name of the log configuration file.")]
+			public string LogConfig { get; init; } = "logconfig.json";
+
+			[Description("Sets the minimum log level. For more granular settings, please edit logconfig.json.")]
+			public LogLevel LogLevel { get; init; } = LogLevel.Default;
+
+			[Description("Which format (plain, json) to use when writing to the console.")]
+			public LogConsoleFormat LogConsoleFormat { get; init; } = LogConsoleFormat.Plain;
+
+			[Description("Maximum size of each log file.")]
+			public int LogFileSize { get; init; } = 1024 * 1024 * 1024;
+
+			[Description("How often to rotate logs.")]
+			public RollingInterval LogFileInterval { get; init; } = RollingInterval.Day;
+
+			[Description("How many log files to hold on to.")]
+			public int LogFileRetentionCount { get; init; } = 31;
+
+			[Description("Disable log to disk.")]
+			public bool DisableLogFile { get; init; } = false;
+
+			public static LoggingOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				Log = configurationRoot.GetValue<string>(nameof(Log)),
+				LogConfig = configurationRoot.GetValue<string>(nameof(LogConfig)),
+				LogLevel = configurationRoot.GetValue<LogLevel>(nameof(LogLevel)),
+				LogConsoleFormat = configurationRoot.GetValue<LogConsoleFormat>(nameof(LogConsoleFormat)),
+				LogFileSize = configurationRoot.GetValue<int>(nameof(LogFileSize)),
+				LogFileInterval = configurationRoot.GetValue<RollingInterval>(nameof(LogFileInterval)),
+				LogFileRetentionCount = configurationRoot.GetValue<int>(nameof(LogFileRetentionCount)),
+				DisableLogFile = configurationRoot.GetValue<bool>(nameof(DisableLogFile))
 			};
 		}
 

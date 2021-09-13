@@ -44,7 +44,6 @@ using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Cluster;
-using EventStore.Core.LogV3;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
@@ -1498,13 +1497,13 @@ namespace EventStore.Core {
 		}
 
 		private void ReloadLogOptions(ClusterVNodeOptions options) {
-			if (options.Application.LogLevel != LogLevel.Default) {
-				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Application.LogLevel);
+			if (options.Log.LogLevel != LogLevel.Default) {
+				var changed = EventStoreLoggerConfiguration.AdjustMinimumLogLevel(options.Log.LogLevel);
 				if (changed) {
-					Log.Information($"The log level was adjusted to: {options.Application.LogLevel}");
+					Log.Information($"The log level was adjusted to: {options.Log.LogLevel}");
 
-					if (options.Application.LogLevel > LogLevel.Information) {
-						Console.WriteLine($"The log level was adjusted to: {options.Application.LogLevel}");
+					if (options.Log.LogLevel > LogLevel.Information) {
+						Console.WriteLine($"The log level was adjusted to: {options.Log.LogLevel}");
 					}
 				}
 			}

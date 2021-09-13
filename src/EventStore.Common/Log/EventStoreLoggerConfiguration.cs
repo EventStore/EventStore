@@ -13,6 +13,7 @@ using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Filters;
+using Serilog.Formatting.Compact;
 
 namespace EventStore.Common.Log {
 	public class EventStoreLoggerConfiguration {
@@ -43,7 +44,9 @@ namespace EventStore.Common.Log {
 			};
 		}
 
-		public static void Initialize(string logsDirectory, string componentName, string logConfig = "logconfig.json") {
+		public static void Initialize(string logsDirectory, string componentName, LogConsoleFormat logConsoleFormat,
+			int logFileSize, RollingInterval logFileInterval, int logFileRetentionCount, bool disableLogFile,
+			string logConfig = "logconfig.json") {
 			if (Interlocked.Exchange(ref Initialized, 1) == 1) {
 				throw new InvalidOperationException($"{nameof(Initialize)} may not be called more than once.");
 			}
@@ -81,7 +84,8 @@ namespace EventStore.Common.Log {
 
 			Serilog.Log.Logger = (configurationRoot.GetSection("Serilog").Exists()
 					? FromConfiguration(configurationRoot)
-					: Default(logsDirectory, componentName, configurationRoot))
+					: Default(logsDirectory, componentName, configurationRoot, logConsoleFormat, logFileInterval,
+						logFileSize, logFileRetentionCount, disableLogFile))
 				.CreateLogger();
 
 			Serilog.Debugging.SelfLog.Disable();
@@ -90,19 +94,16 @@ namespace EventStore.Common.Log {
 		public static bool AdjustMinimumLogLevel(LogLevel logLevel) {
 			lock (_defaultLogLevelSwitchLock) {
 				if (_defaultLogLevelSwitch == null) {
-					throw new InvalidOperationException($"The logger configuration has not yet been initialized.");
+					throw new InvalidOperationException("The logger configuration has not yet been initialized.");
 				}
 
-				if (Enum.TryParse<LogEventLevel>(logLevel.ToString(), out var serilogLogLevel)) {
-					if (serilogLogLevel != _defaultLogLevelSwitch.MinimumLevel) {
-						_defaultLogLevelSwitch.MinimumLevel = serilogLogLevel;
-						return true;
-					}
-
-					return false;
-				} else {
+				if (!Enum.TryParse<LogEventLevel>(logLevel.ToString(), out var serilogLogLevel)) {
 					throw new ArgumentException($"'{logLevel}' is not a valid log level.");
 				}
+
+				if (serilogLogLevel == _defaultLogLevelSwitch.MinimumLevel) return false;
+				_defaultLogLevelSwitch.MinimumLevel = serilogLogLevel;
+				return true;
 			}
 		}
 
@@ -110,11 +111,14 @@ namespace EventStore.Common.Log {
 			new LoggerConfiguration().ReadFrom.Configuration(configuration);
 
 		private static LoggerConfiguration Default(string logsDirectory, string componentName,
-			IConfigurationRoot logLevelConfigurationRoot) =>
-			new EventStoreLoggerConfiguration(logsDirectory, componentName, logLevelConfigurationRoot);
+			IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
+			RollingInterval logFileInterval, int logFileSize, int logFileRetentionCount, bool disableLogFile) =>
+			new EventStoreLoggerConfiguration(logsDirectory, componentName, logLevelConfigurationRoot, logConsoleFormat,
+				logFileInterval, logFileSize, logFileRetentionCount, disableLogFile);
 
 		private EventStoreLoggerConfiguration(string logsDirectory, string componentName,
-			IConfigurationRoot logLevelConfigurationRoot) {
+			IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
+			RollingInterval logFileInterval, int logFileSize, int logFileRetentionCount, bool disableLogFile) {
 			if (logsDirectory == null) {
 				throw new ArgumentNullException(nameof(logsDirectory));
 			}
@@ -151,6 +155,45 @@ namespace EventStore.Common.Log {
 
 			_loggerConfiguration = loggerConfiguration;
 
+			void AsyncSink(LoggerSinkConfiguration configuration) {
+				configuration.Logger(c => c
+					.Filter.ByIncludingOnly(RegularStats)
+					.WriteTo.Logger(Stats));
+				configuration.Logger(c => c
+					.Filter.ByExcluding(RegularStats)
+					.WriteTo.Logger(Default));
+			}
+
+			void Default(LoggerConfiguration configuration) {
+				if (logConsoleFormat == LogConsoleFormat.Plain) {
+					configuration.WriteTo.Console(outputTemplate: ConsoleOutputTemplate);
+				} else {
+					configuration.WriteTo.Console(new RenderedCompactJsonFormatter());
+				}
+
+				if (!disableLogFile) {
+					configuration.WriteTo
+						.RollingFile(GetLogFileName(), logFileRetentionCount, logFileInterval, logFileSize)
+						.WriteTo.Logger(Error);
+				}
+			}
+
+			void Error(LoggerConfiguration configuration) {
+				if (!disableLogFile) {
+					configuration
+						.Filter.ByIncludingOnly(Errors)
+						.WriteTo
+						.RollingFile(GetLogFileName("err"), logFileRetentionCount, logFileInterval, logFileSize);
+				}
+			}
+
+			void Stats(LoggerConfiguration configuration) {
+				if (!disableLogFile) {
+					configuration.WriteTo.RollingFile(GetLogFileName("stats"), logFileRetentionCount, logFileInterval,
+						logFileSize);
+				}
+			}
+
 			void ApplyLogLevel(IConfigurationSection namedLogLevelSection, LoggingLevelSwitch levelSwitch) {
 				TrySetLogLevel(namedLogLevelSection, levelSwitch);
 				ChangeToken.OnChange(namedLogLevelSection.GetReloadToken,
@@ -172,28 +215,6 @@ namespace EventStore.Common.Log {
 				.Enrich.WithThreadId()
 				.Enrich.FromLogContext();
 
-		private void AsyncSink(LoggerSinkConfiguration configuration) {
-			configuration.Logger(c => c
-				.Filter.ByIncludingOnly(RegularStats)
-				.WriteTo.Logger(Stats));
-			configuration.Logger(c => c
-				.Filter.ByExcluding(RegularStats)
-				.WriteTo.Logger(Default));
-		}
-
-		private void Default(LoggerConfiguration configuration) =>
-			configuration
-				.WriteTo.Console(outputTemplate: ConsoleOutputTemplate)
-				.WriteTo.RollingFile(GetLogFileName())
-				.WriteTo.Logger(Error);
-
-		private void Error(LoggerConfiguration configuration) =>
-			configuration
-				.Filter.ByIncludingOnly(Errors)
-				.WriteTo.RollingFile(GetLogFileName("err"));
-
-		private void Stats(LoggerConfiguration configuration) =>
-			configuration.WriteTo.RollingFile(GetLogFileName("stats"));
 
 		private string GetLogFileName(string log = null) =>
 			Path.Combine(_logsDirectory, $"{_componentName}/log{(log == null ? string.Empty : $"-{log}")}.json");
