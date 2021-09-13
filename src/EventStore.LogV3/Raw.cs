@@ -129,6 +129,8 @@ namespace EventStore.LogV3 {
 
 		[Flags]
 		public enum EventFlags : ushort {
+			None = 0x00,
+			IsJson = 0x01
 		}
 
 		[StructLayout(LayoutKind.Explicit, Size = Size, Pack = 1)]

@@ -16,7 +16,7 @@ namespace EventStore.LogV3 {
 		public EventSystemMetadata SystemMetadata { get; }
 		public Guid EventId => SystemMetadata.EventId;
 		public string EventType => SystemMetadata.EventType;
-		public EventFlags EventFlags => (EventFlags) Header.Flags;
+		public EventFlags EventFlags => Header.Flags.Convert();
 		public long? EventLogPosition { get; }
 		public int? EventOffset { get; }
 

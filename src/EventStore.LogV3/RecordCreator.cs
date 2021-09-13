@@ -287,7 +287,7 @@ namespace EventStore.LogV3 {
 				}
 
 				PopulateEventSubRecord(
-					flags: (Raw.EventFlags) events[i].EventFlags,
+					flags: events[i].EventFlags.Convert(),
 					systemMetadataSize: eventSystemMetadata[i].CalculateSize(),
 					systemMetadata: eventSystemMetadata[i],
 					data: events[i].Data.Span,
