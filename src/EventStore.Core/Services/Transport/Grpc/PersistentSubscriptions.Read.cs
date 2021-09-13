@@ -205,6 +205,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					groupName, streamName, bufferSize, string.Empty, user));
 
 				async Task OnMessage(Message message, CancellationToken ct) {
+					if (message is ClientMessage.NotHandled notHandled && RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
+						_subscriptionIdSource.TrySetException(ex);
+						return;
+					}
+					
 					switch (message) {
 						case ClientMessage.SubscriptionDropped dropped:
 							switch (dropped.Reason) {
