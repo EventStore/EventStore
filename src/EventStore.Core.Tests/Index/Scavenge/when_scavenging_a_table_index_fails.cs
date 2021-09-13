@@ -11,13 +11,19 @@ using EventStore.Core.TransactionLog;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.Scavenge {
-	[TestFixture]
+	[TestFixture(false)]
+	[TestFixture(true)]
 	class when_scavenging_a_table_index_fails : SpecificationWithDirectoryPerTestFixture {
 		private TableIndex<string> _tableIndex;
 		private IHasher<string> _lowHasher;
 		private IHasher<string> _highHasher;
 		private string _indexDir;
 		private FakeTFScavengerLog _log;
+		private readonly bool _useBloomFilter;
+
+		public when_scavenging_a_table_index_fails(bool useBloomFilter) {
+			_useBloomFilter = useBloomFilter;
+		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
@@ -34,7 +40,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
-				maxTablesPerLevel: 5);
+				maxTablesPerLevel: 5,
+				useBloomFilter: _useBloomFilter);
 			_tableIndex.Initialize(long.MaxValue);
 
 			_tableIndex.Add(1, "testStream-1", 0, 0);
@@ -57,7 +64,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
-				maxTablesPerLevel: 5);
+				maxTablesPerLevel: 5,
+				useBloomFilter: _useBloomFilter);
 
 			_tableIndex.Initialize(long.MaxValue);
 		}
@@ -112,7 +120,11 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 		[Test]
 		public void old_index_tables_are_deleted() {
-			Assert.That(Directory.EnumerateFiles(_indexDir).Count(), Is.EqualTo(4), "Expected IndexMap and 3 tables.");
+			if (_useBloomFilter) {
+				Assert.That(Directory.EnumerateFiles(_indexDir).Count(), Is.EqualTo(7), "Expected IndexMap and 3 tables and 3 bloom filters.");
+			} else {
+				Assert.That(Directory.EnumerateFiles(_indexDir).Count(), Is.EqualTo(4), "Expected IndexMap and 3 tables.");
+			}
 		}
 	}
 }

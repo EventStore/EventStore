@@ -10,7 +10,7 @@ namespace EventStore.Core.Index {
 		bool TryGetOneValue(ulong stream, long number, out long position);
 		bool TryGetLatestEntry(ulong stream, out IndexEntry entry);
 		bool TryGetOldestEntry(ulong stream, out IndexEntry entry);
-		IEnumerable<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null);
+		IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null);
 		IEnumerable<IndexEntry> IterateAllInOrder();
 	}
 }

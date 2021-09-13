@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				() => { throw new InvalidOperationException(); },
 				_ptableVersion,
 				5, Constants.PTableMaxReaderCountDefault,
-				maxSizeForMemory: 20,
+				maxSizeForMemory: 5,
 				skipIndexVerify: _skipIndexVerify);
 			_tableIndex.Initialize(long.MaxValue);
 
@@ -56,6 +56,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_tableIndex.Add(0, "0xDEAD", 1, 0xFF11);
 
 			_tableIndex.Add(0, "0xADA", 0, 0xFF00);
+
+			_tableIndex.Add(0, "0xJEEP", 2, 0xFFF0);
+			_tableIndex.Add(0, "0xJEEP", 3, 0xFFF1);
 		}
 
 		[OneTimeTearDown]
@@ -75,13 +78,23 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var res = _tableIndex.GetRange("0xJEEP", 0, 100).ToList();
 			ulong hash = (ulong)_lowHasher.Hash("0xJEEP");
 			hash = _ptableVersion == PTableVersions.IndexV1 ? hash : hash << 32 | _highHasher.Hash("0xJEEP");
-			Assert.That(res.Count(), Is.EqualTo(2));
+			Assert.That(res.Count(), Is.EqualTo(4));
+
 			Assert.That(res[0].Stream, Is.EqualTo(hash));
-			Assert.That(res[0].Version, Is.EqualTo(1));
-			Assert.That(res[0].Position, Is.EqualTo(0xFF01));
+			Assert.That(res[0].Version, Is.EqualTo(3));
+			Assert.That(res[0].Position, Is.EqualTo(0xFFF1));
+
 			Assert.That(res[1].Stream, Is.EqualTo(hash));
-			Assert.That(res[1].Version, Is.EqualTo(0));
-			Assert.That(res[1].Position, Is.EqualTo(0xFF00));
+			Assert.That(res[1].Version, Is.EqualTo(2));
+			Assert.That(res[1].Position, Is.EqualTo(0xFFF0));
+
+			Assert.That(res[2].Stream, Is.EqualTo(hash));
+			Assert.That(res[2].Version, Is.EqualTo(1));
+			Assert.That(res[2].Position, Is.EqualTo(0xFF01));
+
+			Assert.That(res[3].Stream, Is.EqualTo(hash));
+			Assert.That(res[3].Version, Is.EqualTo(0));
+			Assert.That(res[3].Position, Is.EqualTo(0xFF00));
 		}
 
 		[Test]

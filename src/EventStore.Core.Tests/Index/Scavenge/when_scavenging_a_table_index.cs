@@ -19,10 +19,12 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		private string _indexDir;
 		private FakeTFScavengerLog _log;
 		private static readonly long[] Deleted = { 200, 300, 500 };
-		private bool _skipIndexVerify;
+		private readonly bool _skipIndexVerify;
+		private readonly bool _useBloomFilter;
 
 		public when_scavenging_a_table_index(bool skipIndexVerify) {
 			_skipIndexVerify = skipIndexVerify;
+			_useBloomFilter = skipIndexVerify; // bloomfilter orthogonal
 		}
 
 		[OneTimeSetUp]
@@ -41,7 +43,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
-				maxTablesPerLevel: 5, skipIndexVerify: _skipIndexVerify);
+				maxTablesPerLevel: 5, skipIndexVerify: _skipIndexVerify,
+				useBloomFilter: _useBloomFilter);
 			_tableIndex.Initialize(long.MaxValue);
 
 
@@ -64,7 +67,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 				PTableVersions.IndexV4,
 				5, Constants.PTableMaxReaderCountDefault,
 				maxSizeForMemory: 2,
-				maxTablesPerLevel: 5);
+				maxTablesPerLevel: 5,
+				useBloomFilter: _useBloomFilter);
 
 			_tableIndex.Initialize(long.MaxValue);
 		}
@@ -114,7 +118,11 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 		[Test]
 		public void old_index_tables_are_deleted() {
-			Assert.That(Directory.EnumerateFiles(_indexDir).Count(), Is.EqualTo(4), "Expected IndexMap and 3 tables.");
+			if (_useBloomFilter) {
+				Assert.That(Directory.EnumerateFiles(_indexDir).Count(), Is.EqualTo(7), "Expected IndexMap and 3 tables and 3 bloom filters.");
+			} else {
+				Assert.That(Directory.EnumerateFiles(_indexDir).Count(), Is.EqualTo(4), "Expected IndexMap and 3 tables.");
+			}
 		}
 	}
 }

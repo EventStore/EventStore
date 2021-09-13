@@ -26,7 +26,9 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			var mtable = new HashListMemTable(_ptableVersion, maxSize: 10);
 			mtable.Add(0x010100000000, 0x0001, 0x0001);
 			mtable.Add(0x010500000000, 0x0001, 0x0002);
-			_table = PTable.FromMemtable(mtable, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
+			_table = PTable.FromMemtable(mtable, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+				skipIndexVerify: _skipIndexVerify,
+				useBloomFilter: true);
 			_table.MarkForDestruction();
 		}
 
@@ -34,6 +36,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		public void the_file_is_deleted() {
 			_table.WaitForDisposal(1000);
 			Assert.IsFalse(File.Exists(Filename));
+			Assert.IsFalse(File.Exists(_table.BloomFilterFilename));
 		}
 
 		[Test]
