@@ -643,6 +643,8 @@ namespace EventStore.Core {
 				inMem: Db.Config.InMemDb,
 				skipIndexVerify: options.Database.SkipIndexVerify,
 				indexCacheDepth: options.Database.IndexCacheDepth,
+				useBloomFilter: options.Database.UseIndexBloomFilters,
+				lruCacheSize: options.Database.IndexCacheSize,
 				initializationThreads: options.Database.InitializationThreads,
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,

@@ -347,6 +347,12 @@ namespace EventStore.Core {
 			[Description("Keep everything in memory, no directories or files are created.")]
 			public bool MemDb { get; init; } = false;
 
+			[Description("Creates a Bloom filter file for each new index file to speed up index reads.")]
+			public bool UseIndexBloomFilters { get; init; } = true;
+
+			[Description("The maximum number of entries to keep in each index cache.")]
+			public int IndexCacheSize { get; init; } = 1_000_000;
+
 			[Description("Bypasses the checking of file hashes of database during startup " +
 			             "(allows for faster startup).")]
 			public bool SkipDbVerify { get; init; } = false;
@@ -451,7 +457,7 @@ namespace EventStore.Core {
 			}
 
 
-			internal static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
+			public static int GetTFChunkMaxReaderCount(int readerThreadsCount, int chunkInitialReaderCount) {
 				var tfChunkMaxReaderCount =
 					GetPTableMaxReaderCount(readerThreadsCount) +
 					2 + /* for caching/uncaching, populating midpoints */
@@ -472,6 +478,8 @@ namespace EventStore.Core {
 				MaxMemTableSize = configurationRoot.GetValue<int>(nameof(MaxMemTableSize)),
 				HashCollisionReadLimit = configurationRoot.GetValue<int>(nameof(HashCollisionReadLimit)),
 				Index = configurationRoot.GetValue<string?>(nameof(Index)),
+				UseIndexBloomFilters = configurationRoot.GetValue<bool>(nameof(UseIndexBloomFilters)),
+				IndexCacheSize = configurationRoot.GetValue<int>(nameof(IndexCacheSize)),
 				SkipDbVerify = configurationRoot.GetValue<bool>(nameof(SkipDbVerify)),
 				WriteThrough = configurationRoot.GetValue<bool>(nameof(WriteThrough)),
 				Unbuffered = configurationRoot.GetValue<bool>(nameof(Unbuffered)),

@@ -41,7 +41,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 
 			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(), upgradeHash, existsAt, readRecord,
 				PTableVersions.IndexV4, out spaceSaved, skipIndexVerify: _skipIndexVerify,
-				initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault);
+				initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
+				useBloomFilter: true);
 		}
 
 		[OneTimeTearDown]
@@ -60,6 +61,15 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		[Test]
 		public void there_are_2_records_in_the_merged_index() {
 			Assert.AreEqual(2, _newtable.Count);
+		}
+
+		[Test]
+		public void a_stream_can_be_found() {
+			var stream = (ulong)0x010300000000;
+			Assert.True(_newtable.TryGetLatestEntry(stream, out var entry));
+			Assert.AreEqual(stream, entry.Stream);
+			Assert.AreEqual(1, entry.Version);
+			Assert.AreEqual(4, entry.Position);
 		}
 
 		[Test]

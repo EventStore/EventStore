@@ -171,7 +171,7 @@ namespace EventStore.Core.Index {
 			_hash.Clear();
 		}
 
-		public IEnumerable<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
+		public IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
 			if (startNumber < 0)
 				throw new ArgumentOutOfRangeException("startNumber");
 			if (endNumber < 0)

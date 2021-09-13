@@ -1,24 +1,30 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Security.Cryptography;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
-using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.Unbuffered;
 using ILogger = Serilog.ILogger;
 using Range = EventStore.Core.Data.Range;
+using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
+using System.Runtime.InteropServices;
 
 namespace EventStore.Core.Index {
 	public class PTableVersions {
+		// original
 		public const byte IndexV1 = 1;
+
+		// 64bit hashes
 		public const byte IndexV2 = 2;
+
+		// 64bit versions
 		public const byte IndexV3 = 3;
+
+		// cached midpoints
 		public const byte IndexV4 = 4;
 	}
 
@@ -35,7 +41,6 @@ namespace EventStore.Core.Index {
 		public const int MD5Size = 16;
 		public const int DefaultBufferSize = 8192;
 		public const int DefaultSequentialBufferSize = 65536;
-
 		private static readonly ILogger Log = Serilog.Log.ForContext<PTable>();
 
 		public Guid Id {
@@ -54,13 +59,32 @@ namespace EventStore.Core.Index {
 			get { return _version; }
 		}
 
+		public string BloomFilterFilename => GenBloomFilterFilename(_filename);
+
+		public bool HasBloomFilter => _bloomFilter is not null;
+
+		public static string GenBloomFilterFilename(string filename) => $"{filename}.bloomfilter";
+
+		private static long GenBloomFilterSizeBytes(long entryCount) {
+			// Fewer events per stream will require a larger bloom filter (or incur more false positives)
+			// We could count them to be precise, but a reasonable estimate will be faster.
+			const int averageEventsPerStreamPerFile = 4;
+			long size = entryCount / averageEventsPerStreamPerFile;
+			size = Math.Max(size, 10_000);
+			return size;
+		}
+
 		private readonly Guid _id;
 		private readonly string _filename;
 		private readonly long _count;
 		private readonly long _size;
-		private UnmanagedMemoryAppendOnlyList<Midpoint> _midpoints = null;
+		private readonly UnmanagedMemoryAppendOnlyList<Midpoint> _midpoints = null;
 		private readonly uint _midpointsCached = 0;
 		private readonly long _midpointsCacheSize = 0;
+
+		private readonly MemoryMappedFileBloomFilter _bloomFilter;
+		private readonly LRUCache<StreamHash, CacheEntry> _lruCache;
+		private readonly LRUCache<StreamHash, bool> _lruConfirmedNotPresent;
 
 		private readonly IndexEntryKey _minEntry, _maxEntry;
 		private readonly ObjectPool<WorkItem> _workItems;
@@ -84,7 +108,10 @@ namespace EventStore.Core.Index {
 			int initialReaders,
 			int maxReaders,
 			int depth = 16,
-			bool skipIndexVerify = false) {
+			bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
+
 			Ensure.NotNullOrEmpty(filename, "filename");
 			Ensure.NotEmptyGuid(id, "id");
 			Ensure.Positive(maxReaders, "maxReaders");
@@ -206,6 +233,25 @@ namespace EventStore.Core.Index {
 			try {
 				calcdepth = GetDepth(_count * _indexEntrySize, depth);
 				_midpoints = CacheMidpointsAndVerifyHash(calcdepth, skipIndexVerify);
+
+				// the bloom filter is important to the efficient functioning of the cache because without it
+				// any cache miss request for data not contained in this file will cause two fruitless searches
+				// to populate the _lruConfirmedNotPresent cache, which itself will become heavily used.
+				if (lruCacheSize > 0 && !useBloomFilter) {
+					Log.Warning("Index cache is enabled (--index-cache-size > 0) but will not be used because --use-index-bloom-filters is false");
+				}
+
+				if (useBloomFilter)
+					_bloomFilter = TryOpenBloomFilter();
+
+				if (lruCacheSize > 0) {
+					if (_bloomFilter is not null) {
+						_lruCache = new(lruCacheSize);
+						_lruConfirmedNotPresent = new(lruCacheSize);
+					} else {
+						Log.Information("Not enabling LRU cache for index {file} because it has no bloom filter", _filename);
+					}
+				}
 			} catch (PossibleToHandleOutOfMemoryException) {
 				Log.Error(
 					"Unable to create midpoints for PTable '{pTable}' ({count} entries, depth {depth} requested). "
@@ -378,6 +424,29 @@ namespace EventStore.Core.Index {
 			}
 		}
 
+		private MemoryMappedFileBloomFilter TryOpenBloomFilter() {
+			try {
+				// todo: if there is a bloom filter with a different size we could still use it
+				var bloomFilter = new MemoryMappedFileBloomFilter(
+					path: BloomFilterFilename,
+					create: false,
+					size: GenBloomFilterSizeBytes(_count));
+
+				return bloomFilter;
+			} catch (FileNotFoundException) {
+				Log.Information("Bloom filter for index file {file} does not exist", _filename);
+				return null;
+			} catch (CorruptedFileException ex) {
+				Log.Error(ex, "Bloom filter for index file {file} is corrupt. Performance will be degraded", _filename);
+				return null;
+			} catch (CorruptedHashException ex) {
+				Log.Error(ex, "Bloom filter contents for index file {file} are corrupt. Performance will be degraded", _filename);
+				return null;
+			} catch (Exception ex) {
+				Log.Error(ex, "Unexpected error opening bloom filter for index file {file}. Performance will be degraded", _filename);
+				return null;
+			}
+		}
 
 		private readonly byte[] TmpReadBuf = new byte[DefaultBufferSize];
 
@@ -433,9 +502,7 @@ namespace EventStore.Core.Index {
 		}
 
 		public bool TryGetOneValue(ulong stream, long number, out long position) {
-			IndexEntry entry;
-			var hash = GetHash(stream);
-			if (TryGetLargestEntry(hash, number, number, out entry)) {
+			if (TryGetLatestEntryNoCache(GetHash(stream), number, number, out var entry)) {
 				position = entry.Position;
 				return true;
 			}
@@ -444,75 +511,98 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 
-		public bool TryGetLatestEntry(ulong stream, out IndexEntry entry) {
-			ulong hash = GetHash(stream);
-			return TryGetLargestEntry(hash, 0, long.MaxValue, out entry);
+		public bool TryGetLatestEntry(ulong stream, out IndexEntry entry) =>
+			_lruCache == null
+				? TryGetLatestEntryNoCache(GetHash(stream), 0, long.MaxValue, out entry)
+				: TryGetLatestEntryWithCache(GetHash(stream), out entry);
+
+		private bool TryGetLatestEntryWithCache(StreamHash stream, out IndexEntry entry) {
+			if (!TryLookThroughLru(stream, out var value)) {
+				// stream not present
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+
+			entry = ReadEntry(_indexEntrySize, value.LatestOffset, _version);
+			return true;
 		}
 
-		private bool TryGetLargestEntry(ulong stream, long startNumber, long endNumber, out IndexEntry entry) {
+		private bool TryGetLatestEntryNoCache(StreamHash stream, long startNumber, long endNumber, out IndexEntry entry) {
 			Ensure.Nonnegative(startNumber, "startNumber");
 			Ensure.Nonnegative(endNumber, "endNumber");
+
+			if (!MightContainStream(stream)) {
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+
+			return TrySearchForLatestEntry(stream, startNumber, endNumber, out entry, out _);
+		}
+
+		private bool TrySearchForLatestEntry(StreamHash stream, long startNumber, long endNumber,
+			out IndexEntry entry, out long offset) {
 
 			entry = TableIndex.InvalidIndexEntry;
 
 			var startKey = BuildKey(stream, startNumber);
 			var endKey = BuildKey(stream, endNumber);
 
-			if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
+			if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry)) {
+				offset = default;
 				return false;
+			}
 
 			var workItem = GetWorkItem();
 			try {
-				IndexEntryKey lowBoundsCheck, highBoundsCheck;
-				var recordRange = LocateRecordRange(endKey, out lowBoundsCheck, out highBoundsCheck);
-
-				long low = recordRange.Lower;
-				long high = recordRange.Upper;
-				while (low < high) {
-					var mid = low + (high - low) / 2;
-					IndexEntry midpoint = ReadEntry(_indexEntrySize, mid, workItem, _version);
-					var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
-
-					if (midpointKey.GreaterThan(lowBoundsCheck)) {
-						throw new MaybeCorruptIndexException(String.Format(
-							"Midpoint key (stream: {0}, version: {1}) > low bounds check key (stream: {2}, version: {3})",
-							midpointKey.Stream, midpointKey.Version, lowBoundsCheck.Stream, lowBoundsCheck.Version));
-					} else if (!midpointKey.GreaterEqualsThan(highBoundsCheck)) {
-						throw new MaybeCorruptIndexException(String.Format(
-							"Midpoint key (stream: {0}, version: {1}) < high bounds check key (stream: {2}, version: {3})",
-							midpointKey.Stream, midpointKey.Version, highBoundsCheck.Stream, highBoundsCheck.Version));
-					}
-
-					if (midpointKey.GreaterThan(endKey)) {
-						low = mid + 1;
-						lowBoundsCheck = midpointKey;
-					} else {
-						high = mid;
-						highBoundsCheck = midpointKey;
-					}
-				}
-
+				var high = ChopForLatest(workItem, endKey);
 				var candEntry = ReadEntry(_indexEntrySize, high, workItem, _version);
 				var candKey = new IndexEntryKey(candEntry.Stream, candEntry.Version);
+
 				if (candKey.GreaterThan(endKey))
 					throw new MaybeCorruptIndexException(string.Format(
 						"candEntry ({0}@{1}) > startKey {2}, stream {3}, startNum {4}, endNum {5}, PTable: {6}.",
 						candEntry.Stream, candEntry.Version, startKey, stream, startNumber, endNumber, Filename));
-				if (candKey.SmallerThan(startKey))
+				if (candKey.SmallerThan(startKey)) {
+					offset = default;
 					return false;
+				}
+
 				entry = candEntry;
+				offset = high;
 				return true;
 			} finally {
 				ReturnWorkItem(workItem);
 			}
 		}
 
-		public bool TryGetOldestEntry(ulong stream, out IndexEntry entry) {
-			ulong hash = GetHash(stream);
-			return TryGetSmallestEntry(hash, 0, long.MaxValue, out entry);
+		public bool TryGetOldestEntry(ulong stream, out IndexEntry entry) =>
+			_lruCache == null
+				? TryGetOldestEntryNoCache(GetHash(stream), out entry)
+				: TryGetOldestEntryWithCache(GetHash(stream), out entry);
+
+		private bool TryGetOldestEntryWithCache(StreamHash stream, out IndexEntry entry) {
+			if (!TryLookThroughLru(stream, out var value)) {
+				// stream not present
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+
+			entry = ReadEntry(_indexEntrySize, value.OldestOffset, _version);
+			return true;
 		}
 
-		private bool TryGetSmallestEntry(ulong stream, long startNumber, long endNumber, out IndexEntry entry) {
+		private bool TryGetOldestEntryNoCache(StreamHash stream, out IndexEntry entry) {
+			if (!MightContainStream(stream)) {
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+
+			return TrySearchForOldestEntry(stream, 0, long.MaxValue, out entry, out _);
+		}
+
+		private bool TrySearchForOldestEntry(StreamHash stream, long startNumber, long endNumber,
+			out IndexEntry entry, out long offset) {
+
 			Ensure.Nonnegative(startNumber, "startNumber");
 			Ensure.Nonnegative(endNumber, "endNumber");
 
@@ -521,127 +611,51 @@ namespace EventStore.Core.Index {
 			var startKey = BuildKey(stream, startNumber);
 			var endKey = BuildKey(stream, endNumber);
 
-			if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
+			if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry)) {
+				offset = default;
 				return false;
+			}
 
 			var workItem = GetWorkItem();
 			try {
-				IndexEntryKey lowBoundsCheck, highBoundsCheck;
-				var recordRange = LocateRecordRange(startKey, out lowBoundsCheck, out highBoundsCheck);
-
-				long low = recordRange.Lower;
-				long high = recordRange.Upper;
-				while (low < high) {
-					var mid = low + (high - low + 1) / 2;
-					var midpoint = ReadEntry(_indexEntrySize, mid, workItem, _version);
-					var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
-
-					if (midpointKey.GreaterThan(lowBoundsCheck)) {
-						throw new MaybeCorruptIndexException(String.Format(
-							"Midpoint key (stream: {0}, version: {1}) > low bounds check key (stream: {2}, version: {3})",
-							midpointKey.Stream, midpointKey.Version, lowBoundsCheck.Stream, lowBoundsCheck.Version));
-					} else if (!midpointKey.GreaterEqualsThan(highBoundsCheck)) {
-						throw new MaybeCorruptIndexException(String.Format(
-							"Midpoint key (stream: {0}, version: {1}) < high bounds check key (stream: {2}, version: {3})",
-							midpointKey.Stream, midpointKey.Version, highBoundsCheck.Stream, highBoundsCheck.Version));
-					}
-
-					if (midpointKey.SmallerThan(startKey)) {
-						high = mid - 1;
-						highBoundsCheck = midpointKey;
-					} else {
-						low = mid;
-						lowBoundsCheck = midpointKey;
-					}
-				}
-
+				var high = ChopForOldest(workItem, startKey);
 				var candEntry = ReadEntry(_indexEntrySize, high, workItem, _version);
 				var candidateKey = new IndexEntryKey(candEntry.Stream, candEntry.Version);
 				if (candidateKey.SmallerThan(startKey))
 					throw new MaybeCorruptIndexException(string.Format(
 						"candEntry ({0}@{1}) < startKey {2}, stream {3}, startNum {4}, endNum {5}, PTable: {6}.",
 						candEntry.Stream, candEntry.Version, startKey, stream, startNumber, endNumber, Filename));
-				if (candidateKey.GreaterThan(endKey))
+				if (candidateKey.GreaterThan(endKey)) {
+					offset = default;
 					return false;
+				}
+
 				entry = candEntry;
+				offset = high;
 				return true;
 			} finally {
 				ReturnWorkItem(workItem);
 			}
 		}
 
-		public IEnumerable<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
+		public IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
 			Ensure.Nonnegative(startNumber, "startNumber");
 			Ensure.Nonnegative(endNumber, "endNumber");
 
-			ulong hash = GetHash(stream);
-
-			var result = new List<IndexEntry>();
-			var startKey = BuildKey(hash, startNumber);
-			var endKey = BuildKey(hash, endNumber);
-
-			if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
-				return result;
-
-			var workItem = GetWorkItem();
-			try {
-				IndexEntryKey lowBoundsCheck, highBoundsCheck;
-				var recordRange = LocateRecordRange(endKey, out lowBoundsCheck, out highBoundsCheck);
-				long low = recordRange.Lower;
-				long high = recordRange.Upper;
-				while (low < high) {
-					var mid = low + (high - low) / 2;
-					IndexEntry midpoint = ReadEntry(_indexEntrySize, mid, workItem, _version);
-					var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
-
-					if (midpointKey.GreaterThan(lowBoundsCheck)) {
-						throw new MaybeCorruptIndexException(String.Format(
-							"Midpoint key (stream: {0}, version: {1}) > low bounds check key (stream: {2}, version: {3})",
-							midpointKey.Stream, midpointKey.Version, lowBoundsCheck.Stream, lowBoundsCheck.Version));
-					} else if (!midpointKey.GreaterEqualsThan(highBoundsCheck)) {
-						throw new MaybeCorruptIndexException(String.Format(
-							"Midpoint key (stream: {0}, version: {1}) < high bounds check key (stream: {2}, version: {3})",
-							midpointKey.Stream, midpointKey.Version, highBoundsCheck.Stream, highBoundsCheck.Version));
-					}
-
-					if (midpointKey.SmallerEqualsThan(endKey)) {
-						high = mid;
-						highBoundsCheck = midpointKey;
-					} else {
-						low = mid + 1;
-						lowBoundsCheck = midpointKey;
-					}
-				}
-
-				PositionAtEntry(_indexEntrySize, high, workItem);
-				for (long i = high, n = Count; i < n; ++i) {
-					IndexEntry entry = ReadNextNoSeek(workItem, _version);
-					var candidateKey = new IndexEntryKey(entry.Stream, entry.Version);
-					if (candidateKey.GreaterThan(endKey))
-						throw new MaybeCorruptIndexException(string.Format(
-							"entry ({0}@{1}) > endKey {2}, stream {3}, startNum {4}, endNum {5}, PTable: {6}.",
-							entry.Stream, entry.Version, startKey, stream, startNumber, endNumber, Filename));
-					if (candidateKey.SmallerThan(startKey))
-						return result;
-					result.Add(entry);
-					if (result.Count == limit)
-						break;
-				}
-
-				return result;
-			} finally {
-				ReturnWorkItem(workItem);
-			}
+			return _lruCache == null
+				? GetRangeNoCache(GetHash(stream), startNumber, endNumber, limit)
+				: GetRangeWithCache(GetHash(stream), startNumber, endNumber, limit);
 		}
 
-		private ulong GetHash(ulong hash) {
-			return _version == PTableVersions.IndexV1 ? hash >> 32 : hash;
+		private StreamHash GetHash(ulong hash) {
+			return new(_version, hash);
 		}
 
-		private static IndexEntryKey BuildKey(ulong stream, long version) {
-			return new IndexEntryKey(stream, version);
+		private static IndexEntryKey BuildKey(StreamHash stream, long version) {
+			return new IndexEntryKey(stream.Hash, version);
 		}
 
+		// use the midpoints (if they exist) to narrow the search range.
 		private Range LocateRecordRange(IndexEntryKey key, out IndexEntryKey lowKey, out IndexEntryKey highKey) {
 			lowKey = new IndexEntryKey(ulong.MaxValue, long.MaxValue);
 			highKey = new IndexEntryKey(ulong.MinValue, long.MinValue);
@@ -653,6 +667,7 @@ namespace EventStore.Core.Index {
 
 			if (midpoints == null)
 				return new Range(0, Count - 1);
+
 			long lowerMidpoint = LowerMidpointBound(midpoints, key);
 			long upperMidpoint = UpperMidpointBound(midpoints, key);
 
@@ -700,6 +715,15 @@ namespace EventStore.Core.Index {
 			return ReadNextNoSeek(workItem, ptableVersion);
 		}
 
+		private IndexEntry ReadEntry(int indexEntrySize, long indexNum, int ptableVersion) {
+			var workItem = GetWorkItem();
+			try {
+				return ReadEntry(_indexEntrySize, indexNum, workItem, ptableVersion);
+			} finally {
+				ReturnWorkItem(workItem);
+			}
+		}
+
 		private static IndexEntry ReadNextNoSeek(WorkItem workItem, int ptableVersion) {
 			long version = (ptableVersion >= PTableVersions.IndexV3)
 				? workItem.Reader.ReadInt64()
@@ -743,6 +767,7 @@ namespace EventStore.Core.Index {
 			if (disposing) {
 				//dispose any managed objects here
 				_midpoints?.Dispose();
+				_bloomFilter?.Dispose();
 			}
 
 			_disposed = true;
@@ -750,8 +775,11 @@ namespace EventStore.Core.Index {
 
 		private void OnAllWorkItemsDisposed() {
 			File.SetAttributes(_filename, FileAttributes.Normal);
-			if (_deleteFile)
+			if (_deleteFile) {
+				_bloomFilter?.Dispose();
 				File.Delete(_filename);
+				File.Delete(BloomFilterFilename);
+			}
 			_destroyEvent.Set();
 			Dispose(true);
 			GC.SuppressFinalize(this);
@@ -765,6 +793,259 @@ namespace EventStore.Core.Index {
 		public void WaitForDisposal(TimeSpan timeout) {
 			if (!_destroyEvent.Wait(timeout))
 				throw new TimeoutException();
+		}
+
+		public List<IndexEntry> GetRangeWithCache(StreamHash stream, long startNumber, long endNumber, int? limit = null) {
+			if (!OverlapsRange(stream, startNumber, endNumber, out var tableLatestNumber, out var tableLatestOffset))
+				return new List<IndexEntry>();
+
+			// it does overlap.
+			// if the requested end version is greater than or equal to what we have in this ptable
+			// then we can jump to tableLatestOffset and read the file forwards from there without binary chopping.
+			if (endNumber >= tableLatestNumber) {
+				return PositionAndReadForward(stream, startNumber, endNumber, limit, tableLatestOffset: tableLatestOffset);
+			}
+			// todo: else if the requested start version is less than or equal to what we have in this ptable
+			// then we could jump to tableStartOffset and read the file backwards.
+
+			// otherwise the request is contained strictly within what we have in this ptable
+			// and we must chop for it
+			return ChopAndReadForward(stream, startNumber, endNumber, limit);
+		}
+
+		public List<IndexEntry> GetRangeNoCache(StreamHash stream, long startNumber, long endNumber, int? limit = null) {
+			if (!MightContainStream(stream))
+				return new List<IndexEntry>();
+
+			return ChopAndReadForward(stream, startNumber, endNumber, limit);
+		}
+
+		private List<IndexEntry> ChopAndReadForward(StreamHash stream, long startNumber, long endNumber, int? limit) {
+			return PositionAndReadForward(stream, startNumber, endNumber, limit: limit, tableLatestOffset: null);
+		}
+
+		private List<IndexEntry> PositionAndReadForward(StreamHash stream, long startNumber, long endNumber, int? limit, long? tableLatestOffset) {
+			var result = new List<IndexEntry>();
+
+			var startKey = BuildKey(stream, startNumber);
+			var endKey = BuildKey(stream, endNumber);
+
+			if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
+				return result;
+
+			var workItem = GetWorkItem();
+			try {
+				var high = tableLatestOffset ?? ChopForLatest(workItem, endKey);
+				PositionAtEntry(_indexEntrySize, high, workItem);
+				result = ReadForward(workItem, high, startKey, endKey, limit);
+				return result;
+			} catch (MaybeCorruptIndexException ex) {
+				throw new MaybeCorruptIndexException(
+					$"{ex.Message}. stream {stream}, startNum {startNumber}, endNum {endNumber}, PTable: {Filename}.");
+			} finally {
+				ReturnWorkItem(workItem);
+			}
+		}
+
+		// forward here meaning forward in the file. towards the older records.
+		private List<IndexEntry> ReadForward(WorkItem workItem, long high, IndexEntryKey startKey, IndexEntryKey endKey, int? limit) {
+
+			var result = new List<IndexEntry>();
+
+			for (long i = high, n = Count; i < n; ++i) {
+				var entry = ReadNextNoSeek(workItem, _version);
+
+				var candidateKey = new IndexEntryKey(entry.Stream, entry.Version);
+
+				if (candidateKey.GreaterThan(endKey))
+					throw new MaybeCorruptIndexException($"candidateKey ({candidateKey}) > endKey ({endKey})");
+
+				if (candidateKey.SmallerThan(startKey))
+					return result;
+
+				result.Add(entry);
+
+				if (result.Count == limit)
+					break;
+			}
+
+			return result;
+		}
+
+		private long ChopForLatest(WorkItem workItem, IndexEntryKey endKey) {
+			var recordRange = LocateRecordRange(endKey, out var lowBoundsCheck, out var highBoundsCheck);
+			long low = recordRange.Lower;
+			long high = recordRange.Upper;
+			while (low < high) {
+				var mid = low + (high - low) / 2;
+				var midpoint = ReadEntry(_indexEntrySize, mid, workItem, _version);
+				var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
+
+				if (midpointKey.GreaterThan(lowBoundsCheck)) {
+					throw new MaybeCorruptIndexException(String.Format(
+						"Midpoint key (stream: {0}, version: {1}) > low bounds check key (stream: {2}, version: {3})",
+						midpointKey.Stream, midpointKey.Version, lowBoundsCheck.Stream, lowBoundsCheck.Version));
+				} else if (!midpointKey.GreaterEqualsThan(highBoundsCheck)) {
+					throw new MaybeCorruptIndexException(String.Format(
+						"Midpoint key (stream: {0}, version: {1}) < high bounds check key (stream: {2}, version: {3})",
+						midpointKey.Stream, midpointKey.Version, highBoundsCheck.Stream, highBoundsCheck.Version));
+				}
+
+				if (midpointKey.GreaterThan(endKey)) {
+					low = mid + 1;
+					lowBoundsCheck = midpointKey;
+				} else {
+					high = mid;
+					highBoundsCheck = midpointKey;
+				}
+			}
+
+			return high;
+		}
+
+		private long ChopForOldest(WorkItem workItem, IndexEntryKey startKey) {
+			var recordRange = LocateRecordRange(startKey, out var lowBoundsCheck, out var highBoundsCheck);
+			long low = recordRange.Lower;
+			long high = recordRange.Upper;
+			while (low < high) {
+				var mid = low + (high - low + 1) / 2;
+				var midpoint = ReadEntry(_indexEntrySize, mid, workItem, _version);
+				var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
+
+				if (midpointKey.GreaterThan(lowBoundsCheck)) {
+					throw new MaybeCorruptIndexException(String.Format(
+						"Midpoint key (stream: {0}, version: {1}) > low bounds check key (stream: {2}, version: {3})",
+						midpointKey.Stream, midpointKey.Version, lowBoundsCheck.Stream, lowBoundsCheck.Version));
+				} else if (!midpointKey.GreaterEqualsThan(highBoundsCheck)) {
+					throw new MaybeCorruptIndexException(String.Format(
+						"Midpoint key (stream: {0}, version: {1}) < high bounds check key (stream: {2}, version: {3})",
+						midpointKey.Stream, midpointKey.Version, highBoundsCheck.Stream, highBoundsCheck.Version));
+				}
+
+				if (midpointKey.SmallerThan(startKey)) {
+					high = mid - 1;
+					highBoundsCheck = midpointKey;
+				} else {
+					low = mid;
+					lowBoundsCheck = midpointKey;
+				}
+			}
+
+			return high;
+		}
+
+		// Checks if this file might contain any of the range from start to end inclusive.
+		private bool OverlapsRange(
+			StreamHash stream,
+			long startNumber,
+			long endNumber,
+			out long tableLatestNumber,
+			out long tableLatestOffset) {
+
+			if (!TryLookThroughLru(stream, out var cacheEntry)) {
+				// no range present
+				tableLatestNumber = default;
+				tableLatestOffset = default;
+				return false;
+			}
+
+			tableLatestNumber = cacheEntry.LatestNumber;
+			tableLatestOffset = cacheEntry.LatestOffset;
+
+			// there is a range for this stream, does it overlap?
+			return startNumber <= cacheEntry.LatestNumber && cacheEntry.OldestNumber <= endNumber;
+		}
+
+		// Gets the value from the lru cache. Populate the cache if necessary
+		// returns true iff we managed to get a CacheEntry. i.e. if any events are
+		// present for this stream in this file.
+		private bool TryLookThroughLru(StreamHash stream, out CacheEntry value) {
+			Ensure.NotNull(_lruCache, nameof(_lruCache));
+
+			if (_lruCache.TryGet(stream, out value)) {
+				return true;
+			}
+
+			if (!MightContainStream(stream)) {
+				value = default;
+				return false;
+			}
+
+			if (_lruConfirmedNotPresent.TryGet(stream, out _)) {
+				value = default;
+				return false;
+			}
+
+			// its not in either of the LRU caches. add it to one or the other
+			// so that subsequent calls do not require searching.
+			if (TrySearchForLatestEntry(stream, 0, long.MaxValue, out var latestEntry, out var latestOffset) &&
+				TrySearchForOldestEntry(stream, 0, long.MaxValue, out var oldestEntry, out var oldestOffset)) {
+
+				value = new(
+					oldestNumber: oldestEntry.Version,
+					latestNumber: latestEntry.Version,
+					oldestOffset: oldestOffset,
+					latestOffset: latestOffset);
+
+				_lruCache.Put(stream, value);
+				return true;
+			} else {
+				// in case of false positive in the bloom filter
+				_lruConfirmedNotPresent.Put(stream, true);
+				value = default;
+				return false;
+			}
+		}
+
+		private bool MightContainStream(StreamHash stream) {
+			if (_bloomFilter == null)
+				return true;
+
+			// with a workitem checked out the ptable (and bloom filter specifically)
+			// wont get disposed
+			var workItem = GetWorkItem();
+			try {
+				var streamHash = stream.Hash;
+				return _bloomFilter.MightContain(GetSpan(ref streamHash));
+			} finally {
+				ReturnWorkItem(workItem);
+			}
+		}
+
+		private static ReadOnlySpan<byte> GetSpan(ref ulong streamHash) =>
+			MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref streamHash, 1));
+
+		// construct this struct with a 64 bit hash and it will convert it to a hash
+		// for the specified table version
+		public readonly struct StreamHash : IEquatable<StreamHash> {
+			public StreamHash(byte version, ulong hash) {
+				Hash = version == PTableVersions.IndexV1 ? hash >> 32 : hash;
+			}
+
+			public ulong Hash { get; init; }
+
+			public override int GetHashCode() =>
+				Hash.GetHashCode();
+
+			public bool Equals(StreamHash other) =>
+				Hash == other.Hash;
+
+			public override bool Equals(object obj) =>
+				obj is StreamHash streamHash && Equals(streamHash);
+		}
+
+		public struct CacheEntry {
+			public readonly long OldestNumber;
+			public readonly long LatestNumber;
+			public readonly long OldestOffset;
+			public readonly long LatestOffset;
+
+			public CacheEntry(long oldestNumber, long latestNumber, long oldestOffset, long latestOffset) {
+				OldestNumber = oldestNumber;
+				LatestNumber = latestNumber;
+				OldestOffset = oldestOffset;
+				LatestOffset = latestOffset;
+			}
 		}
 
 		public struct Midpoint {

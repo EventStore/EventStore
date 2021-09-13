@@ -27,6 +27,10 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			_skipIndexVerify = skipIndexVerify;
 		}
 
+		private ulong GetHash(ulong value) {
+			return _ptableVersion == PTableVersions.IndexV1 ? value >> 32 : value;
+		}
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
@@ -38,12 +42,14 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 					table.Add((ulong)(0x010100000000 << (j + 1)), i + 1, i * j);
 				}
 
-				_tables.Add(PTable.FromMemtable(table, _files[i], Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify));
+				_tables.Add(PTable.FromMemtable(table, _files[i], Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+					skipIndexVerify: _skipIndexVerify, useBloomFilter: true));
 			}
 
 			_files.Add(GetTempFilePath());
 			_newtable = PTable.MergeTo(_tables, _files[2], (streamId, hash) => hash, x => true,
-				x => new System.Tuple<string, bool>("", true), _ptableVersion, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify);
+				x => new System.Tuple<string, bool>("", true), _ptableVersion, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+				skipIndexVerify: _skipIndexVerify, useBloomFilter: true);
 		}
 
 		[OneTimeTearDown]
@@ -59,6 +65,17 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		[Test]
 		public void there_are_twenty_records_in_merged_index() {
 			Assert.AreEqual(20, _newtable.Count);
+		}
+
+		[Test]
+		public void the_streams_can_be_found() {
+			for (int j = 0; j < 10; j++) {
+				var stream = (ulong)(0x010100000000 << (j + 1));
+				Assert.True(_newtable.TryGetLatestEntry(stream, out var entry));
+				Assert.AreEqual(GetHash(stream), entry.Stream);
+				Assert.AreEqual(2, entry.Version);
+				Assert.AreEqual(1 * j, entry.Position);
+			}
 		}
 
 		[Test]

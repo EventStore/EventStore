@@ -25,7 +25,15 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			return pTableFilename;
 		}
 
-		private void CorruptPTableFile(string ptableFile, byte version, string corruptionType) {
+		private static void CorruptBloomFilter(string bloomFilterFile) {
+			using var stream = File.Open(bloomFilterFile, FileMode.Open);
+			var data = new byte[255];
+			stream.Seek(0, SeekOrigin.Begin);
+			data[0] = 0xFF;
+			stream.Write(data, 0, 1);
+		}
+
+		private static void CorruptPTableFile(string ptableFile, byte version, string corruptionType) {
 			int indexEntrySize = 0;
 			if (version == PTableVersions.IndexV1)
 				indexEntrySize = PTable.IndexEntryV1Size;
@@ -212,7 +220,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			//loading with a depth of 1 should load only 2 midpoints (first and last index entry)
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.GetRange(GetOriginalHash(numIndexEntries / 2, version), 1, 1));
+				pTable.GetRange(GetOriginalHash(numIndexEntries / 4, version), 1, 1));
 			pTable.Dispose();
 		}
 
@@ -227,7 +235,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			//loading with a depth of 1 should load only 2 midpoints (first and last index entry)
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.GetRange(GetOriginalHash(numIndexEntries / 2, version), 1, 1));
+				pTable.GetRange(GetOriginalHash(numIndexEntries / 4, version), 1, 1));
 			pTable.Dispose();
 		}
 
@@ -243,7 +251,8 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			IndexEntry entry;
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.TryGetLatestEntry(GetOriginalHash(numIndexEntries / 2, version), out entry));
+				// changed 2 to 4 here because the corruption actually removes the stream at /2, so it isn't in the bloom filter
+				pTable.TryGetLatestEntry(GetOriginalHash(numIndexEntries / 4, version), out entry));
 			pTable.Dispose();
 		}
 
@@ -259,7 +268,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			IndexEntry entry;
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.TryGetLatestEntry(GetOriginalHash(numIndexEntries / 2, version), out entry));
+				pTable.TryGetLatestEntry(GetOriginalHash(numIndexEntries / 4, version), out entry));
 			pTable.Dispose();
 		}
 
@@ -275,7 +284,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			IndexEntry entry;
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.TryGetOldestEntry(GetOriginalHash(numIndexEntries / 2, version), out entry));
+				pTable.TryGetOldestEntry(GetOriginalHash(numIndexEntries / 4, version), out entry));
 			pTable.Dispose();
 		}
 
@@ -291,7 +300,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			IndexEntry entry;
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.TryGetOldestEntry(GetOriginalHash(numIndexEntries / 2, version), out entry));
+				pTable.TryGetOldestEntry(GetOriginalHash(numIndexEntries / 4, version), out entry));
 			pTable.Dispose();
 		}
 
@@ -307,7 +316,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			long position;
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.TryGetOneValue(GetOriginalHash(numIndexEntries / 2, version), 1, out position));
+				pTable.TryGetOneValue(GetOriginalHash(numIndexEntries / 4, version), 1, out position));
 			pTable.Dispose();
 		}
 
@@ -323,7 +332,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			PTable pTable = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, 1, skipIndexVerify);
 			long position;
 			Assert.Throws<MaybeCorruptIndexException>(() =>
-				pTable.TryGetOneValue(GetOriginalHash(numIndexEntries / 2, version), 1, out position));
+				pTable.TryGetOneValue(GetOriginalHash(numIndexEntries / 4, version), 1, out position));
 			pTable.Dispose();
 		}
 
@@ -365,6 +374,18 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			string ptableFileName = ConstructPTable(version);
 			CorruptPTableFile(ptableFileName, version, "moreMidpointsThanIndexEntries");
 			Assert.Throws<CorruptIndexException>(() => PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, skipIndexVerify));
+		}
+
+		[TestCase(PTableVersions.IndexV4, false)]
+		[TestCase(PTableVersions.IndexV4, true)]
+		public void continue_without_corrupt_bloom_filter(byte version, bool corrupt) {
+			string ptableFileName = ConstructPTable(version);
+
+			if (corrupt)
+				CorruptBloomFilter(PTable.GenBloomFilterFilename(ptableFileName));
+
+			var table = PTable.FromFile(ptableFileName, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, skipIndexVerify: true);
+			Assert.AreEqual(!corrupt, table.HasBloomFilter);
 		}
 	}
 }

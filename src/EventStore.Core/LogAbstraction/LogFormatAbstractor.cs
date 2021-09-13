@@ -28,6 +28,9 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public class LogV2FormatAbstractorFactory : ILogFormatAbstractorFactory<string> {
+		public LogV2FormatAbstractorFactory() {
+		}
+
 		public LogFormatAbstractor<string> Create(LogFormatAbstractorOptions options) {
 			var lowHasher = new XXHashUnsafe();
 			var highHasher = new Murmur3AUnsafe();
@@ -87,6 +90,9 @@ namespace EventStore.Core.LogAbstraction {
 	}
 
 	public class LogV3FormatAbstractorFactory : ILogFormatAbstractorFactory<LogV3StreamId> {
+		public LogV3FormatAbstractorFactory() {
+		}
+
 		public LogFormatAbstractor<LogV3StreamId> Create(LogFormatAbstractorOptions options) {
 			var metastreams = new LogV3Metastreams();
 			var recordFactory = new LogV3RecordFactory();
