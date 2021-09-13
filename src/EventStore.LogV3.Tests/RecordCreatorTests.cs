@@ -16,7 +16,9 @@ namespace EventStore.LogV3.Tests {
 		readonly uint _uint1 = 5;
 		readonly ushort _ushort1 = 6;
 		readonly string _string1 = "one";
-		readonly EventFlags _eventFlags = EventFlags.IsJson;
+		readonly string _string2 = "two";
+		readonly EventFlags _eventFlags1 = EventFlags.IsJson;
+		readonly EventFlags _eventFlags2 = EventFlags.None;
 		readonly Raw.PartitionFlags _partitionFlags = (Raw.PartitionFlags)4;
 		readonly ReadOnlyMemory<byte> _bytes1 = new byte[] { 0x10 };
 		readonly ReadOnlyMemory<byte> _bytes2 = new byte[] { 0x20, 0x01 };
@@ -178,7 +180,7 @@ namespace EventStore.LogV3.Tests {
 				eventType: _string1,
 				data: _bytes3,
 				metadata: _bytes4,
-				eventFlags: _eventFlags,
+				eventFlags: _eventFlags1,
 				eventLogPosition: null,
 				eventOffset: 0);
 
@@ -207,9 +209,59 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_string1, record.Events[0].EventType);
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record.Events[0].Data));
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Events[0].Metadata));
-			Assert.Equal(_eventFlags, record.Events[0].EventFlags);
+			Assert.Equal(_eventFlags1, record.Events[0].EventFlags);
 		}
-		
+
+		[Fact]
+		public void can_create_stream_write_record_for_multiple_events() {
+			var eventRecords = new IEventRecord[] {
+				new MockEventRecord(eventId: _guid2,
+					eventType: _string1,
+					data: _bytes3,
+					metadata: _bytes4,
+					eventFlags: _eventFlags1,
+					eventLogPosition: null,
+					eventOffset: 0),
+				new MockEventRecord(eventId: _guid3,
+					eventType: _string2,
+					data: _bytes2,
+					metadata: _bytes1,
+					eventFlags: _eventFlags2,
+					eventLogPosition: null,
+					eventOffset: 0),
+			};
+			var record = RecordCreator.CreateStreamWriteRecord(
+				timeStamp: _dateTime1,
+				correlationId: _guid1,
+				logPosition: _long1,
+				streamNumber: _long2,
+				startingEventNumber: _long3,
+				eventRecords
+			);
+
+			Assert.Equal(LogRecordType.StreamWrite, record.Header.Type);
+			Assert.Equal(LogRecordVersion.LogRecordV0, record.Header.Version);
+			Assert.Equal(_dateTime1, record.Header.TimeStamp);
+			Assert.Equal(_long1, record.Header.LogPosition);
+			Assert.Equal<Guid>(_guid1, record.SystemMetadata.CorrelationId);
+			Assert.Equal(0, record.SystemMetadata.StartingEventNumberRoot);
+			Assert.Equal(0, record.SystemMetadata.StartingEventNumberCategory);
+			Assert.Equal(0, record.WriteId.CategoryNumber);
+			Assert.Equal(0, record.WriteId.ParentTopicNumber);
+			Assert.Equal(0, record.WriteId.TopicNumber);
+			Assert.Equal(_long2, record.WriteId.StreamNumber);
+			Assert.Equal(_long3, record.WriteId.StartingEventNumber);
+			Assert.Equal<Guid>(_guid2, record.Events[0].EventId);
+			Assert.Equal(_string1, record.Events[0].EventType);
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record.Events[0].Data));
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Events[0].Metadata));
+			Assert.Equal(_eventFlags1, record.Events[0].EventFlags);
+			Assert.Equal<Guid>(_guid3, record.Events[1].EventId);
+			Assert.Equal(_string2, record.Events[1].EventType);
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes2), MemoryMarshal.ToEnumerable(record.Events[1].Data));
+			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes1), MemoryMarshal.ToEnumerable(record.Events[1].Metadata));
+			Assert.Equal(_eventFlags2, record.Events[1].EventFlags);
+		}
 		[Fact]
 		public void can_create_transaction_start() {
 			var record = RecordCreator.CreateTransactionStartRecord(
