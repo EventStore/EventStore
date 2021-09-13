@@ -74,3 +74,67 @@ For security monitoring, you can enable logging failed authentication attempts b
 | Environment variable | `EVENTSTORE_LOG_FAILED_AUTHENTICATION_ATTEMPTS` |
 
 **Default**: `false`
+
+## Log Console Format
+
+The format of the console logger. Use `Json` for structured log output.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--log-console-format` |
+| YAML                 | `LogConsoleFormat` |
+| Environment variable | `EVENTSTORE_LOG_CONSOLE_FORMAT` |
+
+Acceptable values are: `Plain`, `Json` 
+
+**Default**: `Plain`
+
+## Log File Size
+
+The maximum size of each log file, in bytes.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--log-file-size` |
+| YAML                 | `LogFileSize` |
+| Environment variable | `EVENTSTORE_LOG_FILE_SIZE` |
+
+**Default**: `1GB`
+
+## Log File Interval
+
+How often to rotate logs.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--log-file-interval` |
+| YAML                 | `LogFileInterval` |
+| Environment variable | `EVENTSTORE_LOG_FILE_INTERVAL` |
+
+Acceptable values are: `Minute`, `Hour`, `Day`, `Week`, `Month`, `Year`
+
+**Default**: `Day`
+
+## Log File Retention Count
+
+How many log files to hold on to.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--log-file-retention-count` |
+| YAML                 | `LogFileRetentionCount` |
+| Environment variable | `EVENTSTORE_LOG_RETENTION_COUNT` |
+
+**Default**: `31`
+
+## Disable Log File
+
+Disable Log to Disk
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--disable-log-file` |
+| YAML                 | `DisableLogFile` |
+| Environment variable | `EVENTSTORE_DISABLE_LOG_FILE` |
+
+**Default**: `false`
