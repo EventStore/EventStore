@@ -41,8 +41,8 @@ The buttons on the top right when you are viewing an event stream are:
 - _Pause_: Stop showing events arriving into this stream.
 - _Resume_: Resume showing events arriving into this stream.
 - _Edit ACL_: Edit [the access control lists](../security/acl.md) for a stream.
-- _Add Event_: [Add a new event](../../http-api/appending-events.md) to the stream.
-- _Delete_: [Delete a stream](../../http-api/deleting-a-stream.md) to the stream.
+- _Add Event_: [Add a new event](/clients/http-api/v5/introduction/appending-events.md) to the stream.
+- _Delete_: [Delete a stream](/clients/http-api/v5/introduction/deleting-a-stream.md) to the stream.
 - _Query_:
 
 The buttons on the left above the events when you are viewing an event stream are:
@@ -99,9 +99,9 @@ The _Query_ tab a code editor field where you can create transient and short-liv
 
 ## Persistent subscriptions
 
-The _Persistent Subscriptions_ tab shows an overview of [persistent subscriptions](../../http-api/persistent-subscriptions.md) configured on streams. The button above the list do the following:
+The _Persistent Subscriptions_ tab shows an overview of [persistent subscriptions](/clients/http-api/v5/persistent/README.md) configured on streams. The button above the list do the following:
 
-- _New Subscription_: Create a new [subscriptions](../../http-api/reading-subscribing-events.md)
+- _New Subscription_: Create a new [subscriptions](/clients/http-api/v5/introduction/reading-subscribing-events.md)
 
 Clicking the _+_ icon next to a stream name reveals the subscription name and more buttons. The _Back_ button takes you to the parent screen. :
 
@@ -118,7 +118,7 @@ Clicking the _+_ icon next to a stream name reveals the subscription name and mo
 
 :::
 
-The _Admin_ tab shows sub systems enabled (currently only [projections](../projections/)) on EventStoreDB and [scavenges](../operations/scavenging.md) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
+The _Admin_ tab shows sub systems enabled (currently only [projections](../projections/)) on EventStoreDB and [scavenges](../operations/scavenge.md) run. You can start a new scavenge operation by clicking the _Scavenge_ button, and shut EventStoreDB down by clicking the _Shutdown Server_ button.
 
 ## Users
 

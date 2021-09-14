@@ -6,7 +6,7 @@ You cannot delete events from the middle of the stream. EventStoreDB only allows
 
 When you delete a stream, you can use either a soft delete or hard delete. When a stream is soft-deleted, all events from the stream get scavenged during the next scavenging run. It means that you can reopen the stream by appending to it again. When using hard delete, the stream gets closed with a tombstone event. Such an event tells the database that the stream cannot be reopened, so any attempt to append to the hard-deleted stream will fail. The tombstone event doesn't get scavenged.
 
-The `$all` stream bypasses the index, meaning that it does not check the metadata to determine whether events exist or not. As such, events that have been deleted are still be readable until a scavenge has removed them. There are requirements for a scavenge to successfully remove events, for more information about this, read the [scavenging guide](../scavenge/).
+The `$all` stream bypasses the index, meaning that it does not check the metadata to determine whether events exist or not. As such, events that have been deleted are still be readable until a scavenge has removed them. There are requirements for a scavenge to successfully remove events, for more information about this, read the [scavenging guide](../operations/scavenge.md).
 
 EventStoreDB will always keep one event in the stream even if the stream was deleted, to indicate the stream existence and the last event version. Therefore, we advise you to append a specific event like `StreamDeleted` and then set the max count to one to keep the stream or delete the stream. Keep that in mind when deleting streams that contain sensitive information that you really want to remove without a trace.
 
@@ -45,7 +45,7 @@ A **hard delete** appends a `tombstone` event to the stream, permanently deletin
 
 The events in the deleted stream are liable to be removed in a scavenge, but the tombstone event remains.
 
-A hard delete of a stream is permanent. You cannot append to the stream or recreate it. As such, you should generally soft delete streams unless you have a specific need to permanently delete the stream. On rare occasions when you need to re-open a hard-deleted stream, you can force EventStoreDB to scavenge it by using the [ignore hard deletes](../scavenge/options.md#ignore-hard-delete) option.
+A hard delete of a stream is permanent. You cannot append to the stream or recreate it. As such, you should generally soft delete streams unless you have a specific need to permanently delete the stream. On rare occasions when you need to re-open a hard-deleted stream, you can force EventStoreDB to scavenge it by using the [ignore hard deletes](../operations/scavenge-options.md#ignore-hard-delete) option.
 
 ## Deleted events and projections
 

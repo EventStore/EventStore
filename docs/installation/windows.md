@@ -16,7 +16,7 @@ choco install eventstore-oss
 
 You can also [download](https://eventstore.com/downloads/) a binary, unzip the archive and run from the folder location with an administrator console.
 
-The following command starts EventStoreDB with the database stored at the path _./db_ and the logs in _./logs_. Read mode about configuring the EventStoreDB server node in the [Configuration section](../configuration/README.md).
+The following command starts EventStoreDB with the database stored at the path _./db_ and the logs in _./logs_. Read mode about configuring the EventStoreDB server node in the [Configuration section](./configuration.md).
 
 ```powershell
 EventStore.ClusterNode.exe --db ./db --log ./logs

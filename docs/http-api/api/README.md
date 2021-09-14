@@ -748,7 +748,7 @@ curl -X PUT https://eventstore.com/subscriptions/{stream}/{subscription} \
  `PUT /subscriptions/{stream}/{subscription}`
 *Create a persistent subscription*
 
-Before interacting with a subscription group, you need to create one. You will receive an error if you attempt to create a subscription group more than once. This requires [admin permissions](/v5/server/access-control-lists).
+Before interacting with a subscription group, you need to create one. You will receive an error if you attempt to create a subscription group more than once. This requires [admin permissions](/server/v5/security/acl.md).
 
 > Body parameter
 
@@ -2381,9 +2381,7 @@ This operation does not require authentication
 
 <h1 id="http-api-stats">Stats</h1>
 
-Endpoints for Statistics operations
-
-<a href="http://docs.my-api.com/pet-operations.htm">External documentation</a>
+Endpoints for Statistics operations.
 
 ## Get all stats
 

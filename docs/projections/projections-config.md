@@ -15,14 +15,14 @@ You change the configuration of a projection by setting the relevant key and val
 
 <!-- TODO: Further explanation here -->
 
-<<< @/samples/http-api/projections/create-projection.sh
+@[code](../samples/projections/create-projection.sh)
 
 ::::
 :::: tab .NET Client
 
 <!-- TODO: Further explanation here -->
 
-<<< @/docs/clients/dotnet/5.0/sample-code/GettingStarted/UserProjections.cs#UpdateProjectionProperties
+@[code{UpdateProjectionProperties}](../../../clients/dotnet/5.0/sample-code/GettingStarted/UserProjections.cs)
 
 ::::
 :::::

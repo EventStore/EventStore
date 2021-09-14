@@ -1,16 +1,16 @@
 module.exports = [
-    {
-        title: "HTTP API",
-        collapsable: true,
-        path: "",
-        children: [
-            "",
-            "appending-events.md",
-            "reading-streams.md",
-            "deleting-a-stream.md",
-            "description-document.md",
-            "optimistic-concurrency-and-idempotence.md",
-            "stream-metadata.md",
+  {
+        title: "Getting Started",
+    collapsable: true,
+    path: "introduction",
+    children: [
+      "introduction/",
+      "introduction/appending-events.md",
+      "introduction/reading-streams.md",
+      "introduction/deleting-a-stream.md",
+      "introduction/description-document.md",
+      "introduction/optimistic-concurrency-and-idempotence.md",
+      "introduction/stream-metadata.md",
         ]
     },
     {

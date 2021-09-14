@@ -16,32 +16,32 @@ If the `ExpectedVersion` does not match the version of the stream, EventStoreDB 
 In the following cURL command `ExpectedVersion` is not set, and it appends or create/append to the stream.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-to-new-stream.sh#curl
+::: code-group-item Request
+@[code{curl}](@httpapi/append-event-to-new-stream.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-to-new-stream.sh#response
+::: code-group-item Response
+@[code{response}](@httpapi/append-event-to-new-stream.sh)
 :::
 ::::
 
 The stream `newstream` has one event. If you append with an expected version of `3`, you receive an error.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-wrong-version.sh#curl
+::: code-group-item Request
+@[code{curl}](@httpapi/append-event-wrong-version.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-wrong-version.sh#response
+::: code-group-item Response
+@[code{response}](@httpapi/append-event-wrong-version.sh)
 :::
 ::::
 
 You can see from the `ES-CurrentVersion` header above that the stream is at version 0. Appending with an expected version of 0 works. The expected version is always the version of the last event known in the stream.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-version.sh#curl
+::: code-group-item Request
+@[code{curl}](@httpapi/append-event-version.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-version.sh#response
+::: code-group-item Response
+@[code{response}](@httpapi/append-event-version.sh)
 :::
 ::::

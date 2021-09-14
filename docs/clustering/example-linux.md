@@ -50,7 +50,7 @@ You can also use the method above for HTTP clients to avoid using a load balance
 
 Create a file _docker-compose.yaml_ with following content:
 
-<<< @/samples/server/docker-compose.yaml
+@[code{curl}](../samples/docker-compose.yaml)
 
 Run containers:
 ```bash

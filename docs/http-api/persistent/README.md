@@ -1,6 +1,6 @@
 # Persistent Subscriptions
 
-This document explains how to use HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types please see our [getting started guide](/server/v5/http-api/reading-subscribing-events.md).
+This document explains how to use HTTP API for setting up and consuming persistent subscriptions and competing consumer subscription groups. For an overview on competing consumers and how they relate to other subscription types please see our [getting started guide](../introduction/reading-subscribing-events.md).
 
 ::: tip
 The Administration UI includes a _Competing Consumers_ section where you are able to create, update, delete and view subscriptions and their statuses.
@@ -8,7 +8,7 @@ The Administration UI includes a _Competing Consumers_ section where you are abl
 
 ## Creating a Persistent Subscription
 
-Before interacting with a subscription group, you need to create one. You receive an error if you try to create a subscription group more than once. This requires [admin permissions](security.md).
+Before interacting with a subscription group, you need to create one. You receive an error if you try to create a subscription group more than once. This requires [admin permissions](../security/README.md).
 
 <!-- TODO: File inclusion for the below? -->
 
@@ -90,11 +90,11 @@ By default, reading a stream via a persistent subscription returns a single even
 | `count`             | How many events to return for the request.                   |
 | `embed`             | `None`, `Content`, `Rich`, `Body`, `PrettyBody`, `TryHarder` |
 
-Read [Reading Streams](reading-streams.md) for information on the different embed levels.
+Read [Reading Streams](../introduction/reading-streams.md) for information on the different embed levels.
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/read-stream-response.json
+@[code](@httpapi/persistent-subscriptions/read-stream-response.json)
 
 ## Acknowledgements
 
@@ -147,12 +147,12 @@ For example:
 
 #### Query Parameters
 
-| Parameter           | Description                                                                                                                                                                                                                     |     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| `stream`            | The stream to the persistent subscription is on.                                                                                                                                                                                |     |
-| `subscription_name` | The name of the subscription group.                                                                                                                                                                                             |     |
+| Parameter           | Description                                                                                                                                                                                                                          |     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --- |
+| `stream`            | The stream to the persistent subscription is on.                                                                                                                                                                                     |     |
+| `subscription_name` | The name of the subscription group.                                                                                                                                                                                                  |     |
 | `action`            | <ul><li>**Park**: Don't retry the message, park it until a request is sent to reply the parked messages</li><li>**Retry**: Retry the message</li><li>**Skip**: Discard the message</li><li>**Stop**: Stop the subscription</li></ul> |     |
-| `messageid`         | The id of the message that needs to be acked                                                                                                                                                                                    |     |
+| `messageid`         | The id of the message that needs to be acked                                                                                                                                                                                         |     |
 
 ### Nack a single message
 
@@ -174,7 +174,7 @@ For example:
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/get-all-subscriptions-response.json
+@[code](@httpapi/persistent-subscriptions/get-all-subscriptions-response.json)
 
 ## Get subscriptions for a stream
 
@@ -184,7 +184,7 @@ For example:
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/get-subscriptions-for-stream-response.json
+@[code](@httpapi/persistent-subscriptions/get-subscriptions-for-stream-response.json)
 
 ## Getting a specific subscription
 
@@ -194,7 +194,7 @@ For example:
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/get-subscription-response.json
+@[code](@httpapi/persistent-subscriptions/get-subscription-response.json)
 
 <!-- TODO: Is this better as a general subscriptions page? -->
 <!-- TODO: Somehow get this better integrated with API docs -->
