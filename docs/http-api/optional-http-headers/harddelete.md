@@ -3,11 +3,11 @@
 The `ES-HardDelete` header controls deleting a stream. By default EventStoreDB soft deletes a stream allowing you to later reuse that stream. If you set the `ES-HardDelete` header EventStoreDB permanently deletes the stream.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/delete-stream/hard-delete-stream.sh#curl
+::: code-group-item Request
+@[code{curl}](@httpapi/delete-stream/hard-delete-stream.sh)
 :::
-::: code Response
-<<< @/samples/http-api/delete-stream/hard-delete-stream.sh#response
+::: code-group-item Response
+@[code{response}](@httpapi/delete-stream/hard-delete-stream.sh)
 :::
 ::::
 

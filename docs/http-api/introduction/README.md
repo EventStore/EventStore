@@ -4,7 +4,7 @@ EventStoreDB provides a native interface of AtomPub over HTTP. AtomPub is a REST
 
 ## Compatibility with AtomPub
 
-EventStoreDB v5 is fully compatible with the [1.0 version of the Atom Protocol](http://tools.ietf.org/html/rfc4287). EventStoreDB adds extensions to the protocol, such as headers for control and custom `rel` links.
+EventStoreDB v5 is fully compatible with the [1.0 version of the Atom Protocol](https://datatracker.ietf.org/doc/html/rfc4287). EventStoreDB adds extensions to the protocol, such as headers for control and custom `rel` links.
 
 ::: warning
 The latest versions of EventStoreDB (v20+) have the AtomPub protocol disabled by default. We do not advise creating new applications using AtomPub as we plan to deprecate it. Please explore our new gRPC protocol available in v20. It provides more reliable real-time event streaming with wide range of platforms and language supported.
@@ -14,17 +14,15 @@ The latest versions of EventStoreDB (v20+) have the AtomPub protocol disabled by
 
 Many environments have already implemented the AtomPub protocol, which simplifies the process.
 
-| Library | Description |
-| --------| ------------|
-| NET (BCL)   | `System.ServiceModel.SyndicationServices` |
-| JVM         | <http://java-source.net/open-source/rss-rdf-tools> |
-| PHP         | <http://simplepie.org/> or <https://github.com/fguillot/picoFeed> |
-| Ruby        | <https://github.com/cardmagic/simple-rss> |
-| Clojure     | <https://github.com/scsibug/feedparser-clj> |
-| Go          | <https://github.com/jteeuwen/go-pkg-rss> |
-| Python      | <http://code.google.com/p/feedparser/> |
-| node.js     | <https://github.com/danmactough/node-feedparser> |
-| Objective-C | <https://geekli.st/darvin/repos/MWFeedParser> |
+| Library     | Description                                                       |
+| ----------- | ----------------------------------------------------------------- |
+| NET (BCL)   | `System.ServiceModel.SyndicationServices`                         |
+| JVM         | <http://java-source.net/open-source/rss-rdf-tools>                |
+| PHP         | <http://simplepie.org/>                                           |
+| Ruby        | <https://github.com/cardmagic/simple-rss>                         |
+| Clojure     | <https://github.com/scsibug/feedparser-clj>                       |
+| Python      | <http://code.google.com/p/feedparser/>                            |
+| node.js     | <https://github.com/danmactough/node-feedparser>                  |
 
 ::: warning
 These are not officially supported by EventStoreDB.

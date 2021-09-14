@@ -19,7 +19,7 @@ EventStoreDB offers a low-level protocol in the form of an asynchronous TCP prot
 -   [Node.js](https://www.npmjs.com/package/ges-client)
 -   [Node.js](https://github.com/nicdex/eventstore-node)
 -   [Haskell](https://github.com/YoEight/eventstore)
--   [Erlang](https://bitbucket.org/anakryiko/erles)
+-   [Erlang](https://github.com/anakryiko/erles)
 -   [F#](https://github.com/haf/EventStore.Client.FSharp)
 -   [Elixir](https://github.com/exponentially/extreme)
 -   [Java 8](https://github.com/msemys/esjc)
@@ -30,11 +30,11 @@ EventStoreDB offers a low-level protocol in the form of an asynchronous TCP prot
 
 ## HTTP
 
-EventStoreDB also offers an HTTP-based interface, based specifically on the [AtomPub protocol](http://tools.ietf.org/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it.
+EventStoreDB also offers an HTTP-based interface, based specifically on the [AtomPub protocol](https://datatracker.ietf.org/doc/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it.
 
 ### EventStoreDB supported clients
 
--   [HTTP API](../../docs/http-api/README.md)
+-   [HTTP API](/clients/http-api/v5/introduction/README.md)
 
 ### Community developed clients
 

@@ -15,11 +15,11 @@ http://{eventstore-ip-address}/streams/{stream-name}/metadata
 You should not access metadata by constructing this URL yourself, as the right to change the resource address is reserved. Instead, you should follow the link from the stream itself, which enables your client to tolerate future changes to the addressing structure.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/read-metadata.sh#curl
+::: code-group-item Request
+@[code{curl}](@httpapi/read-metadata.sh)
 :::
-::: code Response
-<<< @/samples/http-api/read-metadata.sh#response
+::: code-group-item Response
+@[code{response}](@httpapi/read-metadata.sh)
 :::
 ::::
 
@@ -32,11 +32,11 @@ curl -i -H "Accept:application/vnd.eventstore.atom+json" http://127.0.0.1:2113/s
 If you have security enabled, reading metadata may require that you pass credentials, as in the examples above. If credentials are required and you do not pass them, then you receive a `401 Unauthorized` response.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/missing-credentials.sh#curl
+::: code-group-item Request
+@[code{curl}](@httpapi/missing-credentials.sh)
 :::
-::: code Response
-<<< @/samples/http-api/missing-credentials.sh#response
+::: code-group-item Response
+@[code{response}](@httpapi/missing-credentials.sh)
 :::
 ::::
 
@@ -46,7 +46,7 @@ To update the metadata for a stream, issue a `POST` request to the metadata reso
 
 Inside a file named _metadata.json_:
 
-<<< @/samples/http-api/metadata.json
+@[code](@httpapi/metadata.json)
 
 You can also add user-specified metadata here. Some examples user-specified metadata are:
 
@@ -57,11 +57,11 @@ You can also add user-specified metadata here. Some examples user-specified meta
 You then post this information is then posted to the stream:
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/update-metadata.sh#curl
+::: code-group-item Request
+@[code{curl}](@httpapi/update-metadata.sh)
 :::
-::: code Response
-<<< @/samples/http-api/update-metadata.sh#response
+::: code-group-item Response
+@[code{response}](@httpapi/update-metadata.sh)
 :::
 ::::
 
