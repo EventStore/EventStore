@@ -1,6 +1,6 @@
 # Exposing endpoints
 
-If you need to disable some of the HTTP endpoints on the [external](./external.md) HTTP interface, you can change some of the settings below. It is possible to disable the Admin UI, stats and gossip port to be exposed externally.
+If you need to disable some of the HTTP endpoints on the external HTTP interface, you can change some of the settings below. It is possible to disable the Admin UI, stats and gossip port to be exposed externally.
 
 You can disable the Admin UI on external HTTP by setting `AdminOnExt` setting to `false`.
 
@@ -22,7 +22,7 @@ Exposing the `stats` endpoint externally is required for the Admin UI and can al
 
 **Default**: `true`, stats endpoint is enabled on the external HTTP.
 
-You can also disable the gossip protocol in the external HTTP interface. If you do that, ensure that the [internal interface](./internal.md) is properly configured. Also, if you use [gossip with DNS](../clustering/using-dns.md), ensure that the [gossip port](../clustering/gossip.md#gossip-port) is set to the [internal HTTP port](./internal.md#ports).
+You can also disable the gossip protocol in the external HTTP interface. If you do that, ensure that the internal interface is properly configured. Also, if you use [gossip with DNS](../clustering/using-dns.md), ensure that the [gossip port](../clustering/gossip.md#gossip-port) is set to the internal HTTP port.
 
 | Format               | Syntax |
 | :------------------- | :----- |
