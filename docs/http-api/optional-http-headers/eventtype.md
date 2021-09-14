@@ -5,11 +5,11 @@ When you append to a stream and don't the `application/vnd.eventstore.events+jso
 You use the `ES-EventType` header as follows.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-to-new-stream.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event-to-new-stream.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-to-new-stream.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-event-to-new-stream.sh)
 :::
 ::::
 
@@ -18,10 +18,10 @@ If you view the event in the UI or with cURL it has the `EventType` of `SomeEven
 <!-- TODO: Does this make sense? If I can't use the custom media type -->
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/read-event.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/read-event.sh)
 :::
-::: code Response
-<<< @/samples/http-api/read-event.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/read-event.sh)
 :::
 ::::

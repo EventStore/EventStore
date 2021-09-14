@@ -5,11 +5,11 @@ When using projections you can have links placed into another stream. By default
 You can see the differences in behaviour in the following cURL commands.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/resolve-links.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/resolve-links.sh)
 :::
-::: code Response
-<<< @/samples/http-api/resolve-links.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/resolve-links.sh)
 :::
 ::::
 
@@ -18,10 +18,10 @@ The content links are pointing to the original projection stream. The linked eve
 :::
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/resolve-links-false.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/resolve-links-false.sh)
 :::
-::: code Response
-<<< @/samples/http-api/resolve-links-false.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/resolve-links-false.sh)
 :::
 ::::

@@ -23,18 +23,18 @@ The format represents data with the following jschema (`eventId` must be a UUID)
 
 ## Appending a single event to a new stream
 
-If you issue a `POST` request with data to a stream and the correct content type set it appends the event to the stream, and generates a `201` response from the server, giving you the location of the event. Using the following event, which [you can also download as a file](../../samples/http-api/event.json):
+If you issue a `POST` request with data to a stream and the correct content type set it appends the event to the stream, and generates a `201` response from the server, giving you the location of the event. Using the following event, which [you can also download as a file](../../samples/event.json):
 
-<<< @/samples/http-api/event.json
+@[code](../../samples/event.json)
 
 `POST` the following request to create a stream and add an event to it:
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-to-new-stream.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event-to-new-stream.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-to-new-stream.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-event-to-new-stream.sh)
 :::
 ::::
 
@@ -43,22 +43,22 @@ Some clients may not be able to generate a unique identifier (or may not want to
 If you leave off the `ES-EventId` header you see different behavior:
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-no-id.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event-no-id.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-no-id.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-event-no-id.sh)
 :::
 ::::
 
 In this case EventStoreDB has responded with a `307 Temporary Redirect`. The location points to another URI that you can post the event to. This new URI is idempotent for posting, even without an event ID.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-follow.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event-follow.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-follow.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-event-follow.sh)
 :::
 ::::
 
@@ -67,11 +67,11 @@ It's generally recommended to include an event ID if possible as it results in f
 When posting to either the stream or to the returned redirect, clients must include the `EventType` header. If you forget to include the header you receive an error.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-no-type.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event-no-type.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-no-type.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-event-no-type.sh)
 :::
 ::::
 
@@ -81,16 +81,16 @@ You can append more than one event in a single post by placing multiple events i
 
 For example, the below has two events:
 
-<<< @/samples/http-api/multiple-events.json
+@[code](../../samples/multiple-events.json)
 
 When you append multiple events in a single post, EventStoreDB treats them as one transaction, it appends all events together or fails.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-multiple-events.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-multiple-events.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-multiple-events.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-multiple-events.sh)
 :::
 ::::
 
@@ -98,14 +98,14 @@ When you append multiple events in a single post, EventStoreDB treats them as on
 
 To append events, issue a `POST` request to the same resource with a new `eventId`:
 
-<<< @/samples/http-api/event-append.json
+@[code](../../samples/event-append.json)
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event.sh#response
+::: code-group-item Response
+@[code{curl}](../../samples/append-event.sh)
 :::
 ::::
 
@@ -114,11 +114,11 @@ To append events, issue a `POST` request to the same resource with a new `eventI
 Version 3.7.0 of EventStoreDB added support for the `application/octet-stream` content type to support data-only binary events. When creating these events, you need to provide the `ES-EventType` and `ES-EventId` headers and cannot have metadata associated with the event. In the example below `SGVsbG8gV29ybGQ=` is the data you `POST` to the stream:
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-data-event.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-data-event.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-data-event.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-data-event.sh)
 :::
 ::::
 
@@ -136,25 +136,25 @@ See the idempotence section below, if you post the same event twice it is idempo
 
 First append an event to a stream, setting a version:
 
-<<< @/samples/http-api/event-version.json
+@[code](../../samples/event-version.json)
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-version.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event-version.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-version.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-event-version.sh)
 :::
 ::::
 
 If you now append to the stream with the incorrect version, you receive an HTTP status code 400 error.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/append-event-wrong-version.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/append-event-wrong-version.sh)
 :::
-::: code Response
-<<< @/samples/http-api/append-event-wrong-version.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/append-event-wrong-version.sh)
 :::
 ::::
 

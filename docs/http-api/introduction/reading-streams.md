@@ -5,13 +5,13 @@
 EventStoreDB exposes streams as a resource located at `http(s)://{yourdomain.com}:{port}/streams/{stream}`. If you issue a simple `GET` request to this resource, you receive a standard AtomFeed document as a response.
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/read-stream.sh#curl
+@[code{curl}](../../samples/read-stream.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/read-stream.sh#response
+@[code{response}](../../samples/read-stream.sh)
 :::
 ::::
 
@@ -33,11 +33,11 @@ The accepted content types for `GET` requests are:
 The non-atom version of the event has fewer details about the event.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/read-event.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/read-event.sh)
 :::
-::: code Response
-<<< @/samples/http-api/read-event.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/read-event.sh)
 :::
 ::::
 
@@ -48,11 +48,11 @@ The next step in understanding how to read a stream is the `first`/`last`/`previ
 In the example above the server returned the following `links` as part of its result:
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/read-stream.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/read-stream.sh)
 :::
-::: code Response
-<<< @/samples/http-api/read-stream.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/read-stream.sh)
 :::
 ::::
 
@@ -64,13 +64,13 @@ This shows that there is not a `next` URL as all the information is in this requ
 If you want to follow a live stream, then you keep following the `previous` links. When you reach the end of a stream, you receive an empty document with no entries or `previous` link. You then continue polling this URI (in the future a document will appear). You can see this by trying the `previous` link from the above feed.
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/read-stream-forwards.sh#curl
+@[code{curl}](../../samples/read-stream-forwards.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/read-stream-forwards.sh#response
+@[code{response}](../../samples/read-stream-forwards.sh)
 :::
 ::::
 
@@ -81,26 +81,26 @@ When parsing an atom subscription, the IDs of events always stay the same. This 
 Let's now try an example with more than a single page. First create the multiple events:
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/append-paging-events.sh#curl
+@[code{curl}](../../samples/append-paging-events.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/append-paging-events.sh#response
+@[code{response}](../../samples/append-paging-events.sh)
 :::
 ::::
 
 If you request the stream of events, you see a series of links above the events:
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/request-paging-events.sh#curl
+@[code{curl}](../../samples/request-paging-events.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/request-paging-events.sh#response
+@[code{response}](../../samples/request-paging-events.sh)
 :::
 ::::
 
@@ -109,13 +109,13 @@ Using the links in the stream of events, you can traverse through all the events
 For example, if you request the `last` link from above:
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/request-last-link.sh#curl
+@[code{curl}](../../samples/request-last-link.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/request-last-link.sh#response
+@[code{response}](../../samples/request-last-link.sh)
 :::
 ::::
 
@@ -134,13 +134,13 @@ To access the `$all` stream, you must use admin details. Find more information o
 :::
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/read-all-events.sh#curl
+@[code{curl}](../../samples/read-all-events.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/read-all-events.sh#response
+@[code{response}](../../samples/read-all-events.sh)
 :::
 ::::
 
@@ -148,18 +148,18 @@ To access the `$all` stream, you must use admin details. Find more information o
 
 The head link supports conditional `GET`s with the use of [ETAGS](http://en.wikipedia.org/wiki/HTTP_ETag), a well-known HTTP construct. You can include the ETAG of your last request and issue a conditional `GET` to the server. If nothing has changed, it won't return the full feed. For example the earlier response has an ETAG:
 
-<<< @/samples/http-api/request-paging-events.sh#responseHeader{8}
+@[code{responseHeader}](../../samples/request-paging-events.sh)
 
 You can use this in your next request when polling the stream for changes by putting it in the `If-None-Match` header. This tells the server to check if the response is the one you already know and returning a '304 not modified' response. If the tags have changed, the server returns a '200 OK' response. You can use this method to optimise your application by not sending large streams if there are no changes.
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/request-etag.sh#curl
+@[code{curl}](../../samples/request-etag.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/request-etag.sh#response
+@[code{response}](../../samples/request-etag.sh)
 :::
 ::::
 
@@ -181,13 +181,13 @@ There are ways of embedding events and further metadata into your stream by usin
 The `rich` embed mode returns more properties about the event (`eventtype`, `streamid`, `position`, and so on) as you can see in the following request.
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/read-stream-rich.sh#curl
+@[code{curl}](../../samples/read-stream-rich.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/read-stream-rich.sh#response
+@[code{response}](../../samples/read-stream-rich.sh)
 :::
 ::::
 
@@ -196,13 +196,13 @@ The `rich` embed mode returns more properties about the event (`eventtype`, `str
 The `body` embed mode returns the JSON/XML body of the events into the feed as well, depending on the type of the feed. You can see this in the request below:
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/read-stream-body.sh#curl
+@[code{curl}](../../samples/read-stream-body.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/read-stream-body.sh#response
+@[code{response}](../../samples/read-stream-body.sh)
 :::
 ::::
 
@@ -218,12 +218,12 @@ Two other modes are variants of `body`:
 The XML format embeds no additional data, as only JSON supports embedding.
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
-<<< @/samples/http-api/read-stream-xml.sh#curl
+@[code{curl}](../../samples/read-stream-xml.sh)
 :::
-::: code Response
+::: code-group-item Response
 
-<<< @/samples/http-api/read-stream-xml.sh#response
+@[code{response}](../../samples/read-stream-xml.sh)
 :::
 ::::

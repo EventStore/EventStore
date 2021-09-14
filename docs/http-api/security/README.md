@@ -10,14 +10,14 @@ EventStoreDB supports basic HTTP authentication to internal users. You create th
 
 When using the HTTP API, you can send the following JSON payload to the server:
 
-<<< @/samples/http-api/new-user.json
+@[code](../../samples/new-user.json)
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/new-user.sh
+::: code-group-item Request
+@[code](../../samples/new-user.sh)
 :::
-::: code Response
-<<< @/samples/http-api/new-user.http
+::: code-group-item Response
+@[code](../../samples/new-user.http)
 :::
 ::::
 
@@ -26,11 +26,11 @@ Once you have added users, you can use their details with requests.
 If you were to use the wrong user or no user when a request requires one, you receive a `401 Unauthorized` response.
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/incorrect-user.sh
+::: code-group-item Request
+@[code](../../samples/incorrect-user.sh)
 :::
-::: code Response
-<<< @/samples/http-api/incorrect-user.http
+::: code-group-item Response
+@[code](../../samples/incorrect-user.http)
 :::
 ::::
 
@@ -48,15 +48,15 @@ The ACL below gives `writer` read and write permission on the stream, while `rea
 
 The request body placed in the file named _metadata.json_:
 
-<<< @/samples/server/metadata.json
+@[code](../../samples/metadata.json)
 
 Then, when you execute HTTP request as follows:
 
-<<< @/samples/server/update-acl.sh#curl
+@[code](../../samples/update-acl.sh#curl)
 
 You get a confirmation from the server:
 
-<<< @/samples/server/update-acl.sh#response
+@[code](../../samples/update-acl.sh#response)
 
 ## Default ACL
 
@@ -64,27 +64,27 @@ You get a confirmation from the server:
 All these examples assume you have created a user named `ouro` with password `ouroboros`.
 :::
 
-<<< @/samples/server/override-default.json
+@[code](../../samples/override-default.json)
 
 :::: code-group
-::: code Request
-<<< @/samples/server/update-default-acl.sh
+::: code-group-item Request
+@[code](../../samples/update-default-acl.sh)
 :::
-::: code Response
-<<< @/samples/server/update-default-acl.http
+::: code-group-item Response
+@[code](../../samples/update-default-acl.http)
 :::
 ::::
 
 If you try to access the `$settings` stream as an unauthorized user, the server returns a 401 response.
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 ```bash
 curl -i http://127.0.0.1:2113/streams/%24settings \
     -u ouro:ouroboros
 ```
 :::
-::: code Response
+::: code-group-item Response
 ```http
 HTTP/1.1 401 Unauthorized
 Access-Control-Allow-Methods: POST, DELETE, GET, OPTIONS
@@ -125,13 +125,13 @@ If you wanted to give `ouro` access by default to system streams, POST the follo
 At which point `ouro` can read system streams by default:
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 ```bash
 curl -i http://127.0.0.1:2113/streams/%24settings \
     -u ouro:ouroboros
 ```
 :::
-::: code Response
+::: code-group-item Response
 ```http
 HTTP/1.1 200 OK
 Access-Control-Allow-Methods: POST, DELETE, GET, OPTIONS

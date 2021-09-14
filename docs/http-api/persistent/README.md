@@ -94,7 +94,7 @@ Read [Reading Streams](reading-streams.md) for information on the different embe
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/read-stream-response.json
+@[code](../../samples/persistent-subscriptions/read-stream-response.json)
 
 ## Acknowledgements
 
@@ -147,12 +147,12 @@ For example:
 
 #### Query Parameters
 
-| Parameter           | Description                                                                                                                                                                                                                     |     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| `stream`            | The stream to the persistent subscription is on.                                                                                                                                                                                |     |
-| `subscription_name` | The name of the subscription group.                                                                                                                                                                                             |     |
+| Parameter           | Description                                                                                                                                                                                                                          |     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --- |
+| `stream`            | The stream to the persistent subscription is on.                                                                                                                                                                                     |     |
+| `subscription_name` | The name of the subscription group.                                                                                                                                                                                                  |     |
 | `action`            | <ul><li>**Park**: Don't retry the message, park it until a request is sent to reply the parked messages</li><li>**Retry**: Retry the message</li><li>**Skip**: Discard the message</li><li>**Stop**: Stop the subscription</li></ul> |     |
-| `messageid`         | The id of the message that needs to be acked                                                                                                                                                                                    |     |
+| `messageid`         | The id of the message that needs to be acked                                                                                                                                                                                         |     |
 
 ### Nack a single message
 
@@ -174,7 +174,7 @@ For example:
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/get-all-subscriptions-response.json
+@[code](../../samples/persistent-subscriptions/get-all-subscriptions-response.json)
 
 ## Get subscriptions for a stream
 
@@ -184,7 +184,7 @@ For example:
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/get-subscriptions-for-stream-response.json
+@[code](../../samples/persistent-subscriptions/get-subscriptions-for-stream-response.json)
 
 ## Getting a specific subscription
 
@@ -194,7 +194,7 @@ For example:
 
 ### Response
 
-<<< @/samples/http-api/persistent-subscriptions/get-subscription-response.json
+@[code](../../samples/persistent-subscriptions/get-subscription-response.json)
 
 <!-- TODO: Is this better as a general subscriptions page? -->
 <!-- TODO: Somehow get this better integrated with API docs -->

@@ -1,4 +1,4 @@
-## Setting up SSL for Docker
+# Setting up SSL for Docker
 
 This example shows how to build own Docker image based on the original EventStoreDB image with a built-in self-signed certificate. The example should be modified before going to production by using real certificate.
 

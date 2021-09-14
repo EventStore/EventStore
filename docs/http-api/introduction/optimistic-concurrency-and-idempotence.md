@@ -9,13 +9,13 @@ Provided the client maintains this EventStoreDB will treat all operations as ide
 For example:
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
 ```bash
 curl -i -d @event.txt "http://127.0.0.1:2113/streams/newstream"
 ```
 :::
-::: code Response
+::: code-group-item Response
 
 ```http
 HTTP/1.1 201 Created
@@ -40,13 +40,13 @@ This allows the client rule of “if you get an unknown condition, retry” to w
 For example:
 
 :::: code-group
-::: code Request
+::: code-group-item Request
 
 ```bash
 curl -i "http://127.0.0.1:2113/streams/newstream444"
 ```
 :::
-::: code Response
+::: code-group-item Response
 
 ```http
 HTTP/1.1 200 OK

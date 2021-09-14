@@ -2,11 +2,11 @@
 
 You can also query the state of all projections using the HTTP API.
 
-<<< @/samples/http-api/projections/list-all-projections.sh
+@[code](../../samples/projections/list-all-projections.sh)
 
 The response is a list of all known projections and useful information about them.
 
-<<< @/samples/http-api/projections/list-all-projections.json
+@[code](../../samples/projections/list-all-projections.json)
 
 ## Add sample data
 
@@ -19,7 +19,7 @@ Download the following files that contain sample data used throughout this step 
 
 Add the sample data to four different streams:
 
-<<< @/samples/http-api/add-sample-data.sh
+@[code](../../samples/add-sample-data.sh)
 
 ## Creating your first projection
 
@@ -35,7 +35,7 @@ The second part of a projection is a set of filters. There is a special filter c
 
 Here is the projection code:
 
-<<< @/samples/http-api/xbox-one-s-counter.js
+@[code](../../samples/xbox-one-s-counter.js)
 
 You create a projection by calling the projection API and providing it with the definition of the projection. Here you decide how to run the projection, declaring that you want the projection to start from the beginning and keep running. You can create a projection using the Admin UI by opening the _Projections_ tab, clicking the _New Projection_ button and filling in the details of your projection.
 
@@ -45,7 +45,7 @@ You create a projection by calling the projection API and providing it with the 
 
 You can also create projections programmatically. Pass the projection JSON file as a parameter of your request, along with any other settings:
 
-<<< @/samples/http-api/projections/create-projection.sh
+@[code](../../samples/projections/create-projection.sh)
 
 ::: tip Next steps
 [Read here](api.md) for more information on creating projections with the HTTP API and the parameters available, or [our projections section](../projections/README.md) for details on projection syntax.
@@ -55,11 +55,11 @@ You can also create projections programmatically. Pass the projection JSON file 
 
 Now the projection is running, you can query the state of the projection. As this projection has a single state, query it with the following request:
 
-<<< @/samples/http-api/projections/query-state.sh
+@[code](../../samples/projections/query-state.sh)
 
 The server will send a response similar to this:
 
-<<< @/samples/http-api/projections/query-state.json
+@[code](../../samples/projections/query-state.json)
 
 ## Appending to streams from projections
 
@@ -71,37 +71,37 @@ Update the projection to output the state to a stream by calling the `outputStat
 
 Below is the updated projection:
 
-<<< @/samples/http-api/xbox-one-s-counter-outputState.js
+@[code](../../samples/xbox-one-s-counter-outputState.js)
 
 To update the projection, edit the projection definition in the Admin UI, or issue the following request:
 
-<<< @/samples/http-api/xbox-one-s-counter-outputState.sh
+@[code](../../samples/xbox-one-s-counter-outputState.sh)
 
 Then reset the projection you created above:
 
-<<< @/samples/http-api/projections/reset-projection.sh
+@[code](../../samples/projections/reset-projection.sh)
 
 You should get a response similar to the one below:
 
-<<< @/samples/http-api/projections/reset-projection.json
+@[code](../../samples/projections/reset-projection.json)
 
 You can now read the events in the result stream by issuing a read request.
 
-<<< @/samples/http-api/projections/read-projection-events.sh
+@[cod](../../samples/projections/read-projection-events.sh)
 
 And you'll get a response like this:
 
-<<< @/samples/http-api/projections/reset-projection.json
+@[code](../../samples/projections/reset-projection.json)
 
 ## Configure projection properties
 
 You can configure properties of the projection by updating values of the `options` object. For example, the following projection changes the name of the results stream:
 
-<<< @/samples/http-api/projections/update-projection-options.js{2}
+@[code{2}](../../samples/projections/update-projection-options.js)
 
 Then send the update to the projection:
 
-<<< @/samples/http-api/projections/update-projection-options.sh
+@[code](../../samples/projections/update-projection-options.sh)
 
 ::: tip
 You can find all the options available in the [user defined projections guide](/server/5.0/projections/user-defined-projections.md).
@@ -109,7 +109,7 @@ You can find all the options available in the [user defined projections guide](/
 
 Now you can read the result as above, but use the new stream name:
 
-<<< @/samples/http-api/projections/read-projection-events-renamed.sh
+@[code](../../samples/projections/read-projection-events-renamed.sh)
 
 ## The number of items per shopping cart
 
@@ -117,7 +117,7 @@ The example in this step so far relied on a global state for the projection, but
 
 EventStoreDB has a built-in `$by_category` projection that lets you select events from a particular list of streams. Enable this projection with the following command.
 
-<<< @/samples/http-api/projections/enable-by-category.sh
+@[code](../../samples/projections/enable-by-category.sh)
 
 The projection links events from existing streams to new streams by splitting the stream name by a separator. You can configure the projection to specify the position of where to split the stream `id` and provide a separator.
 
@@ -133,18 +133,18 @@ You want to define a projection that produces a count per stream for a category,
 
 Below is the projection:
 
-<<< @/samples/http-api/projections/shopping-cart-counter.js
+@[code](../../samples/projections/shopping-cart-counter.js)
 
 Create the projection with the following request:
 
-<<< @/samples/http-api/projections/shopping-cart-counter.sh
+@[code](../../samples/projections/shopping-cart-counter.sh)
 
 #### Querying for the state of the projection by partition
 
 Querying for the state of the projection is different due to the partitioning of the projection. You have to specify the partition and the name of the stream.
 
-<<< @/samples/http-api/projections/read-state-partition.sh
+@[code](../../samples/projections/read-state-partition.sh)
 
 The server then returns the state for the partition:
 
-<<< @/samples/http-api/projections/read-state-partition.json
+@[code](../../samples/projections/read-state-partition.json)

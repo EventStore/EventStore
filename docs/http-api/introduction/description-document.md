@@ -20,11 +20,11 @@ There are three ways in which EventStoreDB returns the description document.
 The client is able to request the description document by passing `application/vnd.eventstore.streamdesc+json` in the `accept` header, for example:
 
 :::: code-group
-::: code Request
-<<< @/samples/http-api/get-dd.sh#curl
+::: code-group-item Request
+@[code{curl}](../../samples/get-dd.sh)
 :::
-::: code Response
-<<< @/samples/http-api/get-dd.sh#response
+::: code-group-item Response
+@[code{response}](../../samples/get-dd.sh)
 :::
 ::::
 
