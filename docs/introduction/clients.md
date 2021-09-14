@@ -53,7 +53,7 @@ Find out more about configuring the TCP protocol on the [TCP configuration](../n
 
 ## HTTP
 
-EventStoreDB also offers an HTTP-based interface, based specifically on the [AtomPub protocol](http://tools.ietf.org/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it. 
+EventStoreDB also offers an HTTP-based interface, based specifically on the [AtomPub protocol](https://datatracker.ietf.org/doc/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it. 
 
 Find out more about configuring the HTTP protocol on the [HTTP configuration](../networking/http.md) page.
 
@@ -61,7 +61,7 @@ Find out more about configuring the HTTP protocol on the [HTTP configuration](..
 The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](../networking/http.md#atompub) to the server configuration.
 :::
 
-As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](/server/generated/v5/docs/http-api/) for it.
+As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](/clients/http-api/v5/introduction/README.md) for it.
 
 ::: note
 Although we plan to remove AtomPub support from the future server versions, the server management HTTP API will still be available.
