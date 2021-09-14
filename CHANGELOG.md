@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - off by one error and brackets in docs [EventStore#3135](https://github.com/EventStore/EventStore/pull/3135)
 - test adapter error when running all tests in visual studio [EventStore#3139](https://github.com/EventStore/EventStore/pull/3139)
 - potential race condition in BatchAppend [EventStore#3138](https://github.com/EventStore/EventStore/pull/3138)
+- Added verification checking if a message is of NotHandled type in PersistentSubscriptions Read message handling [EventStore#3158](https://github.com/EventStore/EventStore/pull/3158)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
@@ -28,6 +29,13 @@ All notable changes to this project will be documented in this file.
 - Alpine Docker Image [EventStore#3069](https://github.com/EventStore/EventStore/pull/3069)
 - a bloom filter to quickly check stream existence [EventStore#3078](https://github.com/EventStore/EventStore/pull/3078)
 - LeaderElectionTimeoutMs option to allow configuring the timeout for election messages. [EventStore#3121](https://github.com/EventStore/EventStore/pull/3121)
+- `--blame-hang-timeout=5min` in case we have hanging builds. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- Improved error messages in case of task timeouts and test setup failures. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- More task timeouts to help prevent hanging build runs. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- Logging for help investigate flaky tests. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- Extra assertions to prevent unclear test failures. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- Retry of tests incase of failure triggered by flakiness. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- Checks to improve cluster stability before running tests. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
