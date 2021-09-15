@@ -240,38 +240,3 @@ jobs:
       with:
         name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
         path: test-results
-  package:
-    needs: [vulnerability-scan, build, docker-compose, protolock]
-    strategy:
-      fail-fast: false
-    runs-on: ubuntu-latest
-    name: ci/github/package
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - shell: bash
-      run: |
-        git fetch --prune --unshallow
-    - name: Install netcoreapp3.1
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.x
-    - name: Install net5.0
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 5.0.x
-    - name: Pack
-      shell: bash
-      run: |
-        dotnet tool restore
-        dotnet pack --configuration=Release --output=./packages \
-          /p:NoWarn=NU5105 \
-          /p:RepositoryUrl=https://github.com/EventStore/EventStore \
-          /p:RepositoryType=git \
-          ./src
-    - name: Push
-      shell: bash
-      if: github.event_name == 'push'
-      run: |
-        find . -name "*.nupkg" | xargs -n1 dotnet tool run gpr -- push --api-key=${{ secrets.github_token }}
-
