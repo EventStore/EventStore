@@ -126,7 +126,9 @@ module.exports = [
     {
         title: "Event streams",
         collapsable: true,
+        path: "streams/",
         children: [
+            "streams/",
             "streams/metadata-and-reserved-names.md",
             "streams/deleting-streams-and-events.md",
             "streams/system-streams.md"
