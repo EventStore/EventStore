@@ -56,6 +56,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				builder.FromAll();
 				builder.AllEvents();
 				builder.SetDefinesStateTransform();
+				builder.SetOutputState();
 			}
 		}
 
