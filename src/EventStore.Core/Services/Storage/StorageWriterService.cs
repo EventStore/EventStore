@@ -413,6 +413,15 @@ namespace EventStore.Core.Services.Storage {
 					// SOFT DELETE
 					var metastreamId = _systemStreams.MetaStreamOf(streamId);
 					var expectedVersion = _indexWriter.GetStreamLastEventNumber(metastreamId);
+
+					if (_indexWriter.GetStreamLastEventNumber(streamId) < 0 && expectedVersion < 0) {
+						var result = new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId,
+							-1, -1, -1, false);
+						ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, result);
+						return;
+					}
+
+
 					const PrepareFlags flags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted |
 											   PrepareFlags.IsJson;
 					var data = new StreamMetadata(truncateBefore: EventNumber.DeletedStream).ToJsonBytes();

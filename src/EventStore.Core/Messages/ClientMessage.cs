@@ -464,11 +464,12 @@ namespace EventStore.Core.Messages {
 				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
-				if (expectedVersion < Data.ExpectedVersion.Any)
-					throw new ArgumentOutOfRangeException(nameof(expectedVersion));
-
 				EventStreamId = eventStreamId;
-				ExpectedVersion = expectedVersion;
+				ExpectedVersion = expectedVersion switch {
+					Data.ExpectedVersion.Invalid => throw new ArgumentOutOfRangeException(nameof(expectedVersion)),
+					< Data.ExpectedVersion.StreamExists => throw new ArgumentOutOfRangeException(nameof(expectedVersion)),
+					_ => expectedVersion
+				};
 				HardDelete = hardDelete;
 				CancellationToken = cancellationToken;
 			}

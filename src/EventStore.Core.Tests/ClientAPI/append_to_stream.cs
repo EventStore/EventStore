@@ -319,7 +319,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 			using (var store = BuildConnection(_node)) {
 				await store.ConnectAsync();
 
-				await store.DeleteStreamAsync(stream, ExpectedVersion.NoStream, hardDelete: false);
+				await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent());
+
+				await store.DeleteStreamAsync(stream, ExpectedVersion.StreamExists, hardDelete: false);
 
 				await AssertEx.ThrowsAsync<StreamDeletedException>(
 					() => store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, TestEvent.NewTestEvent()));
