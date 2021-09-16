@@ -185,6 +185,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				//
 				// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
 				// the cluster but false positives are not a problem since it's a probabilistic filter
+				Log.Debug("Initializing the StreamExistenceFilter. The filter can be disabled by setting the configuration option \"StreamExistenceFilterSize\" to 0");
 				_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer);
 
 				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
