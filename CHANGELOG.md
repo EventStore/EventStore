@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/thefringeninja/EventStore/pull/3060 [EventStore#3067](https://github.com/EventStore/EventStore/pull/3067)
 - //github.com/EventStore/EventStore/pull/3119 [EventStore#3124](https://github.com/EventStore/EventStore/pull/3124)
 - //github.com/EventStore/EventStore/pull/3116 [EventStore#3118](https://github.com/EventStore/EventStore/pull/3118)
+- //github.com/EventStore/EventStore/pull/3166 [EventStore#3169](https://github.com/EventStore/EventStore/pull/3169)
 
 ### Added
 - GitHubActionsTestLogger to Buffer Management Tests [EventStore#3061](https://github.com/EventStore/EventStore/pull/3061)
