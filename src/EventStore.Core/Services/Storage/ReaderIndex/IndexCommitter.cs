@@ -53,7 +53,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private bool _indexRebuild = true;
 		private readonly ICheckpoint _indexChk;
 
-		public IndexCommitter(IPublisher bus,
+		public IndexCommitter(
+			IPublisher bus,
 			IIndexBackend<TStreamId> backend,
 			IIndexReader<TStreamId> indexReader,
 			ITableIndex<TStreamId> tableIndex,

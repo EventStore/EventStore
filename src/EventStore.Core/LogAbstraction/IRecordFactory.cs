@@ -15,7 +15,7 @@ namespace EventStore.Core.LogAbstraction {
 			DateTime timeStamp,
 			TStreamId streamNumber,
 			string streamName);
-		
+
 		IPrepareLogRecord<TStreamId> CreateEventTypeRecord(
 			Guid eventTypeId,
 			Guid parentEventTypeId,

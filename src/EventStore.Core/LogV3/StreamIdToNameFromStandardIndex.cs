@@ -6,7 +6,6 @@ using EventStore.Core.TransactionLog.LogRecords;
 using StreamId = System.UInt32;
 
 namespace EventStore.Core.LogV3 {
-	// todo: when we have eventtype index make this not specific to streams
 	public class StreamIdToNameFromStandardIndex : INameLookup<StreamId> {
 		private readonly IIndexReader<StreamId> _indexReader;
 

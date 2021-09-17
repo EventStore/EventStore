@@ -2,10 +2,9 @@
 using EventStore.Core.LogV3;
 using EventStore.LogV3;
 
-
 namespace EventStore.Core.TransactionLog.LogRecords {
-	public class LogV3EventTypeRecord : LogV3Record<StringPayloadRecord<Raw.EventTypeHeader>>, IPrepareLogRecord<UInt32> {
-		public UInt32 EventStreamId => LogV3SystemStreams.EventTypesCreatedStreamNumber;
+	public class LogV3EventTypeRecord : LogV3Record<StringPayloadRecord<Raw.EventTypeHeader>>, IPrepareLogRecord<uint> {
+		public uint EventStreamId => LogV3SystemStreams.EventTypesCreatedStreamNumber;
 		public PrepareFlags Flags => PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson;
 		public long TransactionPosition => LogPosition;
 		public int TransactionOffset => 0;
@@ -45,7 +44,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			Record = StringPayloadRecord.Create(new RecordView<Raw.EventTypeHeader>(bytes));
 		}
 
-		public IPrepareLogRecord<UInt32> CopyForRetry(long logPosition, long transactionPosition) {
+		public IPrepareLogRecord<uint> CopyForRetry(long logPosition, long transactionPosition) {
 			return new LogV3EventTypeRecord(
 				eventTypeId: Record.Header.RecordId,
 				timeStamp: Record.Header.TimeStamp,

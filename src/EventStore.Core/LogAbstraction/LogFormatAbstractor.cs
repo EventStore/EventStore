@@ -158,7 +158,7 @@ namespace EventStore.Core.LogAbstraction {
 				metastreams: metastreams,
 				recordTypeToHandle: typeof(LogV3StreamRecord));
 
-			static INameIndexPersistence<LogV3StreamId> GenStreamNameIndexPersistence(LogFormatAbstractorOptions options) {
+		static INameIndexPersistence<LogV3StreamId> GenStreamNameIndexPersistence(LogFormatAbstractorOptions options) {
 			if (options.InMemory) {
 				return new NameIndexInMemoryPersistence();
 			}
@@ -261,7 +261,6 @@ namespace EventStore.Core.LogAbstraction {
 			StreamIdSizer = streamIdSizer;
 			StreamExistenceFilter = streamExistenceFilter;
 			StreamExistenceFilterReader = streamExistenceFilterReader;
-			
 			RecordFactory = recordFactory;
 			SupportsExplicitTransactions = supportsExplicitTransactions;
 		}

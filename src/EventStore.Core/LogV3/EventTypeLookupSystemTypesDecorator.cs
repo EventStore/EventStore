@@ -1,5 +1,4 @@
-﻿using System;
-using EventStore.Core.LogAbstraction;
+﻿using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.LogV3
 {

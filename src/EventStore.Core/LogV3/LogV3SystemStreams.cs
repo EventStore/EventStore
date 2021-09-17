@@ -30,7 +30,7 @@ namespace EventStore.Core.LogV3 {
 		public const EventTypeId ScavengeMergeCompleted = 14;
 		public const EventTypeId ScavengeIndexCompleted = 15;
 		
-		public static bool TryGetSystemEventTypeId(string type, out StreamId eventTypeId) {
+		public static bool TryGetSystemEventTypeId(string type, out EventTypeId eventTypeId) {
 			switch (type) {
 				case SystemEventTypes.EmptyEventType:
 					eventTypeId = EmptyEventType;
@@ -51,7 +51,7 @@ namespace EventStore.Core.LogV3 {
 			}
 		}
 		
-		public static bool TryGetVirtualEventType(StreamId eventTypeId, out string name) {
+		public static bool TryGetVirtualEventType(EventTypeId eventTypeId, out string name) {
 			if (!IsVirtualEventType(eventTypeId)) {
 				name = null;
 				return false;
@@ -68,7 +68,7 @@ namespace EventStore.Core.LogV3 {
 			return name != null;
 		}
 		
-		private static bool IsVirtualEventType(StreamId eventTypeId) => eventTypeId < FirstRealEventType;
+		private static bool IsVirtualEventType(EventTypeId eventTypeId) => eventTypeId < FirstRealEventType;
 	}
 
 	public class LogV3SystemStreams : ISystemStreamLookup<StreamId> {
@@ -97,7 +97,7 @@ namespace EventStore.Core.LogV3 {
 
 		// virtual stream so that we can index StreamRecords for looking up stream names
 		public const StreamId StreamsCreatedStreamNumber = 6;
-		
+
 		// virtual stream for storing system settings
 		private const StreamId SettingsStreamNumber = 8;
 		

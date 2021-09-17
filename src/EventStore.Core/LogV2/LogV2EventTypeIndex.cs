@@ -4,10 +4,12 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 
-namespace EventStore.Core.LogV2
-{
-	public class LogV2EventTypeIndex : 
-		INameIndex<string>, INameIndexConfirmer<string>, IValueLookup<string>, INameLookup<string> {
+namespace EventStore.Core.LogV2 {
+	public class LogV2EventTypeIndex :
+		INameIndex<string>,
+		INameIndexConfirmer<string>,
+		IValueLookup<string>,
+		INameLookup<string> {
 			
 		public void Dispose() {
 		}
@@ -37,7 +39,7 @@ namespace EventStore.Core.LogV2
 			return true;
 		}
 
-		public string LookupValue(string streamName) => streamName;
+		public string LookupValue(string eventTypeName) => eventTypeName;
 
 		public bool TryGetName(string eventTypeId, out string name) {
 			name = eventTypeId;

@@ -45,7 +45,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, INameLookup<TStreamId> streamNames, INameLookup<TStreamId> eventTypes) {
 			Ensure.NotNull(backend, "backend");
 			Ensure.NotNull(indexCommitter, "indexCommitter");
-			Ensure.NotNull(indexCommitter, nameof(streamNames));
+			Ensure.NotNull(streamNames, nameof(streamNames));
+			Ensure.NotNull(eventTypes, nameof(eventTypes));
 			_backend = backend;
 			_indexCommitter = indexCommitter;
 			_streamNames = streamNames;

@@ -513,7 +513,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					nextEventNumber, lastEventNumber, isEndOfStream);
 			}
 		}
-		
+
 		public TStreamId GetEventStreamIdByTransactionId(long transactionId) {
 			Ensure.Nonnegative(transactionId, "transactionId");
 			using (var reader = _backend.BorrowReader()) {
