@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using EventStore.Projections.Core.Services.Processing;
+using NUnit.Framework;
 
 namespace EventStore.Projections.Core.Tests.Services.Jint
 {
@@ -19,10 +20,11 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.AllStreams);
-				Assert.That(_source.Streams == null || _source.Streams.Length == 0);
-				Assert.That(_source.Categories == null || _source.Categories.Length == 0);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.FromAll();
+					b.AllEvents();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -40,12 +42,11 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.AllStreams);
-				Assert.IsNotNull(_source.Streams);
-				Assert.AreEqual(1, _source.Streams.Length);
-				Assert.AreEqual("stream1", _source.Streams[0]);
-				Assert.That(_source.Categories == null || _source.Categories.Length == 0);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromStream("stream1");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -63,14 +64,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.AllStreams);
-				Assert.IsNotNull(_source.Streams);
-				Assert.AreEqual(3, _source.Streams.Length);
-				Assert.AreEqual("stream1", _source.Streams[0]);
-				Assert.AreEqual("stream2", _source.Streams[1]);
-				Assert.AreEqual("stream3", _source.Streams[2]);
-				Assert.That(_source.Categories == null || _source.Categories.Length == 0);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromStream("stream1");
+					b.FromStream("stream2");
+					b.FromStream("stream3");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -88,14 +88,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.AllStreams);
-				Assert.IsNotNull(_source.Streams);
-				Assert.AreEqual(3, _source.Streams.Length);
-				Assert.AreEqual("stream1", _source.Streams[0]);
-				Assert.AreEqual("stream2", _source.Streams[1]);
-				Assert.AreEqual("stream3", _source.Streams[2]);
-				Assert.That(_source.Categories == null || _source.Categories.Length == 0);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromStream("stream1");
+					b.FromStream("stream2");
+					b.FromStream("stream3");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -113,14 +112,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.AllStreams);
-				Assert.IsNotNull(_source.Streams);
-				Assert.AreEqual(3, _source.Streams.Length);
-				Assert.AreEqual("$ce-category1", _source.Streams[0]);
-				Assert.AreEqual("$ce-category2", _source.Streams[1]);
-				Assert.AreEqual("$ce-category3", _source.Streams[2]);
-				Assert.That(_source.Categories == null || _source.Categories.Length == 0);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromStream("$ce-category1");
+					b.FromStream("$ce-category2");
+					b.FromStream("$ce-category3");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -138,14 +136,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.AllStreams);
-				Assert.IsNotNull(_source.Streams);
-				Assert.AreEqual(3, _source.Streams.Length);
-				Assert.AreEqual("$ce-category1", _source.Streams[0]);
-				Assert.AreEqual("$ce-category2", _source.Streams[1]);
-				Assert.AreEqual("$ce-category3", _source.Streams[2]);
-				Assert.That(_source.Categories == null || _source.Categories.Length == 0);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromStream("$ce-category1");
+					b.FromStream("$ce-category2");
+					b.FromStream("$ce-category3");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -163,12 +160,11 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.AllStreams);
-				Assert.IsNotNull(_source.Categories);
-				Assert.AreEqual(1, _source.Categories.Length);
-				Assert.AreEqual("category1", _source.Categories[0]);
-				Assert.That(_source.Streams == null || _source.Streams.Length == 0);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromCategory("category1");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -186,12 +182,12 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.AllStreams);
-				Assert.IsNotNull(_source.Categories);
-				Assert.AreEqual(1, _source.Categories.Length);
-				Assert.AreEqual("category1", _source.Categories[0]);
-				Assert.That(_source.Streams == null || _source.Streams.Length == 0);
-				Assert.AreEqual(true, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromCategory("category1");
+					b.SetByStream();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -211,11 +207,12 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.AllStreams);
-				Assert.That(_source.Categories == null || _source.Categories.Length == 0);
-				Assert.That(_source.Streams == null || _source.Streams.Length == 0);
-				Assert.AreEqual(true, _source.ByCustomPartitions);
-				Assert.AreEqual(false, _source.ByStreams);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetByCustomPartitions();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -235,7 +232,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.DefinesStateTransform);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetDefinesStateTransform();
+					b.SetOutputState();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -253,7 +256,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.DefinesStateTransform);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetDefinesStateTransform();
+					b.SetOutputState();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -271,7 +280,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.DefinesStateTransform);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.FromAll();
+					b.IncludeEvent("some");
+					b.SetDefinesStateTransform();
+					b.SetOutputState();
+				});
+				AssertEx.AreEqual(expected, _source);
 			}
 		}
 
@@ -285,7 +300,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.ProducesResults);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.NoWhen();
+					b.SetOutputState();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -299,7 +320,12 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(false, _source.DefinesFold);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.NoWhen();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -313,7 +339,11 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.DefinesFold);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.FromAll();
+					b.IncludeEvent("a");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -334,7 +364,12 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual("state-stream", _source.ResultStreamNameOption);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetResultStreamNameOption("state-stream");
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -355,7 +390,12 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.IncludeLinksOption);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetIncludeLinks();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -376,7 +416,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(true, _source.IsBiState);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetDefinesFold();
+					b.SetIsBiState(true);
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -398,8 +444,13 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(500, _source.ProcessingLagOption);
-				Assert.AreEqual(true, _source.ReorderEventsOption);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetProcessingLag(500);
+					b.SetReorderEvents(true);
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 
@@ -424,8 +475,54 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 
 			[Test, Category(_projectionType)]
 			public void source_definition_is_correct() {
-				Assert.AreEqual(500, _source.ProcessingLagOption);
-				Assert.AreEqual(true, _source.ReorderEventsOption);
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetProcessingLag(500);
+					b.SetReorderEvents(true);
+				});
+				AssertEx.AreEqual(expected,_source);
+			}
+		}
+
+		[TestFixture]
+		public class with_foreach_and_deleted_notification_handled : TestFixtureWithInterpretedProjection {
+			protected override void Given() {
+				_projection = @"fromAll().foreachStream().when({
+                $deleted: function(){}
+            })";
+				_state = @"{}";
+			}
+
+			[Test]
+			public void source_definition_is_correct() {
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetByStream();
+					b.SetHandlesStreamDeletedNotifications();
+				});
+				AssertEx.AreEqual(expected,_source);
+			}
+		}
+
+		[TestFixture]
+		public class with_deleted_notification_handled : TestFixtureWithInterpretedProjection {
+			protected override void Given() {
+				_projection = @"fromAll().when({
+                $deleted: function(){}
+            })";
+				_state = @"{}";
+			}
+
+			[Test]
+			public void source_definition_is_correct() {
+				var expected = SourceDefinitionBuilder.From(b => {
+					b.AllEvents();
+					b.FromAll();
+					b.SetHandlesStreamDeletedNotifications();
+				});
+				AssertEx.AreEqual(expected,_source);
 			}
 		}
 	}

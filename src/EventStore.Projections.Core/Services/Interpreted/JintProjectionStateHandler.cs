@@ -243,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(3).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json));
 				}
 
 				metadata = new ExtraMetaData(d);
@@ -273,14 +273,14 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			throw new ArgumentException("string expected", parameterName);
 		}
 
-		string? AsString(JsValue? value) {
+		static string? AsString(JsValue? value, JsonInstance json) {
 			return value switch {
 				JsBoolean b => b.AsBoolean() ? "true" : "false",
 				JsString s => s.AsString(),
 				JsNumber n => n.AsNumber().ToString(CultureInfo.InvariantCulture),
 				JsNull => null,
 				JsUndefined => null,
-				{ } v => _json.Stringify(JsValue.Undefined, new[] { v }).AsString(),
+				{ } v => json.Stringify(JsValue.Undefined, new[] { v }).AsString(),
 				_ => null
 			};
 		}
@@ -303,7 +303,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(4).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -326,7 +326,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(4).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -598,12 +598,14 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 			private JsValue DefinesStateTransform(JsValue thisValue, JsValue[] parameters) {
 				_definitionBuilder.SetDefinesStateTransform();
+				_definitionBuilder.SetOutputState();
 				return Undefined;
 			}
 
 			private JsValue FilterBy(JsValue thisValue, JsValue[] parameters) {
 				if (parameters.At(0) is ScriptFunctionInstance fi) {
 					_definitionBuilder.SetDefinesStateTransform();
+					_definitionBuilder.SetOutputState();
 					_transforms.Add((TransformType.Filter, fi));
 					RestrictProperties("filterBy");
 					return this;
@@ -615,6 +617,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private JsValue TransformBy(JsValue thisValue, JsValue[] parameters) {
 				if (parameters.At(0) is ScriptFunctionInstance fi) {
 					_definitionBuilder.SetDefinesStateTransform();
+					_definitionBuilder.SetOutputState();
 					_transforms.Add((TransformType.Transform, fi));
 					RestrictProperties("transformBy");
 					return this;
@@ -826,7 +829,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				}
 
 				public string EventType {
-					get => Get("eventType").AsString();
+					get => AsString(Get("eventType"), _json) ?? "";
 					set => SetOwnProperty("eventType", new PropertyDescriptor(value, false, true, false));
 				}
 
@@ -862,8 +865,8 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					set => SetOwnProperty("isJson", new PropertyDescriptor(value, false, true, false));
 				}
 
-				public string BodyRaw {
-					get => Get("bodyRaw").AsString();
+				public string? BodyRaw {
+					get => AsString(Get("bodyRaw"), _json);
 					set => SetOwnProperty("bodyRaw", new PropertyDescriptor(value, false, true, false));
 				}
 

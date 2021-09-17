@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Tests;
 using NUnit.Framework;
-
+using static EventStore.Core.Tests.AssertEx;
 namespace EventStore.Projections.Core.Tests.ClientAPI.when_executing_query.with_long_from_all_query {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
@@ -32,7 +32,7 @@ fromAll().when({
     },
 });
 ";
-			await AssertEx.ThrowsAsync<OperationTimedOutException>(() => _queryManager.ExecuteAsync("query", query,
+			await ThrowsAsync<OperationTimedOutException>(() => _queryManager.ExecuteAsync("query", query,
 				TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(5000), _admin));
 		}
 	}

@@ -18,6 +18,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				source.AllEvents();
 				source.SetResultStreamNameOption("state-stream");
 				source.SetDefinesStateTransform();
+				source.SetOutputState();
 			};
 			AllWritesSucceed();
 			NoOtherStreams();

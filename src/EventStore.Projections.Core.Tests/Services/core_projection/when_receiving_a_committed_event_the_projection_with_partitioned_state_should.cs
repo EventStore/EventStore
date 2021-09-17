@@ -24,6 +24,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 				source.AllEvents();
 				source.SetByStream();
 				source.SetDefinesStateTransform();
+				source.SetOutputState();
 			};
 			TicksAreHandledImmediately();
 			AllWritesSucceed();

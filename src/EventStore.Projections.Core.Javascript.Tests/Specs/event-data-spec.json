@@ -82,7 +82,7 @@
 			"partitioned": false,
 			"definesStateTransform": true,
 			"handlesDeletedNotifications": false,
-			"producesResults": true,
+			"producesResults": false,
 			"definesFold": true,
 			"resultStreamName": "",
 			"partitionResultStreamNamePattern": "",

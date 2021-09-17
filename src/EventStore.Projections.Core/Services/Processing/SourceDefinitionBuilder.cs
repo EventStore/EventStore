@@ -64,7 +64,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void SetDefinesStateTransform() {
 			_options.DefinesStateTransform = true;
-			_options.ProducesResults = true;
 		}
 
 		public void SetOutputState() {
