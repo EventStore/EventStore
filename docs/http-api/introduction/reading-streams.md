@@ -7,11 +7,11 @@ EventStoreDB exposes streams as a resource located at `http(s)://{yourdomain.com
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/read-stream.sh)
+@[code{curl}](@httpapi/read-stream.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/read-stream.sh)
+@[code{response}](@httpapi/read-stream.sh)
 :::
 ::::
 
@@ -34,10 +34,10 @@ The non-atom version of the event has fewer details about the event.
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/read-event.sh)
+@[code{curl}](@httpapi/read-event.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/read-event.sh)
+@[code{response}](@httpapi/read-event.sh)
 :::
 ::::
 
@@ -49,10 +49,10 @@ In the example above the server returned the following `links` as part of its re
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/read-stream.sh)
+@[code{curl}](@httpapi/read-stream.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/read-stream.sh)
+@[code{response}](@httpapi/read-stream.sh)
 :::
 ::::
 
@@ -66,11 +66,11 @@ If you want to follow a live stream, then you keep following the `previous` link
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/read-stream-forwards.sh)
+@[code{curl}](@httpapi/read-stream-forwards.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/read-stream-forwards.sh)
+@[code{response}](@httpapi/read-stream-forwards.sh)
 :::
 ::::
 
@@ -83,11 +83,11 @@ Let's now try an example with more than a single page. First create the multiple
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/append-paging-events.sh)
+@[code{curl}](@httpapi/append-paging-events.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/append-paging-events.sh)
+@[code{response}](@httpapi/append-paging-events.sh)
 :::
 ::::
 
@@ -96,11 +96,11 @@ If you request the stream of events, you see a series of links above the events:
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/request-paging-events.sh)
+@[code{curl}](@httpapi/request-paging-events.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/request-paging-events.sh)
+@[code{response}](@httpapi/request-paging-events.sh)
 :::
 ::::
 
@@ -111,11 +111,11 @@ For example, if you request the `last` link from above:
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/request-last-link.sh)
+@[code{curl}](@httpapi/request-last-link.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/request-last-link.sh)
+@[code{response}](@httpapi/request-last-link.sh)
 :::
 ::::
 
@@ -136,11 +136,11 @@ To access the `$all` stream, you must use admin details. Find more information o
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/read-all-events.sh)
+@[code{curl}](@httpapi/read-all-events.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/read-all-events.sh)
+@[code{response}](@httpapi/read-all-events.sh)
 :::
 ::::
 
@@ -148,18 +148,18 @@ To access the `$all` stream, you must use admin details. Find more information o
 
 The head link supports conditional `GET`s with the use of [ETAGS](http://en.wikipedia.org/wiki/HTTP_ETag), a well-known HTTP construct. You can include the ETAG of your last request and issue a conditional `GET` to the server. If nothing has changed, it won't return the full feed. For example the earlier response has an ETAG:
 
-@[code{responseHeader}](../../samples/request-paging-events.sh)
+@[code{responseHeader}](@httpapi/request-paging-events.sh)
 
 You can use this in your next request when polling the stream for changes by putting it in the `If-None-Match` header. This tells the server to check if the response is the one you already know and returning a '304 not modified' response. If the tags have changed, the server returns a '200 OK' response. You can use this method to optimise your application by not sending large streams if there are no changes.
 
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/request-etag.sh)
+@[code{curl}](@httpapi/request-etag.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/request-etag.sh)
+@[code{response}](@httpapi/request-etag.sh)
 :::
 ::::
 
@@ -183,11 +183,11 @@ The `rich` embed mode returns more properties about the event (`eventtype`, `str
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/read-stream-rich.sh)
+@[code{curl}](@httpapi/read-stream-rich.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/read-stream-rich.sh)
+@[code{response}](@httpapi/read-stream-rich.sh)
 :::
 ::::
 
@@ -198,11 +198,11 @@ The `body` embed mode returns the JSON/XML body of the events into the feed as w
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/read-stream-body.sh)
+@[code{curl}](@httpapi/read-stream-body.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/read-stream-body.sh)
+@[code{response}](@httpapi/read-stream-body.sh)
 :::
 ::::
 
@@ -220,10 +220,10 @@ The XML format embeds no additional data, as only JSON supports embedding.
 :::: code-group
 ::: code-group-item Request
 
-@[code{curl}](../../samples/read-stream-xml.sh)
+@[code{curl}](@httpapi/read-stream-xml.sh)
 :::
 ::: code-group-item Response
 
-@[code{response}](../../samples/read-stream-xml.sh)
+@[code{response}](@httpapi/read-stream-xml.sh)
 :::
 ::::

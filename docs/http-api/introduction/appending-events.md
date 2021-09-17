@@ -23,18 +23,18 @@ The format represents data with the following jschema (`eventId` must be a UUID)
 
 ## Appending a single event to a new stream
 
-If you issue a `POST` request with data to a stream and the correct content type set it appends the event to the stream, and generates a `201` response from the server, giving you the location of the event. Using the following event, which [you can also download as a file](../../samples/event.json):
+If you issue a `POST` request with data to a stream and the correct content type set it appends the event to the stream, and generates a `201` response from the server, giving you the location of the event. Using the following event, which [you can also download as a file](@httpapi/event.json):
 
-@[code](../../samples/event.json)
+@[code](@httpapi/event.json)
 
 `POST` the following request to create a stream and add an event to it:
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event-to-new-stream.sh)
+@[code{curl}](@httpapi/append-event-to-new-stream.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-event-to-new-stream.sh)
+@[code{response}](@httpapi/append-event-to-new-stream.sh)
 :::
 ::::
 
@@ -44,10 +44,10 @@ If you leave off the `ES-EventId` header you see different behavior:
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event-no-id.sh)
+@[code{curl}](@httpapi/append-event-no-id.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-event-no-id.sh)
+@[code{response}](@httpapi/append-event-no-id.sh)
 :::
 ::::
 
@@ -55,10 +55,10 @@ In this case EventStoreDB has responded with a `307 Temporary Redirect`. The loc
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event-follow.sh)
+@[code{curl}](@httpapi/append-event-follow.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-event-follow.sh)
+@[code{response}](@httpapi/append-event-follow.sh)
 :::
 ::::
 
@@ -68,10 +68,10 @@ When posting to either the stream or to the returned redirect, clients must incl
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event-no-type.sh)
+@[code{curl}](@httpapi/append-event-no-type.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-event-no-type.sh)
+@[code{response}](@httpapi/append-event-no-type.sh)
 :::
 ::::
 
@@ -81,16 +81,16 @@ You can append more than one event in a single post by placing multiple events i
 
 For example, the below has two events:
 
-@[code](../../samples/multiple-events.json)
+@[code](@httpapi/multiple-events.json)
 
 When you append multiple events in a single post, EventStoreDB treats them as one transaction, it appends all events together or fails.
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-multiple-events.sh)
+@[code{curl}](@httpapi/append-multiple-events.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-multiple-events.sh)
+@[code{response}](@httpapi/append-multiple-events.sh)
 :::
 ::::
 
@@ -98,14 +98,14 @@ When you append multiple events in a single post, EventStoreDB treats them as on
 
 To append events, issue a `POST` request to the same resource with a new `eventId`:
 
-@[code](../../samples/event-append.json)
+@[code](@httpapi/event-append.json)
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event.sh)
+@[code{curl}](@httpapi/append-event.sh)
 :::
 ::: code-group-item Response
-@[code{curl}](../../samples/append-event.sh)
+@[code{curl}](@httpapi/append-event.sh)
 :::
 ::::
 
@@ -115,10 +115,10 @@ Version 3.7.0 of EventStoreDB added support for the `application/octet-stream` c
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-data-event.sh)
+@[code{curl}](@httpapi/append-data-event.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-data-event.sh)
+@[code{response}](@httpapi/append-data-event.sh)
 :::
 ::::
 
@@ -136,14 +136,14 @@ See the idempotence section below, if you post the same event twice it is idempo
 
 First append an event to a stream, setting a version:
 
-@[code](../../samples/event-version.json)
+@[code](@httpapi/event-version.json)
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event-version.sh)
+@[code{curl}](@httpapi/append-event-version.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-event-version.sh)
+@[code{response}](@httpapi/append-event-version.sh)
 :::
 ::::
 
@@ -151,10 +151,10 @@ If you now append to the stream with the incorrect version, you receive an HTTP 
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event-wrong-version.sh)
+@[code{curl}](@httpapi/append-event-wrong-version.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-event-wrong-version.sh)
+@[code{response}](@httpapi/append-event-wrong-version.sh)
 :::
 ::::
 

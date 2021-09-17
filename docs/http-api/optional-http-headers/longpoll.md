@@ -12,10 +12,10 @@ First go to the head of the stream.
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/read-stream.sh)
+@[code{curl}](@httpapi/read-stream.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/read-stream.sh)
+@[code{response}](@httpapi/read-stream.sh)
 :::
 ::::
 
@@ -23,15 +23,15 @@ Then fetch the previous `rel` link `http://127.0.0.1:2113/streams/newstream/2/fo
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/get-forward-link.sh)
+@[code{curl}](@httpapi/get-forward-link.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/get-forward-link.sh)
+@[code{response}](@httpapi/get-forward-link.sh)
 :::
 ::::
 
 The entries section is empty (there is no further data to provide). Now try the same URI with a long poll header.
 
-@[code](../../samples/longpoll.sh)
+@[code](@httpapi/longpoll.sh)
 
 If you do not insert any events into the stream while this is running it takes 10 seconds for the HTTP request to finish. If you append an event to the stream while its running you see the result for that request when you append the event.

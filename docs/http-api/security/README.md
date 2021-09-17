@@ -10,14 +10,14 @@ EventStoreDB supports basic HTTP authentication to internal users. You create th
 
 When using the HTTP API, you can send the following JSON payload to the server:
 
-@[code](../../samples/new-user.json)
+@[code](@httpapi/new-user.json)
 
 :::: code-group
 ::: code-group-item Request
-@[code](../../samples/new-user.sh)
+@[code](@httpapi/new-user.sh)
 :::
 ::: code-group-item Response
-@[code](../../samples/new-user.http)
+@[code](@httpapi/new-user.http)
 :::
 ::::
 
@@ -27,10 +27,10 @@ If you were to use the wrong user or no user when a request requires one, you re
 
 :::: code-group
 ::: code-group-item Request
-@[code](../../samples/incorrect-user.sh)
+@[code](@httpapi/incorrect-user.sh)
 :::
 ::: code-group-item Response
-@[code](../../samples/incorrect-user.http)
+@[code](@httpapi/incorrect-user.http)
 :::
 ::::
 
@@ -40,7 +40,7 @@ As you pass the username and password in the request we recommend you to enable 
 
 Alongside authentication, EventStoreDB supports per stream configuration of Access Control Lists (ACL). To configure the ACL of a stream go to its head and look for the `metadata` relationship link to fetch the metadata for the stream.
 
-To set access control lists over HTTP you can post to the metadata stream as [with setting any other metadata](../stream-metadata.md). You can also set Access Control Lists for a stream in the admin UI.
+To set access control lists over HTTP you can post to the metadata stream as [with setting any other metadata](../introduction/stream-metadata.md). You can also set Access Control Lists for a stream in the admin UI.
 
 ### ACL example
 
@@ -48,15 +48,15 @@ The ACL below gives `writer` read and write permission on the stream, while `rea
 
 The request body placed in the file named _metadata.json_:
 
-@[code](../../samples/metadata.json)
+@[code](@httpapi/metadata.json)
 
 Then, when you execute HTTP request as follows:
 
-@[code](../../samples/update-acl.sh#curl)
+@[code](@httpapi/update-acl.sh#curl)
 
 You get a confirmation from the server:
 
-@[code](../../samples/update-acl.sh#response)
+@[code](@httpapi/update-acl.sh#response)
 
 ## Default ACL
 
@@ -64,14 +64,14 @@ You get a confirmation from the server:
 All these examples assume you have created a user named `ouro` with password `ouroboros`.
 :::
 
-@[code](../../samples/override-default.json)
+@[code](@httpapi/override-default.json)
 
 :::: code-group
 ::: code-group-item Request
-@[code](../../samples/update-default-acl.sh)
+@[code](@httpapi/update-default-acl.sh)
 :::
 ::: code-group-item Response
-@[code](../../samples/update-default-acl.http)
+@[code](@httpapi/update-default-acl.http)
 :::
 ::::
 

@@ -6,10 +6,10 @@ You use the `ES-EventType` header as follows.
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/append-event-to-new-stream.sh)
+@[code{curl}](@httpapi/append-event-to-new-stream.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/append-event-to-new-stream.sh)
+@[code{response}](@httpapi/append-event-to-new-stream.sh)
 :::
 ::::
 
@@ -19,9 +19,9 @@ If you view the event in the UI or with cURL it has the `EventType` of `SomeEven
 
 :::: code-group
 ::: code-group-item Request
-@[code{curl}](../../samples/read-event.sh)
+@[code{curl}](@httpapi/read-event.sh)
 :::
 ::: code-group-item Response
-@[code{response}](../../samples/read-event.sh)
+@[code{response}](@httpapi/read-event.sh)
 :::
 ::::
