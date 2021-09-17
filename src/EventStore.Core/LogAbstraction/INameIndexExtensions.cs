@@ -5,7 +5,7 @@ namespace EventStore.Core.LogAbstraction {
 	public static class INameIndexExtensions {
 		// todo: rename to GetOrReserveStream when we generalise to EventTypes too.
 		/// Generates a StreamRecord if necessary
-		public static bool GetOrReserve<TStreamId>(
+		public static bool? GetOrReserve<TStreamId>(
 			this INameIndex<TStreamId> streamNameIndex,
 			IRecordFactory<TStreamId> recordFactory,
 			string streamName,
@@ -15,7 +15,7 @@ namespace EventStore.Core.LogAbstraction {
 
 			var preExisting = streamNameIndex.GetOrReserve(streamName, out streamId, out var addedId, out var addedName);
 
-			var appendNewStream = recordFactory.ExplicitStreamCreation && !preExisting;
+			var appendNewStream = recordFactory.ExplicitStreamCreation && preExisting == false;
 			if (!appendNewStream) {
 				streamRecord = null;
 				return preExisting;

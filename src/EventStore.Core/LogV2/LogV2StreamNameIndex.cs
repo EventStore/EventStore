@@ -27,6 +27,9 @@ namespace EventStore.Core.LogV2 {
 		public void CancelReservations() {
 		}
 
+		public void CancelLastReservation() {
+		}
+
 		public void Confirm(IList<IPrepareLogRecord<string>> prepares, bool catchingUp, IIndexBackend<string> backend) {
 			if (catchingUp) {
 				// after the main index is caught up we will initialize the stream existence filter
@@ -66,15 +69,12 @@ namespace EventStore.Core.LogV2 {
 			_existenceFilter.CurrentCheckpoint = commit.LogPosition;
 		}
 
-		public bool GetOrReserve(string streamName, out string streamId, out string createdId, out string createdName) {
+		public bool? GetOrReserve(string streamName, out string streamId, out string createdId, out string createdName) {
 			Ensure.NotNullOrEmpty(streamName, "streamName");
 			streamId = streamName;
 			createdId = default;
 			createdName = default;
-
-			// not adding the stream to the filter here, but this is safe because returning
-			// true indicates that the stream might exist and no shortcut may be taken.
-			return true;
+			return null;
 		}
 
 		public string LookupValue(string streamName) => streamName;

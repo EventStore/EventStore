@@ -266,16 +266,19 @@ namespace EventStore.Core.Services.Storage {
 					streamId: out var streamId,
 					streamRecord: out var streamRecord);
 
+				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
+					msg.Events.Select(x => x.EventId), streamExists: preExisting);
+				if (commitCheck.Decision != CommitDecision.Ok) {
+					ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
+					if (streamRecord != null) {
+						_streamNameIndex.CancelLastReservation();
+					}
+					return;
+				}
+
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
-				}
-
-				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
-					msg.Events.Select(x => x.EventId), streamMightExist: preExisting);
-				if (commitCheck.Decision != CommitDecision.Ok) {
-					ActOnCommitCheckFailure(msg.Envelope, msg.CorrelationId, commitCheck);
-					return;
 				}
 
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
@@ -416,16 +419,19 @@ namespace EventStore.Core.Services.Storage {
 					streamId: out var streamId,
 					streamRecord: out var streamRecord);
 
+				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
+					new[] { eventId }, streamExists: preExisting);
+				if (commitCheck.Decision != CommitDecision.Ok) {
+					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
+					if (streamRecord != null) {
+						_streamNameIndex.CancelLastReservation();
+					}
+					return;
+				}
+
 				if (streamRecord != null) {
 					var res = WritePrepareWithRetry(streamRecord);
 					logPosition = res.NewPos;
-				}
-
-				var commitCheck = _indexWriter.CheckCommit(streamId, message.ExpectedVersion,
-					new[] { eventId }, streamMightExist: preExisting);
-				if (commitCheck.Decision != CommitDecision.Ok) {
-					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
-					return;
 				}
 
 				if (message.HardDelete) {

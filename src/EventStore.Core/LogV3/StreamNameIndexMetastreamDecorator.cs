@@ -21,7 +21,11 @@ namespace EventStore.Core.LogV3 {
 			_wrapped.CancelReservations();
 		}
 
-		public bool GetOrReserve(string streamName, out StreamId streamId, out StreamId createdId, out string createdName) {
+		public void CancelLastReservation() {
+			_wrapped.CancelLastReservation();
+		}
+
+		public bool? GetOrReserve(string streamName, out StreamId streamId, out StreamId createdId, out string createdName) {
 			Ensure.NotNullOrEmpty(streamName, "streamName");
 			if (SystemStreams.IsMetastream(streamName)) {
 				streamName = SystemStreams.OriginalStreamOf(streamName);

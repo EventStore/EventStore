@@ -36,6 +36,7 @@ namespace EventStore.Core.LogV3 {
 		private readonly Value _valueInterval;
 		private readonly object _nextValueLock = new();
 		private Value _nextValue;
+		private string _lastReservedName;
 
 		public NameIndex(
 			string indexName,
@@ -64,6 +65,18 @@ namespace EventStore.Core.LogV3 {
 			var nextValue = CalcNextValue();
 			Log.Information("{indexName} {count} reservations cancelled. Next value is {value}",
 				_indexName, count, nextValue);
+		}
+
+		public void CancelLastReservation() {
+			if (_lastReservedName == null) {
+				throw new Exception("Nothing has been reserved yet");
+			}
+
+			if (_reservations.TryRemove(_lastReservedName, out _)) {
+				lock (_nextValueLock) {
+					_nextValue -= _valueInterval;
+				}
+			} else throw new Exception("The last reservation has already been confirmed or cancelled");
 		}
 
 		public void InitializeWithConfirmed(INameLookup<Value> source) {
@@ -144,7 +157,7 @@ namespace EventStore.Core.LogV3 {
 			IIndexBackend<Value> backend) {
 		}
 
-		public bool GetOrReserve(string name, out Value value, out Value addedValue, out string addedName) {
+		public bool? GetOrReserve(string name, out Value value, out Value addedValue, out string addedName) {
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException(nameof(name));
 
@@ -177,6 +190,7 @@ namespace EventStore.Core.LogV3 {
 				addedValue = value;
 				addedName = name;
 				_reservations[name] = value;
+				_lastReservedName = name;
 				Log.Debug("{indexName} reserved new entry: {key}:{value}", _indexName, name, value);
 			}
 		}

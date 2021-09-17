@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		void Reset();
 		CommitCheckResult<TStreamId> CheckCommitStartingAt(long transactionPosition, long commitPosition);
-		CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist);
+		CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool? streamExists);
 		void PreCommit(CommitLogRecord commit);
 		void PreCommit(IList<IPrepareLogRecord<TStreamId>> commitedPrepares);
 		void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo<TStreamId> transactionInfo);
@@ -148,7 +148,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var eventIds = from prepare in GetTransactionPrepares(transactionPosition, commitPosition, null)
 				where prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 				from eventRecord in prepare.Events select eventRecord.EventId;
-			return CheckCommit(streamId, expectedVersion, eventIds, streamMightExist: true);
+			return CheckCommit(streamId, expectedVersion, eventIds, streamExists: null);
 		}
 
 		private static IPrepareLogRecord<TStreamId> GetPrepare(TFReaderLease reader, long logPosition) {
@@ -170,8 +170,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return new CommitCheckResult<TStreamId>(commitDecision, streamId, ExpectedVersion.NoStream, -1, -1, false);
 		}
 
-		public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist) {
-			if (!streamMightExist) {
+		public CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool? streamExists) {
+			if (streamExists == false) {
 				// fast path for completely new streams
 				return CheckCommitForNewStream(streamId, expectedVersion);
 			}
@@ -186,11 +186,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (IsSoftDeleted(streamId))
 					return new CommitCheckResult<TStreamId>(CommitDecision.Deleted, streamId, curVersion, -1, -1, true);
 
-				if (curVersion < 0) {
-					var metadataVersion = GetStreamLastEventNumber(_systemStreams.MetaStreamOf(streamId));
-					if (metadataVersion < 0)
-						return new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId, curVersion, -1, -1,
-							false);
+				if (streamExists != true) {
+					if (curVersion < 0) {
+						var metadataVersion = GetStreamLastEventNumber(_systemStreams.MetaStreamOf(streamId));
+						if (metadataVersion < 0)
+							return new CommitCheckResult<TStreamId>(CommitDecision.WrongExpectedVersion, streamId,
+								curVersion, -1, -1,
+								false);
+					}
 				}
 			}
 
