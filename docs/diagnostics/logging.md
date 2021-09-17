@@ -37,6 +37,16 @@ For example, adding this line to the `eventstore.conf` file will force writing l
 Log: /tmp/eventstore/logs
 ```
 
+## Log Configuration File
+
+Specifies the location of the file which configures the logging levels of various components. By default, the application directory (and `/etc/eventstore` on Linux and Mac) are checked. You may specify a full path.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--log-config` |
+| YAML                 | `LogConfig` |
+| Environment variable | `EVENTSTORE_LOG_CONFIG` |
+
 ## Log level
 
 You can change the level using the `LogLevel` setting:
