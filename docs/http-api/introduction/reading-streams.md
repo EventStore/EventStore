@@ -212,18 +212,3 @@ Two other modes are variants of `body`:
 
 - `PrettyBody` tries to reformat the JSON to make it "pretty to read".
 - `TryHarder` works harder to try to parse and reformat the JSON from an event to return it in the feed. These do not include further information and are focused on how the feed looks.
-
-## Embedding data into streams in XML format
-
-The XML format embeds no additional data, as only JSON supports embedding.
-
-:::: code-group
-::: code-group-item Request
-
-@[code{curl}](@httpapi/read-stream-xml.sh)
-:::
-::: code-group-item Response
-
-@[code{response}](../../samples/read-stream-xml.sh)
-:::
-::::
