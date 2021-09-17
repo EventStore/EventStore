@@ -52,11 +52,11 @@ The request body placed in the file named _metadata.json_:
 
 Then, when you execute HTTP request as follows:
 
-@[code](@httpapi/update-acl.sh#curl)
+@[code{curl}](@httpapi/update-acl.sh)
 
 You get a confirmation from the server:
 
-@[code](@httpapi/update-acl.sh#response)
+@[code{response}](@httpapi/update-acl.sh)
 
 ## Default ACL
 

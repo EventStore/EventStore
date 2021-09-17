@@ -224,6 +224,6 @@ The XML format embeds no additional data, as only JSON supports embedding.
 :::
 ::: code-group-item Response
 
-@[code{response}](@httpapi/read-stream-xml.sh)
+@[code{response}](../../samples/read-stream-xml.sh)
 :::
 ::::
