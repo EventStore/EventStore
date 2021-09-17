@@ -39,7 +39,7 @@ namespace EventStore.Core.LogAbstraction {
 			out TStreamId eventTypeId,
 			out IPrepareLogRecord<TStreamId> eventTypeRecord) {
 
-			var preExisting = eventTypeIndex.GetOrReserve(eventType, out eventTypeId, out _, out _);
+			var preExisting = eventTypeIndex.GetOrReserve(eventType, out eventTypeId, out var addedNumber, out var addedName);
 
 			var appendNewEventType = recordFactory.ExplicitStreamCreation && !preExisting;
 			if (!appendNewEventType) {
@@ -50,8 +50,8 @@ namespace EventStore.Core.LogAbstraction {
 			eventTypeRecord = recordFactory.CreateEventTypeRecord(
 				eventTypeId: Guid.NewGuid(),
 				parentEventTypeId: Guid.Empty,
-				eventType: eventType,
-				eventTypeNumber: eventTypeId,
+				eventType: addedName,
+				eventTypeNumber: addedNumber,
 				version: 0,
 				logPosition: logPosition,
 				timeStamp: DateTime.UtcNow);
