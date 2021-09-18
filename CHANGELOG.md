@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 - test adapter error when running all tests in visual studio [EventStore#3139](https://github.com/EventStore/EventStore/pull/3139)
 - potential race condition in BatchAppend [EventStore#3138](https://github.com/EventStore/EventStore/pull/3138)
 - Added verification checking if a message is of NotHandled type in PersistentSubscriptions Read message handling [EventStore#3158](https://github.com/EventStore/EventStore/pull/3158)
+- Issue with not handling null event data correctly  [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
+- Incorrectly setting OutputState on IQuerySources when only a fold is defined [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
