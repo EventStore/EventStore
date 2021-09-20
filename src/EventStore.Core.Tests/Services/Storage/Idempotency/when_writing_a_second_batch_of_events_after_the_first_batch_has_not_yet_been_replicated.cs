@@ -33,26 +33,26 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 		[Test]
 		public void check_commit_with_same_expectedversion_should_return_idempotentnotready_decision() {
 			/*Second, idempotent write*/
-			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, _eventIds, streamMightExist: true);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, _eventIds, streamExists: null);
 			Assert.AreEqual(CommitDecision.IdempotentNotReady, commitCheckResult.Decision);
 		}
 
 		[Test]
 		public void check_commit_with_expectedversion_any_should_return_idempotentnotready_decision() {
 			/*Second, idempotent write*/
-			var commitCheckResult = _indexWriter.CheckCommit(_streamId, ExpectedVersion.Any, _eventIds, streamMightExist: true);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, ExpectedVersion.Any, _eventIds, streamExists: null);
 			Assert.AreEqual(CommitDecision.IdempotentNotReady, commitCheckResult.Decision);
 		}
 
 		[Test]
 		public void check_commit_with_next_expectedversion_should_return_ok_decision() {
-			var commitCheckResult = _indexWriter.CheckCommit(_streamId, _numEvents-1, _eventIds, streamMightExist: true);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, _numEvents-1, _eventIds, streamExists: null);
 			Assert.AreEqual(CommitDecision.Ok, commitCheckResult.Decision);
 		}
 
 		[Test]
 		public void check_commit_with_incorrect_expectedversion_should_return_wrongexpectedversion_decision() {
-			var commitCheckResult = _indexWriter.CheckCommit(_streamId, _numEvents, _eventIds, streamMightExist: true);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, _numEvents, _eventIds, streamExists: null);
 			Assert.AreEqual(CommitDecision.WrongExpectedVersion, commitCheckResult.Decision);
 		}
 
@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 			
 			ids[ids.Count-2] = Guid.NewGuid();
 
-			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, ids, streamMightExist: true);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, ids, streamExists: null);
 			Assert.AreEqual(CommitDecision.CorruptedIdempotency, commitCheckResult.Decision);
 		}
 
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 			
 			ids[0] = Guid.NewGuid();
 
-			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, ids, streamMightExist: true);
+			var commitCheckResult = _indexWriter.CheckCommit(_streamId, -1, ids, streamExists: null);
 			Assert.AreEqual(CommitDecision.WrongExpectedVersion, commitCheckResult.Decision);
 		}
     }
