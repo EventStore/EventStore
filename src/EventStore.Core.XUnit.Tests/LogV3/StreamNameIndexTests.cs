@@ -111,6 +111,31 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 		}
 
 		[Fact]
+		public void can_cancel_last_reservation() {
+			Assert.False(_sut.GetOrReserve("streamA", out var numberA, out _, out _));
+			Assert.Equal(1024U, numberA);
+			_sut.CancelLastReservation();
+			Assert.False(_sut.GetOrReserve("streamC", out var numberC, out _, out _));
+			Assert.Equal(numberA, numberC);
+		}
+
+		[Fact]
+		public void cannot_cancel_last_reservation_twice() {
+			Assert.False(_sut.GetOrReserve("streamA", out var numberA, out _, out _));
+			Assert.Equal(1024U, numberA);
+			_sut.CancelLastReservation();
+			Assert.Throws<Exception>(() => _sut.CancelLastReservation());
+		}
+
+		[Fact]
+		public void cannot_cancel_last_reservation_if_already_confirmed() {
+			Assert.False(_sut.GetOrReserve("streamA", out var numberA, out _, out _));
+			Assert.Equal(1024U, numberA);
+			_sut.Confirm("streamA", numberA);
+			Assert.Throws<Exception>(() => _sut.CancelLastReservation());
+		}
+
+		[Fact]
 		public async Task can_checkpoint_log() {
 			// reserve A and B
 			Assert.False(_sut.GetOrReserve("streamA", out var numberA, out _, out _));
