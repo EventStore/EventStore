@@ -259,6 +259,22 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[Test]
 		[Category("Network")]
+		public async Task should_append_with_stream_exists_exp_ver_to_existing_stream_with_zero_events() {
+			//this test does not apply to Log V2
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				return;
+			}
+
+			const string stream = "should_append_with_stream_exists_exp_ver_to_existing_stream_with_zero_events";
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream); // Log V3: creates stream record
+				await store.AppendToStreamAsync(stream, ExpectedVersion.StreamExists, TestEvent.NewTestEvent());
+			}
+		}
+
+		[Test]
+		[Category("Network")]
 		public async Task should_append_with_stream_exists_exp_ver_to_stream_with_multiple_events() {
 			const string stream = "should_append_with_stream_exists_exp_ver_to_stream_with_multiple_events";
 			using (var store = BuildConnection(_node)) {
