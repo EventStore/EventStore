@@ -215,29 +215,29 @@ namespace EventStore.Core {
 			};
 
 		/// <summary>
-		/// Loads an <see cref="X509Certificate2"/> from the options set
 		/// </summary>
 		/// <param name="options"></param>
 		/// <returns></returns>
 		/// <exception cref="InvalidConfigurationException"></exception>
-		public static X509Certificate2 LoadServerCertificate(this ClusterVNodeOptions options) {
-			if (options.ServerCertificate != null) {
-				return options.ServerCertificate!;
+		public static (X509Certificate2 certificate,X509Certificate2Collection intermediates) LoadNodeCertificate(this ClusterVNodeOptions options) {
+			if (options.ServerCertificate != null) { //used by test code paths only
+				return (options.ServerCertificate!, null);
 			}
 			if (!string.IsNullOrWhiteSpace(options.CertificateStore.CertificateStoreLocation)) {
 				var location =
-					CertificateLoader.GetCertificateStoreLocation(options.CertificateStore.CertificateStoreLocation);
-				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStore.CertificateStoreName);
-				return CertificateLoader.FromStore(location, name, options.CertificateStore.CertificateSubjectName, options.CertificateStore.CertificateThumbprint);
+					CertificateUtils.GetCertificateStoreLocation(options.CertificateStore.CertificateStoreLocation);
+				var name = CertificateUtils.GetCertificateStoreName(options.CertificateStore.CertificateStoreName);
+				return (CertificateUtils.LoadFromStore(location, name, options.CertificateStore.CertificateSubjectName, options.CertificateStore.CertificateThumbprint), null);
 			}
 
 			if (!string.IsNullOrWhiteSpace(options.CertificateStore.CertificateStoreName)) {
-				var name = CertificateLoader.GetCertificateStoreName(options.CertificateStore.CertificateStoreName);
-				return CertificateLoader.FromStore(name, options.CertificateStore.CertificateSubjectName, options.CertificateStore.CertificateThumbprint);
+				var name = CertificateUtils.GetCertificateStoreName(options.CertificateStore.CertificateStoreName);
+				return (CertificateUtils.LoadFromStore(name, options.CertificateStore.CertificateSubjectName, options.CertificateStore.CertificateThumbprint), null);
 			}
 
 			if (options.CertificateFile.CertificateFile.IsNotEmptyString()) {
-				return CertificateLoader.FromFile(options.CertificateFile.CertificateFile, options.CertificateFile.CertificatePrivateKeyFile, options.CertificateFile.CertificatePassword);
+				Log.Information("Loading the node's certificate(s) from file: {path}", options.CertificateFile.CertificateFile);
+				return CertificateUtils.LoadFromFile(options.CertificateFile.CertificateFile, options.CertificateFile.CertificatePrivateKeyFile, options.CertificateFile.CertificatePassword);
 			}
 
 			throw new InvalidConfigurationException(
@@ -258,10 +258,10 @@ namespace EventStore.Core {
 					$"{nameof(options.Certificate.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) is set.");
 			}
 			Log.Information("Loading trusted root certificates.");
-			foreach (var (fileName, cert) in CertificateLoader.LoadAllCertificates(options.Certificate
+			foreach (var (fileName, cert) in CertificateUtils.LoadAllCertificates(options.Certificate
 				.TrustedRootCertificatesPath)) {
 				trustedRootCerts.Add(cert);
-				Log.Information("Trusted root certificate file loaded: {file}", fileName);
+				Log.Information("Loading trusted root certificate file: {file}", fileName);
 			}
 
 			if (trustedRootCerts.Count == 0)

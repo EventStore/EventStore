@@ -24,6 +24,7 @@ namespace EventStore.Core.Cluster {
 			if (address.Scheme == Uri.UriSchemeHttps){
 				var socketsHttpHandler = new SocketsHttpHandler {
 					SslOptions = {
+						CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
 						RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
 							var (isValid, error) = serverCertValidator(certificate, chain, errors);
 							if (!isValid && error != null) {
