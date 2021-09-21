@@ -66,7 +66,7 @@ If more than one method is used to configure the server, it might be hard to fin
 
 When you run EventStoreDB with this option, it will print out the effective configuration applied from all available sources (default and custom configuration file, environment variables and command line parameters) and print it out to the console.
 
-::: detail Click here to see a WhatIf example
+::: details Click here to see a WhatIf example
 ```
 $ eventstore --what-if
 [1085525, 1,09:19:40.884,INF]
