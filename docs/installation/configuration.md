@@ -71,7 +71,7 @@ When you run EventStoreDB with this option, it will print out the effective conf
 Always run EventStoreDB as a service first, so it creates all the necessary directories using the service permissions. Running the service executable with `--what-if` option before starting the service _will create the data and log directories_ owned by the current user. It might prevent the service from running properly due to lack of write permissions for those directories.
 :::
 
-::: detail Click here to see a WhatIf example
+::: details Click here to see a WhatIf example
 ```
 $ eventstored --what-if
 [38558,01,17:05:37.079]
