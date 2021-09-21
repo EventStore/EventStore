@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file.
 - Extra assertions to prevent unclear test failures. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
 - Retry of tests incase of failure triggered by flakiness. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
 - Checks to improve cluster stability before running tests. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- Add a log message describing how to disable the stream existence filter [EventStore#3172](https://github.com/EventStore/EventStore/pull/3172)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
