@@ -85,11 +85,9 @@ namespace EventStore.Common.Utils {
 		/// Returns the directories that potentially contain any configuration files.
 		/// </summary>
 		/// <returns></returns>
-		public static string[] GetPotentialConfigurationDirectories() {
-			return new [] {
-				ApplicationDirectory,
-				DefaultConfigurationDirectory
-			}.Distinct().ToArray();
-		}
+		public static string[] GetPotentialConfigurationDirectories() => new[] {
+			DefaultConfigurationDirectory,
+			ApplicationDirectory,
+		}.Distinct().ToArray();
 	}
 }
