@@ -28,9 +28,9 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 			Service.Handle(new StorageMessage.CommitAck(_correlationId1, _logPosition3, _logPosition1, 0, 0));
 
 				
-			ReplicationCheckpoint.Write(_logPosition4);
+			ReplicationCheckpoint.Write(_logPosition4 + 1);
 			ReplicationCheckpoint.Flush();
-			Service.Handle(new ReplicationTrackingMessage.ReplicatedTo(_logPosition4));
+			Service.Handle(new ReplicationTrackingMessage.ReplicatedTo(_logPosition4 + 1));
 		}
 		
 		[Test]
