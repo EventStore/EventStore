@@ -16,7 +16,7 @@ The installation procedure consists of the following steps:
 
 ## Configuration Wizard
 
-[EventStore Configurator] online tool can help you to go through all the required steps.
+[EventStore Configurator](https://configurator.eventstore.com) online tool can help you to go through all the required steps.
 
 You can provide the details about your desired deployment topology, and get the following:
 - Generated configuration files
