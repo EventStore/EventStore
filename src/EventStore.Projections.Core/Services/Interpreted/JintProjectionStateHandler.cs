@@ -243,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(3).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json, true));
 				}
 
 				metadata = new ExtraMetaData(d);
@@ -273,10 +273,10 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			throw new ArgumentException("string expected", parameterName);
 		}
 
-		static string? AsString(JsValue? value, JsonInstance json) {
+		static string? AsString(JsValue? value, JsonInstance json, bool formatForRaw) {
 			return value switch {
 				JsBoolean b => b.AsBoolean() ? "true" : "false",
-				JsString s => s.AsString(),
+				JsString s => formatForRaw ? $"\"{s.AsString()}\"": s.AsString(),
 				JsNumber n => n.AsNumber().ToString(CultureInfo.InvariantCulture),
 				JsNull => null,
 				JsUndefined => null,
@@ -303,7 +303,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(4).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json, true));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -326,7 +326,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(4).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json, true));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -829,7 +829,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				}
 
 				public string EventType {
-					get => AsString(Get("eventType"), _json) ?? "";
+					get => AsString(Get("eventType"), _json, false) ?? "";
 					set => SetOwnProperty("eventType", new PropertyDescriptor(value, false, true, false));
 				}
 
@@ -866,7 +866,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				}
 
 				public string? BodyRaw {
-					get => AsString(Get("bodyRaw"), _json);
+					get => AsString(Get("bodyRaw"), _json, false);
 					set => SetOwnProperty("bodyRaw", new PropertyDescriptor(value, false, true, false));
 				}
 
