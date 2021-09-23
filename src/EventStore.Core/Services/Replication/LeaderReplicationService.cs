@@ -111,6 +111,9 @@ namespace EventStore.Core.Services.Replication {
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			_state = message.State;
 
+			if (message.State == VNodeState.Leader)
+				_noQuorumTimestamp = TimeSpan.Zero;
+
 			if (message.State == VNodeState.ShuttingDown)
 				_stop = true;
 		}
