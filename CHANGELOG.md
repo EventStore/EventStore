@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 - Added verification checking if a message is of NotHandled type in PersistentSubscriptions Read message handling [EventStore#3158](https://github.com/EventStore/EventStore/pull/3158)
 - Issue with not handling null event data correctly  [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
 - Incorrectly setting OutputState on IQuerySources when only a fold is defined [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
+- Off-by-one error in Index committer service [EventStore#3186](https://github.com/EventStore/EventStore/pull/3186)
+- Node stays stuck in Leader state until next elections if a quorum never emerges [EventStore#3181](https://github.com/EventStore/EventStore/pull/3181)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
