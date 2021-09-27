@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
+using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.TestClient.Statistics;
 using Microsoft.Extensions.Configuration;
@@ -46,7 +47,8 @@ namespace EventStore.TestClient {
 
 			try {
 				var logsDirectory = log?.FullName ?? Locations.DefaultTestClientLogDirectory;
-				EventStoreLoggerConfiguration.Initialize(logsDirectory, "client");
+				EventStoreLoggerConfiguration.Initialize(logsDirectory, "client", LogConsoleFormat.Plain,
+					1024 * 1024 * 1024, RollingInterval.Day, 31, false);
 				var statsLog = statsFormat == StatsFormat.Csv
 					? TestClientCsvLoggerConfiguration.Initialize(logsDirectory, "client")
 					: Log.ForContext(Serilog.Core.Constants.SourceContextPropertyName, "REGULAR-STATS-LOGGER");
