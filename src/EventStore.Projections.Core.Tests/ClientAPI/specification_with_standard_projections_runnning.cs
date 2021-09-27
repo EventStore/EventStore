@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -9,7 +8,6 @@ using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.SystemData;
 using EventStore.Common.Options;
 using EventStore.Core;
-using EventStore.Core.Bus;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Util;
@@ -17,7 +15,6 @@ using EventStore.Projections.Core.Services.Processing;
 using NUnit.Framework;
 using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
-using EventStore.Common;
 
 namespace EventStore.Projections.Core.Tests.ClientAPI {
 	[Category("ClientAPI")]
@@ -44,7 +41,6 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 				false,
 				TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault),
 				Opts.FaultOutOfOrderProjectionsDefault,
-				JavascriptProjectionRuntime.Interpreted,
 				500,
 				250);
 			_projections = new ProjectionsSubsystem(configuration);

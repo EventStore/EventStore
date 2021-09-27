@@ -17,7 +17,6 @@ using ResolvedEvent = EventStore.ClientAPI.ResolvedEvent;
 using EventStore.ClientAPI.Projections;
 using System.Threading.Tasks;
 using EventStore.ClientAPI.Common.Log;
-using EventStore.Common;
 using EventStore.Core.Data;
 using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
@@ -117,7 +116,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.Cluster {
 		}
 
 		private MiniClusterNode<TLogFormat, TStreamId> CreateNode(int index, Endpoints endpoints, EndPoint[] gossipSeeds) {
-			_projections[index] = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, false, TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), Opts.FaultOutOfOrderProjectionsDefault,JavascriptProjectionRuntime.Interpreted, 500, 250));
+			_projections[index] = new ProjectionsSubsystem(new ProjectionSubsystemOptions(1, ProjectionType.All, false, TimeSpan.FromMinutes(Opts.ProjectionsQueryExpiryDefault), Opts.FaultOutOfOrderProjectionsDefault, 500, 250));
 			var node = new MiniClusterNode<TLogFormat, TStreamId>(
 				PathName, index, endpoints.InternalTcp,
 				endpoints.ExternalTcp, endpoints.HttpEndPoint,

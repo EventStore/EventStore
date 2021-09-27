@@ -6,6 +6,26 @@
     <Platforms>x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Prelude\1Prelude.js" />
+    <None Remove="Prelude\Modules.js" />
+    <None Remove="Prelude\ModulesExecuted.js" />
+    <None Remove="Prelude\Projections.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Prelude\1Prelude.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\Modules.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\ModulesExecuted.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Prelude\Projections.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
 		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -23,16 +43,8 @@
     <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />   
   </ItemGroup>
 	<ItemGroup>
-		<Folder Include="Prelude\Modules\" />
 		<Protobuf Include="../Protos/Grpc/projections.proto" GrpcServices="Server" LinkBase="Services/Grpc" Access="Internal">
 		  <Link>Services\Grpc\Protos\projections.proto</Link>
 		</Protobuf>
 	</ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Prelude\1Prelude.js" />
-    <EmbeddedResource Include="Prelude\Modules.js" />
-    <EmbeddedResource Include="Prelude\ModulesExecuted.js" />
-    <EmbeddedResource Include="Prelude\Projections.js" />
-    <!-- TODO(jen20): What is this and why do we need it? -->
-  </ItemGroup>
 </Project>

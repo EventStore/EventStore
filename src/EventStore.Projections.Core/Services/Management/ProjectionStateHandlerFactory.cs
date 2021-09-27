@@ -1,25 +1,17 @@
 using System;
-using EventStore.Projections.Core.Services.v8;
 using System.Linq;
-using EventStore.Common;
-using EventStore.Common.Options;
 using EventStore.Projections.Core.Services.Interpreted;
-using ProtoBuf.Meta;
 
 namespace EventStore.Projections.Core.Services.Management {
 
 	
 	public class ProjectionStateHandlerFactory {
-		private readonly Func<string, Action<string, object[]>, Action<int, Action>, bool, IProjectionStateHandler> _jsFactory;
-		public ProjectionStateHandlerFactory(TimeSpan javascriptCompilationTimeout, TimeSpan javascriptExecutionTimeout, JavascriptProjectionRuntime runtime) {
-			
-			_jsFactory = runtime switch {
-				JavascriptProjectionRuntime.Legacy => (source, logger, cancelCallbackFactory, enableContentTypeValidation) =>
-					new DefaultV8ProjectionStateHandler(source, logger, cancelCallbackFactory, enableContentTypeValidation),
-				JavascriptProjectionRuntime.Interpreted => (source, _, _, enableContentTypeValidation) => 
-					new JintProjectionStateHandler(source, enableContentTypeValidation, javascriptCompilationTimeout, javascriptExecutionTimeout),
-				_ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown javascript projection runtime")
-			};
+		private readonly TimeSpan _javascriptCompilationTimeout;
+		private readonly TimeSpan _javascriptExecutionTimeout;
+
+		public ProjectionStateHandlerFactory(TimeSpan javascriptCompilationTimeout, TimeSpan javascriptExecutionTimeout) {
+			_javascriptCompilationTimeout = javascriptCompilationTimeout;
+			_javascriptExecutionTimeout = javascriptExecutionTimeout;
 		}
 		public IProjectionStateHandler Create(
 			string factoryType, string source,
@@ -39,7 +31,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			IProjectionStateHandler result;
 			switch (kind.ToLowerInvariant()) {
 				case "js":
-					result = _jsFactory(source, logger, cancelCallbackFactory, enableContentTypeValidation);
+					result = new JintProjectionStateHandler(source, enableContentTypeValidation,
+						_javascriptCompilationTimeout, _javascriptExecutionTimeout);
 					break;
 				case "native":
 					var type = Type.GetType(rest);

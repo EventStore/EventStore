@@ -1,4 +1,3 @@
-using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 
@@ -10,14 +9,13 @@ namespace EventStore.Projections.Core {
 			IBus leaderOutputBus,
 			IQueuedHandler leaderInputQueue,
 			IBus leaderMainBus,
-			bool faultOutOfOrderProjections, JavascriptProjectionRuntime projectionRuntime, int projectionCompilationTimeout, int projectionExecutionTimeout) {
+			bool faultOutOfOrderProjections, int projectionCompilationTimeout, int projectionExecutionTimeout) {
 			ProjectionWorkerThreadCount = projectionWorkerThreadCount;
 			RunProjections = runProjections;
 			LeaderOutputBus = leaderOutputBus;
 			LeaderInputQueue = leaderInputQueue;
 			LeaderMainBus = leaderMainBus;
 			FaultOutOfOrderProjections = faultOutOfOrderProjections;
-			ProjectionRuntime = projectionRuntime;
 			ProjectionCompilationTimeout = projectionCompilationTimeout;
 			ProjectionExecutionTimeout = projectionExecutionTimeout;
 		}
@@ -33,9 +31,7 @@ namespace EventStore.Projections.Core {
 		public IBus LeaderMainBus { get; }
 
 		public bool FaultOutOfOrderProjections { get; }
-
-		public JavascriptProjectionRuntime ProjectionRuntime { get; }
-
+		
 		public int ProjectionCompilationTimeout { get; }
 
 		public int ProjectionExecutionTimeout { get; }

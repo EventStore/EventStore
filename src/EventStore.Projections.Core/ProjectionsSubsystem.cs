@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
@@ -24,8 +23,7 @@ namespace EventStore.Projections.Core {
 		ProjectionType RunProjections, 
 		bool StartStandardProjections, 
 		TimeSpan ProjectionQueryExpiry, 
-		bool FaultOutOfOrderProjections, 
-		JavascriptProjectionRuntime Runtime, 
+		bool FaultOutOfOrderProjections,
 		int CompilationTimeout, 
 		int ExecutionTimeout);
 
@@ -64,7 +62,6 @@ namespace EventStore.Projections.Core {
 
 		private readonly bool _faultOutOfOrderProjections;
 		
-		private readonly JavascriptProjectionRuntime _projectionRuntime;
 		private readonly int _compilationTimeout;
 		private readonly int _executionTimeout;
 
@@ -106,7 +103,6 @@ namespace EventStore.Projections.Core {
 			
 			_leaderMainBus = new InMemoryBus("manager input bus");
 			_subsystemInitialized = 0;
-			_projectionRuntime = projectionSubsystemOptions.Runtime;
 			_executionTimeout = projectionSubsystemOptions.ExecutionTimeout;
 			_compilationTimeout = projectionSubsystemOptions.CompilationTimeout;
 		}
@@ -130,7 +126,8 @@ namespace EventStore.Projections.Core {
 				_leaderInputQueue,
 				_leaderMainBus,
 				_faultOutOfOrderProjections,
-				_projectionRuntime, _compilationTimeout, _executionTimeout);
+				_compilationTimeout, 
+				_executionTimeout);
 
 			CreateAwakerService(standardComponents);
 			_coreQueues =

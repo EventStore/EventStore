@@ -43,7 +43,6 @@ namespace EventStore.ClusterNode {
 						options.Application.StartStandardProjections, 
 						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
 						options.Projections.FaultOutOfOrderProjections,
-						options.Projections.ProjectionRuntime,
 						options.Projections.ProjectionCompilationTimeout,
 						options.Projections.ProjectionExecutionTimeout)))
 				: options;
