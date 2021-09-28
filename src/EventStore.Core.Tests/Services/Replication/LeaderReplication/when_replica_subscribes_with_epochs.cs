@@ -15,11 +15,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		private TcpConnectionManager _replicaManager;
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
+			Writer.Write(CreateLogRecord(1), out _);
+			Writer.Write(CreateLogRecord(2), out _);
+			Writer.Write(CreateLogRecord(3), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(1);
 
 			var epochs = new [] {
@@ -49,11 +49,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
+			Writer.Write(CreateLogRecord(1), out _);
+			Writer.Write(CreateLogRecord(2), out _);
+			Writer.Write(CreateLogRecord(3), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(1);
 
 			_lastEpoch = EpochManager.GetLastEpoch();
@@ -83,11 +83,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
-			Writer.Write(CreateLogRecord(4, "test"), out _subscribedPosition);
+			Writer.Write(CreateLogRecord(0), out _);
+			Writer.Write(CreateLogRecord(1), out _);
+			Writer.Write(CreateLogRecord(2), out _);
+			Writer.Write(CreateLogRecord(3), out _);
+			Writer.Write(CreateLogRecord(4), out _subscribedPosition);
 			EpochManager.WriteNewEpoch(1);
 
 			_lastEpoch = EpochManager.GetLastEpoch();
@@ -116,15 +116,15 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
+			Writer.Write(CreateLogRecord(1), out _);
+			Writer.Write(CreateLogRecord(2), out _);
+			Writer.Write(CreateLogRecord(3), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(1);
-			Writer.Write(CreateLogRecord(5, "test"), out _);
-			Writer.Write(CreateLogRecord(6, "test"), out _);
-			Writer.Write(CreateLogRecord(7, "test"), out var lastWritePosition);
+			Writer.Write(CreateLogRecord(5), out _);
+			Writer.Write(CreateLogRecord(6), out _);
+			Writer.Write(CreateLogRecord(7), out var lastWritePosition);
 			Writer.Flush();
 
 			_replicaEpochs = new List<Epoch> {
@@ -157,11 +157,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
-			Writer.Write(CreateLogRecord(2, "test"), out var otherEpochLogPosition);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
+			Writer.Write(CreateLogRecord(1), out _);
+			Writer.Write(CreateLogRecord(2), out var otherEpochLogPosition);
+			Writer.Write(CreateLogRecord(3), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(2);
 
 			var firstEpoch = EpochManager.GetLastEpochs(10).First(e => e.EpochNumber == 0);
@@ -193,11 +193,11 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
+			Writer.Write(CreateLogRecord(1), out _);
+			Writer.Write(CreateLogRecord(2), out _);
+			Writer.Write(CreateLogRecord(3), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(1);
 
 			var subscribePosition = Db.Config.WriterCheckpoint.ReadNonFlushed() + 1000;
@@ -229,12 +229,12 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
+			Writer.Write(CreateLogRecord(1), out _);
+			Writer.Write(CreateLogRecord(2), out _);
 			EpochManager.WriteNewEpoch(1);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(3), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(4);
 
 			var subscribePosition = Db.Config.WriterCheckpoint.ReadNonFlushed() + 1000;
@@ -259,7 +259,6 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		}
 	}
 
-	[TestFixture]
 	public class when_replica_subscribes_with_uncached_epoch<TLogFormat, TStreamId>
 		: with_replication_service_and_epoch_manager<TLogFormat, TStreamId> {
 		private readonly Guid _replicaId = Guid.NewGuid();
@@ -267,22 +266,22 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		private List<Epoch> _replicaEpochs;
 		public override void When() {
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
 			EpochManager.WriteNewEpoch(1);
 
 			// The EpochManager for these tests only caches 5 epochs
 			_replicaEpochs = EpochManager.GetLastEpochs(2)
 				.Select(e => new Epoch(e.EpochPosition, e.EpochNumber, e.EpochId)).ToList();
 
-			Writer.Write(CreateLogRecord(1, "test"), out _);
+			Writer.Write(CreateLogRecord(1), out _);
 			EpochManager.WriteNewEpoch(2);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
+			Writer.Write(CreateLogRecord(2), out _);
 			EpochManager.WriteNewEpoch(3);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
+			Writer.Write(CreateLogRecord(3), out _);
 			EpochManager.WriteNewEpoch(4);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(5);
-			Writer.Write(CreateLogRecord(5, "test"), out _);
+			Writer.Write(CreateLogRecord(5), out _);
 			EpochManager.WriteNewEpoch(6);
 
 			AddSubscription(_replicaId, true, _replicaEpochs.ToArray(), _replicaEpochs[0].EpochPosition, out _replicaManager);
@@ -299,7 +298,6 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		}
 	}
 
-	[TestFixture]
 	public class when_replica_subscribes_with_uncached_epoch_that_does_not_exist_on_leader<TLogFormat, TStreamId>
 		: with_replication_service_and_epoch_manager<TLogFormat, TStreamId> {
 		private readonly Guid _replicaId = Guid.NewGuid();
@@ -310,20 +308,20 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			// The EpochManager for these tests only caches 5 epochs
 			// Epochs 2 and 3 don't exist
 			EpochManager.WriteNewEpoch(0);
-			Writer.Write(CreateLogRecord(0, "test"), out _);
+			Writer.Write(CreateLogRecord(0), out _);
 			EpochManager.WriteNewEpoch(1);
-			Writer.Write(CreateLogRecord(1, "test"), out _);
+			Writer.Write(CreateLogRecord(1), out _);
 
 			_uncachedLeaderEpochs = EpochManager.GetLastEpochs(2);
 
 			EpochManager.WriteNewEpoch(4);
-			Writer.Write(CreateLogRecord(2, "test"), out _);
+			Writer.Write(CreateLogRecord(2), out _);
 			EpochManager.WriteNewEpoch(5);
-			Writer.Write(CreateLogRecord(3, "test"), out _);
+			Writer.Write(CreateLogRecord(3), out _);
 			EpochManager.WriteNewEpoch(6);
-			Writer.Write(CreateLogRecord(4, "test"), out _);
+			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(7);
-			Writer.Write(CreateLogRecord(5, "test"), out _);
+			Writer.Write(CreateLogRecord(5), out _);
 			EpochManager.WriteNewEpoch(8);
 
 			_replicaEpochs = new List<Epoch> {

@@ -8,6 +8,7 @@ namespace EventStore.Core.LogAbstraction {
 
 	public interface IRecordFactory<TStreamId> : IRecordFactory {
 		bool ExplicitStreamCreation { get; }
+		bool ExplicitEventTypeCreation { get; }
 
 		IPrepareLogRecord<TStreamId> CreateStreamRecord(
 			Guid streamId,
@@ -15,6 +16,15 @@ namespace EventStore.Core.LogAbstraction {
 			DateTime timeStamp,
 			TStreamId streamNumber,
 			string streamName);
+
+		IPrepareLogRecord<TStreamId> CreateEventTypeRecord(
+			Guid eventTypeId,
+			Guid parentEventTypeId,
+			string eventType,
+			TStreamId eventTypeNumber,
+			ushort eventTypeVersion,
+			long logPosition,
+			DateTime timeStamp);
 
 		IPrepareLogRecord<TStreamId> CreatePrepare(
 			long logPosition,
@@ -26,7 +36,7 @@ namespace EventStore.Core.LogAbstraction {
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
-			string eventType,
+			TStreamId eventType,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata);
 	}

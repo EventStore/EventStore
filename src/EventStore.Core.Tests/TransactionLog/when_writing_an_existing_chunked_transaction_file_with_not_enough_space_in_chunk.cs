@@ -36,6 +36,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			var record1 = LogRecord.Prepare(
 				factory: recordFactory,
@@ -48,7 +49,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				eventStreamId: streamId,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
-				eventType: "type",
+				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[8000]);
 			Assert.IsTrue(tf.Write(record1, out pos)); // almost fill up first chunk
@@ -64,7 +65,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				eventStreamId: streamId,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
-				eventType: "type",
+				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[8000]);
 			Assert.IsFalse(tf.Write(record2, out pos)); // chunk has too small space
@@ -80,7 +81,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				eventStreamId: streamId,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.None,
-				eventType: "type",
+				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[2000]);
 			Assert.IsTrue(tf.Write(record3, out pos));

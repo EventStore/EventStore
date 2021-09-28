@@ -30,6 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			_record = LogRecord.Prepare(
 				factory: recordFactory,
@@ -42,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				expectedVersion: 1234,
 				timeStamp: new DateTime(2012, 12, 21),
 				flags: PrepareFlags.SingleWrite,
-				eventType: "type",
+				eventType: eventTypeId,
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[] {7, 17});
 			long newPos;
@@ -65,6 +66,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				Assert.IsTrue(reader.TryReadNext(out r));
 
 				var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+				var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 				Assert.True(r is IPrepareLogRecord<TStreamId>);
 				var p = (IPrepareLogRecord<TStreamId>)r;
@@ -78,7 +80,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				Assert.AreEqual(p.ExpectedVersion, 1234);
 				Assert.That(p.TimeStamp, Is.EqualTo(new DateTime(2012, 12, 21)).Within(7).Milliseconds);
 				Assert.AreEqual(p.Flags, PrepareFlags.SingleWrite);
-				Assert.AreEqual(p.EventType, "type");
+				Assert.AreEqual(p.EventType, eventTypeId);
 				Assert.AreEqual(p.Data.Length, 5);
 				Assert.AreEqual(p.Metadata.Length, 2);
 			}

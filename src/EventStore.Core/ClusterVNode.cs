@@ -659,6 +659,7 @@ namespace EventStore.Core {
 				logFormat.StreamIdSizer,
 				logFormat.StreamExistenceFilter,
 				logFormat.StreamExistenceFilterReader,
+				logFormat.EventTypeIndexConfirmer,
 				streamInfoCacheCapacity,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
@@ -692,6 +693,8 @@ namespace EventStore.Core {
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
 				logFormat.RecordFactory,
 				logFormat.StreamNameIndex,
+				logFormat.EventTypeIndex,
+				logFormat.EmptyEventTypeId,
 				logFormat.SystemStreams,
 				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition,
 				partitionManager); // subscribes internally

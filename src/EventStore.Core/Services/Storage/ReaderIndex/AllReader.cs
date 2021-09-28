@@ -40,14 +40,17 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly IIndexBackend _backend;
 		private readonly IIndexCommitter _indexCommitter;
 		private readonly INameLookup<TStreamId> _streamNames;
+		private readonly INameLookup<TStreamId> _eventTypes;
 
-		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, INameLookup<TStreamId> streamNames) {
+		public AllReader(IIndexBackend backend, IIndexCommitter indexCommitter, INameLookup<TStreamId> streamNames, INameLookup<TStreamId> eventTypes) {
 			Ensure.NotNull(backend, "backend");
 			Ensure.NotNull(indexCommitter, "indexCommitter");
-			Ensure.NotNull(indexCommitter, nameof(streamNames));
+			Ensure.NotNull(streamNames, nameof(streamNames));
+			Ensure.NotNull(eventTypes, nameof(eventTypes));
 			_backend = backend;
 			_indexCommitter = indexCommitter;
 			_streamNames = streamNames;
+			_eventTypes = eventTypes;
 		}
 
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
@@ -93,7 +96,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare:
-						case LogRecordType.Stream: {
+						case LogRecordType.Stream:
+						case LogRecordType.EventType: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
@@ -103,8 +107,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && new TFPos(prepare.LogPosition, prepare.LogPosition) >= pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
+								var eventType = _eventTypes.LookupName(prepare.EventType);
 								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
-									prepare, streamName);
+									prepare, streamName, eventType);
 								consideredEventsCount++;
 								if (eventFilter.IsEventAllowed(eventRecord)) {
 									records.Add(new CommitEventRecord(eventRecord, prepare.LogPosition));
@@ -145,9 +150,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 								    && new TFPos(commit.LogPosition, prepare.LogPosition) >= pos) {
 									var streamName = _streamNames.LookupName(prepare.EventStreamId);
+									var eventType = _eventTypes.LookupName(prepare.EventType);
 									var eventRecord =
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
-											prepare, streamName);
+											prepare, streamName, eventType);
 									consideredEventsCount++;
 									if (eventFilter.IsEventAllowed(eventRecord)) {
 										records.Add(new CommitEventRecord(eventRecord, commit.LogPosition));
@@ -219,7 +225,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Prepare:
-						case LogRecordType.Stream: {
+						case LogRecordType.Stream:
+						case LogRecordType.EventType: {
 							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 							if (firstCommit) {
 								firstCommit = false;
@@ -229,8 +236,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 							    && new TFPos(result.RecordPostPosition, result.RecordPostPosition) <= pos) {
 								var streamName = _streamNames.LookupName(prepare.EventStreamId);
+								var eventType = _eventTypes.LookupName(prepare.EventType);
 								var eventRecord = new EventRecord(eventNumber: prepare.ExpectedVersion + 1,
-									prepare, streamName);
+									prepare, streamName, eventType);
 								consideredEventsCount++;
 
 								if (eventFilter.IsEventAllowed(eventRecord)) {
@@ -278,9 +286,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 								if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)
 								    && new TFPos(commitPostPos, result.RecordPostPosition) <= pos) {
 									var streamName = _streamNames.LookupName(prepare.EventStreamId);
+									var eventType = _eventTypes.LookupName(prepare.EventType);
 									var eventRecord =
 										new EventRecord(commit.FirstEventNumber + prepare.TransactionOffset,
-											prepare, streamName);
+											prepare, streamName, eventType);
 									consideredEventsCount++;
 
 									if (eventFilter.IsEventAllowed(eventRecord)) {
@@ -311,7 +320,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private static bool IsCommitAlike(ILogRecord rec) {
 			return rec.RecordType == LogRecordType.Commit
-			       || ((rec.RecordType == LogRecordType.Prepare || rec.RecordType == LogRecordType.Stream) &&
+			       || ((rec.RecordType == LogRecordType.Prepare
+			            || rec.RecordType == LogRecordType.EventType
+			            || rec.RecordType == LogRecordType.Stream) &&
 			           ((IPrepareLogRecord)rec).Flags.HasAnyOf(PrepareFlags.IsCommitted));
 		}
 	}

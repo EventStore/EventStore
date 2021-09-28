@@ -19,7 +19,7 @@ namespace EventStore.Core.LogV3 {
 	// might exist or definitely does not exist.
 	//
 	// The entries can then be confirmed, which transfers them to the INameIndexPersistence
-	// object which is allowed to persist them to disk. This is similar to the IndexCommiter class.
+	// object which is allowed to persist them to disk. This is similar to the IndexCommitter class.
 	//
 	// Components wanting only entries that have been confirmed will read from the INameIndexPersistence.
 	public class NameIndex :
@@ -36,6 +36,7 @@ namespace EventStore.Core.LogV3 {
 		private readonly Value _valueInterval;
 		private readonly object _nextValueLock = new();
 		private Value _nextValue;
+		private Type _recordTypeToHandle;
 
 		public NameIndex(
 			string indexName,
@@ -43,7 +44,8 @@ namespace EventStore.Core.LogV3 {
 			Value valueInterval,
 			INameExistenceFilter existenceFilter,
 			INameIndexPersistence<Value> persistence,
-			IMetastreamLookup<Value> metastreams) {
+			IMetastreamLookup<Value> metastreams,
+			Type recordTypeToHandle) {
 
 			_indexName = indexName;
 			_firstValue = firstValue;
@@ -52,6 +54,7 @@ namespace EventStore.Core.LogV3 {
 			_existenceFilter = existenceFilter;
 			_persistence = persistence;
 			_metastreams = metastreams;
+			_recordTypeToHandle = recordTypeToHandle;
 		}
 
 		public void Dispose() {
@@ -101,6 +104,11 @@ namespace EventStore.Core.LogV3 {
 			}
 		}
 
+		// todo: TC: could be sensible to take this code out of here altogether. that will save this
+		// class from having to know which _recordTypeToHandle, and save the indexcommitter from
+		// having to commit to two indexes (which will both look for what they need). instead the index commiter
+		// (perhaps using another class) can commit the right stuff to the right indexes itself.
+		//
 		// this is stream specific and will need to be generalised for eventtypes
 		// not terribly happy with the 'catchingUp' mechanism here because it couples
 		// the IndexCommitter behaviour to this method. but the intention is to remove
@@ -109,18 +117,20 @@ namespace EventStore.Core.LogV3 {
 			for (int i = 0; i < prepares.Count; i++) {
 				var prepare = prepares[i];
 				if (prepare.RecordType == LogRecordType.Stream &&
-					prepare is LogV3StreamRecord streamRecord) {
+					prepare is LogV3StreamRecord streamRecord && prepare.GetType() == _recordTypeToHandle) {
 					Confirm(
 						name: streamRecord.StreamName,
 						value: streamRecord.StreamNumber);
 
 					// update the streams stream
 					// initialisation of the stream name index caused an entry to be populated in
-					// the last event number cache, now we need to keep it up to date even on initialisation
+					// the last event number cache, because it read the last event number of the streams stream.
+					// now we need to keep it up to date even on initialisation or it will be wrong
 					backend.SetStreamLastEventNumber(prepare.EventStreamId, prepare.ExpectedVersion + 1);
 
 					if (catchingUp) {
-						// we are catching up, do not set the last event numbers because they will not be
+						// we are catching up, do not set the last event numbers of the stream we just
+						// created because they will not be
 						// updated during the catchup if we do write some events to those streams.
 						// therefore leave the entry blank so it will be (cheaply because in mem) be
 						// populated on miss.
@@ -133,6 +143,18 @@ namespace EventStore.Core.LogV3 {
 						backend.SetStreamLastEventNumber(createdStreamNumber, ExpectedVersion.NoStream);
 						backend.SetStreamLastEventNumber(createdMetaStreamNumber, ExpectedVersion.NoStream);
 					}
+				}
+				else if (prepare.RecordType == LogRecordType.EventType &&
+				         prepare is LogV3EventTypeRecord eventTypeRecord && prepare.GetType() == _recordTypeToHandle) {
+					Confirm(
+						name: eventTypeRecord.EventTypeName,
+						value: eventTypeRecord.EventTypeNumber);
+
+					// update the event types stream
+					// initialisation of the event types index caused an entry to be populated in
+					// the last event number cache, because it read the last event number of the event types stream.
+					// now we need to keep it up to date even on initialisation or it will be wrong
+					backend.SetStreamLastEventNumber(prepare.EventStreamId, prepare.ExpectedVersion + 1);
 				}
 			}
 		}

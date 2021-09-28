@@ -52,6 +52,10 @@ namespace EventStore.Core.Tests {
 		public static TStreamId StreamId { get; } =	Choose<TStreamId>("stream", 1024U);
 		public static TStreamId StreamId2 { get; } = Choose<TStreamId>("stream2", 1026U);
 
+		public static TStreamId EventTypeId { get; } =	Choose<TStreamId>("eventType", 1024U);
+		public static TStreamId EventTypeId2 { get; } =	Choose<TStreamId>("eventType2", 1025U);
+		public static TStreamId EmptyEventTypeId { get; } = _staticLogFormat.EmptyEventTypeId;
+		
 		public static void CheckIfExplicitTransactionsSupported() {
 			if (typeof(TLogFormat) == typeof(LogFormat.V3)) {
 				throw new InvalidOperationException("Explicit transactions are not supported yet by Log V3");

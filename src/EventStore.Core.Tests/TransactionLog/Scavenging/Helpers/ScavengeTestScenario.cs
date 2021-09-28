@@ -78,6 +78,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				_logFormat.StreamIdSizer,
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
+				_logFormat.EventTypeIndexConfirmer,
 				100, true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);

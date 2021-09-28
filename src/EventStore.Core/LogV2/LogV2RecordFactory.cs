@@ -8,6 +8,7 @@ namespace EventStore.Core.LogV2 {
 		}
 
 		public bool ExplicitStreamCreation => false;
+		public bool ExplicitEventTypeCreation => false;
 
 		public IPrepareLogRecord<string> CreateStreamRecord(
 			Guid streamId,
@@ -15,6 +16,16 @@ namespace EventStore.Core.LogV2 {
 			DateTime timeStamp,
 			string streamNumber,
 			string streamName) =>
+			throw new NotSupportedException();
+
+		public IPrepareLogRecord<string> CreateEventTypeRecord(
+			Guid eventTypeId,
+			Guid parentEventTypeId,
+			string eventType,
+			string referenceNumber,
+			ushort version,
+			long logPosition,
+			DateTime timeStamp) =>
 			throw new NotSupportedException();
 
 		public ISystemLogRecord CreateEpoch(EpochRecord epoch) {

@@ -21,9 +21,10 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 
 			long pos0, pos1, pos2, pos3, pos4;
 			GetOrReserve("test1", out var streamId1, out pos0);
-			_prepare1 = LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId1, ExpectedVersion.NoStream, "type", new byte[0], new byte[0]);
+			GetOrReserveEventType("eventType", out var eventTypeId, out pos0);
+			_prepare1 = LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId1, ExpectedVersion.NoStream, eventTypeId, new byte[0], new byte[0]);
 			Writer.Write(_prepare1, out pos1);
-			_prepare2 = LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId1, 0, "type", new byte[0], new byte[0]);
+			_prepare2 = LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId1, 0, eventTypeId, new byte[0], new byte[0]);
 			Writer.Write(_prepare2, out pos2);
 			Writer.Write(new CommitLogRecord(pos2, _id1, pos0, DateTime.UtcNow, 0), out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id2, pos1, DateTime.UtcNow, 1), out pos4);
@@ -33,14 +34,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		public void the_first_event_can_be_read() {
 			var result = ReadIndex.ReadEvent("test1", 0);
 			Assert.AreEqual(ReadEventResult.Success, result.Result);
-			Assert.AreEqual(new EventRecord(0, _prepare1, "test1"), result.Record);
+			Assert.AreEqual(new EventRecord(0, _prepare1, "test1", "eventType"), result.Record);
 		}
 
 		[Test]
 		public void the_second_event_can_be_read() {
 			var result = ReadIndex.ReadEvent("test1", 1);
 			Assert.AreEqual(ReadEventResult.Success, result.Result);
-			Assert.AreEqual(new EventRecord(1, _prepare2, "test1"), result.Record);
+			Assert.AreEqual(new EventRecord(1, _prepare2, "test1", "eventType"), result.Record);
 		}
 
 		[Test]
@@ -53,7 +54,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 		public void the_last_event_can_be_read_and_is_correct() {
 			var result = ReadIndex.ReadEvent("test1", -1);
 			Assert.AreEqual(ReadEventResult.Success, result.Result);
-			Assert.AreEqual(new EventRecord(1, _prepare2, "test1"), result.Record);
+			Assert.AreEqual(new EventRecord(1, _prepare2, "test1", "eventType"), result.Record);
 		}
 
 		[Test]
@@ -61,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var result = ReadIndex.ReadStreamEventsBackward("test1", 0, 1);
 			Assert.AreEqual(ReadStreamResult.Success, result.Result);
 			Assert.AreEqual(1, result.Records.Length);
-			Assert.AreEqual(new EventRecord(0, _prepare1, "test1"), result.Records[0]);
+			Assert.AreEqual(new EventRecord(0, _prepare1, "test1", "eventType"), result.Records[0]);
 		}
 
 		[Test]
@@ -69,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var result = ReadIndex.ReadStreamEventsBackward("test1", 1, 1);
 			Assert.AreEqual(ReadStreamResult.Success, result.Result);
 			Assert.AreEqual(1, result.Records.Length);
-			Assert.AreEqual(new EventRecord(1, _prepare2, "test1"), result.Records[0]);
+			Assert.AreEqual(new EventRecord(1, _prepare2, "test1", "eventType"), result.Records[0]);
 		}
 
 		[Test]
@@ -77,8 +78,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var result = ReadIndex.ReadStreamEventsBackward("test1", 1, 2);
 			Assert.AreEqual(ReadStreamResult.Success, result.Result);
 			Assert.AreEqual(2, result.Records.Length);
-			Assert.AreEqual(new EventRecord(1, _prepare2, "test1"), result.Records[0]);
-			Assert.AreEqual(new EventRecord(0, _prepare1, "test1"), result.Records[1]);
+			Assert.AreEqual(new EventRecord(1, _prepare2, "test1", "eventType"), result.Records[0]);
+			Assert.AreEqual(new EventRecord(0, _prepare1, "test1", "eventType"), result.Records[1]);
 		}
 
 		[Test]
@@ -86,8 +87,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			var result = ReadIndex.ReadStreamEventsBackward("test1", -1, 2);
 			Assert.AreEqual(ReadStreamResult.Success, result.Result);
 			Assert.AreEqual(2, result.Records.Length);
-			Assert.AreEqual(new EventRecord(1, _prepare2, "test1"), result.Records[0]);
-			Assert.AreEqual(new EventRecord(0, _prepare1, "test1"), result.Records[1]);
+			Assert.AreEqual(new EventRecord(1, _prepare2, "test1", "eventType"), result.Records[0]);
+			Assert.AreEqual(new EventRecord(0, _prepare1, "test1", "eventType"), result.Records[1]);
 		}
 
 		[Test]

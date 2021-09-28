@@ -22,14 +22,15 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			GetOrReserve("test2", out var streamId2, out pos0);
 			var expectedVersion1 = ExpectedVersion.NoStream;
 			var expectedVersion2 = ExpectedVersion.NoStream;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos0, _id1, _id1, pos0, 0, streamId1, expectedVersion1++,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
+					PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow),
 				out pos1);
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos1, _id2, _id2, pos1, 0, streamId2, expectedVersion2++,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
+					PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow),
 				out pos2);
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id3, _id3, pos2, 0, streamId2, expectedVersion2++,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow),
+					PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow),
 				out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id1, pos0, DateTime.UtcNow, 0), out pos4);
 			Writer.Write(new CommitLogRecord(pos4, _id2, pos1, DateTime.UtcNow, 0), out pos5);

@@ -30,5 +30,33 @@ namespace EventStore.Core.LogAbstraction {
 
 			return preExisting;
 		}
+		
+		public static bool GetOrReserveEventType<TStreamId>(
+			this INameIndex<TStreamId> eventTypeIndex,
+			IRecordFactory<TStreamId> recordFactory,
+			string eventType,
+			long logPosition,
+			out TStreamId eventTypeId,
+			out IPrepareLogRecord<TStreamId> eventTypeRecord) {
+
+			var preExisting = eventTypeIndex.GetOrReserve(eventType, out eventTypeId, out var addedNumber, out var addedName);
+
+			var appendNewEventType = recordFactory.ExplicitEventTypeCreation && !preExisting;
+			if (!appendNewEventType) {
+				eventTypeRecord = null;
+				return preExisting;
+			}
+
+			eventTypeRecord = recordFactory.CreateEventTypeRecord(
+				eventTypeId: Guid.NewGuid(),
+				parentEventTypeId: Guid.Empty,
+				eventType: addedName,
+				eventTypeNumber: addedNumber,
+				eventTypeVersion: 0,
+				logPosition: logPosition,
+				timeStamp: DateTime.UtcNow);
+
+			return preExisting;
+		}
 	}
 }

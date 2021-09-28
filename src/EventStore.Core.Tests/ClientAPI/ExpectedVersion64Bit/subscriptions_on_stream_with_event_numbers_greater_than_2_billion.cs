@@ -5,6 +5,7 @@ using NUnit.Framework;
 using EventStore.Core.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Services;
 
 namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -65,6 +66,9 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			EventStore.ClientAPI.ResolvedEvent receivedEvent = new EventStore.ClientAPI.ResolvedEvent();
 			var mre = new ManualResetEvent(false);
 			await _store.SubscribeToAllAsync(true, (s, e) => {
+				if (SystemStreams.IsSystemStream(e.OriginalStreamId))
+					return Task.CompletedTask;
+				
 				receivedEvent = e;
 				mre.Set();
 				return Task.CompletedTask;

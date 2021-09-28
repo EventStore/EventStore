@@ -20,17 +20,18 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
 			_deleteId = Guid.NewGuid();
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			GetOrReserve("ES", out var streamId, out var pos0);
 			long pos1, pos2, pos3;
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId, ExpectedVersion.NoStream, "type", new byte[0],
-				new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos1);
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId, 0, "type", new byte[0],
-				new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos2);
-			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, streamId, 1, "type", new byte[0],
-				new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos3);
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos0, _id1, _id1, streamId, ExpectedVersion.NoStream,
+				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos1);
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos1, _id2, _id2, streamId, 0,
+				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos2);
+			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, streamId, 1,
+				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos3);
 			Writer.Write(LogRecord.DeleteTombstone(_recordFactory, pos3, _deleteId, _deleteId, streamId,
-				EventNumber.DeletedStream - 1, PrepareFlags.IsCommitted), out _);
+				eventTypeId, EventNumber.DeletedStream - 1, PrepareFlags.IsCommitted), out _);
 		}
 
 		[Test]

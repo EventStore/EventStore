@@ -11,6 +11,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 using StreamId = System.UInt32;
+using EventTypeId = System.UInt32;
 
 namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 	// check that lookups of the various combinations of virtual/normal/meta
@@ -28,8 +29,11 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		readonly string _systemStream = "$something-parked";
 		readonly StreamId _streamId;
 		readonly StreamId _systemStreamId;
+		readonly string _eventType = "some-event";
+		readonly EventTypeId _eventTypeId;
 		readonly MockIndexReader _mockIndexReader = new();
 		readonly int _numStreams;
+		readonly int _numEventTypes;
 
 		public LogFormatAbstractorV3Tests() {
 			TryDeleteDirectory();
@@ -37,7 +41,10 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			_sut.StreamExistenceFilter.Initialize(_sut.StreamExistenceFilterInitializer);
 			Assert.False(GetOrReserve(_stream, out _streamId, out _, out _));
 			Assert.False(GetOrReserve(_systemStream, out _systemStreamId, out _, out _));
+			Assert.False(GetOrReserveEventType(_eventType, out _eventTypeId, out _, out _));
+			
 			_numStreams = 2;
+			_numEventTypes = 1;
 		}
 
 		public void Dispose() {
@@ -60,7 +67,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 				logPosition: 123,
 				streamId: out streamId,
 				streamRecord: out var record);
-
+			
 			if (record is LogV3StreamRecord streamRecord) {
 				createdId = streamRecord.Record.SubHeader.ReferenceNumber;
 				createdName = streamRecord.StreamName;
@@ -77,6 +84,75 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			}
 		}
 
+		bool GetOrReserveEventType(string eventType, out StreamId eventTypeId, out EventTypeId createdId, out string createdName) {
+			_sut.EventTypeIndex.GetOrReserveEventType(
+				recordFactory: _sut.RecordFactory,
+				eventType: eventType,
+				logPosition: 456,
+				eventTypeId: out eventTypeId,
+				eventTypeRecord: out var record);
+
+			if (record is LogV3EventTypeRecord eventTypeRecord) {
+				createdId = eventTypeRecord.Record.SubHeader.ReferenceNumber;
+				createdName = eventTypeRecord.EventTypeName;
+				_mockIndexReader.Add(eventTypeRecord.ExpectedVersion + 1, eventTypeRecord);
+				_sut.EventTypeIndexConfirmer.Confirm(
+					replicatedPrepares: new[] { eventTypeRecord },
+					catchingUp: false,
+					backend: new MockIndexBackend<EventTypeId>());
+				return false;
+			} else {
+				createdId = default;
+				createdName = default;
+				return true;
+			}
+		}
+
+		[Fact]
+		public void can_add_another_event_type() {
+			Assert.False(GetOrReserveEventType("new-event-type-1", out var newEventTypeId1, out var createdId1, out var createdName1));
+			Assert.False(GetOrReserveEventType("new-event-type-2", out var newEventTypeId2, out var createdId2, out var createdName2));
+			Assert.Equal(newEventTypeId1 + 1, newEventTypeId2);
+			Assert.Equal(newEventTypeId1, createdId1);
+			Assert.Equal(newEventTypeId2, createdId2);
+			Assert.Equal("new-event-type-1", createdName1);
+			Assert.Equal("new-event-type-2", createdName2);
+			Assert.Equal(_numEventTypes + 2, _mockIndexReader.EventTypeCount);
+		}
+		
+		[Fact]
+		public void can_find_existing_event_type() {
+			Assert.True(GetOrReserveEventType(_eventType, out var eventTypeId, out _, out _));
+			Assert.Equal(_numEventTypes, _mockIndexReader.EventTypeCount);
+			Assert.Equal(_eventTypeId, eventTypeId);
+			_sut.EventTypes.LookupName(_eventTypeId);
+			Assert.Equal(_eventType, _sut.EventTypes.LookupName(_eventTypeId));
+		}
+		
+		[Theory]
+		[InlineData(0, ""/* empty event type */)]
+		[InlineData(1, "$event-type")]
+		[InlineData(2, "$stream")]
+		[InlineData(3, "$metadata")] 
+		[InlineData(4, "$streamDeleted")]
+		public void can_find_virtual_event_type(EventTypeId expectedId, string name) {
+			Assert.True(GetOrReserveEventType(name, out var eventTypeId, out _, out _));
+			Assert.Equal(_numEventTypes, _mockIndexReader.EventTypeCount);
+			Assert.Equal(expectedId, eventTypeId);
+			Assert.Equal(name, _sut.EventTypes.LookupName(expectedId));
+		}
+
+		[Fact]
+		public void uses_correct_event_type_interval() {
+			var expectedEventTypeNumber1 = LogV3SystemEventTypes.FirstRealEventTypeNumber + _numEventTypes;
+			Assert.False(GetOrReserveEventType("new-event-type-1", out var newEventTypeId1, out var createdId1, out var createdName1));
+			Assert.False(GetOrReserveEventType("new-event-type-2", out var newEventTypeId2, out var createdId2, out var createdName2));
+			Assert.Equal(expectedEventTypeNumber1, newEventTypeId1);
+			Assert.Equal(expectedEventTypeNumber1 + 1, newEventTypeId2);
+			Assert.True(_sut.EventTypes.TryGetName((uint)expectedEventTypeNumber1, out var eventType1));
+			Assert.True(_sut.EventTypes.TryGetName((uint)expectedEventTypeNumber1 + 1, out var eventType2));
+		}
+		
 		[Fact]
 		public void can_add_another_stream() {
 			Assert.False(GetOrReserve("new-stream-1", out var newStreamId1, out var createdId1, out var createdName1));
@@ -86,14 +162,14 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			Assert.Equal(newStreamId2, createdId2);
 			Assert.Equal("new-stream-1", createdName1);
 			Assert.Equal("new-stream-2", createdName2);
-			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
+			Assert.Equal(_numStreams + 2, _mockIndexReader.StreamCount);
 		}
 
 		[Fact]
 		public void can_add_another_meta_stream() {
 			Assert.False(GetOrReserve("$$new-stream-3", out var newStreamId1, out var createdId1, out var createdName1));
 			Assert.False(GetOrReserve("$$new-stream-4", out var newStreamId2, out var createdId2, out var createdName2));
-			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
+			Assert.Equal(_numStreams + 2, _mockIndexReader.StreamCount);
 
 			// ids should be 2 apart to leave room for meta
 			Assert.Equal(newStreamId1 + 2, newStreamId2);
@@ -109,7 +185,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		public void can_add_another_system_stream() {
 			Assert.False(GetOrReserve("$new-stream-5", out var newStreamId1, out var createdId1, out var createdName1));
 			Assert.False(GetOrReserve("$new-stream-6", out var newStreamId2, out var createdId2, out var createdName2));
-			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
+			Assert.Equal(_numStreams + 2, _mockIndexReader.StreamCount);
 
 			// ids should be 2 apart to leave room for meta
 			Assert.Equal(newStreamId1 + 2, newStreamId2);
@@ -125,7 +201,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		public void can_add_another_system_meta_stream() {
 			Assert.False(GetOrReserve("$$$new-stream-7", out var newStreamId1, out var createdId1, out var createdName1));
 			Assert.False(GetOrReserve("$$$new-stream-8", out var newStreamId2, out var createdId2, out var createdName2));
-			Assert.Equal(_numStreams + 2, _mockIndexReader.Count);
+			Assert.Equal(_numStreams + 2, _mockIndexReader.StreamCount);
 
 			// ids should be 2 apart to leave room for meta
 			Assert.Equal(newStreamId1 + 2, newStreamId2);
@@ -140,7 +216,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		[Fact]
 		public void can_find_existing_stream() {
 			Assert.True(GetOrReserve(_stream, out var streamId, out _, out _));
-			Assert.Equal(_numStreams, _mockIndexReader.Count);
+			Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 			Assert.Equal(_streamId, streamId);
 			Assert.Equal(_streamId, _sut.StreamIds.LookupValue(_stream));
 			Assert.Equal(_stream, _sut.StreamNames.LookupName(_streamId));
@@ -154,7 +230,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			var metaStreamName = "$$" + _stream;
 			var expectedMetaStreamId = _streamId + 1;
 			Assert.True(GetOrReserve(metaStreamName, out var streamId, out _, out _));
-			Assert.Equal(_numStreams, _mockIndexReader.Count);
+			Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 			Assert.Equal(expectedMetaStreamId, streamId);
 			Assert.Equal(expectedMetaStreamId, _sut.StreamIds.LookupValue(metaStreamName));
 			Assert.Equal(metaStreamName, _sut.StreamNames.LookupName(expectedMetaStreamId));
@@ -165,7 +241,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		[Fact]
 		public void can_find_existing_system_stream() {
 			Assert.True(GetOrReserve(_systemStream, out var streamId, out _, out _));
-			Assert.Equal(_numStreams, _mockIndexReader.Count);
+			Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 			Assert.Equal(_systemStreamId, streamId);
 			Assert.Equal(_systemStreamId, _sut.StreamIds.LookupValue(_systemStream));
 			Assert.Equal(_systemStream, _sut.StreamNames.LookupName(_systemStreamId));
@@ -178,7 +254,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			var metaStreamName = "$$" + _systemStream;
 			var expectedMetaStreamId = _systemStreamId + 1;
 			Assert.True(GetOrReserve(metaStreamName, out var streamId, out _, out _));
-			Assert.Equal(_numStreams, _mockIndexReader.Count);
+			Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 			Assert.Equal(expectedMetaStreamId, streamId);
 			Assert.Equal(expectedMetaStreamId, _sut.StreamIds.LookupValue(metaStreamName));
 			Assert.Equal(metaStreamName, _sut.StreamNames.LookupName(expectedMetaStreamId));
@@ -192,7 +268,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		[InlineData(8, "$settings")]
 		public void can_find_virtual_stream(StreamId expectedId, string name) {
 			Assert.True(GetOrReserve(name, out var streamId, out _, out _));
-			Assert.Equal(_numStreams, _mockIndexReader.Count);
+			Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 			Assert.Equal(expectedId, streamId);
 			Assert.Equal(expectedId, _sut.StreamIds.LookupValue(name));
 			Assert.Equal(name, _sut.StreamNames.LookupName(expectedId));
@@ -203,7 +279,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		[Fact]
 		public void can_find_virtual_meta_stream() {
 			Assert.True(GetOrReserve("$$$all", out var streamId, out _, out _));
-			Assert.Equal(_numStreams, _mockIndexReader.Count);
+			Assert.Equal(_numStreams, _mockIndexReader.StreamCount);
 			Assert.Equal(5U, streamId);
 			Assert.Equal(5U, _sut.StreamIds.LookupValue("$$$all"));
 			Assert.Equal("$$$all", _sut.StreamNames.LookupName(5));
@@ -231,15 +307,19 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		}
 
 		class MockIndexReader : IIndexReader<StreamId> {
-			private readonly Dictionary<long, IPrepareLogRecord<StreamId>> _streamsStream = new();
-
-			public void Add(long eventNumber, IPrepareLogRecord<StreamId> streamRecord) => _streamsStream.Add(eventNumber, streamRecord);
-
-			public int Count => _streamsStream.Count;
+			private Dictionary<StreamId, Dictionary<long, IPrepareLogRecord<StreamId>>> _index = new() {
+				{LogV3SystemStreams.StreamsCreatedStreamNumber, new()},
+				{LogV3SystemStreams.EventTypesStreamNumber, new()} 
+			};
+			
+			public void Add(long eventNumber, IPrepareLogRecord<StreamId> record) => _index[record.EventStreamId].Add(eventNumber, record);
+			
+			public int StreamCount => _index[LogV3SystemStreams.StreamsCreatedStreamNumber].Count;
+			public int EventTypeCount => _index[LogV3SystemStreams.EventTypesStreamNumber].Count;
 
 			public IPrepareLogRecord<StreamId> ReadPrepare(StreamId streamId, long eventNumber) {
 				// simulates what would be in the index.
-				return _streamsStream[eventNumber];
+				return _index[streamId][eventNumber];
 			}
 
 			public long CachedStreamInfo => throw new NotImplementedException();
@@ -256,7 +336,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 			public long GetStreamLastEventNumber(StreamId streamId) {
 				if (streamId == LogV3SystemStreams.StreamsCreatedStreamNumber)
-					return _streamsStream.Count - 1;
+					return _index[streamId].Count - 1;
 				throw new NotImplementedException();
 			}
 

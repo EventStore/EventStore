@@ -121,6 +121,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
 				// account for stream records: $scavenges, $user-admin, $user-ops, $users, stream-a
 				expectedCount -= 5;
+				// account for event type records: $UserCreated, $User, AEvent, BEvent, CEvent
+				expectedCount -= 5;
 			}
 
 			Assert.AreEqual(expectedCount, slice.Events.Length);

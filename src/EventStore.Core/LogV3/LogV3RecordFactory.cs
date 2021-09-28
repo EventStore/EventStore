@@ -18,6 +18,7 @@ namespace EventStore.Core.LogV3 {
 		}
 
 		public bool ExplicitStreamCreation => true;
+		public bool ExplicitEventTypeCreation => true;
 
 		public IPrepareLogRecord<StreamId> CreateStreamRecord(
 			Guid streamId,
@@ -32,6 +33,28 @@ namespace EventStore.Core.LogV3 {
 				timeStamp: timeStamp,
 				streamNumber: streamNumber,
 				streamName: streamName,
+				partitionId: _rootPartitionId);
+
+			return result;
+		}
+
+		public IPrepareLogRecord<StreamId> CreateEventTypeRecord(
+			Guid eventTypeId,
+			Guid parentEventTypeId,
+			string eventType,
+			uint eventTypeNumber,
+			ushort eventTypeVersion,
+			long logPosition,
+			DateTime timeStamp) {
+
+			var result = new LogV3EventTypeRecord(
+				eventTypeId: eventTypeId,
+				parentEventTypeId: parentEventTypeId,
+				eventType: eventType,
+				eventTypeNumber: eventTypeNumber,
+				eventTypeVersion: eventTypeVersion,
+				logPosition: logPosition,
+				timeStamp: timeStamp,
 				partitionId: _rootPartitionId);
 
 			return result;
@@ -58,7 +81,7 @@ namespace EventStore.Core.LogV3 {
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
-			string eventType,
+			StreamId eventType,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata) {
 

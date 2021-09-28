@@ -26,15 +26,17 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId1 = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var streamId2 = LogFormatHelper<TLogFormat, TStreamId>.StreamId2;
+			var eventTypeId1 = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
+			var eventTypeId2 = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId2;
 
 			_prepare1 = LogRecord.Prepare(recordFactory, 0, _corrId, _eventId, 0, 0, streamId1, 1,
-				PrepareFlags.None, "Foo", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
+				PrepareFlags.None, eventTypeId1, new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			var r1 = _chunk.TryAppend(_prepare1);
 			_written1 = r1.Success;
 			_position1 = r1.OldPosition;
 
 			_prepare2 = LogRecord.Prepare(recordFactory, r1.NewPosition, _corrId, _eventId, 0, 0, streamId2, 2,
-				PrepareFlags.None, "Foo2", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
+				PrepareFlags.None, eventTypeId2, new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			var r2 = _chunk.TryAppend(_prepare2);
 			_written2 = r2.Success;
 			_position2 = r2.OldPosition;
