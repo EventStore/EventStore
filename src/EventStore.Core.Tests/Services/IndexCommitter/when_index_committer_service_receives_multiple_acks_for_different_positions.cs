@@ -26,9 +26,9 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 
 		public override void When() {
 			// Reach quorum for middle commit
-			ReplicationCheckpoint.Write(_logPositionCommit2);
+			ReplicationCheckpoint.Write(_logPositionCommit2 + 1);
 			ReplicationCheckpoint.Flush();
-			Service.Handle(new ReplicationTrackingMessage.ReplicatedTo(_logPositionCommit2));
+			Service.Handle(new ReplicationTrackingMessage.ReplicatedTo(_logPositionCommit2 + 1));
 
 		}
 
