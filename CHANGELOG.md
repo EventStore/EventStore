@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
 - Incorrectly setting OutputState on IQuerySources when only a fold is defined [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
 - Off-by-one error in Index committer service [EventStore#3186](https://github.com/EventStore/EventStore/pull/3186)
 - Node stays stuck in Leader state until next elections if a quorum never emerges [EventStore#3181](https://github.com/EventStore/EventStore/pull/3181)
+- user provided metadata to be formatted correctly [EventStore#3188](https://github.com/EventStore/EventStore/pull/3188)
+- Incorrect configuration file selection on linux [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
@@ -42,6 +44,7 @@ All notable changes to this project will be documented in this file.
 - Retry of tests incase of failure triggered by flakiness. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
 - Checks to improve cluster stability before running tests. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
 - Add a log message describing how to disable the stream existence filter [EventStore#3172](https://github.com/EventStore/EventStore/pull/3172)
+- New options to control logging: --log-console-format, --log-file-size, --log-file-interval, --log-file-retention-count, and --disable-log-file [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
