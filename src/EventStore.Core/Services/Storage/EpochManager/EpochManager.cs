@@ -5,8 +5,10 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 
@@ -192,7 +194,6 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			Ensure.Nonnegative(epochNumber, "epochNumber");
 			Ensure.NotEmptyGuid(epochId, "epochId");
 
-
 			if (epochNumber > LastEpochNumber)
 				return false;
 
@@ -202,6 +203,10 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				if (epoch != null) {
 					return epoch.EpochId == epochId && epoch.EpochPosition == epochPosition;
 				}
+
+				if (_firstCachedEpoch.Value != null && epochNumber > _firstCachedEpoch.Value.EpochNumber)
+					// This isn't a cache miss, we don't have that epoch on this node
+					return false;
 			}
 
 			// epochNumber < _minCachedEpochNumber
@@ -216,6 +221,9 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 				epoch = sysRec.GetEpochRecord();
 				return epoch.EpochNumber == epochNumber && epoch.EpochId == epochId;
+			} catch(Exception ex) when (ex is InvalidReadException || ex is UnableToReadPastEndOfStreamException) {
+				Log.Information(ex, "Failed to read epoch {epochNumber} at {epochPosition}.", epochNumber, epochPosition);
+				return false;
 			} finally {
 				_readers.Return(reader);
 			}
