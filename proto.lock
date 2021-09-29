@@ -4242,6 +4242,11 @@
                     "id": 9,
                     "name": "uuid_option",
                     "type": "UUIDOption"
+                  },
+                  {
+                    "id": 10,
+                    "name": "control_option",
+                    "type": "ControlOption"
                   }
                 ],
                 "messages": [
@@ -4370,6 +4375,16 @@
                         "type": "event_store.client.Empty"
                       }
                     ]
+                  },
+                  {
+                    "name": "ControlOption",
+                    "fields": [
+                      {
+                        "id": 1,
+                        "name": "compatibility",
+                        "type": "uint32"
+                      }
+                    ]
                   }
                 ]
               }
@@ -4400,12 +4415,17 @@
               },
               {
                 "id": 5,
-                "name": "stream_position",
-                "type": "StreamPosition"
+                "name": "first_stream_position",
+                "type": "uint64"
               },
               {
                 "id": 6,
-                "name": "all_stream_position",
+                "name": "last_stream_position",
+                "type": "uint64"
+              },
+              {
+                "id": 7,
+                "name": "last_all_stream_position",
                 "type": "AllStreamPosition"
               }
             ],
@@ -4519,36 +4539,6 @@
                     "id": 1,
                     "name": "stream_identifier",
                     "type": "event_store.client.StreamIdentifier"
-                  }
-                ]
-              },
-              {
-                "name": "StreamPosition",
-                "fields": [
-                  {
-                    "id": 1,
-                    "name": "last_stream_position",
-                    "type": "uint64"
-                  },
-                  {
-                    "id": 2,
-                    "name": "next_stream_position",
-                    "type": "uint64"
-                  }
-                ]
-              },
-              {
-                "name": "AllStreamPosition",
-                "fields": [
-                  {
-                    "id": 1,
-                    "name": "last_position",
-                    "type": "event_store.client.AllStreamPosition"
-                  },
-                  {
-                    "id": 2,
-                    "name": "next_position",
-                    "type": "event_store.client.AllStreamPosition"
                   }
                 ]
               }

@@ -21,6 +21,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly bool _requiresLeader;
 			private readonly DateTime _deadline;
 			private readonly ReadReq.Types.Options.Types.UUIDOption _uuidOption;
+			private readonly uint _compatibility;
 			private readonly CancellationToken _cancellationToken;
 			private readonly SemaphoreSlim _semaphore;
 			private readonly Channel<ReadResp> _channel;
@@ -38,23 +39,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				bool requiresLeader,
 				DateTime deadline,
 				ReadReq.Types.Options.Types.UUIDOption uuidOption,
+				uint compatibility,
 				CancellationToken cancellationToken) {
-				if (bus == null) {
-					throw new ArgumentNullException(nameof(bus));
-				}
-
-				if (streamName == null) {
-					throw new ArgumentNullException(nameof(streamName));
-				}
-
-				_bus = bus;
-				_streamName = streamName;
+				_bus = bus ?? throw new ArgumentNullException(nameof(bus));
+				_streamName = streamName ?? throw new ArgumentNullException(nameof(streamName));
 				_maxCount = maxCount;
 				_resolveLinks = resolveLinks;
 				_user = user;
 				_requiresLeader = requiresLeader;
 				_deadline = deadline;
 				_uuidOption = uuidOption;
+				_compatibility = compatibility;
 				_cancellationToken = cancellationToken;
 				_semaphore = new SemaphoreSlim(1, 1);
 				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
@@ -100,43 +95,44 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					switch (completed.Result) {
 						case ReadStreamResult.Success:
-							var nextStreamPosition = (ulong)completed.NextEventNumber;
+							if (readCount == 0 && _compatibility >= 1) {
+								if (completed.Events.Length == 0) {
+									var firstStreamPosition = StreamRevision.FromInt64(completed.NextEventNumber);
+									if (startRevision != firstStreamPosition) {
+										await _channel.Writer.WriteAsync(new() {
+											FirstStreamPosition = firstStreamPosition
+										}, ct).ConfigureAwait(false);
+									}
+								}
+							}
 
 							foreach (var @event in completed.Events) {
 								if (readCount >= _maxCount) {
-									await _channel.Writer.WriteAsync(new ReadResp {
-										StreamPosition = new() {
-											LastStreamPosition = (ulong)completed.LastEventNumber,
-											NextStreamPosition = nextStreamPosition
-										}
-									}, ct).ConfigureAwait(false);
-									_channel.Writer.TryComplete();
-									return;
+									break;
 								}
-								await _channel.Writer.WriteAsync(new ReadResp {
-									Event = ConvertToReadEvent(_uuidOption, @event),
+								await _channel.Writer.WriteAsync(new() {
+									Event = ConvertToReadEvent(_uuidOption, @event)
 								}, ct).ConfigureAwait(false);
-								nextStreamPosition = (ulong)@event.OriginalEvent.EventNumber;
 								readCount++;
 							}
 
-
-							if (completed.IsEndOfStream) {
-								await _channel.Writer.WriteAsync(new ReadResp {
-									StreamPosition = new() {
-										LastStreamPosition = (ulong)completed.LastEventNumber,
-										NextStreamPosition = nextStreamPosition
-									}
-								}, ct).ConfigureAwait(false);
-								_channel.Writer.TryComplete();
+							if (!completed.IsEndOfStream && readCount < _maxCount) {
+								ReadPage(StreamRevision.FromInt64(completed.NextEventNumber), readCount);
 								return;
 							}
 
-							ReadPage(StreamRevision.FromInt64(completed.NextEventNumber), readCount);
+							if (_compatibility >= 1) {
+								await _channel.Writer.WriteAsync(new() {
+									LastStreamPosition = StreamRevision.FromInt64(completed.LastEventNumber)
+								}, ct).ConfigureAwait(false);
+							}
+
+							_channel.Writer.TryComplete();
 							return;
+
 						case ReadStreamResult.NoStream:
-							await _channel.Writer.WriteAsync(new ReadResp {
-								StreamNotFound = new ReadResp.Types.StreamNotFound {
+							await _channel.Writer.WriteAsync(new() {
+								StreamNotFound = new() {
 									StreamIdentifier = _streamName
 								}
 							}, _cancellationToken).ConfigureAwait(false);

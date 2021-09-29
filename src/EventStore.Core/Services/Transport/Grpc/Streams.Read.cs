@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using Grpc.Core;
-using Microsoft.AspNetCore.Http;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
 using FilterOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.FilterOptionOneofCase;
 using ReadDirection = EventStore.Client.Streams.ReadReq.Types.Options.Types.ReadDirection;
@@ -22,6 +20,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var streamOptionsCase = options.StreamOptionCase;
 			var readDirection = options.ReadDirection;
 			var filterOptionsCase = options.FilterOptionCase;
+			var compatibility = options.ControlOption?.Compatibility ?? 0;
 
 			var user = context.GetHttpContext().User;
 			var requiresLeader = GetRequiresLeader(context.RequestHeaders);
@@ -55,6 +54,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							requiresLeader,
 							context.Deadline,
 							options.UuidOption,
+							compatibility,
 							context.CancellationToken),
 					(StreamOptionOneofCase.Stream,
 						CountOptionOneofCase.Count,
@@ -69,6 +69,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							requiresLeader,
 							context.Deadline,
 							options.UuidOption,
+							compatibility,
 							context.CancellationToken),
 					(StreamOptionOneofCase.All,
 						CountOptionOneofCase.Count,
