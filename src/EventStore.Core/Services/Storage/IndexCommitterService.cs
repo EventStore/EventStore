@@ -223,7 +223,7 @@ namespace EventStore.Core.Services.Storage {
 				if (_commitAcks.Count > 0) {
 					do {
 						var ack = _commitAcks.Values[0];
-						if (ack.LogPosition > _replicationCheckpoint.Read()) { break; }
+						if (ack.LogPosition >= _replicationCheckpoint.Read()) { break; }
 						replicated.Add(ack);
 						_commitAcks.RemoveAt(0);
 					} while (_commitAcks.Count > 0);
