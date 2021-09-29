@@ -453,6 +453,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
 		public void when_reading_multiple_times_exact_page_size() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 4096 * 100 + 50);
+			Span<byte> expected = GetBytes(4096);
 			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
 				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
 				var read = new byte[4096];
@@ -460,16 +461,21 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
 					var total = stream.Read(read, 0, 4096);
 					Assert.AreEqual(4096 * (i + 1), stream.Position);
 					Assert.AreEqual(4096, total);
-					for (var j = 0; j < read.Length; j++) {
-						Assert.AreEqual(j % 256, read[j]);
+					if (!expected.SequenceEqual(read)) {
+						for (var j = 0; j < read.Length; j++) {
+							Assert.AreEqual(j % 256, read[j]);
+						}
 					}
 				}
 
+				expected = expected.Slice(0, 50);
 				var total2 = stream.Read(read, 0, 50);
 				Assert.AreEqual(409600 + 50, stream.Position);
 				Assert.AreEqual(50, total2);
-				for (var j = 0; j < 50; j++) {
-					Assert.AreEqual(j % 256, read[j]);
+				if (!expected.SequenceEqual(read)) {
+					for (var j = 0; j < 50; j++) {
+						Assert.AreEqual(j % 256, read[j]);
+					}
 				}
 			}
 		}
@@ -478,17 +484,20 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
 		public void when_reading_multiple_times_offset_page_size() {
 			var filename = GetFilePathFor(Guid.NewGuid().ToString());
 			MakeFile(filename, 4096 * 100 + 50);
+			Span<byte> expected = GetBytes(4096 + 50);
+			expected = expected[50..];
 			using (var stream = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.ReadWrite,
 				FileShare.ReadWrite, false, 4096, 4096, false, 4096)) {
 				stream.Seek(50, SeekOrigin.Begin);
 				var read = new byte[4096];
 				for (var i = 0; i < 100; i++) {
-					if (i == 99) Console.Write("");
 					var total = stream.Read(read, 0, 4096);
 					Assert.AreEqual(4096 * (i + 1) + 50, stream.Position);
 					Assert.AreEqual(4096, total);
-					for (var j = 0; j < read.Length; j++) {
-						Assert.AreEqual((j + 50) % 256, read[j]);
+					if (!expected.SequenceEqual(read)) {
+						for (var j = 0; j < read.Length; j++) {
+							Assert.AreEqual((j + 50) % 256, read[j]);
+						}
 					}
 				}
 
@@ -615,23 +624,24 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
 			var bytes = BuildBytes(4096 * 128);
 			File.WriteAllBytes(filename, bytes);
 			using (var f = new FileStream(filename, FileMode.Open, FileAccess.Read)) {
-				using (
-					var b = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.Read, FileShare.Read, false,
-						4096, 4096, false, 4096)) {
-					var readf = new byte[4096];
+				using (var b = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.Read, FileShare.Read,
+					false, 4096, 4096, false, 4096)) {
+					Span<byte> readf = new byte[4096];
 					var readb = new byte[4096];
 					for (var i = 0; i < 128; i++) {
-						var totalf = f.Read(readf, 0, 4096);
+						var totalf = f.Read(readf);
 						var totalb = b.Read(readb, 0, 4096);
-						Assert.AreEqual(totalf, totalb);
-						for (var j = 0; j < 4096; j++) {
-							Assert.AreEqual(readf[j], readb[j]);
+
+						if (!readf[..totalf].SequenceEqual(readb[..totalb])) {
+							for (var j = 0; j < 4096; j++) {
+								Assert.AreEqual(totalf, totalb);
+								Assert.AreEqual(readf[j], readb[j]);
+							}
 						}
 					}
 				}
 			}
 		}
-
 
 		[Test]
 		public void same_as_file_stream_on_reads_with_bigger_buffer() {
@@ -639,17 +649,19 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
 			var bytes = BuildBytes(4096 * 128);
 			File.WriteAllBytes(filename, bytes);
 			using (var f = new FileStream(filename, FileMode.Open, FileAccess.Read)) {
-				using (
-					var b = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.Read, FileShare.Read, false,
-						4096, 4096 * 4, false, 4096)) {
-					var readf = new byte[4096];
+				using (var b = UnbufferedFileStream.Create(filename, FileMode.Open, FileAccess.Read, FileShare.Read,
+					false, 4096, 4096 * 4, false, 4096)) {
+					Span<byte> readf = new byte[4096];
 					var readb = new byte[4096];
 					for (var i = 0; i < 128; i++) {
-						var totalf = f.Read(readf, 0, 4096);
+						var totalf = f.Read(readf);
 						var totalb = b.Read(readb, 0, 4096);
-						Assert.AreEqual(totalf, totalb);
-						for (var j = 0; j < 4096; j++) {
-							Assert.AreEqual(readf[j], readb[j]);
+
+						if (!readf[..totalf].SequenceEqual(readb[..totalb])) {
+							for (var j = 0; j < 4096; j++) {
+								Assert.AreEqual(totalf, totalb);
+								Assert.AreEqual(readf[j], readb[j]);
+							}
 						}
 					}
 				}
