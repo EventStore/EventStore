@@ -32,7 +32,6 @@ namespace EventStore.Core.Services.VNode {
 
 		private VNodeState _state = VNodeState.Initializing;
 		private MemberInfo _leader;
-		private int _currentEpoch;
 		private Guid _stateCorrelationId = Guid.NewGuid();
 		private Guid _subscriptionId = Guid.Empty;
 		private readonly int _clusterSize;
@@ -91,7 +90,6 @@ namespace EventStore.Core.Services.VNode {
 			                     TimeSpan.FromMilliseconds(300);
 
 			_fsm = CreateFSM();
-			_currentEpoch = -1;
 		}
 
 		public void SetMainQueue(IQueuedHandler mainQueue) {
@@ -105,8 +103,8 @@ namespace EventStore.Core.Services.VNode {
 			var stm = new VNodeFSMBuilder(() => _state)
 				.InAnyState()
 				.When<SystemMessage.StateChangeMessage>()
-				.Do(m => Application.Exit(ExitCode.Error,
-					string.Format("{0} message was unhandled in {1}.", m.GetType().Name, GetType().Name)))
+					.Do(m => Application.Exit(ExitCode.Error,
+						string.Format("{0} message was unhandled in {1}. State: {2}", m.GetType().Name, GetType().Name, _state)))
 				.When<AuthenticationMessage.AuthenticationProviderInitialized>().Do(Handle)
 				.When<AuthenticationMessage.AuthenticationProviderInitializationFailed>().Do(Handle)
 				.When<SystemMessage.SubSystemInitialized>().Do(Handle)
@@ -274,10 +272,12 @@ namespace EventStore.Core.Services.VNode {
 				.InState(VNodeState.PreReadOnlyReplica)
 				.When<SystemMessage.BecomeReadOnlyReplica>().Do(Handle)
 				.InStates(VNodeState.PreLeader, VNodeState.Leader, VNodeState.ResigningLeader)
+				.When<SystemMessage.NoQuorumMessage>().Do(Handle)
 				.When<GossipMessage.GossipUpdated>().Do(HandleAsLeader)
 				.When<ReplicationMessage.ReplicaSubscriptionRequest>().ForwardTo(_outputBus)
 				.When<ReplicationMessage.ReplicaLogPositionAck>().ForwardTo(_outputBus)
 				.InAllStatesExcept(VNodeState.PreLeader, VNodeState.Leader, VNodeState.ResigningLeader)
+				.When<SystemMessage.NoQuorumMessage>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscriptionRequest>().Ignore()
 				.InState(VNodeState.PreLeader)
 				.When<SystemMessage.BecomeLeader>().Do(Handle)
@@ -285,7 +285,6 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.ChaserCaughtUp>().Do(HandleAsPreLeader)
 				.WhenOther().ForwardTo(_outputBus)
 				.InStates(VNodeState.Leader, VNodeState.ResigningLeader)
-				.When<SystemMessage.NoQuorumMessage>().Do(Handle)
 				.When<StorageMessage.WritePrepares>().ForwardTo(_outputBus)
 				.When<StorageMessage.WriteDelete>().ForwardTo(_outputBus)
 				.When<StorageMessage.WriteTransactionStart>().ForwardTo(_outputBus)
@@ -294,7 +293,6 @@ namespace EventStore.Core.Services.VNode {
 				.When<StorageMessage.WriteCommit>().ForwardTo(_outputBus)
 				.WhenOther().ForwardTo(_outputBus)
 				.InAllStatesExcept(VNodeState.Leader, VNodeState.ResigningLeader)
-				.When<SystemMessage.NoQuorumMessage>().Ignore()
 				.When<SystemMessage.InitiateLeaderResignation>().Ignore()
 				.When<SystemMessage.BecomeResigningLeader>().Ignore()
 				.When<StorageMessage.WritePrepares>().Ignore()
@@ -517,7 +515,6 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(ElectionMessage.ElectionsDone message) {
-			_currentEpoch = message.ProposalNumber;
 			if (_leader != null && _leader.InstanceId == message.Leader.InstanceId) {
 				//if the leader hasn't changed, we skip state changes through PreLeader or PreReplica
 				if (_leader.InstanceId == _nodeInfo.InstanceId && _state == VNodeState.Leader) {
@@ -1013,7 +1010,6 @@ namespace EventStore.Core.Services.VNode {
 				return;
 
 			_outputBus.Publish(message);
-			_fsm.Handle(new SystemMessage.BecomeLeader(_stateCorrelationId, _currentEpoch));
 		}
 
 		private void HandleAsPreReplica(SystemMessage.ChaserCaughtUp message) {

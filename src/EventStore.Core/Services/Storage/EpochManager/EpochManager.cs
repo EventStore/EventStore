@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
@@ -267,9 +268,92 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				if (!_writer.Write(rec, out pos))
 					throw new Exception($"Second write try failed at {epoch.EpochPosition}.");
 			}
+			WriteEpochInformationWithRetry(epoch);
 			_writer.Flush();
+			_bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			_bus.Publish(new SystemMessage.EpochWritten(epoch));
 			return epoch;
+		}
+
+		void WriteEpochInformationWithRetry(EpochRecord epoch) {
+			if (!TryGetExpectedVersionForEpochInformation(epoch, out var expectedVersion))
+				expectedVersion = ExpectedVersion.NoStream;
+
+			var originalLogPosition = _writer.Checkpoint.ReadNonFlushed();
+
+			var epochInformation = LogRecord.Prepare(
+					logPosition: originalLogPosition,
+					correlationId: Guid.NewGuid(),
+					eventId: Guid.NewGuid(),
+					transactionPos: originalLogPosition,
+					transactionOffset: 0,
+					eventStreamId: SystemStreams.EpochInformationStream,
+					expectedVersion: expectedVersion,
+					flags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
+					eventType: SystemEventTypes.EpochInformation,
+					data: epoch.AsSerialized(),
+					metadata: Empty.ByteArray);
+
+			if (_writer.Write(epochInformation, out var retryLogPosition))
+				return;
+
+			epochInformation = new PrepareLogRecord(
+				retryLogPosition,
+				epochInformation.CorrelationId,
+				epochInformation.EventId,
+				retryLogPosition,
+				epochInformation.TransactionOffset,
+				epochInformation.EventStreamId,
+				epochInformation.ExpectedVersion,
+				epochInformation.TimeStamp,
+				epochInformation.Flags,
+				epochInformation.EventType,
+				epochInformation.Data,
+				epochInformation.Metadata);
+
+			if (_writer.Write(epochInformation, out _))
+				return;
+
+			throw new Exception(
+				string.Format("Second write try failed when first writing $epoch-information at {0}, then at {1}.",
+					originalLogPosition,
+					retryLogPosition));
+		}
+
+		// we have just written epoch. about to write the $epoch-information for it.
+		// this decides what expected version the $epoch-information should have.
+		// it looks up the previous epoch, finds that epoch's previous information
+		// (which immediately follows it) and gets its event number.
+		bool TryGetExpectedVersionForEpochInformation(EpochRecord epoch, out long expectedVersion) {
+			expectedVersion = default;
+
+			if (epoch.PrevEpochPosition < 0)
+				return false;
+
+			var reader = _readers.Get();
+			try {
+				reader.Reposition(epoch.PrevEpochPosition);
+
+				// read the epoch
+				var result = reader.TryReadNext();
+				if (!result.Success)
+					return false;
+
+				// read the epoch-information (if there is one)
+				result = reader.TryReadNext();
+				if (!result.Success ||
+					result.LogRecord.RecordType != LogRecordType.Prepare ||
+					result.LogRecord is not PrepareLogRecord prepare ||
+					prepare.EventStreamId != SystemStreams.EpochInformationStream)
+					return false;
+
+				expectedVersion = prepare.ExpectedVersion + 1;
+				return true;
+			} catch (Exception) {
+				return false;
+			} finally {
+				_readers.Return(reader);
+			}
 		}
 
 		public void CacheEpoch(EpochRecord epoch) {

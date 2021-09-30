@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -7,6 +8,7 @@ using EventStore.Core.Messages;
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public static class EventFilter {
 		public static IEventFilter None => new AlwaysAllowStrategy();
+		public static IEventFilter DefaultAllFilter { get; } = new DefaultAllFilterStrategy();
 
 		public static class StreamName {
 			public static IEventFilter Prefixes(params string[] prefixes)
@@ -44,6 +46,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				StreamName.Regex(filter.Data[0]),
 				_ => throw new Exception() // Invalid filter
 			};
+		}
+
+		public sealed class DefaultAllFilterStrategy : IEventFilter {
+			[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+			public bool IsEventAllowed(EventRecord eventRecord) =>
+				eventRecord.EventStreamId != SystemStreams.EpochInformationStream;
+
+			public override string ToString() => nameof(DefaultAllFilterStrategy);
 		}
 
 		private class AlwaysAllowStrategy : IEventFilter {

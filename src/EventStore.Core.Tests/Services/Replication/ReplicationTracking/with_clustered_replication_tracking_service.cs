@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Replication.ReplicationTracking {
 		public abstract void When();
 		
 		protected void BecomeLeader() {
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 		}
 
 		protected void BecomeUnknown() {

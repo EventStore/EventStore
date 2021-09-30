@@ -26,6 +26,7 @@ namespace EventStore.Core.Services.Replication {
 	public class LeaderReplicationService : IMonitoredQueue,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.EnablePreLeaderReplication>,
 		IHandle<ReplicationMessage.ReplicaSubscriptionRequest>,
 		IHandle<ReplicationMessage.ReplicaLogPositionAck>,
 		IHandle<ReplicationMessage.GetReplicationStats>,
@@ -68,6 +69,7 @@ namespace EventStore.Core.Services.Replication {
 		private volatile bool _newSubscriptions;
 		private TimeSpan _noQuorumTimestamp = TimeSpan.Zero;
 		private bool _noQuorumNotified;
+		private bool _preLeaderReplicationEnabled;
 		private ManualResetEventSlim _flushSignal = new ManualResetEventSlim(false, 1);
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
@@ -111,15 +113,41 @@ namespace EventStore.Core.Services.Replication {
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			_state = message.State;
 
+			if (message.State == VNodeState.PreLeader) {
+				_preLeaderReplicationEnabled = false;
+				_noQuorumTimestamp = TimeSpan.Zero;
+			}
+
+			if (message.State == VNodeState.Leader)
+				_noQuorumTimestamp = TimeSpan.Zero;
+
 			if (message.State == VNodeState.ShuttingDown)
 				_stop = true;
+		}
+
+		public void Handle(SystemMessage.EnablePreLeaderReplication message) {
+			_preLeaderReplicationEnabled = true;
+		}
+
+		private bool CanAcceptSubscription(ReplicationMessage.ReplicaSubscriptionRequest message) {
+			return CanAcceptSubscriptions() && message.LeaderId == _instanceId;
+		}
+
+		private bool CanAcceptSubscriptions() {
+			if (_state == VNodeState.Leader)
+				return true;
+
+			if (_state == VNodeState.PreLeader && _preLeaderReplicationEnabled)
+				return true;
+
+			return false;
 		}
 
 		public void Handle(ReplicationMessage.ReplicaSubscriptionRequest message) {
 			_publisher.Publish(new SystemMessage.VNodeConnectionEstablished(message.ReplicaEndPoint,
 				message.Connection.ConnectionId));
 
-			if (_state != VNodeState.Leader || message.LeaderId != _instanceId) {
+			if (!CanAcceptSubscription(message)) {
 				message.Envelope.ReplyWith(
 					new ReplicationMessage.ReplicaSubscriptionRetry(_instanceId, message.SubscriptionId));
 				return;
@@ -528,7 +556,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		private void ManageNoQuorumDetection() {
-			if (_state == VNodeState.Leader) {
+			if (CanAcceptSubscriptions()) {
 				var now = _stopwatch.Elapsed;
 				if (_subscriptions.Count(x => x.Value.IsPromotable) >= _clusterSize / 2) // everything is ok
 					_noQuorumTimestamp = TimeSpan.Zero;

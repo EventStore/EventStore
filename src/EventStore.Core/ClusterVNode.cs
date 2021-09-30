@@ -56,6 +56,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core {
 	public class ClusterVNode :
@@ -337,6 +338,18 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
+			// PRE-LEADER -> LEADER TRANSITION MANAGEMENT
+			var inaugurationManager = new InaugurationManager(
+				publisher: _mainQueue,
+				replicationCheckpoint: db.Config.ReplicationCheckpoint,
+				indexCheckpoint: db.Config.IndexCheckpoint);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.ChaserCaughtUp>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.EpochWritten>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.CheckInaugurationConditions>(inaugurationManager);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(inaugurationManager);
+			_mainBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(inaugurationManager);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(inaugurationManager);
 
 			//REPLICATION TRACKING
 			var replicationTracker =
@@ -716,6 +729,7 @@ namespace EventStore.Core {
 				AddTask(leaderReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
+				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);				
 				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(leaderReplicationService);
