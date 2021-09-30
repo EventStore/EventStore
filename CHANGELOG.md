@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
+- Optimise some slow running tests [EventStore#3190](https://github.com/EventStore/EventStore/pull/3190)
 
 ### solution
 - correct the sample [EventStore#3127](https://github.com/EventStore/EventStore/pull/3127)
