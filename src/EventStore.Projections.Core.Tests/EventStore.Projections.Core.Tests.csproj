@@ -17,7 +17,7 @@
 		<Compile Remove="Playground\LaunchpadBase.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0"/>
+		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
@@ -40,10 +40,4 @@
 		<IsMac>false</IsMac>
 		<IsMac Condition="'$(OS)' == 'Unix' And Exists ('/Library/Frameworks')">true</IsMac>
 	</PropertyGroup>
-	<Target BeforeTargets="BeforeBuild" Name="ProjectionDependencies">
-		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\linux\libjs1.so" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'" />
-		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\mac\libjs1.dylib" DestinationFolder="$(OutDir)" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'" />
-		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
-		<Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
-	</Target>
 </Project>

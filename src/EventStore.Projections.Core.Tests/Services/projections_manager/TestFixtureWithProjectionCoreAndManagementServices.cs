@@ -192,7 +192,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 			var guardBus = new GuardBusToTriggerFixingIfUsed();
 			var configuration = new ProjectionsStandardComponents(1, ProjectionType.All, guardBus, guardBus, guardBus, true,
-				JavascriptProjectionRuntime.Interpreted, 500, 250);
+				500, 250);
 			var coreService = new ProjectionCoreService(
 				workerId,
 				inputQueue,

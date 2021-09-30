@@ -74,7 +74,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_timeProvider = timeProvider;
 			_processingStrategySelector = new ProcessingStrategySelector(_subscriptionDispatcher);
 			_factory = new ProjectionStateHandlerFactory(TimeSpan.FromMilliseconds(configuration.ProjectionCompilationTimeout),
-				TimeSpan.FromMilliseconds(configuration.ProjectionExecutionTimeout), configuration.ProjectionRuntime);
+				TimeSpan.FromMilliseconds(configuration.ProjectionExecutionTimeout));
 		}
 
 		public ILogger Logger {

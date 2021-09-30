@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint {
 		[SetUp]
 		public void Setup() {
 			_stateHandlerFactory =
-				new ProjectionStateHandlerFactory(TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(100), JavascriptProjectionRuntime.Interpreted);
+				new ProjectionStateHandlerFactory(TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(100));
 		}
 
 		[Test, Category(_projectionType)]

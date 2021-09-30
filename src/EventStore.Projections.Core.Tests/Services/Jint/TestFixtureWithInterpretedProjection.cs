@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint
 			Given();
 			_logged = new List<string>();
 			_stateHandlerFactory =
-				new ProjectionStateHandlerFactory(CompilationTimeout, ExecutionTimeout, JavascriptProjectionRuntime.Interpreted);
+				new ProjectionStateHandlerFactory(CompilationTimeout, ExecutionTimeout);
 			_stateHandler = CreateStateHandler();
 			_source = _stateHandler.GetSourceDefinition();
 

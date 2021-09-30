@@ -37,23 +37,5 @@
 				<IsMac>false</IsMac>
 				<IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
 		</PropertyGroup>
-		<ItemGroup>
-				<Content Include="..\EventStore.Projections.Core\Prelude\**\*">
-						<PackagePath>Prelude</PackagePath>
-						<Link>Prelude/%(RecursiveDir)%(Filename)%(Extension)</Link>
-						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-				</Content>
-				<Content Include="..\libs\x64\win\js1.dll;..\libs\x64\win\js1.pdb" Condition=" '$(OS)' == 'Windows_NT' ">
-						<PackagePath>runtimes/win-x64/native/js1.dll</PackagePath>
-						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-				</Content>
-				<Content Include="..\libs\x64\linux\libjs1.so" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'false'">
-						<PackagePath>runtimes/linux-x64/native/libjs1.so</PackagePath>
-						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-				</Content>
-				<Content Include="..\libs\x64\mac\libjs1.dylib" Condition="'$(OS)' != 'Windows_NT' And '$(IsMac)' == 'true'">
-						<PackagePath>runtimes/osx-x64/native/libjs1.dylib</PackagePath>
-						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-				</Content>
-		</ItemGroup>
+		
 </Project>
