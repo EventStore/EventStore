@@ -234,13 +234,13 @@ namespace EventStore.Core.Services.Replication {
 			}
 
 			var leaderCheckpoint = _db.Config.WriterCheckpoint.Read();
-			Epoch afterCommonEpoch = null;
+			Epoch nextEpochAfterCommonEpoch = null;
 			Epoch commonEpoch = null;
 			for (int i = 0; i < epochs.Length; ++i) {
 				var epoch = epochs[i];
 				if (_epochManager.IsCorrectEpochAt(epoch.EpochPosition, epoch.EpochNumber, epoch.EpochId)) {
 					commonEpoch = epoch;
-					afterCommonEpoch = i > 0 ? epochs[i - 1] : null;
+					nextEpochAfterCommonEpoch = i > 0 ? epochs[i - 1] : null;
 					break;
 				}
 			}
@@ -256,9 +256,9 @@ namespace EventStore.Core.Services.Replication {
 				return 0;
 			}
 
-			// if afterCommonEpoch is present, logPosition > afterCommonEpoch.EpochPosition,
-			// so safe position is definitely the start of afterCommonEpoch
-			var replicaPosition = afterCommonEpoch?.EpochPosition ?? logPosition;
+			// if nextEpochAfterCommonEpoch is present, replica logPosition > nextEpochAfterCommonEpoch.EpochPosition,
+			// so safe position is definitely the start of nextEpochAfterCommonEpoch
+			var replicaPosition = nextEpochAfterCommonEpoch?.EpochPosition ?? logPosition;
 
 			if (commonEpoch.EpochNumber == _epochManager.LastEpochNumber)
 				return Math.Min(replicaPosition, leaderCheckpoint);
@@ -271,17 +271,17 @@ namespace EventStore.Core.Services.Replication {
 					"Replica [{0},S:{1},{2}(0x{3:X}),epochs:\n{4}]\n provided epochs which are not in "
 					+ "EpochManager (possibly too old, known epochs:\n{5}).\nLeader LogPosition: {6} (0x{7:X}). "
 					+ "We do not support this case as of now.\n"
-					+ "CommonEpoch: {8}, AfterCommonEpoch: {9}",
+					+ "CommonEpoch: {8}, NextEpochAfterCommonEpoch: {9}",
 					replicaEndPoint, subscriptionId, logPosition, logPosition,
 					string.Join("\n", epochs.Select(x => x.AsString())),
 					string.Join("\n", _epochManager.GetLastEpochs(int.MaxValue).Select(x => x.AsString())),
 					leaderCheckpoint, leaderCheckpoint,
-					commonEpoch.AsString(), afterCommonEpoch == null ? "<none>" : afterCommonEpoch.AsString());
+					commonEpoch.AsString(), nextEpochAfterCommonEpoch == null ? "<none>" : nextEpochAfterCommonEpoch.AsString());
 				Log.Error(
 					"Replica [{replicaEndPoint},S:{subscriptionId},{logPosition}(0x{logPosition:X}),epochs:\n{epochs}]\n provided epochs which are not in "
 					+ "EpochManager (possibly too old, known epochs:\n{lastEpochs}).\nLeader LogPosition: {leaderCheckpoint} (0x{leaderCheckpoint:X}). "
 					+ "We do not support this case as of now.\n"
-					+ "CommonEpoch: {commonEpoch}, AfterCommonEpoch: {afterCommonEpoch}",
+					+ "CommonEpoch: {commonEpoch}, NextEpochAfterCommonEpoch: {nextEpochAfterCommonEpoch}",
 					replicaEndPoint,
 					subscriptionId,
 					logPosition,
@@ -291,7 +291,7 @@ namespace EventStore.Core.Services.Replication {
 					leaderCheckpoint,
 					leaderCheckpoint,
 					commonEpoch.AsString(),
-					afterCommonEpoch == null ? "<none>" : afterCommonEpoch.AsString()
+					nextEpochAfterCommonEpoch == null ? "<none>" : nextEpochAfterCommonEpoch.AsString()
 				);
 				throw new Exception(msg);
 			}
