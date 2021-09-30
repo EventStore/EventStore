@@ -64,7 +64,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public bool IsCurrent() {
-			Debug.Assert(_state == VNodeState.Leader);
+			Debug.Assert(_state == VNodeState.Leader || _state == VNodeState.PreLeader);
 			return Interlocked.Read(ref _publishedPosition) == _replicationCheckpoint.Read();
 		}
 
@@ -73,7 +73,7 @@ namespace EventStore.Core.Services.Replication {
 			try {
 				while (!_stop) {
 					_replicationChange.Reset();
-					if (_state == VNodeState.Leader) {
+					if (_state == VNodeState.Leader || _state == VNodeState.PreLeader) {
 						//Publish Log Commit Position
 						var newPos = _replicationCheckpoint.Read();
 						if (newPos > Interlocked.Read(ref _publishedPosition)) {
@@ -97,7 +97,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationTrackingMessage.LeaderReplicatedTo message) {
-			if (_state != VNodeState.Leader && message.LogPosition > _replicationCheckpoint.Read()) {
+			if (_state != VNodeState.Leader && _state != VNodeState.PreLeader && message.LogPosition > _replicationCheckpoint.Read()) {
 				_replicationCheckpoint.Write(message.LogPosition);
 				_replicationCheckpoint.Flush();
 				_publisher.Publish(new ReplicationTrackingMessage.ReplicatedTo(message.LogPosition));
@@ -137,7 +137,7 @@ namespace EventStore.Core.Services.Replication {
 
 
 		public void Handle(ReplicationTrackingMessage.ReplicaWriteAck message) {
-			if (_state != VNodeState.Leader) { return; }
+			if (_state != VNodeState.Leader && _state != VNodeState.PreLeader) { return; }
 			if (_replicaLogPositions.TryGetValue(message.SubscriptionId, out var position) &&
 				message.ReplicationLogPosition <= position) { return; }
 			_replicaLogPositions.AddOrUpdate(message.SubscriptionId, message.ReplicationLogPosition, (k, v) => message.ReplicationLogPosition);
@@ -145,7 +145,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationTrackingMessage.WriterCheckpointFlushed message) {
-			if (_state != VNodeState.Leader) { return; }
+			if (_state != VNodeState.Leader && _state != VNodeState.PreLeader) { return; }
 			UpdateReplicationPosition();
 		}
 
@@ -158,7 +158,7 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(SystemMessage.VNodeConnectionLost msg) {
-			if (_state != VNodeState.Leader || !msg.SubscriptionId.HasValue) return;
+			if ((_state != VNodeState.Leader && _state != VNodeState.PreLeader) || !msg.SubscriptionId.HasValue) return;
 			_replicaLogPositions.TryRemove(msg.SubscriptionId.Value, out _);
 		}
 

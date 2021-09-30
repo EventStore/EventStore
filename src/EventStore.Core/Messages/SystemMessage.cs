@@ -135,10 +135,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public readonly int EpochNumber;
-
-			public BecomeLeader(Guid correlationId, int epochNumber) : base(correlationId, VNodeState.Leader) {
-				EpochNumber = epochNumber;
+			public BecomeLeader(Guid correlationId) : base(correlationId, VNodeState.Leader) {
 			}
 		}
 
@@ -401,6 +398,28 @@ namespace EventStore.Core.Messages {
 			public ChaserCaughtUp(Guid correlationId) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				CorrelationId = correlationId;
+			}
+		}
+
+		public class EnablePreLeaderReplication : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public EnablePreLeaderReplication() {
+			}
+		}
+
+		public class CheckInaugurationConditions : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public CheckInaugurationConditions() {
 			}
 		}
 

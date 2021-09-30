@@ -12,11 +12,15 @@ namespace EventStore.Core.LogV3 {
 		public const EventTypeId StreamCreatedNumber = 2;
 		public const EventTypeId StreamMetadataNumber = 3;
 		public const EventTypeId StreamDeletedNumber = 4;
+		public const EventTypeId EpochInformationNumber = 5;
 
 		public static bool TryGetSystemEventTypeId(string type, out EventTypeId eventTypeId) {
 			switch (type) {
 				case SystemEventTypes.EmptyEventType:
 					eventTypeId = EmptyEventTypeNumber;
+					return true;
+				case SystemEventTypes.EpochInformation:
+					eventTypeId = EpochInformationNumber;
 					return true;
 				case SystemEventTypes.EventTypeDefined:
 					eventTypeId = EventTypeDefinedNumber;
@@ -44,6 +48,7 @@ namespace EventStore.Core.LogV3 {
 
 			name = eventTypeId switch {
 				EmptyEventTypeNumber => SystemEventTypes.EmptyEventType,
+				EpochInformationNumber => SystemEventTypes.EpochInformation,
 				EventTypeDefinedNumber => SystemEventTypes.EventTypeDefined,
 				StreamCreatedNumber => SystemEventTypes.StreamCreated,
 				StreamMetadataNumber => SystemEventTypes.StreamMetadata,

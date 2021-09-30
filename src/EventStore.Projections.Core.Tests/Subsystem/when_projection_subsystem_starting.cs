@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				}));
 			
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				}));
 			
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			
 			WaitForStartMessage();
 
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
@@ -103,7 +103,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		[Test]
 		public void should_allow_starting_the_subsystem_again() {
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 			var startMessage = WaitForStartMessage();
 			
 			Assert.AreNotEqual(_instanceCorrelation, startMessage.InstanceCorrelationId);
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
@@ -169,7 +169,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMessage = WaitForStartMessage();
 			_instanceCorrelation = startMessage.InstanceCorrelationId;
@@ -184,7 +184,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			WaitForStopMessage();
 
 			// Become leader again before subsystem fully stopped
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			Subsystem.Handle(new ProjectionSubsystemMessage.ComponentStopped(
 				ProjectionManager.ServiceName, _instanceCorrelation));

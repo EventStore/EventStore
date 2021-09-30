@@ -103,6 +103,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					_position &&
 					response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8() != StreamName);
 
+				// skip the epochinfo - which isn't in unfiltered all reads so we haven't accounted for it above
+				skippedEventCount += 1;
 				_expected = skippedEventCount / _checkpointInterval;
 
 				await foreach (var response in StreamsClient.Read(new ReadReq {

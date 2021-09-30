@@ -52,7 +52,6 @@ namespace EventStore.Core.Services.Storage {
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 
 		protected readonly IEpochManager EpochManager;
-		private readonly IPartitionManager _partitionManager;
 
 		protected readonly IPublisher Bus;
 		private readonly ISubscriber _subscribeToBus;
@@ -98,8 +97,7 @@ namespace EventStore.Core.Services.Storage {
 			TStreamId emptyEventTypeId,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
-			QueueStatsManager queueStatsManager,
-			IPartitionManager partitionManager) {
+			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -110,7 +108,6 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(eventTypeIndex, nameof(eventTypeIndex));
 			Ensure.NotNull(systemStreams, nameof(systemStreams));
 			Ensure.NotNull(epochManager, "epochManager");
-			Ensure.NotNull(partitionManager, "partitionManager");
 
 			Bus = bus;
 			_subscribeToBus = subscribeToBus;
@@ -120,7 +117,6 @@ namespace EventStore.Core.Services.Storage {
 			_streamNameIndex = streamNameIndex;
 			_eventTypeIndex = eventTypeIndex;
 			_systemStreams = systemStreams;
-			_partitionManager = partitionManager;
 			_emptyEventTypeId = emptyEventTypeId;
 			EpochManager = epochManager;
 
@@ -209,8 +205,6 @@ namespace EventStore.Core.Services.Storage {
 						_indexWriter.Reset();
 						_streamNameIndex.CancelReservations();
 						_eventTypeIndex.CancelReservations();
-						EpochManager.WriteNewEpoch(((SystemMessage.BecomeLeader)message).EpochNumber);
-						_partitionManager.Initialize();
 						break;
 					}
 				case VNodeState.ShuttingDown: {
@@ -221,11 +215,8 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<SystemMessage.WriteEpoch>.Handle(SystemMessage.WriteEpoch message) {
-			//Ensure we write a new epoch when being re-elected master even if there is no state change
-			if (_vnodeState == VNodeState.PreLeader)
-				return;
-			if (_vnodeState != VNodeState.Leader)
-				throw new Exception(string.Format("New Epoch request not in leader state. State: {0}.", _vnodeState));
+			if (_vnodeState != VNodeState.Leader && _vnodeState != VNodeState.PreLeader)
+				throw new Exception(string.Format("New Epoch request not in leader or preleader state. State: {0}.", _vnodeState));
 			EpochManager.WriteNewEpoch(message.EpochNumber);
 			PurgeNotProcessedInfo();
 		}
@@ -237,8 +228,10 @@ namespace EventStore.Core.Services.Storage {
 				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
-			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed())
+			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed()) {
 				Writer.Flush();
+				Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
+			}
 
 			var sw = Stopwatch.StartNew();
 			while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() &&

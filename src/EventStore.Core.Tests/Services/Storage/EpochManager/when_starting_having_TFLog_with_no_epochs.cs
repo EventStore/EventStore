@@ -24,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public sealed class when_starting_having_TFLog_with_no_epochs<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture, IDisposable {
 		private TFChunkDb _db;
-		private EpochManager _epochManager;
+		private EpochManager<TStreamId> _epochManager;
+		private LogFormatAbstractor<TStreamId> _logFormat;
 		private LinkedList<EpochRecord> _cache;
 		private TFChunkReader _reader;
 		private TFChunkWriter _writer;
@@ -38,8 +39,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return (int)Interlocked.Increment(ref _currentEpoch);
 		}
 		private static long _currentEpoch = -1;
-		private EpochManager GetManager() {
-			return new EpochManager(_mainBus,
+		private EpochManager<TStreamId> GetManager() {
+			return new EpochManager<TStreamId>(_mainBus,
 				10,
 				_db.Config.EpochCheckpoint,
 				_writer,
@@ -47,17 +48,28 @@ namespace EventStore.Core.Tests.Services.Storage {
 				maxReaderCount: 5,
 				readerFactory: () => new TFChunkReader(_db, _db.Config.WriterCheckpoint,
 					optimizeReadSideCache: _db.Config.OptimizeReadSideCache),
-				LogFormatHelper<TLogFormat, TStreamId>.RecordFactory,
+				_logFormat.RecordFactory,
+				_logFormat.StreamNameIndex,
+				_logFormat.EventTypeIndex,
+				_logFormat.CreatePartitionManager(
+					reader: new TFChunkReader(_db, _db.Config.WriterCheckpoint),
+					writer: _writer),
 				_instanceId);
 		}
-		private LinkedList<EpochRecord> GetCache(EpochManager manager) {
-			return (LinkedList<EpochRecord>)typeof(EpochManager).GetField("_epochs", BindingFlags.NonPublic | BindingFlags.Instance)
+		private LinkedList<EpochRecord> GetCache(EpochManager<TStreamId> manager) {
+			return (LinkedList<EpochRecord>)typeof(EpochManager<TStreamId>).GetField("_epochs", BindingFlags.NonPublic | BindingFlags.Instance)
 				.GetValue(_epochManager);
 		}
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
+
+			var indexDirectory = GetFilePathFor("index");
+			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+				IndexDirectory = indexDirectory,
+			});
+
 			_mainBus = new InMemoryBus(nameof(when_starting_having_TFLog_with_no_epochs<TLogFormat, TStreamId>));
 			_mainBus.Subscribe(new AdHocHandler<SystemMessage.EpochWritten>(m => _published.Add(m)));
 			_db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
@@ -97,6 +109,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			//epochManager?.Dispose();
 			//reader?.Dispose();
 			try {
+				_logFormat?.Dispose();
 				_writer?.Dispose();
 			} catch {
 				//workaround for TearDown error

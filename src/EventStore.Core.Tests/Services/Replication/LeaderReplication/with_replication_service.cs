@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				queueStatsManager: new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			ReplicaSubscriptionId = AddSubscription(ReplicaId, true, out ReplicaManager1);
 			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, true, out ReplicaManager2);
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		public abstract void When();
 		protected void BecomeLeader() {
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 		}
 
 		protected void BecomeUnknown() {

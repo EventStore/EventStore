@@ -36,17 +36,23 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		protected InMemoryBus TcpSendPublisher = new InMemoryBus("tcpSend");
 		protected LeaderReplicationService Service;
 		protected ConcurrentQueue<TcpMessage.TcpSend> TcpSends = new ConcurrentQueue<TcpMessage.TcpSend>();
-		private static readonly IRecordFactory<TStreamId> _recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
+		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected Guid LeaderId = Guid.NewGuid();
 
 		protected TFChunkDbConfig DbConfig;
-		protected EpochManager EpochManager;
+		protected EpochManager<TStreamId> EpochManager;
 		protected TFChunkDb Db;
 		protected TFChunkWriter Writer;
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
+
+			var indexDirectory = GetFilePathFor("index");
+			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+				IndexDirectory = indexDirectory,
+			});
+
 			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
 
 			DbConfig = CreateDbConfig();
@@ -54,7 +60,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Db.Open();
 
 			Writer = new TFChunkWriter(Db);
-			EpochManager = new EpochManager(
+			EpochManager = new EpochManager<TStreamId>(
 				Publisher,
 				5,
 				DbConfig.EpochCheckpoint,
@@ -62,7 +68,12 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				1, 1,
 				() => new TFChunkReader(Db, Db.Config.WriterCheckpoint,
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
-				_recordFactory,
+				_logFormat.RecordFactory,
+				_logFormat.StreamNameIndex,
+				_logFormat.EventTypeIndex,
+				_logFormat.CreatePartitionManager(
+					reader: new TFChunkReader(Db, Db.Config.WriterCheckpoint),
+					writer: Writer),
 				Guid.NewGuid());
 			Service = new LeaderReplicationService(
 				Publisher,
@@ -75,13 +86,14 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			When();
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
+			_logFormat?.Dispose();
 			await base.TestFixtureTearDown();
 			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
 		}
@@ -89,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		public IPrepareLogRecord<TStreamId> CreateLogRecord(long eventNumber, string data = "*************") {
 			var tStreamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var eventType = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
-			return LogRecord.Prepare<TStreamId>(_recordFactory, Db.Config.WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+			return LogRecord.Prepare(_logFormat.RecordFactory, Db.Config.WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				tStreamId, eventNumber, PrepareFlags.None, eventType, Encoding.UTF8.GetBytes(data),
 				null, DateTime.UtcNow);
 		}
@@ -145,8 +157,8 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			var nodeConfig = new TFChunkDbConfig(
 				PathName, 
 				new VersionedPatternFileNamingStrategy(PathName, "chunk-"),
-				TFConsts.ChunkSize,
-				TFConsts.ChunksCacheSize,
+				chunkSize: 1000,
+				maxChunksCacheSize: 10000,
 				writerChk,
 				chaserChk,
 				epochChk,
@@ -157,7 +169,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				streamExistenceFilterCheckpoint,
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
-				true);
+				inMemDb: true);
 			return nodeConfig;
 		}
 	}
