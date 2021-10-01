@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Node stays stuck in Leader state until next elections if a quorum never emerges [EventStore#3181](https://github.com/EventStore/EventStore/pull/3181)
 - user provided metadata to be formatted correctly [EventStore#3188](https://github.com/EventStore/EventStore/pull/3188)
 - Incorrect configuration file selection on linux [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
+- Prevent the EpochManager from attempting to read epochs that should have been cached [EventStore#3198](https://github.com/EventStore/EventStore/pull/3198)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
@@ -52,6 +53,9 @@ All notable changes to this project will be documented in this file.
 
 ### solution
 - correct the sample [EventStore#3127](https://github.com/EventStore/EventStore/pull/3127)
+
+### Removed
+- V8 projection runtime [EventStore#3193](https://github.com/EventStore/EventStore/pull/3193)
 
 ## [20.10.4] - 2021-07-22
 
