@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				new QueueStatsManager());
 
 			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			When();
 		}

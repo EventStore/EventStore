@@ -23,6 +23,7 @@ namespace EventStore.Core.Services {
 		public const string SettingsStream = "$settings";
 		public const string StatsStreamPrefix = "$stats";
 		public const string ScavengesStream = "$scavenges";
+		public const string EpochInformationStream = "$epoch-information";
 
 		public static bool IsSystemStream(string streamId) {
 			return streamId.Length != 0 && streamId[0] == '$';
@@ -67,6 +68,7 @@ namespace EventStore.Core.Services {
 		public const string StreamReference = "$@";
 		public const string StreamMetadata = "$metadata";
 		public const string Settings = "$settings";
+		public const string EpochInformation = "$epoch-information";
 
 		public const string V2__StreamCreated_InIndex = "StreamCreated";
 		public const string V1__StreamCreated__ = "$stream-created";

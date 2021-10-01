@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
@@ -72,7 +72,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 		protected override void Given() {
 			// Start subsystem
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			 var startMsg = WaitForStartMessage();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
@@ -141,7 +141,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
@@ -186,7 +186,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			WaitForStartMessage();
 			
@@ -209,7 +209,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;
@@ -244,7 +244,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 
 		protected override void Given() {
 			Subsystem.Handle(new SystemMessage.SystemCoreReady());
-			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid(),0));
+			Subsystem.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
 			var startMsg = WaitForStartMessage();
 			_instanceCorrelation = startMsg.InstanceCorrelationId;

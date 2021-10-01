@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.GetAwaiter()
 				.GetResult();
 
-			Assert.AreEqual(2, slice.Events.Length); // Includes system events at start of stream
+			Assert.AreEqual(1, slice.Events.Length); // Includes system events at start of stream (inc epoch-information)
 		}
 
 		[Test, Category("LongRunning")]

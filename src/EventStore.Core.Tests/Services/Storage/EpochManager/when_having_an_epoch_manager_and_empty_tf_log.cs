@@ -16,6 +16,9 @@ using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading;
+using EventStore.Core.Services;
+using EventStore.Core.Data;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]
@@ -98,7 +101,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.That(epochWritten.Epoch.LeaderInstanceId == _instanceId);
 			Assert.That(epochWritten.Epoch.TimeStamp < DateTime.UtcNow);
 			Assert.That(epochWritten.Epoch.TimeStamp >= beforeWrite);
-			_published.Clear();
 
 			// will_cache_epochs_written() {
 			
@@ -131,6 +133,22 @@ namespace EventStore.Core.Tests.Services.Storage {
 				epoch = epoch.Next;
 			}
 			CollectionAssert.IsOrdered(epochs);
+
+			// has written epoch information
+			var epochsWritten = _published.OfType<SystemMessage.EpochWritten>().ToArray();
+			Assert.AreEqual(1 + 4 + 16, epochsWritten.Length);
+			for (int i = 0; i < epochsWritten.Length; i++) {
+				_reader.Reposition(epochsWritten[i].Epoch.EpochPosition);
+				_reader.TryReadNext(); // read epoch
+				var result = _reader.TryReadNext(); // read epoch-information
+				Assert.True(result.Success);
+				var epochInfo = (PrepareLogRecord)result.LogRecord;
+				Assert.AreEqual(SystemStreams.EpochInformationStream, epochInfo.EventStreamId);
+				Assert.AreEqual(SystemEventTypes.EpochInformation, epochInfo.EventType);
+				Assert.AreEqual(i - 1, epochInfo.ExpectedVersion);
+				Assert.AreEqual(_instanceId, new EpochRecord(epochInfo.Data.ParseJson<EpochRecord.EpochRecordDto>()).LeaderInstanceId);
+			}
+			_published.Clear();
 		}
 
 		public void Dispose() {
