@@ -32,9 +32,15 @@ namespace EventStore.Core.Tests.Http.Cluster {
 			await leader.AdminUserCreated;
 			// Wait for the admin user created event to be replicated before starting our tests
 			var leaderIndex = leader.Db.Config.IndexCheckpoint.Read();
-			AssertEx.IsOrBecomesTrue(()=> follower.Db.Config.IndexCheckpoint.Read() >= leaderIndex, 
-				timeout: TimeSpan.FromSeconds(10),
-				msg: $"Waiting for follower to reach index checkpoint timed out! (LeaderIndex={leaderIndex},FollowerState={follower.NodeState})");
+
+			try {
+				AssertEx.IsOrBecomesTrue(() => follower.Db.Config.IndexCheckpoint.Read() >= leaderIndex,
+					timeout: TimeSpan.FromSeconds(10),
+					msg: $"Waiting for follower to reach index checkpoint timed out! (LeaderIndex={leaderIndex},FollowerState={follower.NodeState})");
+			}
+			catch (Exception ex) {
+				throw new Exception($"{follower.Db.Config.IndexCheckpoint.Read()} / {leader.Db.Config.IndexCheckpoint.Read()}", ex);
+			}
 
 			await AddStreamAndWait(leader, follower, TestDeleteStream);
 			await AddStreamAndWait(leader, follower, TestStream);

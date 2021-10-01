@@ -39,6 +39,11 @@ namespace EventStore.Core.Tests.Http.HealthChecks {
 			using var response = await _node.HttpClient.SendAsync(new HttpRequestMessage(method, "/health/live"));
 
 			Assert.GreaterOrEqual((int)response.StatusCode, 500);
+
+			//qq hack
+			await _node.Start()
+				.WithTimeout()
+				.ConfigureAwait(false);
 		}
 
 		[TestCaseSource(nameof(MethodAllowedTestCases))]

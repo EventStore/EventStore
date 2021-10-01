@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests {
 		public virtual Task TestFixtureSetUp() {
 			ThreadPool.SetMinThreads(100, 1000);
 			var typeName = GetType().Name.Length > 30 ? GetType().Name.Substring(0, 30) : GetType().Name;
-			PathName = Path.Combine(Path.GetTempPath(), string.Format("ES-{0}-{1}", Guid.NewGuid(), typeName));
+			PathName = Path.Combine(Path.GetTempPath(), string.Format("ES/ES-{0}-{1}", typeName, Guid.NewGuid()));
 			Directory.CreateDirectory(PathName);
 
 			return Task.CompletedTask;
