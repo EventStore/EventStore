@@ -14,6 +14,13 @@ The installation procedure consists of the following steps:
 - Start the EventStoreDB service on each node
 - Check the cluster status using the Admin UI on any node
 
+## Default access
+
+User | Password
+---- | --------
+admin | changeit
+ops | changeit
+
 ## Configuration Wizard
 
 [EventStore Configurator](https://configurator.eventstore.com) online tool can help you to go through all the required steps.
