@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -24,8 +23,9 @@ namespace EventStore.Core.Data {
 		public readonly ReadOnlyMemory<byte> Data;
 		public readonly ReadOnlyMemory<byte> Metadata;
 
-		public EventRecord(long eventNumber, IPrepareLogRecord prepare, string eventStreamName) {
+		public EventRecord(long eventNumber, IPrepareLogRecord prepare, string eventStreamId, string eventType) {
 			Ensure.Nonnegative(eventNumber, "eventNumber");
+			Ensure.NotNull(eventStreamId, "eventStreamId");
 
 			EventNumber = eventNumber;
 			LogPosition = prepare.LogPosition;
@@ -33,12 +33,12 @@ namespace EventStore.Core.Data {
 			EventId = prepare.EventId;
 			TransactionPosition = prepare.TransactionPosition;
 			TransactionOffset = prepare.TransactionOffset;
-			EventStreamId = eventStreamName;
+			EventStreamId = eventStreamId;
 			ExpectedVersion = prepare.ExpectedVersion;
 			TimeStamp = prepare.TimeStamp;
 
 			Flags = prepare.Flags;
-			EventType = prepare.EventType ?? string.Empty;
+			EventType = eventType ?? string.Empty;
 			Data = prepare.Data;
 			Metadata = prepare.Metadata;
 		}

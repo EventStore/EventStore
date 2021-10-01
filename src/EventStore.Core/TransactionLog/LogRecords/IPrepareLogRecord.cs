@@ -12,13 +12,14 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		Guid EventId { get; }
 		Guid CorrelationId { get; }
 		DateTime TimeStamp { get; }
-		string EventType { get; }
 		ReadOnlyMemory<byte> Data { get; }
 		ReadOnlyMemory<byte> Metadata { get; }
 	}
 
 	public interface IPrepareLogRecord<TStreamId> : IPrepareLogRecord {
 		TStreamId EventStreamId { get; }
+		TStreamId EventType { get; }
+		
 		IPrepareLogRecord<TStreamId> CopyForRetry(long logPosition, long transactionPosition);
 	}
 }

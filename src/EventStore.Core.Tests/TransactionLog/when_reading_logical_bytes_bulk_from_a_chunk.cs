@@ -76,8 +76,9 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var chunk = TFChunkHelper.CreateNewChunk(GetFilePathFor("file1"), 3000);
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 			var rec = LogRecord.Prepare(recordFactory, 0, Guid.NewGuid(),
-				Guid.NewGuid(), 0, 0, streamId, -1, PrepareFlags.None, "ET",
+				Guid.NewGuid(), 0, 0, streamId, -1, PrepareFlags.None, eventTypeId,
 				new byte[2000], null);
 			Assert.IsTrue(chunk.TryAppend(rec).Success, "Record was not appended");
 

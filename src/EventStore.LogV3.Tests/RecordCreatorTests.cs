@@ -137,8 +137,8 @@ namespace EventStore.LogV3.Tests {
 				eventTypeId: _guid1,
 				parentEventTypeId: _guid2,
 				partitionId: _guid3,
-				referenceNumber: _uint1,
-				version: _ushort1,
+				eventTypeNumber: _uint1,
+				eventTypeVersion: _ushort1,
 				name: _string1);
 
 			Assert.Equal(LogRecordType.EventType, record.Header.Type);
@@ -184,7 +184,7 @@ namespace EventStore.LogV3.Tests {
 				streamNumber: _long3,
 				startingEventNumber: _long4,
 				eventId: _guid2,
-				eventType: _string1,
+				eventTypeNumber: _uint1,
 				eventData: _bytes3.Span,
 				eventMetadata: _bytes4.Span,
 				eventFlags: _prepareflags);
@@ -204,7 +204,7 @@ namespace EventStore.LogV3.Tests {
 			Assert.Equal(_long3, record.WriteId.StreamNumber);
 			Assert.Equal(_long4, record.WriteId.StartingEventNumber);
 			Assert.Equal<Guid>(_guid2, record.Event.SystemMetadata.EventId);
-			Assert.Equal(_string1, record.Event.SystemMetadata.EventType);
+			Assert.Equal(_uint1, record.Event.Header.EventTypeNumber);
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes3), MemoryMarshal.ToEnumerable(record.Event.Data));
 			Assert.Equal(MemoryMarshal.ToEnumerable(_bytes4), MemoryMarshal.ToEnumerable(record.Event.Metadata));
 			Assert.Equal(_prepareflags, record.Event.Header.Flags);

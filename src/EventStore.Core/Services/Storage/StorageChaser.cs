@@ -179,6 +179,7 @@ namespace EventStore.Core.Services.Storage {
 		private void ProcessLogRecord(SeqReadResult result) {
 			switch (result.LogRecord.RecordType) {
 				case LogRecordType.Stream:
+				case LogRecordType.EventType:
 				case LogRecordType.Prepare: {
 					var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 					ProcessPrepareRecord(record, result.RecordPostPosition);

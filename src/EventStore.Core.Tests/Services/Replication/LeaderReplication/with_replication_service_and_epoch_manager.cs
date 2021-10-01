@@ -86,9 +86,10 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
 		}
 
-		public IPrepareLogRecord<TStreamId> CreateLogRecord(long eventNumber, string eventType, string data = "*************") {
+		public IPrepareLogRecord<TStreamId> CreateLogRecord(long eventNumber, string data = "*************") {
 			var tStreamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
-			return LogRecord.Prepare(_recordFactory, Db.Config.WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+			var eventType = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
+			return LogRecord.Prepare<TStreamId>(_recordFactory, Db.Config.WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				tStreamId, eventNumber, PrepareFlags.None, eventType, Encoding.UTF8.GetBytes(data),
 				null, DateTime.UtcNow);
 		}

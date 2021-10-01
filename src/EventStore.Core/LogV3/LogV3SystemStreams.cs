@@ -2,7 +2,9 @@
 using EventStore.Core.Services;
 using StreamId = System.UInt32;
 
+
 namespace EventStore.Core.LogV3 {
+
 	public class LogV3SystemStreams : ISystemStreamLookup<StreamId> {
 		// Virtual streams are streams that exist without requiring a stream record.
 		// Essentially, they are hard coded.
@@ -32,6 +34,9 @@ namespace EventStore.Core.LogV3 {
 
 		// virtual stream for storing system settings
 		private const StreamId SettingsStreamNumber = 8;
+		
+		// virtual stream so that we can index EventTypeRecords for looking up event type names
+		public const StreamId EventTypesStreamNumber = 10;
 
 		public StreamId AllStream => AllStreamNumber;
 		public StreamId SettingsStream => SettingsStreamNumber;
@@ -55,6 +60,7 @@ namespace EventStore.Core.LogV3 {
 
 			name = streamId switch {
 				AllStreamNumber => SystemStreams.AllStream,
+				EventTypesStreamNumber => SystemStreams.EventTypesStream,
 				SettingsStreamNumber => SystemStreams.SettingsStream,
 				StreamsCreatedStreamNumber => SystemStreams.StreamsCreatedStream,
 				_ => null,
@@ -67,6 +73,9 @@ namespace EventStore.Core.LogV3 {
 			switch (name) {
 				case SystemStreams.AllStream:
 					streamId = AllStreamNumber;
+					return true;
+				case SystemStreams.EventTypesStream:
+					streamId = EventTypesStreamNumber;
 					return true;
 				case SystemStreams.StreamsCreatedStream:
 					streamId = StreamsCreatedStreamNumber;

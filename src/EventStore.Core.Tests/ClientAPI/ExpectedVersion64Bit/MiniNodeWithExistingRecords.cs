@@ -129,6 +129,17 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			if (streamRecord != null) {
 				Writer.Write(streamRecord, out pos);
 			}
+			
+			_logFormatFactory.EventTypeIndex.GetOrReserveEventType(
+				_logFormatFactory.RecordFactory,
+				eventType,
+				pos,
+				out var eventTypeId,
+				out var eventTypeRecord);
+
+			if (eventTypeRecord != null) {
+				Writer.Write(eventTypeRecord, out pos);
+			}
 
 			var prepare = LogRecord.SingleWrite(
 				_logFormatFactory.RecordFactory,
@@ -137,7 +148,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 				Guid.NewGuid(),
 				eventStreamId,
 				eventNumber - 1,
-				eventType,
+				eventTypeId,
 				Helper.UTF8NoBom.GetBytes(data),
 				null,
 				timestamp);
@@ -147,7 +158,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName);
+			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName, eventType);
 			return eventRecord;
 		}
 	}

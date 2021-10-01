@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.ClientAPI.Helpers {
 			
 			return EventStoreConnection.Create(Settings(tcpType, userCredentials),
 				endPoint.ToESTcpUri(),
-				$"ESC-{TestContext.CurrentContext?.Test?.Name}-{Interlocked.Increment(ref _nextConnId)}");
+				$"ESC-{Interlocked.Increment(ref _nextConnId)}");
 		}
 
 		public static IEventStoreConnection To(MiniNode miniNode, TcpType tcpType,

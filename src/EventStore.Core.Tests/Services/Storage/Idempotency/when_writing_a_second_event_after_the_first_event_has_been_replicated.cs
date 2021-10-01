@@ -13,7 +13,8 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
 		public override void WriteEvents() {
 			var expectedEventNumber = -1;
 			var transactionPosition = 1000;
-			var prepares = CreatePrepareLogRecord(_streamId, expectedEventNumber, "type", _eventId, transactionPosition);
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
+			var prepares = CreatePrepareLogRecord(_streamId, expectedEventNumber, eventTypeId, _eventId, transactionPosition);
 			var commit = CreateCommitLogRecord(transactionPosition + RecordOffset, transactionPosition, expectedEventNumber + 1);
 
 			/*First write: committed to db and index*/

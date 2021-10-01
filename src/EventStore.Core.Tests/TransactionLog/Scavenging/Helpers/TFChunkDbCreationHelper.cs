@@ -103,6 +103,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						Write(i, chunk, streamRecord, out logPos);
 						records[i].Add(streamRecord);
 					}
+					
+					_logFormat.EventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, rec.EventType, logPos, out var eventTypeNumber, out var eventTypeRecord);
+					if (eventTypeRecord != null) {
+						Write(i, chunk, eventTypeRecord, out logPos);
+						records[i].Add(eventTypeRecord);
+					}
 
 					long streamVersion = streamUncommitedVersion[rec.StreamId];
 					if (streamVersion == -1
@@ -127,7 +133,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.NoStream;
 					switch (rec.Type) {
 						case Rec.RecType.Prepare: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
+							record = CreateLogRecord(rec, streamNumber, eventTypeNumber, transInfo, logPos, expectedVersion);
 
 							if (SystemStreams.IsMetastream(rec.StreamId))
 								transInfo.StreamMetadata = rec.Metadata;
@@ -137,7 +143,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						}
 
 						case Rec.RecType.Delete: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
+							record = CreateLogRecord(rec, streamNumber, eventTypeNumber, transInfo, logPos, expectedVersion);
 
 							streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV0
 								? int.MaxValue
@@ -147,11 +153,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 						case Rec.RecType.TransStart:
 						case Rec.RecType.TransEnd: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
+							record = CreateLogRecord(rec, streamNumber, eventTypeNumber, transInfo, logPos, expectedVersion);
 							break;
 						}
 						case Rec.RecType.Commit: {
-							record = CreateLogRecord(rec, streamNumber, transInfo, logPos, expectedVersion);
+							record = CreateLogRecord(rec, streamNumber, eventTypeNumber, transInfo, logPos, expectedVersion);
 
 							if (transInfo.StreamMetadata != null) {
 								var streamId = SystemStreams.OriginalStreamOf(rec.StreamId);
@@ -199,7 +205,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			return meta.ToJsonBytes();
 		}
 
-		private ILogRecord CreateLogRecord(Rec rec, TStreamId streamId, TransactionInfo transInfo, long logPos, long expectedVersion) {
+		private ILogRecord CreateLogRecord(Rec rec, TStreamId streamId, TStreamId eventTypeId, TransactionInfo transInfo, long logPos, long expectedVersion) {
 			switch (rec.Type) {
 				case Rec.RecType.Prepare: {
 					int transOffset = transInfo.TransactionOffset;
@@ -225,7 +231,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
 						| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
-						rec.EventType,
+						eventTypeId,
 						rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
 						null,
 						rec.TimeStamp);
@@ -253,7 +259,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						PrepareFlags.StreamDelete
 						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
-						rec.EventType,
+						eventTypeId,
 						LogRecord.NoData,
 						null,
 						rec.TimeStamp);
@@ -277,7 +283,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						expectedVersion,
 						(transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
-						rec.EventType,
+						eventTypeId,
 						LogRecord.NoData,
 						null,
 						rec.TimeStamp);

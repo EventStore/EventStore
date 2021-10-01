@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
@@ -59,6 +58,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private readonly IIndexBackend<TStreamId> _backend;
 		private readonly ITableIndex<TStreamId> _tableIndex;
+		private readonly INameLookup<TStreamId> _eventTypes;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly IValidator<TStreamId> _validator;
 		private readonly IExistenceFilterReader<TStreamId> _streamExistenceFilter;
@@ -89,6 +89,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_backend = backend;
 			_tableIndex = tableIndex;
 			_systemStreams = streamNamesProvider.SystemStreams;
+			_eventTypes = streamNamesProvider.EventTypes;
 			_validator = validator;
 			_streamExistenceFilter = streamExistenceFilter;
 			_metastreamMetadata = metastreamMetadata;
@@ -137,7 +138,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (metadata.MaxAge.HasValue && prepare.TimeStamp < DateTime.UtcNow - metadata.MaxAge.Value)
 					return new IndexReadEventResult(ReadEventResult.NotFound, metadata, lastEventNumber,
 						originalStreamExists);
-				return new IndexReadEventResult(ReadEventResult.Success, new EventRecord(eventNumber, prepare, streamName),
+				return new IndexReadEventResult(ReadEventResult.Success, CreateEventRecord(eventNumber, prepare, streamName),
 					metadata, lastEventNumber, originalStreamExists);
 			}
 
@@ -199,7 +200,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return null;
 
 			if (result.LogRecord.RecordType != LogRecordType.Prepare &&
-				result.LogRecord.RecordType != LogRecordType.Stream)
+				result.LogRecord.RecordType != LogRecordType.Stream &&
+				result.LogRecord.RecordType != LogRecordType.EventType)
 				throw new Exception(string.Format("Incorrect type of log record {0}, expected Prepare record.",
 					result.LogRecord.RecordType));
 			return (IPrepareLogRecord<TStreamId>)result.LogRecord;
@@ -245,7 +247,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					return ForStreamWithMaxAge(streamId, streamName,
 						fromEventNumber, maxCount,
 						startEventNumber, endEventNumber, lastEventNumber,
-						metadata.MaxAge.Value, metadata, _tableIndex, reader, skipIndexScanOnRead);
+						metadata.MaxAge.Value, metadata, _tableIndex, reader, _eventTypes);
 				}
 				var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
 					.Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
@@ -255,7 +257,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						.GroupBy(x => x.Version).Select(x => x.Last());
 				}
 				
-				var records = recordsQuery.Reverse().Select(x => new EventRecord(x.Version, x.Prepare, streamName)).ToArray();
+				var records = recordsQuery.Reverse().Select(x => CreateEventRecord(x.Version, x.Prepare, streamName)).ToArray();
 
 				long nextEventNumber = Math.Min(endEventNumber + 1, lastEventNumber + 1);
 				if (records.Length > 0)
@@ -269,7 +271,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				string streamName,
 				long fromEventNumber, int maxCount, long startEventNumber,
 				long endEventNumber, long lastEventNumber, TimeSpan maxAge, StreamMetadata metadata,
-				ITableIndex<TStreamId> tableIndex, TFReaderLease reader, bool skipIndexScanOnRead) {
+				ITableIndex<TStreamId> tableIndex, TFReaderLease reader, INameLookup<TStreamId> eventTypes) {
 				if (startEventNumber > lastEventNumber) {
 					return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
 						metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: true);
@@ -305,7 +307,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 
 					if (prepare?.TimeStamp >= ageThreshold) {
-						results.Add(new EventRecord(indexEntries[i].Version, prepare, streamName));
+						results.Add(CreateEventRecord(indexEntries[i].Version, prepare, streamName, eventTypes));
 					} else {
 						break;
 					}
@@ -372,7 +374,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							continue;
 						}
 						if (prepare?.TimeStamp >= ageThreshold) {
-							results.Add(new EventRecord(indexEntries[i].Version, prepare, streamName));
+							results.Add(CreateEventRecord(indexEntries[i].Version, prepare, streamName, eventTypes));
 						} else {
 							break;
 						}
@@ -499,7 +501,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					recordsQuery = recordsQuery.Where(x => x.Prepare.TimeStamp >= ageThreshold);
 				}
 
-				var records = recordsQuery.Select(x => new EventRecord(x.Version, x.Prepare, streamName)).ToArray();
+				var records = recordsQuery.Select(x => CreateEventRecord(x.Version, x.Prepare, streamName)).ToArray();
 
 				isEndOfStream = isEndOfStream
 								|| startEventNumber == 0
@@ -683,6 +685,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			} catch (Exception) {
 				return StreamMetadata.Empty;
 			}
+		}
+
+		private EventRecord CreateEventRecord(long version, IPrepareLogRecord<TStreamId> prepare, string streamName) {
+			return CreateEventRecord(version, prepare, streamName, _eventTypes);
+		}
+		
+		private static EventRecord CreateEventRecord(long version, IPrepareLogRecord<TStreamId> prepare,
+			string streamName, INameLookup<TStreamId> eventTypeLookup) {
+			
+			var eventTypeName = eventTypeLookup.LookupName(prepare.EventType);
+			
+			return new EventRecord(version, prepare, streamName, eventTypeName);
 		}
 	}
 }

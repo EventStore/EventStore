@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_forward_with_event_type_regex() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.EventType,
-				FilterType.Regex, new[] {@"^.*event-type.*$"});
+				FilterType.Regex, new[] {@"^.*event-type-.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsForwardFiltered(_forwardReadPos, 10, 10, eventFilter);
@@ -125,7 +125,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 		public void should_filter_out_disallowed_streams_when_reading_events_backward_with_event_type_regex() {
 			var filter = new TcpClientMessageDto.Filter(
 				FilterContext.EventType,
-				FilterType.Regex, new[] {@"^.*event-type.*$"});
+				FilterType.Regex, new[] {@"^.*event-type-.*$"});
 			var eventFilter = EventFilter.Get(true, filter);
 
 			var result = ReadIndex.ReadAllEventsBackwardFiltered(_backwardReadPos, 10, 10, eventFilter);

@@ -20,9 +20,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			base.TestFixtureSetUp();
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			_record = LogRecord.Prepare(recordFactory, 0, _corrId, _eventId, 0, 0, streamId, 1,
-				PrepareFlags.None, "Foo", new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
+				PrepareFlags.None, eventTypeId, new byte[12], new byte[15], new DateTime(2000, 1, 1, 12, 0, 0));
 			_chunk = TFChunkHelper.CreateNewChunk(Filename);
 			_result = _chunk.TryAppend(_record);
 			_chunk.Flush();

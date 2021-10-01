@@ -20,6 +20,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.LogV3;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.LogCommon;
 
@@ -34,6 +35,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected IRecordFactory<TStreamId> _recordFactory;
 		protected INameIndex<TStreamId> _streamNameIndex;
+		protected INameIndex<TStreamId> _eventTypeIndex;
 		protected TableIndex<TStreamId> TableIndex;
 		protected IReadIndex<TStreamId> ReadIndex;
 
@@ -68,6 +70,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			});
 			_recordFactory = _logFormat.RecordFactory;
 			_streamNameIndex = _logFormat.StreamNameIndex;
+			_eventTypeIndex = _logFormat.EventTypeIndex;
 
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			ChaserCheckpoint = new InMemoryCheckpoint(0);
@@ -112,6 +115,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				_logFormat.StreamIdSizer,
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
+				_logFormat.EventTypeIndexConfirmer,
 				streamInfoCacheCapacity: StreamInfoCacheCapacity,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
@@ -154,6 +158,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 				Writer.Write(streamRecord, out newPos);
 			}
 		}
+		
+		protected void GetOrReserveEventType(string eventType, out TStreamId eventTypeId, out long newPos) {
+			newPos = WriterCheckpoint.ReadNonFlushed();
+			_eventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, eventType, newPos, out eventTypeId, out var eventTypeRecord);
+			if (eventTypeRecord != null) {
+				Writer.Write(eventTypeRecord, out newPos);
+			}
+		}
 
 		protected EventRecord WriteSingleEvent(string eventStreamName,
 			long eventNumber,
@@ -163,12 +175,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 			bool retryOnFail = false,
 			string eventType = "some-type") {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
+			GetOrReserveEventType(eventType, out var eventTypeId, out pos);
 			var prepare = LogRecord.SingleWrite(_recordFactory, pos,
 				eventId == default(Guid) ? Guid.NewGuid() : eventId,
 				Guid.NewGuid(),
 				eventStreamId,
 				eventNumber - 1,
-				eventType,
+				eventTypeId,
 				Helper.UTF8NoBom.GetBytes(data),
 				null,
 				timestamp);
@@ -210,19 +223,20 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName);
+			var eventRecord = new EventRecord(eventNumber, prepare, eventStreamName, eventType);
 			return eventRecord;
 		}
 
 		protected EventRecord WriteStreamMetadata(string eventStreamName, long eventNumber, string metadata,
 			DateTime? timestamp = null) {
 			GetOrReserve(SystemStreams.MetastreamOf(eventStreamName), out var eventStreamId, out var pos);
+			GetOrReserveEventType(SystemEventTypes.StreamMetadata, out var eventTypeId, out pos);
 			var prepare = LogRecord.SingleWrite(_recordFactory, pos,
 				Guid.NewGuid(),
 				Guid.NewGuid(),
 				eventStreamId,
 				eventNumber - 1,
-				SystemEventTypes.StreamMetadata,
+				eventTypeId,
 				Helper.UTF8NoBom.GetBytes(metadata),
 				null,
 				timestamp ?? DateTime.UtcNow,
@@ -234,7 +248,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			var eventRecord = new EventRecord(eventNumber, prepare, SystemStreams.MetastreamOf(eventStreamName));
+			var eventRecord = new EventRecord(eventNumber, prepare, SystemStreams.MetastreamOf(eventStreamName), SystemEventTypes.StreamMetadata);
 			return eventRecord;
 		}
 
@@ -242,6 +256,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			string eventData) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
+			GetOrReserveEventType("some-type", out var eventTypeId, out pos);
 			var prepare = LogRecord.Prepare(_recordFactory, pos,
 				Guid.NewGuid(),
 				Guid.NewGuid(),
@@ -250,13 +265,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 				eventStreamId,
 				expectedVersion,
 				PrepareFlags.Data | PrepareFlags.TransactionBegin,
-				"some-type",
+				eventTypeId,
 				Helper.UTF8NoBom.GetBytes(eventData),
 				null);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			return new EventRecord(eventNumber, prepare, eventStreamName);
+			return new EventRecord(eventNumber, prepare, eventStreamName, "some-type");
 		}
 
 		protected IPrepareLogRecord<TStreamId> WriteTransactionBegin(string eventStreamName, long expectedVersion) {
@@ -275,10 +290,12 @@ namespace EventStore.Core.Tests.Services.Storage {
 			long eventNumber,
 			string eventData,
 			PrepareFlags flags,
-			bool retryOnFail = false) {
+			bool retryOnFail = false,
+			string eventType = "some-type") {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
+			GetOrReserveEventType(eventType, out var eventTypeId, out pos);
 
 			var prepare = LogRecord.Prepare(_recordFactory, pos,
 				correlationId,
@@ -288,7 +305,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				eventStreamId,
 				ExpectedVersion.Any,
 				flags,
-				"some-type",
+				eventTypeId,
 				Helper.UTF8NoBom.GetBytes(eventData),
 				null);
 
@@ -308,13 +325,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 				}
 
 				Assert.AreEqual(eventStreamId, prepare.EventStreamId);
-				return new EventRecord(eventNumber, prepare, eventStreamName);
+				return new EventRecord(eventNumber, prepare, eventStreamName, eventType);
 			}
 
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
-			return new EventRecord(eventNumber, prepare, eventStreamName);
+			return new EventRecord(eventNumber, prepare, eventStreamName, eventType);
 		}
 
 		protected IPrepareLogRecord<TStreamId> WriteTransactionEnd(Guid correlationId, long transactionId, string eventStreamName) {
@@ -342,12 +359,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 			string data = null,
 			PrepareFlags additionalFlags = PrepareFlags.None) {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
+			GetOrReserveEventType(eventType.IsEmptyString() ? "some-type" : eventType, out var eventTypeId, out pos);
 			var prepare = LogRecord.SingleWrite(_recordFactory, pos,
 				Guid.NewGuid(),
 				eventId == default(Guid) ? Guid.NewGuid() : eventId,
 				eventStreamId,
 				expectedVersion,
-				eventType.IsEmptyString() ? "some-type" : eventType,
+				eventTypeId,
 				data.IsEmptyString() ? LogRecord.NoData : Helper.UTF8NoBom.GetBytes(data),
 				LogRecord.NoData,
 				DateTime.UtcNow,
@@ -381,8 +399,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		protected EventRecord WriteDelete(string eventStreamName) {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
+			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
-				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, EventNumber.DeletedStream - 1);
+				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, EventNumber.DeletedStream - 1);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
 				prepare.CorrelationId,
@@ -391,13 +410,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
 
-			return new EventRecord(EventNumber.DeletedStream, prepare, eventStreamName);
+			return new EventRecord(EventNumber.DeletedStream, prepare, eventStreamName, SystemEventTypes.StreamDeleted);
 		}
 
 		protected IPrepareLogRecord<TStreamId> WriteDeletePrepare(string eventStreamName) {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
+			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
-				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, ExpectedVersion.Any);
+				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, ExpectedVersion.Any);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			return prepare;

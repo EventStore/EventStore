@@ -15,6 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			_scavenged = new List<ILogRecord>();
 
 			GetOrReserve("s1", out var s1StreamId, out _);
+			GetOrReserveEventType("event-type", out var eventTypeId, out _);
 			var transPos = WriterCheckpoint.ReadNonFlushed();
 
 			for (int i = 0; i < 10; ++i) {
@@ -27,7 +28,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 					s1StreamId,
 					i == 0 ? -1 : -2,
 					PrepareFlags.Data | (i == 9 ? PrepareFlags.TransactionEnd : PrepareFlags.None),
-					"event-type",
+					eventTypeId,
 					new byte[3],
 					new byte[3]);
 				Assert.IsTrue(Writer.Write(r, out tmp));

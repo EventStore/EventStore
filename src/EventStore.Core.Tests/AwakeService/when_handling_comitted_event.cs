@@ -25,12 +25,13 @@ namespace EventStore.Core.Tests.AwakeService {
 
 			var recordFactory = LogFormatHelper<TLogFormat, TStreamId>.RecordFactory;
 			var streamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			_eventRecord = new EventRecord(
 				10,
 				LogRecord.Prepare(
 					recordFactory, 500, Guid.NewGuid(), Guid.NewGuid(), 500, 0, streamId, 99, PrepareFlags.Data,
-					"event", new byte[0], null, DateTime.UtcNow), "Stream");
+					eventTypeId, new byte[0], null, DateTime.UtcNow), "Stream", "EventType");
 			_eventCommitted = new StorageMessage.EventCommitted(1000, _eventRecord, isTfEof: true);
 		}
 

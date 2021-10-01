@@ -66,8 +66,10 @@ namespace EventStore.Core.Tests.ClientAPI {
 		[Test]
 		public void calls_checkpoint_delegate_during_catchup() {
 			var filter = Filter.StreamId.Prefix("stream-a");
+			// in v2 there are 20 events, 10 in stream-a and 10 in stream-b.
+			// in v3 there are additionally two stream records and two event type records
 			var isV2 = LogFormatHelper<TLogFormat, TStreamId>.IsV2;
-			var checkpointReached = new CountdownEvent(isV2 ? 10 : 12 /* accounting for stream records */);
+			var checkpointReached = new CountdownEvent(isV2 ? 10 : 14);
 			var eventsSeen = 0;
 
 			var settings = new CatchUpSubscriptionFilteredSettings(

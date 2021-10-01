@@ -16,11 +16,11 @@ namespace EventStore.Core.Tests.Services.Storage.Idempotency {
         {
 			var expectedEventNumber = -1;
 			var transactionPosition = 1000;
-			var eventTypes = new List<string>();
+			var eventTypes = new List<TStreamId>();
 			
 			for(var i=0;i<_numEvents;i++){
 				_eventIds.Add(Guid.NewGuid());
-				eventTypes.Add("type");
+				eventTypes.Add(LogFormatHelper<TLogFormat, TStreamId>.EventTypeId);
 			}
 
 			var prepares = CreatePrepareLogRecords(_streamId, expectedEventNumber, eventTypes, _eventIds, transactionPosition);

@@ -47,20 +47,21 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			}
 
 			var expectedVersion = ExpectedVersion.NoStream;
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			//stream id: duplicate_stream at version: 0
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos0, _id1, _id1, pos0, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos1);
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos1);
 			Writer.Write(new CommitLogRecord(pos1, _id1, pos0, DateTime.UtcNow, 0), out pos2);
 
 			//stream id: duplicate_stream at version: 1
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos2, _id2, _id2, pos2, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos3);
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id2, pos2, DateTime.UtcNow, 1), out pos4);
 
 			//stream id: duplicate_stream at version: 2
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos4, _id3, _id3, pos4, 0, streamId, expectedVersion++,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos5);
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos5);
 			Writer.Write(new CommitLogRecord(pos5, _id3, pos4, DateTime.UtcNow, 2), out pos6);
 		}
 
@@ -69,10 +70,11 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			long pos8;
 
 			var streamId = _logFormat.StreamIds.LookupValue("duplicate_stream");
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 
 			//stream id: duplicate_stream at version: 0 (duplicate event/index entry)
 			Writer.Write(LogRecord.Prepare(_logFormat.RecordFactory, pos6, _id4, _id4, pos6, 0, streamId, ExpectedVersion.NoStream,
-				PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], DateTime.UtcNow), out pos7);
+				PrepareFlags.SingleWrite, eventTypeId, new byte[0], new byte[0], DateTime.UtcNow), out pos7);
 			Writer.Write(new CommitLogRecord(pos7, _id4, pos6, DateTime.UtcNow, 0), out pos8);
 		}
 
@@ -157,7 +159,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				_logFormat.StreamIdSizer,
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
-				100_000,
+				_logFormat.EventTypeIndexConfirmer,
+				streamInfoCacheCapacity: 100_000,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
@@ -200,7 +203,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				_logFormat.StreamIdSizer,
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
-				100_000,
+				_logFormat.EventTypeIndexConfirmer,
+				streamInfoCacheCapacity: 100_000,
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,

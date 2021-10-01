@@ -14,10 +14,11 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 		private EventRecord _event1;
 
 		protected override void WriteTestScenario() {
+			var eventTypeId = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
 			Assert.True(_logFormat.StreamNameIndex.GetOrReserve("ES", out var esStreamId, out _, out _));
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(),
-				esStreamId, 1);
+				esStreamId, eventTypeId, 1);
 			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 

@@ -681,7 +681,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		protected override async Task When() {
 			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
-			_feed = await GetJson<JObject>("/streams/$all",
+			_feed = await GetJson<JObject>("/streams/$all/head/backward/30",
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
@@ -749,7 +749,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		protected override async Task When() {
 			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "True"}};
-			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20", 
+			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30", 
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
@@ -783,7 +783,7 @@ namespace EventStore.Core.Tests.Http.Streams {
 
 		protected override async Task When() {
 			var headers = new NameValueCollection {{"ES-ResolveLinkTos", "False"}};
-			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/20", 
+			_feed = await GetJson<JObject>("/streams/$all/00000000000000000000037777777777/forward/30", 
 				ContentType.Json, DefaultData.AdminNetworkCredentials, headers);
 			_entries = _feed != null ? _feed["entries"].ToList() : new List<JToken>();
 		}
