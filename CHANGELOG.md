@@ -46,6 +46,7 @@ All notable changes to this project will be documented in this file.
 - Checks to improve cluster stability before running tests. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
 - Add a log message describing how to disable the stream existence filter [EventStore#3172](https://github.com/EventStore/EventStore/pull/3172)
 - New options to control logging: --log-console-format, --log-file-size, --log-file-interval, --log-file-retention-count, and --disable-log-file [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
+- Event type index for LogV3 [EventStore#3114](https://github.com/EventStore/EventStore/pull/3114)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
