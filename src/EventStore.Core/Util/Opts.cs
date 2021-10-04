@@ -2,6 +2,7 @@
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.TransactionLog.Chunks;
+using Serilog;
 
 namespace EventStore.Core.Util {
 	public static class Opts {
@@ -42,6 +43,21 @@ namespace EventStore.Core.Util {
 		public const string LogsDescr = "Path where to keep log files.";
 		public const string LogLevelDescr = "Sets the minimum log level. For more granular settings, please edit logconfig.json.";
 		public const LogLevel LogLevelDefault = LogLevel.Default;
+
+		public const string LogFileSizeDescr = "Maximum size of each log file.";
+		public const int LogFileSizeDefault = 1024 * 1024 * 1024;
+
+		public const string LogFileIntervalDescr = "How often to rotate logs. (Infinite, Year, Month, Day, Hour, Minute)";
+		public const RollingInterval LogFileIntervalDefault = RollingInterval.Day;
+
+		public const string LogConsoleFormatDescr = " Which format (plain, json) to use when writing to the console. (Plain, Json)";
+		public const LogConsoleFormat LogConsoleFormatDefault = LogConsoleFormat.Plain;
+
+		public const string LogFileRetentionCountDescr = "How many log files to hold on to.";
+		public const int LogFileRetentionCountDefault = 31;
+
+		public const string DisableLogFileDescr = "Disable log to disk.";
+		public const bool DisableLogFileDefault = false;
 
 		public const string LogConfigDescr = "The name of the log configuration file.";
 		public const string LogConfigDefault = "logconfig.json";
