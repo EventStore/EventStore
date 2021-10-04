@@ -28,6 +28,7 @@ using ElectionsService = EventStore.Core.Services.Transport.Grpc.Cluster.Electio
 using Operations = EventStore.Core.Services.Transport.Grpc.Operations;
 using ClusterGossip = EventStore.Core.Services.Transport.Grpc.Cluster.Gossip;
 using ClientGossip = EventStore.Core.Services.Transport.Grpc.Gossip;
+using ClientCapabilities = EventStore.Core.Services.Transport.Grpc.ClientCapabilities;
 
 namespace EventStore.Core {
 	public class ClusterVNodeStartup<TStreamId> : IStartup, IHandle<SystemMessage.SystemReady>,
@@ -135,7 +136,8 @@ namespace EventStore.Core {
 				.UseEndpoints(ep => ep.MapGrpcService<Elections>())
 				.UseEndpoints(ep => ep.MapGrpcService<Operations>())
 				.UseEndpoints(ep => ep.MapGrpcService<ClientGossip>())
-				.UseEndpoints(ep => ep.MapGrpcService<Monitoring>());
+				.UseEndpoints(ep => ep.MapGrpcService<Monitoring>())
+				.UseEndpoints(ep => ep.MapGrpcService<ClientCapabilities>());
 
 			_subsystems.Aggregate(app, (b, subsystem) => subsystem.Configure(b));
 		}
@@ -163,6 +165,7 @@ namespace EventStore.Core {
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Monitoring(_monitoringQueue))
+						.AddSingleton<ClientCapabilities>()
 						.AddGrpc()
 						.AddServiceOptions<Streams<TStreamId>>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)

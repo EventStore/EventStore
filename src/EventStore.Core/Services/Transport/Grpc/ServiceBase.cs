@@ -29,6 +29,13 @@ namespace EventStore.Client.PersistentSubscriptions {
 	}
 }
 
+namespace EventStore.Client.FeatureDiscovery {
+	partial class FeatureDiscovery {
+		partial class FeatureDiscoveryBase : ServiceBase {
+		}
+	}
+}
+
 namespace EventStore.Client.Streams {
 	partial class Streams {
 		partial class StreamsBase : ServiceBase {
