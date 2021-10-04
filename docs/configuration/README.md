@@ -1,10 +1,12 @@
-# Options
+# Configuration 
+
+## Options
 
 EventStoreDB has a number of configuration options that can be changed. You can find all the options described in details in this section.
 
 When you don't change the configuration, EventStoreDB will use sensible defaults, but they might not suit your needs. You can always instruct EventStoreDB to use a different set of options. There are multiple ways to configure EventStoreDB server, described below.
 
-## Version and help
+### Version and help
 
 You can check what version of EventStoreDB you have installed by using the `--version` parameter in the command line. For example:
 
@@ -15,7 +17,7 @@ EventStoreDB version v21.6.0 (tags/oss-v21.6.0/1f713a407, Unknown)
 
 The full list of available options is available from the currently installed server by using the `--help` option in the command line.
 
-## Configuration file
+### Configuration file
 
 You would use the configuration file when you want the server to run with the same set of options every time. YAML files are better for large installations as you can centrally distribute and manage them, or generate them from a configuration management system.
 
@@ -35,13 +37,13 @@ The default configuration file name is `eventstore.conf`. It is located in `/etc
 
 To tell the EventStoreDB server to use a different configuration file, you pass the file path on the command line with `--config=filename`, or use the `CONFIG` environment variable.
 
-## Environment variables
+### Environment variables
 
 You can also set all arguments with environment variables. All variables are prefixed with `EVENTSTORE_` and normally follow the pattern `EVENTSTORE_{option}`. For example, setting the `EVENTSTORE_LOG` variable would instruct the server to use a custom location for log files.
 
 Environment variables override all the options specified in configuration files.
 
-## Command line
+### Command line
 
 You can also override options from both configuration files and environment variables using the command line.
 
@@ -60,7 +62,7 @@ EventStore.ClusterNode.exe --log C:\Temp\EventStore\Logs
 :::
 ::::
 
-## Testing the configuration
+### Testing the configuration
 
 If more than one method is used to configure the server, it might be hard to find out what the effective configuration will be when the server starts. To help finding out just that, you can use the `--what-if` option. 
 
@@ -201,3 +203,55 @@ E.g: the following will prevent the server from starting:
 
 And will output on `stdout` only: `Error while parsing options: The option UnknownConfig is not a known option. (Parameter 'UnknownConfig')`.
 :::
+
+## Auto-Configured Options
+
+Some options are configured at startup to make better use of the available resources on larger instances or machines.
+
+These options are `StreamInfoCacheCapacity`, `ReaderThreadsCount`, and `WorkerThreads`.
+
+### StreamInfoCacheCapacity
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--stream-info-cache-capacity` |
+| YAML                 | `StreamInfoCacheCapacity` |
+| Environment variable | `STREAM_INFO_CACHE_CAPACITY` | 
+
+This option sets the maximum number of entries to keep in the stream info cache. This is the lookup that contains the information of any stream that has recently been read or written to. Having entries in this cache significantly improves write and read performance to cached streams on larger databases.
+
+The cache is configured at startup based on the available free memory at the time. If there is 4gb or more available, it will be configured to take at most 75% of the remaining memory, otherwise it will take at most 50%. The minimum that it can be set to is 100,000 entries.
+
+The option is set to 0 by default, which enables auto-configuration. The default on previous versions of EventStoreDb was 100,000 entries.
+
+### ReaderThreadsCount
+
+| Option Name               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--reader-threads-count` |
+| YAML                 | `ReaderThreadsCount` |
+| Environment variable | `READER_THREADS_COUNT` | 
+
+This option configures the number of reader threads available to EventStoreDb. Having more reader threads allows more concurrent reads to be processed.
+
+The reader threads count will be set at startup to twice the number of available processors, with a minimum of 4 and a maximum of 16 threads.
+
+The option is set to 0 by default, which enables auto-configuration. The default on previous versions of EventStoreDb was 4 threads.
+
+:::warning
+Increasing the reader threads count too high can cause read timeouts if your disk cannot handle the increased load.
+:::
+
+### WorkerThreads
+
+| Option Name               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--worker-threads` |
+| YAML                 | `WorkerThreads` |
+| Environment variable | `WORKER_THREADS` | 
+
+Worker Threads configures the number of threads available to the pool of worker services.
+
+At startup the number of worker threads will be set to 10 if there are more than 4 reader threads. Otherwise, it will be set to have 5 threads available.
+
+The option is set to 0 by default, which enables auto-configuration. The default on previous versions of EventStoreDb was 5 threads.
