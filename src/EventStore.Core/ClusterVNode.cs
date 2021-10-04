@@ -58,6 +58,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
+using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -669,7 +670,14 @@ namespace EventStore.Core {
 				Db.Config.IndexCheckpoint);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);
-			var epochManager = new EpochManager(_mainQueue,
+
+			var partitionManager = logFormat.CreatePartitionManager(new TFChunkReader(
+					Db,
+					Db.Config.WriterCheckpoint.AsReadOnly(),
+					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+				writer);
+			
+			var epochManager = new EpochManager<TStreamId>(_mainQueue,
 				ESConsts.CachedEpochCount,
 				Db.Config.EpochCheckpoint,
 				writer,
@@ -680,15 +688,12 @@ namespace EventStore.Core {
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
 				logFormat.RecordFactory,
+				logFormat.StreamNameIndex,
+				logFormat.EventTypeIndex,
+				partitionManager,
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
-			var partitionManager = logFormat.CreatePartitionManager(new TFChunkReader(
-					Db,
-					Db.Config.WriterCheckpoint.AsReadOnly(),
-					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
-				writer);
-			
 			var storageWriter = new ClusterStorageWriterService<TStreamId>(_mainQueue, _mainBus,
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
 				logFormat.RecordFactory,
@@ -696,8 +701,8 @@ namespace EventStore.Core {
 				logFormat.EventTypeIndex,
 				logFormat.EmptyEventTypeId,
 				logFormat.SystemStreams,
-				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition,
-				partitionManager); // subscribes internally
+				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition);
+			// subscribes internally
 			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
@@ -711,6 +716,18 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(storageReader);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageReader);
 
+			// PRE-LEADER -> LEADER TRANSITION MANAGEMENT
+			var inaugurationManager = new InaugurationManager(
+				publisher: _mainQueue,
+				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
+				indexCheckpoint: Db.Config.IndexCheckpoint);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.ChaserCaughtUp>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.EpochWritten>(inaugurationManager);
+			_mainBus.Subscribe<SystemMessage.CheckInaugurationConditions>(inaugurationManager);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(inaugurationManager);
+			_mainBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(inaugurationManager);
+			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(inaugurationManager);
 
 			// REPLICATION TRACKING
 			var replicationTracker = new ReplicationTrackingService(
@@ -1195,6 +1212,7 @@ namespace EventStore.Core {
 				AddTask(leaderReplicationService.Task);
 				_mainBus.Subscribe<SystemMessage.SystemStart>(leaderReplicationService);
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(leaderReplicationService);
+				_mainBus.Subscribe<SystemMessage.EnablePreLeaderReplication>(leaderReplicationService);				
 				_mainBus.Subscribe<ReplicationMessage.ReplicaSubscriptionRequest>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationMessage.ReplicaLogPositionAck>(leaderReplicationService);
 				_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(leaderReplicationService);

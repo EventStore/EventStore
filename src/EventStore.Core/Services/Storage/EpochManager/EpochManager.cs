@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Exceptions;
@@ -15,14 +16,20 @@ using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
 
 namespace EventStore.Core.Services.Storage.EpochManager {
-	public class EpochManager : IEpochManager {
-		private static readonly ILogger Log = Serilog.Log.ForContext<EpochManager>();
+	public abstract class Epochmanager {
+	}
+
+	public class EpochManager<TStreamId> : IEpochManager {
+		private static readonly ILogger Log = Serilog.Log.ForContext<EpochManager.Epochmanager>();
 		private readonly IPublisher _bus;
 
 		private readonly ICheckpoint _checkpoint;
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ITransactionFileWriter _writer;
-		private readonly IRecordFactory _recordFactory;
+		private readonly IRecordFactory<TStreamId> _recordFactory;
+		private readonly INameIndex<TStreamId> _streamNameIndex;
+		private readonly INameIndex<TStreamId> _eventTypeIndex;
+		private readonly IPartitionManager _partitionManager;
 		private readonly Guid _instanceId;
 
 		private readonly object _locker = new object();
@@ -34,7 +41,6 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		public EpochRecord GetLastEpoch() => _lastCachedEpoch?.Value;
 		public int LastEpochNumber => _lastCachedEpoch?.Value.EpochNumber ?? -1;
 
-
 		public EpochManager(IPublisher bus,
 			int cachedEpochCount,
 			ICheckpoint checkpoint,
@@ -42,7 +48,10 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			int initialReaderCount,
 			int maxReaderCount,
 			Func<ITransactionFileReader> readerFactory,
-			IRecordFactory recordFactory,
+			IRecordFactory<TStreamId> recordFactory,
+			INameIndex<TStreamId> streamNameIndex,
+			INameIndex<TStreamId> eventTypeIndex,
+			IPartitionManager partitionManager,
 			Guid instanceId) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.Nonnegative(cachedEpochCount, "cachedEpochCount");
@@ -62,6 +71,9 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				maxReaderCount, readerFactory);
 			_writer = writer;
 			_recordFactory = recordFactory;
+			_streamNameIndex = streamNameIndex;
+			_eventTypeIndex = eventTypeIndex;
+			_partitionManager = partitionManager;
 			_instanceId = instanceId;
 		}
 
@@ -272,9 +284,112 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				if (!_writer.Write(rec, out pos))
 					throw new Exception($"Second write try failed at {epoch.EpochPosition}.");
 			}
+			_partitionManager.Initialize();
+			WriteEpochInformationWithRetry(epoch);
 			_writer.Flush();
+			_bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			_bus.Publish(new SystemMessage.EpochWritten(epoch));
 			return epoch;
+		}
+
+		private TStreamId GetEpochInformationStream() {
+			if (!_streamNameIndex.GetOrReserve(SystemStreams.EpochInformationStream, out var streamId, out _, out _))
+				throw new Exception($"{SystemStreams.EpochInformationStream} stream does not exist");
+			return streamId;
+		}
+
+		private TStreamId GetEpochInformationEventType() {
+			if (!_eventTypeIndex.GetOrReserve(SystemEventTypes.EpochInformation, out var eventTypeId, out _, out _))
+				throw new Exception($"{SystemEventTypes.EpochInformation} event type does not exist");
+			return eventTypeId;
+		}
+
+		void WriteEpochInformationWithRetry(EpochRecord epoch) {
+			if (!TryGetExpectedVersionForEpochInformation(epoch, out var expectedVersion))
+				expectedVersion = ExpectedVersion.NoStream;
+
+			var originalLogPosition = _writer.Checkpoint.ReadNonFlushed();
+
+			var epochInformation = LogRecord.Prepare(
+					factory: _recordFactory,
+					logPosition: originalLogPosition,
+					correlationId: Guid.NewGuid(),
+					eventId: Guid.NewGuid(),
+					transactionPos: originalLogPosition,
+					transactionOffset: 0,
+					eventStreamId: GetEpochInformationStream(),
+					expectedVersion: expectedVersion,
+					flags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
+					eventType: GetEpochInformationEventType(),
+					data: epoch.AsSerialized(),
+					metadata: Empty.ByteArray);
+
+			if (_writer.Write(epochInformation, out var retryLogPosition))
+				return;
+
+			epochInformation = epochInformation.CopyForRetry(retryLogPosition, retryLogPosition);
+
+			if (_writer.Write(epochInformation, out _))
+				return;
+
+			throw new Exception(
+				string.Format("Second write try failed when first writing $epoch-information at {0}, then at {1}.",
+					originalLogPosition,
+					retryLogPosition));
+		}
+
+		// we have just written epoch. about to write the $epoch-information for it.
+		// this decides what expected version the $epoch-information should have.
+		// it looks up the previous epoch, finds that epoch's previous information
+		// (which immediately follows it) and gets its event number.
+		// except the first epoch in logv3, which is followed by the root partition
+		// initialization before the epochinfo.
+		bool TryGetExpectedVersionForEpochInformation(EpochRecord epoch, out long expectedVersion) {
+			expectedVersion = default;
+
+			if (epoch.PrevEpochPosition < 0)
+				return false;
+
+			var reader = _readers.Get();
+			try {
+				reader.Reposition(epoch.PrevEpochPosition);
+
+				// read the epoch
+				var result = reader.TryReadNext();
+				if (!result.Success)
+					return false;
+
+				// read the epoch-information (if there is one)
+				while (true) {
+					result = reader.TryReadNext();
+					if (!result.Success)
+						return false;
+
+					if (result.LogRecord is IPrepareLogRecord<TStreamId> prepare &&
+						EqualityComparer<TStreamId>.Default.Equals(prepare.EventStreamId, GetEpochInformationStream())) {
+						// found the epoch information
+						expectedVersion = prepare.ExpectedVersion + 1;
+						return true;
+					}
+
+					if (result.LogRecord.RecordType == LogRecordType.Prepare ||
+						result.LogRecord.RecordType == LogRecordType.Commit ||
+						result.LogRecord.RecordType == LogRecordType.System ||
+						result.LogRecord.RecordType == LogRecordType.StreamWrite) {
+						// definitely not reading the root partition initialization;
+						// there is no epochinfo for this epoch (probably the epoch is older
+						// than the epochinfo mechanism.
+						return false;
+					}
+
+					// could be reading the root partition initialization; skip over it.
+				}
+
+			} catch (Exception) {
+				return false;
+			} finally {
+				_readers.Return(reader);
+			}
 		}
 
 		public void CacheEpoch(EpochRecord epoch) {

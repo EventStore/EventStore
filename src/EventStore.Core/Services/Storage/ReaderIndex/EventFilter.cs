@@ -13,8 +13,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public const string RegexType = "regex";
 		public const string PrefixType = "prefix";
 
-		public static IEventFilter DefaultAllFilter => new DefaultAllFilterStrategy();
-		public static IEventFilter DefaultStreamFilter => new DefaultStreamFilterStrategy();
+		public static IEventFilter DefaultAllFilter { get; } = new DefaultAllFilterStrategy();
+		public static IEventFilter DefaultStreamFilter { get; } = new DefaultStreamFilterStrategy();
 
 		public static class StreamName {
 			public static IEventFilter Prefixes(bool isAllStream, params string[] prefixes)
@@ -64,6 +64,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			private (IEventFilter filter, bool allow)[] _allFilters = {
 				//immediately allow all non-system events
 				(new NonSystemStreamStrategy(), true),
+				//disallow $epoch-information
+				(new OrdinalStreamIdEqualityStrategy(SystemStreams.EpochInformationStream), false),
 				//disallow persistent subscription to $all checkpoints
 				(new OrdinalStreamIdPrefixAndSuffixStrategy("$persistentsubscription-$all::","-checkpoint"), false),
 				//disallow persistent subscription to $all parked messages
@@ -92,6 +94,20 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					eventRecord.EventStreamId[0] != '$';
 
 				public override string ToString() => nameof(NonSystemStreamStrategy);
+			}
+
+			private sealed class OrdinalStreamIdEqualityStrategy : IEventFilter {
+				private readonly string _stream;
+
+				public OrdinalStreamIdEqualityStrategy(string stream) {
+					_stream = stream;
+				}
+
+				[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+				public bool IsEventAllowed(EventRecord eventRecord) =>
+					eventRecord.EventStreamId == _stream;
+
+				public override string ToString() => nameof(OrdinalStreamIdEqualityStrategy);
 			}
 
 			private class OrdinalStreamIdPrefixAndSuffixStrategy : IEventFilter {

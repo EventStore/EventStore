@@ -103,7 +103,11 @@ namespace EventStore.Core.Tests.Integration {
 			_nodes[1].Start();
 			_nodes[2].Start();
 
-			await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
+			try {
+				await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
+			} catch (TimeoutException ex) {
+				throw new TimeoutException($"Cluster nodes did not start. Statuses: {_nodes[0].NodeState}/{_nodes[1].NodeState}/{_nodes[2].NodeState}", ex);
+			}
 			
 			// wait for cluster to be fully operational, tests depend on leader and followers
 			AssertEx.IsOrBecomesTrue(() => _nodes.Any(x => x.NodeState == Data.VNodeState.Leader),

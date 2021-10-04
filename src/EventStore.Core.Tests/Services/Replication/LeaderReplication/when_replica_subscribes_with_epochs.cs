@@ -325,8 +325,8 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			EpochManager.WriteNewEpoch(8);
 
 			_replicaEpochs = new List<Epoch> {
-				new Epoch(_uncachedLeaderEpochs[0].EpochPosition + 800, 3, Guid.NewGuid()),
-				new Epoch(_uncachedLeaderEpochs[0].EpochPosition + 400, 2, Guid.NewGuid()),
+				new Epoch(_uncachedLeaderEpochs[0].EpochPosition + 8000, 3, Guid.NewGuid()),
+				new Epoch(_uncachedLeaderEpochs[0].EpochPosition + 4000, 2, Guid.NewGuid()),
 				new Epoch(_uncachedLeaderEpochs[0].EpochPosition, _uncachedLeaderEpochs[0].EpochNumber, _uncachedLeaderEpochs[0].EpochId),
 				new Epoch(_uncachedLeaderEpochs[1].EpochPosition, _uncachedLeaderEpochs[1].EpochNumber, _uncachedLeaderEpochs[1].EpochId)
 			};

@@ -66,7 +66,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
 			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null, int? chunkSize = null,
 			int? cachedChunkSize = null, bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
-			bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0, string intHostAdvertiseAs = null) {
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.Helpers {
 					ClusterSize = 3,
 					PrepareCount = 2,
 					CommitCount = 2,
-					NodePriority = 0,
+					NodePriority = nodePriority,
 					GossipIntervalMs = 2_000,
 					GossipAllowedDifferenceMs = 1_000,
 					GossipTimeoutMs = 2_000,
@@ -124,7 +124,8 @@ namespace EventStore.Core.Tests.Helpers {
 					ExtTcpHeartbeatInterval = 2_000,
 					IntTcpHeartbeatInterval = 2_000,
 					EnableAtomPubOverHttp = true,
-					EnableTrustedAuth = enableTrustedAuth
+					EnableTrustedAuth = enableTrustedAuth,
+					IntHostAdvertiseAs = intHostAdvertiseAs,
 				},
 				Database = new() {
 					MinFlushDelayMs = TFConsts.MinFlushDelayMs.TotalMilliseconds,
@@ -210,7 +211,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			Node.MainBus.Subscribe(
 				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
-					NodeState = _isReadOnlyReplica ? VNodeState.ReadOnlyLeaderless : VNodeState.Unknown;
+					NodeState = m.State;
 				}));
 			if (!_isReadOnlyReplica) {
 				Node.MainBus.Subscribe(
@@ -257,6 +258,12 @@ namespace EventStore.Core.Tests.Helpers {
 			StoppingTime.Start();
 			_kestrelTestServer?.Dispose();
 			await Node.StopAsync().WithTimeout(TimeSpan.FromSeconds(20));
+
+			// the same message 'BecomeShutdown' triggers the disposal of the ReadIndex
+			// and also the notification here that the node as stopped so there is a race.
+			// For now let's wait for a moment before we try to delete the directory.
+			await Task.Delay(500);
+
 			_host?.Dispose();
 			if (!keepDb)
 				TryDeleteDirectory(_dbPath);

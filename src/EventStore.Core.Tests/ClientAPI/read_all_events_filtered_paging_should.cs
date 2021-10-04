@@ -115,8 +115,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 				.GetAwaiter()
 				.GetResult();
 
-			// Includes system events at start of stream
-			var expectedCount = 12;
+			// Includes system events at start of stream (inc epoch-information)
+			var expectedCount = 11;
 
 			if (LogFormatHelper<TLogFormat, TStreamId>.IsV3) {
 				// account for stream records: $scavenges, $user-admin, $user-ops, $users, stream-a

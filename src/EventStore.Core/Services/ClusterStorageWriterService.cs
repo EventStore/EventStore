@@ -49,10 +49,9 @@ namespace EventStore.Core.Services {
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
-			Func<long> getLastIndexedPosition,
-			IPartitionManager partitionManager)
+			Func<long> getLastIndexedPosition)
 			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex,
-				eventTypeIndex, emptyEventTypeId, systemStreams, epochManager, queueStatsManager, partitionManager) {
+				eventTypeIndex, emptyEventTypeId, systemStreams, epochManager, queueStatsManager) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;
