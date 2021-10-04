@@ -15,7 +15,7 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.query_result.with_long_fro
 			await PostEvent("stream-1", "type1", "{}");
 			await PostEvent("stream-1", "type1", "{}");
 
-			WaitIdle();
+			WaitIdle();			
 		}
 
 		[Test, Category("Network")]
@@ -24,9 +24,8 @@ namespace EventStore.Projections.Core.Tests.ClientAPI.query_result.with_long_fro
 fromAll().when({
     $init: function(){return {count:0}},
     type1: function(s,e){
-        var start = new Date();
-        while(new Date()-start < 500){}
-        
+        var start = new Date().getTime();
+        while(new Date().getTime() - start < 100){}        
         s.count++;
     },
 });

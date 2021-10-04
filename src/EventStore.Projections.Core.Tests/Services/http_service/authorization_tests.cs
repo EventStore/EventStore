@@ -129,7 +129,7 @@ namespace EventStore.Projections.Core.Tests.Services.Transport.Http {
 			return base.TestFixtureTearDown();
 		}
 
-		[Test, Combinatorial]
+		[Test, Combinatorial, Ignore("invalid url templates, retained for refernce only")]
 		public async Task authorization_tests(
 			[Values(
 				"None",
