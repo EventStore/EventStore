@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - release/oss-v*
     tags:
       - oss-v*
     paths-ignore:
