@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Exceptions;
@@ -84,7 +83,9 @@ namespace EventStore.Core {
 
 			string logsDirectory =
 				Path.GetFullPath(options.Log.IsNotEmptyString() ? options.Log : GetLogsDirectory(options));
-			EventStoreLoggerConfiguration.Initialize(logsDirectory, componentName, options.LogConfig);
+			EventStoreLoggerConfiguration.Initialize(logsDirectory, componentName, options.LogConsoleFormat,
+				options.LogFileSize, options.LogFileInterval, options.LogFileRetentionCount, options.DisableLogFile,
+				options.LogConfig);
 
 			Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
 				VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);

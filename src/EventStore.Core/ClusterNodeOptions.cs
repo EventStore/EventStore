@@ -3,6 +3,7 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Rags;
+using Serilog;
 
 namespace EventStore.Core {
 	public class ClusterNodeOptions : IOptions {
@@ -17,6 +18,21 @@ namespace EventStore.Core {
 
 		[ArgDescription(Opts.LogLevelDescr, Opts.AppGroup)]
 		public LogLevel LogLevel { get; set; }
+
+		[ArgDescription(Opts.LogConsoleFormatDescr, Opts.AppGroup)]
+		public LogConsoleFormat LogConsoleFormat { get; set; }
+
+		[ArgDescription(Opts.LogFileSizeDescr, Opts.AppGroup)]
+		public int LogFileSize { get; set; }
+
+		[ArgDescription(Opts.LogFileIntervalDescr, Opts.AppGroup)]
+		public RollingInterval LogFileInterval { get; set; }
+
+		[ArgDescription(Opts.LogFileRetentionCountDescr, Opts.AppGroup)]
+		public int LogFileRetentionCount { get; set; }
+
+		[ArgDescription(Opts.DisableLogFileDescr, Opts.AppGroup)]
+		public bool DisableLogFile { get; set; }
 
 		[ArgDescription(Opts.LogConfigDescr, Opts.AppGroup)]
 		public string LogConfig { get; set; }
@@ -339,6 +355,11 @@ namespace EventStore.Core {
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultLogDirectory;
 			LogLevel = Opts.LogLevelDefault;
+			LogFileSize = Opts.LogFileSizeDefault;
+			LogFileInterval = Opts.LogFileIntervalDefault;
+			LogConsoleFormat = Opts.LogConsoleFormatDefault;
+			LogFileRetentionCount = Opts.LogFileRetentionCountDefault;
+			DisableLogFile = Opts.DisableLogFileDefault;
 			LogConfig = Opts.LogConfigDefault;
 			WhatIf = Opts.WhatIfDefault;
 
