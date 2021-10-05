@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - user provided metadata to be formatted correctly [EventStore#3188](https://github.com/EventStore/EventStore/pull/3188)
 - Incorrect configuration file selection on linux [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
 - Prevent the EpochManager from attempting to read epochs that should have been cached [EventStore#3198](https://github.com/EventStore/EventStore/pull/3198)
+- race condition where a node becomes leader and immediately writes to streams that have recently been written to but not indexed, resulting in events with incorrect numbers in their streams. [EventStore#3201](https://github.com/EventStore/EventStore/pull/3201)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
@@ -31,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3119 [EventStore#3124](https://github.com/EventStore/EventStore/pull/3124)
 - //github.com/EventStore/EventStore/pull/3116 [EventStore#3118](https://github.com/EventStore/EventStore/pull/3118)
 - //github.com/EventStore/EventStore/pull/3166 [EventStore#3169](https://github.com/EventStore/EventStore/pull/3169)
+- //github.com/EventStore/EventStore/pull/3208 [EventStore#3209](https://github.com/EventStore/EventStore/pull/3209)
 
 ### Added
 - GitHubActionsTestLogger to Buffer Management Tests [EventStore#3061](https://github.com/EventStore/EventStore/pull/3061)
@@ -47,6 +49,7 @@ All notable changes to this project will be documented in this file.
 - Add a log message describing how to disable the stream existence filter [EventStore#3172](https://github.com/EventStore/EventStore/pull/3172)
 - New options to control logging: --log-console-format, --log-file-size, --log-file-interval, --log-file-retention-count, and --disable-log-file [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
 - Event type index for LogV3 [EventStore#3114](https://github.com/EventStore/EventStore/pull/3114)
+- ClientCapabilities proto for discovering which gRPC methods are available on the server [EventStore#3194](https://github.com/EventStore/EventStore/pull/3194)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
