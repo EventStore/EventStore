@@ -159,7 +159,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_engine.ResetConstraints();
 			_currentPosition = deletePosition;
 
-			_interpreterRuntime.HandleDeleted(partition, false);
+			_interpreterRuntime.HandleDeleted(_state, partition, false);
 			newState = ConvertToStringHandlingNulls(_json, _state);
 			return true;
 		}
@@ -990,9 +990,9 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				}
 			}
 
-			public void HandleDeleted(string partition, bool isSoftDelete) {
+			public void HandleDeleted(JsValue state, string partition, bool isSoftDelete) {
 				if (_deleted != null) {
-					_deleted.Call(this, new JsValue[] { partition, isSoftDelete });
+					_deleted.Call(this, new JsValue[] {state, Null, partition, isSoftDelete });
 				}
 			}
 		}
