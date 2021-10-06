@@ -49,8 +49,8 @@ namespace EventStore.Core.Tests.Integration {
 			}, true);
 			await base.Given();
 		}
-		private CallOptions GetCallOptions()
-		{
+
+		private CallOptions GetCallOptions() {
 			return new(
 				credentials: CallCredentials.FromInterceptor((_, metadata) => {
 					metadata.Add("authorization", $"{AuthenticationScheme} {AuthenticationValue}");
@@ -63,7 +63,7 @@ namespace EventStore.Core.Tests.Integration {
 			using var channel = GrpcChannel.ForAddress(new Uri($"https://{endpoint}"),
 				new GrpcChannelOptions { HttpClient = _httpClient });
 			var streamClient = new Streams.StreamsClient(channel);
-			var call = streamClient.Append(GetCallOptions());
+			using var call = streamClient.Append(GetCallOptions());
 
 			var optionsAppendReq = new AppendReq {
 				Options = new() {
@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.Integration {
 				new GrpcChannelOptions { HttpClient = _httpClient });
 			var streamClient = new Streams.StreamsClient(channel);
 
-			var call = streamClient.Read(new ReadReq {
+			using var call = streamClient.Read(new ReadReq {
 				Options = new() {
 					All = new() {
 						Start = new Empty()

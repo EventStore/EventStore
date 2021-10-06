@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 
 			protected override async Task When() {
-				_responses.AddRange(await StreamsClient.Read(new() {
+				using var call = StreamsClient.Read(new() {
 					Options = new() {
 						UuidOption = new() { Structured = new() },
 						Count = 20,
@@ -50,7 +50,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 							StreamIdentifier = new() { Prefix = { StreamId } }
 						}
 					}
-				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().ToArrayAsync());
+				}, GetCallOptions(AdminCredentials));
+				_responses.AddRange(await call.ResponseStream.ReadAllAsync().ToArrayAsync());
 			}
 
 			[Test]
