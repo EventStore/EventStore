@@ -55,7 +55,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			[Test]
 			public void should_not_receive_null_events() {
-				Assert.False(_responses.Where(x => x.AllStreamPosition is null)
+				Assert.False(_responses
+					.Where(x => x.ContentCase == ReadResp.ContentOneofCase.Event)
 					.Any(x => x.Event is null));
 			}
 

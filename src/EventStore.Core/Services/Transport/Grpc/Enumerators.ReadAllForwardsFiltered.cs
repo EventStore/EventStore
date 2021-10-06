@@ -117,45 +117,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					switch (completed.Result) {
 						case FilteredReadAllResult.Success:
-							var nextPosition = completed.NextPos;
-
 							foreach (var @event in completed.Events) {
 								if (readCount >= _maxCount) {
-									await _channel.Writer.WriteAsync(new ReadResp {
-										AllStreamPosition = new () {
-											NextPosition = new() {
-												CommitPosition = (ulong)nextPosition.CommitPosition,
-												PreparePosition = (ulong)nextPosition.PreparePosition
-											},
-											LastPosition = new() {
-												CommitPosition = (ulong)completed.CurrentPos.CommitPosition,
-												PreparePosition = (ulong)completed.CurrentPos.PreparePosition
-											}
-										}
-									}, ct).ConfigureAwait(false);
 									_channel.Writer.TryComplete();
 									return;
 								}
 								await _channel.Writer.WriteAsync(new ReadResp {
 									Event = ConvertToReadEvent(_uuidOption, @event)
 								}, _cancellationToken).ConfigureAwait(false);
-								nextPosition = @event.OriginalPosition ?? TFPos.Invalid;
 								readCount++;
 							}
 
 							if (completed.IsEndOfStream) {
-								await _channel.Writer.WriteAsync(new ReadResp {
-									AllStreamPosition = new() {
-										NextPosition = new() {
-											CommitPosition = (ulong)nextPosition.CommitPosition,
-											PreparePosition = (ulong)nextPosition.PreparePosition
-										},
-										LastPosition = new() {
-											CommitPosition = (ulong)completed.CurrentPos.CommitPosition,
-											PreparePosition = (ulong)completed.CurrentPos.PreparePosition
-										}
-									}
-								}, _cancellationToken).ConfigureAwait(false);
 								_channel.Writer.TryComplete();
 								return;
 							}

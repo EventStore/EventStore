@@ -99,18 +99,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							foreach (var @event in completed.Events) {
 								if (readCount >= _maxCount) {
-									await _channel.Writer.WriteAsync(new ReadResp {
-										AllStreamPosition = new() {
-											NextPosition = new() {
-												CommitPosition = (ulong)nextPosition.CommitPosition,
-												PreparePosition = (ulong)nextPosition.PreparePosition
-											},
-											LastPosition = new() {
-												CommitPosition = (ulong)completed.CurrentPos.CommitPosition,
-												PreparePosition = (ulong)completed.CurrentPos.PreparePosition
-											}
-										}
-									}, ct).ConfigureAwait(false);
 									_channel.Writer.TryComplete();
 									return;
 								}
@@ -123,18 +111,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							}
 
 							if (completed.IsEndOfStream) {
-								await _channel.Writer.WriteAsync(new ReadResp {
-									AllStreamPosition = new() {
-										NextPosition = new() {
-											CommitPosition = (ulong)nextPosition.CommitPosition,
-											PreparePosition = (ulong)nextPosition.PreparePosition
-										},
-										LastPosition = new() {
-											CommitPosition = (ulong)completed.CurrentPos.CommitPosition,
-											PreparePosition = (ulong)completed.CurrentPos.PreparePosition
-										}
-									}
-								}, ct).ConfigureAwait(false);
 								_channel.Writer.TryComplete();
 								return;
 							}
