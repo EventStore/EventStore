@@ -47,6 +47,7 @@ fromAll().foreachStream().when({
 		}
 
 		[Test, Category("Network")]
+		[Ignore("Regression")]
 		public async Task receives_deleted_notification() {
 			await AssertStreamTail("$projections-test-projection-stream-1-result", "Result:{\"deleted\":1}");
 			await AssertStreamTail("$projections-test-projection-stream-2-result", "Result:{\"a\":2}");
