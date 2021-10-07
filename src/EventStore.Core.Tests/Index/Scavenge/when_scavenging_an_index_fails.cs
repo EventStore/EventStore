@@ -31,7 +31,8 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			_expectedOutputFile = GetTempFilePath();
 			Assert.That(
 				() => PTable.Scavenged(_oldTable, _expectedOutputFile, upgradeHash, existsAt, readRecord,
-					PTableVersions.IndexV4, out spaceSaved, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault),
+					PTableVersions.IndexV4, out spaceSaved, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
+					useBloomFilter: true),
 				Throws.Exception.With.Message.EqualTo("Expected exception"));
 		}
 
@@ -45,6 +46,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 		[Test]
 		public void the_output_file_is_deleted() {
 			Assert.That(File.Exists(_expectedOutputFile), Is.False);
+			Assert.That(File.Exists(PTable.GenBloomFilterFilename(_expectedOutputFile)), Is.False);
 		}
 	}
 }

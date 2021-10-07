@@ -9,19 +9,41 @@ using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
+using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
 
 namespace EventStore.Core.Index {
 	public unsafe partial class PTable {
-		public static PTable FromFile(string filename, int initialReaders, int maxReaders, int cacheDepth,
-			bool skipIndexVerify) {
-			return new PTable(filename, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify);
+		public static PTable FromFile(string filename, int initialReaders, int maxReaders,
+			int cacheDepth, bool skipIndexVerify,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
+
+			return new PTable(filename, Guid.NewGuid(), initialReaders, maxReaders,
+				cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize);
 		}
 
 		private const int MidpointsOverflowSafetyNet = 20;
 
+		private static MemoryMappedFileBloomFilter ConstructBloomFilter(
+			bool useBloomFilter,
+			string filename,
+			long indexEntryCount) {
+
+			if (!useBloomFilter)
+				return null;
+
+			return new MemoryMappedFileBloomFilter(
+					path: GenBloomFilterFilename(filename),
+					create: true,
+					size: GenBloomFilterSizeBytes(indexEntryCount));
+		}
+
 		public static PTable FromMemtable(IMemTable table, string filename, int initialReaders, int maxReaders,
 			int cacheDepth = 16,
-			bool skipIndexVerify = false) {
+			bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
+
 			Ensure.NotNull(table, "table");
 			Ensure.NotNullOrEmpty(filename, "filename");
 			Ensure.Nonnegative(cacheDepth, "cacheDepth");
@@ -32,10 +54,12 @@ namespace EventStore.Core.Index {
 			var sw = Stopwatch.StartNew();
 			using (var fs = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None,
 				DefaultSequentialBufferSize, FileOptions.SequentialScan)) {
+
 				var fileSize = GetFileSizeUpToIndexEntries(table.Count, table.Version);
 				fs.SetLength(fileSize);
 				fs.Seek(0, SeekOrigin.Begin);
 
+				using (var bloomFilter = ConstructBloomFilter(useBloomFilter, filename, table.Count))
 				using (var md5 = MD5.Create())
 				using (var cs = new CryptoStream(fs, md5, CryptoStreamMode.Write))
 				using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize)) {
@@ -50,12 +74,21 @@ namespace EventStore.Core.Index {
 					using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
 
 					long indexEntry = 0L;
+					ulong? previousHash = null;
 					foreach (var rec in records) {
 						AppendRecordTo(bs, buffer, table.Version, rec, indexEntrySize);
 						dumpedEntryCount += 1;
 						if (table.Version >= PTableVersions.IndexV4 &&
 						    IsMidpointIndex(indexEntry, table.Count, requiredMidpointCount)) {
 							midpoints.Add(new Midpoint(new IndexEntryKey(rec.Stream, rec.Version), indexEntry));
+						}
+
+						// WRITE BLOOM FILTER ENTRY
+						if (bloomFilter != null && rec.Stream != previousHash) {
+							// we are creating a PTable of the same version as the Memtable. therefore the hash is the right format
+							var streamHash = rec.Stream;
+							bloomFilter.Add(GetSpan(ref streamHash));
+							previousHash = rec.Stream;
 						}
 
 						indexEntry++;
@@ -77,6 +110,7 @@ namespace EventStore.Core.Index {
 							numIndexEntries, requiredMidpointCount, midpoints);
 					}
 
+					bloomFilter?.Flush();
 					bs.Flush();
 					cs.FlushFinalBlock();
 
@@ -89,13 +123,17 @@ namespace EventStore.Core.Index {
 			}
 
 			Log.Debug("Dumped MemTable [{id}, {table} entries] in {elapsed}.", table.Id, table.Count, sw.Elapsed);
-			return new PTable(filename, table.Id, initialReaders, maxReaders, cacheDepth, skipIndexVerify);
+			return new PTable(filename, table.Id, initialReaders, maxReaders, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize);
 		}
 
 		public static PTable MergeTo<TStreamId>(IList<PTable> tables, string outputFile, Func<TStreamId, ulong, ulong> upgradeHash,
 			Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<TStreamId, bool>> readRecord, byte version,
 			int initialReaders, int maxReaders,
-			int cacheDepth = 16, bool skipIndexVerify = false) {
+			int cacheDepth = 16,
+			bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
+
 			Ensure.NotNull(tables, "tables");
 			Ensure.NotNullOrEmpty(outputFile, "outputFile");
 			Ensure.Nonnegative(cacheDepth, "cacheDepth");
@@ -109,7 +147,7 @@ namespace EventStore.Core.Index {
 			var fileSizeUpToIndexEntries = GetFileSizeUpToIndexEntries(numIndexEntries, version);
 			if (tables.Count == 2)
 				return MergeTo2(tables, numIndexEntries, indexEntrySize, outputFile, upgradeHash, existsAt, readRecord,
-					version, initialReaders, maxReaders, cacheDepth, skipIndexVerify); // special case
+					version, initialReaders, maxReaders, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize); // special case
 
 			Log.Debug("PTables merge started.");
 			var watch = Stopwatch.StartNew();
@@ -131,6 +169,7 @@ namespace EventStore.Core.Index {
 					f.SetLength(fileSizeUpToIndexEntries);
 					f.Seek(0, SeekOrigin.Begin);
 
+					using (var bloomFilter = ConstructBloomFilter(useBloomFilter, outputFile, tables.Sum(table => table.Count)))
 					using (var md5 = MD5.Create())
 					using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
 					using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize)) {
@@ -145,14 +184,23 @@ namespace EventStore.Core.Index {
 						using var midpoints = new UnmanagedMemoryAppendOnlyList<Midpoint>((int)requiredMidpointCount + MidpointsOverflowSafetyNet);
 
 						// WRITE INDEX ENTRIES
+						ulong? previousHash = null;
 						while (enumerators.Count > 0) {
 							var idx = GetMaxOf(enumerators);
 							var current = enumerators[idx].Current;
 							AppendRecordTo(bs, buffer, version, current, indexEntrySize);
 							if (version >= PTableVersions.IndexV4 &&
-							    IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
+								IsMidpointIndex(indexEntry, numIndexEntries, requiredMidpointCount)) {
 								midpoints.Add(new Midpoint(new IndexEntryKey(current.Stream, current.Version),
 									indexEntry));
+							}
+
+							// WRITE BLOOM FILTER ENTRY
+							if (bloomFilter != null && current.Stream != previousHash) {
+								// upgradeHash has already ensured the hash is in the right format for the target
+								var streamHash = current.Stream;
+								bloomFilter.Add(GetSpan(ref streamHash));
+								previousHash = current.Stream;
 							}
 
 							indexEntry++;
@@ -178,6 +226,7 @@ namespace EventStore.Core.Index {
 								requiredMidpointCount, midpoints);
 						}
 
+						bloomFilter?.Flush();
 						bs.Flush();
 						cs.FlushFinalBlock();
 
@@ -194,7 +243,7 @@ namespace EventStore.Core.Index {
 				Log.Debug(
 					"PTables merge finished in {elapsed} ([{entryCount}] entries merged into {dumpedEntryCount}).",
 					watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
-				return new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify);
+				return new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize);
 			} finally {
 				foreach (var enumerableTable in enumerators) {
 					enumerableTable.Dispose();
@@ -223,7 +272,9 @@ namespace EventStore.Core.Index {
 			Func<TStreamId, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt,
 			Func<IndexEntry, Tuple<TStreamId, bool>> readRecord,
 			byte version, int initialReaders, int maxReaders,
-			int cacheDepth, bool skipIndexVerify) {
+			int cacheDepth, bool skipIndexVerify,
+			bool useBloomFilter, int lruCacheSize) {
+
 			Log.Debug("PTables merge started (specialized for <= 2 tables).");
 			var watch = Stopwatch.StartNew();
 
@@ -237,6 +288,7 @@ namespace EventStore.Core.Index {
 					f.SetLength(fileSizeUpToIndexEntries);
 					f.Seek(0, SeekOrigin.Begin);
 
+					using (var bloomFilter = ConstructBloomFilter(useBloomFilter, outputFile, tables.Sum(table => table.Count)))
 					using (var md5 = MD5.Create())
 					using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
 					using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize)) {
@@ -256,6 +308,7 @@ namespace EventStore.Core.Index {
 						bool available1 = enum1.MoveNext();
 						bool available2 = enum2.MoveNext();
 						IndexEntry current;
+						ulong? previousHash = null;
 						while (available1 || available2) {
 							var entry1 = new IndexEntry(enum1.Current.Stream, enum1.Current.Version,
 								enum1.Current.Position);
@@ -277,6 +330,14 @@ namespace EventStore.Core.Index {
 									indexEntry));
 							}
 
+							// WRITE BLOOM FILTER ENTRY
+							if (bloomFilter != null && current.Stream != previousHash) {
+								// upgradeHash has already ensured the hash is in the right format for the target
+								var streamHash = current.Stream;
+								bloomFilter.Add(GetSpan(ref streamHash));
+								previousHash = current.Stream;
+							}
+
 							indexEntry++;
 							dumpedEntryCount++;
 						}
@@ -295,6 +356,7 @@ namespace EventStore.Core.Index {
 								requiredMidpointCount, midpoints);
 						}
 
+						bloomFilter?.Flush();
 						bs.Flush();
 						cs.FlushFinalBlock();
 
@@ -310,7 +372,7 @@ namespace EventStore.Core.Index {
 				Log.Debug(
 					"PTables merge finished in {elapsed} ([{entryCount}] entries merged into {dumpedEntryCount}).",
 					watch.Elapsed, string.Join(", ", tables.Select(x => x.Count)), dumpedEntryCount);
-				return new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify);
+				return new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize);
 			} finally {
 				foreach (var enumerator in enumerators) {
 					enumerator.Dispose();
@@ -323,7 +385,10 @@ namespace EventStore.Core.Index {
 			out long spaceSaved,
 			int initialReaders, int maxReaders,
 			int cacheDepth = 16, bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000,
 			CancellationToken ct = default(CancellationToken)) {
+
 			Ensure.NotNull(table, "table");
 			Ensure.NotNullOrEmpty(outputFile, "outputFile");
 			Ensure.Nonnegative(cacheDepth, "cacheDepth");
@@ -344,6 +409,7 @@ namespace EventStore.Core.Index {
 					f.SetLength(fileSizeUpToIndexEntries);
 					f.Seek(0, SeekOrigin.Begin);
 
+					using (var bloomFilter = ConstructBloomFilter(useBloomFilter, outputFile, table.Count))
 					using (var md5 = MD5.Create())
 					using (var cs = new CryptoStream(f, md5, CryptoStreamMode.Write))
 					using (var bs = new BufferedStream(cs, DefaultSequentialBufferSize)) {
@@ -355,10 +421,20 @@ namespace EventStore.Core.Index {
 						var buffer = new byte[indexEntrySize];
 						using (var enumerator =
 							new EnumerableTable<TStreamId>(version, table, upgradeHash, existsAt, readRecord)) {
+
+							ulong? previousHash = null;
 							while (enumerator.MoveNext()) {
 								ct.ThrowIfCancellationRequested();
 								if (existsAt(enumerator.Current)) {
+									var current = enumerator.Current;
 									AppendRecordTo(bs, buffer, version, enumerator.Current, indexEntrySize);
+									// WRITE BLOOM FILTER ENTRY
+									if (bloomFilter != null && current.Stream != previousHash) {
+										// upgradeHash has already ensured the hash is in the right format for the target
+										var streamHash = current.Stream;
+										bloomFilter.Add(GetSpan(ref streamHash));
+										previousHash = current.Stream;
+									}
 									keptCount++;
 								}
 							}
@@ -402,6 +478,7 @@ namespace EventStore.Core.Index {
 								requiredMidpointCount, midpoints);
 						}
 
+						bloomFilter?.Flush();
 						bs.Flush();
 						cs.FlushFinalBlock();
 
@@ -419,7 +496,7 @@ namespace EventStore.Core.Index {
 					"PTable scavenge finished in {elapsed} ({droppedCount} entries removed, {keptCount} remaining).",
 					watch.Elapsed,
 					droppedCount, keptCount);
-				var scavengedTable = new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify);
+				var scavengedTable = new PTable(outputFile, Guid.NewGuid(), initialReaders, maxReaders, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize);
 				spaceSaved = table._size - scavengedTable._size;
 				return scavengedTable;
 			} catch (Exception) {
@@ -429,6 +506,12 @@ namespace EventStore.Core.Index {
 					Log.Error(ex, "Unable to delete unwanted scavenged PTable: {outputFile}", outputFile);
 				}
 
+				var bloomFilterFile = GenBloomFilterFilename(outputFile);
+				try {
+					File.Delete(bloomFilterFile);
+				} catch (Exception ex) {
+					Log.Error(ex, "Unable to delete unwanted bloom filter: {bloomFilterFile}", bloomFilterFile);
+				}
 				throw;
 			}
 		}
@@ -614,8 +697,10 @@ namespace EventStore.Core.Index {
 
 			public bool MoveNext() {
 				var hasMovedToNext = _enumerator.MoveNext();
-				if (_list == null || hasMovedToNext) return hasMovedToNext;
+				if (_list == null || hasMovedToNext)
+					return hasMovedToNext;
 
+				// upgrading a V1 table
 				_enumerator.Dispose();
 				_list = ReadUntilDifferentHash(_mergedPTableVersion, _ptableEnumerator, _upgradeHash, _existsAt,
 					_readRecord);

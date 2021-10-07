@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 		//}
 
 		[Test]
-		public void the_file_gets_created() {
+		public void the_file_gets_created_and_can_be_read() {
 			var indexEntrySize = PTable.IndexEntryV4Size;
 			if (_ptableVersion == PTableVersions.IndexV1) {
 				indexEntrySize = PTable.IndexEntryV1Size;
@@ -73,7 +73,10 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010500000000, 0x0001, 0x0002);
 			table.Add(0x010200000000, 0x0001, 0x0003);
 			table.Add(0x010200000000, 0x0002, 0x0003);
-			using (var sstable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, skipIndexVerify: _skipIndexVerify)) {
+			using (var sstable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault,
+				skipIndexVerify: _skipIndexVerify,
+				useBloomFilter: true)) {
+
 				var fileinfo = new FileInfo(Filename);
 				var midpointsCached = PTable.GetRequiredMidpointCountCached(4, _ptableVersion);
 				Assert.AreEqual(
@@ -88,6 +91,12 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				Assert.AreEqual(0x0001, items[2].Version);
 				Assert.AreEqual(GetHash(0x010100000000), items[3].Stream);
 				Assert.AreEqual(0x0001, items[3].Version);
+
+				var stream = (ulong)0x010200000000;
+				Assert.True(sstable.TryGetLatestEntry(stream, out var entry));
+				Assert.AreEqual(GetHash(stream), entry.Stream);
+				Assert.AreEqual(0x0002, entry.Version);
+				Assert.AreEqual(0x0003, entry.Position);
 			}
 		}
 

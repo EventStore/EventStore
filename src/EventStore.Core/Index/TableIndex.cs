@@ -43,6 +43,8 @@ namespace EventStore.Core.Index {
 		private readonly bool _inMem;
 		private readonly bool _skipIndexVerify;
 		private readonly int _indexCacheDepth;
+		private readonly bool _useBloomFilter;
+		private readonly int _lruCacheSize;
 		private readonly int _initializationThreads;
 		private readonly byte _ptableVersion;
 		private readonly string _directory;
@@ -85,7 +87,10 @@ namespace EventStore.Core.Index {
 			bool inMem = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
-			int initializationThreads = 1) {
+			int initializationThreads = 1,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
+
 			Ensure.NotNullOrEmpty(directory, "directory");
 			Ensure.NotNull(memTableFactory, "memTableFactory");
 			Ensure.NotNull(lowHasher, "lowHasher");
@@ -110,6 +115,8 @@ namespace EventStore.Core.Index {
 			_skipIndexVerify = ShouldForceIndexVerify() ? false : skipIndexVerify;
 			_indexCacheDepth = indexCacheDepth;
 			_initializationThreads = initializationThreads;
+			_useBloomFilter = useBloomFilter;
+			_lruCacheSize = lruCacheSize;
 			_ptableVersion = ptableVersion;
 			_awaitingMemTables = new List<TableItem> {new TableItem(_memTableFactory(), -1, -1, 0)};
 
@@ -148,7 +155,12 @@ namespace EventStore.Core.Index {
 			// this can happen (very unlikely, though) on leader crash
 			try {
 				_indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth,
-					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel, _pTableMaxReaderCount);
+					_skipIndexVerify,
+					useBloomFilter: _useBloomFilter,
+					lruCacheSize: _lruCacheSize,
+					threads: _initializationThreads,
+					maxAutoMergeLevel: _maxAutoMergeIndexLevel,
+					pTableMaxReaderCount: _pTableMaxReaderCount);
 				if (_indexMap.CommitCheckpoint >= chaserCheckpoint) {
 					_indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
 					throw new CorruptIndexException(String.Format(
@@ -166,14 +178,21 @@ namespace EventStore.Core.Index {
 				File.Delete(indexmapFile);
 				DeleteForceIndexVerifyFile();
 				_indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, true, _indexCacheDepth,
-					_skipIndexVerify, _initializationThreads, _maxAutoMergeIndexLevel, _pTableMaxReaderCount);
+					_skipIndexVerify,
+					useBloomFilter: _useBloomFilter,
+					lruCacheSize: _lruCacheSize,
+					threads: _initializationThreads,
+					maxAutoMergeLevel: _maxAutoMergeIndexLevel,
+					pTableMaxReaderCount: _pTableMaxReaderCount);
 			}
 
 			_prepareCheckpoint = _indexMap.PrepareCheckpoint;
 			_commitCheckpoint = _indexMap.CommitCheckpoint;
 
 			// clean up all other remaining files
-			var indexFiles = _indexMap.InOrder().Select(x => Path.GetFileName(x.Filename))
+			var indexFiles = _indexMap.InOrder().SelectMany(x => new[] {
+					Path.GetFileName(x.Filename),
+ 					Path.GetFileName(x.BloomFilterFilename) })
 				.Union(new[] {IndexMapFilename});
 			var toDeleteFiles = Directory.EnumerateFiles(_directory).Select(Path.GetFileName)
 				.Except(indexFiles, StringComparer.OrdinalIgnoreCase);
@@ -294,7 +313,9 @@ namespace EventStore.Core.Index {
 								_fileNameProvider,
 								_ptableVersion,
 								_indexCacheDepth,
-								_skipIndexVerify);
+								_skipIndexVerify,
+								useBloomFilter: _useBloomFilter,
+								lruCacheSize: _lruCacheSize);
 
 							if (manualMergeResult.HasMergedAny) {
 								_indexMap = manualMergeResult.MergedMap;
@@ -323,7 +344,10 @@ namespace EventStore.Core.Index {
 						ptable = PTable.FromMemtable(memtable, _fileNameProvider.GetFilenameNewTable(),
 							ESConsts.PTableInitialReaderCount,
 							_pTableMaxReaderCount,
-							_indexCacheDepth, _skipIndexVerify);
+							_indexCacheDepth,
+							_skipIndexVerify,
+							useBloomFilter: _useBloomFilter,
+							lruCacheSize: _lruCacheSize);
 					} else
 						ptable = (PTable)tableItem.Table;
 
@@ -342,7 +366,9 @@ namespace EventStore.Core.Index {
 									_fileNameProvider,
 									_ptableVersion,
 									_indexCacheDepth,
-									_skipIndexVerify);
+									_skipIndexVerify,
+									useBloomFilter: _useBloomFilter,
+									lruCacheSize: _lruCacheSize);
 
 								if (mergeResult.HasMergedAny) {
 									_indexMap = mergeResult.MergedMap;
@@ -427,7 +453,10 @@ namespace EventStore.Core.Index {
 							(streamId, currentHash) => UpgradeHash(streamId, currentHash),
 							entry => reader.ExistsAt(entry.Position),
 							entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion,
-							_indexCacheDepth, _skipIndexVerify);
+							_indexCacheDepth,
+							_skipIndexVerify,
+							useBloomFilter: _useBloomFilter,
+							lruCacheSize: _lruCacheSize);
 
 						if (scavengeResult.IsSuccess) {
 							_indexMap = scavengeResult.ScavengedMap;
@@ -492,7 +521,9 @@ namespace EventStore.Core.Index {
 					ESConsts.PTableInitialReaderCount,
 					_pTableMaxReaderCount,
 					_indexCacheDepth,
-					_skipIndexVerify);
+					_skipIndexVerify,
+					useBloomFilter: _useBloomFilter,
+					lruCacheSize: _lruCacheSize);
 				var swapped = false;
 				lock (_awaitingTablesLock) {
 					for (var j = _awaitingMemTables.Count - 1; j >= 1; j--) {
@@ -647,28 +678,64 @@ namespace EventStore.Core.Index {
 			if (endVersion < 0)
 				throw new ArgumentOutOfRangeException("endVersion");
 
-			var candidates = new List<IEnumerator<IndexEntry>>();
+			// 1. assemble results per table for memtables and ptables
+			// discard any results with 0 entries.
+			var resultsPerTable = new List<IList<IndexEntry>>(16);
 
 			var awaiting = _awaitingMemTables;
 			for (int index = 0; index < awaiting.Count; index++) {
-				var range = awaiting[index].Table.GetRange(hash, startVersion, endVersion, limit).GetEnumerator();
-				if (range.MoveNext())
-					candidates.Add(range);
+				var range = awaiting[index].Table.GetRange(hash, startVersion, endVersion, limit);
+				if (range.Count > 0)
+					resultsPerTable.Add(range);
 			}
 
 			var map = _indexMap;
 			foreach (var table in map.InOrder()) {
-				var range = table.GetRange(hash, startVersion, endVersion, limit).GetEnumerator();
-				if (range.MoveNext())
-					candidates.Add(range);
+				var range = table.GetRange(hash, startVersion, endVersion, limit);
+				if (range.Count > 0)
+					resultsPerTable.Add(range);
 			}
 
+			// 2. iterate through the per table results producing candidate enumerators
+			// if the results per table dont overlap then we can merge them much more quickly
+			// because they're already in order. this will be so in the common case of
+			// having no hash collisions.
+			var maybeInOrder = true;
+			var prevOldestVersion = long.MaxValue;
+			var totalEntryCount = 0;
+			var candidates = new List<IEnumerator<IndexEntry>>(resultsPerTable.Count);
+			foreach (var entries in resultsPerTable) {
+				var entriesEnumerator = entries.GetEnumerator();
+				entriesEnumerator.MoveNext();
+				candidates.Add(entriesEnumerator);
+
+				totalEntryCount += entries.Count;
+
+				if (maybeInOrder) {
+					var latestVersion = entriesEnumerator.Current.Version;
+
+					if (latestVersion >= prevOldestVersion) {
+						maybeInOrder = false;
+					}
+
+					var oldestVersion = entries[^1].Version;
+					prevOldestVersion = oldestVersion;
+				}
+			}
+			var areInOrder = maybeInOrder;
+
+			// 3. sort the entries by consuming the enumerators
+			//    removes duplicates
 			var last = new IndexEntry(0, 0, 0);
 			var first = true;
 
-			var sortedCandidates = new List<IndexEntry>();
+			var sortedCandidates = new List<IndexEntry>(totalEntryCount);
+
+			// reverse so that typically the largest candidate is at the back, making the RemoveAt cheap
+			candidates.Reverse();
+
 			while (candidates.Count > 0) {
-				var maxIdx = GetMaxOf(candidates);
+				var maxIdx = areInOrder ? (candidates.Count - 1) : GetMaxOf(candidates);
 				var winner = candidates[maxIdx];
 
 				var best = winner.Current;

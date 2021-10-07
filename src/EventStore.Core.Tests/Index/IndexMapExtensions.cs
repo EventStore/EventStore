@@ -15,7 +15,9 @@ namespace EventStore.Core.Tests.Index {
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
-			bool skipIndexVerify = false) {
+			bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
 
 			var addResult = indexMap.AddPTable(tableToAdd, prepareCheckpoint, commitCheckpoint);
 			if (addResult.CanMergeAny) {
@@ -30,7 +32,9 @@ namespace EventStore.Core.Tests.Index {
 						filenameProvider,
 						version,
 						indexCacheDepth,
-						skipIndexVerify
+						skipIndexVerify,
+						useBloomFilter,
+						lruCacheSize
 					);
 
 					curMap = mergeResult.MergedMap;

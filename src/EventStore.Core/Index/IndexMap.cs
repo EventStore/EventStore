@@ -121,6 +121,8 @@ namespace EventStore.Core.Index {
 			bool loadPTables,
 			int cacheDepth,
 			bool skipIndexVerify,
+			bool useBloomFilter,
+			int lruCacheSize,
 			int threads,
 			int maxAutoMergeLevel,
 			int pTableMaxReaderCount) {
@@ -154,7 +156,7 @@ namespace EventStore.Core.Index {
 					//we are doing a logical upgrade of the version to have the new data, so we will change the version to match so that new files are saved with the right version
 					version = IndexMapVersion;
 					var tables = loadPTables
-						? LoadPTables(reader, filename, checkpoints, cacheDepth, skipIndexVerify, threads, pTableMaxReaderCount)
+						? LoadPTables(reader, filename, checkpoints, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize, threads, pTableMaxReaderCount)
 						: new List<List<PTable>>();
 
 					if (!loadPTables && reader.ReadLine() != null)
@@ -244,6 +246,7 @@ namespace EventStore.Core.Index {
 
 		private static List<List<PTable>> LoadPTables(StreamReader reader, string indexmapFilename, TFPos checkpoints,
 			int cacheDepth, bool skipIndexVerify,
+			bool useBloomFilter, int lruCacheSize,
 			int threads,
 			int pTableMaxReaderCount) {
 			var tables = new List<List<PTable>>();
@@ -268,7 +271,7 @@ namespace EventStore.Core.Index {
 								var path = Path.GetDirectoryName(indexmapFilename);
 								var ptablePath = Path.Combine(path, file);
 
-								ptable = PTable.FromFile(ptablePath, ESConsts.PTableInitialReaderCount, pTableMaxReaderCount, cacheDepth, skipIndexVerify);
+								ptable = PTable.FromFile(ptablePath, ESConsts.PTableInitialReaderCount, pTableMaxReaderCount, cacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize);
 
 								lock (tables) {
 									InsertTableToTables(tables, level, position, ptable);
@@ -404,7 +407,9 @@ namespace EventStore.Core.Index {
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
-			bool skipIndexVerify = false) {
+			bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
 
 			var tables = CopyFrom(_map);
 
@@ -422,7 +427,8 @@ namespace EventStore.Core.Index {
 					PTable mergedTable = PTable.MergeTo(tables[level], filename, upgradeHash, existsAt, recordExistsAt,
 						version,
 						ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
-						indexCacheDepth, skipIndexVerify);
+						indexCacheDepth, skipIndexVerify,
+						useBloomFilter, lruCacheSize);
 					hasMergedAny = true;
 
 					AddTableToTables(tables, level + 1, mergedTable);
@@ -443,7 +449,9 @@ namespace EventStore.Core.Index {
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
-			bool skipIndexVerify = false) {
+			bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
 
 			var tables = CopyFrom(_map);
 
@@ -459,7 +467,8 @@ namespace EventStore.Core.Index {
 			var filename = filenameProvider.GetFilenameNewTable();
 			PTable mergedTable = PTable.MergeTo(tablesToMerge, filename, upgradeHash, existsAt, recordExistsAt,
 				version, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount,
-				indexCacheDepth, skipIndexVerify);
+				indexCacheDepth, skipIndexVerify,
+				useBloomFilter, lruCacheSize);
 
 			for (int i = tables.Count - 1; i > _maxTableLevelsForAutomaticMerge; i--) {
 				tables.RemoveAt(i);
@@ -481,7 +490,10 @@ namespace EventStore.Core.Index {
 			IIndexFilenameProvider filenameProvider,
 			byte version,
 			int indexCacheDepth = 16,
-			bool skipIndexVerify = false) {
+			bool skipIndexVerify = false,
+			bool useBloomFilter = true,
+			int lruCacheSize = 1_000_000) {
+
 			var scavengedMap = CopyFrom(_map);
 			for (int level = 0; level < scavengedMap.Count; level++) {
 				for (int i = 0; i < scavengedMap[level].Count; i++) {
@@ -491,7 +503,7 @@ namespace EventStore.Core.Index {
 						var oldTable = scavengedMap[level][i];
 
 						PTable scavenged = PTable.Scavenged(oldTable, filename, upgradeHash, existsAt, recordExistsAt,
-							version, out spaceSaved, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount, indexCacheDepth, skipIndexVerify, ct);
+							version, out spaceSaved, ESConsts.PTableInitialReaderCount, _pTableMaxReaderCount, indexCacheDepth, skipIndexVerify, useBloomFilter, lruCacheSize, ct);
 
 						if (scavenged == null) {
 							return ScavengeResult.Failed(oldTable, level, i);

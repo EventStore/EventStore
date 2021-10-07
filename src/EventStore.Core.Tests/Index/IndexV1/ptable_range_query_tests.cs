@@ -3,22 +3,30 @@ using EventStore.Core.Index;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
-	[TestFixture(PTableVersions.IndexV1, false)]
-	[TestFixture(PTableVersions.IndexV1, true)]
-	[TestFixture(PTableVersions.IndexV2, false)]
-	[TestFixture(PTableVersions.IndexV2, true)]
-	[TestFixture(PTableVersions.IndexV3, false)]
-	[TestFixture(PTableVersions.IndexV3, true)]
-	[TestFixture(PTableVersions.IndexV4, false)]
-	[TestFixture(PTableVersions.IndexV4, true)]
+	[TestFixture(PTableVersions.IndexV1, false, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV1, true, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV1, false, 0)]
+	[TestFixture(PTableVersions.IndexV1, true, 0)]
+	[TestFixture(PTableVersions.IndexV2, false, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV2, true, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV3, false, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV3, true, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV4, false, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV4, true, 1_000_000)]
+	[TestFixture(PTableVersions.IndexV4, false, 0)]
+	[TestFixture(PTableVersions.IndexV4, true, 0)]
 	public class ptable_range_query_tests : SpecificationWithFilePerTestFixture {
 		protected byte _ptableVersion = PTableVersions.IndexV1;
 		private PTable _ptable;
-		private bool _skipIndexVerify;
+		private readonly bool _skipIndexVerify;
+		private readonly bool _useBloomFilter;
+		private readonly int _lruCacheSize;
 
-		public ptable_range_query_tests(byte version, bool skipIndexVerify) {
+		public ptable_range_query_tests(byte version, bool skipIndexVerify, int lruCacheSize) {
 			_ptableVersion = version;
 			_skipIndexVerify = skipIndexVerify;
+			_useBloomFilter = skipIndexVerify; // bloomfilter orthogonal
+			_lruCacheSize = lruCacheSize;
 		}
 
 		public override void TestFixtureSetUp() {
@@ -32,7 +40,10 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 			table.Add(0x010300000000, 0x0001, 0xFFF1);
 			table.Add(0x010300000000, 0x0003, 0xFFF3);
 			table.Add(0x010300000000, 0x0005, 0xFFF5);
-			_ptable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, cacheDepth: 0, skipIndexVerify: _skipIndexVerify);
+			_ptable = PTable.FromMemtable(table, Filename, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, cacheDepth: 0,
+				skipIndexVerify: _skipIndexVerify,
+				useBloomFilter: _useBloomFilter,
+				lruCacheSize: _lruCacheSize);
 		}
 
 		public override void TestFixtureTearDown() {
