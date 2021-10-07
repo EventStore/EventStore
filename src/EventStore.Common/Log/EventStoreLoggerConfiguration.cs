@@ -13,12 +13,14 @@ using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Filters;
-using Serilog.Formatting.Compact;
+using Serilog.Templates;
 
 namespace EventStore.Common.Log {
 	public class EventStoreLoggerConfiguration {
 		private const string ConsoleOutputTemplate =
 			"[{ProcessId,5},{ThreadId,2},{Timestamp:HH:mm:ss.fff},{Level:u3}] {Message}{NewLine}{Exception}";
+
+		private const string CompactJsonTemplate = "{ {@t, @mt, @r, @l, @i, @x, ..@p} }\n";
 
 		public static readonly Logger ConsoleLog = StandardLoggerConfiguration
 			.WriteTo.Console(outputTemplate: ConsoleOutputTemplate)
@@ -168,12 +170,13 @@ namespace EventStore.Common.Log {
 				if (logConsoleFormat == LogConsoleFormat.Plain) {
 					configuration.WriteTo.Console(outputTemplate: ConsoleOutputTemplate);
 				} else {
-					configuration.WriteTo.Console(new RenderedCompactJsonFormatter());
+					configuration.WriteTo.Console(new ExpressionTemplate(CompactJsonTemplate));
 				}
 
 				if (!disableLogFile) {
 					configuration.WriteTo
-						.RollingFile(GetLogFileName(), logFileRetentionCount, logFileInterval, logFileSize)
+						.RollingFile(GetLogFileName(), new ExpressionTemplate(CompactJsonTemplate),
+							logFileRetentionCount, logFileInterval, logFileSize)
 						.WriteTo.Logger(Error);
 				}
 			}
@@ -183,13 +186,15 @@ namespace EventStore.Common.Log {
 					configuration
 						.Filter.ByIncludingOnly(Errors)
 						.WriteTo
-						.RollingFile(GetLogFileName("err"), logFileRetentionCount, logFileInterval, logFileSize);
+						.RollingFile(GetLogFileName("err"), new ExpressionTemplate(CompactJsonTemplate),
+							logFileRetentionCount, logFileInterval, logFileSize);
 				}
 			}
 
 			void Stats(LoggerConfiguration configuration) {
 				if (!disableLogFile) {
-					configuration.WriteTo.RollingFile(GetLogFileName("stats"), logFileRetentionCount, logFileInterval,
+					configuration.WriteTo.RollingFile(GetLogFileName("stats"),
+						new ExpressionTemplate(CompactJsonTemplate), logFileRetentionCount, logFileInterval,
 						logFileSize);
 				}
 			}
