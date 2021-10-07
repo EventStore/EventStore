@@ -49,7 +49,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (!Registered) {
 				var phase = Interlocked.Increment(ref Phase);
 				CommitSource.NotifyOnReplicated(LastEventPosition, Committed);
-				CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+				//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 				Registered = true;
 			}
 		}

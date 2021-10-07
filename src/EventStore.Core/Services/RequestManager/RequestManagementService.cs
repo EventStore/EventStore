@@ -11,6 +11,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
 using System.Linq;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace EventStore.Core.Services.RequestManager {
 	public class RequestManagementService :
@@ -31,6 +32,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<SystemMessage.StateChangeMessage> {
 		private readonly IPublisher _bus;
 		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
+		private ConcurrentQueue<RequestManagerBase> _activeRequests = new ConcurrentQueue<RequestManagerBase>();
 		private const string _requestManagerHistogram = "request-manager";
 		private Stopwatch _requestServiceStopwatch = Stopwatch.StartNew();
 		private readonly TimeSpan _prepareTimeout;
@@ -50,6 +52,7 @@ namespace EventStore.Core.Services.RequestManager {
 			_commitTimeout = commitTimeout;
 			_commitSource = new CommitSource();
 			_explicitTransactionsSupported = explicitTransactionsSupported;
+			_commitSource.NotifyAfter(TimeSpan.FromMilliseconds(100), Timeout);
 		}
 
 		public void Handle(ClientMessage.WriteEvents message) {
@@ -67,6 +70,7 @@ namespace EventStore.Core.Services.RequestManager {
 								_commitSource,
 								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
+			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -85,6 +89,7 @@ namespace EventStore.Core.Services.RequestManager {
 								_commitSource,
 								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
+			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -111,6 +116,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.ExpectedVersion,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
+			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -137,6 +143,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.TransactionId,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
+			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -154,7 +161,7 @@ namespace EventStore.Core.Services.RequestManager {
 
 			var manager = new TransactionCommit(
 								_bus,
-								_requestServiceStopwatch.ElapsedMilliseconds,								
+								_requestServiceStopwatch.ElapsedMilliseconds,
 								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -162,6 +169,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.TransactionId,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
+			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -173,7 +181,7 @@ namespace EventStore.Core.Services.RequestManager {
 			if (_nodeState != VNodeState.Leader && _currentRequests.Any()) {
 				foreach (var request in _currentRequests.Values) {
 					request.CancelRequest();
-				}				
+				}
 			}
 		}
 
@@ -186,11 +194,21 @@ namespace EventStore.Core.Services.RequestManager {
 			if (!_currentRequests.Remove(message.CorrelationId))
 				throw new InvalidOperationException("Should never complete request twice.");
 
-			if (_nodeState == VNodeState.ResigningLeader && !_currentRequests.Any()) {				
+			if (_nodeState == VNodeState.ResigningLeader && !_currentRequests.Any()) {
 				_bus.Publish(new SystemMessage.RequestQueueDrained());
 			}
 		}
-
+		private void Timeout() {
+			var currentTime = _requestServiceStopwatch.ElapsedMilliseconds;
+			var activeRequests = _activeRequests;
+			_activeRequests = new ConcurrentQueue<RequestManagerBase>();
+			while (activeRequests.TryDequeue(out var request)) {
+				if (request.Complete != 1 && !request.PhaseTimeout(currentTime)) {					;
+					_activeRequests.Enqueue(request);
+				}
+			}
+			_commitSource.NotifyAfter( TimeSpan.FromMilliseconds(100), Timeout);
+		}
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 

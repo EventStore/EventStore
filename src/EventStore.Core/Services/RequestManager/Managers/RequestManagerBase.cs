@@ -49,6 +49,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		private bool _allEventsWritten;
 		private bool _allPreparesWritten;
+		public long Complete => Interlocked.Read(ref _complete);
 		private long _complete;
 
 		private bool _commitReceived;
@@ -101,7 +102,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		public void Start() {
 			Phase = 0;
 			Publisher.Publish(WriteRequestMsg);
-			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(0));
+			//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(0));
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
@@ -121,7 +122,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allPreparesWritten) { AllPreparesWritten(); }
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+			//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 		}
 		public virtual void Handle(StorageMessage.CommitIndexed message) {
 			if (Interlocked.Read(ref _complete) == 1 || _commitReceived) { return; }
@@ -135,7 +136,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			LastEventNumber = message.LastEventNumber;
 			CommitPosition = message.LogPosition;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+			//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 		}
 		protected virtual void AllPreparesWritten() { }
 
@@ -143,7 +144,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (!Registered) {
 				var phase = Interlocked.Increment(ref Phase);
 				CommitSource.NotifyOnIndexed(LastEventPosition, Committed);
-				CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+				//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 				Registered = true;
 			}			
 		}
@@ -154,9 +155,14 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
 		}
-		public void PhaseTimeout(long phase) {
-			if (Interlocked.Read(ref _complete) == 1 || Interlocked.Read(ref Phase) != phase) { return; }
-			CancelRequest();
+		public bool PhaseTimeout(long currentOffset) {
+			if (Interlocked.Read(ref _complete) == 1) { return false; }
+			//toto: simplify 
+			if ((StartOffset + ((Phase + 1) * Timeout.TotalMilliseconds)) < currentOffset) {
+				CancelRequest();
+				return true;
+			}
+			return false;
 		}
 		public void CancelRequest() {
 			var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
