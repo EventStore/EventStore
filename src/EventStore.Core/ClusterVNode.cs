@@ -173,10 +173,12 @@ namespace EventStore.Core {
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
 		private X509Certificate2 _certificate;
+		private X509Certificate2Collection _intermediateCerts;
 		private X509Certificate2Collection _trustedRootCerts;
 		private readonly bool _disableHttps;
 		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate2Collection> _trustedRootCertsSelector;
+		private readonly Func<X509Certificate2Collection> _intermediateCertsSelector;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
@@ -513,11 +515,12 @@ namespace EventStore.Core {
 
 			_certificateSelector = () => _certificate;
 			_trustedRootCertsSelector = () => _trustedRootCerts;
+			_intermediateCertsSelector = () => _intermediateCerts;
 
-			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
-			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
+			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
 			_externalClientCertificateValidator = delegate { return (true, null); };
-			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificateWithTrustedRootCerts(cert, chain, errors, _trustedRootCertsSelector);
+			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (options.Application.EnableHistograms) {
@@ -1433,40 +1436,22 @@ namespace EventStore.Core {
 			return await tcs.Task.ConfigureAwait(false);
 		}
 
-		public static ValueTuple<bool, string> ValidateServerCertificateWithTrustedRootCerts(X509Certificate certificate,
-			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector) {
-			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertsSelector, "server");
+		public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector) {
+			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "server");
 		}
 
-		public static ValueTuple<bool, string> ValidateClientCertificateWithTrustedRootCerts(X509Certificate certificate,
-			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector) {
-			return ValidateCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, trustedRootCertsSelector, "client");
+		public static ValueTuple<bool, string> ValidateClientCertificate(X509Certificate certificate,
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector) {
+			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client");
 		}
 
-		private static ValueTuple<bool, string> ValidateCertificateWithTrustedRootCerts(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> trustedRootCertsSelector, string certificateOrigin) {
+		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain _, SslPolicyErrors sslPolicyErrors,
+			Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector, string certificateOrigin) {
 			if (certificate == null)
 				return (false, $"No certificate was provided by the {certificateOrigin}");
 
-			var newChain = new X509Chain {
-				ChainPolicy = {
-					RevocationMode = X509RevocationMode.NoCheck
-				}
-			};
-
-			var trustedRootCerts = trustedRootCertsSelector();
-			if (trustedRootCerts != null) {
-				foreach (var cert in trustedRootCerts)
-					newChain.ChainPolicy.ExtraStore.Add(cert);
-			}
-
-			newChain.Build(new X509Certificate2(certificate));
-			var chainStatus = X509ChainStatusFlags.NoError;
-			foreach (var status in newChain.ChainStatus) {
-				chainStatus |= status.Status;
-			}
-
-			chainStatus &= ~X509ChainStatusFlags.UntrustedRoot; //clear the UntrustedRoot flag which indicates that the certificate is present in the extra store
-
+			var chainStatus = CertificateUtils.BuildChain(certificate, intermediateCertsSelector(), trustedRootCertsSelector());
 			if (chainStatus == X509ChainStatusFlags.NoError)
 				sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors; //clear the RemoteCertificateChainErrors flag
 			else
@@ -1474,26 +1459,6 @@ namespace EventStore.Core {
 
 			if (sslPolicyErrors != SslPolicyErrors.None) {
 				return (false, $"The certificate ({certificate.Subject}) provided by the {certificateOrigin} failed validation with the following error(s): {sslPolicyErrors.ToString()} ({chainStatus})");
-			}
-
-			//client certificates need to be strictly validated against the set of trusted root certificates
-			//but this is not required for server certificates since the client is already validating the CN/SAN against the IP address/hostname it's connecting to
-			if (certificateOrigin == "client") {
-				var chainRoot = newChain.ChainElements[^1].Certificate;
-				var chainRootIsTrusted = false;
-				if (trustedRootCerts != null) {
-					foreach (var rootCert in trustedRootCerts) {
-						if (chainRoot.RawData.SequenceEqual(rootCert.RawData)) {
-							chainRootIsTrusted = true;
-							break;
-						}
-					}
-				}
-
-				if (!chainRootIsTrusted) {
-					return (false,
-						$"The certificate provided by the {certificateOrigin} does not have a root certificate present in the list of trusted root certificates");
-				}
 			}
 
 			return (true, null);
@@ -1538,16 +1503,81 @@ namespace EventStore.Core {
 				return;
 			}
 
-			var certificate = options.LoadServerCertificate();
+			var (certificate, intermediates) = options.LoadNodeCertificate();
 
 			var previousThumbprint = _certificate?.Thumbprint;
 			var newThumbprint = certificate.Thumbprint;
+			Log.Information("Loading the node's certificate. Subject: {subject}, Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}",
+				certificate.SubjectName.Name, previousThumbprint, newThumbprint);
+
+			if (intermediates != null) {
+				foreach (var intermediateCert in intermediates) {
+					Log.Information("Loading intermediate certificate. Subject: {subject}, Thumbprint: {thumbprint}", intermediateCert.SubjectName.Name, intermediateCert.Thumbprint);
+				}
+			}
+
+			var trustedRootCerts = options.LoadTrustedRootCertificates();
+
+			foreach (var trustedRootCert in trustedRootCerts) {
+				Log.Information("Loading trusted root certificate. Subject: {subject}, Thumbprint: {thumbprint}", trustedRootCert.SubjectName.Name, trustedRootCert.Thumbprint);
+			}
+
+			if (!VerifyCertificates(certificate, intermediates, trustedRootCerts)) {
+				throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
+			}
 
 			//no need for a lock here since reference assignment is atomic
 			_certificate = certificate;
-			_trustedRootCerts = options.LoadTrustedRootCertificates();
+			_intermediateCerts = intermediates;
+			_trustedRootCerts = trustedRootCerts;
 
-			Log.Information("Certificate loaded. Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}", previousThumbprint, newThumbprint);
+			Log.Information("All certificates successfully loaded.");
+		}
+
+		private static bool VerifyCertificates(X509Certificate2 nodeCertificate, X509Certificate2Collection intermediates, X509Certificate2Collection trustedRoots) {
+			bool error = false;
+
+			if (!CertificateUtils.IsValidNodeCertificate(nodeCertificate, out var errorMsg)) {
+				Log.Error(errorMsg);
+				error = true;
+			}
+
+			if (intermediates != null) {
+				foreach (var cert in intermediates) {
+					if (!CertificateUtils.IsValidIntermediateCertificate(cert, out errorMsg)) {
+						Log.Error($"{errorMsg} Please bundle only intermediate certificates (if any) and not root certificates with the node's certificate.");
+						error = true;
+					}
+				}
+			}
+
+			if (trustedRoots != null && trustedRoots.Count > 0) {
+				foreach (var cert in trustedRoots) {
+					if (!CertificateUtils.IsValidRootCertificate(cert, out errorMsg)) {
+						Log.Error($"{errorMsg} If you have intermediate certificates, please bundle them with the node's certificate (in PEM or PKCS #12 format).");
+						error = true;
+					}
+				}
+			} else {
+				Log.Error("No trusted root certificates loaded");
+				error = true;
+			}
+
+			if (error) return false;
+
+			var chainStatus = CertificateUtils.BuildChain(nodeCertificate, intermediates, trustedRoots);
+
+			if (chainStatus != X509ChainStatusFlags.NoError) {
+				Log.Error("Failed to build the certificate chain with the node's own certificate up to the root with error: {chainStatus}. " +
+				             "If you have intermediate certificates, please bundle them with the node's certificate (in PEM or PKCS #12 format).", chainStatus);
+				error = true;
+			}
+
+			if (!error) {
+				Log.Information("Certificate chain verification successful.");
+			}
+
+			return !error;
 		}
 
 		public override string ToString() =>

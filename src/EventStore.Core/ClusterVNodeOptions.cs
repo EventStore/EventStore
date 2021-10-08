@@ -211,7 +211,8 @@ namespace EventStore.Core {
 
 		[Description("Certificate Options (from file)")]
 		public record CertificateFileOptions {
-			[Description("The path to a PKCS #12 (.p12/.pfx) or an X.509 (.pem, .crt, .cer, .der) certificate file.")]
+			[Description("The path to a PKCS #12 (.p12/.pfx) or an X.509 (.pem, .crt, .cer, .der) certificate file. " +
+			             "If you have intermediate certificates, they should be bundled together in a PEM or PKCS #12 file containing the node's certificate followed by the intermediate certificates.")]
 			public string? CertificateFile { get; init; }
 
 			[Description("The path to the certificate private key file (.key) if an X.509 (.pem, .crt, .cer, .der) " +

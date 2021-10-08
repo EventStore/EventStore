@@ -37,6 +37,7 @@ namespace EventStore.Core.Services {
 
 			var socketsHttpHandler = new SocketsHttpHandler {
 				SslOptions = {
+					CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
 					RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
 						var (isValid, error) = externServerCertValidator(certificate, chain, errors);
 						if (!isValid && error != null) {

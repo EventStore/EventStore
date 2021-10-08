@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var listener = new TcpServerListener(serverEndPoint);
 			listener.StartListening((endPoint, socket) => {
 				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, () => serverCertificate,
-					(cert, chain, err) => validateClientCertificate ? ClusterVNode<string>.ValidateClientCertificateWithTrustedRootCerts(cert, chain, err, () => rootCertificates) : (true, null),
+					(cert, chain, err) => validateClientCertificate ? ClusterVNode<string>.ValidateClientCertificate(cert, chain, err, () => null, () => rootCertificates) : (true, null),
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();
 				if (ssl.IsClosed)
@@ -99,7 +99,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				Guid.NewGuid(),
 				serverEndPoint.GetHost(),
 				serverEndPoint,
-				(cert, chain, err) => validateServerCertificate ? ClusterVNode<string>.ValidateServerCertificateWithTrustedRootCerts(cert, chain, err, () => rootCertificates) : (true, null),
+				(cert, chain, err) => validateServerCertificate ? ClusterVNode<string>.ValidateServerCertificate(cert, chain, err, () => null, () => rootCertificates) : (true, null),
 				() => new X509CertificateCollection{clientCertificate},
 				new TcpClientConnector(),
 				TcpConnectionManager.ConnectionTimeout,

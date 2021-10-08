@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options
 				.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.Secure(new X509Certificate2Collection(), _certificate);
+				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()), _certificate);
 
 		[Test]
 		public void should_set_tls_to_enabled() {

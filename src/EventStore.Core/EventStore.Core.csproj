@@ -31,6 +31,7 @@
 		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.57" />
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
 		<PackageReference Include="HostStat.NET" Version="1.0.1" />
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="5.0.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
