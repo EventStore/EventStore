@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Incorrect configuration file selection on linux [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
 - Prevent the EpochManager from attempting to read epochs that should have been cached [EventStore#3198](https://github.com/EventStore/EventStore/pull/3198)
 - race condition where a node becomes leader and immediately writes to streams that have recently been written to but not indexed, resulting in events with incorrect numbers in their streams. [EventStore#3201](https://github.com/EventStore/EventStore/pull/3201)
+- Handling $deleted in the interpreted projections runtime. [EventStore#3216](https://github.com/EventStore/EventStore/pull/3216)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
@@ -51,6 +52,8 @@ All notable changes to this project will be documented in this file.
 - Event type index for LogV3 [EventStore#3114](https://github.com/EventStore/EventStore/pull/3114)
 - ClientCapabilities proto for discovering which gRPC methods are available on the server [EventStore#3194](https://github.com/EventStore/EventStore/pull/3194)
 - control message to indicate client compatibility level on reads [EventStore#3197](https://github.com/EventStore/EventStore/pull/3197)
+- Bloom Filters and LRU Caches to PTables [EventStore#3161](https://github.com/EventStore/EventStore/pull/3161)
+- log level to compact json log output [EventStore#3212](https://github.com/EventStore/EventStore/pull/3212)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
