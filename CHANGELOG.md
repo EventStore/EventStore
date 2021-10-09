@@ -54,10 +54,13 @@ All notable changes to this project will be documented in this file.
 - control message to indicate client compatibility level on reads [EventStore#3197](https://github.com/EventStore/EventStore/pull/3197)
 - Bloom Filters and LRU Caches to PTables [EventStore#3161](https://github.com/EventStore/EventStore/pull/3161)
 - log level to compact json log output [EventStore#3212](https://github.com/EventStore/EventStore/pull/3212)
+- Support for Intermediate CA certificates [EventStore#3176](https://github.com/EventStore/EventStore/pull/3176)
+- Validation of certificate chain with node's own certificate on start up [EventStore#3176](https://github.com/EventStore/EventStore/pull/3176)
 
 ### Changed
 - added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
 - Optimise some slow running tests [EventStore#3190](https://github.com/EventStore/EventStore/pull/3190)
+- Do not download intermediate certificates from AIA URLs [EventStore#3176](https://github.com/EventStore/EventStore/pull/3176)
 
 ### solution
 - correct the sample [EventStore#3127](https://github.com/EventStore/EventStore/pull/3127)
