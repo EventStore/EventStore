@@ -94,6 +94,8 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		private void ChaseTransactionLog() {
+			string error = null;
+			int count = 0;
 			try {
 				_queueStats.Start();
 				QueueMonitor.Default.Register(this);
@@ -116,13 +118,15 @@ namespace EventStore.Core.Services.Storage {
 						Thread.Sleep(1);
 				}
 			} catch (Exception exc) {
+				error = $"Fatal Error in StorageChaser: {exc.Message}";
 				Log.Fatal(exc, "Error in StorageChaser. Terminating...");
 				_queueStats.EnterIdle();
 				_queueStats.ProcessingStarted<FaultedChaserState>(0);
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error, "Error in StorageChaser. Terminating...\nError: " + exc.Message);
-				while (!_stop) {
+				while (!_stop && count < 100) {
 					Thread.Sleep(100);
+					count++;
 				}
 
 				_queueStats.ProcessingEnded(0);
@@ -133,7 +137,7 @@ namespace EventStore.Core.Services.Storage {
 
 			_writerCheckpoint.Flushed -= OnWriterFlushed;
 			_chaser.Close();
-			_leaderBus.Publish(new SystemMessage.ServiceShutdown(Name));
+			_leaderBus.Publish(new SystemMessage.ServiceShutdown(Name, $"error: {error} count: {count}"));
 		}
 
 		private void OnWriterFlushed(long obj) {

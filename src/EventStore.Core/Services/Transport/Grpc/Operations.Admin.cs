@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 
-			_publisher.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+			_publisher.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true, "Triggered by gRPC operations"));
 			return EmptyResult;
 		}
 

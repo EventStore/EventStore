@@ -63,6 +63,7 @@ namespace EventStore.Core.Services.Replication {
 			new ConcurrentDictionary<Guid, ReplicaSubscription>();
 
 		private volatile VNodeState _state = VNodeState.Initializing;
+		private volatile string _stateReason;
 
 		private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
 		private TimeSpan _lastRolesAssignmentTimestamp;
@@ -112,6 +113,7 @@ namespace EventStore.Core.Services.Replication {
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
 			_state = message.State;
+			_stateReason = message.Reason;
 
 			if (message.State == VNodeState.PreLeader) {
 				_preLeaderReplicationEnabled = false;
@@ -431,7 +433,7 @@ namespace EventStore.Core.Services.Replication {
 
 				_db.Config.WriterCheckpoint.Flushed -= OnWriterFlushed;
 
-				_publisher.Publish(new SystemMessage.ServiceShutdown(Name));
+				_publisher.Publish(new SystemMessage.ServiceShutdown(Name, _stateReason));
 			} catch (Exception ex) {
 				_tcs.TrySetException(ex);
 				throw;

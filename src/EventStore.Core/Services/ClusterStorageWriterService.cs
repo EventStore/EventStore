@@ -15,6 +15,8 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using Serilog;
+using Serilog.Events;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services {
@@ -86,10 +88,18 @@ namespace EventStore.Core.Services {
 
 			_framer.Reset();
 
+			//qq
+			var messages = new StringWriter();
+			var log = new LoggerConfiguration()
+				.MinimumLevel.Debug()
+				.WriteTo.Console(LogEventLevel.Information)
+				.WriteTo.TextWriter(messages)
+				.CreateLogger();
+
 			_subscriptionId = message.SubscriptionId;
 			_ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
 
-			Log.Information(
+			log.Information(
 				"=== SUBSCRIBED to [{leaderEndPoint},{leaderId:B}] at {subscriptionPosition} (0x{subscriptionPosition:X}). SubscriptionId: {subscriptionId:B}.",
 				message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition, message.SubscriptionPosition,
 				message.SubscriptionId);
@@ -104,17 +114,17 @@ namespace EventStore.Core.Services {
 			}
 
 			if (message.SubscriptionPosition < writerCheck) {
-				Log.Information(
+				log.Information(
 					"Leader [{leaderEndPoint},{leaderId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our writer checkpoint {writerCheckpoint} (0x{writerCheckpoint:X}). TRUNCATION IS NEEDED.",
 					message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition,
 					message.SubscriptionPosition, writerCheck, writerCheck);
 
 				var lastIndexedPosition = _getLastIndexedPosition();
 				if (message.SubscriptionPosition > lastIndexedPosition)
-					Log.Information(
+					log.Information(
 						"ONLINE TRUNCATION IS NEEDED. NOT IMPLEMENTED. OFFLINE TRUNCATION WILL BE PERFORMED. SHUTTING DOWN NODE.");
 				else
-					Log.Information(
+					log.Information(
 						"OFFLINE TRUNCATION IS NEEDED (SubscribedAt {subscriptionPosition} (0x{subscriptionPosition:X}) <= LastCommitPosition {lastCommitPosition} (0x{lastCommitPosition:X})). SHUTTING DOWN NODE.",
 						message.SubscriptionPosition, message.SubscriptionPosition, lastIndexedPosition,
 						lastIndexedPosition);
@@ -122,12 +132,12 @@ namespace EventStore.Core.Services {
 				EpochRecord lastEpoch = EpochManager.GetLastEpoch();
 				if (AreAnyCommittedRecordsTruncatedWithLastEpoch(message.SubscriptionPosition, lastEpoch,
 					lastIndexedPosition)) {
-					Log.Error(
+					log.Error(
 						"Leader [{leaderEndPoint},{leaderId:B}] subscribed us at {subscriptionPosition} (0x{subscriptionPosition:X}), which is less than our last epoch and LastCommitPosition {lastCommitPosition} (0x{lastCommitPosition:X}) >= lastEpoch.EpochPosition {lastEpochPosition} (0x{lastEpochPosition:X}). That might be bad, especially if the LastCommitPosition is way beyond EpochPosition.",
 						message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition,
 						message.SubscriptionPosition, lastIndexedPosition, lastIndexedPosition, lastEpoch.EpochPosition,
 						lastEpoch.EpochPosition);
-					Log.Error(
+					log.Error(
 						"ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF A NEWLY-ELECTED LEADER FAILS IMMEDIATELY AFTER ELECTION.");
 				}
 
@@ -135,7 +145,7 @@ namespace EventStore.Core.Services {
 				Db.Config.TruncateCheckpoint.Flush();
 
 				BlockWriter = true;
-				Bus.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+				Bus.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true, $"Offline truncation required: {messages}"));
 				return;
 			}
 

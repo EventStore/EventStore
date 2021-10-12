@@ -501,7 +501,7 @@ namespace EventStore.Core.Services.VNode {
 			_exitProcessOnShutdown = message.ExitProcess;
 			_state = VNodeState.ShuttingDown;
 			_mainQueue.Publish(TimerMessage.Schedule.Create(ShutdownTimeout, _publishEnvelope,
-				new SystemMessage.ShutdownTimeout()));
+				new SystemMessage.ShutdownTimeout(message.Reason)));
 			_outputBus.Publish(message);
 		}
 
@@ -544,7 +544,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_leader.InstanceId == _nodeInfo.InstanceId)
 				_fsm.Handle(new SystemMessage.BecomePreLeader(_stateCorrelationId));
 			else
-				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader));
+				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader, "elections done"));
 		}
 
 		private void Handle(SystemMessage.ServiceInitialized message) {
@@ -569,7 +569,7 @@ namespace EventStore.Core.Services.VNode {
 		
 		private void Handle(AuthenticationMessage.AuthenticationProviderInitializationFailed message) {
 			Log.Error("Authentication Provider Initialization Failed. Shutting Down.");
-			_fsm.Handle(new SystemMessage.BecomeShutdown(Guid.NewGuid()));
+			_fsm.Handle(new SystemMessage.BecomeShutdown(Guid.NewGuid(), "Authentication Provider Initialization Failed"));
 		}
 
 		private void Handle(SystemMessage.SystemCoreReady message) {
@@ -919,7 +919,7 @@ namespace EventStore.Core.Services.VNode {
 			{
 				var msg = _state == VNodeState.PreReplica
 					? (Message)new ReplicationMessage.ReconnectToLeader(_stateCorrelationId, _leader)
-					: new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader);
+					: new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader, "vnode connection lost");
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
 			}
 
@@ -1016,7 +1016,7 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information("Existing LEADER found during LEADER DISCOVERY stage. LEADER: [{leader}]. Proceeding to PRE-REPLICA state.", _leader);
 				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
 				_stateCorrelationId = Guid.NewGuid();
-				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader));
+				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader, "gossip updated"));
 			} else {
 				Log.Debug(
 					"{leadersFound} found during LEADER DISCOVERY stage, making further attempts.",
@@ -1091,7 +1091,7 @@ namespace EventStore.Core.Services.VNode {
 			if (IsLegitimateReplicationMessage(message)) {
 				_outputBus.Publish(message);
 				if (_nodeInfo.IsReadOnlyReplica) {
-					_fsm.Handle(new SystemMessage.BecomeReadOnlyReplica(_stateCorrelationId, _leader));
+					_fsm.Handle(new SystemMessage.BecomeReadOnlyReplica(_stateCorrelationId, _leader, "replica subscribed"));
 				} else {
 					_fsm.Handle(new SystemMessage.BecomeCatchingUp(_stateCorrelationId, _leader));
 				}
@@ -1137,7 +1137,7 @@ namespace EventStore.Core.Services.VNode {
 					_leader.InternalTcpEndPoint == null ? "n/a" : _leader.InternalTcpEndPoint.ToString(),
 					_leader.InternalSecureTcpEndPoint == null ? "n/a" : _leader.InternalSecureTcpEndPoint.ToString(),
 					message.LeaderId);
-				_fsm.Handle(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+				_fsm.Handle(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true, "Node surplus"));
 			}
 		}
 
@@ -1168,17 +1168,19 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(ClientMessage.RequestShutdown message) {
 			_outputBus.Publish(message);
 			_fsm.Handle(
-				new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess, message.ShutdownHttp));
+				new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), message.ExitProcess, message.ShutdownHttp, message.Reason));
 		}
 
+		List<(string, string)> _serviceShutdownReasons = new();
 		private void Handle(SystemMessage.ServiceShutdown message) {
 			Log.Information("========== [{httpEndPoint}] Service '{service}' has shut down.", _nodeInfo.HttpEndPoint,
 				message.ServiceName);
 
+			_serviceShutdownReasons.Add((message.ServiceName, message.Reason));
 			_serviceShutdownsToExpect -= 1;
 			if (_serviceShutdownsToExpect == 0) {
 				Log.Information("========== [{httpEndPoint}] All Services Shutdown.", _nodeInfo.HttpEndPoint);
-				Shutdown();
+				Shutdown(string.Join(",", _serviceShutdownReasons.Select(x => $"{x}")));
 			}
 
 			_outputBus.Publish(message);
@@ -1188,15 +1190,15 @@ namespace EventStore.Core.Services.VNode {
 			Debug.Assert(_state == VNodeState.ShuttingDown);
 
 			Log.Error("========== [{httpEndPoint}] Shutdown Timeout.", _nodeInfo.HttpEndPoint);
-			Shutdown();
+			Shutdown("Shutdown timed out. " + message.ShutdownReason);
 			_outputBus.Publish(message);
 		}
 
-		private void Shutdown() {
+		private void Shutdown(string reason) {
 			Debug.Assert(_state == VNodeState.ShuttingDown);
 
 			_db.Close();
-			_fsm.Handle(new SystemMessage.BecomeShutdown(_stateCorrelationId));
+			_fsm.Handle(new SystemMessage.BecomeShutdown(_stateCorrelationId, reason));
 		}
 	}
 }

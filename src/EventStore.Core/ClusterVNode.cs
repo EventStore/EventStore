@@ -1347,7 +1347,7 @@ namespace EventStore.Core {
 			}
 
 			timeout ??= TimeSpan.FromSeconds(5);
-			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true));
+			_mainQueue.Publish(new ClientMessage.RequestShutdown(false, true, "Stop called"));
 
 			UnixSignalManager.StopProcessing();
 

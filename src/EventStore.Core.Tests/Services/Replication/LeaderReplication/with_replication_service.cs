@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
 			await base.TestFixtureTearDown();
-			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
+			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true, "tear down"));
 		}
 
 		private Guid AddSubscription(Guid replicaId, bool isPromotable, out TcpConnectionManager manager) {

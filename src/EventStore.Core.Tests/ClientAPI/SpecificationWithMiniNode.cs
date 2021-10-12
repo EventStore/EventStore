@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			try {
 				await base.TestFixtureSetUp();
 			} catch (Exception ex) {
-				throw new Exception("TestFixtureSetUp Failed", ex);
+				throw new Exception($"TestFixtureSetUp Failed: {ex}", ex);
 			}
 			
 			try {
@@ -41,27 +41,31 @@ namespace EventStore.Core.Tests.ClientAPI {
 				_conn = BuildConnection(_node);
 				await _conn.ConnectAsync();		
 			} catch (Exception ex) {
-				throw new Exception("MiniNodeSetUp Failed", ex);
+				throw new Exception($"MiniNodeSetUp Failed: {ex}", ex);
 			}
 
 			try {
 				await Given().WithTimeout(Timeout);
 			} catch (Exception ex) {
-				throw new Exception("Given Failed", ex);
+				throw new Exception($"Given Failed: {ex}", ex);
 			}
 
 			try {
 				await When().WithTimeout(Timeout);
 			} catch (Exception ex) {
-				throw new Exception("When Failed", ex);
+				throw new Exception($"When Failed: {ex}", ex);
 			}
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_conn?.Close();
-			await _node.Shutdown();
-			await base.TestFixtureTearDown();
+			try {
+				_conn?.Close();
+				await _node.Shutdown();
+				await base.TestFixtureTearDown();
+			} catch (Exception ex) {
+				throw new Exception($"TestFixtureTearDown Failed: {ex}", ex);
+			}
 		}
 	}
 }

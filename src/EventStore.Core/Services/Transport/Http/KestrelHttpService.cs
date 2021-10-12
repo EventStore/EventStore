@@ -68,7 +68,8 @@ namespace EventStore.Core.Services.Transport.Http {
 				Shutdown();
 			_inputBus.Publish(
 				new SystemMessage.ServiceShutdown(
-					$"HttpServer [{String.Join(", ", EndPoints)}]"));
+					$"HttpServer [{String.Join(", ", EndPoints)}]",
+					message.Reason));
 		}
 
 		public void Shutdown() {

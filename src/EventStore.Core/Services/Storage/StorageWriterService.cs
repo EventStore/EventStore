@@ -158,12 +158,12 @@ namespace EventStore.Core.Services.Storage {
 
 			StorageWriterQueue.Publish(message);
 
-			if (message is SystemMessage.BecomeShuttingDown)
+			if (message is SystemMessage.BecomeShuttingDown m)
 			// we need to handle this message on main thread to stop StorageWriterQueue
 			{
 				StorageWriterQueue.Stop();
 				BlockWriter = true;
-				Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter"));
+				Bus.Publish(new SystemMessage.ServiceShutdown("StorageWriter", m.Reason));
 			}
 		}
 

@@ -109,11 +109,13 @@ namespace EventStore.Core.Messages {
 
 			public readonly Guid CorrelationId;
 			public readonly VNodeState State;
+			public readonly string Reason;
 
-			protected StateChangeMessage(Guid correlationId, VNodeState state) {
+			protected StateChangeMessage(Guid correlationId, VNodeState state, string reason = null) {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				CorrelationId = correlationId;
 				State = state;
+				Reason = reason;
 			}
 		}
 
@@ -149,8 +151,8 @@ namespace EventStore.Core.Messages {
 
 			public readonly bool ExitProcess;
 
-			public BecomeShuttingDown(Guid correlationId, bool exitProcess, bool shutdownHttp) : base(correlationId,
-				VNodeState.ShuttingDown) {
+			public BecomeShuttingDown(Guid correlationId, bool exitProcess, bool shutdownHttp, string reason = null) : base(correlationId,
+				VNodeState.ShuttingDown, reason) {
 				ShutdownHttp = shutdownHttp;
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				ExitProcess = exitProcess;
@@ -164,7 +166,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeShutdown(Guid correlationId) : base(correlationId, VNodeState.Shutdown) {
+			public BecomeShutdown(Guid correlationId, string reason) : base(correlationId, VNodeState.Shutdown, reason) {
 			}
 		}
 
@@ -213,8 +215,8 @@ namespace EventStore.Core.Messages {
 
 			public readonly MemberInfo Leader;
 
-			protected ReplicaStateMessage(Guid correlationId, VNodeState state, MemberInfo leader)
-				: base(correlationId, state) {
+			protected ReplicaStateMessage(Guid correlationId, VNodeState state, MemberInfo leader, string reason)
+				: base(correlationId, state, reason) {
 				Ensure.NotNull(leader, "leader");
 				Leader = leader;
 			}
@@ -227,8 +229,8 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomePreReplica(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.PreReplica,
-				leader) {
+			public BecomePreReplica(Guid correlationId, MemberInfo leader, string reason) : base(correlationId, VNodeState.PreReplica,
+				leader, reason) {
 			}
 		}
 
@@ -240,7 +242,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public BecomeCatchingUp(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.CatchingUp,
-				leader) {
+				leader, "") {
 			}
 		}
 
@@ -251,7 +253,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeClone(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.Clone, leader) {
+			public BecomeClone(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.Clone, leader, "") {
 			}
 		}
 
@@ -263,7 +265,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public BecomeFollower(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.Follower,
-				leader) {
+				leader, "") {
 			}
 		}
 
@@ -287,7 +289,7 @@ namespace EventStore.Core.Messages {
 			}
 
 			public BecomePreReadOnlyReplica(Guid correlationId, MemberInfo leader)
-				: base(correlationId, VNodeState.PreReadOnlyReplica, leader) {
+				: base(correlationId, VNodeState.PreReadOnlyReplica, leader, "") {
 			}
 		}
 
@@ -298,8 +300,8 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomeReadOnlyReplica(Guid correlationId, MemberInfo leader)
-				: base(correlationId, VNodeState.ReadOnlyReplica, leader) {
+			public BecomeReadOnlyReplica(Guid correlationId, MemberInfo leader, string reason)
+				: base(correlationId, VNodeState.ReadOnlyReplica, leader, reason) {
 			}
 		}
 
@@ -312,11 +314,13 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly string ServiceName;
+			public readonly string Reason;
 
-			public ServiceShutdown(string serviceName) {
+			public ServiceShutdown(string serviceName, string reason) {
 				if (String.IsNullOrEmpty(serviceName))
 					throw new ArgumentNullException("serviceName");
 				ServiceName = serviceName;
+				Reason = reason;
 			}
 		}
 
@@ -325,6 +329,12 @@ namespace EventStore.Core.Messages {
 
 			public override int MsgTypeId {
 				get { return TypeId; }
+			}
+
+			public readonly string ShutdownReason;
+
+			public ShutdownTimeout(string shutdownReason) {
+				ShutdownReason = shutdownReason;
 			}
 		}
 

@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
+using System.Collections.Generic;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode<TLogFormat, TStreamId> {
@@ -55,6 +56,8 @@ namespace EventStore.Core.Tests.Helpers {
 		public Task AdminUserCreated => _adminUserCreated.Task;
 
 		public VNodeState NodeState = VNodeState.Unknown;
+		public string NodeStateReason;
+		public List<(VNodeState, string)> NodeStateHistory = new(new[] { (VNodeState.Unknown, "Initial") });
 		private readonly IWebHost _host;
 
 		private readonly TestServer _kestrelTestServer;
@@ -212,6 +215,8 @@ namespace EventStore.Core.Tests.Helpers {
 			Node.MainBus.Subscribe(
 				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
 					NodeState = m.State;
+					NodeStateReason = m.Reason;
+					NodeStateHistory.Add((NodeState, NodeStateReason));
 				}));
 			if (!_isReadOnlyReplica) {
 				Node.MainBus.Subscribe(

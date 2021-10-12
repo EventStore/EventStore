@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using System.Threading;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class specification_with_cluster<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
@@ -99,14 +100,46 @@ namespace EventStore.Core.Tests.Integration {
 
 			BeforeNodesStart();
 
+			Assert.AreEqual(0, _nodes[0].Db.Config.WriterCheckpoint.ReadNonFlushed());
+			Assert.AreEqual(0, _nodes[1].Db.Config.WriterCheckpoint.ReadNonFlushed());
+			Assert.AreEqual(0, _nodes[2].Db.Config.WriterCheckpoint.ReadNonFlushed());
+
 			_nodes[0].Start();
 			_nodes[1].Start();
 			_nodes[2].Start();
 
+			var secondsTimeout = 30;
+			var cts = new CancellationTokenSource();
+
+			// sometimes nodes shutdown because they need truncation
+			// but why? these are supposed to be all new nodes.
+			// either they have old data in sometimes
+			// or spinning up a cluster is somehow resulting in one becoming leader
+			// then another becoming leader? no because the started task is completed when it becomes leaer
+			// and stays completed so it wasnever leader. so if it was ever leader it would count as started
+			//async Task RestartShutdownNodes(CancellationToken cancellationToken) {
+			//	for (int i = 0; i < secondsTimeout; i++) {
+			//		await Task.Delay(1000, cancellationToken);
+			//		for (var n = 0; n < 3; n++) {
+			//			if (_nodes[n].NodeState == VNodeState.Shutdown)
+			//				_nodes[n].Start();
+			//		}
+			//	}
+			//}
+
+			//qq var restarter = RestartShutdownNodes(cts.Token);
+
 			try {
-				await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
+				await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(secondsTimeout));
 			} catch (TimeoutException ex) {
-				throw new TimeoutException($"Cluster nodes did not start. Statuses: {_nodes[0].NodeState}/{_nodes[1].NodeState}/{_nodes[2].NodeState}", ex);
+				throw new TimeoutException(
+					$"Cluster nodes did not start. Statuses: [" +
+					$"(writer {_nodes[0].Db.Config.WriterCheckpoint.ReadNonFlushed()},{string.Join(" -> ", _nodes[0].NodeStateHistory)},{_nodes[0].NodeStateReason}), " +
+					$"(writer {_nodes[1].Db.Config.WriterCheckpoint.ReadNonFlushed()},{string.Join(" -> ", _nodes[1].NodeStateHistory)},{_nodes[1].NodeStateReason}), " +
+					$"(writer {_nodes[2].Db.Config.WriterCheckpoint.ReadNonFlushed()},{string.Join(" -> ", _nodes[2].NodeStateHistory)},{_nodes[2].NodeStateReason})] ",
+					ex);
+			} finally {
+				cts.Cancel();
 			}
 			
 			// wait for cluster to be fully operational, tests depend on leader and followers

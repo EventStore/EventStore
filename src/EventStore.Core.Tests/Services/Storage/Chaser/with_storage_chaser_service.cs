@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
 			await base.TestFixtureTearDown();
-			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
+			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true, "tear down"));
 		}
 
 

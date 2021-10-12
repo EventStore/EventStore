@@ -81,7 +81,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (entity.User != null &&
 			    (entity.User.LegacyRoleCheck(SystemRoles.Admins) || entity.User.LegacyRoleCheck(SystemRoles.Operations))) {
 				Log.Information("Request shut down of node because shutdown command has been received.");
-				Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
+				Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true, "Received shutdown command"));
 				entity.ReplyStatus(HttpStatusCode.OK, "OK", LogReplyError);
 			} else {
 				entity.ReplyStatus(HttpStatusCode.Unauthorized, "Unauthorized", LogReplyError);

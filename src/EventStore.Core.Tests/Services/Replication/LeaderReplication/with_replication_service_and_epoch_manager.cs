@@ -46,56 +46,70 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
-			await base.TestFixtureSetUp();
+			try {
+				await base.TestFixtureSetUp();
 
-			var indexDirectory = GetFilePathFor("index");
-			_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
-				IndexDirectory = indexDirectory,
-			});
+				var indexDirectory = GetFilePathFor("index");
+				_logFormat = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory.Create(new() {
+					IndexDirectory = indexDirectory,
+				});
 
-			TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
+				TcpSendPublisher.Subscribe(new AdHocHandler<TcpMessage.TcpSend>(msg => TcpSends.Enqueue(msg)));
 
-			DbConfig = CreateDbConfig();
-			Db = new TFChunkDb(DbConfig);
-			Db.Open();
+				DbConfig = CreateDbConfig();
+				Db = new TFChunkDb(DbConfig);
+				Db.Open();
 
-			Writer = new TFChunkWriter(Db);
-			EpochManager = new EpochManager<TStreamId>(
-				Publisher,
-				5,
-				DbConfig.EpochCheckpoint,
-				Writer,
-				1, 1,
-				() => new TFChunkReader(Db, Db.Config.WriterCheckpoint,
-					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
-				_logFormat.RecordFactory,
-				_logFormat.StreamNameIndex,
-				_logFormat.EventTypeIndex,
-				_logFormat.CreatePartitionManager(
-					reader: new TFChunkReader(Db, Db.Config.WriterCheckpoint),
-					writer: Writer),
-				Guid.NewGuid());
-			Service = new LeaderReplicationService(
-				Publisher,
-				LeaderId,
-				Db,
-				TcpSendPublisher,
-				EpochManager,
-				ClusterSize,
-				false,
-				new QueueStatsManager());
+				Writer = new TFChunkWriter(Db);
+				EpochManager = new EpochManager<TStreamId>(
+					Publisher,
+					5,
+					DbConfig.EpochCheckpoint,
+					Writer,
+					1, 1,
+					() => new TFChunkReader(Db, Db.Config.WriterCheckpoint,
+						optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
+					_logFormat.RecordFactory,
+					_logFormat.StreamNameIndex,
+					_logFormat.EventTypeIndex,
+					_logFormat.CreatePartitionManager(
+						reader: new TFChunkReader(Db, Db.Config.WriterCheckpoint),
+						writer: Writer),
+					Guid.NewGuid());
+				Service = new LeaderReplicationService(
+					Publisher,
+					LeaderId,
+					Db,
+					TcpSendPublisher,
+					EpochManager,
+					ClusterSize,
+					false,
+					new QueueStatsManager());
 
-			Service.Handle(new SystemMessage.SystemStart());
-			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
+				Service.Handle(new SystemMessage.SystemStart());
+				Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
-			When();
+				When();
+			} catch (Exception e) {
+				throw new Exception($"{e}", e);
+			}
 		}
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
-			_logFormat?.Dispose();
-			await base.TestFixtureTearDown();
-			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
+			var state = "none";
+			try {
+				state = "disposing";
+				_logFormat?.Dispose();
+				state = "tearingdown";
+				await base.TestFixtureTearDown();
+				state = "constructing shuttingdown";
+				var m = new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true);
+				state = $"handling shuttingdown. Service: {Service}.";
+				Service.Handle(m);
+			} catch (Exception ex) {
+				throw new Exception(state, ex);
+			}
 		}
 
 		public IPrepareLogRecord<TStreamId> CreateLogRecord(long eventNumber, string data = "*************") {

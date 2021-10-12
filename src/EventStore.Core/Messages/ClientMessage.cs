@@ -36,10 +36,12 @@ namespace EventStore.Core.Messages {
 			public readonly bool ExitProcess;
 
 			public readonly bool ShutdownHttp;
+			public string Reason;
 
-			public RequestShutdown(bool exitProcess, bool shutdownHttp) {
+			public RequestShutdown(bool exitProcess, bool shutdownHttp, string reason) {
 				ExitProcess = exitProcess;
 				ShutdownHttp = shutdownHttp;
+				Reason = reason;
 			}
 		}
 

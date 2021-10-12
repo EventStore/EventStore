@@ -92,7 +92,7 @@ namespace EventStore.Core.Services.Storage {
 				Log.Error(exc, "Error while stopping readers multi handler.");
 			}
 
-			_bus.Publish(new SystemMessage.ServiceShutdown("StorageReader"));
+			_bus.Publish(new SystemMessage.ServiceShutdown("StorageReader", message.Reason));
 		}
 
 		void IHandle<SystemMessage.BecomeShutdown>.Handle(SystemMessage.BecomeShutdown message) {

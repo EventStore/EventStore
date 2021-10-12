@@ -39,7 +39,11 @@ namespace EventStore.Core.Tests.Http.Cluster {
 					msg: $"Waiting for follower to reach index checkpoint timed out! (LeaderIndex={leaderIndex},FollowerState={follower.NodeState})");
 			}
 			catch (Exception ex) {
-				throw new Exception($"{follower.Db.Config.IndexCheckpoint.Read()} / {leader.Db.Config.IndexCheckpoint.Read()}", ex);
+				throw new Exception(
+					$"{follower.Db.Config.IndexCheckpoint.Read()} / {leader.Db.Config.IndexCheckpoint.Read()}. " +
+					$"{follower.NodeState}. " +
+					$"{follower.NodeStateReason}",
+					ex);
 			}
 
 			await AddStreamAndWait(leader, follower, TestDeleteStream);

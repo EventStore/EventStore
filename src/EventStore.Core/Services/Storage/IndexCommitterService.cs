@@ -101,6 +101,8 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		public void HandleReplicatedQueue() {
+			string error = null;
+			int count = 0;
 			try {
 				_queueStats.Start();
 				QueueMonitor.Default.Register(this);
@@ -125,12 +127,14 @@ namespace EventStore.Core.Services.Storage {
 			} catch (Exception exc) {
 				_queueStats.EnterIdle();
 				_queueStats.ProcessingStarted<FaultedIndexCommitterServiceState>(0);
+				error = $"Fatal Error in IndexCommitterService: {exc.Message}";
 				Log.Fatal(exc, "Error in IndexCommitterService. Terminating...");
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error,
 					"Error in IndexCommitterService. Terminating...\nError: " + exc.Message);
-				while (!_stop) {
+				while (!_stop && count < 100) {
 					Thread.Sleep(100);
+					count++;
 				}
 
 				_queueStats.ProcessingEnded(0);
@@ -139,7 +143,7 @@ namespace EventStore.Core.Services.Storage {
 				QueueMonitor.Default.Unregister(this);
 			}
 
-			_publisher.Publish(new SystemMessage.ServiceShutdown(Name));
+			_publisher.Publish(new SystemMessage.ServiceShutdown(Name, $"error: {error} count: {count}"));
 		}
 
 		private void ProcessCommitReplicated(StorageMessage.CommitAck message) {

@@ -70,6 +70,8 @@ namespace EventStore.Core.Services.Replication {
 
 		private void TrackReplication() {
 
+			string error = null;
+			int count = 0;
 			try {
 				while (!_stop) {
 					_replicationChange.Reset();
@@ -84,16 +86,18 @@ namespace EventStore.Core.Services.Replication {
 					_replicationChange.Wait(100);
 				}
 			} catch (Exception exc) {
+				error = $"Fatal Error in ReplicationTrackingService: {exc.Message}";
 				_log.Fatal(exc, $"Error in {nameof(ReplicationTrackingService)}. Terminating...");
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error,
 					$"Error in {nameof(ReplicationTrackingService)}. Terminating...\nError: " + exc.Message);
 				//TODO(clc): is this right, are we waiting for someone to clean us up???
-				while (!_stop) {
+				while (!_stop && count < 100) {
 					Thread.Sleep(100);
+					count++;
 				}
 			}
-			_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(ReplicationTrackingService)));
+			_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(ReplicationTrackingService), $"error: {error} count: {count}"));
 		}
 
 		public void Handle(ReplicationTrackingMessage.LeaderReplicatedTo message) {
