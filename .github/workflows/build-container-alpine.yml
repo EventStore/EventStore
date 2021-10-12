@@ -1,4 +1,4 @@
-name: Build Containers
+name: Build Alpine Container
 
 on:
   pull_request:
@@ -16,3 +16,6 @@ on:
 jobs:
   build-container:
     uses: EventStore/EventStore/.github/workflows/build-container-reusable.yml@multi-workflow
+    with:
+      container-runtime: alpine
+

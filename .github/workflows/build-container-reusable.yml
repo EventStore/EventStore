@@ -2,15 +2,17 @@ name: Build Container - Reusable
 
 on:
   workflow_call:
+    inputs:
+      container-runtime:
+        required: true
+        type: string
 
 jobs:
   build-container:
     strategy:
       fail-fast: false
-      matrix:
-        container-runtime: [focal, buster-slim, alpine]
     runs-on: ubuntu-latest
-    name: ci/github/build-${{ matrix.container-runtime }}
+    name: ci/github/build-${{ inputs.container-runtime }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -33,13 +35,13 @@ jobs:
     - name: Calculate Version
       run: |
         dotnet tool restore
-        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ matrix.container-runtime }}
+        version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ inputs.container-runtime }}
         echo "VERSION=${version}" >> $GITHUB_ENV
     - name: Setup Variables
       id: variables
       uses: kanga333/variable-mapper@master
       with:
-        key: "${{ matrix.container-runtime }}"
+        key: "${{ inputs.container-runtime }}"
         map: |
           {
             "focal": {
@@ -60,7 +62,7 @@ jobs:
         load: true
         tags: eventstore
         build-args: |
-          CONTAINER_RUNTIME=${{ matrix.container-runtime }}
+          CONTAINER_RUNTIME=${{ inputs.container-runtime }}
           RUNTIME=${{ steps.variables.outputs.runtime }}
     - name: Verify Build
       run: |
@@ -73,7 +75,7 @@ jobs:
         target: test
         tags: eventstore-test
         build-args: |
-          CONTAINER_RUNTIME=${{ matrix.container-runtime }}
+          CONTAINER_RUNTIME=${{ inputs.container-runtime }}
           RUNTIME=${{ steps.variables.outputs.runtime }}
     - name: Run Tests
       run: |
@@ -86,12 +88,12 @@ jobs:
       if: always()
       with:
         path: test-results/test-results.html
-        name: test-results-${{ matrix.container-runtime }}.html
+        name: test-results-${{ inputs.container-runtime }}.html
     - name: Publish Test Results (All)
       uses: actions/upload-artifact@v1
       if: always()
       with:
-        name: test-results-${{ matrix.container-runtime }}
+        name: test-results-${{ inputs.container-runtime }}
         path: test-results
     - name: Push GitHub Container Registry
       if: always() && github.event_name == 'push'
@@ -100,7 +102,7 @@ jobs:
         docker tag eventstore ghcr.io/eventstore/eventstore:${{ env.VERSION }}
         docker push ghcr.io/eventstore/eventstore:${{ env.VERSION }}
     - name: Push GitHub Container Registry (CI)
-      if: always() && github.event_name == 'push' && matrix.container-runtime == 'focal'
+      if: always() && github.event_name == 'push' && inputs.container-runtime == 'focal'
       shell: bash
       run: |
         docker tag eventstore ghcr.io/eventstore/eventstore:ci
@@ -117,7 +119,7 @@ jobs:
         registry: https://docker.pkg.github.com
     - name: Docker Push CI
       uses: jen20/action-docker-build@v1
-      if: github.event_name == 'push' && matrix.container-runtime == 'focal'
+      if: github.event_name == 'push' && inputs.container-runtime == 'focal'
       with:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
