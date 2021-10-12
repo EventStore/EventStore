@@ -1,4 +1,4 @@
-name: Build Containers
+name: Build Windows 2019
 
 on:
   pull_request:
@@ -14,5 +14,7 @@ on:
       - "**.md"
 
 jobs:
-  build-container:
-    uses: EventStore/EventStore/.github/workflows/build-container-reusable.yml@multi-workflow
+  build:
+    uses: EventStore/EventStore/.github/workflows/build-reusable.yml@multi-workflow
+    with:
+      os: windows-2019

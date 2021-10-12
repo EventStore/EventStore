@@ -2,16 +2,19 @@ name: Build - Reusable
 
 on:
   workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, windows-2019]
         configuration: [release]
-    runs-on: ${{ matrix.os }}
-    name: ci/github/build-${{ matrix.os }}
+    runs-on: ${{ inputs.os }}
+    name: ci/github/build-${{ inputs.os }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -28,7 +31,7 @@ jobs:
         dotnet-version: 5.0.x
     - name: Clear Nuget Cache
       shell: powershell
-      if: matrix.os == 'windows-2019'
+      if: inputs.os == 'windows-2019'
       run: |
         if (-not(Test-Path $env:APPDATA\NuGet\NuGet.Config -PathType Leaf)) {
           return;
@@ -58,10 +61,10 @@ jobs:
       if: always()
       with:
         path: test-results.html
-        name: test-results-${{ matrix.configuration }}-${{ matrix.os }}.html
+        name: test-results-${{ matrix.configuration }}-${{ inputs.os }}.html
     - name: Publish Test Results (All)
       uses: actions/upload-artifact@v1
       if: always()
       with:
-        name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
+        name: test-results-${{ matrix.configuration }}-${{ inputs.os }}
         path: test-results
