@@ -65,7 +65,7 @@ namespace EventStore.Core.Tests.Integration {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
-			
+
 			_nodeEndpoints[0] = new Endpoints();
 			_nodeEndpoints[1] = new Endpoints();
 			_nodeEndpoints[2] = new Endpoints();
@@ -84,13 +84,13 @@ namespace EventStore.Core.Tests.Integration {
 			Assert.IsEmpty(duplicates);
 
 			_nodeCreationFactory.Add(0, wait => CreateNode(0,
-				_nodeEndpoints[0], new[] {_nodeEndpoints[1].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint},
+				_nodeEndpoints[0], new[] { _nodeEndpoints[1].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint },
 				wait));
 			_nodeCreationFactory.Add(1, wait => CreateNode(1,
-				_nodeEndpoints[1], new[] {_nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint},
+				_nodeEndpoints[1], new[] { _nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[2].HttpEndPoint },
 				wait));
 			_nodeCreationFactory.Add(2, wait => CreateNode(2,
-				_nodeEndpoints[2], new[] {_nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[1].HttpEndPoint},
+				_nodeEndpoints[2], new[] { _nodeEndpoints[0].HttpEndPoint, _nodeEndpoints[1].HttpEndPoint },
 				wait));
 
 			_nodes[0] = _nodeCreationFactory[0](true);
@@ -104,22 +104,24 @@ namespace EventStore.Core.Tests.Integration {
 			_nodes[2].Start();
 
 			try {
-				await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
+				await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(60));
 			} catch (TimeoutException ex) {
-				throw new TimeoutException($"Cluster nodes did not start. Statuses: {_nodes[0].NodeState}/{_nodes[1].NodeState}/{_nodes[2].NodeState}", ex);
+				if (_nodes.Select(x => x.Started).Count() < 2){
+					throw new TimeoutException($"Cluster nodes did not start. Statuses: {_nodes[0].NodeState}/{_nodes[1].NodeState}/{_nodes[2].NodeState}", ex);
+				}
 			}
-			
+
 			// wait for cluster to be fully operational, tests depend on leader and followers
 			AssertEx.IsOrBecomesTrue(() => _nodes.Any(x => x.NodeState == Data.VNodeState.Leader),
 				timeout: TimeSpan.FromSeconds(30),
 				msg: "Waiting for leader timed out!");
-			
+
 			//flaky: most tests only need 1 follower, waiting for 2 causes timeouts 
-			AssertEx.IsOrBecomesTrue(() => 
+			AssertEx.IsOrBecomesTrue(() =>
 					_nodes.Any(x => x.NodeState is VNodeState.Follower or VNodeState.ReadOnlyReplica),
 				timeout: TimeSpan.FromSeconds(90),
 				msg: $"Waiting for followers timed out! States={string.Join(", ", _nodes.Select(n => n.NodeState))}");
-			
+
 			_conn = CreateConnection();
 			await _conn.ConnectAsync();
 
@@ -155,18 +157,18 @@ namespace EventStore.Core.Tests.Integration {
 
 		protected static void WaitIdle() {
 		}
-		
+
 		protected MiniClusterNode<TLogFormat, TStreamId> GetLeader() {
 			var leader = _nodes.First(x => x.NodeState == Data.VNodeState.Leader);
 			Assert.NotNull(leader, "Cluster doesn't have a leader available!");
-			
+
 			return leader;
 		}
 
 		protected MiniClusterNode<TLogFormat, TStreamId>[] GetFollowers() {
 			var followers = _nodes.Where(x => x.NodeState == Data.VNodeState.Follower).ToArray();
 			Assert.IsNotEmpty(followers, "Cluster doesn't have followers available!");
-			
+
 			return followers;
 		}
 	}
