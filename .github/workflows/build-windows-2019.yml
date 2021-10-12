@@ -15,6 +15,6 @@ on:
 
 jobs:
   build:
-    uses: EventStore/EventStore/.github/workflows/build-reusable.yml@multi-workflow
+    uses: EventStore/EventStore/.github/workflows/build-reusable.yml@1b5ad0078ebf1db5be0ea5253df4584f740099cb
     with:
       os: windows-2019
