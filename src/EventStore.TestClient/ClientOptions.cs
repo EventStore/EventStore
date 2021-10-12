@@ -3,6 +3,7 @@ using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
 using EventStore.Rags;
+using Serilog;
 
 namespace EventStore.TestClient {
 	/// <summary>
@@ -25,10 +26,38 @@ namespace EventStore.TestClient {
 		/// Path where to keep log files.
 		/// </summary>
 		[ArgDescription(Opts.LogsDescr)] public string Log { get; set; }
+
 		/// <summary>
 		/// The name of the log config file.
 		/// </summary>	
 		[ArgDescription(Opts.LogConfigDescr)] public string LogConfig { get; set; }
+
+		/// <summary>
+		/// Which format (plain, json) to use when writing to the console.
+		/// </summary>
+		[ArgDescription(Opts.LogConsoleFormatDescr, Opts.AppGroup)]
+		public LogConsoleFormat LogConsoleFormat { get; set; }
+
+		/// <summary>
+		/// Maximum size of each log file.
+		/// </summary>
+		[ArgDescription(Opts.LogFileSizeDescr, Opts.AppGroup)] public int LogFileSize { get; set; }
+
+		/// <summary>
+		/// How often to rotate logs.
+		/// </summary>
+		[ArgDescription(Opts.LogFileIntervalDescr, Opts.AppGroup)] public RollingInterval LogFileInterval { get; set; }
+
+		/// <summary>
+		/// The number of log files to hold on to.
+		/// </summary>
+		[ArgDescription(Opts.LogFileRetentionCountDescr, Opts.AppGroup)] public int LogFileRetentionCount { get; set; }
+
+		/// <summary>
+		/// Disable log to disk.
+		/// </summary>
+		[ArgDescription(Opts.DisableLogFileDescr, Opts.AppGroup)] public bool DisableLogFile { get; set; }
+
 		/// <summary>
 		/// Path to the config file.
 		/// </summary>
@@ -37,8 +66,7 @@ namespace EventStore.TestClient {
 		/// <summary>
 		/// Print out the effective configuration without running a command.
 		/// </summary>
-		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
-		public bool WhatIf { get; set; }
+		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)] public bool WhatIf { get; set; }
 
 		/// <summary>
 		/// The host of the EventStore node.
@@ -101,6 +129,11 @@ namespace EventStore.TestClient {
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultTestClientLogDirectory;
 			LogConfig = Opts.LogConfigDefault;
+			LogConsoleFormat = Opts.LogConsoleFormatDefault;
+			LogFileSize = Opts.LogFileSizeDefault;
+			LogFileInterval = Opts.LogFileIntervalDefault;
+			LogFileRetentionCount = Opts.LogFileRetentionCountDefault;
+			DisableLogFile = Opts.DisableLogFileDefault;
 			WhatIf = Opts.WhatIfDefault;
 			Host = IPAddress.Loopback.ToString();
 			TcpPort = 1113;

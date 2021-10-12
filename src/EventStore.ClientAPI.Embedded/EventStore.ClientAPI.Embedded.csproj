@@ -50,7 +50,7 @@
 		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="3.1.5" />
 		<PackageReference Include="Microsoft.Net.Http.Headers" Version="2.2.8" />
 		<PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
-		<PackageReference Include="Serilog" Version="2.9.0" />
+		<PackageReference Include="Serilog" Version="2.10.0" />
 		<PackageReference Include="Serilog.Enrichers.Process" Version="2.0.1" />
 		<PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
 		<PackageReference Include="Serilog.Filters.Expressions" Version="2.1.0" />

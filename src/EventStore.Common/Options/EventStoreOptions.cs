@@ -190,10 +190,10 @@ namespace EventStore.Common.Options {
 
 						property.SetValue(revived, revivedValue, null);
 					}
-				} catch {
+				} catch (Exception ex) {
 					throw new OptionException(
-						String.Format("The value {0} could not be converted to {1}", optionSource.Value,
-							property.PropertyType.Name), property.Name);
+						$"The value {optionSource.Value} could not be converted to {property.PropertyType.Name}",
+						property.Name, ex);
 				}
 			}
 

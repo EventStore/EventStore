@@ -718,7 +718,7 @@ namespace EventStore.Core {
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
 				vNodeSettings.GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				vNodeSettings.NodePriority, vNodeSettings.ReadOnlyReplica);
-			
+
 			if (!isSingleNode) {
 				// LEADER REPLICATION
 				var leaderReplicationService = new LeaderReplicationService(_mainQueue, _nodeInfo.InstanceId, db,
@@ -754,14 +754,14 @@ namespace EventStore.Core {
 			// ELECTIONS
 			if (!vNodeSettings.NodeInfo.IsReadOnlyReplica) {
 				var electionsService = new ElectionsService(
-					_mainQueue, 
-					memberInfo, 
+					_mainQueue,
+					memberInfo,
 					vNodeSettings.ClusterNodeCount,
-					db.Config.WriterCheckpoint, 
+					db.Config.WriterCheckpoint,
 					db.Config.ChaserCheckpoint,
 					db.Config.ProposalCheckpoint,
 					epochManager,
-					() => readIndex.LastIndexedPosition, 
+					() => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority,
 					_timeProvider);
 				electionsService.SubscribeMessages(_mainBus);
@@ -871,7 +871,7 @@ namespace EventStore.Core {
 		public void Handle(SystemMessage.BecomeShutdown message) {
 			_shutdownSource.TrySetResult(true);
 		}
-		
+
 		public void Handle(SystemMessage.SystemStart message) {
 			_authenticationProvider.Initialize().ContinueWith(t => {
 				if (t.Exception != null) {
