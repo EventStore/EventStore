@@ -1,0 +1,67 @@
+name: Build - Reusable
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, windows-2019]
+        configuration: [release]
+    runs-on: ${{ matrix.os }}
+    name: ci/github/build-${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - shell: bash
+      run: |
+        git fetch --prune --unshallow
+    - name: Install netcoreapp3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Install net5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Clear Nuget Cache
+      shell: powershell
+      if: matrix.os == 'windows-2019'
+      run: |
+        if (-not(Test-Path $env:APPDATA\NuGet\NuGet.Config -PathType Leaf)) {
+          return;
+        }
+        Remove-Item $env:APPDATA\NuGet\NuGet.Config
+    - name: Compile
+      shell: bash
+      run: |
+        dotnet build --configuration ${{ matrix.configuration }} src/EventStore.sln
+    - name: Verify Build
+      shell: bash
+      run: |
+        dotnet run --project src/EventStore.ClusterNode --configuration ${{ matrix.configuration }} -- --insecure --what-if
+    - name: Run Tests
+      shell: bash
+      run: |
+        find ./src -maxdepth 1 -type d -name "*.Tests"  -print0 \
+          | xargs -I{} -0 -n1 bash -c \
+          'dotnet test --configuration ${{ matrix.configuration }} --blame --blame-hang-timeout 5min --blame-hang-dump-type mini --settings ./ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory=$(pwd)/test-results/$1 $1' - '{}'
+    - name: Collect Test Results
+      shell: bash
+      if: always()
+      run: |
+        echo $(find ./test-results -name "*.html" | xargs cat) > test-results.html
+    - name: Publish Test Results (HTML)
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        path: test-results.html
+        name: test-results-${{ matrix.configuration }}-${{ matrix.os }}.html
+    - name: Publish Test Results (All)
+      uses: actions/upload-artifact@v1
+      if: always()
+      with:
+        name: test-results-${{ matrix.configuration }}-${{ matrix.os }}
+        path: test-results
