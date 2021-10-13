@@ -173,7 +173,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					SystemAccounts.System, m => {
 						if (m.Result != OperationResult.Success) {
 							Log.Error(
-								"Failed to set $ops read permission for the {stream} stream. Reason: {reason}",
+								"Failed to write the $maxAge of {days} and set $ops read permission for the {stream} stream. Reason: {reason}",
 								_scavengeHistoryMaxAge.TotalDays, scavengeIdStream, m.Result);
 						}
 					});

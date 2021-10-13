@@ -90,7 +90,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			async Task HandleTimeout(string streamName) {
 				var backOff = GetBackOffDelay(retryCount);
 				Log.Warning(
-					"Timed out reading from stream: {stream{. Retrying in {retryInterval} seconds.",
+					"Timed out reading from stream: {stream}. Retrying in {retryInterval} seconds.",
 					streamName, backOff);
 				await Task.Delay(TimeSpan.FromSeconds(backOff)).ConfigureAwait(false);
 				BeginReadEventsInternal(eventSource, startPosition, countToLoad, batchSize, maxWindowSize, resolveLinkTos,
