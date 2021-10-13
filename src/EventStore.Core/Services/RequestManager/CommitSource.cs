@@ -40,6 +40,7 @@ namespace EventStore.Core.Services.RequestManager {
 		private readonly SortedList<long, List<Action>> _registeredActions = new SortedList<long, List<Action>>();
 		private readonly bool _isTimeLog;
 		private long _logPosition;
+		private long _notifying;
 		private Channel<long> _positionQueue;
 		private object _registerLock = new object();
 		ManualResetEventSlim _cancelNotifyAt = new ManualResetEventSlim();
@@ -65,6 +66,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 		private void Notify(long logPosition) {
 			lock (_registerLock) {
+				Interlocked.Exchange(ref _notifying, 1);
 				_logPosition = logPosition;
 				while (!_registeredActions.Keys.IsEmpty() && _registeredActions.Keys[0] <= logPosition) {
 					if (_registeredActions.Remove(_registeredActions.Keys[0], out var targets)) {
@@ -84,10 +86,11 @@ namespace EventStore.Core.Services.RequestManager {
 					_cancelNotifyAt = new ManualResetEventSlim();
 					Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
 				}
+				Interlocked.Exchange(ref _notifying, 0);
 			}
 		}
 		private void NotifyAt(long timePosition, ManualResetEventSlim cancel) {
-			if (!_isTimeLog) { return; }
+			if (!_isTimeLog) { return; }			
 			var now = _mainStopwatch.ElapsedMilliseconds;
 			var delay = timePosition - now;
 			if (delay > 0) {
@@ -98,7 +101,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 		public void Register(TimeSpan delay, Action target) {
 			if (!_isTimeLog) { throw new InvalidOperationException("Timespan Delays can only be registered on TimeLogs"); }
-			
+
 			var now = _mainStopwatch.ElapsedMilliseconds;
 			var position = now + (long)delay.TotalMilliseconds;
 			Register(position, target);
@@ -112,6 +115,7 @@ namespace EventStore.Core.Services.RequestManager {
 				if (!_registeredActions.TryGetValue(position, out var actionList)) {
 					actionList = new List<Action> { target };
 					_registeredActions.TryAdd(position, actionList);
+					if (Interlocked.Read(ref _notifying) == 1) { return; } //we're reentering the same lock let Notify reschedule when done
 					if (_isTimeLog && !_registeredActions.Keys.IsEmpty() && position == _registeredActions.Keys[0]) {
 						_cancelNotifyAt.Set();
 						_cancelNotifyAt = new ManualResetEventSlim();
