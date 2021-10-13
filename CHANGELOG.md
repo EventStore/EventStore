@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - race condition where a node becomes leader and immediately writes to streams that have recently been written to but not indexed, resulting in events with incorrect numbers in their streams. [EventStore#3201](https://github.com/EventStore/EventStore/pull/3201)
 - Handling $deleted in the interpreted projections runtime. [EventStore#3216](https://github.com/EventStore/EventStore/pull/3216)
 - properly disposing gRPC calls in tests [EventStore#3215](https://github.com/EventStore/EventStore/pull/3215)
+- Improve test stability [EventStore#3220](https://github.com/EventStore/EventStore/pull/3220)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
