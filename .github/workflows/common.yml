@@ -1,0 +1,61 @@
+name: Common
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/oss-v*
+    tags:
+      - oss-v*
+    paths-ignore:
+      - "/docs/**"
+      - "/samples/**"
+      - "**.md"
+
+jobs:
+  vulnerability-scan:
+    runs-on: ubuntu-latest
+    name: ci/github/scan-vulnerabilities
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Install net5.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Scan for Vulnerabilities
+      run: |
+        cd src
+        dotnet restore
+        dotnet list package --vulnerable --include-transitive | tee vulnerabilities.txt
+        ! cat vulnerabilities.txt | grep -q "has the following vulnerable packages"
+  protolock:
+    runs-on: ubuntu-latest
+    name: ci/github/protolock
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Protolock Status
+      shell: bash
+      run: |
+        ./protolock.sh status --uptodate
+  docker-compose:
+    runs-on: ubuntu-latest
+    name: ci/github/docker-compose
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Github Registry Docker Login
+      uses: azure/docker-login@v1
+      with:
+        login-server: docker.pkg.github.com/eventstore
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Docker Compose Smoke Test
+      run: |
+        docker-compose build
+        docker-compose up --detach
+        printf 'Waiting for cluster'
+        timeout 60 bash -c -- 'until $(curl --output /dev/null --silent --insecure --fail https://localhost:2113/health/live); do printf '.'; sleep 2; done'
+        docker-compose down

@@ -1,0 +1,20 @@
+name: Build Windows 2019
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/oss-v*
+    tags:
+      - oss-v*
+    paths-ignore:
+      - "/docs/**"
+      - "/samples/**"
+      - "**.md"
+
+jobs:
+  build:
+    uses: EventStore/EventStore/.github/workflows/build-reusable.yml@1b5ad0078ebf1db5be0ea5253df4584f740099cb
+    with:
+      os: windows-2019
