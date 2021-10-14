@@ -42,9 +42,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		protected override void AllEventsWritten() {
 			if (!Registered) {
-				var phase = Interlocked.Increment(ref Phase);
-				CommitSource.NotifyOnReplicated(LastEventPosition, Committed);
-				CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+				Disposables.Add(CommitSource.NotifyOnReplicated(LastEventPosition, Committed));
 				Registered = true;
 			}
 		}

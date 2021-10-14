@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 
 		protected override Message When() {
 			AssertEx.IsOrBecomesTrue(() => Manager.Result == OperationResult.Success, TimeSpan.FromSeconds(1));
-			Manager.PhaseTimeout(2);
+			Manager.RequestTimedOut();
 			return new TestMessage();
 		}
 

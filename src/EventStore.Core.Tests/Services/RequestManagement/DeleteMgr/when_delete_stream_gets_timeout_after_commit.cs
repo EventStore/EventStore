@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 		}
 
 		protected override Message When() {			
-			Manager.PhaseTimeout(2);
+			Manager.RequestTimedOut();
 			return new TestMessage();
 		}
 

@@ -25,19 +25,19 @@ namespace EventStore.Core.Services.RequestManager {
 			_indexTracker.TryEnqueLogPostion(@event.LogPosition);
 		}
 
-		public void NotifyOnReplicated(long position, Action target) {
-			_replicatedTracker.Register(position, target);
+		public IDisposable NotifyOnReplicated(long position, Action target) {
+			return _replicatedTracker.Register(position, target);
 		}
-		public void NotifyOnIndexed(long position, Action target) {
-			_indexTracker.Register(position, target);
+		public IDisposable NotifyOnIndexed(long position, Action target) {
+			return _indexTracker.Register(position, target);
 		}
-		public void NotifyAfter(TimeSpan delay, Action target) {
-			_delayTracker.Register(delay, target);
+		public IDisposable NotifyAfter(TimeSpan delay, Action target) {
+			return _delayTracker.Register(delay, target);
 		}
 	}
 	public class LogNotificationTracker {
 		//todo: replace with custom sorted list for performance as time alows
-		private readonly SortedList<long, List<Action>> _registeredActions = new SortedList<long, List<Action>>();
+		private readonly SortedList<long, List<Notification>> _registeredActions = new SortedList<long, List<Notification>>();
 		private readonly bool _isTimeLog;
 		private long _logPosition;
 		private long _notifying;
@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.RequestManager {
 			discardingQueueOptions.FullMode = BoundedChannelFullMode.DropOldest;
 			discardingQueueOptions.SingleReader = true;
 			_positionQueue = Channel.CreateBounded<long>(discardingQueueOptions);
-			
+
 			_isTimeLog = isTimeLog;
 			if (!isTimeLog) {
 				Task.Run(() => Notify());
@@ -69,18 +69,16 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 		private void Notify(long logPosition) {
 			lock (_registerLock) {
-				 _notifying = 1;
+				_notifying = 1;
 				_logPosition = logPosition;
 				while (!_registeredActions.Keys.IsEmpty() && _registeredActions.Keys[0] <= logPosition) {
 					if (_registeredActions.Remove(_registeredActions.Keys[0], out var targets)) {
-						foreach (Action target in targets) {
-							if (target != null) {
-								//n.b. targets should enque messages only
-								try {
-									target();
-								} catch {
-									//ignore									
-								}
+						foreach (Notification target in targets) {
+							//n.b. targets should enque messages only
+							try {
+								target.Notify();
+							} catch {
+								//ignore									
 							}
 						}
 					}
@@ -90,11 +88,11 @@ namespace EventStore.Core.Services.RequestManager {
 					_cancelNotifyAt = new ManualResetEventSlim();
 					Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
 				}
-				 _notifying = 0;
+				_notifying = 0;
 			}
 		}
 		private void NotifyAt(long timePosition, ManualResetEventSlim cancel) {
-			if (!_isTimeLog) { return; }			
+			if (!_isTimeLog) { return; }
 			var now = _mainStopwatch.ElapsedMilliseconds;
 			var delay = timePosition - now;
 			if (delay > 0) {
@@ -103,33 +101,70 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 			Notify(timePosition);
 		}
-		public void Register(TimeSpan delay, Action target) {
+		public IDisposable Register(TimeSpan delay, Action target) {
 			if (!_isTimeLog) { throw new InvalidOperationException("Timespan Delays can only be registered on TimeLogs"); }
 
 			var now = _mainStopwatch.ElapsedMilliseconds;
 			var position = now + (long)delay.TotalMilliseconds;
-			Register(position, target);
+			return Register(position, target);
 		}
-		public void Register(long position, Action target) {
+		public IDisposable Register(long position, Action target) {
 			lock (_registerLock) {
 				if (_logPosition >= position) {
 					target();
-					return;
+					return new Disposer(() => { });
 				};
-				if (!_registeredActions.TryGetValue(position, out var actionList)) {
-					actionList = new List<Action> { target };
+				var notification = new Notification(target);
+				var disposer = new Disposer(() => { notification.Cancel(); });
+				if (!_registeredActions.TryGetValue(position, out var actionList)) {					
+					actionList = new List<Notification> { notification };
 					_registeredActions.TryAdd(position, actionList);
-					if (_notifying == 1) { return; } //we're reentering the same lock let Notify reschedule when done
+					if (_notifying == 1) { return disposer; } //we're reentering the same lock let Notify reschedule when done
 					if (_isTimeLog && !_registeredActions.Keys.IsEmpty() && position == _registeredActions.Keys[0]) {
 						_cancelNotifyAt.Set();
 						_cancelNotifyAt = new ManualResetEventSlim();
 						Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
 					}
 				} else {
-					actionList.Add(target);
+					actionList.Add(notification);
 				}
+				return disposer;
 			}
 		}
+		public struct Notification {
+			private Action _target;
 
+			public Notification(Action target) {
+				_target = target;
+			}
+			public void Notify() {
+				_target?.Invoke();
+				_target = null;
+			}
+			public void Cancel() {
+				_target = null;
+			}
+
+		}
+		public class Disposer : IDisposable {
+			private Action _disposeAction;
+
+			public Disposer(Action disposeAction) {
+				_disposeAction = disposeAction ?? throw new ArgumentNullException(nameof(disposeAction));
+			}
+
+			private bool _disposed;
+			public void Dispose() {
+				if (_disposed)
+					return;
+				try {
+					_disposeAction();
+					_disposeAction = null;
+				} catch {
+					//ignore
+				}
+				_disposed = true;
+			}
+		}
 	}
 }

@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 		}
 
 		protected override Message When() {
-			Manager.PhaseTimeout(0);
+			Manager.RequestTimedOut();
 			return new TestMessage();
 		}
 

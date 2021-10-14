@@ -23,8 +23,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		protected readonly IPublisher Publisher;
 		public readonly long StartOffset;
-		protected TimeSpan Timeout;		
-		protected long Phase;
+		protected readonly TimeSpan Timeout;	
+
 
 		protected readonly IEnvelope WriteReplyEnvelope;
 
@@ -53,6 +53,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		private bool _commitReceived;
 		private readonly int _prepareCount;
+		protected List<IDisposable> Disposables = new List<IDisposable>();	
 
 
 		protected RequestManagerBase(
@@ -76,6 +77,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 			Publisher = publisher;
 			StartOffset = startOffset;
+			if (prepareCount > 1) { //tx write support
+				timeout = timeout * prepareCount;
+			}
 			Timeout = timeout;
 			_clientResponseEnvelope = clientResponseEnvelope;
 			InternalCorrId = internalCorrId;
@@ -99,14 +103,12 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected abstract Message ClientSuccessMsg { get; }
 		protected abstract Message ClientFailMsg { get; }
 		public void Start() {
-			Phase = 0;
 			Publisher.Publish(WriteRequestMsg);
-			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(0));
+			Disposables.Add( CommitSource.NotifyAfter(Timeout, () => RequestTimedOut()));
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
 			if (Interlocked.Read(ref _complete) == 1 || _allPreparesWritten) { return; }
-			var phase = Interlocked.Increment(ref Phase);
 			if (message.Flags.HasAnyOf(PrepareFlags.TransactionBegin)) {
 				TransactionId = message.LogPosition;
 			}
@@ -121,11 +123,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allPreparesWritten) { AllPreparesWritten(); }
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 		}
 		public virtual void Handle(StorageMessage.CommitIndexed message) {
 			if (Interlocked.Read(ref _complete) == 1 || _commitReceived) { return; }
-			var phase = Interlocked.Increment(ref Phase);
 			_commitReceived = true;
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (message.LogPosition > LastEventPosition) {
@@ -135,15 +135,12 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			LastEventNumber = message.LastEventNumber;
 			CommitPosition = message.LogPosition;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
 		}
 		protected virtual void AllPreparesWritten() { }
 
 		protected virtual void AllEventsWritten() {			
 			if (!Registered) {
-				var phase = Interlocked.Increment(ref Phase);
-				CommitSource.NotifyOnIndexed(LastEventPosition, Committed);
-				CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+				Disposables.Add(CommitSource.NotifyOnIndexed(LastEventPosition, Committed));
 				Registered = true;
 			}			
 		}
@@ -154,8 +151,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
 		}
-		public void PhaseTimeout(long phase) {
-			if (Interlocked.Read(ref _complete) == 1 || Interlocked.Read(ref Phase) != phase) { return; }
+		public void RequestTimedOut() {
+			if (Interlocked.Read(ref _complete) == 1) { return; }
 			CancelRequest();
 		}
 		public void CancelRequest() {
@@ -208,12 +205,14 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (!_disposed) {
 				if (disposing) {
 					try {
-						if (Interlocked.Read(ref _complete) != 1) {
-							//todo (clc) need a better Result here, but need to see if this will impact the client API
-							var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
-							var msg = "Request canceled by server, likely deposed leader";
-							CompleteFailedRequest(result, msg);
-						}
+						Disposables?.ForEach(d => d?.Dispose());
+						Disposables = null;
+						//if (Interlocked.Read(ref _complete) != 1) {
+						//	//todo (clc) need a better Result here, but need to see if this will impact the client API
+						//	var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
+						//	var msg = "Request canceled by server, likely deposed leader";
+						//	CompleteFailedRequest(result, msg);
+						//}
 					} catch { /*don't throw in disposed*/}
 
 					_disposed = true;

@@ -173,19 +173,18 @@ namespace EventStore.Core.Services.RequestManager {
 			if (_nodeState != VNodeState.Leader && _currentRequests.Any()) {
 				foreach (var request in _currentRequests.Values) {
 					request.CancelRequest();
+					request.Dispose();
 				}				
 			}
 		}
 
 		public void Handle(StorageMessage.RequestCompleted message) {
 
-			if (_currentRequests.TryGetValue(message.CorrelationId, out var manager)) {
+			if (_currentRequests.TryGetValue(message.CorrelationId, out var manager)) {				
+				_currentRequests.Remove(message.CorrelationId);
 				HistogramService.SetValue(_requestManagerHistogram, _requestServiceStopwatch.ElapsedMilliseconds - manager.StartOffset);
+				manager.Dispose();
 			}
-
-			if (!_currentRequests.Remove(message.CorrelationId))
-				throw new InvalidOperationException("Should never complete request twice.");
-
 			if (_nodeState == VNodeState.ResigningLeader && !_currentRequests.Any()) {				
 				_bus.Publish(new SystemMessage.RequestQueueDrained());
 			}
