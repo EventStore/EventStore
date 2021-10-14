@@ -9,7 +9,16 @@ This is the repository for the open source version of EventStoreDB, which includ
 Information on support and commercial tools such as LDAP authentication can be found here: [Event Store Support](https://eventstore.com/support/).
 
 ## CI Status
-![Build](https://github.com/EventStore/EventStore/workflows/Build/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-ubuntu-18.04.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-windows-2019.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-alpine.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-buster-slim.yml/badge.svg)
+
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-focal.yml/badge.svg)
 
 ## Documentation
 Documentation is located in the [`docs`](/docs) folder. It's orchestrated in the separate [documentation repository](https://github.com/EventStore/documentation). It's available online at https://developers.eventstore.com/.
