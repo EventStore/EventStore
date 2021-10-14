@@ -52,8 +52,11 @@ namespace EventStore.Core.Services.RequestManager {
 			discardingQueueOptions.FullMode = BoundedChannelFullMode.DropOldest;
 			discardingQueueOptions.SingleReader = true;
 			_positionQueue = Channel.CreateBounded<long>(discardingQueueOptions);
-			Task.Run(() => Notify());
+			
 			_isTimeLog = isTimeLog;
+			if (!isTimeLog) {
+				Task.Run(() => Notify());
+			}
 		}
 		public bool TryEnqueLogPostion(long logPosition) => _positionQueue.Writer.TryWrite(logPosition);
 		private async void Notify() {
@@ -66,7 +69,7 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 		private void Notify(long logPosition) {
 			lock (_registerLock) {
-				Interlocked.Exchange(ref _notifying, 1);
+				 _notifying = 1;
 				_logPosition = logPosition;
 				while (!_registeredActions.Keys.IsEmpty() && _registeredActions.Keys[0] <= logPosition) {
 					if (_registeredActions.Remove(_registeredActions.Keys[0], out var targets)) {
@@ -83,10 +86,11 @@ namespace EventStore.Core.Services.RequestManager {
 					}
 				}
 				if (_isTimeLog && !_registeredActions.Keys.IsEmpty()) {
+					_cancelNotifyAt.Set();
 					_cancelNotifyAt = new ManualResetEventSlim();
 					Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
 				}
-				Interlocked.Exchange(ref _notifying, 0);
+				 _notifying = 0;
 			}
 		}
 		private void NotifyAt(long timePosition, ManualResetEventSlim cancel) {
@@ -115,7 +119,7 @@ namespace EventStore.Core.Services.RequestManager {
 				if (!_registeredActions.TryGetValue(position, out var actionList)) {
 					actionList = new List<Action> { target };
 					_registeredActions.TryAdd(position, actionList);
-					if (Interlocked.Read(ref _notifying) == 1) { return; } //we're reentering the same lock let Notify reschedule when done
+					if (_notifying == 1) { return; } //we're reentering the same lock let Notify reschedule when done
 					if (_isTimeLog && !_registeredActions.Keys.IsEmpty() && position == _registeredActions.Keys[0]) {
 						_cancelNotifyAt.Set();
 						_cancelNotifyAt = new ManualResetEventSlim();
