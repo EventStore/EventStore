@@ -300,7 +300,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			var source = sourceValue.AsString();
 			ExtraMetaData? metadata = null;
 			if (parameters.Length == 3) {
-				var md = parameters.At(4).AsObject();
+				var md = EnsureNonNullObjectValue(parameters.At(2), "metaData");
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
 					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json, true));
