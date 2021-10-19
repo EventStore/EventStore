@@ -2,6 +2,10 @@ name: Build Ubuntu 18.04
 
 on:
   pull_request:
+    paths-ignore:
+      - "/docs/**"
+      - "/samples/**"
+      - "**.md"
   push:
     branches:
       - master

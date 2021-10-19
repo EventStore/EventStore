@@ -2,6 +2,10 @@ name: Build Buster Slim Container
 
 on:
   pull_request:
+    paths-ignore:
+      - "/docs/**"
+      - "/samples/**"
+      - "**.md"
   push:
     branches:
       - master
