@@ -805,8 +805,8 @@ namespace EventStore.Core.Index {
 			var awaiting = _awaitingMemTables;
 			var map = _indexMap;
 
-			for (var index = awaiting.Count - 1; index >= 0; index--)
-				yield return awaiting[index].Table;
+			foreach (var tableItem in awaiting)
+				yield return tableItem.Table;
 
 			foreach (var table in map.InOrder())
 				yield return table;

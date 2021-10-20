@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using EventStore.Common.Utils;
+using EventStore.Core.Exceptions;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
@@ -48,29 +49,66 @@ namespace EventStore.Core.LogV2 {
 
 			// we have no checkpoint, build from the index. unfortunately there isn't
 			// a simple way to checkpoint in the middle of the index.
-			var tables = _tableIndex.IterateAllInOrder().ToList();
-			foreach (var table in tables) {
-				if (table.Version == PTableVersions.IndexV1) {
-					throw new NotSupportedException("The Stream Existence Filter is not supported with V1 index files. Please disable the filter by setting StreamExistenceFilterSize to 0, or rebuild the indexes.");
-				}
-			}
+			// keep track of the max position we see and use that as the checkpoint
+			// but only if we complete.
+			var checkpoint = -1L;
+			var enumerators = GetEnumerators();
 
 			ulong? previousHash = null;
-			foreach (var table in tables) {
-				foreach (var entry in table.IterateAllInOrder()) {
+			foreach (var enumerator in enumerators) {
+				do {
+					// enumerators are already advanced to first item
+					var entry = enumerator.Current;
+					checkpoint = Math.Max(checkpoint, entry.Position);
 					if (entry.Stream == previousHash)
 						continue;
 
 					// add regardless of version because event 0 may be scavenged
 					filter.Add(entry.Stream);
 					previousHash = entry.Stream;
-				}
+				} while (enumerator.MoveNext());
+				enumerator.Dispose();
 			}
 
 			// checkpoint at the end of the index.
-			if (previousHash != null) {
-				filter.CurrentCheckpoint = _tableIndex.CommitCheckpoint;
+			filter.CurrentCheckpoint = checkpoint;
+		}
+
+		private List<IEnumerator<IndexEntry>> GetEnumerators() {
+			var attempt = 0;
+			while (attempt < 5) {
+				attempt++;
+				var enumerators = new List<IEnumerator<IndexEntry>>();
+				try {
+					var tables = _tableIndex.IterateAllInOrder();
+					foreach (var table in tables) {
+						if (table.Version == PTableVersions.IndexV1)
+							throw new NotSupportedException("The Stream Existence Filter is not supported with V1 index files. Please disable the filter by setting StreamExistenceFilterSize to 0, or rebuild the indexes.");
+
+						var enumerator = table.IterateAllInOrder().GetEnumerator();
+
+						// advance into the enumerator so that we obtain a workitem in each table
+						// so that the ptables will definitely not be deleted until we are done.
+						if (enumerator.MoveNext()) {
+							// got workitem!
+							enumerators.Add(enumerator);
+						} else {
+							enumerator.Dispose();
+						}
+					}
+					return enumerators;
+				} catch (NotSupportedException) {
+					foreach (var enumerator in enumerators)
+						enumerator.Dispose();
+					throw;
+				} catch (FileBeingDeletedException) {
+					foreach (var enumerator in enumerators)
+						enumerator.Dispose();
+					Log.Debug("PTable is being deleted.");
+				}
 			}
+
+			throw new InvalidOperationException("Failed to get enumerators for the index.");
 		}
 
 		private void InitializeFromLog(INameExistenceFilter filter) {
