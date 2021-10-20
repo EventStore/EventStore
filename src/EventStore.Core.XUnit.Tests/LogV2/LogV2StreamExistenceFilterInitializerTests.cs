@@ -26,6 +26,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 				memTableFactory: () => new HashListMemTable(
 					version: PTableVersions.IndexV4,
 					maxSize: 1_000_000 * 2),
+				maxSizeForMemory: 100_000,
 				tfReaderFactory: () => new TFReaderLease(_log),
 				ptableVersion: PTableVersions.IndexV4,
 				maxAutoMergeIndexLevel: int.MaxValue,
@@ -68,6 +69,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			_sut.Initialize(_filter);
 			Assert.Equal(-1, _filter.CurrentCheckpoint);
 			Assert.Empty(_filter.Hashes);
+			Assert.Equal(1, _log.NumReads);
 		}
 
 		[Fact]
@@ -84,6 +86,25 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 
 			Assert.Equal(600, _filter.CurrentCheckpoint);
 			Assert.Equal(3, _filter.Hashes.Count);
+			Assert.Equal(2, _log.NumReads);
+		}
+
+		// this ensures every record is processed because each stream has 1 record
+		[Fact]
+		public void can_initialize_from_beginning_unique() {
+			// (implementation detail: initializes from index)
+			AddEventToSut("1", 0);
+			AddEventToSut("2", 0);
+			AddEventToSut("3", 0);
+			AddEventToSut("4", 0);
+			AddEventToSut("5", 0);
+			AddEventToSut("6", 0);
+
+			_sut.Initialize(_filter);
+
+			Assert.Equal(600, _filter.CurrentCheckpoint);
+			Assert.Equal(6, _filter.Hashes.Count);
+			Assert.Equal(2, _log.NumReads);
 		}
 
 		[Fact]
@@ -102,6 +123,32 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 
 			Assert.Equal(600, _filter.CurrentCheckpoint);
 			Assert.Equal(3, _filter.Hashes.Count);
+			Assert.Equal(7, _log.NumReads);
+		}
+
+		// while initialising from the index there might be an index merge causing a filedeletedexception
+		// before the fix this test fairly reliably fails on my machine due to the indexes being deleted.
+		// after the fix the window for getting the filedeletedexception is small so the test
+		// is unlikely to exercise it.
+		[Fact(Skip = "manual")]
+		public void can_initalize_during_merge() {
+			var eventsPerStream = 1_000;
+			var numStreams = 1_000;
+			var numEvents = eventsPerStream * numStreams;
+			for (int i = 0; i < numStreams; i++) {
+				for (int j = 0; j < eventsPerStream; j++) {
+					AddEventToSut(stream: $"stream-{i}", eventNumber: j);
+				}
+			}
+
+			var hasher = new CompositeHasher<string>(new XXHashUnsafe(), new Murmur3AUnsafe());
+			// addDelayMs: we want to initialize the filter slowly, to give the ptables longer to move around
+			var slowFilter = new MockExistenceFilter(hasher, addDelayMs: 1);
+			_sut.Initialize(slowFilter);
+
+			Assert.Equal(numEvents * _recordOffset, slowFilter.CurrentCheckpoint);
+			Assert.Equal(numStreams, slowFilter.Hashes.Count);
+			Assert.Equal(2, _log.NumReads);
 		}
 
 		[Fact]
@@ -133,6 +180,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 				"The Stream Existence Filter is not supported with V1 index files. " +
 				"Please disable the filter by setting StreamExistenceFilterSize to 0, or rebuild the indexes.",
 				ex.Message);
+			Assert.Equal(0, _log.NumReads);
 		}
 	}
 }
