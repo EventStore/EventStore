@@ -26,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - properly disposing gRPC calls in tests [EventStore#3215](https://github.com/EventStore/EventStore/pull/3215)
 - Improve test stability [EventStore#3220](https://github.com/EventStore/EventStore/pull/3220)
 - incorrect log message templates [EventStore#3223](https://github.com/EventStore/EventStore/pull/3223)
+- linkTo metadata not properly read. [EventStore#3227](https://github.com/EventStore/EventStore/pull/3227)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
@@ -70,6 +71,9 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 - V8 projection runtime [EventStore#3193](https://github.com/EventStore/EventStore/pull/3193)
+
+### The UI now includes the replica stats screen
+- https://github.com/EventStore/EventStore.UI/pull/299 [EventStore#3228](https://github.com/EventStore/EventStore/pull/3228)
 
 ## [20.10.4] - 2021-07-22
 
