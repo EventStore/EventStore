@@ -142,6 +142,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			EnsureStarted();
 			_headEventReader.Pause();
 			_headEventReader = null;
+			EmptyCache();
 			_started = false;
 		}
 
@@ -244,6 +245,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			var lastAvailableCommittedEvent = _lastMessages.Peek();
 			_subscribeFromPosition = lastAvailableCommittedEvent.Position;
+		}
+
+		private void EmptyCache() {
+			_lastMessages.Clear();
+			_subscribeFromPosition = new TFPos(long.MaxValue, long.MaxValue);
 		}
 
 		private void AddSubscriber(Guid publishWithCorrelationId, IReaderSubscription subscription) {
