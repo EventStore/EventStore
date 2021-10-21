@@ -21,7 +21,6 @@ namespace EventStore.Core.LogAbstraction.Common {
 		private readonly CancellationTokenSource _cancellationTokenSource;
 
 		private int _initialized;
-		private bool _initializing;
 		private long _addedSinceLoad;
 
 		protected static readonly ILogger Log = Serilog.Log.ForContext<StreamExistenceFilter>();
@@ -152,33 +151,23 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public void Initialize(INameExistenceFilterInitializer source) {
-			_initializing = true;
 			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint:N0} (0x{checkpoint:X}).",
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
 			source.Initialize(this);
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
-			_initializing = false;
 			Interlocked.Exchange(ref _initialized, 1);
 		}
 
 		public void Add(string name) {
 			_mmfStreamBloomFilter.Add(name);
-			OnAdded();
+			_addedSinceLoad++;
 		}
 
 		public void Add(ulong hash) {
 			_mmfStreamBloomFilter.Add(hash);
-			OnAdded();
-		}
-
-		private void OnAdded() {
 			_addedSinceLoad++;
-
-			if (_initializing && _addedSinceLoad % 500_000 == 0) {
-				Log.Debug("{_filterName} rebuilding: processed {processed:N0} records.", _filterName, _addedSinceLoad);
-			}
 		}
 
 		public bool MightContain(string name) {
