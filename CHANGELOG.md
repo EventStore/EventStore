@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - incorrect log message templates [EventStore#3223](https://github.com/EventStore/EventStore/pull/3223)
 - linkTo metadata not properly read. [EventStore#3227](https://github.com/EventStore/EventStore/pull/3227)
 - Clear HeadingEventReader cache when stopping the readers [EventStore#3233](https://github.com/EventStore/EventStore/pull/3233)
+- Use the right advertised host value in a cluster configuration. [EventStore#3224](https://github.com/EventStore/EventStore/pull/3224)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
