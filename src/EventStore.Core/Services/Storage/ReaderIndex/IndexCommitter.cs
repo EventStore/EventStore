@@ -183,6 +183,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					}
 				}
 
+				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
+					processed, DateTime.UtcNow - startTime);
+				startTime = DateTime.UtcNow;
+
 				// now that the main index has caught up, we initialize the stream existence filter to add any missing entries.
 				// V2:
 				// reads the index and transaction file forward from the last checkpoint (a log position) and adds stream names to the filter, possibly multiple times
@@ -195,9 +199,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				// the cluster but false positives are not a problem since it's a probabilistic filter
 				Log.Debug("Initializing the StreamExistenceFilter. The filter can be disabled by setting the configuration option \"StreamExistenceFilterSize\" to 0");
 				_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer);
+				Log.Debug("StreamExistenceFilter initialized. Time elapsed: {elapsed}.",
+					DateTime.UtcNow - startTime);
 
-				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
-					processed, DateTime.UtcNow - startTime);
 				_bus.Publish(new StorageMessage.TfEofAtNonCommitRecord());
 				_backend.SetSystemSettings(GetSystemSettings());
 			}

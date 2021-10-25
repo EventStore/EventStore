@@ -9,6 +9,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private long _curPosition = 0;
 		private int _recordOffset;
 
+		public int NumReads { get; private set; }
+
 		public FakeInMemoryTfReader(int recordOffset){
 			_recordOffset = recordOffset;
 		}
@@ -22,7 +24,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		public SeqReadResult TryReadNext() {
-			if(_records.ContainsKey(_curPosition)){
+			NumReads++;
+			if (_records.ContainsKey(_curPosition)){
 				var pos = _curPosition;
 				_curPosition += _recordOffset;
 				return new SeqReadResult(true, false, _records[pos], _recordOffset, pos, pos + _recordOffset);
@@ -36,7 +39,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		public RecordReadResult TryReadAt(long position) {
-			if(_records.ContainsKey(position)){
+			NumReads++;
+			if (_records.ContainsKey(position)){
 				return new RecordReadResult(true, 0, _records[position], 0);
 			} else{
 				return new RecordReadResult(false, 0, _records[position], 0);
