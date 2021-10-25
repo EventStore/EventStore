@@ -124,6 +124,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					_lastCheckpointedSequenceNumber = 0L;
 					_lastKnownSequenceNumber = 0L;
 					_lastKnownMessage = _settings.EventSource.GetStreamPositionFor(checkpoint);
+					_statistics.SetLastCheckPoint(_lastKnownMessage);
 
 					Log.Debug("Subscription {subscriptionId}: read checkpoint {checkpoint}", _settings.SubscriptionId,
 						checkpoint);

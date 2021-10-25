@@ -1361,6 +1361,37 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 		}
 
 		[Test]
+		public void loading_subscription_from_checkpoint_should_set_the_last_known_event_number() {
+			var reader = new FakeCheckpointReader();
+			var streamReader = new FakeStreamReader();
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
+					.WithEventLoader(streamReader)
+					.WithCheckpointReader(reader)
+					.WithCheckpointWriter(new FakeCheckpointWriter(x => { }))
+					.WithMessageParker(new FakeMessageParker())
+					.PreferDispatchToSingle()
+					.StartFromBeginning()
+					.MaximumToCheckPoint(1));
+			string checkpoint = "";
+			switch (_eventSource)
+			{
+				case EventSource.SingleStream:
+					checkpoint = "1";
+					reader.Load(checkpoint);
+					break;
+				case EventSource.AllStream:
+				case EventSource.FilteredAllStream:
+					checkpoint = "C:1/P:1";
+					reader.Load(checkpoint);
+					break;
+			}
+
+			var info = sub.GetStatistics();
+			Assert.AreEqual(checkpoint, info.LastCheckpointedEventPosition);
+		}
+
+		[Test]
 		public void loading_subscription_from_no_checkpoint_and_no_start_from_should_read_from_beginning_of_stream() {
 			IPersistentSubscriptionStreamPosition actualStart = null;
 			var reader = new FakeCheckpointReader();
