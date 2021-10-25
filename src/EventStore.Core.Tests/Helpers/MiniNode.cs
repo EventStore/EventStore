@@ -137,8 +137,7 @@ namespace EventStore.Core.Tests.Helpers {
 					 + "{11,-25} {12}\n"
 					 + "{13,-25} {14}\n"
 					 + "{15,-25} {16}\n"
-					 + "{17,-25} {18}\n"
-					 + "{19,-25} {20}\n\n",
+					 + "{17,-25} {18}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
 				"OS:", OS.OsFlavor, Environment.OSVersion,
 				"RUNTIME:", OS.GetRuntimeVersion(), Marshal.SizeOf(typeof(IntPtr)) * 8,

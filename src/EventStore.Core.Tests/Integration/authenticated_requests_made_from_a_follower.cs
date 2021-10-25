@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.Integration {
 						}, true)
 					});
 				var streamClient = new Streams.StreamsClient(channel);
-				var call = streamClient.Append(new CallOptions(
+				using var call = streamClient.Append(new CallOptions(
 					credentials: CallCredentials.FromInterceptor((_, metadata) => {
 						metadata.Add("authorization", AuthorizationHeaderValue);
 						return Task.CompletedTask;

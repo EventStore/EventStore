@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 
 			protected override async Task When() {
-				_responses.AddRange(await StreamsClient.Read(new() {
+				using var call = StreamsClient.Read(new() {
 					Options = new() {
 						UuidOption = new() { Structured = new() },
 						Count = 20,
@@ -48,7 +48,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						},
 						NoFilter = new()
 					}
-				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().ToArrayAsync());
+				}, GetCallOptions(AdminCredentials));
+				_responses.AddRange(await call.ResponseStream.ReadAllAsync().ToArrayAsync());
 			}
 
 			[Test]
@@ -93,17 +94,17 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 
 			protected override async Task When() {
-				_responses.AddRange(
-					await StreamsClient.Read(new() {
-						Options = new() {
-							UuidOption = new() { Structured = new() },
-							Count = 20,
-							ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
-							ResolveLinks = false,
-							All = new() { End = new() },
-							NoFilter = new()
-						}
-					}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().ToArrayAsync());
+				using var call = StreamsClient.Read(new() {
+					Options = new() {
+						UuidOption = new() { Structured = new() },
+						Count = 20,
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Backwards,
+						ResolveLinks = false,
+						All = new() { End = new() },
+						NoFilter = new()
+					}
+				}, GetCallOptions(AdminCredentials));
+				_responses.AddRange(await call.ResponseStream.ReadAllAsync().ToArrayAsync());
 			}
 
 			[Test]

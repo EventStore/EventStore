@@ -10,12 +10,11 @@ using EventStore.Core.Services.TimerService;
 using System.Collections.Generic;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Util;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Helpers {
 	
-	public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage> {
+	public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<ClientMessage.NotHandled> {
 		public const int ReadTimeoutMs = 10000;
 
 		private readonly Guid _selfId = Guid.NewGuid();
@@ -26,7 +25,6 @@ namespace EventStore.Core.Helpers {
 		private readonly PendingReads _pendingReads = new PendingReads();
 		private readonly bool _trackPendingRequests;
 		private readonly HashSet<Guid> _allPendingRequests = new HashSet<Guid>();
-		
 		private bool _draining;
 		private Action _onRequestsDrained;
 
@@ -841,6 +839,14 @@ namespace EventStore.Core.Helpers {
 			if (_selfId != message.CorrelationId)
 				return;
 			message.Action();
+		}
+
+		public void Handle(ClientMessage.NotHandled message) {
+			if (!_trackPendingRequests || !_allPendingRequests.Contains(message.CorrelationId)) return;
+
+			RemovePendingRequest(message.CorrelationId);
+			if (_pendingReads.IsRegistered(message.CorrelationId))
+				_pendingReads.Remove(message.CorrelationId);
 		}
 	}
 }

@@ -89,7 +89,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 				_position = new Position(success.Position.CommitPosition, success.Position.PreparePosition);
 
-				var skippedEventCount = await StreamsClient.Read(new ReadReq {
+				using var skippedEventCall = StreamsClient.Read(new ReadReq {
 					Options = new ReadReq.Types.Options {
 						Count = 4096,
 						All = new() { Start = new() },
@@ -97,7 +97,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						NoFilter = new()
 					}
-				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync().CountAsync(response =>
+				}, GetCallOptions(AdminCredentials));
+				var skippedEventCount = await skippedEventCall.ResponseStream.ReadAllAsync().CountAsync(response =>
 					response.Event is not null &&
 					new Position(response.Event.Event.CommitPosition, response.Event.Event.PreparePosition) <=
 					_position &&
@@ -107,7 +108,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				skippedEventCount += 1;
 				_expected = skippedEventCount / _checkpointInterval;
 
-				await foreach (var response in StreamsClient.Read(new ReadReq {
+				using var call = StreamsClient.Read(new ReadReq {
 					Options = new ReadReq.Types.Options {
 						Subscription = new(),
 						All = new() { Start = new() },
@@ -119,7 +120,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						UuidOption = new() { Structured = new() },
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards
 					}
-				}, GetCallOptions(AdminCredentials)).ResponseStream.ReadAllAsync()) {
+				}, GetCallOptions(AdminCredentials));
+				await foreach (var response in call.ResponseStream.ReadAllAsync()) {
 					if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
 						_positions.Add(new Position(response.Checkpoint.CommitPosition,
 							response.Checkpoint.PreparePosition));

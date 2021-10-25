@@ -163,19 +163,19 @@ namespace EventStore.Core.Services.VNode {
 				.When<ClientMessage.ReadStreamEventsBackward>().ForwardTo(_outputBus)
 				.When<ClientMessage.ReadAllEventsForward>().ForwardTo(_outputBus)
 				.When<ClientMessage.ReadAllEventsBackward>().ForwardTo(_outputBus)
-				.When<ClientMessage.WriteEvents>().Ignore()
-				.When<ClientMessage.TransactionStart>().Ignore()
-				.When<ClientMessage.TransactionWrite>().Ignore()
-				.When<ClientMessage.TransactionCommit>().Ignore()
-				.When<ClientMessage.DeleteStream>().Ignore()
-				.When<ClientMessage.CreatePersistentSubscriptionToStream>().Ignore()
-				.When<ClientMessage.ConnectToPersistentSubscriptionToStream>().Ignore()
-				.When<ClientMessage.UpdatePersistentSubscriptionToStream>().Ignore()
-				.When<ClientMessage.DeletePersistentSubscriptionToStream>().Ignore()
-				.When<ClientMessage.CreatePersistentSubscriptionToAll>().Ignore()
-				.When<ClientMessage.ConnectToPersistentSubscriptionToAll>().Ignore()
-				.When<ClientMessage.UpdatePersistentSubscriptionToAll>().Ignore()
-				.When<ClientMessage.DeletePersistentSubscriptionToAll>().Ignore()
+				.When<ClientMessage.WriteEvents>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.TransactionStart>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.TransactionWrite>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.TransactionCommit>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.DeleteStream>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.CreatePersistentSubscriptionToStream>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.ConnectToPersistentSubscriptionToStream>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.UpdatePersistentSubscriptionToStream>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.DeletePersistentSubscriptionToStream>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.CreatePersistentSubscriptionToAll>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.ConnectToPersistentSubscriptionToAll>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.UpdatePersistentSubscriptionToAll>().Do(HandleAsResigningLeader)
+				.When<ClientMessage.DeletePersistentSubscriptionToAll>().Do(HandleAsResigningLeader)
 				.When<SystemMessage.RequestQueueDrained>().Do(Handle)
 				.InAllStatesExcept(VNodeState.ResigningLeader)
 				.When<SystemMessage.RequestQueueDrained>().Ignore()
@@ -586,6 +586,46 @@ namespace EventStore.Core.Services.VNode {
 			if (Interlocked.Decrement(ref _subSystemInitsToExpect) == 0) {
 				_outputBus.Publish(new SystemMessage.SystemReady());
 			}
+		}
+
+		private void HandleAsResigningLeader(ClientMessage.WriteEvents message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.TransactionStart message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.TransactionWrite message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.TransactionCommit message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.DeleteStream message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.CreatePersistentSubscriptionToStream message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.ConnectToPersistentSubscriptionToStream message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.UpdatePersistentSubscriptionToStream message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.DeletePersistentSubscriptionToStream message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.CreatePersistentSubscriptionToAll message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.ConnectToPersistentSubscriptionToAll message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.UpdatePersistentSubscriptionToAll message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
+		}
+		private void HandleAsResigningLeader(ClientMessage.DeletePersistentSubscriptionToAll message) {
+			DenyRequestBecauseNotReady(message.Envelope, message.CorrelationId);
 		}
 
 		private void HandleAsNonLeader(ClientMessage.ReadEvent message) {
