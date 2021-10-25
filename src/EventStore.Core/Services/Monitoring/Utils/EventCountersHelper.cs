@@ -15,9 +15,8 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		private static readonly ILogger Log = Serilog.Log.ForContext<EventCountersHelper>();
 		private const int InvalidCounterResult = -1;
 
-		private readonly List<EventPipeProvider> _providers;
-		private DiagnosticsClient _client;
 		private EventPipeSession _session;
+		private readonly List<EventPipeProvider> _providers;
 		private readonly IDictionary<string, double> _collectedStats = new Dictionary<string, double>();
 
 		private readonly int _pid;
@@ -41,9 +40,9 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		public void Start() {
 			Task.Run(() => {
 				try {
-					_client = new DiagnosticsClient(_pid);
-					_session = _client.StartEventPipeSession(_providers, false);
-					var source = new EventPipeEventSource(_session.EventStream);
+					var client = new DiagnosticsClient(_pid);
+					_session = client.StartEventPipeSession(_providers, false);
+					using var source = new EventPipeEventSource(_session.EventStream);
 
 					source.NeedLoadedDotNetRuntimes();
 					source.AddCallbackOnProcessStart(proc => {
@@ -76,8 +75,10 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 							}
 						}
 					};
-					
+
 					source.Process();
+				} catch (ObjectDisposedException) {
+					// ignore exception on shutdown
 				} catch (Exception exception) {
 					Log.Warning(exception, "Error encountered while processing events");
 				}
