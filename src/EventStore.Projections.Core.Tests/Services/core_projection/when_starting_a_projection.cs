@@ -51,7 +51,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe(_ioDispatcher.BackwardReader);
 			_bus.Subscribe(_ioDispatcher.ForwardReader);
 			_bus.Subscribe(_ioDispatcher.Writer);
-			_bus.Subscribe(_ioDispatcher);
+			_bus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher);
+			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher);
 			IProjectionStateHandler projectionStateHandler = new FakeProjectionStateHandler();
 			_projectionConfig =
 				new ProjectionConfig(null, 5, 10, 1000, 250, true, true, false, false, true, 10000, 1);

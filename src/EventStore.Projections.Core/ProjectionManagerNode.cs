@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core {
 				projectionManagerMessageDispatcher);
 
 
-			SubscribeOutputBus(standardComponents, projectionsStandardComponents, forwarder);
+			SubscribeOutputBus(standardComponents, projectionsStandardComponents, forwarder, ioDispatcher);
 		}
 
 		private static void SubscribeMainBus(
@@ -108,7 +108,8 @@ namespace EventStore.Projections.Core {
 			mainBus.Subscribe(ioDispatcher.StreamDeleter);
 			mainBus.Subscribe(ioDispatcher.Writer);
 			mainBus.Subscribe(ioDispatcher.EventReader);
-			mainBus.Subscribe(ioDispatcher);
+			mainBus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
+			mainBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 
 			mainBus.Subscribe(projectionManagerMessageDispatcher);
 		}
@@ -116,7 +117,8 @@ namespace EventStore.Projections.Core {
 		private static void SubscribeOutputBus(
 			StandardComponents standardComponents,
 			ProjectionsStandardComponents projectionsStandardComponents,
-			RequestResponseQueueForwarder forwarder) {
+			RequestResponseQueueForwarder forwarder,
+			IODispatcher ioDispatcher) {
 			var managerOutput = projectionsStandardComponents.LeaderOutputBus;
 			managerOutput.Subscribe<ClientMessage.ReadEvent>(forwarder);
 			managerOutput.Subscribe<ClientMessage.ReadStreamEventsBackward>(forwarder);
@@ -124,6 +126,7 @@ namespace EventStore.Projections.Core {
 			managerOutput.Subscribe<ClientMessage.WriteEvents>(forwarder);
 			managerOutput.Subscribe<ClientMessage.DeleteStream>(forwarder);
 			managerOutput.Subscribe(Forwarder.Create<Message>(projectionsStandardComponents.LeaderInputQueue));
+			managerOutput.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 
 			managerOutput.Subscribe<TimerMessage.Schedule>(standardComponents.TimerService);
 			managerOutput.Subscribe(Forwarder.Create<AwakeServiceMessage.SubscribeAwake>(standardComponents.MainQueue));

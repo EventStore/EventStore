@@ -3,6 +3,7 @@ using System.Text;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.Bus;
+using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.LogRecords;
 using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
@@ -22,7 +23,8 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests {
 		}
 
 		public static void SubscribeIODispatcher(IODispatcher ioDispatcher, IBus bus) {
-			bus.Subscribe(ioDispatcher);
+			bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
+			bus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 			bus.Subscribe(ioDispatcher.ForwardReader);
 			bus.Subscribe(ioDispatcher.BackwardReader);
 			bus.Subscribe(ioDispatcher.Writer);
