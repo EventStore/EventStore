@@ -29,6 +29,10 @@ All notable changes to this project will be documented in this file.
 - linkTo metadata not properly read. [EventStore#3227](https://github.com/EventStore/EventStore/pull/3227)
 - Clear HeadingEventReader cache when stopping the readers [EventStore#3233](https://github.com/EventStore/EventStore/pull/3233)
 - Use the right advertised host value in a cluster configuration. [EventStore#3224](https://github.com/EventStore/EventStore/pull/3224)
+- Ensure the IODispatcher clears up pending requests [EventStore#3244](https://github.com/EventStore/EventStore/pull/3244)
+- Replica stats page correctly shows catching up nodes [EventStore#3247](https://github.com/EventStore/EventStore/pull/3247)
+- Set last checkpoint for persistent subscriptions when they are loaded [EventStore#3241](https://github.com/EventStore/EventStore/pull/3241)
+- Object disposed exception in `EventCountersHelper` on shutdown. [EventStore#3242](https://github.com/EventStore/EventStore/pull/3242)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
