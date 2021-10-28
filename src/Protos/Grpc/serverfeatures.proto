@@ -1,0 +1,20 @@
+syntax = "proto3";
+package event_store.client.server_features;
+option java_package = "com.eventstore.dbclient.proto.serverfeatures";
+import "shared.proto";
+
+service ServerFeatures {
+	rpc GetSupportedMethods (event_store.client.Empty) returns (SupportedMethods);
+}
+
+message SupportedMethods {
+	repeated SupportedMethod methods = 1;
+	string event_store_server_version = 2;
+}
+
+message SupportedMethod {
+	string method_name = 1;
+	string service_name = 2;
+	repeated string features = 3;
+}
+
