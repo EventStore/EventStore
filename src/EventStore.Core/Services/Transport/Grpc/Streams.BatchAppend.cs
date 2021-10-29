@@ -237,7 +237,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										}
 									}
 								};
-								batchAppendResp.CorrelationId = Uuid.FromGuid(correlationId).ToDto();
+								batchAppendResp.CorrelationId = request.CorrelationId;
 								batchAppendResp.StreamIdentifier = new StreamIdentifier {
 									StreamName = ByteString.CopyFromUtf8(clientWriteRequest.StreamId)
 								};
