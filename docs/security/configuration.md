@@ -126,6 +126,34 @@ You need to add the certificate thumbprint setting on Windows so the server can 
 | YAML                 | `CertificateThumbprint` |
 | Environment variable | `EVENTSTORE_CERTIFICATE_THUMBPRINT` |
 
+
+
+### Intermediate CA certificates
+
+Intermediate certificates are supported by loading them from a [PEM](https://www.rfc-editor.org/rfc/rfc1422) or [PKCS #12](https://datatracker.ietf.org/doc/html/rfc7292) bundle. The node's certificate should be first in the bundle, followed by the intermediates (intermediates can be in any order but it would be good to keep it from leaf to root as per the usual convention). The certificate chain is validated on startup with the node's own certificate.
+
+Additionally, in order to improve performance, the server will also try to bypass intermediate certificate downloads, when they are available on the system in the appropriate locations:
+
+#### Steps on Linux:
+The following script assumes EventStoreDB is running under the `eventstore` account.
+```
+sudo su eventstore --shell /bin/bash
+dotnet tool install --global dotnet-certificate-tool
+ ~/.dotnet/tools/certificate-tool add --file /path/to/intermediate.crt
+```
+
+#### Steps on Windows:
+To import the intermediate certificate in the Certificate store, run the following PowerShell under the same account as EventStoreDB is running:
+```PowerShell
+Import-Certificate -FilePath .\path\to\intermediate.crt -CertStoreLocation Cert:\CurrentUser\CA
+```
+
+To import the intermediate certificate in the `Local Computer` store, run the following as `Administrator`:
+```PowerShell
+Import-Certificate -FilePath .\ca.crt -CertStoreLocation Cert:\LocalMachine\CA
+```
+
+
 ## Certificate Generation CLI
 
 Event Store provides the interactive Certificate Generation CLI, which creates self-signed certificates for EventStoreDB. You can use the [configuration wizard](../installation/README.md), that will provide you exact CLI commands that you need to run to generates certificates matching your configuration. 
