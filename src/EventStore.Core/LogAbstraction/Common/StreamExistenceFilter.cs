@@ -150,14 +150,32 @@ namespace EventStore.Core.LogAbstraction.Common {
 			}
 		}
 
-		public void Initialize(INameExistenceFilterInitializer source) {
+		public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) {
 			Log.Debug("{filterName} rebuilding started from checkpoint: {checkpoint:N0} (0x{checkpoint:X}).",
 				_filterName, CurrentCheckpoint, CurrentCheckpoint);
 			var startTime = DateTime.UtcNow;
-			source.Initialize(this);
+			source.Initialize(this, truncateToPosition);
 			Log.Debug("{filterName} rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 				_filterName, _addedSinceLoad, DateTime.UtcNow - startTime);
 			Interlocked.Exchange(ref _initialized, 1);
+		}
+
+		// any truncation must be done prior to calling Add or setting CurrentCheckpoint
+		public void TruncateTo(long checkpoint) {
+			Log.Information("{filterName} is truncating from {current:N0} to {truncateTo:N0}.",
+				_filterName,
+				CurrentCheckpoint,
+				checkpoint);
+
+			// we dont need to remove data from the bloom filter since false positives
+			// are allowed, and we can't anyway, since we wouldn't know what to remove.
+			// but we DO need to move the checkpoint back and flush it. otherwise if
+			// (1) the writer/chaser move forward and (2) the node exits before
+			// the filter has flushed those records, then we will no longer know that
+			// we need to go back and add them.
+			Interlocked.Exchange(ref _lastNonFlushedCheckpoint, checkpoint);
+			_checkpoint.Write(checkpoint);
+			_checkpoint.Flush();
 		}
 
 		public void Add(string name) {

@@ -26,7 +26,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		public void can_initialize() {
 			var names = new[] { "can_initialize" };
 			var initializer = new MockExistenceFilterInitializer(names);
-			Sut.Initialize(initializer);
+			Sut.Initialize(initializer, 0);
 
 			foreach (var name in names)
 				Assert.True(Sut.MightContain(name));

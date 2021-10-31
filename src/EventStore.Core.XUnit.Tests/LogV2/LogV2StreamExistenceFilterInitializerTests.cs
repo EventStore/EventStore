@@ -66,10 +66,29 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 		[Fact]
 		public void can_initialize_empty() {
 			Assert.Equal(-1, _filter.CurrentCheckpoint);
-			_sut.Initialize(_filter);
+			_sut.Initialize(_filter, 0);
 			Assert.Equal(-1, _filter.CurrentCheckpoint);
 			Assert.Empty(_filter.Hashes);
 			Assert.Equal(1, _log.NumReads);
+		}
+
+		[Theory]
+		[InlineData(100, 600)] // if we do truncate (to 100)
+		[InlineData(1000, 1000)] // if we dont truncate
+		[InlineData(2000, 1000)] // if we dont truncate
+		public void can_truncate(long truncateTo, long expectedCheckpoint) {
+			_filter.CurrentCheckpoint = 1000;
+
+			AddEventToSut("1", 0);
+			AddEventToSut("2", 0);
+			AddEventToSut("3", 0);
+			AddEventToSut("4", 0);
+			AddEventToSut("5", 0);
+			AddEventToSut("6", 0);
+
+			_sut.Initialize(_filter, truncateTo);
+
+			Assert.Equal(expectedCheckpoint, _filter.CurrentCheckpoint);
 		}
 
 		[Fact]
@@ -82,7 +101,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			AddEventToSut("3", 0);
 			AddEventToSut("3", 1);
 
-			_sut.Initialize(_filter);
+			_sut.Initialize(_filter, 0);
 
 			Assert.Equal(600, _filter.CurrentCheckpoint);
 			Assert.Equal(3, _filter.Hashes.Count);
@@ -100,7 +119,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			AddEventToSut("5", 0);
 			AddEventToSut("6", 0);
 
-			_sut.Initialize(_filter);
+			_sut.Initialize(_filter, 0);
 
 			Assert.Equal(600, _filter.CurrentCheckpoint);
 			Assert.Equal(6, _filter.Hashes.Count);
@@ -119,7 +138,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			AddEventToSut("3", 0);
 			AddEventToSut("3", 1);
 
-			_sut.Initialize(_filter);
+			_sut.Initialize(_filter, 0);
 
 			Assert.Equal(600, _filter.CurrentCheckpoint);
 			Assert.Equal(3, _filter.Hashes.Count);
@@ -144,7 +163,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			var hasher = new CompositeHasher<string>(new XXHashUnsafe(), new Murmur3AUnsafe());
 			// addDelayMs: we want to initialize the filter slowly, to give the ptables longer to move around
 			var slowFilter = new MockExistenceFilter(hasher, addDelayMs: 1);
-			_sut.Initialize(slowFilter);
+			_sut.Initialize(slowFilter, 0);
 
 			Assert.Equal(numEvents * _recordOffset, slowFilter.CurrentCheckpoint);
 			Assert.Equal(numStreams, slowFilter.Hashes.Count);
@@ -174,7 +193,7 @@ namespace EventStore.Core.XUnit.Tests.LogV2 {
 			var filter = new MockExistenceFilter(hasher: null);
 
 			var ex = Assert.Throws<NotSupportedException>(() => {
-				sut.Initialize(filter);
+				sut.Initialize(filter, 0);
 			});
 			Assert.Equal(
 				"The Stream Existence Filter is not supported with V1 index files. " +

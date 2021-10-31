@@ -28,13 +28,13 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 		[Fact]
 		public void can_init() {
-			_sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer("1"));
+			_sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer("1"), 0);
 			Assert.True(_sut.StreamExistenceFilterReader.MightContain("1"));
 		}
 
 		[Fact]
 		public void can_confirm() {
-			_sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer());
+			_sut.StreamExistenceFilter.Initialize(new MockExistenceFilterInitializer(), 0);
 
 			var prepare = LogRecord.SingleWrite(
 				factory: _sut.RecordFactory,
