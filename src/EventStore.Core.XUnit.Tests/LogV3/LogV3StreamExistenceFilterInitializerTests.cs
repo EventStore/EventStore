@@ -10,7 +10,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			var sut = new LogV3StreamExistenceFilterInitializer(new MockNameLookup(new()));
 
 			var filter = new MockExistenceFilter();
-			filter.Initialize(sut);
+			filter.Initialize(sut, 0);
 
 			Assert.Equal(-1, filter.CurrentCheckpoint);
 			Assert.Empty(filter.Streams);
@@ -25,7 +25,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			}));
 
 			var filter = new MockExistenceFilter();
-			filter.Initialize(sut);
+			filter.Initialize(sut, 0);
 
 			Assert.Equal(1026, filter.CurrentCheckpoint);
 			Assert.True(filter.MightContain("1024"));

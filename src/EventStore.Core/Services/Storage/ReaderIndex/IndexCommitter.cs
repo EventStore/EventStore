@@ -188,6 +188,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				startTime = DateTime.UtcNow;
 
 				// now that the main index has caught up, we initialize the stream existence filter to add any missing entries.
+				// while the index above is concerned with building exactly to the buildToPosition and not beyond, that isn't
+				// important for the streamexistencefiler since false positives are allowed. it only cares about truncating back
+				// to the buildToPosition (if necessary).
 				// V2:
 				// reads the index and transaction file forward from the last checkpoint (a log position) and adds stream names to the filter, possibly multiple times
 				// but it's not an issue since it's idempotent
@@ -198,7 +201,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
 				// the cluster but false positives are not a problem since it's a probabilistic filter
 				Log.Debug("Initializing the StreamExistenceFilter. The filter can be disabled by setting the configuration option \"StreamExistenceFilterSize\" to 0");
-				_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer);
+				_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer, truncateToPosition: buildToPosition);
 				Log.Debug("StreamExistenceFilter initialized. Time elapsed: {elapsed}.",
 					DateTime.UtcNow - startTime);
 

@@ -18,8 +18,12 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 		public void Dispose() {
 		}
 
-		public void Initialize(INameExistenceFilterInitializer source) {
-			source.Initialize(this);
+		public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) {
+			source.Initialize(this, truncateToPosition);
+		}
+
+		public void TruncateTo(long checkpoint) {
+			CurrentCheckpoint = checkpoint;
 		}
 
 		public void Verify(double corruptionThreshold) { }
