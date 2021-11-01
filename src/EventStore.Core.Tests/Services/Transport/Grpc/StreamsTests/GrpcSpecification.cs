@@ -124,8 +124,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				Task.Run(async () => {
 					while (await BatchAppend.ResponseStream.MoveNext().ConfigureAwait(false)) {
 						var response = BatchAppend.ResponseStream.Current;
-						var correlationId = Uuid.FromInt64(response.CorrelationId.Structured.MostSignificantBits,
-							response.CorrelationId.Structured.LeastSignificantBits);
+						var correlationId = Uuid.FromDto(response.CorrelationId);
 
 						if (_responses.TryRemove(correlationId, out var tcs)) {
 							tcs.TrySetResult(response);
@@ -149,8 +148,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						nameof(requests));
 				}
 				var tcs = new TaskCompletionSource<BatchAppendResp>();
-				var correlationId = Uuid.FromInt64(requests[0].CorrelationId.Structured.MostSignificantBits,
-					requests[0].CorrelationId.Structured.LeastSignificantBits);
+				var correlationId = Uuid.FromDto(requests[0].CorrelationId);
 
 				if (!_responses.TryAdd(correlationId, tcs)) {
 					throw new ArgumentException("CorrelationId is already reserved.", nameof(correlationId));
