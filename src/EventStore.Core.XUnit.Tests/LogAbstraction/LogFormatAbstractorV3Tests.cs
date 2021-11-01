@@ -38,7 +38,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 		public LogFormatAbstractorV3Tests() {
 			TryDeleteDirectory();
 			_sut.StreamNamesProvider.SetReader(_mockIndexReader);
-			_sut.StreamExistenceFilter.Initialize(_sut.StreamExistenceFilterInitializer);
+			_sut.StreamExistenceFilter.Initialize(_sut.StreamExistenceFilterInitializer, 0);
 			Assert.False(GetOrReserve(_stream, out _streamId, out _, out _));
 			Assert.False(GetOrReserve(_systemStream, out _systemStreamId, out _, out _));
 			Assert.False(GetOrReserveEventType(_eventType, out _eventTypeId, out _, out _));
