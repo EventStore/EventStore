@@ -28,3 +28,15 @@ If you have set the maximum level ([`MaxAutoMergeIndexLevel`](./configuration.md
 
 Triggering a manual merge causes EventStoreDB to merge all tables that have a level equal to the maximum merge level or above into a single table. If there is only 1 table at the maximum level or above, no merge is performed.
 
+## Stream Existence Filter
+
+The _Stream Existence Filter_ is a pair of files in the index directory.
+
+- `/index/stream-existence/streamExistenceFilter.chk`
+- `/index/stream-existence/streamExistenceFilter.dat`
+
+It is made up of a persisted Bloom filter (the `.dat` file), and a checkpoint (the `.chk` file) that records where in the log the filter has processed up to. As per the documented backup procedure, the checkpoint needs to be backed up before the dat file.
+
+The Stream Existence Filter is used when reading and writing to quickly determine whether a stream _might exist_ or _definitely does not exist_. If a stream definitely does not exist then EventStoreDB can skip looking through the index to find information about it. This is particularly useful when creating new streams (i.e. writing to streams that did not previously exist).
+
+Additional information can be found in this [`blog post`](https://www.eventstore.com/blog/bloom-filters).
