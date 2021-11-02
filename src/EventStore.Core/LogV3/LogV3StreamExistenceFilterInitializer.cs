@@ -12,7 +12,9 @@ namespace EventStore.Core.LogV3 {
 			_streamNames = streamNames;
 		}
 
-		public void Initialize(INameExistenceFilter filter) {
+		public void Initialize(INameExistenceFilter filter, long truncateToPosition) {
+			// todo: truncate if necessary. implementation will likely depend on how the indexes come out
+
 			if (!_streamNames.TryGetLastValue(out var sourceLastStreamId))
 				return;
 

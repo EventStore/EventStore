@@ -16,7 +16,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 		public StreamExistenceFilterTests(DirectoryFixture<StreamExistenceFilterTests> fixture) {
 			_fixture = fixture;
 			Sut = GenSut();
-			Sut.Initialize(new MockExistenceFilterInitializer());
+			Sut.Initialize(new MockExistenceFilterInitializer(), 0);
 		}
 
 		protected override INameExistenceFilter Sut { get; set; }
@@ -55,7 +55,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 		[Fact]
 		public void can_add_without_hasher() {
 			var sut = GenSut(useHasher: false);
-			sut.Initialize(new MockExistenceFilterInitializer());
+			sut.Initialize(new MockExistenceFilterInitializer(), 0);
 			var name = "can_add_without_hasher";
 			Assert.False(sut.MightContain(name));
 			sut.Add(name);
@@ -73,9 +73,25 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 		}
 
 		[Fact]
+		public void can_truncate() {
+			var sut = GenSut();
+			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
+			Assert.Equal(2L, sut.CurrentCheckpoint);
+
+			// truncate works
+			sut.TruncateTo(1);
+			Assert.Equal(1L, sut.CurrentCheckpoint);
+
+			// even after restart
+			sut.Dispose();
+			sut = GenSut();
+			Assert.Equal(1L, sut.CurrentCheckpoint);
+		}
+
+		[Fact]
 		public void on_restart_checkpoint_does_not_exceed_data() {
 			var sut = GenSut();
-			sut.Initialize(new MockExistenceFilterInitializer());
+			sut.Initialize(new MockExistenceFilterInitializer(), 0);
 
 			Assert.Equal(-1, sut.CurrentCheckpoint);
 			Assert.False(sut.MightContain("0"));
@@ -103,7 +119,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			// when restart
 			sut.Dispose();
 			sut = GenSut();
-			sut.Initialize(new MockExistenceFilterInitializer());
+			sut.Initialize(new MockExistenceFilterInitializer(), 0);
 
 			// then 
 			Assert.Equal(0, sut.CurrentCheckpoint);
@@ -116,7 +132,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 		[Fact]
 		public void when_flushed_then_checkpoint_is_persisted() {
 			var sut = GenSut();
-			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"));
+			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 
 			// wait for flush, then close
 			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
@@ -131,7 +147,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 		[Fact]
 		public void when_missing_dat_then_reset_checkpoint() {
 			var sut = GenSut();
-			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"));
+			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 
 			// wait for flush, then close
 			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
@@ -147,7 +163,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 		[Fact]
 		public void when_changing_size_then_reset_checkpoint() {
 			var sut = GenSut(size: 10_000);
-			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"));
+			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 
 			// wait for flush, then close
 			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
@@ -162,7 +178,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 		[Fact]
 		public void writes_can_be_read_by_another_thread() {
 			var sut = GenSut();
-			sut.Initialize(new MockExistenceFilterInitializer());
+			sut.Initialize(new MockExistenceFilterInitializer(), 0);
 
 			var theValue = 12345;
 

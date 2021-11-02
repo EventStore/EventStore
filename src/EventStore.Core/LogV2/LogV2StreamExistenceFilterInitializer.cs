@@ -16,8 +16,10 @@ namespace EventStore.Core.LogV2 {
 	/// Reads the index and transaction log to populate the stream existence filter from the last checkpoint.
 	/// May add a stream hash more than once.
 	/// </summary>
-	/// In V2 the the bloom filter checkpoint is the commit position of the last processed
-	/// log record.
+	/// In V2 the the bloom filter checkpoint is the post-position of the last processed
+	/// log record. Sometimes we only have the pre-position, but this is also the post-position
+	/// of the previous record, which is fine. the net effect is an extra record is initialized
+	/// on startup next time.
 	public class LogV2StreamExistenceFilterInitializer : INameExistenceFilterInitializer {
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly ITableIndex _tableIndex;
@@ -34,7 +36,11 @@ namespace EventStore.Core.LogV2 {
 			_tableIndex = tableIndex;
 		}
 
-		public void Initialize(INameExistenceFilter filter) {
+		public void Initialize(INameExistenceFilter filter, long truncateToPosition) {
+			if (truncateToPosition < filter.CurrentCheckpoint) {
+				filter.TruncateTo(checkpoint: truncateToPosition);
+			}
+
 			InitializeFromIndex(filter);
 			InitializeFromLog(filter);
 		}
@@ -140,6 +146,7 @@ namespace EventStore.Core.LogV2 {
 						filter.Add(prepare.EventStreamId);
 						filter.CurrentCheckpoint = result.RecordPostPosition;
 						break;
+					// no need to handle commits here, see comments in the prepare handling.
 				}
 			}
 		}

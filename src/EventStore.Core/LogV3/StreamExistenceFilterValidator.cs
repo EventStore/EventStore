@@ -15,7 +15,11 @@ namespace EventStore.Core.LogV3 {
 			set => _wrapped.CurrentCheckpoint = value;
 		}
 
-		public void Initialize(INameExistenceFilterInitializer source) => _wrapped.Initialize(source);
+		public void Initialize(INameExistenceFilterInitializer source, long truncateToPosition) =>
+			_wrapped.Initialize(source, truncateToPosition);
+
+		public void TruncateTo(long checkpoint) =>
+			_wrapped.TruncateTo(checkpoint);
 
 		public void Verify(double corruptionThreshold) => _wrapped.Verify(corruptionThreshold);
 

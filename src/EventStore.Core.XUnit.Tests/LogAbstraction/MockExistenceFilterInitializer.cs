@@ -8,7 +8,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			_names = names;
 		}
 
-		public void Initialize(INameExistenceFilter filter) {
+		public void Initialize(INameExistenceFilter filter, long truncateToPosition) {
 			int checkpoint = 0;
 			foreach (var name in _names) {
 				filter.Add(name);
