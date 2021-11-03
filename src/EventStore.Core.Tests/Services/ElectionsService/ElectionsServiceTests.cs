@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		private IBus _bus;
 		protected FakePublisher _publisher;
 		protected Guid _epochId;
+		protected TimeSpan LeaderElectionProgressTimeout = TimeSpan.FromMilliseconds(1_000);
 
 		protected static Func<int, VNodeInfo> NodeFactory = (id) => new VNodeInfo(
 			Guid.Parse($"00000000-0000-0000-0000-00000000000{id}"), id,
@@ -54,7 +55,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				new InMemoryCheckpoint(0),
 				new InMemoryCheckpoint(0),
 				new InMemoryCheckpoint(-1),
-				new FakeEpochManager(), () => 0L, 0, _timeProvider);
+				new FakeEpochManager(), () => 0L, 0, _timeProvider,
+				TimeSpan.FromMilliseconds(1_000));
 			_sut.SubscribeMessages(_bus);
 		}
 	}
@@ -75,14 +77,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
+					LeaderElectionProgressTimeout,
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.ElectionsTimedOut(0)),
 			};
@@ -204,14 +204,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.HttpEndPoint, newView),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.HttpEndPoint, newView),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
+					LeaderElectionProgressTimeout,
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.ElectionsTimedOut(1)),
 			};
@@ -289,12 +287,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.ViewChangeProof(_node.InstanceId, _node.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.ViewChangeProof(_node.InstanceId, _node.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
 					Core.Services.ElectionsService.SendViewChangeProofInterval,
 					new PublishEnvelope(_publisher),
@@ -382,14 +378,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.HttpEndPoint, 10),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.ViewChange(_node.InstanceId, _node.HttpEndPoint, 10),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				TimerMessage.Schedule.Create(
-					Core.Services.ElectionsService.LeaderElectionProgressTimeout,
+					LeaderElectionProgressTimeout,
 					new PublishEnvelope(_publisher),
 					new ElectionMessage.ElectionsTimedOut(10)),
 			};
@@ -437,12 +431,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.Prepare(_node.InstanceId, _node.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.Prepare(_node.InstanceId, _node.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout))
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout))
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
@@ -545,8 +537,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.PrepareOk(0,
 						_node.InstanceId, _node.HttpEndPoint, -1, -1, Guid.Empty, Guid.Empty, 0, 0, 0, 0, _clusterInfo),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
@@ -662,14 +653,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.Proposal(_node.InstanceId, _node.HttpEndPoint,
 						proposalMessage.LeaderId,
 						proposalMessage.LeaderHttpEndPoint, 0, 0, 0, _epochId, Guid.Empty, 0, 0, 0, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.Proposal(_node.InstanceId, _node.HttpEndPoint,
 						proposalMessage.LeaderId,
 						proposalMessage.LeaderHttpEndPoint, 0, 0, 0, _epochId, Guid.Empty, 0, 0, 0, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout))
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout))
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
@@ -839,14 +828,12 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.Accept(_node.InstanceId, _node.HttpEndPoint,
 						_nodeThree.InstanceId,
 						_nodeThree.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.Accept(_node.InstanceId, _node.HttpEndPoint,
 						_nodeThree.InstanceId,
 						_nodeThree.HttpEndPoint, 0),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
@@ -1079,12 +1066,10 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			var expected = new Message[] {
 				new GrpcMessage.SendOverGrpc(_nodeTwo.HttpEndPoint,
 					new ElectionMessage.LeaderIsResigning(_node.InstanceId, _node.HttpEndPoint),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 				new GrpcMessage.SendOverGrpc(_nodeThree.HttpEndPoint,
 					new ElectionMessage.LeaderIsResigning(_node.InstanceId, _node.HttpEndPoint),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
@@ -1108,8 +1093,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new ElectionMessage.LeaderIsResigningOk(
 						_nodeTwo.InstanceId, _nodeTwo.HttpEndPoint,
 						_node.InstanceId, _node.HttpEndPoint),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionGrpcRequestTimeout),
-					_timeProvider.LocalTime.Add(Core.Services.ElectionsService.LeaderElectionProgressTimeout)),
+					_timeProvider.LocalTime.Add(LeaderElectionProgressTimeout)),
 			};
 			AssertEx.AssertUsingDeepCompare(_publisher.Messages.ToArray(), expected);
 		}
@@ -1241,7 +1225,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					new InMemoryCheckpoint(0),
 					new InMemoryCheckpoint(0),
 					new InMemoryCheckpoint(-1),
-					new FakeEpochManager(), () => 0L, 0, new FakeTimeProvider());
+					new FakeEpochManager(), () => 0L, 0, new FakeTimeProvider(),
+					TimeSpan.FromMilliseconds(1_000));
 			});
 		}
 	}

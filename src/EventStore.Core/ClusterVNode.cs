@@ -763,7 +763,8 @@ namespace EventStore.Core {
 					epochManager,
 					() => readIndex.LastIndexedPosition,
 					vNodeSettings.NodePriority,
-					_timeProvider);
+					_timeProvider,
+					vNodeSettings.LeaderElectionTimeout);
 				electionsService.SubscribeMessages(_mainBus);
 			}
 

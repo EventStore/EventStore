@@ -96,6 +96,7 @@ namespace EventStore.Core {
 		protected TimeSpan _gossipAllowedTimeDifference;
 		protected TimeSpan _deadMemberRemovalPeriod;
 		protected TimeSpan _gossipTimeout;
+		protected TimeSpan _leaderElectionTimeout;
 		protected GossipAdvertiseInfo _gossipAdvertiseInfo;
 
 		protected TimeSpan _intTcpHeartbeatTimeout;
@@ -226,6 +227,7 @@ namespace EventStore.Core {
 			_gossipInterval = TimeSpan.FromMilliseconds(Opts.GossipIntervalMsDefault);
 			_gossipAllowedTimeDifference = TimeSpan.FromMilliseconds(Opts.GossipAllowedDifferenceMsDefault);
 			_gossipTimeout = TimeSpan.FromMilliseconds(Opts.GossipTimeoutMsDefault);
+			_leaderElectionTimeout = TimeSpan.FromMilliseconds(Opts.LeaderElectionTimeoutMsDefault);
 
 			_intTcpHeartbeatInterval = TimeSpan.FromMilliseconds(Opts.IntTcpHeartbeatIntervalDefault);
 			_intTcpHeartbeatTimeout = TimeSpan.FromMilliseconds(Opts.IntTcpHeartbeatTimeoutDefault);
@@ -876,6 +878,16 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
+		/// Sets the leader election timeout
+		/// </summary>
+		/// <param name="leaderElectionTimeout">The leader election timeout</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithLeaderElectionTimeout(TimeSpan leaderElectionTimeout) {
+			_leaderElectionTimeout = leaderElectionTimeout;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the minimum flush delay
 		/// </summary>
 		/// <param name="minFlushDelay">The minimum flush delay</param>
@@ -1521,6 +1533,7 @@ namespace EventStore.Core {
 				ComputePTableMaxReaderCount(ESConsts.PTableInitialReaderCount, _readerThreadsCount),
 				_keepAliveInterval, _keepAliveTimeout,
 				_streamInfoCacheCapacity,
+				_leaderElectionTimeout,
 				_index,
 				enableHistograms: _enableHistograms,
 				skipIndexVerify: _skipIndexVerify,

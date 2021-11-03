@@ -133,8 +133,7 @@ namespace EventStore.Core.Services.Gossip {
 					_timeProvider, DeadMemberRemovalPeriod, CurrentRole);
 				_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
 					new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint),
-					_timeProvider.LocalTime.Add(GossipTimeout),
-					_timeProvider.LocalTime.Add(GossipInterval)));
+					_timeProvider.LocalTime.Add(GossipTimeout)));
 			}
 
 			var interval = message.GossipRound < GossipRoundStartupThreshold ? GossipStartupInterval : GossipInterval;
@@ -236,8 +235,7 @@ namespace EventStore.Core.Services.Gossip {
 				message.VNodeEndPoint);
 			_bus.Publish(new GrpcMessage.SendOverGrpc(node.HttpEndPoint,
 				new GossipMessage.GetGossip(),
-				_timeProvider.LocalTime.Add(GossipTimeout),
-				_timeProvider.LocalTime.Add(GossipInterval)));
+				_timeProvider.LocalTime.Add(GossipTimeout)));
 		}
 
 		public void Handle(GossipMessage.GetGossipReceived message) {

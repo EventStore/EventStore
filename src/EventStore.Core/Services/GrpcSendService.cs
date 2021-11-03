@@ -26,43 +26,43 @@ namespace EventStore.Core.Services {
 			switch (message.Message) {
 				case GossipMessage.SendGossip sendGossip:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendGossip(sendGossip, message.DestinationEndpoint, message.Deadline);
+						.SendGossip(sendGossip, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case GossipMessage.GetGossip _:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.GetGossip(message.DestinationEndpoint, message.Deadline);
+						.GetGossip(message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.ViewChange viewChange:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendViewChange(viewChange, message.DestinationEndpoint, message.Deadline);
+						.SendViewChange(viewChange, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.ViewChangeProof proof:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendViewChangeProof(proof, message.DestinationEndpoint, message.Deadline);
+						.SendViewChangeProof(proof, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.Prepare prepare:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendPrepare(prepare, message.DestinationEndpoint, message.Deadline);
+						.SendPrepare(prepare, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.PrepareOk prepareOk:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendPrepareOk(prepareOk, message.DestinationEndpoint, message.Deadline);
+						.SendPrepareOk(prepareOk, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.Proposal proposal:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendProposal(proposal, message.DestinationEndpoint, message.Deadline);
+						.SendProposal(proposal, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.Accept accept:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendAccept(accept, message.DestinationEndpoint, message.Deadline);
+						.SendAccept(accept, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.LeaderIsResigning resigning:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendLeaderIsResigning(resigning, message.DestinationEndpoint, message.Deadline);
+						.SendLeaderIsResigning(resigning, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				case ElectionMessage.LeaderIsResigningOk resigningOk:
 					_eventStoreClientCache.Get(message.DestinationEndpoint)
-						.SendLeaderIsResigningOk(resigningOk, message.DestinationEndpoint, message.Deadline);
+						.SendLeaderIsResigningOk(resigningOk, message.DestinationEndpoint, message.LiveUntil);
 					break;
 				default:
 					throw new NotImplementedException($"Message of type {message.Message.GetType().Name} cannot be handled.");

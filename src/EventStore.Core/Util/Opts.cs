@@ -289,6 +289,10 @@ namespace EventStore.Core.Util {
 		public const string GossipTimeoutMsDescr = "The timeout, in ms, on gossip to another node.";
 		public const int GossipTimeoutMsDefault = 2500;
 
+		public const string LeaderElectionTimeoutMsDescr =
+			"The timeout, in milliseconds, on election messages to other nodes.";
+		public const int LeaderElectionTimeoutMsDefault = 1_000;
+
 		public const string DisableAdminUiDescr = "Disables the admin ui on the HTTP endpoint";
 		public const bool DisableAdminUiDefault = false;
 

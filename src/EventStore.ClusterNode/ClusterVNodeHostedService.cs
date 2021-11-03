@@ -231,6 +231,7 @@ namespace EventStore.ClusterNode {
 				.WithGossipInterval(TimeSpan.FromMilliseconds(options.GossipIntervalMs))
 				.WithGossipAllowedTimeDifference(TimeSpan.FromMilliseconds(options.GossipAllowedDifferenceMs))
 				.WithGossipTimeout(TimeSpan.FromMilliseconds(options.GossipTimeoutMs))
+				.WithLeaderElectionTimeout(TimeSpan.FromMilliseconds(options.LeaderElectionTimeoutMs))
 				.WithClusterGossipPort(options.ClusterGossipPort)
 				.WithMinFlushDelay(TimeSpan.FromMilliseconds(options.MinFlushDelayMs))
 				.WithPrepareTimeout(TimeSpan.FromMilliseconds(options.PrepareTimeoutMs))

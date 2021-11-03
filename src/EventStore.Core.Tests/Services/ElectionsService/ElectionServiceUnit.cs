@@ -57,7 +57,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				new InMemoryCheckpoint(ChaserCheckpoint),
 				new InMemoryCheckpoint(ProposalCheckpoint),
 				new FakeEpochManager(),
-				() => -1, 0, new FakeTimeProvider());
+				() => -1, 0, new FakeTimeProvider(),
+				TimeSpan.FromMilliseconds(1_000));
 			ElectionsService.SubscribeMessages(_bus);
 
 			InputMessages = new List<Message>();

@@ -144,6 +144,7 @@ namespace EventStore.Core.Tests.Helpers {
 				keepAliveInterval: TimeSpan.FromSeconds(10), keepAliveTimeout: TimeSpan.FromSeconds(10),
 				readOnlyReplica: readOnlyReplica,
 				streamInfoCacheCapacity: Opts.StreamInfoCacheCapacityDefault,
+				leaderElectionTimeout: TimeSpan.FromMilliseconds(Opts.LeaderElectionTimeoutMsDefault),
 				enableExternalTCP: true,
 				disableHttps: !useHttps,
 				enableAtomPubOverHTTP: true);

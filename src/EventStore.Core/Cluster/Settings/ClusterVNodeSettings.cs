@@ -62,6 +62,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly TimeSpan GossipInterval;
 		public readonly TimeSpan GossipAllowedTimeDifference;
 		public readonly TimeSpan GossipTimeout;
+		public readonly TimeSpan LeaderElectionTimeout;
 		public readonly TimeSpan IntTcpHeartbeatTimeout;
 		public readonly TimeSpan IntTcpHeartbeatInterval;
 		public readonly TimeSpan ExtTcpHeartbeatTimeout;
@@ -154,6 +155,7 @@ namespace EventStore.Core.Cluster.Settings {
 			TimeSpan keepAliveInterval,
 			TimeSpan keepAliveTimeout,
 			int streamInfoCacheCapacity,
+			TimeSpan leaderElectionTimeout,
 			string index = null, bool enableHistograms = false,
 			bool skipIndexVerify = false,
 			int indexCacheDepth = 16,
@@ -264,6 +266,7 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipInterval = gossipInterval;
 			GossipAllowedTimeDifference = gossipAllowedTimeDifference;
 			GossipTimeout = gossipTimeout;
+			LeaderElectionTimeout = leaderElectionTimeout;
 			IntTcpHeartbeatTimeout = intTcpHeartbeatTimeout;
 			IntTcpHeartbeatInterval = intTcpHeartbeatInterval;
 			ExtTcpHeartbeatTimeout = extTcpHeartbeatTimeout;
