@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -16,6 +17,7 @@ using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.AspNetCore.Connections;
 using Serilog;
 using Empty = Google.Protobuf.WellKnownTypes.Empty;
 using Status = Google.Rpc.Status;
@@ -30,7 +32,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var worker = new BatchAppendWorker(_publisher, _provider, requestStream, responseStream,
 				context.GetHttpContext().User, _maxAppendSize, _writeTimeout,
 				GetRequiresLeader(context.RequestHeaders));
-
+			
 			await worker.Work(context.CancellationToken).ConfigureAwait(false);
 		}
 
@@ -69,10 +71,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var remaining = 2;
 				var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
+#if DEBUG
+		var sendTask = 		
+#endif				
 				Send(_channel.Reader, cancellationToken)
-					.ContinueWith(HandleCompletion, cancellationToken);
+					.ContinueWith(HandleCompletion, CancellationToken.None);
+#if DEBUG
+		var receiveTask = 		
+#endif				
 				Receive(_channel.Writer, _user, _requiresLeader, cancellationToken)
-					.ContinueWith(HandleCompletion, cancellationToken);
+					.ContinueWith(HandleCompletion, CancellationToken.None);
 
 				return tcs.Task;
 
@@ -84,29 +92,27 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						}
 					} catch (OperationCanceledException) {
 						tcs.TrySetCanceled(cancellationToken);
-					} catch (Exception ex) {
+					} catch (IOException ex) {
+						Log.Information(ex, "Closing gRPC client connection: {message}", ex.GetBaseException().Message);
+						tcs.TrySetException(ex);
+					}
+					catch (Exception ex) {
 						tcs.TrySetException(ex);
 					}
 				}
 			}
 
 			private async Task Send(ChannelReader<BatchAppendResp> reader, CancellationToken cancellationToken) {
-				try {
-					var isClosing = false;
-					await foreach (var response in reader.ReadAllAsync(cancellationToken)) {
-						if (!response.IsClosing) {
-							await _responseStream.WriteAsync(response).ConfigureAwait(false);
-							if (Interlocked.Decrement(ref _pending) >= 0 && isClosing) {
-								break;
-							}
-						} else {
-							isClosing = true;
+				var isClosing = false;
+				await foreach (var response in reader.ReadAllAsync(cancellationToken)) {
+					if (!response.IsClosing) {
+						await _responseStream.WriteAsync(response).ConfigureAwait(false);
+						if (Interlocked.Decrement(ref _pending) >= 0 && isClosing) {
+							break;
 						}
+					} else {
+						isClosing = true;
 					}
-				} catch (Exception ex) when (ex is not OperationCanceledException or TaskCanceledException) {
-					Log.Warning(ex, string.Empty);
-
-					throw;
 				}
 			}
 
@@ -120,7 +126,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							var correlationId = Uuid.FromDto(request.CorrelationId).ToGuid();
 
 							if (request.Options != null) {
-								TimeSpan timeout = Min(GetRequestedTimeout(request.Options), _writeTimeout);
+								var timeout = Min(GetRequestedTimeout(request.Options), _writeTimeout);
 
 								if (!await _authorizationProvider.CheckAccessAsync(user, WriteOperation.WithParameter(
 									Plugins.Authorization.Operations.Streams.Parameters.StreamId(
