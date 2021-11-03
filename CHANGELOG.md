@@ -3,86 +3,59 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [21.10.0] - 2021-11-03
+
 ### Fixed
 - HTTP port parameter in docker-compose.yaml  [EventStore#2995](https://github.com/EventStore/EventStore/pull/2995)
 - WrongExpectedVersion when deleting a projection with all delete options  [EventStore#3014](https://github.com/EventStore/EventStore/pull/3014)
-- Build instructions [EventStore#3021](https://github.com/EventStore/EventStore/pull/3021)
 - Prevent emitted checkpoint streams from being deleted when not enabled. [EventStore#3030](https://github.com/EventStore/EventStore/pull/3030)
 - Http authentication when a `:` is present in the user's password [EventStore#3070](https://github.com/EventStore/EventStore/pull/3070)
 - Persistent subscriptions: Rename LastProcessedEventPosition to LastCheckpointedEventPosition [EventStore#3073](https://github.com/EventStore/EventStore/pull/3073)
-- off by one error and brackets in docs [EventStore#3135](https://github.com/EventStore/EventStore/pull/3135)
-- test adapter error when running all tests in visual studio [EventStore#3139](https://github.com/EventStore/EventStore/pull/3139)
-- potential race condition in BatchAppend [EventStore#3138](https://github.com/EventStore/EventStore/pull/3138)
+- Potential race condition in BatchAppend [EventStore#3138](https://github.com/EventStore/EventStore/pull/3138)
 - Added verification checking if a message is of NotHandled type in PersistentSubscriptions Read message handling [EventStore#3158](https://github.com/EventStore/EventStore/pull/3158)
-- Issue with not handling null event data correctly  [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
-- Incorrectly setting OutputState on IQuerySources when only a fold is defined [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
+- Issue with not handling null event data correctly in Projections [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
+- Incorrectly setting OutputState on IQuerySources when only a fold is defined in Projections [EventStore#3171](https://github.com/EventStore/EventStore/pull/3171)
 - Off-by-one error in Index committer service [EventStore#3186](https://github.com/EventStore/EventStore/pull/3186)
 - Node stays stuck in Leader state until next elections if a quorum never emerges [EventStore#3181](https://github.com/EventStore/EventStore/pull/3181)
-- user provided metadata to be formatted correctly [EventStore#3188](https://github.com/EventStore/EventStore/pull/3188)
+- User provided metadata to be formatted correctly in Projections [EventStore#3188](https://github.com/EventStore/EventStore/pull/3188)
 - Incorrect configuration file selection on linux [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
 - Prevent the EpochManager from attempting to read epochs that should have been cached [EventStore#3198](https://github.com/EventStore/EventStore/pull/3198)
-- race condition where a node becomes leader and immediately writes to streams that have recently been written to but not indexed, resulting in events with incorrect numbers in their streams. [EventStore#3201](https://github.com/EventStore/EventStore/pull/3201)
+- Race condition where a node becomes leader and immediately writes to streams that have recently been written to but not indexed, resulting in events with incorrect numbers in their streams. [EventStore#3201](https://github.com/EventStore/EventStore/pull/3201)
 - Handling $deleted in the interpreted projections runtime. [EventStore#3216](https://github.com/EventStore/EventStore/pull/3216)
-- properly disposing gRPC calls in tests [EventStore#3215](https://github.com/EventStore/EventStore/pull/3215)
-- Improve test stability [EventStore#3220](https://github.com/EventStore/EventStore/pull/3220)
-- incorrect log message templates [EventStore#3223](https://github.com/EventStore/EventStore/pull/3223)
-- linkTo metadata not properly read. [EventStore#3227](https://github.com/EventStore/EventStore/pull/3227)
-- Clear HeadingEventReader cache when stopping the readers [EventStore#3233](https://github.com/EventStore/EventStore/pull/3233)
-- Use the right advertised host value in a cluster configuration. [EventStore#3224](https://github.com/EventStore/EventStore/pull/3224)
+- Incorrect log message templates [EventStore#3223](https://github.com/EventStore/EventStore/pull/3223)
+- LinkTo metadata not properly read in Projections [EventStore#3227](https://github.com/EventStore/EventStore/pull/3227)
+- Clear HeadingEventReader cache in Projections when stopping the readers [EventStore#3233](https://github.com/EventStore/EventStore/pull/3233)
+- Use the right advertised host value in a cluster configuration [EventStore#3224](https://github.com/EventStore/EventStore/pull/3224)
 - Ensure the IODispatcher clears up pending requests [EventStore#3244](https://github.com/EventStore/EventStore/pull/3244)
 - Replica stats page correctly shows catching up nodes [EventStore#3247](https://github.com/EventStore/EventStore/pull/3247)
 - Set last checkpoint for persistent subscriptions when they are loaded [EventStore#3241](https://github.com/EventStore/EventStore/pull/3241)
-- Object disposed exception in `EventCountersHelper` on shutdown. [EventStore#3242](https://github.com/EventStore/EventStore/pull/3242)
-
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/2987 [EventStore#3010](https://github.com/EventStore/EventStore/pull/3010)
-- //github.com/EventStore/EventStore/pull/3015 [EventStore#3019](https://github.com/EventStore/EventStore/pull/3019)
-- //github.com/EventStore/EventStore/pull/2989 [EventStore#3020](https://github.com/EventStore/EventStore/pull/3020)
-- //github.com/EventStore/EventStore/pull/3035 [EventStore#3040](https://github.com/EventStore/EventStore/pull/3040)
-- //github.com/thefringeninja/EventStore/pull/3060 [EventStore#3067](https://github.com/EventStore/EventStore/pull/3067)
-- //github.com/EventStore/EventStore/pull/3119 [EventStore#3124](https://github.com/EventStore/EventStore/pull/3124)
-- //github.com/EventStore/EventStore/pull/3116 [EventStore#3118](https://github.com/EventStore/EventStore/pull/3118)
-- //github.com/EventStore/EventStore/pull/3166 [EventStore#3169](https://github.com/EventStore/EventStore/pull/3169)
-- //github.com/EventStore/EventStore/pull/3208 [EventStore#3209](https://github.com/EventStore/EventStore/pull/3209)
-- //github.com/EventStore/EventStore/pull/3251 [EventStore#3252](https://github.com/EventStore/EventStore/pull/3252)
-- //github.com/thefringeninja/EventStore/pull/3255 [EventStore#3256](https://github.com/EventStore/EventStore/pull/3256)
-- //github.com/EventStore/EventStore/pull/3257 [EventStore#3258](https://github.com/EventStore/EventStore/pull/3258)
+- Object disposed exception in `EventCountersHelper` on shutdown [EventStore#3242](https://github.com/EventStore/EventStore/pull/3242)
+- Memory Leak in Batch Append [EventStore#3253](https://github.com/EventStore/EventStore/pull/3253)
+- Batch append not using requested uuid format [EventStore#3255](https://github.com/EventStore/EventStore/pull/3255)
+- StreamExistenceFilter truncation corner case [EventStore#3257](https://github.com/EventStore/EventStore/pull/3257)
 
 ### Added
-- GitHubActionsTestLogger to Buffer Management Tests [EventStore#3061](https://github.com/EventStore/EventStore/pull/3061)
 - Alpine Docker Image [EventStore#3069](https://github.com/EventStore/EventStore/pull/3069)
-- a bloom filter to quickly check stream existence [EventStore#3078](https://github.com/EventStore/EventStore/pull/3078)
-- LeaderElectionTimeoutMs option to allow configuring the timeout for election messages. [EventStore#3121](https://github.com/EventStore/EventStore/pull/3121)
-- `--blame-hang-timeout=5min` in case we have hanging builds. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
-- Improved error messages in case of task timeouts and test setup failures. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
-- More task timeouts to help prevent hanging build runs. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
-- Logging for help investigate flaky tests. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
-- Extra assertions to prevent unclear test failures. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
-- Retry of tests incase of failure triggered by flakiness. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
-- Checks to improve cluster stability before running tests. [EventStore#3017](https://github.com/EventStore/EventStore/pull/3017)
+- A bloom filter to quickly check stream existence [EventStore#3078](https://github.com/EventStore/EventStore/pull/3078)
+- LeaderElectionTimeoutMs option to allow configuring the timeout for election messages [EventStore#3121](https://github.com/EventStore/EventStore/pull/3121)
 - Add a log message describing how to disable the stream existence filter [EventStore#3172](https://github.com/EventStore/EventStore/pull/3172)
 - New options to control logging: --log-console-format, --log-file-size, --log-file-interval, --log-file-retention-count, and --disable-log-file [EventStore#3159](https://github.com/EventStore/EventStore/pull/3159)
 - Event type index for LogV3 [EventStore#3114](https://github.com/EventStore/EventStore/pull/3114)
 - ClientCapabilities proto for discovering which gRPC methods are available on the server [EventStore#3194](https://github.com/EventStore/EventStore/pull/3194)
-- control message to indicate client compatibility level on reads [EventStore#3197](https://github.com/EventStore/EventStore/pull/3197)
+- ServerFeatures proto to allow clients to discover which features are available on the server [EventStore#3251](https://github.com/EventStore/EventStore/pull/3251)
+- Control message to indicate client compatibility level on reads [EventStore#3197](https://github.com/EventStore/EventStore/pull/3197)
 - Bloom Filters and LRU Caches to PTables [EventStore#3161](https://github.com/EventStore/EventStore/pull/3161)
-- log level to compact json log output [EventStore#3212](https://github.com/EventStore/EventStore/pull/3212)
+- Log level to compact json log output [EventStore#3212](https://github.com/EventStore/EventStore/pull/3212)
 - Support for Intermediate CA certificates [EventStore#3176](https://github.com/EventStore/EventStore/pull/3176)
 - Validation of certificate chain with node's own certificate on start up [EventStore#3176](https://github.com/EventStore/EventStore/pull/3176)
 
 ### Changed
-- added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
-- Optimise some slow running tests [EventStore#3190](https://github.com/EventStore/EventStore/pull/3190)
+- Added a message to timeout error on append / delete [EventStore#3054](https://github.com/EventStore/EventStore/pull/3054)
 - Do not download intermediate certificates from AIA URLs [EventStore#3176](https://github.com/EventStore/EventStore/pull/3176)
-
-### solution
-- correct the sample [EventStore#3127](https://github.com/EventStore/EventStore/pull/3127)
+- Improve stream existence bloom filter V2 initialization [EventStore#3234](https://github.com/EventStore/EventStore/pull/3234)
 
 ### Removed
 - V8 projection runtime [EventStore#3193](https://github.com/EventStore/EventStore/pull/3193)
-
-### The UI now includes the replica stats screen
-- https://github.com/EventStore/EventStore.UI/pull/299 [EventStore#3228](https://github.com/EventStore/EventStore/pull/3228)
 
 ## [20.10.4] - 2021-07-22
 
