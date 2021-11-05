@@ -83,6 +83,40 @@ rsync -a data/*.0* backup
 2. Copy all files to the desired location.
 3. Create a copy of `chaser.chk` and call it `truncate.chk`. This effectively overwrites the restored `truncate.chk`.
 
+## Differential backup & restore
+
+The following procedure is designed to minimize the backup storage space, and can be used to do a full and differential backup.
+
+### Backing up
+
+Backup the index
+
+1. If there are no files in the index directory (apart from directories), go to step 7.
+2. Copy the `index/indexmap` file to the backup. If the source file does not exist, repeat until it does.
+3. Make a list `indexFiles` of all the `index/<GUID>` and `index/<GUID>.bloomfilter` files in the source.
+4. Copy the files listed in `indexFiles` to the backup, skipping file names already in the backup.
+5. Compare the contents of the `indexmap` file in the source and the backup. If they are different (i.e. the indexmap file has changed since step 2, or no longer exists), go back to step 2.
+6. Remove `index/<GUID>` and `index/<GUID>.bloomfilter` files from the backup that are not listed in `indexFiles`.
+7. Copy the `index/stream-existence/streamExistenceFilter.chk` file (if present) to the backup.
+8. Copy the `index/stream-existence/streamExistenceFilter.dat` file (if present) to the backup.
+
+Backup the log
+
+9. Rename the last chunk in the backup to have a `.old` suffix. e.g. rename `chunk-000123.000000` to `chunk-000123.000000.old`
+10. Copy `chaser.chk` to the backup.
+11. Copy `epoch.chk` to the backup.
+12. Copy `writer.chk` to the backup.
+13. Copy `proposal.chk` to the backup.
+14. Make a list `chunkFiles` of all chunk files (`chunk-X.Y`) in the source.
+15. Copy the files listed in `chunkFiles` to the backup, skipping file names already in the backup. All files should copy successfully - none should have been deleted since scavenge is not running.
+16. Remove any chunks from the backup that are not in the `chunksFiles` list. This will include the `.old` file from step 9.
+
+### Restoring a database
+
+1. Ensure the  Event Store DB process is stopped. Restoring a database on running instance is not possible and, in most cases, will lead to data corruption.
+2. Copy all files to the desired location.
+3. Create a copy of `chaser.chk` and call it `truncate.chk`.
+
 ## Other options
 
 There are other options available for ensuring data recovery, that are not strictly related to backups.
