@@ -6,9 +6,11 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Services.Monitoring.Stats;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace EventStore.Core.Services.TimerService {
 	public class ThreadBasedScheduler : IMonitoredQueue, IScheduler, IDisposable {
+		private static readonly ILogger Log = Serilog.Log.ForContext<ThreadBasedScheduler>();
 		public string Name {
 			get { return _queueStats.Name; }
 		}
@@ -50,11 +52,12 @@ namespace EventStore.Core.Services.TimerService {
 		}
 
 		private void DoTiming() {
-			try {
-				_queueStats.Start();
-				QueueMonitor.Default.Register(this);
 
-				while (!_stop) {
+			_queueStats.Start();
+			QueueMonitor.Default.Register(this);
+
+			while (!_stop) {
+				try {
 					_queueStats.EnterBusy();
 					_queueStats.ProcessingStarted<SchedulePendingTasks>(_pending.Count);
 
@@ -82,14 +85,15 @@ namespace EventStore.Core.Services.TimerService {
 
 						Thread.Sleep(10);
 					}
+
+				} catch (Exception ex) {
+					Log.Error(ex, "Error executing scheduled task");
+					_tcs.TrySetException(ex);
 				}
-			} catch (Exception ex) {
-				_tcs.TrySetException(ex);
-				throw;
-			} finally {
-				_queueStats.Stop();
-				QueueMonitor.Default.Unregister(this);
 			}
+
+			_queueStats.Stop();
+			QueueMonitor.Default.Unregister(this);
 		}
 
 		public void Dispose() {
