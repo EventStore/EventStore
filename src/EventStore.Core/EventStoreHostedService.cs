@@ -84,8 +84,7 @@ namespace EventStore.Core {
 			string logsDirectory =
 				Path.GetFullPath(options.Log.IsNotEmptyString() ? options.Log : GetLogsDirectory(options));
 			EventStoreLoggerConfiguration.Initialize(logsDirectory, componentName, options.LogConsoleFormat,
-				options.LogFileSize, options.LogFileInterval, options.LogFileRetentionCount, options.DisableLogFile,
-				options.LogConfig);
+				options.LogFileRetentionCount, options.DisableLogFile, options.LogConfig);
 
 			Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
 				VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);

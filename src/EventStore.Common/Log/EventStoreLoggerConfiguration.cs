@@ -46,7 +46,7 @@ namespace EventStore.Common.Log {
 		}
 
 		public static void Initialize(string logsDirectory, string componentName, LogConsoleFormat logConsoleFormat,
-			int logFileSize, RollingInterval logFileInterval, int logFileRetentionCount, bool disableLogFile,
+			int logFileRetentionCount, bool disableLogFile,
 			string logConfig = "logconfig.json") {
 			if (Interlocked.Exchange(ref Initialized, 1) == 1) {
 				throw new InvalidOperationException($"{nameof(Initialize)} may not be called more than once.");
@@ -80,8 +80,8 @@ namespace EventStore.Common.Log {
 
 			Serilog.Log.Logger = (configurationRoot.GetSection("Serilog").Exists()
 					? FromConfiguration(configurationRoot)
-					: Default(logsDirectory, componentName, configurationRoot, logConsoleFormat, logFileInterval,
-						logFileSize, logFileRetentionCount, disableLogFile))
+					: Default(logsDirectory, componentName, configurationRoot, logConsoleFormat,
+						logFileRetentionCount, disableLogFile))
 				.CreateLogger();
 
 			Serilog.Debugging.SelfLog.Disable();
@@ -108,13 +108,13 @@ namespace EventStore.Common.Log {
 
 		private static LoggerConfiguration Default(string logsDirectory, string componentName,
 			IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
-			RollingInterval logFileInterval, int logFileSize, int logFileRetentionCount, bool disableLogFile) =>
+			int logFileRetentionCount, bool disableLogFile) =>
 			new EventStoreLoggerConfiguration(logsDirectory, componentName, logLevelConfigurationRoot, logConsoleFormat,
-				logFileInterval, logFileSize, logFileRetentionCount, disableLogFile);
+				logFileRetentionCount, disableLogFile);
 
 		private EventStoreLoggerConfiguration(string logsDirectory, string componentName,
 			IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
-			RollingInterval logFileInterval, int logFileSize, int logFileRetentionCount, bool disableLogFile) {
+			int logFileRetentionCount, bool disableLogFile) {
 			if (logsDirectory == null) {
 				throw new ArgumentNullException(nameof(logsDirectory));
 			}
@@ -169,8 +169,7 @@ namespace EventStore.Common.Log {
 
 				if (!disableLogFile) {
 					configuration.WriteTo
-						.RollingFile(GetLogFileName(), new ExpressionTemplate(CompactJsonTemplate),
-							logFileRetentionCount, logFileInterval, logFileSize)
+						.RollingFile(GetLogFileName(), new ExpressionTemplate(CompactJsonTemplate), logFileRetentionCount)
 						.WriteTo.Logger(Error);
 				}
 			}
@@ -180,16 +179,14 @@ namespace EventStore.Common.Log {
 					configuration
 						.Filter.ByIncludingOnly(Errors)
 						.WriteTo
-						.RollingFile(GetLogFileName("err"), new ExpressionTemplate(CompactJsonTemplate),
-							logFileRetentionCount, logFileInterval, logFileSize);
+						.RollingFile(GetLogFileName("err"), new ExpressionTemplate(CompactJsonTemplate), logFileRetentionCount);
 				}
 			}
 
 			void Stats(LoggerConfiguration configuration) {
 				if (!disableLogFile) {
 					configuration.WriteTo.RollingFile(GetLogFileName("stats"),
-						new ExpressionTemplate(CompactJsonTemplate), logFileRetentionCount, logFileInterval,
-						logFileSize);
+						new ExpressionTemplate(CompactJsonTemplate), logFileRetentionCount);
 				}
 			}
 

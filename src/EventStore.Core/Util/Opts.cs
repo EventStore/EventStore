@@ -44,12 +44,6 @@ namespace EventStore.Core.Util {
 		public const string LogLevelDescr = "Sets the minimum log level. For more granular settings, please edit logconfig.json.";
 		public const LogLevel LogLevelDefault = LogLevel.Default;
 
-		public const string LogFileSizeDescr = "Maximum size of each log file.";
-		public const int LogFileSizeDefault = 1024 * 1024 * 1024;
-
-		public const string LogFileIntervalDescr = "How often to rotate logs. (Infinite, Year, Month, Day, Hour, Minute)";
-		public const RollingInterval LogFileIntervalDefault = RollingInterval.Day;
-
 		public const string LogConsoleFormatDescr = " Which format (plain, json) to use when writing to the console. (Plain, Json)";
 		public const LogConsoleFormat LogConsoleFormatDefault = LogConsoleFormat.Plain;
 

@@ -22,12 +22,6 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.LogConsoleFormatDescr, Opts.AppGroup)]
 		public LogConsoleFormat LogConsoleFormat { get; set; }
 
-		[ArgDescription(Opts.LogFileSizeDescr, Opts.AppGroup)]
-		public int LogFileSize { get; set; }
-
-		[ArgDescription(Opts.LogFileIntervalDescr, Opts.AppGroup)]
-		public RollingInterval LogFileInterval { get; set; }
-
 		[ArgDescription(Opts.LogFileRetentionCountDescr, Opts.AppGroup)]
 		public int LogFileRetentionCount { get; set; }
 
@@ -355,8 +349,6 @@ namespace EventStore.Core {
 			Version = Opts.ShowVersionDefault;
 			Log = Locations.DefaultLogDirectory;
 			LogLevel = Opts.LogLevelDefault;
-			LogFileSize = Opts.LogFileSizeDefault;
-			LogFileInterval = Opts.LogFileIntervalDefault;
 			LogConsoleFormat = Opts.LogConsoleFormatDefault;
 			LogFileRetentionCount = Opts.LogFileRetentionCountDefault;
 			DisableLogFile = Opts.DisableLogFileDefault;
