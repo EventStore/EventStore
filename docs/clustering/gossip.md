@@ -79,3 +79,17 @@ Please note that the `GossipOnSingleNode` option has been deprecated in this ver
 | Environment variable | `EVENTSTORE_GOSSIP_ON_SINGLE_NODE` |
 
 **Default**: `false`
+
+## Leader Election Timeout
+
+The Leader Elections are separate to the node gossip, and are used to elect a node as Leader and assign roles to the other nodes.
+
+In some cases the leader election messages may be delayed, which can result in elections taking longer than they should. If you start seeing election timeouts in the logs or if you've needed to increase the gossip timeout due to a congested network, then you should consider increasing the leader election timeout as well.
+
+| Format               | Syntax |
+| :------------------- | :----- |
+| Command line         | `--leader-election-timeout-ms` |
+| YAML                 | `LeaderElectionTimeoutMs` |
+| Environment variable | `EVENTSTORE_LEADER_ELECTION_TIMEOUT_MS` |
+
+**Default**: `1000` (in milliseconds).

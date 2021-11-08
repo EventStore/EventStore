@@ -289,6 +289,9 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.GossipTimeoutMsDescr, Opts.ClusterGroup)]
 		public int GossipTimeoutMs { get; set; }
 
+		[ArgDescription(Opts.LeaderElectionTimeoutMsDescr, Opts.ClusterGroup)]
+		public int LeaderElectionTimeoutMs { get; set; }
+
 		[ArgDescription(Opts.ReadOnlyReplicaDescr, Opts.ClusterGroup)]
 		public bool ReadOnlyReplica { get; set; }
 
@@ -445,6 +448,7 @@ namespace EventStore.Core {
 			GossipIntervalMs = Opts.GossipIntervalMsDefault;
 			GossipAllowedDifferenceMs = Opts.GossipAllowedDifferenceMsDefault;
 			GossipTimeoutMs = Opts.GossipTimeoutMsDefault;
+			LeaderElectionTimeoutMs = Opts.LeaderElectionTimeoutMsDefault;
 			IndexCacheDepth = Opts.IndexCacheDepthDefault;
 			SkipIndexVerify = Opts.SkipIndexVerifyDefault;
 			OptimizeIndexMerge = Opts.OptimizeIndexMergeDefault;

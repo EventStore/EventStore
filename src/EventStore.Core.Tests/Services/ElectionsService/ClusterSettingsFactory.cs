@@ -61,6 +61,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 				Constants.PTableMaxReaderCountDefault,
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				Opts.StreamInfoCacheCapacityDefault,
+				TimeSpan.FromMilliseconds(Opts.LeaderElectionTimeoutMsDefault),
 				readOnlyReplica: isReadOnlyReplica,
 				disableHttps: !useHttps);
 
