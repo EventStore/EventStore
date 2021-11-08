@@ -39,16 +39,6 @@ namespace EventStore.TestClient {
 		public LogConsoleFormat LogConsoleFormat { get; set; }
 
 		/// <summary>
-		/// Maximum size of each log file.
-		/// </summary>
-		[ArgDescription(Opts.LogFileSizeDescr, Opts.AppGroup)] public int LogFileSize { get; set; }
-
-		/// <summary>
-		/// How often to rotate logs.
-		/// </summary>
-		[ArgDescription(Opts.LogFileIntervalDescr, Opts.AppGroup)] public RollingInterval LogFileInterval { get; set; }
-
-		/// <summary>
 		/// The number of log files to hold on to.
 		/// </summary>
 		[ArgDescription(Opts.LogFileRetentionCountDescr, Opts.AppGroup)] public int LogFileRetentionCount { get; set; }
@@ -130,8 +120,6 @@ namespace EventStore.TestClient {
 			Log = Locations.DefaultTestClientLogDirectory;
 			LogConfig = Opts.LogConfigDefault;
 			LogConsoleFormat = Opts.LogConsoleFormatDefault;
-			LogFileSize = Opts.LogFileSizeDefault;
-			LogFileInterval = Opts.LogFileIntervalDefault;
 			LogFileRetentionCount = Opts.LogFileRetentionCountDefault;
 			DisableLogFile = Opts.DisableLogFileDefault;
 			WhatIf = Opts.WhatIfDefault;
