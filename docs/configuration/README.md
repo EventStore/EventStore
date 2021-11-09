@@ -10,7 +10,7 @@ You can check what version of EventStoreDB you have installed by using the `--ve
 
 ```bash
 $ eventstore --version
-EventStoreDB version v21.6.0 (tags/oss-v21.6.0/1f713a407, Unknown)
+EventStoreDB version 21.10.0.0 (tags/oss-v21.10.0/076363440, Mon, 1 Nov 2021 17:10:49 +0000)
 ```
 
 The full list of available options is available from the currently installed server by using the `--help` option in the command line.
@@ -69,13 +69,13 @@ When you run EventStoreDB with this option, it will print out the effective conf
 ::: details Click here to see a WhatIf example
 ```
 $ eventstore --what-if
-[1085525, 1,09:19:40.884,INF]
-"ES VERSION:"             "21.6.0.0" ("tags/oss-v21.6.0"/"1f713a407", "Thu, 24 Jun 2021 11:49:23 +0400")
-[1085525, 1,09:19:40.902,INF] "OS:"                     Linux ("Unix 5.4.0.66")
-[1085525, 1,09:19:40.905,INF] "RUNTIME:"                ".NET 5.0.3" (64-bit)
-[1085525, 1,09:19:40.905,INF] "GC:"                     "3 GENERATIONS"
-[1085525, 1,09:19:40.905,INF] "LOGS:"                   "/var/log/eventstore"
-[1085525, 1,09:19:40.936,INF] MODIFIED OPTIONS:
+[16540, 1,13:03:50.994,INF]
+"ES VERSION:"             "21.10.0.0" ("tags/oss-v21.10.0"/"076363440", "Unknown")
+[16540, 1,13:03:51.011,INF] "OS:"                     Linux ("Unix 5.4.0.66")
+[16540, 1,13:03:51.012,INF] "RUNTIME:"                ".NET 5.0.11/f431858f8" (64-bit)
+[16540, 1,13:03:51.012,INF] "GC:"                     "3 GENERATIONS"
+[16540, 1,13:03:51.012,INF] "LOGS:"                   "/var/log/eventstore"
+[16540, 1,13:03:51.035,INF] MODIFIED OPTIONS:
 
      WHAT IF:                                 true (Command Line)
 
@@ -83,19 +83,25 @@ DEFAULT OPTIONS:
 
      HELP:                                    False (<DEFAULT>)
      VERSION:                                 False (<DEFAULT>)
-     LOG:                                     /var/log/eventstore (<DEFAULT>)
-     LOG LEVEL:                               Default (<DEFAULT>)
      CONFIG:                                  /etc/eventstore/eventstore.conf (<DEFAULT>)
      START STANDARD PROJECTIONS:              False (<DEFAULT>)
      DISABLE HTTP CACHING:                    False (<DEFAULT>)
      STATS PERIOD SEC:                        30 (<DEFAULT>)
-     WORKER THREADS:                          5 (<DEFAULT>)
+     WORKER THREADS:                          0 (<DEFAULT>)
      ENABLE HISTOGRAMS:                       False (<DEFAULT>)
      LOG HTTP REQUESTS:                       False (<DEFAULT>)
      LOG FAILED AUTHENTICATION ATTEMPTS:      False (<DEFAULT>)
      SKIP INDEX SCAN ON READS:                False (<DEFAULT>)
      MAX APPEND SIZE:                         1048576 (<DEFAULT>)
      INSECURE:                                False (<DEFAULT>)
+     LOG:                                     /var/log/eventstore (<DEFAULT>)
+     LOG CONFIG:                              logconfig.json (<DEFAULT>)
+     LOG LEVEL:                               Default (<DEFAULT>)
+     LOG CONSOLE FORMAT:                      Plain (<DEFAULT>)
+     LOG FILE SIZE:                           1073741824 (<DEFAULT>)
+     LOG FILE INTERVAL:                       Day (<DEFAULT>)
+     LOG FILE RETENTION COUNT:                31 (<DEFAULT>)
+     DISABLE LOG FILE:                        False (<DEFAULT>)
      AUTHORIZATION TYPE:                      internal (<DEFAULT>)
      AUTHORIZATION CONFIG:                    <empty> (<DEFAULT>)
      AUTHENTICATION TYPE:                     internal (<DEFAULT>)
@@ -110,7 +116,7 @@ DEFAULT OPTIONS:
      CERTIFICATE STORE NAME:                  <empty> (<DEFAULT>)
      CERTIFICATE SUBJECT NAME:                <empty> (<DEFAULT>)
      CERTIFICATE THUMBPRINT:                  <empty> (<DEFAULT>)
-     STREAM INFO CACHE CAPACITY:              100000 (<DEFAULT>)
+     STREAM INFO CACHE CAPACITY:              0 (<DEFAULT>)
      CLUSTER SIZE:                            1 (<DEFAULT>)
      NODE PRIORITY:                           0 (<DEFAULT>)
      COMMIT COUNT:                            -1 (<DEFAULT>)
@@ -125,6 +131,10 @@ DEFAULT OPTIONS:
      READ ONLY REPLICA:                       False (<DEFAULT>)
      UNSAFE ALLOW SURPLUS NODES:              False (<DEFAULT>)
      DEAD MEMBER REMOVAL PERIOD SEC:          1800 (<DEFAULT>)
+     LEADER ELECTION TIMEOUT MS:              1000 (<DEFAULT>)
+     QUORUM SIZE:                             1 (<DEFAULT>)
+     PREPARE ACK COUNT:                       1 (<DEFAULT>)
+     COMMIT ACK COUNT:                        1 (<DEFAULT>)
      MIN FLUSH DELAY MS:                      2 (<DEFAULT>)
      DISABLE SCAVENGE MERGING:                False (<DEFAULT>)
      SCAVENGE HISTORY MAX AGE:                30 (<DEFAULT>)
@@ -135,6 +145,8 @@ DEFAULT OPTIONS:
      DB:                                      /var/lib/eventstore (<DEFAULT>)
      INDEX:                                   <empty> (<DEFAULT>)
      MEM DB:                                  False (<DEFAULT>)
+     USE INDEX BLOOM FILTERS:                 True (<DEFAULT>)
+     INDEX CACHE SIZE:                        0 (<DEFAULT>)
      SKIP DB VERIFY:                          False (<DEFAULT>)
      WRITE THROUGH:                           False (<DEFAULT>)
      UNBUFFERED:                              False (<DEFAULT>)
@@ -150,10 +162,14 @@ DEFAULT OPTIONS:
      ALWAYS KEEP SCAVENGED:                   False (<DEFAULT>)
      REDUCE FILE CACHE PRESSURE:              False (<DEFAULT>)
      INITIALIZATION THREADS:                  1 (<DEFAULT>)
-     READER THREADS COUNT:                    4 (<DEFAULT>)
+     READER THREADS COUNT:                    0 (<DEFAULT>)
      MAX AUTO MERGE INDEX LEVEL:              2147483647 (<DEFAULT>)
      WRITE STATS TO DB:                       False (<DEFAULT>)
      MAX TRUNCATION:                          268435456 (<DEFAULT>)
+     CHUNK SIZE:                              268435456 (<DEFAULT>)
+     STATS STORAGE:                           File (<DEFAULT>)
+     DB LOG FORMAT:                           V2 (<DEFAULT>)
+     STREAM EXISTENCE FILTER SIZE:            256000000 (<DEFAULT>)
      KEEP ALIVE INTERVAL:                     10000 (<DEFAULT>)
      KEEP ALIVE TIMEOUT:                      10000 (<DEFAULT>)
      INT IP:                                  127.0.0.1 (<DEFAULT>)
@@ -188,6 +204,8 @@ DEFAULT OPTIONS:
      PROJECTION THREADS:                      3 (<DEFAULT>)
      PROJECTIONS QUERY EXPIRY:                5 (<DEFAULT>)
      FAULT OUT OF ORDER PROJECTIONS:          False (<DEFAULT>)
+     PROJECTION COMPILATION TIMEOUT:          500 (<DEFAULT>)
+     PROJECTION EXECUTION TIMEOUT:            250 (<DEFAULT>)
 ```
 :::
 
