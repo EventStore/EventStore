@@ -530,7 +530,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 				var wev = await AssertEx.ThrowsAsync<WrongExpectedVersionException>(() =>
 					store.AppendToStreamAsync(stream, 1, TestEvent.NewTestEvent()));
 				Assert.AreEqual(1, wev.ExpectedVersion);
-				Assert.AreEqual(0, wev.ActualVersion);
+				Assert.AreEqual(0, wev.ActualVersion.GetValueOrDefault(0));
 			}
 		}
 

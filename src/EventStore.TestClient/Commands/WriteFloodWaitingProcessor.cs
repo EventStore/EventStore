@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
 
@@ -66,8 +65,8 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						Interlocked.Increment(ref received);
-						var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-						if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
+						var dto = pkg.Data.Deserialize<WriteEventsCompleted>();
+						if (dto.Result == OperationResult.Success) {
 							if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write(".");
 						} else {
 							if (Interlocked.Increment(ref fail) % 1000 == 0) Console.Write("#");
@@ -85,11 +84,11 @@ namespace EventStore.TestClient.Commands {
 
 				threads.Add(new Thread(() => {
 					for (int j = 0; j < count; ++j) {
-						var write = new TcpClientMessageDto.WriteEvents(
+						var write = new WriteEvents(
 							eventStreamId,
 							ExpectedVersion.Any,
 							new[] {
-								new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+								new NewEvent(Guid.NewGuid().ToByteArray(),
 									"TakeSomeSpaceEvent",
 									0, 0,
 									Common.Utils.Helper.UTF8NoBom.GetBytes("DATA" + new string('*', dataSize)),

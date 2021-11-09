@@ -45,7 +45,7 @@ namespace EventStore.Core.Services {
 		public void Handle(ClientMessage.NotHandled message) {
 			_forwardingProxy.TryForwardReply(
 				message.CorrelationId, message,
-				(clientCorrId, m) => new ClientMessage.NotHandled(clientCorrId, m.Reason, m.AdditionalInfo));
+				(clientCorrId, m) => new ClientMessage.NotHandled(clientCorrId, m.Reason, m.LeaderInfo));
 		}
 
 		public void Handle(ClientMessage.WriteEventsCompleted message) {

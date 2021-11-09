@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -40,7 +41,7 @@ namespace EventStore.TestClient.Commands {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Reading...", conn.RemoteEndPoint,
 						conn.LocalEndPoint);
 					var readDto =
-						new TcpClientMessageDto.ReadEvent(eventStreamId, fromNumber, resolveLinkTos, requireLeader);
+						new ReadEvent(eventStreamId, fromNumber, resolveLinkTos, requireLeader);
 					var package =
 						new TcpPackage(TcpCommand.ReadEvent, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					sw.Start();
@@ -55,7 +56,7 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
+					var dto = pkg.Data.Deserialize<ReadEventCompleted>();
 					context.Log.Information("READ events from <{stream}>:\n\n"
 					                 + "\tEventStreamId: {stream}\n"
 					                 + "\tEventNumber:   {eventNumber}\n"
@@ -68,11 +69,11 @@ namespace EventStore.TestClient.Commands {
 						dto.Event.Event.EventNumber,
 						dto.Result,
 						dto.Event.Event.EventType,
-						Helper.UTF8NoBom.GetString(dto.Event.Event.Data ?? new byte[0]),
-						Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata ?? new byte[0]));
+						Helper.UTF8NoBom.GetString(dto.Event.Event.Data.ToByteArray()),
+						Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata.ToByteArray()));
 
 
-					if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success) {
+					if (dto.Result == ReadEventCompleted.Types.ReadEventResult.Success) {
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));
 						context.Success();

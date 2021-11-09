@@ -866,13 +866,7 @@
               {
                 "id": 6,
                 "name": "result",
-                "type": "ReadAllResult",
-                "options": [
-                  {
-                    "name": "default",
-                    "value": "Success"
-                  }
-                ]
+                "type": "ReadAllResult"
               },
               {
                 "id": 7,
@@ -979,13 +973,7 @@
               {
                 "id": 7,
                 "name": "result",
-                "type": "FilteredReadAllResult",
-                "options": [
-                  {
-                    "name": "default",
-                    "value": "Success"
-                  }
-                ]
+                "type": "FilteredReadAllResult"
               },
               {
                 "id": 8,
@@ -1185,13 +1173,7 @@
               {
                 "id": 1,
                 "name": "result",
-                "type": "UpdatePersistentSubscriptionResult",
-                "options": [
-                  {
-                    "name": "default",
-                    "value": "Success"
-                  }
-                ]
+                "type": "UpdatePersistentSubscriptionResult"
               },
               {
                 "id": 2,
@@ -1206,13 +1188,7 @@
               {
                 "id": 1,
                 "name": "result",
-                "type": "CreatePersistentSubscriptionResult",
-                "options": [
-                  {
-                    "name": "default",
-                    "value": "Success"
-                  }
-                ]
+                "type": "CreatePersistentSubscriptionResult"
               },
               {
                 "id": 2,
@@ -1227,13 +1203,7 @@
               {
                 "id": 1,
                 "name": "result",
-                "type": "DeletePersistentSubscriptionResult",
-                "options": [
-                  {
-                    "name": "default",
-                    "value": "Success"
-                  }
-                ]
+                "type": "DeletePersistentSubscriptionResult"
               },
               {
                 "id": 2,
@@ -1300,13 +1270,7 @@
               {
                 "id": 4,
                 "name": "action",
-                "type": "NakAction",
-                "options": [
-                  {
-                    "name": "default",
-                    "value": "Unknown"
-                  }
-                ]
+                "type": "NakAction"
               }
             ]
           },
@@ -1434,13 +1398,7 @@
               {
                 "id": 1,
                 "name": "reason",
-                "type": "SubscriptionDropReason",
-                "options": [
-                  {
-                    "name": "default",
-                    "value": "Unsubscribed"
-                  }
-                ]
+                "type": "SubscriptionDropReason"
               }
             ]
           },
@@ -2020,6 +1978,302 @@
                 "id": 20,
                 "name": "advertise_tcp_port_to_client_as",
                 "type": "uint32"
+              }
+            ]
+          },
+          {
+            "name": "ReplicaLogWrite",
+            "fields": [
+              {
+                "id": 1,
+                "name": "log_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "replica_id",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "ReplicatedTo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "log_position",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "Epoch",
+            "fields": [
+              {
+                "id": 1,
+                "name": "epoch_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "epoch_number",
+                "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "epoch_id",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "SubscribeReplica",
+            "fields": [
+              {
+                "id": 1,
+                "name": "log_position",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "chunk_id",
+                "type": "bytes"
+              },
+              {
+                "id": 3,
+                "name": "LastEpochs",
+                "type": "Epoch",
+                "is_repeated": true
+              },
+              {
+                "id": 4,
+                "name": "ip",
+                "type": "bytes"
+              },
+              {
+                "id": 5,
+                "name": "port",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 7,
+                "name": "subscription_id",
+                "type": "bytes"
+              },
+              {
+                "id": 8,
+                "name": "is_promotable",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "ReplicaSubscriptionRetry",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "ReplicaSubscribed",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
+              },
+              {
+                "id": 3,
+                "name": "subscription_position",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "ReplicaLogPositionAck",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "replication_log_position",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "CreateChunk",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
+              },
+              {
+                "id": 3,
+                "name": "chunk_header_bytes",
+                "type": "bytes"
+              },
+              {
+                "id": 4,
+                "name": "file_size",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "is_completed_chunk",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "RawChunkBulk",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
+              },
+              {
+                "id": 3,
+                "name": "chunk_start_number",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "chunk_end_number",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "raw_position",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "raw_bytes",
+                "type": "bytes"
+              },
+              {
+                "id": 7,
+                "name": "complete_chunk",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "DataChunkBulk",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
+              },
+              {
+                "id": 3,
+                "name": "chunk_start_number",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "chunk_end_number",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "subscription_position",
+                "type": "int64"
+              },
+              {
+                "id": 6,
+                "name": "data_bytes",
+                "type": "bytes"
+              },
+              {
+                "id": 7,
+                "name": "complete_chunk",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "FollowerAssignment",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "CloneAssignment",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "DropSubscription",
+            "fields": [
+              {
+                "id": 1,
+                "name": "leader_id",
+                "type": "bytes"
+              },
+              {
+                "id": 2,
+                "name": "subscription_id",
+                "type": "bytes"
               }
             ]
           }

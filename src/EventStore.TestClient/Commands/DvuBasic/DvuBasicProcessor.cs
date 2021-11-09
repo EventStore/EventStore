@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
+using OperationResult = EventStore.Client.Messages.OperationResult;
 
 namespace EventStore.TestClient.Commands.DvuBasic {
 	internal class DvuBasicProcessor : ICmdProcessor {
@@ -203,9 +205,9 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			var head = -1;
 
 			Action<TcpTypedConnection<byte[]>, TcpPackage> packageHandler = (conn, pkg) => {
-				var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
+				var dto = pkg.Data.Deserialize<WriteEventsCompleted>();
 				switch (dto.Result) {
-					case TcpClientMessageDto.OperationResult.Success:
+					case OperationResult.Success:
 						lock (_heads) {
 							var currentHead = _heads[streamIdx];
 							Ensure.Equal(currentHead, head, "currentHead");
@@ -213,23 +215,23 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 						}
 
 						break;
-					case TcpClientMessageDto.OperationResult.PrepareTimeout:
+					case OperationResult.PrepareTimeout:
 						prepareTimeouts++;
 						failed++;
 						break;
-					case TcpClientMessageDto.OperationResult.CommitTimeout:
+					case OperationResult.CommitTimeout:
 						commitTimeouts++;
 						failed++;
 						break;
-					case TcpClientMessageDto.OperationResult.ForwardTimeout:
+					case OperationResult.ForwardTimeout:
 						forwardTimeouts++;
 						failed++;
 						break;
-					case TcpClientMessageDto.OperationResult.WrongExpectedVersion:
+					case OperationResult.WrongExpectedVersion:
 						wrongExpectedVersion++;
 						failed++;
 						break;
-					case TcpClientMessageDto.OperationResult.StreamDeleted:
+					case OperationResult.StreamDeleted:
 						streamsDeleted++;
 						failed++;
 						break;
@@ -262,11 +264,11 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 				}
 
 				var evnt = CreateEvent(_streams[streamIdx], head + 1);
-				var write = new TcpClientMessageDto.WriteEvents(
+				var write = new WriteEvents(
 					_streams[streamIdx],
 					head,
 					new[] {
-						new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType,
+						new NewEvent(evnt.EventId.ToByteArray(), evnt.EventType,
 							evnt.IsJson ? 1 : 0, 0, evnt.Data, evnt.Metadata)
 					},
 					false);
@@ -298,10 +300,10 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 			var eventidx = -1;
 
 			Action<TcpTypedConnection<byte[]>, TcpPackage> packageReceived = (conn, pkg) => {
-				var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
+				var dto = pkg.Data.Deserialize<ReadEventCompleted>();
 				switch (dto.Result) {
-					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success:
-						if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data)) {
+					case ReadEventCompleted.Types.ReadEventResult.Success:
+						if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data.ToByteArray())) {
 							successes++;
 							if (successes % 1000 == 0)
 								status.ReportReadsProgress(readerIdx, successes, fails);
@@ -311,11 +313,11 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 						}
 
 						break;
-					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.NotFound:
-					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.NoStream:
-					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.StreamDeleted:
-					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Error:
-					case TcpClientMessageDto.ReadEventCompleted.ReadEventResult.AccessDenied:
+					case ReadEventCompleted.Types.ReadEventResult.NotFound:
+					case ReadEventCompleted.Types.ReadEventResult.NoStream:
+					case ReadEventCompleted.Types.ReadEventResult.StreamDeleted:
+					case ReadEventCompleted.Types.ReadEventResult.Error:
+					case ReadEventCompleted.Types.ReadEventResult.AccessDenied:
 						fails++;
 						status.ReportNotFoundOnRead(readerIdx, _streams[streamIdx], eventidx);
 						break;
@@ -346,7 +348,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 					eventidx = NextRandomEventVersion(rnd, head);
 					var stream = _streams[streamIdx];
 					var corrid = Guid.NewGuid();
-					var read = new TcpClientMessageDto.ReadEvent(stream, eventidx, resolveLinkTos: false,
+					var read = new ReadEvent(stream, eventidx, resolveLinkTos: false,
 						requireLeader: false);
 					var package = new TcpPackage(TcpCommand.ReadEvent, corrid, read.Serialize());
 

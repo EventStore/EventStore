@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
+using OperationResult = EventStore.Client.Messages.OperationResult;
 
 namespace EventStore.TestClient.Commands {
 	internal class MultiWriteFloodWaitingProcessor : ICmdProcessor {
@@ -66,8 +68,8 @@ namespace EventStore.TestClient.Commands {
 							return;
 						}
 
-						var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-						if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
+						var dto = pkg.Data.Deserialize<WriteEventsCompleted>();
+						if (dto.Result == OperationResult.Success) {
 							if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write(".");
 						} else {
 							if (Interlocked.Increment(ref fail) % 1000 == 0) Console.Write("#");
@@ -85,11 +87,11 @@ namespace EventStore.TestClient.Commands {
 
 				threads.Add(new Thread(() => {
 					for (int j = 0; j < count; ++j) {
-						var writeDto = new TcpClientMessageDto.WriteEvents(
+						var writeDto = new WriteEvents(
 							eventStreamId,
 							ExpectedVersion.Any,
 							Enumerable.Range(0, writeCnt).Select(x =>
-								new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+								new NewEvent(Guid.NewGuid().ToByteArray(),
 									"type",
 									0, 0,
 									Common.Utils.Helper.UTF8NoBom.GetBytes(data),

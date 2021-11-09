@@ -1,12 +1,12 @@
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
-using System.Text;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Http.Codecs;
+
 
 namespace EventStore.TestClient.Commands {
 	internal class WriteJsonProcessor : ICmdProcessor {
@@ -37,11 +37,11 @@ namespace EventStore.TestClient.Commands {
 			}
 
 			context.IsAsync();
-			var writeDto = new TcpClientMessageDto.WriteEvents(
+			var writeDto = new WriteEvents(
 				eventStreamId,
 				expectedVersion,
 				new[] {
-					new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+					new NewEvent(Guid.NewGuid().ToByteArray(),
 						"JsonDataEvent",
 						1, 0,
 						Helper.UTF8NoBom.GetBytes(data),
@@ -70,8 +70,8 @@ namespace EventStore.TestClient.Commands {
 					dataReceived = true;
 					sw.Stop();
 
-					var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-					if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
+					var dto = pkg.Data.Deserialize<WriteEventsCompleted>();
+					if (dto.Result == OperationResult.Success) {
 						context.Log.Information("Successfully written. EventId: {correlationId}.", package.CorrelationId);
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));

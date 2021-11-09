@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
@@ -79,9 +80,9 @@ namespace EventStore.TestClient.Commands {
 							return;
 						}
 
-						var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadEventCompleted>();
+						var dto = pkg.Data.Deserialize<ReadEventCompleted>();
 						monitor.EndOperation(pkg.CorrelationId);
-						if (dto.Result == TcpClientMessageDto.ReadEventCompleted.ReadEventResult.Success) {
+						if (dto.Result == ReadEventCompleted.Types.ReadEventResult.Success) {
 							if (Interlocked.Increment(ref succ) % 1000 == 0) Console.Write(".");
 						} else {
 							if (Interlocked.Increment(ref fail) % 1000 == 0) Console.Write("#");
@@ -115,7 +116,7 @@ namespace EventStore.TestClient.Commands {
 						var eventStreamId = streams[streamIndex++];
 						if (streamIndex >= streamsCnt)
 							streamIndex = 0;
-						var read = new TcpClientMessageDto.ReadEvent(eventStreamId, 0, resolveLinkTos, requireLeader);
+						var read = new ReadEvent(eventStreamId, 0, resolveLinkTos, requireLeader);
 						var package = new TcpPackage(TcpCommand.ReadEvent, corrId, read.Serialize());
 						monitor.StartOperation(corrId);
 						client.EnqueueSend(package.AsByteArray());

@@ -9,6 +9,7 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Text;
+using EventStore.Client.Messages;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.LogV2;
 using EventStore.Core.Services.UserManagement;
@@ -16,6 +17,8 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services;
 using EventStore.Core.Tests.Authorization;
 using EventStore.Core.Util;
+using EventRecord = EventStore.Core.Data.EventRecord;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture]
@@ -51,7 +54,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.ReadStreamEventsForwardCompleted, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadStreamEventsCompleted>();
+			var dto = package.Value.Data.Deserialize<ReadStreamEventsCompleted>();
 			Assert.IsNotNull(dto, "DTO is null");
 
 			Assert.AreEqual(long.MaxValue, dto.LastEventNumber, "Last Event Number");
@@ -68,7 +71,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.ReadStreamEventsBackwardCompleted, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadStreamEventsCompleted>();
+			var dto = package.Value.Data.Deserialize<ReadStreamEventsCompleted>();
 			Assert.IsNotNull(dto, "DTO is null");
 
 			Assert.AreEqual(long.MaxValue, dto.LastEventNumber, "Last Event Number");
@@ -88,7 +91,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.ReadAllEventsForwardCompleted, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
+			var dto = package.Value.Data.Deserialize<ReadAllEventsCompleted>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(1, dto.Events.Count(), "Number of events");
 
@@ -109,7 +112,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.ReadAllEventsForwardCompleted, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
+			var dto = package.Value.Data.Deserialize<ReadAllEventsCompleted>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(1, dto.Events.Count(), "Number of events");
 
@@ -132,7 +135,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.ReadAllEventsBackwardCompleted, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
+			var dto = package.Value.Data.Deserialize<ReadAllEventsCompleted>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(1, dto.Events.Count(), "Number of events");
 
@@ -154,7 +157,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.ReadAllEventsBackwardCompleted, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
+			var dto = package.Value.Data.Deserialize<ReadAllEventsCompleted>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(1, dto.Events.Count(), "Number of events");
 
@@ -172,7 +175,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.StreamEventAppeared, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
+			var dto = package.Value.Data.Deserialize<StreamEventAppeared>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(long.MaxValue, dto.Event.Event.EventNumber, "Event Number");
 		}
@@ -185,7 +188,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.SubscriptionConfirmation, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+			var dto = package.Value.Data.Deserialize<SubscriptionConfirmation>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(long.MaxValue, dto.LastEventNumber, "Last Event Number");
 		}
@@ -198,7 +201,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.SubscriptionConfirmation, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+			var dto = package.Value.Data.Deserialize<SubscriptionConfirmation>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(long.MaxValue, dto.LastEventNumber, "Last Event Number");
 		}
@@ -213,7 +216,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.StreamEventAppeared, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
+			var dto = package.Value.Data.Deserialize<StreamEventAppeared>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(0, dto.Event.Event.EventNumber, "Event Number");
 			Assert.AreEqual(long.MaxValue, dto.Event.Link.EventNumber, "Link Event Number");
@@ -228,7 +231,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(package, "Package is null");
 			Assert.AreEqual(TcpCommand.PersistentSubscriptionConfirmation, package.Value.Command, "TcpCommand");
 
-			var dto = package.Value.Data.Deserialize<TcpClientMessageDto.PersistentSubscriptionConfirmation>();
+			var dto = package.Value.Data.Deserialize<PersistentSubscriptionConfirmation>();
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(long.MaxValue, dto.LastEventNumber, "Last event number");
 		}

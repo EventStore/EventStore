@@ -2,10 +2,11 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
+using OperationResult = EventStore.Core.Messages.OperationResult;
 
 namespace EventStore.TestClient.Commands {
 	internal class MultiWriteProcessor : ICmdProcessor {
@@ -42,10 +43,10 @@ namespace EventStore.TestClient.Commands {
 				connectionEstablished: conn => {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,
 						conn.LocalEndPoint);
-					var writeDto = new TcpClientMessageDto.WriteEvents(
+					var writeDto = new WriteEvents(
 						eventStreamId,
 						expectedVersion,
-						Enumerable.Range(0, writeCount).Select(x => new TcpClientMessageDto.NewEvent(
+						Enumerable.Range(0, writeCount).Select(x => new NewEvent(
 							Guid.NewGuid().ToByteArray(),
 							"type",
 							0, 0,
@@ -66,8 +67,8 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-					if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
+					var dto = pkg.Data.Deserialize<WriteEventsCompleted>();
+					if (dto.Result == EventStore.Client.Messages.OperationResult.Success) {
 						context.Log.Information("Successfully written {writeCount} events.", writeCount);
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));
