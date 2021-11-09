@@ -1,10 +1,9 @@
-name: Build Ubuntu 18.04
-
+name: Build Ubuntu 20.04 ARM64
 on:
   pull_request:
     paths-ignore:
-      - "docs/**"
-      - "samples/**"
+      - "/docs/**"
+      - "/samples/**"
       - "**.md"
   push:
     branches:
@@ -13,13 +12,13 @@ on:
     tags:
       - oss-v*
     paths-ignore:
-      - "docs/**"
-      - "samples/**"
+      - "/docs/**"
+      - "/samples/**"
       - "**.md"
 
 jobs:
   build:
     uses: EventStore/EventStore/.github/workflows/build-reusable.yml@9aceaed29d75e9fd70742aae0574dbc9e1d4f472
     with:
-      os: ubuntu-18.04
-      arch: x64
+      os: ubuntu-20.04-arm64
+      arch: arm64
