@@ -1,5 +1,4 @@
-name: Build Windows 2019
-
+name: Build Ubuntu 20.04 ARM64
 on:
   pull_request:
     paths-ignore:
@@ -21,5 +20,5 @@ jobs:
   build:
     uses: EventStore/EventStore/.github/workflows/build-reusable.yml@9aceaed29d75e9fd70742aae0574dbc9e1d4f472
     with:
-      os: windows-2019
-      arch: x64
+      os: ubuntu-20.04-arm64
+      arch: arm64
