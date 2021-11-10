@@ -354,31 +354,10 @@ namespace EventStore.ClusterNode {
 			}
 
 			if (requireCertificates) {
-				if (!string.IsNullOrWhiteSpace(options.CertificateStoreLocation)) {
-					var location = CertificateLoader.GetCertificateStoreLocation(options.CertificateStoreLocation);
-					var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
-					builder.WithServerCertificateFromStore(location, name, options.CertificateSubjectName,
-						options.CertificateThumbprint);
-				} else if (!string.IsNullOrWhiteSpace(options.CertificateStoreName)) {
-					var name = CertificateLoader.GetCertificateStoreName(options.CertificateStoreName);
-					builder.WithServerCertificateFromStore(name, options.CertificateSubjectName,
-						options.CertificateThumbprint);
-				} else if (options.CertificateFile.IsNotEmptyString()) {
-					builder.WithServerCertificateFromFile(
-						options.CertificateFile,
-						options.CertificatePrivateKeyFile,
-						options.CertificatePassword);
-				} else {
-					throw new InvalidConfigurationException(
-						"A certificate is required unless insecure mode (--insecure) is set.");
-				}
-
-				if (!string.IsNullOrEmpty(options.TrustedRootCertificatesPath)) {
-					builder.WithTrustedRootCertificatesPath(options.TrustedRootCertificatesPath);
-				} else {
-					throw new InvalidConfigurationException(
-						$"{nameof(options.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) is set.");
-				}
+				var (certificate, intermediateCerts) = options.LoadNodeCertificate();
+				builder.WithServerCertificate(certificate);
+				builder.WithIntermediateCertificates(intermediateCerts);
+				builder.WithTrustedRootCertificates(options.LoadTrustedRootCertificates());
 			}
 
 			var authorizationConfig = String.IsNullOrEmpty(options.AuthorizationConfig)

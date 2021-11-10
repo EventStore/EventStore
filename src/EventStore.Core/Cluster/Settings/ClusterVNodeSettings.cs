@@ -17,6 +17,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly GossipAdvertiseInfo GossipAdvertiseInfo;
 		public readonly bool EnableTrustedAuth;
 		public X509Certificate2 Certificate;
+		public X509Certificate2Collection IntermediateCerts;
 		public X509Certificate2Collection TrustedRootCerts;
 		public readonly string CertificateReservedNodeCommonName;
 		public readonly int WorkerThreads;
@@ -110,6 +111,7 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipAdvertiseInfo gossipAdvertiseInfo,
 			bool enableTrustedAuth,
 			X509Certificate2 certificate,
+			X509Certificate2Collection intermediateCerts,
 			X509Certificate2Collection trustedRootCerts,
 			string certificateReservedNodeCommonName,
 			int workerThreads,
@@ -220,6 +222,7 @@ namespace EventStore.Core.Cluster.Settings {
 			GossipAdvertiseInfo = gossipAdvertiseInfo;
 			EnableTrustedAuth = enableTrustedAuth;
 			Certificate = certificate;
+			IntermediateCerts = intermediateCerts;
 			TrustedRootCerts = trustedRootCerts;
 			CertificateReservedNodeCommonName = certificateReservedNodeCommonName;
 
@@ -310,6 +313,7 @@ namespace EventStore.Core.Cluster.Settings {
 			$"HttpEndPoint: {NodeInfo.HttpEndPoint}\n" +
 			$"EnableTrustedAuth: {EnableTrustedAuth}\n" +
 			$"Certificate: {(Certificate == null ? "n/a" : Certificate.ToString(true))}\n" +
+			$"Intermediate Certificates: {(IntermediateCerts == null ? "n/a" : IntermediateCerts.ToString())}\n" +
 			$"Trusted Root Certificates: {(TrustedRootCerts == null ? "n/a" : TrustedRootCerts.ToString())}\n" +
 			$"LogHttpRequests: {LogHttpRequests}\n" + $"WorkerThreads: {WorkerThreads}\n" +
 			$"DiscoverViaDns: {DiscoverViaDns}\n" + $"ClusterDns: {ClusterDns}\n" +

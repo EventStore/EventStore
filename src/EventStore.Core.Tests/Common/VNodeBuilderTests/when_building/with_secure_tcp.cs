@@ -18,9 +18,15 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			_internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
+			var options = new ClusterNodeOptions {
+				CertificateFile = certPath,
+				CertificatePrivateKeyFile = string.Empty,
+				CertificatePassword = "password"
+			};
+			var (cert, _) = options.LoadNodeCertificate();
 			_builder.WithInternalSecureTcpOn(_internalSecTcp)
 				.WithExternalSecureTcpOn(_externalSecTcp)
-				.WithServerCertificateFromFile(certPath, string.Empty, "password");
+				.WithServerCertificate(cert);
 		}
 
 		[Test]
@@ -93,7 +99,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
 		}
 	}
-
 
 	[TestFixture]
 	public class with_secure_tcp_endpoints_and_no_certificates {

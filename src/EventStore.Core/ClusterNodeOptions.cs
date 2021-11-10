@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Util;
@@ -7,6 +8,10 @@ using Serilog;
 
 namespace EventStore.Core {
 	public class ClusterNodeOptions : IOptions {
+		// Used for test paths only
+		public X509Certificate2 ServerCertificate;
+		public X509Certificate2Collection TrustedRootCertificates;
+
 		[ArgDescription(Opts.ShowHelpDescr, Opts.AppGroup)]
 		public bool Help { get; set; }
 

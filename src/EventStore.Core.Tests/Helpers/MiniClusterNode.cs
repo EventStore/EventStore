@@ -112,7 +112,7 @@ namespace EventStore.Core.Tests.Helpers {
 				useHttps ? new X509Certificate2Collection(ssl_connections.GetRootCertificate()) : null;
 
 			var singleVNodeSettings = new ClusterVNodeSettings(
-				Guid.NewGuid(), debugIndex, () => new ClusterNodeOptions(),
+				Guid.NewGuid(), debugIndex, () => new ClusterNodeOptions{ ServerCertificate = certificate, TrustedRootCertificates = trustedRootCertificates },
 				InternalTcpEndPoint, InternalTcpSecEndPoint, ExternalTcpEndPoint,
 				ExternalTcpSecEndPoint, HttpEndPoint,
 				new Data.GossipAdvertiseInfo(
@@ -120,7 +120,7 @@ namespace EventStore.Core.Tests.Helpers {
 					InternalTcpSecEndPoint.ToDnsEndPoint(),
 					ExternalTcpEndPoint.ToDnsEndPoint(), ExternalTcpSecEndPoint.ToDnsEndPoint(), HttpEndPoint.ToDnsEndPoint(),
 					null, null, 0, null, 0, 0), enableTrustedAuth,
-				certificate, trustedRootCertificates, Opts.CertificateReservedNodeCommonNameDefault, 1, false,
+				certificate, null, trustedRootCertificates, Opts.CertificateReservedNodeCommonNameDefault, 1, false,
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				TimeSpan.FromSeconds(10), false, false,TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new AuthenticationProviderFactory(components => 
@@ -179,7 +179,7 @@ namespace EventStore.Core.Tests.Helpers {
 								ClientCertificateMode = ClientCertificateMode.AllowCertificate,
 								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
 									var (isValid, error) =
-										ClusterVNode.ValidateClientCertificateWithTrustedRootCerts(certificate, chain, sslPolicyErrors, () => trustedRootCertificates);
+										ClusterVNode.ValidateClientCertificate(certificate, chain, sslPolicyErrors, () => null, () => trustedRootCertificates);
 									if (!isValid && error != null) {
 										Log.Error("Client certificate validation error: {e}", error);
 									}

@@ -55,6 +55,7 @@ namespace EventStore.Core {
 
 		protected bool _enableTrustedAuth;
 		protected X509Certificate2 _certificate;
+		protected X509Certificate2Collection _intermediateCerts;
 		protected X509Certificate2Collection _trustedRootCerts;
 		private string _certificateReservedNodeCommonName;
 		
@@ -699,51 +700,6 @@ namespace EventStore.Core {
 			_workerThreads = count;
 			return this;
 		}
-		
-		/// <summary>
-		/// Sets the Server TLS Certificate to be loaded from a file
-		/// </summary>
-		/// <param name="certificatePath">The path to the certificate file</param>
-		/// <param name="privateKeyPath">The path to the private key file</param>
-		/// <param name="password">The password for the certificate</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithServerCertificateFromFile(
-			string certificatePath,
-			string privateKeyPath,
-			string password) {
-			try {
-				_certificate = CertificateLoader.FromFile(certificatePath, privateKeyPath, password);
-			} catch (CryptographicException exc) {
-				throw new AggregateException("Error loading certificate file. Please verify that the correct password has been provided via the `CertificatePassword` option.", exc);
-			}
-			catch (NoCertificatePrivateKeyException) {
-				throw new Exception("Expect certificate to contain a private key. " +
-				                    "Please either provide a certificate that contains one or set the private key" +
-				                    " via the `CertificatePrivateKeyFile` option.");
-			}
-
-			return this;
-		}
-
-		/// <summary>
-		/// Restricts trust to the root certificates in the specified path
-		/// </summary>
-		/// <param name="trustedRootCertificatesPath">The path to the trusted root certificates</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithTrustedRootCertificatesPath(
-			string trustedRootCertificatesPath) {
-			Ensure.NotNullOrEmpty(trustedRootCertificatesPath, "trustedRootCertificatesPath");
-			var certCollection = new X509Certificate2Collection();
-			foreach (var (fileName, certificate) in CertificateLoader.LoadAllCertificates(trustedRootCertificatesPath)) {
-				certCollection.Add(certificate);
-				_log.Information("Trusted root certificate file loaded: {file}", fileName);
-			}
-			if (certCollection.Count == 0)
-				throw new Exception($"No trusted root certificates were loaded from: {trustedRootCertificatesPath}");
-
-			_trustedRootCerts = certCollection;
-			return this;
-		}
 
 		/// <summary>
 		/// Restricts trust to the specified root certificates
@@ -1209,29 +1165,12 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Sets the Server TLS Certificate to be loaded from a certificate store
+		/// Sets the intermediate certificates for the server certificate
 		/// </summary>
-		/// <param name="storeLocation">The location of the certificate store</param>
-		/// <param name="storeName">The name of the certificate store</param>
-		/// <param name="certificateSubjectName">The subject name of the certificate</param>
-		/// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
+		/// <param name="intermediateCerts">The intermediate certificates for the server certificate</param>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithServerCertificateFromStore(StoreLocation storeLocation, StoreName storeName,
-			string certificateSubjectName, string certificateThumbprint) {
-			_certificate = CertificateLoader.FromStore(storeLocation, storeName, certificateSubjectName, certificateThumbprint);
-			return this;
-		}
-
-		/// <summary>
-		/// Sets the Server TLS Certificate to be loaded from a certificate store
-		/// </summary>
-		/// <param name="storeName">The name of the certificate store</param>
-		/// <param name="certificateSubjectName">The subject name of the certificate</param>
-		/// <param name="certificateThumbprint">The thumbpreint of the certificate</param>
-		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithServerCertificateFromStore(StoreName storeName, string certificateSubjectName,
-			string certificateThumbprint) {
-			_certificate = CertificateLoader.FromStore(storeName, certificateSubjectName, certificateThumbprint);
+		public VNodeBuilder WithIntermediateCertificates(X509Certificate2Collection intermediateCerts) {
+			_intermediateCerts = intermediateCerts;
 			return this;
 		}
 
@@ -1489,6 +1428,7 @@ namespace EventStore.Core {
 				_gossipAdvertiseInfo,
 				_enableTrustedAuth,
 				_certificate,
+				_intermediateCerts,
 				_trustedRootCerts,
 				_certificateReservedNodeCommonName,
 				_workerThreads,

@@ -2,10 +2,12 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Authentication;
+using EventStore.Core.Tests.Certificates;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 
@@ -594,6 +596,62 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 	}
 
 	[TestFixture]
+	public class with_ssl_enabled_and_using_intermediate_certificates : SingleNodeScenario {
+		private IPEndPoint _internalSecTcp;
+		private IPEndPoint _externalSecTcp;
+		private X509Certificate2 _certificate;
+		private X509Certificate2 _intermediateCert;
+		private X509Certificate2 _rootCert;
+
+		public override void Given() {
+			_rootCert = with_certificates.CreateCertificate(issuer: true, expired: false);
+			_intermediateCert = with_certificates.CreateCertificate(issuer: true, parent: _rootCert, expired: false);
+			_certificate = with_certificates.CreateCertificate(issuer: false, parent: _intermediateCert, expired: false);
+			var baseIpAddress = IPAddress.Parse("127.0.1.15");
+			_internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
+			_externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
+			_builder.WithInternalSecureTcpOn(_internalSecTcp)
+				.WithExternalSecureTcpOn(_externalSecTcp)
+				.WithTrustedRootCertificates(new X509Certificate2Collection(_rootCert))
+				.WithIntermediateCertificates(new X509Certificate2Collection(_intermediateCert))
+				.WithServerCertificate(_certificate);
+		}
+
+		[Test]
+		public void should_set_tls_to_enabled() {
+			Assert.IsFalse(_settings.DisableInternalTcpTls);
+			Assert.IsFalse(_settings.DisableExternalTcpTls);
+		}
+
+		[Test]
+		public void should_set_certificate() {
+			Assert.AreEqual(_certificate.Thumbprint, _settings.Certificate.Thumbprint);
+		}
+
+		[Test]
+		public void should_set_root_certificate() {
+			Assert.AreEqual(1, _settings.IntermediateCerts.Count);
+			Assert.AreEqual(_intermediateCert.Thumbprint, _settings.IntermediateCerts[0].Thumbprint);
+		}
+
+		[Test]
+		public void should_set_intermediate_certificate() {
+			Assert.AreEqual(1, _settings.TrustedRootCerts.Count);
+			Assert.AreEqual(_rootCert.Thumbprint, _settings.TrustedRootCerts[0].Thumbprint);
+		}
+
+		[Test]
+		public void should_set_internal_secure_tcp_endpoint() {
+			Assert.AreEqual(_internalSecTcp, _settings.NodeInfo.InternalSecureTcp);
+		}
+
+		[Test]
+		public void should_set_external_secure_tcp_endpoint() {
+			Assert.AreEqual(_externalSecTcp, _settings.NodeInfo.ExternalSecureTcp);
+		}
+	}
+
+	[TestFixture]
 	public class with_connection_queue_size_threshold : SingleNodeScenario {
 		private int _threshold = 2000;
 
@@ -604,36 +662,6 @@ namespace EventStore.Core.Tests.Common.VNodeBuilderTests.when_building {
 		[Test]
 		public void should_set_connection_queue_size_threshold() {
 			Assert.AreEqual(_threshold, _settings.ConnectionQueueSizeThreshold);
-		}
-	}
-	
-	[TestFixture]
-	public class with_certificate_with_password_from_file : SingleNodeScenario {
-		public override void Given() {
-			var certificateWithPassword =
-				HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates",
-					"public_and_private_with_password.p12"));
-			_builder.WithServerCertificateFromFile(certificateWithPassword, string.Empty, "changeit");
-		}
-
-		[Test]
-		public void should_not_be_null() {
-			Assert.IsNotNull(_settings.Certificate);
-		}
-	}
-	
-	[TestFixture]
-	public class with_certificate_and_private_key_from_file : SingleNodeScenario {
-		public override void Given() {
-			var certificate =
-				HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates", "certificate.pem"));
-			var privateKey = HelperExtensions.GetFilePathFromAssembly(Path.Combine("TestCertificates", "private.key"));
-			_builder.WithServerCertificateFromFile(certificate, privateKey, string.Empty);
-		}
-
-		[Test]
-		public void should_not_be_null() {
-			Assert.IsNotNull(_settings.Certificate);
 		}
 	}
 }

@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 					GetLoopbackForPort(tcpExtPort).ToDnsEndPoint(), null,
 					GetLoopbackForPort(httpPort).ToDnsEndPoint(), null,
 					null, 0, null, 0, 0),
-				false, certificate, new X509Certificate2Collection(trustedRootCertificate),
+				false, certificate, null, new X509Certificate2Collection(trustedRootCertificate),
 				Opts.CertificateReservedNodeCommonNameDefault, 1, false, "dns", new[] {GetLoopbackForPort(ManagerPort)},
 				TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(2),
 				TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2), false, false,TimeSpan.FromHours(1),
