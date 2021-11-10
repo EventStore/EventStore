@@ -4,13 +4,13 @@
     <TargetFramework>net5.0</TargetFramework>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <DebugSymbols>true</DebugSymbols>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
   </ItemGroup>
   <ItemGroup>
-		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0"/>
+		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
 		<PackageReference Include="NUnit" Version="3.13.2" />

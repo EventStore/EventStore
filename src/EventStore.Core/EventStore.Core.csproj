@@ -4,7 +4,7 @@
 		<TargetFramework>net5.0</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<Platforms>x64</Platforms>
+		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
 			<FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -15,9 +15,9 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="EventStore.Plugins" Version="21.2.0" />
-		<PackageReference Include="Google.Protobuf" Version="3.14.0" />
-		<PackageReference Include="Grpc.AspNetCore" Version="2.35.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.36.1">
+		<PackageReference Include="Google.Protobuf" Version="3.15.8" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.39.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.39.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
@@ -30,7 +30,7 @@
 		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
 		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.57" />
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
-		<PackageReference Include="HostStat.NET" Version="1.0.1" />
+		<PackageReference Include="HostStat.NET" Version="1.0.2" />
 		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="5.0.1" />
 	</ItemGroup>
 	<ItemGroup>
