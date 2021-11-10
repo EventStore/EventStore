@@ -12,7 +12,7 @@ Normally, you'd want to keep the database files separated from the OS and other 
 | YAML                 | `Db` |
 | Environment variable | `EVENTSTORE_DB` | 
 
-**Default**: the default database location is platform specific. On Windows and macOS (when not running as `root`), the database will be stored in the `data` directory inside the EventStoreDB installation location. On Linux and on macOS (when running as `root`), it will be `/var/lib/eventstore`. 
+**Default**: the default database location is platform specific. On Windows, the database will be stored in the `data` directory inside the EventStoreDB installation location. On Linux, it will be `/var/lib/eventstore`. 
 
 ## In-memory database
 

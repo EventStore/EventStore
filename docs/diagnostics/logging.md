@@ -30,7 +30,7 @@ Keep in mind that the console output will not use structured logging, the option
 
 ## Logs location
 
-Log files are located in `/var/lib/eventstore` for Linux and macOS, and in the `logs` subdirectory of the EventStoreDB installation directory on Windows. You can change the log files location using the `Log` configuration option.
+Log files are located in `/var/lib/eventstore` for Linux, and in the `logs` subdirectory of the EventStoreDB installation directory on Windows. You can change the log files location using the `Log` configuration option.
 
 ::: tip
 Moving logs to a separate storage might improve the database performance if you keep the default verbose log level.
