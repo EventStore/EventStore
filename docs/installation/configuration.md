@@ -49,7 +49,7 @@ You can also override options from both configuration files and environment vari
 For example, starting EventStoreDB with the `--log` option will override the default log files location:
 
 :::: tabs
-::: tab macOS
+::: tab linux
 ```
 eventstore --log /tmp/eventstore/logs
 ```
@@ -76,7 +76,7 @@ Always run EventStoreDB as a service first, so it creates all the necessary dire
 $ eventstored --what-if
 [38558,01,17:05:37.079]
 "ES VERSION:"             "5.0.8.0" ("HEAD"/"6b871e5659ed38775372456fb21be6a99392fddb", "Thu, 26 Mar 2020 11:42:43 +0100")
-[38558,01,17:05:37.110] "OS:"                     MacOS (Unix 19.5.0.0)
+[38558,01,17:05:37.110] "OS:"                     Linux ("Unix 4.19.76.0")
 [38558,01,17:05:37.117] "RUNTIME:"                "5.16.0.220 (2018-06/bb3ae37d71a Fri Nov 16 17:12:11 EST 2018)" (64-bit)
 [38558,01,17:05:37.117] "GC:"                     "2 GENERATIONS"
 [38558,01,17:05:37.117] "LOGS:"                   "/var/log/eventstore"

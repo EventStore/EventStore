@@ -14,7 +14,7 @@ Check the [configuration](configuration.md) page to find out how to configure yo
 
 - [Linux](./linux.md)
 - [Windows](./windows.md)
-- [macOS](./macos.md)
+- macOS bare metal is not supported. We recommend using Docker instead.
 
 ## Docker
 

@@ -17,7 +17,6 @@ module.exports = [
             "installation/linux.md",
             "installation/docker.md",
             "installation/windows.md",
-            "installation/macos.md",
             // "installation/kubernetes.md",
             "installation/configuration.md"
         ]
