@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3260 [EventStore#3268](https://github.com/EventStore/EventStore/pull/3268)
+- //github.com/EventStore/EventStore/pull/3274 [EventStore#3281](https://github.com/EventStore/EventStore/pull/3281)
+
+### Added
+- Support for ARM64 on Linux. [EventStore#3076](https://github.com/EventStore/EventStore/pull/3076)
 
 ## [21.10.0] - 2021-11-03
 
