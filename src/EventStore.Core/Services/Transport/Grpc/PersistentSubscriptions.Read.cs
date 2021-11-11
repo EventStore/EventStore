@@ -52,8 +52,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
 
+			var read = ValueTask.CompletedTask;
+			var cts = new CancellationTokenSource();
 			try {
-				var read = requestStream.ForEachAsync(HandleAckNack);
+				read = PumpRequestStream(cts.Token);
 
 				await responseStream.WriteAsync(new ReadResp {
 					SubscriptionConfirmation = new ReadResp.Types.SubscriptionConfirmation {
@@ -66,10 +68,19 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						Event = ConvertToReadEvent(enumerator.Current)
 					}).ConfigureAwait(false);
 				}
-
-				await read.ConfigureAwait(false);
 			} catch (IOException) {
 				Log.Information("Subscription {correlationId} to {subscriptionId} disposed. The request stream was closed.", correlationId, subscriptionId);
+			} finally {
+				// make sure we stop reading the request stream before leaving this method
+				cts.Cancel();
+				await read.ConfigureAwait(false);
+			}
+
+			async ValueTask PumpRequestStream(CancellationToken token) {
+				try {
+					await requestStream.ForEachAsync(HandleAckNack, token).ConfigureAwait(false);
+				} catch {
+				}
 			}
 
 			ValueTask HandleAckNack(ReadReq request) {
