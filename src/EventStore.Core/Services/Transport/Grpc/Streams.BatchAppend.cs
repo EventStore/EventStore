@@ -93,7 +93,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					} catch (OperationCanceledException) {
 						tcs.TrySetCanceled(cancellationToken);
 					} catch (IOException ex) {
-						Log.Information(ex, "Closing gRPC client connection: {message}", ex.GetBaseException().Message);
+						Log.Information("Closing gRPC client connection: {message}", ex.GetBaseException().Message);
 						tcs.TrySetException(ex);
 					}
 					catch (Exception ex) {
