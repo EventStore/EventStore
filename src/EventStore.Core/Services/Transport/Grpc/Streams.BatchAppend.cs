@@ -236,11 +236,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 										_ => new BatchAppendResp { Error = Status.Unknown }
 									},
 									_ => new BatchAppendResp {
-										Error = new Status {
-											Details = Any.Pack(new Empty()),
-											Message =
-												$"Envelope callback expected either {nameof(ClientMessage.WriteEventsCompleted)} or {nameof(ClientMessage.NotHandled)}, received {message.GetType().Name} instead"
-										}
+										Error = Status.InternalError(
+											$"Envelope callback expected either {nameof(ClientMessage.WriteEventsCompleted)} or {nameof(ClientMessage.NotHandled)}, received {message.GetType().Name} instead.")
 									}
 								};
 								batchAppendResp.CorrelationId = request.CorrelationId;

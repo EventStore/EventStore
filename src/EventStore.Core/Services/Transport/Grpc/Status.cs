@@ -1,6 +1,7 @@
 using EventStore.Client;
 using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf.WellKnownTypes;
+using Empty = Google.Protobuf.WellKnownTypes.Empty;
 
 // ReSharper disable once CheckNamespace
 namespace Google.Rpc {
@@ -27,19 +28,19 @@ namespace Google.Rpc {
 		};
 
 		public static Status Timeout { get; } = new() {
-			Details =  Any.Pack(new Timeout()),
+			Details = Any.Pack(new Timeout()),
 			Message = nameof(Timeout),
 			Code = Code.DeadlineExceeded
 		};
 
 		public static Status InvalidTransaction { get; } = new() {
-			Details =  Any.Pack(new InvalidTransaction()),
+			Details = Any.Pack(new InvalidTransaction()),
 			Message = nameof(InvalidTransaction),
 			Code = Code.FailedPrecondition
 		};
 
 		public static Status Unknown { get; } = new() {
-			Details =  Any.Pack(new Unknown()),
+			Details = Any.Pack(new Unknown()),
 			Message = nameof(Unknown),
 			Code = Code.Unknown
 		};
@@ -57,6 +58,12 @@ namespace Google.Rpc {
 			Details = Any.Pack(new BadRequest {Message = message}),
 			Message = nameof(BadRequest),
 			Code = Code.InvalidArgument
+		};
+
+		public static Status InternalError(string message) => new() {
+			Details = Any.Pack(new Empty()),
+			Message = message,
+			Code = Code.Internal
 		};
 	}
 }
