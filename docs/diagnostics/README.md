@@ -1,3 +1,5 @@
+foo
+
 # Diagnostics
 
 EventStoreDB provides several ways to diagnose and troubleshoot issues.
