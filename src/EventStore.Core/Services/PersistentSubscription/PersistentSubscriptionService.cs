@@ -131,11 +131,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private void Start() {
 			_started = true;
 			_bus.Publish(new SubscriptionMessage.PersistentSubscriptionsStarted());
+			Log.Debug("Persistent Subscriptions have been started.");
 		}
 
 		private void Stop() {
 			_started = false;
 			_bus.Publish(new SubscriptionMessage.PersistentSubscriptionsStopped());
+			Log.Debug("Persistent Subscriptions have been stopped.");
 		}
 
 		public void Handle(ClientMessage.UnsubscribeFromStream message) {
