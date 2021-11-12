@@ -2,8 +2,8 @@ name: Build Ubuntu 20.04 ARM64
 on:
   pull_request:
     paths-ignore:
-      - "/docs/**"
-      - "/samples/**"
+      - "docs/**"
+      - "samples/**"
       - "**.md"
   push:
     branches:
@@ -12,8 +12,8 @@ on:
     tags:
       - oss-v*
     paths-ignore:
-      - "/docs/**"
-      - "/samples/**"
+      - "docs/**"
+      - "samples/**"
       - "**.md"
 
 jobs:

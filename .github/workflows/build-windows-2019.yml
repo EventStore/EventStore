@@ -3,8 +3,8 @@ name: Build Windows 2019
 on:
   pull_request:
     paths-ignore:
-      - "/docs/**"
-      - "/samples/**"
+      - "docs/**"
+      - "samples/**"
       - "**.md"
   push:
     branches:
@@ -13,8 +13,8 @@ on:
     tags:
       - oss-v*
     paths-ignore:
-      - "/docs/**"
-      - "/samples/**"
+      - "docs/**"
+      - "samples/**"
       - "**.md"
 
 jobs:
