@@ -1,3 +1,4 @@
+foo
 #region curl
 curl -i -X GET "http://127.0.0.1:2113/stats/proc/tcp" -u "admin:changeit"
 #endregion curl
