@@ -1,3 +1,4 @@
+foo
 module.exports = [
     {
         title: "Introduction",
