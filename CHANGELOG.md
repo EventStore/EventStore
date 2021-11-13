@@ -6,10 +6,12 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Exception in scheduled message callback crashes server [EventStore#3270](https://github.com/EventStore/EventStore/pull/3270)
 - IODispatcher is now threadsafe for request tracking [EventStore#3270](https://github.com/EventStore/EventStore/pull/3270)
+- InvalidOperationException caused by reading RequestStream after completing the PersistentSubscription gRPC call  [EventStore#3287](https://github.com/EventStore/EventStore/pull/3287)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3260 [EventStore#3268](https://github.com/EventStore/EventStore/pull/3268)
 - //github.com/EventStore/EventStore/pull/3274 [EventStore#3281](https://github.com/EventStore/EventStore/pull/3281)
+- //github.com/EventStore/EventStore/pull/3282 [EventStore#3296](https://github.com/EventStore/EventStore/pull/3296)
 
 ### Added
 - Support for ARM64 on Linux. [EventStore#3076](https://github.com/EventStore/EventStore/pull/3076)
