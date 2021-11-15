@@ -2,9 +2,9 @@ name: Pull Request check
 on:
   pull_request:
     paths-ignore:
-      - "/src/*.Tests/**"
-      - "/docs/**"
-      - "/samples/**"
+      - "src/*.Tests/**"
+      - "docs/**"
+      - "samples/**"
       - "**.md"
     types: [opened, edited]
 jobs:
