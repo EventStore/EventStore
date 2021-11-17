@@ -2,15 +2,13 @@
 
 When you tell EventStoreDB to use DNS for its gossip, the server will resolve the DNS name to a list of IP addresses and connect to each of those addresses to find other nodes. This method is very flexible because you can change the list of nodes on your DNS server without changing the cluster configuration. The DNS method is also useful in automated deployment scenario when you control both the cluster deployment and the DNS server from your infrastructure-as-code scripts.
 
-::: warning
-Cluster discovery using the `ClusterDns` setting only works for:
-- Insecure clusters
-- Secure clusters with SSL certificates that contain IP addresses of the nodes
+To use the DNS discovery, you need to set the `ClusterDns` option to the DNS name that allows making an HTTP call to it. When the server starts, it will attempt to make a gRPC call using the `https://<cluster-dns>:<gossip-port>` URL (`http` if the cluster is insecure).
 
-You cannot use `ClusterDns` for gossip when using wildcard certificates as they don't have IP address SANs.
-:::
+When using a certificate signed by a trusted CA, you'd normally use the wildcard certificate. Ensure that the cluster DNS name fits the wildcard, otherwise the request will fail on SSL check.
 
-To use the DNS discovery, you need to set the `ClusterDns` option to the DNS name that resolves to a list of IP addresses for the cluster nodes. You also need to have the `DiscoverViaDns` option to be set to `true` but it is its default value.
+When using self-signed certificates, the cluster DNS name must be included to the certificate of each node as SAN (subject alternative name).
+
+You also need to have the `DiscoverViaDns` option to be set to `true` but it is its default value.
 
 | Format               | Syntax |
 | :------------------- | :----- |
