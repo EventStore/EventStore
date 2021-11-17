@@ -147,6 +147,34 @@ All notable changes to this project will be documented in this file.
 - V3 StreamNumbers are now 32bit instead of 64bit [EventStore#2976](https://github.com/EventStore/EventStore/pull/2976)
 - Allow specifying a filter when creating a persistent subscription to $all [EventStore#2970](https://github.com/EventStore/EventStore/pull/2970)
 
+## [20.10.3] Server - 2020-04-14
+
+### Added
+- --stream-info-cache-capacity option to allow setting the cache capacity of the ReadIndex. [EventStore#2762](https://github.com/EventStore/EventStore/pull/2762)
+- auto configuration for stream cache, reader threads and worker threads. [EventStore#2934](https://github.com/EventStore/EventStore/pull/2934)
+
+### Changed
+- gRPC settings [EventStore#2934](https://github.com/EventStore/EventStore/pull/2934)
+
+## [20.10.2] Server - 2020-03-12
+
+### Changed
+- Increased the maximum chunk count to patch issue with 25 logical TB. [EventStore#2830](https://github.com/EventStore/EventStore/pull/2830)
+- Updated internal dependencies and added client builds for .NET 5.0 [EventStore#2764](https://github.com/EventStore/EventStore/pull/2764)
+
+### Fixed
+- Permission Denied when performing privileged commands on a follower [EventStore#2803](https://github.com/EventStore/EventStore/pull/2803)
+- --insecure has stopped working after targeting .NET 5.0 [EventStore#2779](https://github.com/EventStore/EventStore/pull/2779)
+- Track retry count for persistent subscription messages after a client has lost connection. [EventStore#2797](https://github.com/EventStore/EventStore/pull/2797)
+- Time out gossip discovery on the TCP client if the task does not complete [EventStore#2821](https://github.com/EventStore/EventStore/pull/2821)
+- Check for old/replayed events only if the event passes the event filter in projections [EventStore#2809](https://github.com/EventStore/EventStore/pull/2809)
+- Prevent a projection checkpoint from being emitted at same position twice [EventStore#2824](https://github.com/EventStore/EventStore/pull/2824)
+- Proactively send heartbeat requests to the remote party if no data was sent within the last heartbeat interval [EventStore#2772](https://github.com/EventStore/EventStore/pull/2772)
+- Regression in TCP connection introduced by commit: cd2aa67 from PR: #2772 [EventStore#2834][https://github.com/EventStore/EventStore/pull/2834]
+
+### Added
+- Content Type Validation to projections which will allow projections to only handle valid json events if isJson is set to true [EventStore#2812](https://github.com/EventStore/EventStore/pull/2812)
+
 ## [21.2.0] Server - 2021-02-26
 
 ### Added
