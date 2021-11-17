@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3260 [EventStore#3268](https://github.com/EventStore/EventStore/pull/3268)
 - //github.com/EventStore/EventStore/pull/3274 [EventStore#3281](https://github.com/EventStore/EventStore/pull/3281)
 - //github.com/EventStore/EventStore/pull/3282 [EventStore#3296](https://github.com/EventStore/EventStore/pull/3296)
+- //github.com/thefringeninja/EventStore/pull/3295 [EventStore#3298](https://github.com/EventStore/EventStore/pull/3298)
 
 ### Added
 - Support for ARM64 on Linux. [EventStore#3076](https://github.com/EventStore/EventStore/pull/3076)
