@@ -118,6 +118,7 @@ module.exports = [
             "diagnostics/logging.md",
             "diagnostics/stats.md",
             "diagnostics/histograms.md",
+            "diagnostics/vector.md",
             "diagnostics/prometheus.md",
             "diagnostics/datadog.md",
         ]
