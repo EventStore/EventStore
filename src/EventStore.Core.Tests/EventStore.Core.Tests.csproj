@@ -8,7 +8,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
-		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0"/>
+		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
 		<PackageReference Include="Grpc.Core" Version="2.39.1" />
 		<PackageReference Include="Grpc.Net.Client" Version="2.39.0" />
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="5.0.6" />
