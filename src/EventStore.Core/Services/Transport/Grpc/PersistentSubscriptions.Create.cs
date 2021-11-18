@@ -31,6 +31,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			string streamId = null;
+			string consumerStrategy = null;
+			if (settings.ConsumerStrategy is null) { /*for backwards compatibility*/
+			#pragma warning disable 612
+				consumerStrategy = settings.NamedConsumerStrategy.ToString();
+			#pragma warning restore 612
+
+			} else {
+				consumerStrategy = settings.ConsumerStrategy;
+			}
 
 			switch (request.Options.StreamOptionCase)
 			{
@@ -53,6 +62,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						startRevision = new StreamRevision(request.Options.Settings.Revision);
 						#pragma warning restore 612
 					}
+
 					_publisher.Publish(
 						new ClientMessage.CreatePersistentSubscriptionToStream(
 							correlationId,
@@ -84,7 +94,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							settings.MinCheckpointCount,
 							settings.MaxCheckpointCount,
 							settings.MaxSubscriberCount,
-							settings.NamedConsumerStrategy.ToString(),
+							consumerStrategy,
 							user));
 					break;
 				}
@@ -140,7 +150,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							settings.MinCheckpointCount,
 							settings.MaxCheckpointCount,
 							settings.MaxSubscriberCount,
-							settings.NamedConsumerStrategy.ToString(),
+							consumerStrategy,
 							user));
 					break;
 				default:

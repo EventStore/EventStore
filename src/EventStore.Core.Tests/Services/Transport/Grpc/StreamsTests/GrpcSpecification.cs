@@ -22,7 +22,7 @@ using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	public abstract class GrpcSpecification<TLogFormat, TStreamId> : IDisposable {
 		private readonly TestServer _server;
-		private readonly GrpcChannel _channel;
+		protected readonly GrpcChannel Channel;
 		private readonly IHost _host;
 		private readonly MiniNode<TLogFormat, TStreamId> _node;
 		protected MiniNode<TLogFormat, TStreamId> Node => _node;
@@ -37,13 +37,13 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					.Configure(_node.Node.Startup.Configure));
 			_host = builder.Start();
 			_server = _host.GetTestServer();
-			_channel = GrpcChannel.ForAddress(new UriBuilder {
+			Channel = GrpcChannel.ForAddress(new UriBuilder {
 				Scheme = Uri.UriSchemeHttps
 			}.Uri, new GrpcChannelOptions {
 				HttpClient = _server.CreateClient(),
 				DisposeHttpClient = true
 			});
-			StreamsClient = new Streams.StreamsClient(_channel);
+			StreamsClient = new Streams.StreamsClient(Channel);
 			_batchAppender = new BatchAppender(StreamsClient);
 		}
 
@@ -104,7 +104,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		public void Dispose() {
 			_batchAppender.DisposeAsync().GetAwaiter().GetResult();
 			_server?.Dispose();
-			_channel?.Dispose();
+			Channel?.Dispose();
 			_host?.Dispose();
 		}
 
