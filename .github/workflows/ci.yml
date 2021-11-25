@@ -109,20 +109,20 @@ jobs:
       with:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        repository: docker.pkg.github.com/eventstore/eventstore/eventstore
+        repository: ghcr.io/eventstore/eventstore
         tag-latest: false
         additional-tags: ${{ env.VERSION }}
-        registry: https://docker.pkg.github.com
+        registry: https://ghcr.io
     - name: Docker Push CI
       uses: jen20/action-docker-build@v1
       if: github.event_name == 'push' && matrix.container-runtime == 'bionic'
       with:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        repository: docker.pkg.github.com/eventstore/eventstore/eventstore
+        repository: ghcr.io/eventstore/eventstore
         tag-latest: false
         additional-tags: ci
-        registry: https://docker.pkg.github.com
+        registry: https://ghcr.io
   build:
     strategy:
       fail-fast: false
