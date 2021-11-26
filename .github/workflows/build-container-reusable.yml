@@ -11,8 +11,16 @@ jobs:
   build-container:
     strategy:
       fail-fast: false
-    runs-on: ubuntu-latest
-    name: ci/github/build-${{ inputs.container-runtime }}
+      matrix:
+       include:
+         - os : ubuntu-latest
+           arch : amd64
+         - os : ubuntu-20.04-arm64
+           arch: arm64
+    runs-on: ${{ matrix.os }} 
+    name: ci/github/build-${{ inputs.container-runtime }}-${{ matrix.arch }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -22,10 +30,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
-    - name: Setup QEMU
-      uses: docker/setup-qemu-action@v1
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v1
       with:
@@ -33,25 +37,42 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Calculate Version
+      id : version
       run: |
         dotnet tool restore
         version=$(dotnet tool run minver -- --tag-prefix=oss-v)-${{ inputs.container-runtime }}
         echo "VERSION=${version}" >> $GITHUB_ENV
-    - name: Setup Variables
-      id: variables
+        echo "::set-output name=version::${version}"
+    - name: Setup RID OS
+      id: rid-os
       uses: kanga333/variable-mapper@master
       with:
         key: "${{ inputs.container-runtime }}"
         map: |
           {
             "focal": {
-              "runtime": "linux-x64"
+              "os": "linux"
             },
             "buster-slim": {
-              "runtime": "linux-x64"
+              "os": "linux"
             },
             "alpine": {
-              "runtime": "alpine-x64"
+              "os": "alpine"
+            }
+          }
+        export_to: output
+    - name: Setup RID Architecture
+      id: rid-arch
+      uses: kanga333/variable-mapper@master
+      with:
+        key: "${{ matrix.arch }}"
+        map: |
+          {
+            "amd64": {
+              "arch": "x64"
+            },
+            "arm64": {
+              "arch": "arm64"
             }
           }
         export_to: output
@@ -63,7 +84,7 @@ jobs:
         tags: eventstore
         build-args: |
           CONTAINER_RUNTIME=${{ inputs.container-runtime }}
-          RUNTIME=${{ steps.variables.outputs.runtime }}
+          RUNTIME=${{ steps.rid-os.outputs.os }}-${{ steps.rid-arch.outputs.arch }}
     - name: Verify Build
       run: |
         docker run --rm eventstore --insecure --what-if
@@ -76,7 +97,7 @@ jobs:
         tags: eventstore-test
         build-args: |
           CONTAINER_RUNTIME=${{ inputs.container-runtime }}
-          RUNTIME=${{ steps.variables.outputs.runtime }}
+          RUNTIME=${{ steps.rid-os.outputs.os }}-${{ steps.rid-arch.outputs.arch }}
     - name: Run Tests
       run: |
           docker run \
@@ -88,42 +109,45 @@ jobs:
       if: always()
       with:
         path: test-results/test-results.html
-        name: test-results-${{ inputs.container-runtime }}.html
+        name: test-results-${{ inputs.container-runtime }}-${{ matrix.arch }}.html
     - name: Publish Test Results (All)
       uses: actions/upload-artifact@v1
       if: always()
       with:
-        name: test-results-${{ inputs.container-runtime }}
+        name: test-results-${{ inputs.container-runtime }}-${{ matrix.arch }}
         path: test-results
     - name: Push GitHub Container Registry
       if: always() && github.event_name == 'push'
       shell: bash
       run: |
-        docker tag eventstore ghcr.io/eventstore/eventstore:${{ env.VERSION }}
-        docker push ghcr.io/eventstore/eventstore:${{ env.VERSION }}
+        docker tag eventstore ghcr.io/eventstore/eventstore:${{ env.VERSION }}-${{ matrix.arch }}
+        docker push ghcr.io/eventstore/eventstore:${{ env.VERSION }}-${{ matrix.arch }}
     - name: Push GitHub Container Registry (CI)
       if: always() && github.event_name == 'push' && inputs.container-runtime == 'focal'
       shell: bash
       run: |
-        docker tag eventstore ghcr.io/eventstore/eventstore:ci
-        docker push ghcr.io/eventstore/eventstore:ci
-    - name: Docker Push
-      uses: jen20/action-docker-build@v1
-      if: github.event_name == 'push'
+        docker tag eventstore ghcr.io/eventstore/eventstore:ci-${{ matrix.arch }}
+        docker push ghcr.io/eventstore/eventstore:ci-${{ matrix.arch }}
+  multiarch-images:
+    name: Multi-architecture image manifest
+    needs: build-container
+    runs-on: ubuntu-latest
+    steps:
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
       with:
+        registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        repository: docker.pkg.github.com/eventstore/eventstore/eventstore
-        tag-latest: false
-        additional-tags: ${{ env.VERSION }}
-        registry: https://docker.pkg.github.com
-    - name: Docker Push CI
-      uses: jen20/action-docker-build@v1
-      if: github.event_name == 'push' && inputs.container-runtime == 'focal'
-      with:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        repository: docker.pkg.github.com/eventstore/eventstore/eventstore
-        tag-latest: false
-        additional-tags: ci
-        registry: https://docker.pkg.github.com
+    - name : Create and push manifest
+      run: |
+         docker manifest create ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}} \
+         --amend ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}}-amd64 \
+         --amend ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}}-arm64
+         docker manifest push ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}}
+    - name: Create and push manifest (CI)
+      run: |
+         docker manifest create ghcr.io/eventstore/eventstore:ci \
+         --amend ghcr.io/eventstore/eventstore:ci-arm64 \
+         --amend ghcr.io/eventstore/eventstore:ci-amd4
+         docker manifest push ghcr.io/eventstore/eventstore:ci
