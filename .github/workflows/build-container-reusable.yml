@@ -140,12 +140,14 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name : Create and push manifest
+      if: always() && github.event_name == 'push'
       run: |
          docker manifest create ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}} \
          --amend ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}}-amd64 \
          --amend ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}}-arm64
          docker manifest push ghcr.io/eventstore/eventstore:${{needs.build-container.outputs.version}}
     - name: Create and push manifest (CI)
+      if: github.event_name == 'push' && inputs.container-runtime == 'focal'
       run: |
          docker manifest create ghcr.io/eventstore/eventstore:ci \
          --amend ghcr.io/eventstore/eventstore:ci-arm64 \
