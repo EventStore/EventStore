@@ -48,7 +48,7 @@ ARG RUNTIME=linux-x64
 ARG UID=1000
 ARG GID=1000
 
-RUN if [[ "${RUNTIME}" = "alpine-x64" ]];\
+RUN if [[ "${RUNTIME}" = "alpine-x64" ]] || [[."${RUNTIME}" = "alpine-arm64"]];\
     then \
         apk update && \
         apk add --no-cache \
