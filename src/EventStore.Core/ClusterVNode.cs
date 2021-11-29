@@ -406,8 +406,12 @@ namespace EventStore.Core {
 
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
 				_workersHandler, vNodeSettings.LogHttpRequests,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHostAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortAs,
+				string.IsNullOrEmpty(vNodeSettings.GossipAdvertiseInfo.AdvertiseHostToClientAs)
+					? vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHostAs
+					: vNodeSettings.GossipAdvertiseInfo.AdvertiseHostToClientAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs == 0
+					? vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortAs
+					: vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
 				vNodeSettings.DisableFirstLevelHttpAuthorization,
 				vNodeSettings.NodeInfo.HttpEndPoint);
 
