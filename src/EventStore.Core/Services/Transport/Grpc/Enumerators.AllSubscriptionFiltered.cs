@@ -289,7 +289,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							if (startPosition != Position.End) {
 								ReadHistoricalEvents(startPosition);
 							} else {
-								NotifyCaughtUp(startPosition);
+								NotifyCaughtUp(Position.FromInt64(caughtUp.CommitPosition, caughtUp.PreparePosition));
 							}
 
 							void NotifyCaughtUp(Position position) {
