@@ -117,6 +117,7 @@ namespace EventStore.Core {
 		protected bool _unbuffered;
 		protected bool _writethrough;
 		protected int _chunkInitialReaderCount;
+		protected bool _useMemoryMappedCheckpoints;
 
 		protected string _index;
 		protected bool _skipIndexVerify;
@@ -1108,6 +1109,15 @@ namespace EventStore.Core {
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the node to use memory mapped checkpoints
+		/// </summary>
+		/// <param name="useMemoryMappedCheckpoints">Whether to use memory mapped checkpoints rather than file checkpoints</param>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder UseMemoryMappedCheckpoints() {
+			_useMemoryMappedCheckpoints = true;
+			return this;
+		}
 
 		/// <summary>
 		/// Sets the number of threads to use to initialize the node.
@@ -1412,6 +1422,7 @@ namespace EventStore.Core {
 				_optimizeIndexMerge,
 				_reduceFileCachePressure,
 				_maxTruncation,
+				_useMemoryMappedCheckpoints,
 				_log);
 			FileStreamExtensions.ConfigureFlush(disableFlushToDisk: _unsafeDisableFlushToDisk);
 
@@ -1577,6 +1588,7 @@ namespace EventStore.Core {
 			bool optimizeReadSideCache,
 			bool reduceFileCachePressure,
 			long maxTruncation,
+			bool useMemoryMappedCheckpoints,
 			ILogger log) {
 			ICheckpoint writerChk;
 			ICheckpoint chaserChk;
@@ -1616,14 +1628,28 @@ namespace EventStore.Core {
 				var epochCheckFilename = Path.Combine(dbPath, Checkpoint.Epoch + ".chk");
 				var proposalCheckFilename = Path.Combine(dbPath, Checkpoint.Proposal + ".chk");
 				var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
-				writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-				chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-				epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
-					initValue: -1);
-				proposalChk = new MemoryMappedFileCheckpoint(proposalCheckFilename, Checkpoint.Proposal, cached: true,
-					initValue: -1);
-				truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
-					cached: true, initValue: -1);
+				if (useMemoryMappedCheckpoints) {
+					log.Debug("Using Memory Mapped File Checkpoints");
+					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+					epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+						initValue: -1);
+					proposalChk = new MemoryMappedFileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
+						cached: true,
+						initValue: -1);
+					truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
+						cached: true, initValue: -1);
+				} else {
+					writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+					chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+					epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+						initValue: -1);
+					proposalChk = new FileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
+						cached: true,
+						initValue: -1);
+					truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
+						cached: true, initValue: -1);
+				}
 			}
 
 			var cache = cachedChunks >= 0

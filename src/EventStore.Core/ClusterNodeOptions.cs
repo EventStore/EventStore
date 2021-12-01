@@ -195,6 +195,9 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.ChunkInitialReaderCountDescr, Opts.DbGroup)]
 		public int ChunkInitialReaderCount { get; set; }
 
+		[ArgDescription(Opts.UseMemoryMappedCheckpointsDescr, Opts.DbGroup)]
+		public bool UseMemoryMappedCheckpoints { get; set; }
+
 
 		[ArgDescription(Opts.RunProjectionsDescr, Opts.ProjectionsGroup)]
 		public ProjectionType RunProjections { get; set; }
@@ -478,6 +481,7 @@ namespace EventStore.Core {
 			ConnectionPendingSendBytesThreshold = Opts.ConnectionPendingSendBytesThresholdDefault;
 			ConnectionQueueSizeThreshold = Opts.ConnectionQueueSizeThresholdDefault;
 			ChunkInitialReaderCount = Opts.ChunkInitialReaderCountDefault;
+			UseMemoryMappedCheckpoints = Opts.UseMemoryMappedCheckpointsDefault;
 
 			StreamInfoCacheCapacity = Opts.StreamInfoCacheCapacityDefault;
 

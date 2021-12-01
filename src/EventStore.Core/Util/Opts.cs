@@ -150,6 +150,9 @@ namespace EventStore.Core.Util {
 
 		public const int ChunkInitialReaderCountDefault = 5;
 
+		public const string UseMemoryMappedCheckpointsDescr = "Use memory mapped checkpoints instead of file checkpoints";
+		public const bool UseMemoryMappedCheckpointsDefault = false;
+
 		public const string UnbufferedDescr =
 			"Enables Unbuffered/DirectIO when writing to the file system, this bypasses filesystem caches.";
 

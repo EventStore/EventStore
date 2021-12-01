@@ -105,6 +105,12 @@ namespace EventStore.ClusterNode {
 					+ "It is recommended to use gRPC instead.\n";
 			}
 
+			if (opts.UseMemoryMappedCheckpoints) {
+				deprecationMessages +=
+					$"- The '{nameof(Options.UseMemoryMappedCheckpoints)}' option is a safety feature and should only be enabled if the database "
+					+ "is experiencing issues with file checkpoints. It will be removed in a future version.\n";
+			}
+
 			if (opts.DisableExternalTcpTls) {
 				deprecationMessages +=
 					$"- The '{nameof(Options.DisableExternalTcpTls)}' option has been deprecated as of version 20.6.1.\n";
@@ -271,6 +277,8 @@ namespace EventStore.ClusterNode {
 				.WithMaxAppendSize(options.MaxAppendSize)
 				.WithEnableAtomPubOverHTTP(options.EnableAtomPubOverHTTP)
 				.WithStreamInfoCacheCapacity(options.StreamInfoCacheCapacity);
+			if (options.UseMemoryMappedCheckpoints)
+				builder.UseMemoryMappedCheckpoints();
 
 			if (options.GossipSeed.Length > 0)
 				builder.WithGossipSeeds(options.GossipSeed);

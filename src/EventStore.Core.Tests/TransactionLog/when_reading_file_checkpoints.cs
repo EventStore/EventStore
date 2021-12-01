@@ -1,0 +1,34 @@
+using System.Threading.Tasks;
+using EventStore.Core.TransactionLog.Checkpoint;
+using NUnit.Framework;
+
+namespace EventStore.Core.Tests.TransactionLog {
+	[TestFixture]
+	public class when_reading_file_checkpoints : SpecificationWithFile {
+		[Test]
+		public void mem_mapped_file_checkpoint_can_be_read_as_file_checkpoint() {
+			var memoryMapped = new MemoryMappedFileCheckpoint(Filename);
+			memoryMapped.Write(0xDEAD);
+			memoryMapped.Flush();
+			memoryMapped.Dispose();
+
+			var fileCheckpoint = new FileCheckpoint(Filename);
+			var read = fileCheckpoint.Read();
+			fileCheckpoint.Dispose();
+			Assert.AreEqual(0xDEAD, read);
+		}
+
+		[Test]
+		public void file_checkpoint_can_be_read_as_mem_mapped_file_checkpoint() {
+			var fileCheckpoint = new FileCheckpoint(Filename);
+			fileCheckpoint.Write(0xDEAD);
+			fileCheckpoint.Flush();
+			fileCheckpoint.Dispose();
+
+			var memoryMapped = new MemoryMappedFileCheckpoint(Filename);
+			var read = memoryMapped.Read();
+			memoryMapped.Dispose();
+			Assert.AreEqual(0xDEAD, read);
+		}
+	}
+}
