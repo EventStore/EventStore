@@ -138,9 +138,10 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_engine.ResetConstraints();
 			var envelope = _interpreterRuntime.CreateEnvelope("", data, category);
 			var partition = _interpreterRuntime.GetPartition(envelope);
-			if (partition == JsValue.Null || partition == JsValue.Undefined || !partition.IsString())
+			if (partition == JsValue.Null || partition == JsValue.Undefined || !(partition.IsString() || partition.IsNumber()))
 				return null;
-			return partition.AsString();
+
+			return partition.IsNumber() ? partition.AsNumber().ToString() : partition.AsString();
 		}
 
 		public bool ProcessPartitionCreated(string partition, CheckpointTag createPosition, ResolvedEvent @event,
