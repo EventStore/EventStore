@@ -406,8 +406,12 @@ namespace EventStore.Core {
 
 			_httpService = new KestrelHttpService(ServiceAccessibility.Public, _mainQueue, new TrieUriRouter(),
 				_workersHandler, vNodeSettings.LogHttpRequests,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHostAs,
-				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortAs,
+				string.IsNullOrEmpty(vNodeSettings.GossipAdvertiseInfo.AdvertiseHostToClientAs)
+					? vNodeSettings.GossipAdvertiseInfo.AdvertiseExternalHostAs
+					: vNodeSettings.GossipAdvertiseInfo.AdvertiseHostToClientAs,
+				vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs == 0
+					? vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortAs
+					: vNodeSettings.GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
 				vNodeSettings.DisableFirstLevelHttpAuthorization,
 				vNodeSettings.NodeInfo.HttpEndPoint);
 
@@ -638,7 +642,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 			_mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
-			_mainBus.Subscribe(ioDispatcher);
+			_mainBus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
+			_mainBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());

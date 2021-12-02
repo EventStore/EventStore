@@ -23,7 +23,8 @@ namespace EventStore.Projections.Core.Tests.Services {
 			_node.Node.MainBus.Subscribe(_ioDispatcher.Writer);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.StreamDeleter);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.Awaker);
-			_node.Node.MainBus.Subscribe(_ioDispatcher);
+			_node.Node.MainBus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher);
+			_node.Node.MainBus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher);
 			_projectionNamesBuilder = ProjectionNamesBuilder.CreateForTest(_projectionName);
 			_emittedStreamsTracker = new EmittedStreamsTracker(_ioDispatcher,
 				new ProjectionConfig(null, 1000, 1000 * 1000, 100, 500, true, true, false, false,

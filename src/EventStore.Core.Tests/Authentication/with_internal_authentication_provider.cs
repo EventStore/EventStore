@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Helpers;
+using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Plugins.Authentication;
@@ -18,7 +19,8 @@ namespace EventStore.Core.Tests.Authentication {
 			_bus.Subscribe(_ioDispatcher.Writer);
 			_bus.Subscribe(_ioDispatcher.StreamDeleter);
 			_bus.Subscribe(_ioDispatcher.Awaker);
-			_bus.Subscribe(_ioDispatcher);
+			_bus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher);
+			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher);
 
 			PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
 			_internalAuthenticationProvider =

@@ -25,7 +25,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				bus.Subscribe(_dispatcher.Writer);
 				bus.Subscribe(_dispatcher.StreamDeleter);
 				bus.Subscribe(_dispatcher.Awaker);
-				bus.Subscribe(_dispatcher);
+				bus.Subscribe<IODispatcherDelayedMessage>(_dispatcher);
+				bus.Subscribe<ClientMessage.NotHandled>(_dispatcher);
 			}
 
 			var usersController =
@@ -49,7 +50,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			_components.MainBus.Subscribe(ioDispatcher.Writer);
 			_components.MainBus.Subscribe(ioDispatcher.StreamDeleter);
 			_components.MainBus.Subscribe(ioDispatcher.Awaker);
-			_components.MainBus.Subscribe(ioDispatcher);
+			_components.MainBus.Subscribe<IODispatcherDelayedMessage>(_dispatcher);
+			_components.MainBus.Subscribe<ClientMessage.NotHandled>(_dispatcher);
 
 			return provider;
 		}
