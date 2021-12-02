@@ -459,7 +459,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private ResolvedEvent ResolveLinkToEvent(EventRecord eventRecord, long commitPosition) {
 			if (eventRecord.EventType == SystemEventTypes.LinkTo) {
 				try {
-					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split('@');
+					string[] parts = Helper.UTF8NoBom.GetString(eventRecord.Data.Span).Split('@', 2);
 					long eventNumber = long.Parse(parts[0]);
 					string streamId = parts[1];
 
