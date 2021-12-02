@@ -1,13 +1,15 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using EventStore.ClientAPI;
+using EventStore.Core.Data;
 using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using System.Collections.Generic;
+using ExpectedVersion = EventStore.ClientAPI.ExpectedVersion;
 
 namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	// both the stream names hash to the same value using XXHash.
@@ -21,7 +23,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		protected int _maxMemTableSize = 5;
 		protected TableIndex _tableIndex;
 		protected IIndexReader _indexReader;
-		protected FakeIndexBackend _indexBackend;
+		protected IIndexBackend _indexBackend;
 		protected IHasher _lowHasher;
 		protected IHasher _highHasher;
 		protected string _indexDir;
@@ -63,6 +65,15 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		}
 	}
 
+	class UseMaxAgeFixtureArgs: IEnumerable
+	{
+		public IEnumerator GetEnumerator()
+		{
+			yield return true;
+			yield return false;
+		}
+	}
+
 	[TestFixture]
 	public class when_stream_does_not_exist : HashCollisionTestFixture {
 		protected override void given() {
@@ -82,65 +93,104 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	}
 
 	[TestFixture]
+	[TestFixtureSource(typeof(UseMaxAgeFixtureArgs))]
 	public class when_stream_is_out_of_range_of_read_limit : HashCollisionTestFixture {
+		private readonly bool _useMaxAge;
+		private readonly string stream1Id = "account--696193173";
+		private readonly string stream2Id = "LPN-FC002_LPK51001";
+
+		public when_stream_is_out_of_range_of_read_limit(bool useMaxAge) {
+			_useMaxAge = useMaxAge;
+		}
+
 		protected override void given() {
 			_hashCollisionReadLimit = 1;
 		}
 
 		protected override void when() {
+			if (_useMaxAge) {
+				_indexBackend.SetStreamMetadata(stream1Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
+				_indexBackend.SetStreamMetadata(stream2Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
+			}
 			//ptable 1
-			_tableIndex.Add(1, "account--696193173", 0, 0);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 0, 3);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 1, 5);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 2, 7);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 3, 9);
+			_tableIndex.Add(1, stream1Id, 0, 0);
+			_tableIndex.Add(1, stream2Id, 0, 3);
+			_tableIndex.Add(1, stream2Id, 1, 5);
+			_tableIndex.Add(1, stream2Id, 2, 7);
+			_tableIndex.Add(1, stream2Id, 3, 9);
 			//mem table
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 4, 13);
+			_tableIndex.Add(1, stream2Id, 4, 13);
 		}
 
 		[Test]
 		public void should_return_invalid_event_number() {
 			Assert.AreEqual(EventStore.Core.Data.EventNumber.Invalid,
-				_indexReader.GetStreamLastEventNumber("account--696193173"));
+				_indexReader.GetStreamLastEventNumber(stream1Id));
 		}
 	}
 
 	[TestFixture]
+	[TestFixtureSource(typeof(UseMaxAgeFixtureArgs))]
 	public class when_stream_is_in_of_range_of_read_limit : HashCollisionTestFixture {
+		private readonly bool _useMaxAge;
+		private readonly string stream1Id = "account--696193173";
+		private readonly string stream2Id = "LPN-FC002_LPK51001";
+
+		public when_stream_is_in_of_range_of_read_limit(bool useMaxAge) {
+			_useMaxAge = useMaxAge;
+		}
+
 		protected override void given() {
 			_hashCollisionReadLimit = 5;
 		}
 
 		protected override void when() {
+			if (_useMaxAge) {
+				_indexBackend.SetStreamMetadata(stream1Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
+				_indexBackend.SetStreamMetadata(stream2Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
+			}
 			//ptable 1
-			_tableIndex.Add(1, "account--696193173", 0, 0);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 0, 3);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 1, 5);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 2, 7);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 3, 9);
+			_tableIndex.Add(1, stream1Id, 0, 0);
+			_tableIndex.Add(1, stream2Id, 0, 3);
+			_tableIndex.Add(1, stream2Id, 1, 5);
+			_tableIndex.Add(1, stream2Id, 2, 7);
+			_tableIndex.Add(1, stream2Id, 3, 9);
 			//mem table
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 4, 13);
+			_tableIndex.Add(1, stream2Id, 4, 13);
 		}
 
 		[Test]
 		public void should_return_last_event_number() {
-			Assert.AreEqual(0, _indexReader.GetStreamLastEventNumber("account--696193173"));
+			Assert.AreEqual(0, _indexReader.GetStreamLastEventNumber(stream1Id));
 		}
 	}
 
 	[TestFixture]
+	[TestFixtureSource(typeof(UseMaxAgeFixtureArgs))]
 	public class when_hash_read_limit_is_not_reached : HashCollisionTestFixture {
+		private readonly bool _useMaxAge;
+
+		public when_hash_read_limit_is_not_reached(bool useMaxAge) {
+			_useMaxAge = useMaxAge;
+		}
+
 		protected override void given() {
 			_hashCollisionReadLimit = 3;
 		}
 
 		protected override void when() {
+			string stream1Id = "account--696193173";
+			string stream2Id = "LPN-FC002_LPK51001";
+			if (_useMaxAge) {
+				_indexBackend.SetStreamMetadata(stream1Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
+				_indexBackend.SetStreamMetadata(stream2Id, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
+			}
 			//ptable 1
-			_tableIndex.Add(1, "account--696193173", 0, 0);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 0, 3);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 1, 5);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 2, 7);
-			_tableIndex.Add(1, "LPN-FC002_LPK51001", 3, 9);
+			_tableIndex.Add(1, stream1Id, 0, 0);
+			_tableIndex.Add(1, stream2Id, 0, 3);
+			_tableIndex.Add(1, stream2Id, 1, 5);
+			_tableIndex.Add(1, stream2Id, 2, 7);
+			_tableIndex.Add(1, stream2Id, 3, 9);
 		}
 
 		[Test]
@@ -150,27 +200,23 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		}
 	}
 
-	[TestFixture(true)]
-	[TestFixture(false)]
+	[TestFixture]
+	[TestFixtureSource(typeof(UseMaxAgeFixtureArgs))]
 	public class when_index_contains_duplicate_entries : HashCollisionTestFixture {
-		private string streamId = "account--696193173";
-		private readonly bool _withMaxAge;
+		private readonly string streamId = "account--696193173";
+		private readonly bool _useMaxAge;
 
-		public when_index_contains_duplicate_entries(bool withMaxAge) {
-			_withMaxAge = withMaxAge;
+		public when_index_contains_duplicate_entries(bool useMaxAge) {
+			_useMaxAge = useMaxAge;
 		}
-
 		protected override void given() {
 			_hashCollisionReadLimit = 5;
 		}
 
 		protected override void when() {
-			if (_withMaxAge) {
-				_indexBackend.SetStreamMetadata(
-					streamId,
-					new Data.StreamMetadata(maxAge: TimeSpan.FromDays(1)));
+			if (_useMaxAge) {
+				_indexBackend.SetStreamMetadata(streamId, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
 			}
-
 			//ptable 1
 			_tableIndex.Add(1, streamId, 0, 2);
 			_tableIndex.Add(1, streamId, 0, 4);
@@ -225,9 +271,15 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 	}
 
 	[TestFixture]
+	[TestFixtureSource(typeof(UseMaxAgeFixtureArgs))]
 	public class
 		when_index_contains_duplicate_entries_and_the_duplicate_is_a_64bit_index_entry : HashCollisionTestFixture {
-		private string streamId = "account--696193173";
+		private readonly string streamId = "account--696193173";
+		private readonly bool _useMaxAge;
+
+		public when_index_contains_duplicate_entries_and_the_duplicate_is_a_64bit_index_entry(bool useMaxAge) {
+			_useMaxAge = useMaxAge;
+		}
 
 		protected override void given() {
 			_maxMemTableSize = 3;
@@ -235,6 +287,9 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		}
 
 		protected override void when() {
+			if (_useMaxAge) {
+				_indexBackend.SetStreamMetadata(streamId, new StreamMetadata(maxAge:TimeSpan.FromDays(1)));
+			}
 			//ptable 1 with 32bit indexes
 			_tableIndex.Add(1, streamId, 0, 2);
 			_tableIndex.Add(1, streamId, 1, 4);
@@ -315,7 +370,7 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		protected override void when() {
 			_indexBackend.SetStreamMetadata(
 				_evenStream,
-				new Data.StreamMetadata(maxAge: TimeSpan.FromDays(1)));
+				new StreamMetadata(maxAge: TimeSpan.FromDays(1)));
 
 			_tableIndex.Add(1, _evenStream, 5, 0);
 			_tableIndex.Add(1, _evenStream, 6, 2);
@@ -326,18 +381,11 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		[Test]
 		public void can_read() {
-			//qq here we probably fail to get the evenstream
 			var result = _indexReader.ReadStreamEventsForward(
 				streamId: _evenStream,
 				fromEventNumber: 0,
 				maxCount: 2);
 
-			//qq the behaviour between having no events and having expired events is different
-			//    with scavenged events (i.e. here) the read will start from the first present events
-			//    with expired events that have not been scavenged the read will be empty because
-			//    the first present are deemd out of range
-			// when_reading_very_long_stream_with_max_age_and_mostly_expired_events 
-			Assert.AreEqual(ReadStreamResult.Success, result.Result);
 			Assert.AreEqual(2, result.Records.Length);
 			Assert.AreEqual(5, result.Records[0].EventNumber);
 			Assert.AreEqual(6, result.Records[1].EventNumber);
@@ -346,7 +394,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 	public class FakeIndexBackend : IIndexBackend {
 		private readonly TFReaderLease _readerLease;
-		private readonly Dictionary<string, Data.StreamMetadata> _metadatas = new Dictionary<string, Data.StreamMetadata>();
+		private readonly Dictionary<string, IndexBackend.MetadataCached> _streamMetadata =
+			new Dictionary<string, IndexBackend.MetadataCached>();
 
 		public FakeIndexBackend(TFReaderLease readerLease) {
 			_readerLease = readerLease;
@@ -361,8 +410,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 		}
 
 		public IndexBackend.MetadataCached TryGetStreamMetadata(string streamId) {
-			if (_metadatas.TryGetValue(streamId, out var metadata))
-				return new IndexBackend.MetadataCached(1, metadata);
+			if (_streamMetadata.TryGetValue(streamId, out var metadata))
+				return metadata;
 			return new IndexBackend.MetadataCached();
 		}
 
@@ -372,7 +421,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		public EventStore.Core.Data.StreamMetadata UpdateStreamMetadata(int cacheVersion, string streamId,
 			EventStore.Core.Data.StreamMetadata metadata) {
-			return null;
+			_streamMetadata[streamId] = new IndexBackend.MetadataCached(1, metadata);
+			return metadata;
 		}
 
 		public long? SetStreamLastEventNumber(string streamId, long lastEventNumber) {
@@ -381,8 +431,8 @@ namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
 
 		public EventStore.Core.Data.StreamMetadata SetStreamMetadata(string streamId,
 			EventStore.Core.Data.StreamMetadata metadata) {
-			_metadatas[streamId] = metadata;
-			return null;
+			_streamMetadata[streamId] = new IndexBackend.MetadataCached(1, metadata);
+			return metadata;
 		}
 
 		public void SetSystemSettings(EventStore.Core.Data.SystemSettings systemSettings) {
