@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - IODispatcher is now threadsafe for request tracking [EventStore#3270](https://github.com/EventStore/EventStore/pull/3270)
 - InvalidOperationException caused by reading RequestStream after completing the PersistentSubscription gRPC call  [EventStore#3287](https://github.com/EventStore/EventStore/pull/3287)
 - Fix `partitionBy` not working with numbers [EventStore#3325](https://github.com/EventStore/EventStore/pull/3325)
+- Fix link parsing in persistent subscription service. [EventStore#3328](https://github.com/EventStore/EventStore/pull/3328)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3260 [EventStore#3268](https://github.com/EventStore/EventStore/pull/3268)
