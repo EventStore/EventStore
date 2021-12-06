@@ -16,11 +16,11 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 
 			var metadata = string.Format(@"{{""$maxAge"":{0}}}", (int)TimeSpan.FromMinutes(20).TotalSeconds);
 			WriteStreamMetadata("ES", 0, metadata, now.AddMinutes(-100));
-			WriteSingleEvent("ES", 0, "bla", now.AddMinutes(-50));
-			WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-25));
-			_event2 = WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-15));
-			_event3 = WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-11));
-			_event4 = WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-3));
+			WriteSingleEvent("ES", 0, "bla", now.AddMinutes(-50)); // expired
+			WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-25)); // expired
+			_event2 = WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-15)); // active
+			_event3 = WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-11)); // active
+			_event4 = WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-3)); // active
 		}
 
 		[Test]
