@@ -14,6 +14,21 @@ using Position = EventStore.Core.Services.Transport.Grpc.Position;
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
 	public class SubscribeToAllFilteredTests {
+		public static IEnumerable<object[]> TestCases() {
+			var checkpointIntervalMultipliers = new uint[] {2, 4, 8};
+
+			var maxSearchWindows = new uint[] {1, 32, 64};
+
+			var filteredEventCount = checkpointIntervalMultipliers.Max() * maxSearchWindows.Max();
+			return from checkpointInterval in checkpointIntervalMultipliers
+				from maxSearchWindow in maxSearchWindows
+				select new object[] {
+					checkpointInterval,
+					maxSearchWindow,
+					(int)filteredEventCount
+				};
+		}
+
 		private static ClaimsPrincipal TestUser =>
 			new ClaimsPrincipal(new ClaimsIdentity(new[] {new Claim(ClaimTypes.Name, "admin"),}, "ES-Test"));
 
@@ -52,6 +67,70 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			public async Task receives_the_correct_number_of_checkpoints() {
 				var checkpointCount = await _checkpointsSeen.Task.WithTimeout();
 				Assert.AreEqual(6, checkpointCount);
+			}
+		}
+
+		[TestFixtureSource(typeof(SubscribeToAllFilteredTests), nameof(TestCases))]
+		public class when_subscribing_to_all_with_a_filter_live : SpecificationWithMiniNode {
+			private const string StreamName = "test";
+
+			private int CheckpointCount => _positions.Count;
+
+			private readonly uint _maxSearchWindow;
+			private readonly int _filteredEventCount;
+			private readonly uint _checkpointIntervalMultiplier;
+			private readonly List<Position> _positions;
+
+			private Position _position;
+
+			public when_subscribing_to_all_with_a_filter_live(uint checkpointIntervalMultiplier, uint maxSearchWindow,
+				int filteredEventCount) {
+				_maxSearchWindow = maxSearchWindow;
+				_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
+				_filteredEventCount = filteredEventCount;
+				_positions = new List<Position>();
+				_position = Position.End;
+			}
+
+			protected override async Task Given() {
+				await _conn.AppendToStreamAsync("abcd", ExpectedVersion.Any, CreateEvents(_filteredEventCount));
+			}
+
+			protected override async Task When() {
+				var filter = EventFilter.StreamName.Prefixes(StreamName);
+				await using var enumerator = new Enumerators.AllSubscriptionFiltered(_node.Node.MainQueue, Position.End,
+					false,
+					filter, TestUser, true, _node.Node.ReadIndex, _maxSearchWindow, _checkpointIntervalMultiplier,
+					CheckpointReached, default);
+
+				var success = await _conn.AppendToStreamAsync(StreamName, ExpectedVersion.Any, CreateEvents(1));
+				_position = new Position((ulong)success.LogPosition.CommitPosition, (ulong)success.LogPosition.PreparePosition);
+
+				while (await enumerator.MoveNextAsync()) {
+					var response = enumerator.Current;
+					Assert.AreEqual(StreamName, response.Event.EventStreamId);
+					return;
+				}
+
+				Task CheckpointReached(Position arg) {
+					_positions.Add(arg);
+					return Task.CompletedTask;
+				}
+			}
+
+			[Test]
+			public void receives_the_correct_number_of_checkpoints() {
+				Assert.AreEqual(1, CheckpointCount);
+			}
+
+			[Test]
+			public void no_duplicate_checkpoints_received() {
+				Assert.AreEqual(_positions.Distinct().Count(), _positions.Count);
+			}
+
+			[Test]
+			public void checkpoint_is_before_last_written_event() {
+				Assert.True(_positions[0] <= _position);
 			}
 		}
 	}
