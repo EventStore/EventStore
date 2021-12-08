@@ -20,12 +20,12 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 				(int)TimeSpan.FromMinutes(20).TotalSeconds);
 
 			WriteStreamMetadata("ES", 0, metadata);
-			WriteSingleEvent("ES", 0, "bla", now.AddMinutes(-100));
-			WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-50));
-			WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-25));
-			_event3 = WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-15));
-			_event4 = WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-11));
-			_event5 = WriteSingleEvent("ES", 5, "bla", now.AddMinutes(-3));
+			WriteSingleEvent("ES", 0, "bla", now.AddMinutes(-100)); // expired: maxcount & maxage
+			WriteSingleEvent("ES", 1, "bla", now.AddMinutes(-50)); // expired: maxage
+			WriteSingleEvent("ES", 2, "bla", now.AddMinutes(-25)); // expired: maxage
+			_event3 = WriteSingleEvent("ES", 3, "bla", now.AddMinutes(-15)); // active
+			_event4 = WriteSingleEvent("ES", 4, "bla", now.AddMinutes(-11)); // active
+			_event5 = WriteSingleEvent("ES", 5, "bla", now.AddMinutes(-3)); // active
 		}
 
 		[Test]
@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount.ReadRangeAndNext
 			on_read_forward_from_start_to_expired_next_event_number_is_expired_by_age_plus_1_and_its_not_end_of_stream() {
 			var res = ReadIndex.ReadStreamEventsForward("ES", 0, 2);
 			Assert.AreEqual(ReadStreamResult.Success, res.Result);
-			Assert.AreEqual(2, res.NextEventNumber);
+			Assert.AreEqual(3, res.NextEventNumber); // new path fast forwards to here
 			Assert.AreEqual(5, res.LastEventNumber);
 			Assert.IsFalse(res.IsEndOfStream);
 

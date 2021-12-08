@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using EventStore.Core.Data;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
 
 namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
-	[TestFixture, Ignore("Metadata must be valid.")]
+	[TestFixture]
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_invalid_max_count_and_normal_max_age<TLogFormat, TStreamId> : ReadIndexTestScenario<TLogFormat, TStreamId> {
@@ -30,10 +29,10 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 		}
 
 		[Test]
-		public void on_single_event_read_invalid_value_is_ignored() {
+		public void on_single_event_read_metadata_is_ignored() {
 			var result = ReadIndex.ReadEvent("ES", 0);
-			Assert.AreEqual(ReadEventResult.NotFound, result.Result);
-			Assert.IsNull(result.Record);
+			Assert.AreEqual(ReadEventResult.Success, result.Result);
+			Assert.AreEqual(_r2, result.Record);
 
 			result = ReadIndex.ReadEvent("ES", 1);
 			Assert.AreEqual(ReadEventResult.Success, result.Result);
@@ -53,49 +52,77 @@ namespace EventStore.Core.Tests.Services.Storage.MaxAgeMaxCount {
 		}
 
 		[Test]
-		public void on_forward_range_read_invalid_value_is_ignored() {
+		public void on_forward_range_read_metadata_is_ignored() {
 			var result = ReadIndex.ReadStreamEventsForward("ES", 0, 100);
 			Assert.AreEqual(ReadStreamResult.Success, result.Result);
-			Assert.AreEqual(4, result.Records.Length);
-			Assert.AreEqual(_r3, result.Records[0]);
-			Assert.AreEqual(_r4, result.Records[1]);
-			Assert.AreEqual(_r5, result.Records[2]);
-			Assert.AreEqual(_r6, result.Records[3]);
+			Assert.AreEqual(5, result.Records.Length);
+			Assert.AreEqual(_r2, result.Records[0]);
+			Assert.AreEqual(_r3, result.Records[1]);
+			Assert.AreEqual(_r4, result.Records[2]);
+			Assert.AreEqual(_r5, result.Records[3]);
+			Assert.AreEqual(_r6, result.Records[4]);
 		}
 
 		[Test]
-		public void on_backward_range_read_invalid_value_is_ignored() {
+		public void on_backward_range_read_metadata_is_ignored() {
 			var result = ReadIndex.ReadStreamEventsBackward("ES", -1, 100);
 			Assert.AreEqual(ReadStreamResult.Success, result.Result);
-			Assert.AreEqual(4, result.Records.Length);
+			Assert.AreEqual(5, result.Records.Length);
 			Assert.AreEqual(_r6, result.Records[0]);
 			Assert.AreEqual(_r5, result.Records[1]);
 			Assert.AreEqual(_r4, result.Records[2]);
 			Assert.AreEqual(_r3, result.Records[3]);
+			Assert.AreEqual(_r2, result.Records[4]);
 		}
 
 		[Test]
-		public void on_read_all_forward_both_values_are_ignored() {
+		public void on_read_all_forward_metadata_is_ignored() {
 			var records = ReadIndex.ReadAllEventsForward(new TFPos(0, 0), 100).Records;
-			Assert.AreEqual(6, records.Count);
-			Assert.AreEqual(_r1, records[0].Event);
-			Assert.AreEqual(_r2, records[1].Event);
-			Assert.AreEqual(_r3, records[2].Event);
-			Assert.AreEqual(_r4, records[3].Event);
-			Assert.AreEqual(_r5, records[4].Event);
-			Assert.AreEqual(_r6, records[5].Event);
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				Assert.AreEqual(6, records.Count);
+				Assert.AreEqual(_r1, records[0].Event);
+				Assert.AreEqual(_r2, records[1].Event);
+				Assert.AreEqual(_r3, records[2].Event);
+				Assert.AreEqual(_r4, records[3].Event);
+				Assert.AreEqual(_r5, records[4].Event);
+				Assert.AreEqual(_r6, records[5].Event);
+			} else {
+				Assert.AreEqual(8, records.Count);
+				Assert.AreEqual("$stream", records[0].Event.EventType);
+				Assert.AreEqual(_r1, records[1].Event); // metadata
+				Assert.AreEqual("$event-type", records[2].Event.EventType);
+				Assert.AreEqual(_r2, records[3].Event);
+				Assert.AreEqual(_r3, records[4].Event);
+				Assert.AreEqual(_r4, records[5].Event);
+				Assert.AreEqual(_r5, records[6].Event);
+				Assert.AreEqual(_r6, records[7].Event);
+			}
 		}
 
 		[Test]
-		public void on_read_all_backward_both_values_are_ignored() {
+		public void on_read_all_backward_metadata_is_ignored() {
 			var records = ReadIndex.ReadAllEventsBackward(GetBackwardReadPos(), 100).Records;
-			Assert.AreEqual(6, records.Count);
-			Assert.AreEqual(_r6, records[0].Event);
-			Assert.AreEqual(_r5, records[1].Event);
-			Assert.AreEqual(_r4, records[2].Event);
-			Assert.AreEqual(_r3, records[3].Event);
-			Assert.AreEqual(_r2, records[4].Event);
-			Assert.AreEqual(_r1, records[5].Event);
+
+			if (LogFormatHelper<TLogFormat, TStreamId>.IsV2) {
+				Assert.AreEqual(6, records.Count);
+				Assert.AreEqual(_r6, records[0].Event);
+				Assert.AreEqual(_r5, records[1].Event);
+				Assert.AreEqual(_r4, records[2].Event);
+				Assert.AreEqual(_r3, records[3].Event);
+				Assert.AreEqual(_r2, records[4].Event);
+				Assert.AreEqual(_r1, records[5].Event);
+			} else {
+				Assert.AreEqual(8, records.Count);
+				Assert.AreEqual(_r6, records[0].Event);
+				Assert.AreEqual(_r5, records[1].Event);
+				Assert.AreEqual(_r4, records[2].Event);
+				Assert.AreEqual(_r3, records[3].Event);
+				Assert.AreEqual(_r2, records[4].Event);
+				Assert.AreEqual("$event-type", records[5].Event.EventType);
+				Assert.AreEqual(_r1, records[6].Event); // metadata
+				Assert.AreEqual("$stream", records[7].Event.EventType);
+			}
 		}
 	}
 }
