@@ -418,17 +418,33 @@ namespace EventStore.Core {
 					var truncateCheckFilename = Path.Combine(dbPath, Checkpoint.Truncate + ".chk");
 					var streamExistenceFilterCheckFilename = Path.Combine(streamExistencePath, Checkpoint.StreamExistenceFilter + ".chk");
 
-					writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-					chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-					epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
-						initValue: -1);
-					proposalChk = new MemoryMappedFileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
-						cached: true,
-						initValue: -1);
-					truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
-						cached: true, initValue: -1);
-					streamExistenceFilterChk = new MemoryMappedFileCheckpoint(streamExistenceFilterCheckFilename, Checkpoint.StreamExistenceFilter,
-						cached: true, initValue: -1);
+					if (OS.IsUnix) {
+						Log.Debug("Using File Checkpoints");
+						writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+						chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+						epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+							initValue: -1);
+						proposalChk = new FileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
+							cached: true,
+							initValue: -1);
+						truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
+							cached: true, initValue: -1);
+						streamExistenceFilterChk = new FileCheckpoint(streamExistenceFilterCheckFilename, Checkpoint.StreamExistenceFilter,
+							cached: true, initValue: -1);
+					} else {
+						Log.Debug("Using Memory Mapped File Checkpoints");
+						writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
+						chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
+						epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+							initValue: -1);
+						proposalChk = new MemoryMappedFileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
+							cached: true,
+							initValue: -1);
+						truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
+							cached: true, initValue: -1);
+						streamExistenceFilterChk = new MemoryMappedFileCheckpoint(streamExistenceFilterCheckFilename, Checkpoint.StreamExistenceFilter,
+							cached: true, initValue: -1);
+					}
 				}
 
 				var cache = options.Database.CachedChunks >= 0
