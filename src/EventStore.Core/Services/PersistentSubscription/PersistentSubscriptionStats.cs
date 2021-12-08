@@ -71,6 +71,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				});
 			}
 
+			var gotBuffer = _parent.TryGetStreamBuffer(out var streamBuffer);
+
 			return new MonitoringMessage.SubscriptionInfo() {
 				EventStreamId = _parent.EventStreamId,
 				GroupName = _parent.GroupName,
@@ -91,9 +93,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				ReadBatchSize = _settings.ReadBatchSize,
 				ResolveLinktos = _settings.ResolveLinkTos,
 				StartFrom = _settings.StartFrom,
-				ReadBufferCount = _parent.StreamBuffer.ReadBufferCount,
-				RetryBufferCount = _parent.StreamBuffer.RetryBufferCount,
-				LiveBufferCount = _parent.StreamBuffer.LiveBufferCount,
+				ReadBufferCount = gotBuffer ? streamBuffer.ReadBufferCount : 0,
+				RetryBufferCount = gotBuffer ? streamBuffer.RetryBufferCount : 0,
+				LiveBufferCount = gotBuffer ? streamBuffer.LiveBufferCount : 0,
 				ExtraStatistics = _settings.ExtraStatistics,
 				TotalInFlightMessages = totalInflight,
 				OutstandingMessagesCount = _parent.OutstandingMessageCount,
