@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - InvalidOperationException caused by reading RequestStream after completing the PersistentSubscription gRPC call  [EventStore#3287](https://github.com/EventStore/EventStore/pull/3287)
 - Fix `partitionBy` not working with numbers [EventStore#3325](https://github.com/EventStore/EventStore/pull/3325)
 - Fix link parsing in persistent subscription service. [EventStore#3328](https://github.com/EventStore/EventStore/pull/3328)
+- MaxAge fast path: corner cases and support for SkipIndexScanOnRead [EventStore#3339](https://github.com/EventStore/EventStore/pull/3339)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3260 [EventStore#3268](https://github.com/EventStore/EventStore/pull/3268)
@@ -18,6 +19,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Support for ARM64 on Linux. [EventStore#3076](https://github.com/EventStore/EventStore/pull/3076)
+
+### Changed
+- Use file checkpoints on Linux and memory mapped checkpoints on Windows [EventStore#3340](https://github.com/EventStore/EventStore/pull/3340)
 
 ## [21.10.0] - 2021-11-03
 
