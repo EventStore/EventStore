@@ -154,11 +154,18 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				}
 			}
 
+			_log.Information("Ensuring no excessive chunks...");
 			EnsureNoExcessiveChunks(lastChunkNum);
+			_log.Information("Done ensuring no excessive chunks.");
 
 			if (!readOnly) {
+				_log.Information("Removing old chunk versions...");
 				RemoveOldChunksVersions(lastChunkNum);
+				_log.Information("Done removing old chunk versions.");
+
+				_log.Information("Cleaning up temp files...");
 				CleanUpTempFiles();
+				_log.Information("Done cleaning up temp files.");
 			}
 
 			if (verifyHash && lastChunkNum > 0) {
