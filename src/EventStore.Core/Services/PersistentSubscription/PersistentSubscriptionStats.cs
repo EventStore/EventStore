@@ -75,6 +75,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 			long parkedMessageCount = _settings.MessageParker.ParkedMessageCount;
 
+			var gotBuffer = _parent.TryGetStreamBuffer(out var streamBuffer);
+
 			return new MonitoringMessage.PersistentSubscriptionInfo() {
 				EventSource = _parent.EventSource,
 				GroupName = _parent.GroupName,
@@ -95,9 +97,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				ReadBatchSize = _settings.ReadBatchSize,
 				ResolveLinktos = _settings.ResolveLinkTos,
 				StartFrom = _settings.StartFrom?.ToString(),
-				ReadBufferCount = _parent.StreamBuffer.ReadBufferCount,
-				RetryBufferCount = _parent.StreamBuffer.RetryBufferCount,
-				LiveBufferCount = _parent.StreamBuffer.LiveBufferCount,
+				ReadBufferCount = gotBuffer ? streamBuffer.ReadBufferCount : 0,
+				RetryBufferCount = gotBuffer ? streamBuffer.RetryBufferCount : 0,
+				LiveBufferCount = gotBuffer ? streamBuffer.LiveBufferCount : 0,
 				ExtraStatistics = _settings.ExtraStatistics,
 				TotalInFlightMessages = totalInflight,
 				OutstandingMessagesCount = _parent.OutstandingMessageCount,
