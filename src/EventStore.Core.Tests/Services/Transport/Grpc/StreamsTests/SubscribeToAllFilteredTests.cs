@@ -145,5 +145,104 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				Assert.AreEqual(_positions.Distinct().Count(), _positions.Count);
 			}
 		}
+
+		[TestFixtureSource(typeof(SubscribeToAllFilteredTests), nameof(TestCases))]
+		public class when_subscribing_to_all_with_a_filter_live<TLogFormat, TStreamId>
+			: GrpcSpecification<TLogFormat, TStreamId> {
+			private const string StreamName = "test";
+
+			private int CheckpointCount => _positions.Count;
+
+			private readonly uint _maxSearchWindow;
+			private readonly int _filteredEventCount;
+			private readonly uint _checkpointIntervalMultiplier;
+			private readonly List<Position> _positions;
+			private readonly uint _checkpointInterval;
+
+			private Position _position;
+
+			public when_subscribing_to_all_with_a_filter_live(uint checkpointIntervalMultiplier, uint maxSearchWindow,
+				int filteredEventCount) {
+				_maxSearchWindow = maxSearchWindow;
+				_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
+				_checkpointInterval = checkpointIntervalMultiplier * maxSearchWindow;
+				_filteredEventCount = filteredEventCount;
+				_positions = new List<Position>();
+				_position = Position.End;
+			}
+
+			protected override async Task Given() {
+				await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8("abcd")}
+					},
+					IsFinal = true,
+					ProposedMessages = {CreateEvents(_filteredEventCount)},
+					CorrelationId = Uuid.NewUuid().ToDto()
+				});
+			}
+
+			protected override async Task When() {
+				using var call = StreamsClient.Read(new ReadReq {
+					Options = new ReadReq.Types.Options {
+						Subscription = new(),
+						All = new() {End = new()},
+						Filter = new() {
+							Max = _maxSearchWindow,
+							CheckpointIntervalMultiplier = _checkpointIntervalMultiplier,
+							StreamIdentifier = new() {Prefix = {StreamName}}
+						},
+						UuidOption = new() {Structured = new()},
+						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards
+					}
+				}, GetCallOptions(AdminCredentials));
+
+				Assert.True(await call.ResponseStream.MoveNext());
+
+				Assert.AreEqual(ReadResp.ContentOneofCase.Confirmation, call.ResponseStream.Current.ContentCase);
+
+				var success = (await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
+						StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8(StreamName)}
+					},
+					IsFinal = true,
+					ProposedMessages = {CreateEvents(1)},
+					CorrelationId = Uuid.NewUuid().ToDto()
+				})).Success;
+
+				_position = new Position(success.Position.CommitPosition, success.Position.PreparePosition);
+
+				while (await call.ResponseStream.MoveNext()) {
+					var response = call.ResponseStream.Current;
+					if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
+						_positions.Add(new Position(response.Checkpoint.CommitPosition,
+							response.Checkpoint.PreparePosition));
+						continue;
+					}
+
+					if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
+						Assert.AreEqual(StreamName, response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
+						return;
+					}
+				}
+			}
+
+			[Test]
+			public void receives_the_correct_number_of_checkpoints() {
+				Assert.AreEqual(1, CheckpointCount);
+			}
+
+			[Test]
+			public void no_duplicate_checkpoints_received() {
+				Assert.AreEqual(_positions.Distinct().Count(), _positions.Count);
+			}
+
+			[Test]
+			public void checkpoint_is_before_last_written_event() {
+				Assert.True(_positions[0] < _position);
+			}
+		}
 	}
 }
