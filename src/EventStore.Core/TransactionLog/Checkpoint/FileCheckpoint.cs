@@ -67,17 +67,18 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			if (last == _lastFlushed)
 				return;
 
-			_fileStream.Seek(0, SeekOrigin.Begin);
-			_writer.Write(last);
+			//_fileStream.Seek(0, SeekOrigin.Begin);
+			//_writer.Write(last);
 
-			_fileStream.FlushToDisk();
+			//_fileStream.FlushToDisk();
+
 			Interlocked.Exchange(ref _lastFlushed, last);
 
 			OnFlushed(last);
 		}
 
 		public long Read() {
-			return _cached ? Interlocked.Read(ref _lastFlushed) : ReadCurrent();
+			return Interlocked.Read(ref _lastFlushed);
 		}
 
 		public long

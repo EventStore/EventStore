@@ -64,10 +64,10 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			if (last == _lastFlushed)
 				return;
 
-			_accessor.Write(0, last);
-			_accessor.Flush();
+			//_accessor.Write(0, last);
+			//_accessor.Flush();
 
-			_fileStream.FlushToDisk();
+			//_fileStream.FlushToDisk();
 
 			Interlocked.Exchange(ref _lastFlushed, last);
 
@@ -75,7 +75,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 		}
 
 		public long Read() {
-			return _cached ? Interlocked.Read(ref _lastFlushed) : ReadCurrent();
+			return Interlocked.Read(ref _lastFlushed);
 		}
 
 		private long ReadCurrent() {
