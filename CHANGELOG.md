@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Fix `partitionBy` not working with numbers [EventStore#3325](https://github.com/EventStore/EventStore/pull/3325)
 - Fix link parsing in persistent subscription service. [EventStore#3328](https://github.com/EventStore/EventStore/pull/3328)
 - MaxAge fast path: corner cases and support for SkipIndexScanOnRead [EventStore#3339](https://github.com/EventStore/EventStore/pull/3339)
+- use last indexed position of all stream when consumer subscribes to all filtered live [EventStore#3342](https://github.com/EventStore/EventStore/pull/3342)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3260 [EventStore#3268](https://github.com/EventStore/EventStore/pull/3268)
