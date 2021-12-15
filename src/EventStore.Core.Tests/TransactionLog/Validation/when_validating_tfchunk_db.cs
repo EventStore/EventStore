@@ -465,6 +465,8 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 			}
 
 			public void Emit(LogEvent logEvent) {
+				if (logEvent.Exception is null)
+					return;
 				_output.Append(logEvent.RenderMessage());
 				_logEventReceived.TrySetResult(logEvent.Exception);
 			}
