@@ -69,11 +69,10 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			lock (_locker) {
 				var reader = _readers.Get();
 				try {
-
 					long epochPos = _checkpoint.Read();
-					if (epochPos < 0
-					) // we probably have lost/uninitialized epoch checkpoint scan back to find the most recent epoch in the log
-					{
+					if (epochPos < 0) {
+						// we probably have lost/uninitialized epoch checkpoint scan back to find the most recent epoch in the log
+						Log.Information("No epoch checkpoint. Scanning log backwards for most recent epoch...");
 						reader.Reposition(_writer.Checkpoint.Read());
 
 						SeqReadResult result;
@@ -85,6 +84,8 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 							epochPos = rec.LogPosition;
 							break;
 						}
+
+						Log.Information("Done scanning log backwards for most recent epoch.");
 					}
 
 					//read back down the chain of epochs in the log until the cache is full
