@@ -3092,7 +3092,13 @@
                   {
                     "id": 13,
                     "name": "named_consumer_strategy",
-                    "type": "ConsumerStrategy"
+                    "type": "ConsumerStrategy",
+                    "options": [
+                      {
+                        "name": "deprecated",
+                        "value": "true"
+                      }
+                    ]
                   },
                   {
                     "id": 4,
@@ -3113,6 +3119,11 @@
                     "id": 15,
                     "name": "checkpoint_after_ms",
                     "type": "int32"
+                  },
+                  {
+                    "id": 16,
+                    "name": "consumer_strategy",
+                    "type": "string"
                   }
                 ]
               }
@@ -3352,6 +3363,360 @@
           },
           {
             "name": "DeleteResp"
+          },
+          {
+            "name": "GetInfoReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "all",
+                    "type": "event_store.client.Empty"
+                  },
+                  {
+                    "id": 3,
+                    "name": "group_name",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "GetInfoResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscription_info",
+                "type": "SubscriptionInfo"
+              }
+            ]
+          },
+          {
+            "name": "SubscriptionInfo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_source",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "group_name",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "status",
+                "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "connections",
+                "type": "ConnectionInfo",
+                "is_repeated": true
+              },
+              {
+                "id": 5,
+                "name": "average_per_second",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "total_items",
+                "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "count_since_last_measurement",
+                "type": "int64"
+              },
+              {
+                "id": 8,
+                "name": "last_checkpointed_event_position",
+                "type": "string"
+              },
+              {
+                "id": 9,
+                "name": "last_known_event_position",
+                "type": "string"
+              },
+              {
+                "id": 10,
+                "name": "resolve_link_tos",
+                "type": "bool"
+              },
+              {
+                "id": 11,
+                "name": "start_from",
+                "type": "string"
+              },
+              {
+                "id": 12,
+                "name": "message_timeout_milliseconds",
+                "type": "int32"
+              },
+              {
+                "id": 13,
+                "name": "extra_statistics",
+                "type": "bool"
+              },
+              {
+                "id": 14,
+                "name": "max_retry_count",
+                "type": "int32"
+              },
+              {
+                "id": 15,
+                "name": "live_buffer_size",
+                "type": "int32"
+              },
+              {
+                "id": 16,
+                "name": "buffer_size",
+                "type": "int32"
+              },
+              {
+                "id": 17,
+                "name": "read_batch_size",
+                "type": "int32"
+              },
+              {
+                "id": 18,
+                "name": "check_point_after_milliseconds",
+                "type": "int32"
+              },
+              {
+                "id": 19,
+                "name": "min_check_point_count",
+                "type": "int32"
+              },
+              {
+                "id": 20,
+                "name": "max_check_point_count",
+                "type": "int32"
+              },
+              {
+                "id": 21,
+                "name": "read_buffer_count",
+                "type": "int32"
+              },
+              {
+                "id": 22,
+                "name": "live_buffer_count",
+                "type": "int64"
+              },
+              {
+                "id": 23,
+                "name": "retry_buffer_count",
+                "type": "int32"
+              },
+              {
+                "id": 24,
+                "name": "total_in_flight_messages",
+                "type": "int32"
+              },
+              {
+                "id": 25,
+                "name": "outstanding_messages_count",
+                "type": "int32"
+              },
+              {
+                "id": 26,
+                "name": "named_consumer_strategy",
+                "type": "string"
+              },
+              {
+                "id": 27,
+                "name": "max_subscriber_count",
+                "type": "int32"
+              },
+              {
+                "id": 28,
+                "name": "parked_message_count",
+                "type": "int64"
+              }
+            ],
+            "messages": [
+              {
+                "name": "ConnectionInfo",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "from",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "username",
+                    "type": "string"
+                  },
+                  {
+                    "id": 3,
+                    "name": "average_items_per_second",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 4,
+                    "name": "total_items",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 5,
+                    "name": "count_since_last_measurement",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 6,
+                    "name": "observed_measurements",
+                    "type": "Measurement",
+                    "is_repeated": true
+                  },
+                  {
+                    "id": 7,
+                    "name": "available_slots",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 8,
+                    "name": "in_flight_messages",
+                    "type": "int32"
+                  },
+                  {
+                    "id": 9,
+                    "name": "connection_name",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "name": "Measurement",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "key",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "value",
+                    "type": "int64"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ReplayParkedReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "group_name",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "stream_identifier",
+                    "type": "event_store.client.StreamIdentifier"
+                  },
+                  {
+                    "id": 3,
+                    "name": "all",
+                    "type": "event_store.client.Empty"
+                  },
+                  {
+                    "id": 4,
+                    "name": "stop_at",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 5,
+                    "name": "no_limit",
+                    "type": "event_store.client.Empty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ReplayParkedResp"
+          },
+          {
+            "name": "ListReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "options",
+                "type": "Options"
+              }
+            ],
+            "messages": [
+              {
+                "name": "Options",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "list_all_subscriptions",
+                    "type": "event_store.client.Empty"
+                  },
+                  {
+                    "id": 2,
+                    "name": "list_for_stream",
+                    "type": "StreamOption"
+                  }
+                ]
+              },
+              {
+                "name": "StreamOption",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "stream",
+                    "type": "event_store.client.StreamIdentifier"
+                  },
+                  {
+                    "id": 2,
+                    "name": "all",
+                    "type": "event_store.client.Empty"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ListResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "subscriptions",
+                "type": "SubscriptionInfo",
+                "is_repeated": true
+              }
+            ]
           }
         ],
         "services": [
@@ -3379,6 +3744,26 @@
                 "out_type": "ReadResp",
                 "in_streamed": true,
                 "out_streamed": true
+              },
+              {
+                "name": "GetInfo",
+                "in_type": "GetInfoReq",
+                "out_type": "GetInfoResp"
+              },
+              {
+                "name": "ReplayParked",
+                "in_type": "ReplayParkedReq",
+                "out_type": "ReplayParkedResp"
+              },
+              {
+                "name": "List",
+                "in_type": "ListReq",
+                "out_type": "ListResp"
+              },
+              {
+                "name": "RestartSubsystem",
+                "in_type": "event_store.client.Empty",
+                "out_type": "event_store.client.Empty"
               }
             ]
           }
