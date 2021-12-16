@@ -9,6 +9,10 @@ service PersistentSubscriptions {
 	rpc Update (UpdateReq) returns (UpdateResp);
 	rpc Delete (DeleteReq) returns (DeleteResp);
 	rpc Read (stream ReadReq) returns (stream ReadResp);
+	rpc GetInfo (GetInfoReq) returns (GetInfoResp);
+	rpc ReplayParked (ReplayParkedReq) returns (ReplayParkedResp);
+	rpc List (ListReq) returns (ListResp);
+	rpc RestartSubsystem (event_store.client.Empty) returns (event_store.client.Empty);
 }
 
 message ReadReq {
@@ -155,7 +159,7 @@ message CreateReq {
 		int32 live_buffer_size = 10;
 		int32 read_batch_size = 11;
 		int32 history_buffer_size = 12;
-		ConsumerStrategy named_consumer_strategy = 13;
+		ConsumerStrategy named_consumer_strategy = 13 [deprecated = true];
 		oneof message_timeout {
 			int64 message_timeout_ticks = 4;
 			int32 message_timeout_ms = 14;
@@ -164,6 +168,7 @@ message CreateReq {
 			int64 checkpoint_after_ticks = 6;
 			int32 checkpoint_after_ms = 15;
 		}
+		string consumer_strategy = 16;
 	}
 
 	enum ConsumerStrategy {
@@ -257,4 +262,109 @@ message DeleteReq {
 }
 
 message DeleteResp {
+}
+
+message GetInfoReq {
+	Options options = 1;
+
+	message Options {
+		oneof stream_option {
+			event_store.client.StreamIdentifier stream_identifier = 1;
+			event_store.client.Empty all = 2;
+		}
+
+		string group_name = 3;
+	}
+}
+
+message GetInfoResp {
+	SubscriptionInfo subscription_info = 1;
+}
+
+message SubscriptionInfo {
+	string event_source = 1;
+	string group_name = 2;
+	string status = 3;
+	repeated ConnectionInfo connections = 4;
+	int32 average_per_second = 5;
+	int64 total_items = 6;
+	int64 count_since_last_measurement = 7;
+	string last_checkpointed_event_position = 8;
+	string last_known_event_position = 9;
+	bool resolve_link_tos = 10;
+	string start_from = 11;
+	int32 message_timeout_milliseconds = 12;
+	bool extra_statistics = 13;
+	int32 max_retry_count = 14;
+	int32 live_buffer_size = 15;
+	int32 buffer_size = 16;
+	int32 read_batch_size = 17;
+	int32 check_point_after_milliseconds = 18;
+	int32 min_check_point_count = 19;
+	int32 max_check_point_count = 20;
+	int32 read_buffer_count = 21;
+	int64 live_buffer_count = 22;
+	int32 retry_buffer_count = 23;
+	int32 total_in_flight_messages = 24;
+	int32 outstanding_messages_count = 25;
+	string named_consumer_strategy = 26;
+	int32 max_subscriber_count = 27;
+	int64 parked_message_count = 28;
+
+	message ConnectionInfo {
+		string from = 1;
+		string username = 2;
+		int32 average_items_per_second = 3;
+		int64 total_items = 4;
+		int64 count_since_last_measurement = 5;
+		repeated Measurement observed_measurements = 6;
+		int32 available_slots = 7;
+		int32 in_flight_messages = 8;
+		string connection_name = 9;
+	}
+
+	message Measurement {
+		string key = 1;
+		int64 value = 2;
+	}
+}
+
+message ReplayParkedReq {
+	Options options = 1;
+
+	message Options {
+		string group_name = 1;
+		oneof stream_option {
+			event_store.client.StreamIdentifier stream_identifier = 2;
+			event_store.client.Empty all = 3;
+		}
+		oneof stop_at_option {
+			int64 stop_at = 4;
+			event_store.client.Empty no_limit = 5;
+		}
+	}
+}
+
+message ReplayParkedResp {
+}
+
+message ListReq {
+	Options options = 1;
+
+	message Options {
+		oneof list_option {
+			event_store.client.Empty list_all_subscriptions = 1;
+			StreamOption list_for_stream = 2;
+		}
+	}
+	message StreamOption {
+		oneof stream_option {
+			event_store.client.StreamIdentifier stream = 1;
+			event_store.client.Empty all = 2;
+		}
+	}
+}
+
+message ListResp {
+	repeated SubscriptionInfo subscriptions = 1;
 }
