@@ -22,9 +22,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Support for ARM64 on Linux. [EventStore#3076](https://github.com/EventStore/EventStore/pull/3076)
+- GetInfo, ReplayParked, List, RestartSubsystem operations to persistent subscription gRPC proto [EventStore#3352](https://github.com/EventStore/EventStore/pull/3352)
+- String ConsumerStrategy property when creating persistent subscriptions over gRPC [EventStore#3352](https://github.com/EventStore/EventStore/pull/3352)
 
 ### Changed
 - Use file checkpoints on Linux and memory mapped checkpoints on Windows [EventStore#3340](https://github.com/EventStore/EventStore/pull/3340)
+- Deprecate NamedConsumerStrategy when creating persistent subscriptions over gRPC [EventStore#3352](https://github.com/EventStore/EventStore/pull/3352)
 
 ## [20.10.5] - 2021-12-06
 
