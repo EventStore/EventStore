@@ -472,3 +472,4 @@ MigrationBackup/
 # es-gencert-cli
 certs/
 /es-gencert-cli
+.temp/
