@@ -32,7 +32,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			string streamId = null;
 			string consumerStrategy = null;
-			if (settings.ConsumerStrategy is null) { /*for backwards compatibility*/
+			if (string.IsNullOrEmpty(settings.ConsumerStrategy)) { /*for backwards compatibility*/
 			#pragma warning disable 612
 				consumerStrategy = settings.NamedConsumerStrategy.ToString();
 			#pragma warning restore 612
