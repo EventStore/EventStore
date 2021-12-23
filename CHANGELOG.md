@@ -3,28 +3,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [21.10.1] - 2021-12-16
+
 ### Fixed
 - Exception in scheduled message callback crashes server [EventStore#3270](https://github.com/EventStore/EventStore/pull/3270)
 - IODispatcher is now threadsafe for request tracking [EventStore#3270](https://github.com/EventStore/EventStore/pull/3270)
 - InvalidOperationException caused by reading RequestStream after completing the PersistentSubscription gRPC call  [EventStore#3287](https://github.com/EventStore/EventStore/pull/3287)
+- Return correct status code in batch append [EventStore#3295](https://github.com/EventStore/EventStore/pull/3295)
 - Fix `partitionBy` not working with numbers [EventStore#3325](https://github.com/EventStore/EventStore/pull/3325)
 - Fix link parsing in persistent subscription service. [EventStore#3328](https://github.com/EventStore/EventStore/pull/3328)
 - MaxAge fast path: corner cases and support for SkipIndexScanOnRead [EventStore#3339](https://github.com/EventStore/EventStore/pull/3339)
 - use last indexed position of all stream when consumer subscribes to all filtered live [EventStore#3342](https://github.com/EventStore/EventStore/pull/3342)
-
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/3260 [EventStore#3268](https://github.com/EventStore/EventStore/pull/3268)
-- //github.com/EventStore/EventStore/pull/3274 [EventStore#3281](https://github.com/EventStore/EventStore/pull/3281)
-- //github.com/EventStore/EventStore/pull/3282 [EventStore#3296](https://github.com/EventStore/EventStore/pull/3296)
-- //github.com/thefringeninja/EventStore/pull/3295 [EventStore#3298](https://github.com/EventStore/EventStore/pull/3298)
-- //github.com/EventStore/EventStore/pull/3344 [EventStore#3345](https://github.com/EventStore/EventStore/pull/3345)
-- //github.com/EventStore/EventStore/pull/3346 [EventStore#3350](https://github.com/EventStore/EventStore/pull/3350)
-- //github.com/EventStore/EventStore/pull/3358 [EventStore#3359](https://github.com/EventStore/EventStore/pull/3359)
+- Prevent risk of deadlock when creating a PersistentSubscriptionGroup [EventStore#3344](https://github.com/EventStore/EventStore/pull/3344)
 
 ### Added
 - Support for ARM64 on Linux. [EventStore#3076](https://github.com/EventStore/EventStore/pull/3076)
 - GetInfo, ReplayParked, List, RestartSubsystem operations to persistent subscription gRPC proto [EventStore#3352](https://github.com/EventStore/EventStore/pull/3352)
 - String ConsumerStrategy property when creating persistent subscriptions over gRPC [EventStore#3352](https://github.com/EventStore/EventStore/pull/3352)
+- Extra logging on startup [EventStore#3346](https://github.com/EventStore/EventStore/pull/3346)
 
 ### Changed
 - Use file checkpoints on Linux and memory mapped checkpoints on Windows [EventStore#3340](https://github.com/EventStore/EventStore/pull/3340)
