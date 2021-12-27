@@ -4,9 +4,9 @@ When you tell EventStoreDB to use DNS for its gossip, the server will resolve th
 
 To use the DNS discovery, you need to set the `ClusterDns` option to the DNS name that allows making an HTTP call to it. When the server starts, it will attempt to make a gRPC call using the `https://<cluster-dns>:<gossip-port>` URL (`http` if the cluster is insecure).
 
-When using a certificate signed by a trusted CA, you'd normally use the wildcard certificate. Ensure that the cluster DNS name fits the wildcard, otherwise the request will fail on SSL check.
+When using a certificate signed by a publicly trusted CA, you'd normally use the wildcard certificate. Ensure that the cluster DNS name fits the wildcard, otherwise the request will fail on SSL check.
 
-When using self-signed certificates, the cluster DNS name must be included to the certificate of each node as SAN (subject alternative name).
+When using certificates signed by a private CA, the cluster DNS name must be included to the certificate of each node as SAN (subject alternative name).
 
 You also need to have the `DiscoverViaDns` option to be set to `true` but it is its default value.
 
