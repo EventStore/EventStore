@@ -46,7 +46,7 @@ Configure cluster nodes to discover other nodes in one of two ways:
 - [via a DNS entry](./using-dns.md) and a well-known [gossip port](./gossip.md#gossip-port)
 - [via a list of addresses](./using-ip-addresses.md) of other cluster nodes
 
-The multi-address DNS name cluster discovery only works for clusters that use self-signed SSL certificates, or run insecure. For other scenarios you need to provide the gossip seed using hostnames of other cluster nodes.
+The multi-address DNS name cluster discovery only works for clusters that use certificates signed by a private certificate authority, or run insecure. For other scenarios you need to provide the gossip seed using hostnames of other cluster nodes.
 
 ## Internal communication
 
