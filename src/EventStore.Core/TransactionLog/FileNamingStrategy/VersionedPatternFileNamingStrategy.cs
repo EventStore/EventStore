@@ -1,14 +1,15 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using EventStore.Common.Utils;
 using System.Linq;
 
 namespace EventStore.Core.TransactionLog.FileNamingStrategy {
-	public class VersionedPatternFileNamingStrategy : IFileNamingStrategy {
+	public class VersionedPatternFileNamingStrategy : IVersionedFileNamingStrategy {
 		private readonly string _path;
 		private readonly string _prefix;
-		private readonly Regex _chunkNamePattern;
+		private readonly Regex _pattern;
 
 		public VersionedPatternFileNamingStrategy(string path, string prefix) {
 			Ensure.NotNull(path, "path");
@@ -16,7 +17,7 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 			_path = path;
 			_prefix = prefix;
 
-			_chunkNamePattern = new Regex("^" + _prefix + @"\d{6}\.\w{6}$");
+			_pattern = new Regex("^" + _prefix + @"\d{6}\.\d{6}$");
 		}
 
 		public string GetFilenameFor(int index, int version) {
@@ -38,15 +39,42 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 
 		public string[] GetAllVersionsFor(int index) {
 			var versions = Directory.EnumerateFiles(_path, string.Format("{0}{1:000000}.*", _prefix, index))
-				.Where(x => _chunkNamePattern.IsMatch(Path.GetFileName(x)))
+				.Where(x => _pattern.IsMatch(Path.GetFileName(x)))
 				.OrderByDescending(x => x, StringComparer.CurrentCultureIgnoreCase)
 				.ToArray();
 			return versions;
 		}
 
+		public int GetIndexFor(string fileName) {
+			if (!_pattern.IsMatch(fileName))
+				throw new ArgumentException($"Invalid file name: {fileName}");
+
+			var start = _prefix.Length;
+			var end = fileName.IndexOf('.', _prefix.Length);
+			Debug.Assert(end != -1);
+
+			if (!int.TryParse(fileName[start..end], out var fileIndex))
+				throw new ArgumentException($"Invalid file name: {fileName}");
+
+			return fileIndex;
+		}
+
+		public int GetVersionFor(string fileName) {
+			if (!_pattern.IsMatch(fileName))
+				throw new ArgumentException($"Invalid file name: {fileName}");
+
+			var dot = fileName.IndexOf('.', _prefix.Length);
+			Debug.Assert(dot != -1);
+
+			if (!int.TryParse(fileName[(dot+1)..], out var version))
+				throw new ArgumentException($"Invalid file name: {fileName}");
+
+			return version;
+		}
+
 		public string[] GetAllPresentFiles() {
 			var versions = Directory.EnumerateFiles(_path, string.Format("{0}*.*", _prefix))
-				.Where(x => _chunkNamePattern.IsMatch(Path.GetFileName(x)))
+				.Where(x => _pattern.IsMatch(Path.GetFileName(x)))
 				.ToArray();
 			return versions;
 		}

@@ -14,7 +14,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly ICheckpoint TruncateCheckpoint;
 		public readonly ICheckpoint ReplicationCheckpoint;
 		public readonly ICheckpoint IndexCheckpoint;
-		public readonly IFileNamingStrategy FileNamingStrategy;
+		public readonly IVersionedFileNamingStrategy FileNamingStrategy;
 		public readonly bool InMemDb;
 		public readonly bool Unbuffered;
 		public readonly bool WriteThrough;
@@ -25,7 +25,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly long MaxTruncation;
 
 		public TFChunkDbConfig(string path,
-			IFileNamingStrategy fileNamingStrategy,
+			IVersionedFileNamingStrategy fileNamingStrategy,
 			int chunkSize,
 			long maxChunksCacheSize,
 			ICheckpoint writerCheckpoint,
