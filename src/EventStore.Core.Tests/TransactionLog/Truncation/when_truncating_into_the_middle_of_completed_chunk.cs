@@ -20,7 +20,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			_config = TFChunkHelper.CreateDbConfigEx(PathName, 1711, 5500, 5500, -1, 1111, 1000, -1);
+			_config = TFChunkHelper.CreateDbConfigEx(PathName, 3711, 5500, 5500, -1, 1111, 1000, -1);
 
 			var rnd = new Random();
 			_file1Contents = new byte[_config.ChunkSize];
@@ -30,6 +30,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			DbUtil.CreateSingleChunk(_config, 0, GetFilePathFor("chunk-000000.000001"), contents: _file1Contents);
 			DbUtil.CreateSingleChunk(_config, 1, GetFilePathFor("chunk-000001.000002"), contents: _file2Contents);
+			DbUtil.CreateSingleChunk(_config, 2, GetFilePathFor("chunk-000002.000000"));
+			DbUtil.CreateSingleChunk(_config, 3, GetFilePathFor("chunk-000003.000000"));
 
 			var truncator = new TFChunkDbTruncator(_config);
 			truncator.TruncateDb(_config.TruncateCheckpoint.ReadNonFlushed());
@@ -73,7 +75,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 		}
 
 		[Test]
-		public void all_chunks_are_preserved() {
+		public void chunks_after_truncation_point_are_deleted() {
 			Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000001")));
 			Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000002")));
 			Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
