@@ -78,16 +78,18 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 			File.Create(GetFilePathFor("foo")).Close();
 			File.Create(GetFilePathFor("bla")).Close();
 
-			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 350, chunkSize: 100);
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 450, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000002"));
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000005"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
-				DbUtil.CreateMultiChunk(config, 1, 2, GetFilePathFor("chunk-000001.000001"));
+				DbUtil.CreateMultiChunk(config, 1, 3, GetFilePathFor("chunk-000001.000001"));
 				DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
-				DbUtil.CreateSingleChunk(config, 3, GetFilePathFor("chunk-000003.000007"));
-				DbUtil.CreateOngoingChunk(config, 3, GetFilePathFor("chunk-000003.000008"));
+				DbUtil.CreateSingleChunk(config, 3, GetFilePathFor("chunk-000003.000000"));
+				DbUtil.CreateSingleChunk(config, 3, GetFilePathFor("chunk-000003.000001"));
+				DbUtil.CreateSingleChunk(config, 4, GetFilePathFor("chunk-000004.000007"));
+				DbUtil.CreateOngoingChunk(config, 4, GetFilePathFor("chunk-000004.000008"));
 
 				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
@@ -95,7 +97,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 				Assert.IsTrue(File.Exists(GetFilePathFor("bla")));
 				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000005")));
 				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000001.000001")));
-				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000003.000008")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000004.000008")));
 				Assert.AreEqual(5, Directory.GetFiles(PathName, "*").Length);
 			}
 		}
