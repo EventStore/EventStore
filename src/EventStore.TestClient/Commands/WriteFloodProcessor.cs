@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.TestClient.Statistics;
 using EventStore.Transport.Tcp;
@@ -89,10 +89,10 @@ namespace EventStore.TestClient.Commands {
 							return;
 						}
 
-						var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
+						var dto = pkg.Data.Deserialize<WriteEventsCompleted>();
 						monitor.EndOperation(pkg.CorrelationId);
 						switch (dto.Result) {
-							case TcpClientMessageDto.OperationResult.Success:
+							case OperationResult.Success:
 								Interlocked.Add(ref stats.Succ, batchSize);
 								if (stats.Succ - last > 1000) {
 									last = stats.Succ;
@@ -100,26 +100,26 @@ namespace EventStore.TestClient.Commands {
 								}
 
 								break;
-							case TcpClientMessageDto.OperationResult.PrepareTimeout:
+							case OperationResult.PrepareTimeout:
 								Interlocked.Increment(ref stats.PrepTimeout);
 								break;
-							case TcpClientMessageDto.OperationResult.CommitTimeout:
+							case OperationResult.CommitTimeout:
 								Interlocked.Increment(ref stats.CommitTimeout);
 								break;
-							case TcpClientMessageDto.OperationResult.ForwardTimeout:
+							case OperationResult.ForwardTimeout:
 								Interlocked.Increment(ref stats.ForwardTimeout);
 								break;
-							case TcpClientMessageDto.OperationResult.WrongExpectedVersion:
+							case OperationResult.WrongExpectedVersion:
 								Interlocked.Increment(ref stats.WrongExpVersion);
 								break;
-							case TcpClientMessageDto.OperationResult.StreamDeleted:
+							case OperationResult.StreamDeleted:
 								Interlocked.Increment(ref stats.StreamDeleted);
 								break;
 							default:
 								throw new ArgumentOutOfRangeException();
 						}
 
-						if (dto.Result != TcpClientMessageDto.OperationResult.Success)
+						if (dto.Result != OperationResult.Success)
 							if (Interlocked.Increment(ref stats.Fail) % 1000 == 0)
 								Console.Write('#');
 						Interlocked.Increment(ref received);
@@ -146,9 +146,9 @@ namespace EventStore.TestClient.Commands {
 
 				threads.Add(new Thread(() => {
 					for (int j = 0; j < count; ++j) {
-						var events = new TcpClientMessageDto.NewEvent[batchSize];
+						var events = new NewEvent[batchSize];
 						for (int q = 0; q < batchSize; q++) {
-							events[q] = new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+							events[q] = new NewEvent(Guid.NewGuid().ToByteArray(),
 								"TakeSomeSpaceEvent",
 								1, 0,
 								Common.Utils.Helper.UTF8NoBom.GetBytes(
@@ -158,7 +158,7 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						var corrid = Guid.NewGuid();
-						var write = new TcpClientMessageDto.WriteEvents(
+						var write = new WriteEvents(
 							streams[rnd.Next(streamsCnt)],
 							ExpectedVersion.Any,
 							events,

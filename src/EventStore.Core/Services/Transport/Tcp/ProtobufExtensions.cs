@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Collections.Concurrent;
-using ProtoBuf;
+using Google.Protobuf;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Tcp {
@@ -38,16 +38,17 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_streams.Push(stream);
 		}
 
-		public static T Deserialize<T>(this byte[] data) {
+		public static T Deserialize<T>(this byte[] data) where T: IMessage<T>, new() {
 			return Deserialize<T>(new ArraySegment<byte>(data));
 		}
 
-		public static T Deserialize<T>(this ArraySegment<byte> data) {
+		public static T Deserialize<T>(this ArraySegment<byte> data) where T: IMessage<T>, new() {
 			try {
 				using (var memory = new MemoryStream(data.Array, data.Offset, data.Count)
 				) //uses original buffer as memory
 				{
-					var res = Serializer.Deserialize<T>(memory);
+					var res = new T();
+					res.MergeFrom(memory);
 					return res;
 				}
 			} catch (Exception e) {
@@ -56,11 +57,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 		}
 
-		public static ArraySegment<byte> Serialize<T>(this T protoContract) {
+		public static ArraySegment<byte> Serialize<T>(this T protoContract) where T: IMessage<T> {
 			MemoryStream stream = null;
 			try {
 				stream = AcquireStream();
-				Serializer.Serialize(stream, protoContract);
+				protoContract.WriteTo(stream);
 				var res = new ArraySegment<byte>(stream.ToArray(), 0, (int)stream.Length);
 				return res;
 			} finally {
@@ -70,11 +71,11 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			}
 		}
 
-		public static byte[] SerializeToArray<T>(this T protoContract) {
+		public static byte[] SerializeToArray<T>(this T protoContract) where T: IMessage<T>{
 			MemoryStream stream = null;
 			try {
 				stream = AcquireStream();
-				Serializer.Serialize(stream, protoContract);
+				protoContract.WriteTo(stream);
 				return stream.ToArray();
 			} finally {
 				if (stream != null) {

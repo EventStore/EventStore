@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using Grpc.Core;
@@ -102,17 +103,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public static bool TryHandleNotHandled(ClientMessage.NotHandled notHandled, out Exception exception) {
 			exception = null;
 			switch (notHandled.Reason) {
-				case TcpClientMessageDto.NotHandled.NotHandledReason.NotReady:
+				case ClientMessage.NotHandled.Types.NotHandledReason.NotReady:
 					exception = ServerNotReady();
 					return true;
-				case TcpClientMessageDto.NotHandled.NotHandledReason.TooBusy:
+				case ClientMessage.NotHandled.Types.NotHandledReason.TooBusy:
 					exception = ServerBusy();
 					return true;
-				case TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader:
-				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly:
-					switch (notHandled.AdditionalInfo) {
-						case TcpClientMessageDto.NotHandled.LeaderInfo leaderInfo:
-							exception = LeaderInfo(leaderInfo.HttpAddress, leaderInfo.HttpPort);
+				case ClientMessage.NotHandled.Types.NotHandledReason.NotLeader:
+				case ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly:
+					switch (notHandled.LeaderInfo) {
+						case { } leaderInfo:
+							exception = LeaderInfo(leaderInfo.Http.GetHost(), leaderInfo.Http.GetPort());
 							return true;
 						default:
 							exception = NoLeaderInfo();

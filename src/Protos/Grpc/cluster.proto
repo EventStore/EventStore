@@ -147,3 +147,87 @@ message MemberInfo {
     uint32 advertise_tcp_port_to_client_as = 20;
 }
 
+message ReplicaLogWrite{
+	int64 log_position = 1;
+	bytes replica_id = 2;
+}
+
+message ReplicatedTo{
+	int64 log_position = 1;
+}
+
+message Epoch{
+	int64 epoch_position = 1;
+	int32 epoch_number = 2;
+	bytes epoch_id = 3;
+}
+
+message SubscribeReplica{
+	int64 log_position = 1;
+	bytes chunk_id = 2;
+	repeated Epoch LastEpochs = 3;
+	bytes ip = 4;
+	int32 port = 5;
+	bytes leader_id = 6;
+	bytes subscription_id = 7;
+	bool is_promotable = 8;
+}
+
+message ReplicaSubscriptionRetry{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+}
+
+message ReplicaSubscribed{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+	int64 subscription_position = 3;
+}
+
+message ReplicaLogPositionAck{
+	bytes subscription_id = 1;
+	int64 replication_log_position = 2;
+}
+
+message CreateChunk{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+	bytes chunk_header_bytes = 3;
+	int32 file_size = 4;
+	bool is_completed_chunk = 5;
+}
+
+message RawChunkBulk{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+	int32 chunk_start_number = 3;
+	int32 chunk_end_number = 4;
+	int32 raw_position = 5;
+	bytes raw_bytes = 6;
+	bool complete_chunk = 7;
+}
+
+message DataChunkBulk{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+	int32 chunk_start_number = 3;
+	int32 chunk_end_number = 4;
+	int64 subscription_position = 5;
+	bytes data_bytes = 6;
+	bool complete_chunk = 7;
+}
+
+message FollowerAssignment{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+}
+
+message CloneAssignment{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+}
+
+message DropSubscription{
+	bytes leader_id = 1;
+	bytes subscription_id = 2;
+}

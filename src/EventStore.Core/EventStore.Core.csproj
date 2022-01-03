@@ -44,6 +44,9 @@
 		<ProjectReference Include="..\EventStore.NETCore.Compatibility\EventStore.NETCore.Compatibility.csproj" />
 	</ItemGroup>
 	<ItemGroup>
+		<Protobuf Include="..\Protos\ClientAPI\ClientMessageDtos.proto">
+		  <Link>Services\Transport\Tcp\protos\ClientMessageDtos.proto</Link>
+		</Protobuf>
 		<Protobuf Include="..\Protos\Grpc\code.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
 			<Link>Services\Transport\Grpc\Protos\code.proto</Link>
 		</Protobuf>
@@ -77,5 +80,8 @@
 		<Protobuf Include="..\Protos\Grpc\serverfeatures.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
 			<Link>Services\Transport\Grpc\Protos\serverfeatures.proto</Link>
 		</Protobuf>
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Services\Transport\Tcp\protos\" />
 	</ItemGroup>
 </Project>

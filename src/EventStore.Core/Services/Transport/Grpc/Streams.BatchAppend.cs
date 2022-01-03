@@ -9,6 +9,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Client;
 using EventStore.Client.Streams;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -17,13 +18,12 @@ using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Microsoft.AspNetCore.Connections;
 using Serilog;
 using Empty = Google.Protobuf.WellKnownTypes.Empty;
 using Status = Google.Rpc.Status;
-using static EventStore.Core.Messages.TcpClientMessageDto.NotHandled;
 using static EventStore.Client.Streams.BatchAppendReq.Types;
 using static EventStore.Client.Streams.BatchAppendReq.Types.Options;
+using OperationResult = EventStore.Core.Messages.OperationResult;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams<TStreamId> {
@@ -201,16 +201,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 									ClientMessage.NotHandled notHandled => new BatchAppendResp {
 										Error = new Status {
 											Details = Any.Pack(new Empty()),
-											Message = (notHandled.Reason, notHandled.AdditionalInfo) switch {
-												(NotHandledReason.NotReady, _) => "Server Is Not Ready",
-												(NotHandledReason.TooBusy, _) => "Server Is Busy",
-												(NotHandledReason.NotLeader or NotHandledReason.IsReadOnly,
-													LeaderInfo leaderInfo) =>
-													throw RpcExceptions.LeaderInfo(leaderInfo.HttpAddress,
-														leaderInfo.HttpPort),
-												(NotHandledReason.NotLeader or NotHandledReason.IsReadOnly, _) =>
+											Message = (notHandled.Reason, AdditionalInfo: notHandled.LeaderInfo) switch {
+												(ClientMessage.NotHandled.Types.NotHandledReason.NotReady, _) => "Server Is Not Ready",
+												(ClientMessage.NotHandled.Types.NotHandledReason.TooBusy, _) => "Server Is Busy",
+												(ClientMessage.NotHandled.Types.NotHandledReason.NotLeader or ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly,
+													ClientMessage.NotHandled.Types.LeaderInfo leaderInfo) =>
+													throw RpcExceptions.LeaderInfo(leaderInfo.Http.GetHost(),
+														leaderInfo.Http.GetPort()),
+												(ClientMessage.NotHandled.Types.NotHandledReason.NotLeader or ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly, _) =>
 													"No leader info available in response",
-												_ => $"Unknown {nameof(NotHandledReason)} ({(int)notHandled.Reason})"
+												_ => $"Unknown {nameof(ClientMessage.NotHandled.Types.NotHandledReason)} ({(int)notHandled.Reason})"
 											}
 										}
 									},

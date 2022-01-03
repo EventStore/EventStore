@@ -1,9 +1,8 @@
 using System;
 using System.Diagnostics;
-using System.Text;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands {
@@ -48,11 +47,11 @@ namespace EventStore.TestClient.Commands {
 				connectionEstablished: conn => {
 					context.Log.Information("[{remoteEndPoint}, L{localEndPoint}]: Writing...", conn.RemoteEndPoint,
 						conn.LocalEndPoint);
-					var writeDto = new TcpClientMessageDto.WriteEvents(
+					var writeDto = new WriteEvents(
 						eventStreamId,
 						expectedVersion,
 						new[] {
-							new TcpClientMessageDto.NewEvent(Guid.NewGuid().ToByteArray(),
+							new NewEvent(Guid.NewGuid().ToByteArray(),
 								"TakeSomeSpaceEvent",
 								isJson ? 1 : 0, 0,
 								Helper.UTF8NoBom.GetBytes(data),
@@ -77,8 +76,8 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					var dto = pkg.Data.Deserialize<TcpClientMessageDto.WriteEventsCompleted>();
-					if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
+					var dto = pkg.Data.Deserialize<WriteEventsCompleted>();
+					if (dto.Result == EventStore.Client.Messages.OperationResult.Success) {
 						context.Log.Information("Successfully written.");
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));

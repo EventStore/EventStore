@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
@@ -63,7 +64,7 @@ namespace EventStore.TestClient.Commands {
 						conn.RemoteEndPoint, conn.LocalEndPoint, forward ? "FORWARD" : "BACKWARD");
 
 					var readDto =
-						new TcpClientMessageDto.ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireLeader);
+						new ReadAllEvents(commitPos, preparePos, 10, resolveLinkTos, requireLeader);
 					var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					sw.Start();
 					conn.EnqueueSend(package);
@@ -74,7 +75,7 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					var dto = pkg.Data.Deserialize<TcpClientMessageDto.ReadAllEventsCompleted>();
+					var dto = pkg.Data.Deserialize<ReadAllEventsCompleted>();
 					if (dto.Events.IsEmpty()) {
 						sw.Stop();
 						context.Log.Information("=== Reading ALL {readDirection} completed in {elapsed}. Total read: {total}",
@@ -85,21 +86,21 @@ namespace EventStore.TestClient.Commands {
 					}
 
 					var sb = new StringBuilder();
-					for (int i = 0; i < dto.Events.Length; ++i) {
+					for (int i = 0; i < dto.Events.Count; ++i) {
 						var evnt = dto.Events[i].Event;
 						sb.AppendFormat(
 							"\n{0}:\tStreamId: {1},\n\tEventNumber: {2},\n\tData:\n{3},\n\tEventType: {4}\n",
 							total,
 							evnt.EventStreamId,
 							evnt.EventNumber,
-							Helper.UTF8NoBom.GetString(evnt.Data),
+							Helper.UTF8NoBom.GetString(evnt.Data.ToByteArray()),
 							evnt.EventType);
 						total += 1;
 					}
 
-					context.Log.Information("Next {count} events read:\n{events}", dto.Events.Length, sb.ToString());
+					context.Log.Information("Next {count} events read:\n{events}", dto.Events.Count, sb.ToString());
 
-					var readDto = new TcpClientMessageDto.ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition,
+					var readDto = new ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition,
 						10, resolveLinkTos, requireLeader);
 					var package = new TcpPackage(tcpCommand, Guid.NewGuid(), readDto.Serialize()).AsByteArray();
 					conn.EnqueueSend(package);
