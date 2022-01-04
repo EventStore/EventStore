@@ -28,23 +28,23 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			public string ChunkFileName;
 		}
 
-		IEnumerable<ChunkInfo> GetAllLatestChunkVersions(long checkpoint) {
-			var lastChunkNum = (int)(checkpoint / Config.ChunkSize);
+		IEnumerable<ChunkInfo> GetAllLatestChunkVersions(int lastChunkNum) {
+			_log.Information("Building chunk list...");
+			var chunkInfo = new List<ChunkInfo>();
 
-			for (int chunkNum = 0; chunkNum < lastChunkNum;) {
-				var versions = Config.FileNamingStrategy.GetAllVersionsFor(chunkNum);
-				if (versions.Length == 0)
-					throw new CorruptDatabaseException(
-						new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(chunkNum, 0)));
-
-				var chunkFileName = versions[0];
-
-				var chunkHeader = ReadChunkHeader(chunkFileName);
-
-				yield return new ChunkInfo {ChunkFileName = chunkFileName, ChunkStartNumber = chunkNum};
-
-				chunkNum = chunkHeader.ChunkEndNumber + 1;
-			}
+			Config.FileNamingStrategy.EnumerateAllFiles(
+				GetNextChunkNumber,
+				onLatestVersionFound: (chunk, start, _) => {
+					if (start <= lastChunkNum) {
+						chunkInfo.Add(new ChunkInfo
+							{ ChunkFileName = chunk, ChunkStartNumber = start });
+					}
+				},
+				onFileMissing: (chunk, start) => {
+					if (start <= lastChunkNum)
+						throw new CorruptDatabaseException(new ChunkNotFoundException(chunk));
+				});
+			return chunkInfo;
 		}
 
 		public void Open(bool verifyHash = true, bool readOnly = false, int threads = 1) {
@@ -62,7 +62,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
 
 			try {
-				Parallel.ForEach(GetAllLatestChunkVersions(checkpoint),
+				Parallel.ForEach(GetAllLatestChunkVersions(lastChunkNum - 1), // the last chunk is dealt with separately
 					new ParallelOptions {MaxDegreeOfParallelism = threads},
 					chunkInfo => {
 						TFChunk.TFChunk chunk;
@@ -205,6 +205,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				if (checkpoint.Read() > current)
 					throw new CorruptDatabaseException(new ReaderCheckpointHigherThanWriterException(checkpoint.Name));
 			}
+		}
+
+		private static int GetNextChunkNumber(string chunkFileName) {
+			var header = ReadChunkHeader(chunkFileName);
+			return header.ChunkEndNumber + 1;
 		}
 
 		private static ChunkHeader ReadChunkHeader(string chunkFileName) {
