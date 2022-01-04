@@ -266,17 +266,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void RemoveOldChunksVersions(int lastChunkNum) {
-			for (int chunkNum = 0; chunkNum <= lastChunkNum;) {
-				var chunk = Manager.GetChunk(chunkNum);
-				for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i) {
-					var files = Config.FileNamingStrategy.GetAllVersionsFor(i);
-					for (int j = (i == chunk.ChunkHeader.ChunkStartNumber ? 1 : 0); j < files.Length; ++j) {
-						RemoveFile("Removing excess chunk version: {chunk}...", files[j]);
-					}
-				}
-
-				chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
-			}
+			Config.FileNamingStrategy.EnumerateAllFiles(
+				GetNextChunkNumber,
+				onOldVersionFound: (chunk, start) => {
+					if (start <= lastChunkNum)
+						RemoveFile("Removing old chunk version: {chunk}...", chunk);
+				});
 		}
 
 		private void CleanUpTempFiles() {
