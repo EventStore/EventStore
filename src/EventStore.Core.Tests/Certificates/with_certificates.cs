@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Certificates {
 				return certReq.CreateSelfSigned(startDate, endDate);
 			}
 
-			var parentKey = (RSA) parent!.PrivateKey!;
+			var parentKey = parent!.GetRSAPrivateKey()!;
 			var signatureGenerator = X509SignatureGenerator.CreateForRSA(parentKey!, RSASignaturePadding.Pkcs1);
 			return certReq.Create(parent.SubjectName, signatureGenerator, startDate, endDate, GenerateSerialNumber()).CopyWithPrivateKey(rsa);
 		}
