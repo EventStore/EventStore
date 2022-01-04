@@ -246,18 +246,22 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		private void EnsureNoExcessiveChunks(int lastChunkNum) {
-			var allowedFiles = new List<string>();
-			int cnt = 0;
-			for (int i = 0; i <= lastChunkNum; ++i) {
-				var files = Config.FileNamingStrategy.GetAllVersionsFor(i);
-				cnt += files.Length;
-				allowedFiles.AddRange(files);
-			}
+			var extraneousFiles = new List<string>();
 
-			var allFiles = Config.FileNamingStrategy.GetAllPresentFiles();
-			if (allFiles.Length != cnt) {
+			Config.FileNamingStrategy.EnumerateAllFiles(
+				GetNextChunkNumber,
+				onLatestVersionFound: (chunk, start, _) => {
+					if (start > lastChunkNum)
+						extraneousFiles.Add(chunk);
+				},
+				onOldVersionFound: (chunk, start) => {
+					if (start > lastChunkNum)
+						extraneousFiles.Add(chunk);
+				});
+
+			if (!extraneousFiles.IsEmpty()) {
 				throw new CorruptDatabaseException(new ExtraneousFileFoundException(
-					string.Format("Unexpected files: {0}.", string.Join(", ", allFiles.Except(allowedFiles)))));
+					$"Unexpected files: {string.Join(", ", extraneousFiles)}."));
 			}
 		}
 
