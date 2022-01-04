@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Net.Http;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.TestClient {
@@ -53,10 +54,10 @@ namespace EventStore.TestClient {
 							httpListenerError = exc;
 						}
 					});
-
-					var request = (HttpWebRequest)WebRequest.Create(string.Format("http://{0}:{1}/", ip, port));
+					var client = new HttpClient();
+					var request = client.GetAsync(string.Format("http://{0}:{1}/", ip, port)).Result;
 					var buffer = new byte[256];
-					var read = request.GetResponse().GetResponseStream().Read(buffer, 0, buffer.Length);
+					var read = request.Content.ReadAsStream().Read(buffer, 0, buffer.Length);
 					if (read != 3 || buffer[0] != 1 || buffer[1] != 2 || buffer[2] != 3)
 						throw new Exception(string.Format("Unexpected response received from HTTP on port {0}.", port));
 

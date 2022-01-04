@@ -8,8 +8,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 
 		public override void Hash(string password, out string hash, out string salt) {
 			var salt_ = new byte[SaltSize];
-			var randomProvider = new RNGCryptoServiceProvider();
-			randomProvider.GetBytes(salt_);
+			RandomNumberGenerator.Fill(salt_);
 			var hash_ = new Rfc2898DeriveBytes(password, salt_).GetBytes(HashSize);
 			hash = System.Convert.ToBase64String(hash_);
 			salt = System.Convert.ToBase64String(salt_);
