@@ -53,7 +53,7 @@ Server certificates **must** have the internal and external IP addresses or DNS 
 
 When getting an incoming connection, the server needs to ensure if the certificate used for the connection can be trusted. For this to work, the server needs to know where trusted root certificates are located.
 
-EventStoreDB will not use the default trusted root certificates store location of the platform. So, even if you use a certificate signed by a public trusted CA, you'd need to explicitly tell the node to use the OS default root certificate store. For self-signed certificates, you just provide the path to the CA certificate file (but not the filename).
+EventStoreDB will not use the default trusted root certificates store location of the platform. So, even if you use a certificate signed by a publicly trusted CA, you'd need to explicitly tell the node to use the OS default root certificate store. For certificates signed by a private CA, you just provide the path to the CA certificate file (but not the filename).
 
 | Format               | Syntax |
 | :------------------- | :----- |
@@ -128,7 +128,7 @@ You need to add the certificate thumbprint setting on Windows so the server can 
 
 ## Certificate Generation CLI
 
-Event Store provides the interactive Certificate Generation CLI, which creates self-signed certificates for EventStoreDB. You can use the [configuration wizard](../installation/README.md), that will provide you exact CLI commands that you need to run to generates certificates matching your configuration. 
+Event Store provides the interactive Certificate Generation CLI, which creates certificates signed by a private, auto-generated CA for EventStoreDB. You can use the [configuration wizard](../installation/README.md), that will provide you exact CLI commands that you need to run to generates certificates matching your configuration. 
 
 ### Getting Started
 
@@ -189,7 +189,7 @@ Example:
 
 #### Generating the Node certificate
 
-You need to generate self-signed certificates for each node. They should be installed only on the specific node machine.
+You need to generate certificates signed by the CA for each node. They should be installed only on the specific node machine.
 
 By default, the tool will create the `ca` directory in the `certs` directory you created. Two keys will be generated:
 - `node.crt` - the public file that needs to be also used for the nodes and client configuration,
@@ -261,11 +261,11 @@ See more in the [complete sample of docker-compose secured cluster configuration
 
 ## Certificate installation on a client environment
 
-To connect to EventStoreDB, you need to install generated CA public certificate on the client machine (e.g. machine where the client is hosted, or your dev environment).
+To connect to EventStoreDB, you need to install the auto-generated CA certificate file on the client machine (e.g. machine where the client is hosted, or your dev environment).
 
 #### Linux (Ubuntu, Debian)
 
-1. Copy generated CA file to dir `/usr/local/share/ca-certificates/`, e.g. using command: 
+1. Copy auto-generated CA file to dir `/usr/local/share/ca-certificates/`, e.g. using command: 
   ```bash
   sudo cp ca.crt /usr/local/share/ca-certificates/event_store_ca.crt
   ```
