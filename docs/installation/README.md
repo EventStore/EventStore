@@ -8,7 +8,7 @@ EventStoreDB can run as a single node or as a highly-available cluster. For the 
 
 The installation procedure consists of the following steps:
 - Create a configuration file for each cluster node
-- Obtain SSL certificates, either signed by a trusted authority, or self-signed
+- Obtain SSL certificates, either signed by a publicly trusted or private certificate authority
 - Install EventStoreDB on each node using one of the available methods
 - Copy the configuration files and SSL certificates to each node
 - Start the EventStoreDB service on each node
