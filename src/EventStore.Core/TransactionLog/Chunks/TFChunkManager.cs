@@ -151,7 +151,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					_chunks[i] = chunk;
 				}
 
-				_chunksCount = chunk.ChunkHeader.ChunkEndNumber + 1;
+				_chunksCount = Math.Max(chunk.ChunkHeader.ChunkEndNumber + 1, _chunksCount);
 
 				TryCacheChunk(chunk);
 			}
