@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 ### Updated
 - Consolidate to single protobuf implementation [EventStore#3362](https://github.com/EventStore/EventStore/pull/3362)
 
+### Changed
+- Updated gRPC to include fix for flaky tests [EventStore#3364](https://github.com/EventStore/EventStore/pull/3364)
+
 ## [21.10.1] - 2021-12-16
 
 ### Fixed
