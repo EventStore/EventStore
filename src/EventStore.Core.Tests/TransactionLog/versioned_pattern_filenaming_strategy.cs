@@ -165,7 +165,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
 			var result = new List<string>();
-			int GetNextFileNumber(string chunk) {
+			int GetNextFileNumber(string chunk, int chunkNumber, int chunkVersion) {
 				return Path.GetFileName(chunk) switch {
 					"chunk-000001.000000" => 2,
 					"chunk-000002.000001" => 3,

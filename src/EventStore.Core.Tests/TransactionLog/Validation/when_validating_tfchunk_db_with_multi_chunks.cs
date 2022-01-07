@@ -49,11 +49,11 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		public void allows_next_new_chunk_when_checksum_is_exactly_in_between_two_chunks_if_last_is_ongoing_chunk() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 20000);
 			using (var db = new TFChunkDb(config)) {
-				DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000000"));
+				DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000001"));
 				DbUtil.CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
 				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 
-				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000001")));
 				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000002.000000")));
 				Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
 			}
@@ -122,13 +122,13 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		public void when_checkpoint_is_exactly_on_the_boundary_of_chunk_the_last_chunk_could_be_present() {
 			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 200, chunkSize: 100);
 			using (var db = new TFChunkDb(config)) {
-				DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000000"));
+				DbUtil.CreateMultiChunk(config, 0, 1, GetFilePathFor("chunk-000000.000002"));
 				DbUtil.CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000001"));
 
 				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
 				Assert.IsNotNull(db.Manager.GetChunk(2));
 
-				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000000")));
+				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000000.000002")));
 				Assert.IsTrue(File.Exists(GetFilePathFor("chunk-000002.000001")));
 				Assert.AreEqual(2, Directory.GetFiles(PathName, "*").Length);
 			}

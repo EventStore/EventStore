@@ -150,7 +150,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		private static int GetNextChunkNumber(string chunkFileName) {
+		private static int GetNextChunkNumber(string chunkFileName, int chunkNumber, int chunkVersion) {
+			if (chunkVersion == 0)
+				return chunkNumber + 1;
 			var header = ReadChunkHeader(chunkFileName);
 			return header.ChunkEndNumber + 1;
 		}

@@ -60,8 +60,22 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 			return chunkNumber;
 		}
 
+		private int GetFileVersionFor(string path) {
+			var fileName = Path.GetFileName(path);
+			if (!_chunkNamePattern.IsMatch(fileName))
+				throw new ArgumentException($"Invalid file name: {fileName}");
+
+			var dot = fileName.IndexOf('.', _prefix.Length);
+			Debug.Assert(dot != -1);
+
+			if (!int.TryParse(fileName[(dot+1)..], out var chunkVersion))
+				throw new ArgumentException($"Invalid file name: {fileName}");
+
+			return chunkVersion;
+		}
+
 		public void EnumerateAllFiles(
-			Func<string, int> getNextFileNumber,
+			Func<string, int, int, int> getNextFileNumber,
 			Action<string, int, int> onLatestVersionFound = null,
 			Action<string, int> onOldVersionFound = null,
 			Action<string, int> onFileMissing = null) {
@@ -92,7 +106,7 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 				if (chunkNumber == nextChunkNumber) { // there is a newer version of this chunk
 					onOldVersionFound?.Invoke(chunkFileName, chunkNumber);
 				} else { // latest version of chunk with the expected chunk number
-					expectedChunkNumber = getNextFileNumber(chunkFileName);
+					expectedChunkNumber = getNextFileNumber(chunkFileName, chunkNumber, GetFileVersionFor(chunkFileName));
 					onLatestVersionFound?.Invoke(chunkFileName, chunkNumber, expectedChunkNumber - 1);
 				}
 			}

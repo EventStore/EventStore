@@ -7,7 +7,7 @@ namespace EventStore.Core.TransactionLog.FileNamingStrategy {
 		string[] GetAllVersionsFor(int index);
 		string[] GetAllPresentFiles();
 		void EnumerateAllFiles(
-			Func<string, int> getNextFileNumber,
+			Func<string, int, int, int> getNextFileNumber,
 			Action<string, int, int> onLatestVersionFound = null,
 			Action<string, int> onOldVersionFound = null,
 			Action<string, int> onFileMissing = null);
