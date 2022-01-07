@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Updated gRPC to include fix for flaky tests [EventStore#3364](https://github.com/EventStore/EventStore/pull/3364)
 
+### Fixed
+- Use the term "certificate signed by a private CA" instead of "self-signed certificates" [EventStore#3361](https://github.com/EventStore/EventStore/pull/3361)
+
 ## [21.10.1] - 2021-12-16
 
 ### Fixed
