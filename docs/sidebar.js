@@ -39,6 +39,7 @@ module.exports = [
             "security/authentication.md",
             "security/acl.md",
             "security/trusted-intermediary.md",
+            "security/intermediate-ca-certificates.md",
         ]
     },
     {
