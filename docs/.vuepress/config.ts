@@ -18,9 +18,7 @@ export default defineUserConfig<DefaultThemeOptions>({
         });
         md.use(linkCheckPlugin);
         // this is a quick hack, should be fixed properly to remove direct references from here
-        md.use(replaceLinkPlugin, {
-            replaceLink: (link: string, _) => link.replace("@http-api/", "/samples/clients/http-api/v5/")
-        });
+        md.use(replaceLinkPlugin);
     },
     themeConfig: {
         sidebarDepth: 2,
