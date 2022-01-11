@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -348,7 +349,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void ReplyNotReady(Guid correlationId, string description) {
 			_tcpEnvelope.ReplyWith(new ClientMessage.NotHandled(correlationId,
-				TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, description));
+				ClientMessage.NotHandled.Types.NotHandledReason.NotReady, description));
 		}
 
 		private void ReplyAuthenticated(Guid correlationId, UserCredentials userCredentials, ClaimsPrincipal user) {

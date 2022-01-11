@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -14,6 +15,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Chunks;
 using ILogger = Serilog.ILogger;
+using OperationResult = EventStore.Core.Messages.OperationResult;
 
 namespace EventStore.Core.Services.VNode {
 	public abstract class ClusterVNodeController {
@@ -826,8 +828,8 @@ namespace EventStore.Core.Services.VNode {
 			var endpoints = GetLeaderInfoEndPoints();
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
-					TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader,
-					new TcpClientMessageDto.NotHandled.LeaderInfo( endpoints.AdvertisedTcpEndPoint,
+					ClientMessage.NotHandled.Types.NotHandledReason.NotLeader,
+					new ClientMessage.NotHandled.Types.LeaderInfo( endpoints.AdvertisedTcpEndPoint,
 						endpoints.IsTcpEndPointSecure,
 						endpoints.AdvertisedHttpEndPoint
 						)));
@@ -942,8 +944,8 @@ namespace EventStore.Core.Services.VNode {
 			var endpoints = GetLeaderInfoEndPoints();
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
-					TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly,
-					new TcpClientMessageDto.NotHandled.LeaderInfo(endpoints.AdvertisedTcpEndPoint,
+					ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly,
+					new ClientMessage.NotHandled.Types.LeaderInfo(endpoints.AdvertisedTcpEndPoint,
 						endpoints.IsTcpEndPointSecure,
 						endpoints.AdvertisedHttpEndPoint
 						)));
@@ -951,7 +953,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private void DenyRequestBecauseNotReady(IEnvelope envelope, Guid correlationId) {
 			envelope.ReplyWith(new ClientMessage.NotHandled(correlationId,
-				TcpClientMessageDto.NotHandled.NotHandledReason.NotReady, null));
+				ClientMessage.NotHandled.Types.NotHandledReason.NotReady,((string) null)));
 		}
 
 		private void Handle(SystemMessage.VNodeConnectionLost message) {

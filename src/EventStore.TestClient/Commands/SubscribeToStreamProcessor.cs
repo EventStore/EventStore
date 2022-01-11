@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Text;
-using EventStore.Core.Messages;
+using EventStore.Client.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands {
@@ -26,14 +25,14 @@ namespace EventStore.TestClient.Commands {
 				handlePackage: (conn, pkg) => {
 					switch (pkg.Command) {
 						case TcpCommand.SubscriptionConfirmation: {
-							var dto = pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionConfirmation>();
+							var dto = pkg.Data.Deserialize<SubscriptionConfirmation>();
 							context.Log.Information(
 								"Subscription to <{stream}> WAS CONFIRMED! Subscribed at {lastIndexedPosition} ({lastEventNumber})",
-								streamByCorrId[pkg.CorrelationId], dto.LastIndexedPosition, dto.LastEventNumber);
+								streamByCorrId[pkg.CorrelationId], dto.LastCommitPosition, dto.LastEventNumber);
 							break;
 						}
 						case TcpCommand.StreamEventAppeared: {
-							var dto = pkg.Data.Deserialize<TcpClientMessageDto.StreamEventAppeared>();
+							var dto = pkg.Data.Deserialize<StreamEventAppeared>();
 							context.Log.Information("NEW EVENT:\n\n"
 							                 + "\tEventStreamId: {stream}\n"
 							                 + "\tEventNumber:   {eventNumber}\n"
@@ -43,12 +42,12 @@ namespace EventStore.TestClient.Commands {
 								dto.Event.Event.EventStreamId,
 								dto.Event.Event.EventNumber,
 								dto.Event.Event.EventType,
-								Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Data ?? new byte[0]),
-								Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata ?? new byte[0]));
+								Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Data.ToByteArray()),
+								Common.Utils.Helper.UTF8NoBom.GetString(dto.Event.Event.Metadata.ToByteArray()));
 							break;
 						}
 						case TcpCommand.SubscriptionDropped: {
-							pkg.Data.Deserialize<TcpClientMessageDto.SubscriptionDropped>();
+							pkg.Data.Deserialize<SubscriptionDropped>();
 							context.Log.Error("Subscription to <{stream}> WAS DROPPED!",
 								streamByCorrId[pkg.CorrelationId]);
 							break;
@@ -67,7 +66,7 @@ namespace EventStore.TestClient.Commands {
 
 			if (args.Length == 0) {
 				context.Log.Information("SUBSCRIBING TO ALL STREAMS...");
-				var cmd = new TcpClientMessageDto.SubscribeToStream(string.Empty, resolveLinkTos: false);
+				var cmd = new SubscribeToStream(string.Empty, resolveLinkTos: false);
 				Guid correlationId = Guid.NewGuid();
 				streamByCorrId[correlationId] = "$all";
 				connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, correlationId, cmd.Serialize())
@@ -75,7 +74,7 @@ namespace EventStore.TestClient.Commands {
 			} else {
 				foreach (var stream in args) {
 					context.Log.Information("SUBSCRIBING TO STREAM <{stream}>...", stream);
-					var cmd = new TcpClientMessageDto.SubscribeToStream(stream, resolveLinkTos: false);
+					var cmd = new SubscribeToStream(stream, resolveLinkTos: false);
 					var correlationId = Guid.NewGuid();
 					streamByCorrId[correlationId] = stream;
 					connection.EnqueueSend(new TcpPackage(TcpCommand.SubscribeToStream, correlationId, cmd.Serialize())

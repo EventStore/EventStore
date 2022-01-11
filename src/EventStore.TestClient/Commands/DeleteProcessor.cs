@@ -1,8 +1,9 @@
 using System;
 using System.Diagnostics;
+using EventStore.Client.Messages;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
+using OperationResult = EventStore.Client.Messages.OperationResult;
 
 namespace EventStore.TestClient.Commands {
 	internal class DeleteProcessor : ICmdProcessor {
@@ -35,7 +36,7 @@ namespace EventStore.TestClient.Commands {
 						"[{remoteEndPoint}, L{localEndPoint}]: Trying to delete event stream '{stream}'...",
 						conn.RemoteEndPoint, conn.LocalEndPoint, eventStreamId);
 					var corrid = Guid.NewGuid();
-					var deleteDto = new TcpClientMessageDto.DeleteStream(eventStreamId, expectedVersion, false, true);
+					var deleteDto = new DeleteStream(eventStreamId, expectedVersion, false, true);
 					var package = new TcpPackage(TcpCommand.DeleteStream, corrid, deleteDto.Serialize()).AsByteArray();
 					sw.Start();
 					conn.EnqueueSend(package);
@@ -49,8 +50,8 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					var dto = pkg.Data.Deserialize<TcpClientMessageDto.DeleteStreamCompleted>();
-					if (dto.Result == TcpClientMessageDto.OperationResult.Success) {
+					var dto = pkg.Data.Deserialize<DeleteStreamCompleted>();
+					if (dto.Result == OperationResult.Success) {
 						context.Log.Information("DELETED event stream {stream}.", eventStreamId);
 						PerfUtils.LogTeamCityGraphData(string.Format("{0}-latency-ms", Keyword),
 							(int)Math.Round(sw.Elapsed.TotalMilliseconds));

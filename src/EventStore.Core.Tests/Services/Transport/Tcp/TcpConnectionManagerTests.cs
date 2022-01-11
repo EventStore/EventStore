@@ -13,11 +13,14 @@ using System.Linq;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Services;
 using EventStore.Core.Settings;
 using EventStore.Core.Tests.Authorization;
 using EventStore.Core.Util;
+using EventRecord = EventStore.Core.Data.EventRecord;
+using ResolvedEvent = EventStore.Core.Data.ResolvedEvent;
 
 namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture]
@@ -56,11 +59,11 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			ManualResetEvent waiter = new ManualResetEvent(false);
 			ClientMessage.WriteEvents publishedWrite = null;
 			var evnt = new Event(Guid.NewGuid(), "TestEventType", true, new byte[] { }, new byte[] { });
-			var write = new TcpClientMessageDto.WriteEvents(
+			var write = new WriteEvents(
 				Guid.NewGuid().ToString(),
 				ExpectedVersion.Any,
 				new[] {
-					new TcpClientMessageDto.NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson ? 1 : 0, 0,
+					new NewEvent(evnt.EventId.ToByteArray(), evnt.EventType, evnt.IsJson ? 1 : 0, 0,
 						evnt.Data, evnt.Metadata)
 				},
 				false);

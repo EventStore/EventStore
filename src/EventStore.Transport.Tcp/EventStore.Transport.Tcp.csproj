@@ -6,9 +6,6 @@
 		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="protobuf-net" Version="2.4.0" />
-	</ItemGroup>
-	<ItemGroup>
 		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 	</ItemGroup>

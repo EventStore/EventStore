@@ -8,6 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring;
 using EventStore.Core.Services.Transport.Http.Controllers;
 using HttpStatusCode = EventStore.Transport.Http.HttpStatusCode;
+using OperationResult = EventStore.Core.Messages.OperationResult;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
 namespace EventStore.Core.Services.Transport.Http {
@@ -429,21 +430,21 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		private static ResponseConfiguration HandleNotHandled(Uri requestedUri, ClientMessage.NotHandled notHandled) {
 			switch (notHandled.Reason) {
-				case TcpClientMessageDto.NotHandled.NotHandledReason.NotReady:
+				case ClientMessage.NotHandled.Types.NotHandledReason.NotReady:
 					return ServiceUnavailable("Server Is Not Ready");
-				case TcpClientMessageDto.NotHandled.NotHandledReason.TooBusy:
+				case ClientMessage.NotHandled.Types.NotHandledReason.TooBusy:
 					return ServiceUnavailable("Server Is Too Busy");
-				case TcpClientMessageDto.NotHandled.NotHandledReason.NotLeader: {
-					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
+				case ClientMessage.NotHandled.Types.NotHandledReason.NotLeader: {
+					var leaderInfo = notHandled.LeaderInfo;
 					if (leaderInfo == null)
 						return InternalServerError("No leader info available in response");
-					return TemporaryRedirect(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
+					return TemporaryRedirect(requestedUri, leaderInfo.Http.GetHost(), leaderInfo.Http.GetPort());
 				}
-				case TcpClientMessageDto.NotHandled.NotHandledReason.IsReadOnly: {
-					var leaderInfo = notHandled.AdditionalInfo as TcpClientMessageDto.NotHandled.LeaderInfo;
+				case ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly: {
+					var leaderInfo = notHandled.LeaderInfo;
 					if (leaderInfo == null)
 						return InternalServerError("No leader info available in response");
-					return DenyRequestBecauseReadOnly(requestedUri, leaderInfo.HttpAddress, leaderInfo.HttpPort);
+					return DenyRequestBecauseReadOnly(requestedUri, leaderInfo.Http.GetHost(), leaderInfo.Http.GetPort());
 				}
 				default:
 					return InternalServerError(string.Format("Unknown not handled reason: {0}", notHandled.Reason));

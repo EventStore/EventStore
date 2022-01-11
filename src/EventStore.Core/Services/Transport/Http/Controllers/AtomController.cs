@@ -13,6 +13,7 @@ using EventStore.Transport.Http.EntityManagement;
 using Newtonsoft.Json;
 using System.Linq;
 using System.Threading;
+using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -817,9 +818,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					return (false, "exclude-sytem-events should have a value of true.");
 				}
 
-				filter = EventFilter.Get(isAllStream, new TcpClientMessageDto.Filter(
-					TcpClientMessageDto.Filter.FilterContext.EventType,
-					TcpClientMessageDto.Filter.FilterType.Regex,
+				filter = EventFilter.Get(isAllStream, new Filter(
+					Filter.Types.FilterContext.EventType,
+					Filter.Types.FilterType.Regex,
 					new[] { @"^[^\$].*" }
 				));
 

@@ -26,7 +26,7 @@ Documentation is located in the [`docs`](/docs) folder. It's orchestrated in the
 Read more in the [documentation contribution guidelines](./CONTRIBUTING.md#documentation).
 
 ## Community
-We have a community discussion space at [Event Store Discuss](https://discuss.eventstore.com/). If you prefer [Slack](https://slack.com/), there is also an #eventstore channel in the [DDD-CQRS-ES](https://j.mp/ddd-es-cqrs) Slack community.
+We have a community discussion space at [Event Store Discuss](https://discuss.eventstore.com/). If you prefer [Slack](https://slack.com/), there is also an #eventstore channel in the [DDD-CQRS-ES](https://ddd-cqrs-es.slack.com) Slack community ([Sign-up information](https://github.com/ddd-cqrs-es/slack-community)).
 
 ## Release Packages
 The latest release packages are hosted in the downloads section on the Event Store website: [Event Store Downloads](https://eventstore.com/downloads/)

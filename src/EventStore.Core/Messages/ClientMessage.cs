@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -8,8 +9,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
-using EventStore.Core.Util;
-using static EventStore.Core.Messages.TcpClientMessageDto.FilteredReadAllEventsCompleted;
+
 using FilteredReadAllResult = EventStore.Core.Data.FilteredReadAllResult;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -146,15 +146,45 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid CorrelationId;
-			public readonly TcpClientMessageDto.NotHandled.NotHandledReason Reason;
-			public readonly object AdditionalInfo;
-
+			public readonly Types.NotHandledReason Reason;
+			public readonly Types.LeaderInfo LeaderInfo;
+			public readonly string Description;
 			public NotHandled(Guid correlationId,
-				TcpClientMessageDto.NotHandled.NotHandledReason reason,
-				object additionalInfo) {
+				Types.NotHandledReason reason,
+				Types.LeaderInfo leaderInfo) {
 				CorrelationId = correlationId;
 				Reason = reason;
-				AdditionalInfo = additionalInfo;
+				LeaderInfo = leaderInfo;
+			}
+
+			public NotHandled(Guid correlationId,
+				Types.NotHandledReason reason,
+				string description) {
+				CorrelationId = correlationId;
+				Reason = reason;
+				Description = description;
+			}
+
+
+			public static class Types {
+
+				public enum NotHandledReason {
+					NotReady,
+					TooBusy,
+					NotLeader,
+					IsReadOnly
+				}
+				public class LeaderInfo {
+					public LeaderInfo(EndPoint externalTcp, bool isSecure, EndPoint http) {
+						ExternalTcp = externalTcp;
+						IsSecure = isSecure;
+						Http = http;
+					}
+
+					public bool IsSecure { get; }
+					public EndPoint ExternalTcp { get; }
+					public EndPoint Http { get; }
+				}
 			}
 		}
 
