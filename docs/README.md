@@ -11,7 +11,7 @@ EventStoreDB is available as both a Open-Source and an Enterprise versions:
 
 ## Getting started
 
-Get started by learning more about principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing the [client SDK](clients.md).
+Get started by learning more about principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing the [client SDK](#protocols-clients-and-sdks).
 
 ## Support
 
@@ -49,7 +49,7 @@ We recommend using gRPC since it is the primary protocol for EventStoreDB moving
 - [Go (EventStore/EventStore-Client-Go)](https://github.com/EventStore/EventStore-Client-Go)
 - [Rust (EventStore/EventStoreDB-Client-Rust)](https://github.com/EventStore/EventStoreDB-Client-Rust)
 
-Read more in the [gRPC clients documentation](/clients/grpc/README.md).
+Read more in the [gRPC clients documentation](@clients/grpc/README.md).
 
 #### Community developed clients
 
@@ -61,10 +61,10 @@ Read more in the [gRPC clients documentation](/clients/grpc/README.md).
 EventStoreDB offers a low-level protocol in the form of an asynchronous TCP protocol that exchanges protobuf objects. At present this protocol has adapters for .NET and the JVM.
 
 ::: warning
-We plan to phase out the TCP protocol in the later versions. Please consider migrating your applications that use the TCP protocol and refactor them to use gRPC instead.
+We plan to phase out the TCP protocol in later versions. Please consider migrating your applications that use the TCP protocol and refactor them to use gRPC instead.
 :::
 
-Find out more about configuring the TCP protocol on the [TCP configuration](./networking/tcp.md) page.
+Find out more about configuring the TCP protocol on the [TCP configuration](networking.md#tcp-configuration) page.
 
 #### EventStoreDB supported clients
 
@@ -86,13 +86,13 @@ Find out more about configuring the TCP protocol on the [TCP configuration](./ne
 
 EventStoreDB also offers an HTTP-based interface, based specifically on the [AtomPub protocol](https://datatracker.ietf.org/doc/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it.
 
-Find out more about configuring the HTTP protocol on the [HTTP configuration](./networking/http.md) page.
+Find out more about configuring the HTTP protocol on the [HTTP configuration](networking.md#http-configuration) page.
 
 ::: warning "Deprecation note"
 The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration.
 :::
 
-As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](/clients/http-api/v5/introduction/README.md) for it.
+As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](@clients/http-api/v5/introduction/README.md) for it.
 
 ::: note
 Although we plan to remove AtomPub support from the future server versions, the server management HTTP API will still be available.

@@ -44,7 +44,7 @@ Tuning scavenges Scavenge operations have other options you can set to improve p
 example, you can set the number of threads to use.
 :::
 
-@[code{curl}](../samples/scavenge.sh)
+@[code{curl}](@samples/scavenge.sh)
 
 ::: tip 
 Restart scavenging If you need to restart a stopped scavenge, you can specify the starting chunk ID.

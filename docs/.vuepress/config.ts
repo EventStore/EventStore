@@ -2,11 +2,26 @@ import {path} from '@vuepress/utils';
 import {defineUserConfig} from "@vuepress/cli";
 import type {DefaultThemeOptions} from "@vuepress/theme-default";
 import containers from "./lib/containers";
+import {importCodePlugin} from "./markdown/xode/importCodePlugin";
+import {resolveMultiSamplesPath} from "./lib/samples";
+import {linkCheckPlugin} from "./markdown/linkCheck";
+import {replaceLinkPlugin} from "./markdown/replaceLink";
 
 export default defineUserConfig<DefaultThemeOptions>({
     title: "EventStoreDB Documentation",
     description: "The stream database built for Event Sourcing",
     clientAppEnhanceFiles: path.resolve(__dirname, './clientAppEnhance.ts'),
+    markdown: {importCode: false},
+    extendsMarkdown: md => {
+        md.use(importCodePlugin, {
+            handleImportPath: s => resolveMultiSamplesPath(s)
+        });
+        md.use(linkCheckPlugin);
+        // this is a quick hack, should be fixed properly to remove direct references from here
+        md.use(replaceLinkPlugin, {
+            replaceLink: (link: string, _) => link.replace("@http-api/", "/samples/clients/http-api/v5/")
+        });
+    },
     themeConfig: {
         sidebarDepth: 2,
         docsDir: ".",
