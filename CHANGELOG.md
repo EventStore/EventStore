@@ -15,6 +15,9 @@ All notable changes to this project will be documented in this file.
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
 
+### Added
+- More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
+
 ## [21.10.1] - 2021-12-16
 
 ### Fixed
