@@ -1,0 +1,22 @@
+{
+  "name": "esdb-docs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Event Store Ltd",
+  "devDependencies": {
+    "@babel/cli": "7.14.8",
+    "@babel/core": "7.14.8",
+    "@babel/preset-typescript": "7.14.5",
+    "typescript": "4.3.5",
+    "vuepress-vite": "2.0.0-beta.27"
+  },
+  "dependencies": {
+    "primeflex": "2.0.0",
+    "primeicons": "4.1.0",
+    "primevue": "3.8.1"
+  },
+  "scripts": {
+    "dev": "vuepress dev",
+    "build": "vuepress build"
+  }
+}
