@@ -28,7 +28,7 @@ export default defineUserConfig<DefaultThemeOptions>({
         sidebarDepth: 2,
         docsDir: ".",
         sidebar: {
-            ...require("../sidebar"),
+            "/": require("../sidebar"),
             "/http-api/": require("../http-api/sidebar")
         },
         navbar: [

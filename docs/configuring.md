@@ -8,7 +8,7 @@ and I imagine other config questions may come up in future -->
 
 ### Start EventStoreDB as a service on a custom port
 
-Follow the instructions in [Getting started](getting-started/README.md) to install an EventStoreDB package. Do not start EventStoreDB.
+Follow the instructions in the [installation](installation.md#linux) section to install an EventStoreDB package. Do not start EventStoreDB.
 
 Find your `inet` address. For example:
 

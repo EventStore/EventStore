@@ -45,7 +45,6 @@ This removes EventStoreDB completely, including any user settings.
 
 If you built EventStoreDB from source, remove it by deleting the directory containing the source and build, and manually removing any environment variables.
 
-
 ## Windows
 
 The prerequisites for installing on Windows are:
