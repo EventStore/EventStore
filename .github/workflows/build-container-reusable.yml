@@ -102,28 +102,9 @@ jobs:
         docker tag eventstore ghcr.io/eventstore/eventstore:${{ env.VERSION }}
         docker push ghcr.io/eventstore/eventstore:${{ env.VERSION }}
     - name: Push GitHub Container Registry (CI)
-      if: always() && github.event_name == 'push' && inputs.container-runtime == 'focal'
+      if: always() && github.event_name == 'push' && inputs.container-runtime == 'focal' && github.ref == 'refs/heads/master'
       shell: bash
       run: |
         docker tag eventstore ghcr.io/eventstore/eventstore:ci
         docker push ghcr.io/eventstore/eventstore:ci
-    - name: Docker Push
-      uses: jen20/action-docker-build@v1
-      if: github.event_name == 'push'
-      with:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        repository: docker.pkg.github.com/eventstore/eventstore/eventstore
-        tag-latest: false
-        additional-tags: ${{ env.VERSION }}
-        registry: https://docker.pkg.github.com
-    - name: Docker Push CI
-      uses: jen20/action-docker-build@v1
-      if: github.event_name == 'push' && inputs.container-runtime == 'focal'
-      with:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        repository: docker.pkg.github.com/eventstore/eventstore/eventstore
-        tag-latest: false
-        additional-tags: ci
-        registry: https://docker.pkg.github.com
+
