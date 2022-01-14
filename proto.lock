@@ -3845,6 +3845,11 @@
                         "id": 2,
                         "name": "track_emitted_streams",
                         "type": "bool"
+                      },
+                      {
+                        "id": 3,
+                        "name": "emit_enabled",
+                        "type": "bool"
                       }
                     ]
                   }
