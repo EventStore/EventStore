@@ -17,6 +17,16 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 	[TestFixture]
 	public class when_validating_tfchunk_db : SpecificationWithDirectory {
 		[Test]
+		public void detect_no_database() {
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 4000, chunkSize: 1000);
+			using (var db = new TFChunkDb(config)) {
+				Assert.That(() => db.Open(verifyHash: false),
+					Throws.Exception.InstanceOf<CorruptDatabaseException>()
+						.With.InnerException.InstanceOf<ChunkNotFoundException>());
+			}
+		}
+
+		[Test]
 		public void with_file_of_wrong_size_database_corruption_is_detected() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 500);
 			using (var db = new TFChunkDb(config)) {
