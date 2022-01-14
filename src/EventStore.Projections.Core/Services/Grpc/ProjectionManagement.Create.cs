@@ -35,7 +35,11 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 			var emitEnabled = options.ModeCase switch {
-				ModeOneofCase.Continuous => options.Continuous.TrackEmittedStreams,
+				ModeOneofCase.Continuous => options.Continuous.EmitEnabled,
+				_ => false
+			};
+			var trackEmittedStreams = (options.ModeCase, emitEnabled) switch {
+				(ModeOneofCase.Continuous, true) => options.Continuous.TrackEmittedStreams,
 				_ => false
 			};
 			var checkpointsEnables = options.ModeCase switch {
@@ -45,10 +49,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				_ => throw new InvalidOperationException()
 			};
 			var enabled = true;
-			var trackEmittedStreams = (options.ModeCase, emitEnabled) switch {
-				(ModeOneofCase.Continuous, false) => true,
-				_ => false
-			};
+
 			var runAs = new ProjectionManagementMessage.RunAs(user);
 
 			var envelope = new CallbackEnvelope(OnMessage);
