@@ -11,12 +11,16 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Use the term "certificate signed by a private CA" instead of "self-signed certificates" [EventStore#3361](https://github.com/EventStore/EventStore/pull/3361)
+- Only build ci container on master branch [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
 
 ### Added
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
+
+### Removed
+- Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
 
 ## [21.10.1] - 2021-12-16
 
