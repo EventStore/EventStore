@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -28,22 +27,18 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			public string ChunkFileName;
 		}
 
-		IEnumerable<ChunkInfo> GetAllLatestChunkVersions(long checkpoint) {
-			var lastChunkNum = (int)(checkpoint / Config.ChunkSize);
-
-			for (int chunkNum = 0; chunkNum < lastChunkNum;) {
-				var versions = Config.FileNamingStrategy.GetAllVersionsFor(chunkNum);
-				if (versions.Length == 0)
-					throw new CorruptDatabaseException(
-						new ChunkNotFoundException(Config.FileNamingStrategy.GetFilenameFor(chunkNum, 0)));
-
-				var chunkFileName = versions[0];
-
-				var chunkHeader = ReadChunkHeader(chunkFileName);
-
-				yield return new ChunkInfo {ChunkFileName = chunkFileName, ChunkStartNumber = chunkNum};
-
-				chunkNum = chunkHeader.ChunkEndNumber + 1;
+		IEnumerable<ChunkInfo> GetAllLatestChunksExceptLast(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
+			foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum)) {
+				switch (chunkInfo) {
+					case LatestVersion(var fileName, var start, _):
+						if (start <= lastChunkNum - 1)
+							yield return new ChunkInfo { ChunkFileName = fileName, ChunkStartNumber = start };
+						break;
+					case MissingVersion(var fileName, var start):
+						if (start <= lastChunkNum - 1)
+							throw new CorruptDatabaseException(new ChunkNotFoundException(fileName));
+						break;
+				}
 			}
 		}
 
@@ -60,9 +55,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			var lastChunkNum = (int)(checkpoint / Config.ChunkSize);
 			var lastChunkVersions = Config.FileNamingStrategy.GetAllVersionsFor(lastChunkNum);
+			var chunkEnumerator = new TFChunkEnumerator(Config.FileNamingStrategy);
 
 			try {
-				Parallel.ForEach(GetAllLatestChunkVersions(checkpoint),
+				Parallel.ForEach(GetAllLatestChunksExceptLast(chunkEnumerator, lastChunkNum), // the last chunk is dealt with separately
 					new ParallelOptions {MaxDegreeOfParallelism = threads},
 					chunkInfo => {
 						TFChunk.TFChunk chunk;
@@ -103,7 +99,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 						Manager.AddChunk(chunk);
 					});
 			} catch (AggregateException aggEx) {
-				// We only really care that *something* is wrong - throw the first inner exception. 
+				// We only really care that *something* is wrong - throw the first inner exception.
 				throw aggEx.InnerException;
 			}
 
@@ -155,12 +151,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			_log.Information("Ensuring no excessive chunks...");
-			EnsureNoExcessiveChunks(lastChunkNum);
+			EnsureNoExcessiveChunks(chunkEnumerator, lastChunkNum);
 			_log.Information("Done ensuring no excessive chunks.");
 
 			if (!readOnly) {
 				_log.Information("Removing old chunk versions...");
-				RemoveOldChunksVersions(lastChunkNum);
+				RemoveOldChunksVersions(chunkEnumerator, lastChunkNum);
 				_log.Information("Done removing old chunk versions.");
 
 				_log.Information("Cleaning up temp files...");
@@ -240,33 +236,36 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return chunkFooter;
 		}
 
-		private void EnsureNoExcessiveChunks(int lastChunkNum) {
-			var allowedFiles = new List<string>();
-			int cnt = 0;
-			for (int i = 0; i <= lastChunkNum; ++i) {
-				var files = Config.FileNamingStrategy.GetAllVersionsFor(i);
-				cnt += files.Length;
-				allowedFiles.AddRange(files);
+		private static void EnsureNoExcessiveChunks(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
+			var extraneousFiles = new List<string>();
+
+			foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum)) {
+				switch (chunkInfo) {
+					case LatestVersion(var fileName, var start, _):
+						if (start > lastChunkNum)
+							extraneousFiles.Add(fileName);
+						break;
+					case OldVersion(var fileName, var start):
+						if (start > lastChunkNum)
+							extraneousFiles.Add(fileName);
+						break;
+				}
 			}
 
-			var allFiles = Config.FileNamingStrategy.GetAllPresentFiles();
-			if (allFiles.Length != cnt) {
+			if (!extraneousFiles.IsEmpty()) {
 				throw new CorruptDatabaseException(new ExtraneousFileFoundException(
-					string.Format("Unexpected files: {0}.", string.Join(", ", allFiles.Except(allowedFiles)))));
+					$"Unexpected files: {string.Join(", ", extraneousFiles)}."));
 			}
 		}
 
-		private void RemoveOldChunksVersions(int lastChunkNum) {
-			for (int chunkNum = 0; chunkNum <= lastChunkNum;) {
-				var chunk = Manager.GetChunk(chunkNum);
-				for (int i = chunk.ChunkHeader.ChunkStartNumber; i <= chunk.ChunkHeader.ChunkEndNumber; ++i) {
-					var files = Config.FileNamingStrategy.GetAllVersionsFor(i);
-					for (int j = (i == chunk.ChunkHeader.ChunkStartNumber ? 1 : 0); j < files.Length; ++j) {
-						RemoveFile("Removing excess chunk version: {chunk}...", files[j]);
-					}
+		private void RemoveOldChunksVersions(TFChunkEnumerator chunkEnumerator, int lastChunkNum) {
+			foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(lastChunkNum)) {
+				switch (chunkInfo) {
+					case OldVersion(var fileName, var start):
+						if (start <= lastChunkNum)
+							RemoveFile("Removing old chunk version: {chunk}...", fileName);
+						break;
 				}
-
-				chunkNum = chunk.ChunkHeader.ChunkEndNumber + 1;
 			}
 		}
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
@@ -27,6 +28,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			
 			var oldLastChunkNum = (int)(writerChk / _config.ChunkSize);
 			var newLastChunkNum = (int)(truncateChk / _config.ChunkSize);
+			var chunkEnumerator = new TFChunkEnumerator(_config.FileNamingStrategy);
 
 			var excessiveChunks = _config.FileNamingStrategy.GetAllVersionsFor(oldLastChunkNum + 1);
 			if (excessiveChunks.Length > 0)
@@ -35,58 +37,64 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			ChunkHeader newLastChunkHeader = null;
 			string newLastChunkFilename = null;
-			for (int chunkNum = 0; chunkNum <= newLastChunkNum;) {
-				var chunks = _config.FileNamingStrategy.GetAllVersionsFor(chunkNum);
-				if (chunks.Length == 0) {
-					if (chunkNum != newLastChunkNum)
-						throw new Exception(string.Format("Could not find any chunk #{0}.", chunkNum));
-					break;
-				}
 
-				using (var fs = File.OpenRead(chunks[0])) {
-					var chunkHeader = ChunkHeader.FromStream(fs);
-					if (chunkHeader.ChunkEndNumber >= newLastChunkNum) {
-						newLastChunkHeader = chunkHeader;
-						newLastChunkFilename = chunks[0];
+			// find the chunk to truncate to
+			foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(oldLastChunkNum)) {
+				switch (chunkInfo) {
+					case LatestVersion(var fileName, var _, var end):
+						if (newLastChunkFilename != null || end < newLastChunkNum) break;
+						newLastChunkHeader = ReadChunkHeader(fileName);
+						newLastChunkFilename = fileName;
 						break;
-					}
-
-					chunkNum = chunkHeader.ChunkEndNumber + 1;
-				}
-			}
-
-			// we need to remove excessive chunks from largest number to lowest one, so in case of crash
-			// mid-process, we don't end up with broken non-sequential chunks sequence.
-			for (int i = oldLastChunkNum; i > newLastChunkNum; i -= 1) {
-				foreach (var chunkFile in _config.FileNamingStrategy.GetAllVersionsFor(i)) {
-					Log.Information("File {chunk} will be deleted during TruncateDb procedure.", chunkFile);
-					File.SetAttributes(chunkFile, FileAttributes.Normal);
-					File.Delete(chunkFile);
+					case MissingVersion(var fileName, var chunkNum):
+						if (chunkNum < newLastChunkNum)
+							throw new Exception($"Could not find any chunk #{fileName}.");
+						break;
 				}
 			}
 
 			// it's not bad if there is no file, it could have been deleted on previous run
 			if (newLastChunkHeader != null) {
-				// if the chunk we want to truncate into is already scavenged 
-				// we have to truncate (i.e., delete) the whole chunk, not just part of it
+				var chunksToDelete = new List<string>();
+				var chunkNumToDeleteFrom = newLastChunkNum + 1;
 				if (newLastChunkHeader.IsScavenged) {
-					truncateChk = newLastChunkHeader.ChunkStartPosition;
-
-					// we need to delete EVERYTHING from ChunkStartNumber up to newLastChunkNum, inclusive
 					Log.Information(
-						"Setting TruncateCheckpoint to {truncateCheckpoint} and deleting ALL chunks from #{chunkStartNumber} inclusively "
+						"Deleting ALL chunks from #{chunkStartNumber} inclusively "
 						+ "as truncation position is in the middle of scavenged chunk.",
-						truncateChk, newLastChunkHeader.ChunkStartNumber);
-					for (int i = newLastChunkNum; i >= newLastChunkHeader.ChunkStartNumber; --i) {
-						var chunksToDelete = _config.FileNamingStrategy.GetAllVersionsFor(i);
-						foreach (var chunkFile in chunksToDelete) {
-							Log.Information("File {chunk} will be deleted during TruncateDb procedure.", chunkFile);
-							File.SetAttributes(chunkFile, FileAttributes.Normal);
-							File.Delete(chunkFile);
-						}
+						newLastChunkHeader.ChunkStartNumber);
+					chunkNumToDeleteFrom = newLastChunkHeader.ChunkStartNumber;
+				}
+
+				foreach (var chunkInfo in chunkEnumerator.EnumerateChunks(oldLastChunkNum)) {
+					switch (chunkInfo) {
+						case LatestVersion(var fileName, var start, _):
+							if (start >= chunkNumToDeleteFrom)
+								chunksToDelete.Add(fileName);
+							break;
+						case OldVersion(var fileName, var start):
+							if (start >= chunkNumToDeleteFrom)
+								chunksToDelete.Add(fileName);
+							break;
 					}
-				} else {
+				}
+
+				// we need to remove excessive chunks from largest number to lowest one, so in case of crash
+				// mid-process, we don't end up with broken non-sequential chunks sequence.
+				chunksToDelete.Reverse();
+				foreach (var chunkFile in chunksToDelete) {
+					Log.Information("File {chunk} will be deleted during TruncateDb procedure.", chunkFile);
+					File.SetAttributes(chunkFile, FileAttributes.Normal);
+					File.Delete(chunkFile);
+				}
+
+				if (!newLastChunkHeader.IsScavenged) {
 					TruncateChunkAndFillWithZeros(newLastChunkHeader, newLastChunkFilename, truncateChk);
+				} else {
+					truncateChk = newLastChunkHeader.ChunkStartPosition;
+					Log.Information(
+						"Setting TruncateCheckpoint to {truncateCheckpoint} "
+						+ "as truncation position is in the middle of scavenged chunk.",
+						truncateChk);
 				}
 			}
 
@@ -116,7 +124,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				_config.WriterCheckpoint.Flush();
 			}
 
-			Log.Information("Resetting TruncateCheckpoint to {epoch} (0x{epoch:X}).", -1, -1);
+			Log.Information("Resetting TruncateCheckpoint to {truncateCheckpoint} (0x{truncateCheckpoint:X}).", -1, -1);
 			_config.TruncateCheckpoint.Write(-1);
 			_config.TruncateCheckpoint.Flush();
 		}
@@ -147,6 +155,15 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				fs.FlushToDisk();
 			}
+		}
+
+		private static ChunkHeader ReadChunkHeader(string chunkFileName) {
+			ChunkHeader chunkHeader;
+			using (var fs = new FileStream(chunkFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+				chunkHeader = ChunkHeader.FromStream(fs);
+			}
+
+			return chunkHeader;
 		}
 	}
 }
