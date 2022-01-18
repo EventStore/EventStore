@@ -27,7 +27,20 @@ export default defineUserConfig<DefaultThemeOptions>({
     themeConfig: {
         sidebarDepth: 2,
         docsDir: ".",
-        sidebar: { "/": require("../sidebar") }
+        sidebar: {
+            "/": require("../sidebar"),
+            "/http-api/": require("../http-api/sidebar")
+        },
+        navbar: [
+            {
+                text: "Server",
+                link: "/",
+            },
+            {
+                text: "HTTP API",
+                link: "/http-api/"
+            }
+        ]
     },
     plugins: [
         containers("tabs", "TabView", type => `${type ? ` type='${type}'` : ""}`),
