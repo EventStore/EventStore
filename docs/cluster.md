@@ -184,9 +184,9 @@ Please note that the `GossipOnSingleNode` option has been deprecated in this ver
 
 **Default**: `true`
 
-### Leader Election Timeout
+### Leader election timeout
 
-The Leader Elections are separate to the node gossip, and are used to elect a node as Leader and assign roles to the other nodes.
+The leader elections are separate to the node gossip, and are used to elect a node as Leader and assign roles to the other nodes.
 
 In some cases the leader election messages may be delayed, which can result in elections taking longer than they should. If you start seeing election timeouts in the logs or if you've needed to increase the gossip timeout due to a congested network, then you should consider increasing the leader election timeout as well.
 
