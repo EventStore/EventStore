@@ -115,7 +115,7 @@ jobs:
         registry: https://ghcr.io
     - name: Docker Push CI
       uses: jen20/action-docker-build@v1
-      if: github.event_name == 'push' && matrix.container-runtime == 'bionic'
+      if: github.event_name == 'push' && matrix.container-runtime == 'bionic' && github.ref == 'refs/heads/master'
       with:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
