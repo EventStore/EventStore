@@ -17,13 +17,17 @@ export default defineUserConfig<DefaultThemeOptions>({
             handleImportPath: s => resolveMultiSamplesPath(s)
         });
         md.use(linkCheckPlugin);
-        // this is a quick hack, should be fixed properly to remove direct references from here
-        md.use(replaceLinkPlugin);
+        md.use(replaceLinkPlugin, {
+            replaceLink: (link: string, _) => link
+                .replace("@server", "")
+                .replace("@clients/http-api/", "/http-api/")
+                .replace("@http-api", "../../samples/http-api")
+        });
     },
     themeConfig: {
         sidebarDepth: 2,
         docsDir: ".",
-        sidebar: require("../sidebar")
+        sidebar: { "/": require("../sidebar") }
     },
     plugins: [
         containers("tabs", "TabView", type => `${type ? ` type='${type}'` : ""}`),
