@@ -471,3 +471,7 @@ MigrationBackup/
 
 # es-gencert-cli
 certs/
+
+# docs local cache
+docs/.vuepress/.cache
+docs/.vuepress/.temp
