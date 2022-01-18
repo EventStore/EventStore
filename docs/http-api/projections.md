@@ -12,10 +12,10 @@ The response is a list of all known projections and useful information about the
 
 Download the following files that contain sample data used throughout this step of the getting started guide.
 
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json](@http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json)
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json](@http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json)
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json](@http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json)
-- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json](@http-api/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1164.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1165.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1166.json)
+- [shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json](@httpapi/data/shoppingCart-b989fe21-9469-4017-8d71-9820b8dd1167.json)
 
 Add the sample data to four different streams:
 
