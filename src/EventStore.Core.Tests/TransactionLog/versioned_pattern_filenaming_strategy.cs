@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using NUnit.Framework;
@@ -140,6 +141,38 @@ namespace EventStore.Core.Tests.TransactionLog {
 			Assert.AreEqual(2, tempFiles.Length);
 			Assert.AreEqual(tmp[0], tempFiles[0]);
 			Assert.AreEqual(tmp[1], tempFiles[1]);
+		}
+
+		[Test]
+		public void returns_file_index_for_correctly_formatted_filename() {
+			var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
+			Assert.AreEqual(0, strategy.GetIndexFor("chunk-000000.000000"));
+			Assert.AreEqual(1, strategy.GetIndexFor("chunk-000001.000000"));
+			Assert.AreEqual(999999, strategy.GetIndexFor("chunk-999999.000000"));
+		}
+
+		[Test]
+		public void returns_file_version_for_correctly_formatted_filename() {
+			var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
+			Assert.AreEqual(0, strategy.GetVersionFor("chunk-000002.000000"));
+			Assert.AreEqual(1, strategy.GetVersionFor("chunk-000002.000001"));
+			Assert.AreEqual(999999, strategy.GetVersionFor("chunk-000002.999999"));
+		}
+
+		[Test]
+		public void throws_for_incorrectly_formatted_filename() {
+			var strategy = new VersionedPatternFileNamingStrategy(PathName, "chunk-");
+			Assert.Throws<ArgumentException>(() => strategy.GetIndexFor("chunk-000000.a"));
+			Assert.Throws<ArgumentException>(() => strategy.GetIndexFor("chunk-00000a.000000"));
+			Assert.Throws<ArgumentException>(() => strategy.GetIndexFor("chunk-a.000000"));
+			Assert.Throws<ArgumentException>(() => strategy.GetIndexFor("chunk-000000.00000a"));
+			Assert.Throws<ArgumentException>(() => strategy.GetIndexFor("chunks-000000.00000a"));
+			Assert.Throws<ArgumentException>(() => strategy.GetVersionFor("chunk-000000.a"));
+			Assert.Throws<ArgumentException>(() => strategy.GetVersionFor("chunk-00000a.000000"));
+			Assert.Throws<ArgumentException>(() => strategy.GetVersionFor("chunk-a.000000"));
+			Assert.Throws<ArgumentException>(() => strategy.GetVersionFor("chunk-000000.00000a"));
+			Assert.Throws<ArgumentException>(() => strategy.GetVersionFor("chunks-000000.00000a"));
+			Assert.Throws<ArgumentException>(() => strategy.GetVersionFor("chunks-000000.000000"));
 		}
 	}
 }
