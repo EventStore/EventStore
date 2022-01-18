@@ -35,8 +35,8 @@ You can provide the details about your desired deployment topology, and get the 
 - Installation guidelines
 - gRPC and TCP client connection details
 
-::: tip 
-Event Store Cloud Avoid deploying, configuring, and maintaining the EventStoreDB instance yourself by
+::: tip Event Store Cloud
+Avoid deploying, configuring, and maintaining the EventStoreDB instance yourself by
 using [Event Store Cloud](https://www.eventstore.com/event-store-cloud).
 :::
 

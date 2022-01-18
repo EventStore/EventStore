@@ -16,10 +16,21 @@ configure EventStoreDB server, described below.
 You can check what version of EventStoreDB you have installed by using the `--version` parameter in the
 command line. For example:
 
+:::: code-group
+::: code Linux
+```bash
 ```bash:no-line-numbers
-$ eventstore --version
+$ eventstored --version
 EventStoreDB version 21.10.0.0 (tags/oss-v21.10.0/076363440, Mon, 1 Nov 2021 17:10:49 +0000)
 ```
+:::
+::: code Windows
+```
+> EventStore.ClusterNode.exe --version
+EventStoreDB version 21.10.0.0 (tags/oss-v21.10.0/076363440, Mon, 1 Nov 2021 17:10:49 +0000)
+```
+:::
+::::
 
 The full list of available options is available from the currently installed server by using the `--help`
 option in the command line.
@@ -68,7 +79,7 @@ For example, starting EventStoreDB with the `--log` option will override the def
 :::: code-group
 ::: code-group-item Linux
 ```bash:no-line-numbers
-eventstore --log /tmp/eventstore/logs
+eventstored --log /tmp/eventstore/logs
 ```
 :::
 ::: code-group-item Windows
@@ -91,7 +102,7 @@ and print it out to the console.
 ::: details Click here to see a WhatIf example
 
 ```
-$ eventstore --what-if
+$ eventstored --what-if
 [16540, 1,13:03:50.994,INF]
 "ES VERSION:"             "21.10.0.0" ("tags/oss-v21.10.0"/"076363440", "Unknown")
 [16540, 1,13:03:51.011,INF] "OS:"                     Linux ("Unix 5.4.0.66")
