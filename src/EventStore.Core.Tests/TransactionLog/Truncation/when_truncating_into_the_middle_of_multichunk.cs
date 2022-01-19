@@ -20,9 +20,13 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 
 			DbUtil.CreateMultiChunk(_config, 0, 2, GetFilePathFor("chunk-000000.000001"));
 			DbUtil.CreateMultiChunk(_config, 0, 2, GetFilePathFor("chunk-000000.000002"));
+			DbUtil.CreateSingleChunk(_config, 3, GetFilePathFor("chunk-000003.000000"));
 			DbUtil.CreateMultiChunk(_config, 3, 10, GetFilePathFor("chunk-000003.000001"));
 			DbUtil.CreateMultiChunk(_config, 3, 10, GetFilePathFor("chunk-000003.000002"));
-			DbUtil.CreateMultiChunk(_config, 7, 8, GetFilePathFor("chunk-000007.000001"));
+			DbUtil.CreateSingleChunk(_config, 4, GetFilePathFor("chunk-000004.000000"));
+			DbUtil.CreateMultiChunk(_config, 4, 4, GetFilePathFor("chunk-000004.000002"));
+			DbUtil.CreateMultiChunk(_config, 5, 7, GetFilePathFor("chunk-000005.000001"));
+			DbUtil.CreateMultiChunk(_config, 8, 9, GetFilePathFor("chunk-000008.000001"));
 			DbUtil.CreateOngoingChunk(_config, 11, GetFilePathFor("chunk-000011.000000"));
 
 			var truncator = new TFChunkDbTruncator(_config);

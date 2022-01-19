@@ -17,6 +17,16 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 	[TestFixture]
 	public class when_validating_tfchunk_db : SpecificationWithDirectory {
 		[Test]
+		public void detect_no_database() {
+			var config = TFChunkHelper.CreateSizedDbConfig(PathName, 4000, chunkSize: 1000);
+			using (var db = new TFChunkDb(config)) {
+				Assert.That(() => db.Open(verifyHash: false),
+					Throws.Exception.InstanceOf<CorruptDatabaseException>()
+						.With.InnerException.InstanceOf<ChunkNotFoundException>());
+			}
+		}
+
+		[Test]
 		public void with_file_of_wrong_size_database_corruption_is_detected() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 500);
 			using (var db = new TFChunkDb(config)) {
@@ -132,7 +142,7 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		}
 
 		[Test]
-		public void when_in_multiple_extraneous_files_throws_corrupt_database_exception() {
+		public void when_in_multiple_extraneous_latest_version_of_files_throws_corrupt_database_exception() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 15000);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
@@ -140,7 +150,35 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 				DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
 				Assert.That(() => db.Open(verifyHash: false),
 					Throws.Exception.InstanceOf<CorruptDatabaseException>()
-						.With.InnerException.InstanceOf<ExtraneousFileFoundException>());
+						.With.InnerException.InstanceOf<ExtraneousFileFoundException>()
+						.With.InnerException.Message.Contains("chunk-000002.000000"));
+			}
+		}
+
+		[Test]
+		public void when_in_multiple_extraneous_old_version_of_files_throws_corrupt_database_exception() {
+			var config = TFChunkHelper.CreateDbConfig(PathName, 15000);
+			using (var db = new TFChunkDb(config)) {
+				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+				DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
+				DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
+				DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000001"));
+				Assert.That(() => db.Open(verifyHash: false),
+					Throws.Exception.InstanceOf<CorruptDatabaseException>()
+						.With.InnerException.InstanceOf<ExtraneousFileFoundException>()
+						.With.InnerException.Message.Contains("chunk-000002.000000"));
+			}
+		}
+
+		[Test]
+		public void when_in_multiple_missing_file_throws_corrupt_database_exception() {
+			var config = TFChunkHelper.CreateDbConfig(PathName, 25000);
+			using (var db = new TFChunkDb(config)) {
+				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
+				DbUtil.CreateOngoingChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
+				Assert.That(() => db.Open(verifyHash: false),
+					Throws.Exception.InstanceOf<CorruptDatabaseException>()
+						.With.InnerException.InstanceOf<ChunkNotFoundException>());
 			}
 		}
 
