@@ -919,7 +919,7 @@ namespace EventStore.Core {
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, null, null,
+						_authenticationProvider, AuthorizationGateway, null, null, null,
 						options.Interface.ConnectionPendingSendBytesThreshold,
 						options.Interface.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
@@ -933,7 +933,8 @@ namespace EventStore.Core {
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, _certificateSelector, _externalClientCertificateValidator,
+						_authenticationProvider, AuthorizationGateway,
+						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
 						options.Interface.ConnectionPendingSendBytesThreshold,
 						options.Interface.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
@@ -949,7 +950,7 @@ namespace EventStore.Core {
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
-							_authenticationProvider, AuthorizationGateway, null, null, ESConsts.UnrestrictedPendingSendBytes,
+							_authenticationProvider, AuthorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
 						_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
@@ -962,7 +963,8 @@ namespace EventStore.Core {
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
-							_authenticationProvider, AuthorizationGateway, _certificateSelector, _internalClientCertificateValidator,
+							_authenticationProvider, AuthorizationGateway,
+							_certificateSelector, _intermediateCertsSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);

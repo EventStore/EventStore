@@ -48,10 +48,11 @@ namespace EventStore.Transport.Tcp {
 			IPEndPoint remoteEndPoint,
 			Socket socket,
 			Func<X509Certificate2> serverCertificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
 			bool verbose) {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
-			connection.InitServerSocket(socket, serverCertificateSelector, clientCertValidator, verbose);
+			connection.InitServerSocket(socket, serverCertificateSelector, intermediatesSelector, clientCertValidator, verbose);
 			return connection;
 		}
 
@@ -106,7 +107,12 @@ namespace EventStore.Transport.Tcp {
 			_verbose = verbose;
 		}
 
-		private void InitServerSocket(Socket socket, Func<X509Certificate2> serverCertificateSelector, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator, bool verbose) {
+		private void InitServerSocket(
+			Socket socket,
+			Func<X509Certificate2> serverCertificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
+			bool verbose) {
 			InitConnectionBase(socket);
 			if (verbose)
 				Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
@@ -132,19 +138,22 @@ namespace EventStore.Transport.Tcp {
 					return;
 				}
 
-				Task.Run(async () => await AuthenticateAsServerAsync(serverCertificateSelector));
+				Task.Run(async () => await AuthenticateAsServerAsync(serverCertificateSelector, intermediatesSelector));
 			}
 		}
 
-		private async Task AuthenticateAsServerAsync(Func<X509Certificate2> serverCertificateSelector) {
+		private async Task AuthenticateAsServerAsync(
+			Func<X509Certificate2> serverCertificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector) {
 			try {
 				var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
 				var certificate = serverCertificateSelector?.Invoke();
+				var intermediates = intermediatesSelector?.Invoke();
 				Ensure.NotNull(certificate, "certificate");
 
 				await _sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions {
 					ServerCertificateContext = SslStreamCertificateContext.Create(
-						certificate!, null, offline: true),
+						certificate!, intermediates, offline: true),
 					ClientCertificateRequired = true,
 					EnabledSslProtocols = enabledSslProtocols,
 					CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
