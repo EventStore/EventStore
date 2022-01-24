@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
 
@@ -46,7 +47,7 @@ namespace EventStore.Transport.Tcp {
 		public static ITcpConnection CreateServerFromSocket(Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			Socket socket,
-			Func<X509Certificate> serverCertificateSelector,
+			Func<X509Certificate2> serverCertificateSelector,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
 			bool verbose) {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
@@ -105,7 +106,7 @@ namespace EventStore.Transport.Tcp {
 			_verbose = verbose;
 		}
 
-		private void InitServerSocket(Socket socket, Func<X509Certificate> serverCertificateSelector, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator, bool verbose) {
+		private void InitServerSocket(Socket socket, Func<X509Certificate2> serverCertificateSelector, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator, bool verbose) {
 			InitConnectionBase(socket);
 			if (verbose)
 				Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
@@ -124,59 +125,53 @@ namespace EventStore.Transport.Tcp {
 				}
 
 				try {
-					_sslStream = new SslStream(new NetworkStream(socket, true), false, ValidateClientCertificate, null);
+					_sslStream = new SslStream(new NetworkStream(socket, true), false);
 				} catch (IOException exc) {
 					Log.Debug(exc, "[S{remoteEndPoint}, L{localEndPoint}]: IOException on NetworkStream. The socket has already been disposed.", RemoteEndPoint,
 						LocalEndPoint);
 					return;
 				}
 
-				try {
-					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
-					var certificate = serverCertificateSelector?.Invoke();
-					Ensure.NotNull(certificate, "certificate");
-					_sslStream.BeginAuthenticateAsServer(certificate, true, enabledSslProtocols, false,
-						OnEndAuthenticateAsServer, _sslStream);
-				} catch (AuthenticationException exc) {
-					Log.Information(exc,
-						"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on BeginAuthenticateAsServer.",
-						RemoteEndPoint, LocalEndPoint);
-					CloseInternal(SocketError.SocketError, exc.Message);
-				} catch (ObjectDisposedException) {
-					CloseInternal(SocketError.SocketError, "SslStream disposed.");
-				} catch (Exception exc) {
-					Log.Information(exc,
-						"[S{remoteEndPoint}, L{localEndPoint}]: Exception on BeginAuthenticateAsServer.",
-						RemoteEndPoint, LocalEndPoint);
-					CloseInternal(SocketError.SocketError, exc.Message);
-				}
+				Task.Run(async () => await AuthenticateAsServerAsync(serverCertificateSelector));
 			}
 		}
 
-		private void OnEndAuthenticateAsServer(IAsyncResult ar) {
+		private async Task AuthenticateAsServerAsync(Func<X509Certificate2> serverCertificateSelector) {
 			try {
-				lock (_streamLock) {
-					var sslStream = (SslStream)ar.AsyncState;
-					sslStream.EndAuthenticateAsServer(ar);
-					if (_verbose)
-						DisplaySslStreamInfo(sslStream);
-					_isAuthenticated = true;
-				}
+				var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+				var certificate = serverCertificateSelector?.Invoke();
+				Ensure.NotNull(certificate, "certificate");
 
-				StartReceive();
-				TrySend();
+				await _sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions {
+					ServerCertificateContext = SslStreamCertificateContext.Create(
+						certificate!, null, offline: true),
+					ClientCertificateRequired = true,
+					EnabledSslProtocols = enabledSslProtocols,
+					CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+					RemoteCertificateValidationCallback = ValidateClientCertificate,
+					ApplicationProtocols = new List<SslApplicationProtocol>(),
+					AllowRenegotiation = false,
+				});
+
+				if (_verbose)
+					DisplaySslStreamInfo(_sslStream);
+				_isAuthenticated = true;
 			} catch (AuthenticationException exc) {
 				Log.Information(exc,
-					"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on EndAuthenticateAsServer.",
+					"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on AuthenticateAsServerAsync.",
 					RemoteEndPoint, LocalEndPoint);
 				CloseInternal(SocketError.SocketError, exc.Message);
 			} catch (ObjectDisposedException) {
 				CloseInternal(SocketError.SocketError, "SslStream disposed.");
 			} catch (Exception exc) {
-				Log.Information(exc, "[S{remoteEndPoint}, L{localEndPoint}]: Exception on EndAuthenticateAsServer.",
+				Log.Information(exc,
+					"[S{remoteEndPoint}, L{localEndPoint}]: Exception on AuthenticateAsServerAsync.",
 					RemoteEndPoint, LocalEndPoint);
 				CloseInternal(SocketError.SocketError, exc.Message);
 			}
+
+			StartReceive();
+			TrySend();
 		}
 
 		private void InitClientSocket(Socket socket) {
