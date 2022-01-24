@@ -173,7 +173,7 @@ namespace EventStore.ClusterNode {
 				var serverOptions = new SslServerAuthenticationOptions {
 					ServerCertificateContext = SslStreamCertificateContext.Create(
 						hostedService.Node.CertificateSelector(),
-						null,
+						hostedService.Node.IntermediateCertificatesSelector(),
 						offline: true),
 					ClientCertificateRequired = true,
 					RemoteCertificateValidationCallback = (_, certificate, chain, sslPolicyErrors) => {

@@ -96,6 +96,7 @@ namespace EventStore.Core {
 		abstract public VNodeInfo NodeInfo { get; }
 		abstract public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator { get; }
 		abstract public Func<X509Certificate2> CertificateSelector { get; }
+		abstract public Func<X509Certificate2Collection> IntermediateCertificatesSelector { get; }
 		abstract public bool DisableHttps { get; }
 		abstract public void Start();
 		abstract public Task<ClusterVNode> StartAsync(bool waitUntilRead);
@@ -196,6 +197,7 @@ namespace EventStore.Core {
 
 		public override Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
 		public override Func<X509Certificate2> CertificateSelector => _certificateSelector;
+		public override Func<X509Certificate2Collection> IntermediateCertificatesSelector => _intermediateCertsSelector;
 		public override bool DisableHttps => _disableHttps;
 
 #if DEBUG
