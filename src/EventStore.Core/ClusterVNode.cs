@@ -1465,12 +1465,24 @@ namespace EventStore.Core {
 			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client");
 		}
 
-		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain _, SslPolicyErrors sslPolicyErrors,
+		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors,
 			Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector, string certificateOrigin) {
 			if (certificate == null)
 				return (false, $"No certificate was provided by the {certificateOrigin}");
 
-			var chainStatus = CertificateUtils.BuildChain(certificate, intermediateCertsSelector(), trustedRootCertsSelector());
+			var intermediates = intermediateCertsSelector();
+
+			// add any intermediate certificates received from the origin
+			if (chain != null) {
+				foreach (var chainElement in chain.ChainElements) {
+					if (CertificateUtils.IsValidIntermediateCertificate(chainElement.Certificate, out _)) {
+						intermediates ??= new X509Certificate2Collection();
+						intermediates.Add(new X509Certificate2(chainElement.Certificate));
+					}
+				}
+			}
+
+			var chainStatus = CertificateUtils.BuildChain(certificate, intermediates, trustedRootCertsSelector());
 			if (chainStatus == X509ChainStatusFlags.NoError)
 				sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors; //clear the RemoteCertificateChainErrors flag
 			else
