@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
 - Expose `emitEnabled` on creation of continuous projection. [EventStore#3384](https://github.com/EventStore/EventStore/pull/3384)
+- automatically update license file with current year [EventStore#3382](https://github.com/EventStore/EventStore/pull/3382)
 
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
