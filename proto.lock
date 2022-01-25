@@ -549,6 +549,11 @@
                 "id": 4,
                 "name": "commit_position",
                 "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "current_version",
+                "type": "int64"
               }
             ]
           },

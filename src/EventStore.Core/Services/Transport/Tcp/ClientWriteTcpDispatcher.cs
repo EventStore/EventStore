@@ -288,6 +288,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			if (dto == null) return null;
 			return new ClientMessage.DeleteStreamCompleted(package.CorrelationId, (OperationResult)dto.Result,
 				dto.Message,
+				dto.CurrentVersion,
 				dto.PreparePosition,
 				dto.CommitPosition);
 		}
@@ -295,6 +296,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private static TcpPackage WrapDeleteStreamCompleted(ClientMessage.DeleteStreamCompleted msg) {
 			var dto = new DeleteStreamCompleted((Client.Messages.OperationResult)msg.Result,
 				msg.Message,
+				msg.CurrentVersion,
 				msg.PreparePosition,
 				msg.CommitPosition);
 			return new TcpPackage(TcpCommand.DeleteStreamCompleted, msg.CorrelationId, dto.Serialize());
