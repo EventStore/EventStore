@@ -267,5 +267,41 @@ namespace EventStore.Core {
 				$"since it is not self-signed (subject = {certificate.SubjectName.Name}, issuer = {certificate.IssuerName.Name}).";
 			return false;
 		}
+
+		public static bool UpdateCAStore(X509Certificate2Collection newIntermediates, X509Certificate2Collection oldIntermediates, out string error) {
+			using var intermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser);
+			intermediateStore.Open(OpenFlags.ReadWrite);
+
+			error = string.Empty;
+			if (newIntermediates != null) {
+				foreach (var newIntermediate in newIntermediates) {
+					if (!intermediateStore.Certificates.Contains(newIntermediate)) {
+						try {
+							intermediateStore.Add(newIntermediate);
+						} catch (Exception ex) {
+							error += $"Failed to add certificate with thumbprint '{newIntermediate.Thumbprint}' to the CA certificate store: {ex}\n";
+						}
+					}
+				}
+			}
+
+			if (oldIntermediates != null) {
+				foreach (var oldIntermediate in oldIntermediates) {
+					if (newIntermediates != null && !newIntermediates.Contains(oldIntermediate)) {
+						try {
+							intermediateStore.Remove(oldIntermediate);
+						} catch (Exception ex) {
+							error += $"Failed to remove certificate with thumbprint '{oldIntermediate.Thumbprint}' from the CA certificate store: {ex}\n";
+						}
+					}
+				}
+			}
+
+			if (error != string.Empty)
+				return false;
+
+			error = null;
+			return true;
+		}
 	}
 }
