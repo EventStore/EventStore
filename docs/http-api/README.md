@@ -52,7 +52,7 @@ The accepted content types for GET requests are:
 - `text/html`
 - `application/vnd.eventstore.streamdesc+json`
 
-## Appending Events
+## Appending events
 
 You append to a stream over HTTP using a `POST` request to the resource of the stream. If the stream does not exist then the stream is implicitly created.
 
