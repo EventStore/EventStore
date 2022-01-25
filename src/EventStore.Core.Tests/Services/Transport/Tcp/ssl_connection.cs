@@ -28,7 +28,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		[Test]
 		public void should_connect_to_each_other_and_send_data() {
 			var serverEndPoint = new IPEndPoint(_ip, _port);
-			X509Certificate cert = GetServerCertificate();
+			X509Certificate2 cert = GetServerCertificate();
 
 			var sent = new byte[1000];
 			new Random().NextBytes(sent);
@@ -39,7 +39,8 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 
 			var listener = new TcpServerListener(serverEndPoint);
 			listener.StartListening((endPoint, socket) => {
-				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, () => cert,delegate { return (true, null); },
+				var ssl = TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket,
+					() => cert, null, delegate { return (true, null); },
 					verbose: true);
 				ssl.ConnectionClosed += (x, y) => done.Set();
 				if (ssl.IsClosed)
