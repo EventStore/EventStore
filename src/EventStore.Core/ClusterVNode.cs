@@ -531,7 +531,7 @@ namespace EventStore.Core {
 
 			_certificateSelector = () => _certificate;
 			_trustedRootCertsSelector = () => _trustedRootCerts;
-			_intermediateCertsSelector = () => _intermediateCerts;
+			_intermediateCertsSelector = () => _intermediateCerts == null ? null : new X509Certificate2Collection(_intermediateCerts);
 
 			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
