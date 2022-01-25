@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_invalid_data_is_sent_over_tcp<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 
-		[Timeout(5000)]
+		[Timeout(15000)]
 		[TestCase("InternalTcpEndPoint", false)]
 		[TestCase("ExternalTcpEndPoint", false)]
 		public async Task connection_should_be_closed_by_remote_party(string endpointProperty, bool secure) {

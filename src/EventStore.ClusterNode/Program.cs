@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Configuration;
@@ -10,7 +14,6 @@ using EventStore.Core.Services.Transport.Http;
 using EventStore.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -138,24 +141,7 @@ namespace EventStore.ClusterNode {
 												listenOptions.Use(next =>
 													new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
 											} else {
-												listenOptions.UseHttps(new HttpsConnectionAdapterOptions {
-													ServerCertificateSelector = delegate {
-														return hostedService.Node.CertificateSelector();
-													},
-													ClientCertificateMode = ClientCertificateMode.AllowCertificate,
-													ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
-														var (isValid, error) =
-															hostedService.Node.InternalClientCertificateValidator(
-																certificate,
-																chain,
-																sslPolicyErrors);
-														if (!isValid && error != null) {
-															Log.Error("Client certificate validation error: {e}", error);
-														}
-
-														return isValid;
-													}
-												});
+												listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
 											}
 										});
 								})
@@ -180,6 +166,42 @@ namespace EventStore.ClusterNode {
 			} finally {
 				Log.CloseAndFlush();
 			}
+		}
+
+		private static ServerOptionsSelectionCallback CreateServerOptionsSelectionCallback(ClusterVNodeHostedService hostedService) {
+			return ((_, _, _, _) => {
+				var serverOptions = new SslServerAuthenticationOptions {
+					ServerCertificateContext = SslStreamCertificateContext.Create(
+						hostedService.Node.CertificateSelector(),
+						hostedService.Node.IntermediateCertificatesSelector(),
+						offline: true),
+					ClientCertificateRequired = true, // request a client certificate but it's not necessary for the client to supply one
+					RemoteCertificateValidationCallback = (_, certificate, chain, sslPolicyErrors) => {
+						if(certificate == null) // not necessary to have a client certificate
+							return true;
+
+						var (isValid, error) =
+							hostedService.Node.InternalClientCertificateValidator(
+								certificate,
+								chain,
+								sslPolicyErrors);
+						if (!isValid && error != null) {
+							Log.Error("Client certificate validation error: {e}", error);
+						}
+
+						return isValid;
+					},
+					CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+					EnabledSslProtocols = SslProtocols.None, // let the OS choose a secure TLS protocol
+					ApplicationProtocols = new List<SslApplicationProtocol> {
+						SslApplicationProtocol.Http2,
+						SslApplicationProtocol.Http11
+					},
+					AllowRenegotiation = false
+				};
+
+				return ValueTask.FromResult(serverOptions);
+			});
 		}
 	}
 }

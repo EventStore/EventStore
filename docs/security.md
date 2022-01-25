@@ -402,9 +402,13 @@ cat /path/to/intermediateN.crt >> ./ca_bundle.crt
 openssl pkcs12 -export -in /path/to/node.crt -inkey /path/to/node.key -certfile ./ca_bundle.crt -out /path/to/node.p12 -passout pass:<password>
 ```
 
-#### Preventing intermediate certificate downloads
+#### Adding intermediate certificates to the certificate store
 
-If your certificates use the AIA extension, to improve performance you can additionally follow these steps to prevent the EventStoreDB server from downloading intermediate certificates by putting them on the system in the appropriate locations:
+Intermediate certificates also need to be added to the current user's certificate store.
+
+This is required for two reasons:  
+i)  For the full certificate chain to be sent when TLS connections are established  
+ii) To improve performance by preventing certificate downloads if your certificate uses the AIA extension  
 
 :::: tabs
 ::: tab Linux
@@ -413,17 +417,17 @@ The following script assumes EventStoreDB is running under the `eventstore` acco
 ```bash
 sudo su eventstore --shell /bin/bash
 dotnet tool install --global dotnet-certificate-tool
- ~/.dotnet/tools/certificate-tool add --file /path/to/intermediate.crt
+ ~/.dotnet/tools/certificate-tool add -s CertificateAuthority -l CurrentUser --file /path/to/intermediate.crt
 ```
 :::
 ::: tab Windows
-To import the intermediate certificate in the Certificate store, run the following PowerShell command under the same account as EventStoreDB is running:
+To import the intermediate certificate in the `Intermediate Certification Authorities` certificate store, run the following PowerShell command under the same account as EventStoreDB is running:
 
 ```powershell
 Import-Certificate -FilePath .\path\to\intermediate.crt -CertStoreLocation Cert:\CurrentUser\CA
 ```
 
-To import the intermediate certificate in the `Local Computer` store, run the following as `Administrator`:
+Optionally, to import the intermediate certificate in the `Local Computer` store, run the following as `Administrator`:
 
 ```powershell
 Import-Certificate -FilePath .\ca.crt -CertStoreLocation Cert:\LocalMachine\CA
