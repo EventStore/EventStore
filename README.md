@@ -62,6 +62,50 @@ You can launch the tests as follows:
 dotnet test src/EventStore.sln
 ```
 
+### Build EventStoreDB Docker image
+
+You can also build a Docker image by running the command:
+
+```
+docker build --tag eventstore/eventstore:{version}-{container-runtime} . \
+--build-arg CONTAINER_RUNTIME={container-runtime}
+--build-arg RUNTIME={runtime}
+```
+
+For instance:
+
+```
+docker build --tag eventstore/eventstore:21.10.1-buster-slim . \
+--build-arg CONTAINER_RUNTIME=buster-slim \
+--build-arg RUNTIME=linux-x64
+```
+
+**_Note:_** Because of the [Docker issue](https://github.com/moby/buildkit/issues/1900), if you're building a Docker image on Windows, you may need to set the `DOCKER_BUILDKIT=0` environment variable. For instance, running in PowerShell:
+
+```
+$env:DOCKER_BUILDKIT=0; docker build --tag eventstore/eventstore:21.10.1-buster-slim . `
+--build-arg CONTAINER_RUNTIME=buster-slim `
+--build-arg RUNTIME=linux-x64
+```
+
+Currently we support following configurations:
+1. Buster slim:
+  - `CONTAINER_RUNTIME=buster-slim`
+  - `RUNTIME=linux-x64`
+2. Focal:
+  - `CONTAINER_RUNTIME=focal`
+  - `RUNTIME=linux-x64`
+3. Alpine:
+  - `CONTAINER_RUNTIME=alpine`
+  - `RUNTIME=alpine-x64`
+
+You can verify the built image by running:
+
+```
+docker run --rm eventstore/eventstore:21.10.1-buster-slim --insecure --what-if
+```
+
+
 ## Building the EventStoreDB Clients 
 
 The client libraries are located in their own repositories, refer to their specific instructions.  
