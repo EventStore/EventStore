@@ -101,7 +101,7 @@ The _Query_ tab a code editor field where you can create transient and short-liv
 
 The _Persistent Subscriptions_ tab shows an overview of [persistent subscriptions](@clients/http-api/persistent.md) configured on streams. The button above the list do the following:
 
-- _New Subscription_: Create a new [subscriptions](@clients/http-api/README.md#reading-subscribing-events)
+- _New Subscription_: Create a new subscriptions
 
 Clicking the _+_ icon next to a stream name reveals the subscription name and more buttons. The _Back_ button takes you to the parent screen. :
 
