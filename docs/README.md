@@ -63,7 +63,7 @@ EventStoreDB offers a low-level protocol in the form of an asynchronous TCP prot
 We plan to phase out the TCP protocol in the later versions. Please consider migrating your applications that use the TCP protocol and refactor them to use gRPC instead.
 :::
 
-Find out more about configuring the TCP protocol on the [TCP configuration](../networking/tcp.md) page.
+Find out more about configuring the TCP protocol on the [TCP configuration](networking.md#tcp-configuration) page.
 
 #### EventStoreDB supported clients
 
@@ -88,10 +88,10 @@ Find out more about configuring the TCP protocol on the [TCP configuration](../n
 
 EventStoreDB also offers an HTTP-based interface, based specifically on the [AtomPub protocol](https://datatracker.ietf.org/doc/html/rfc5023). As it operates over HTTP, this is less efficient, but nearly every environment supports it.
 
-Find out more about configuring the HTTP protocol on the [HTTP configuration](../networking/http.md) page.
+Find out more about configuring the HTTP protocol on the [HTTP configuration](networking.md#http-configuration) page.
 
 ::: warning "Deprecation note"
-The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](../networking/http.md#atompub) to the server configuration.
+The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration.
 :::
 
 As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](@clients/http-api/introduction/README.md) for it.
