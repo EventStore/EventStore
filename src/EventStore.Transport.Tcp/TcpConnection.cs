@@ -90,6 +90,7 @@ namespace EventStore.Transport.Tcp {
 		private readonly object _closeLock = new object();
 		private bool _isSending;
 		private volatile bool _isClosed;
+		private volatile bool _isClosing;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
@@ -344,7 +345,16 @@ namespace EventStore.Transport.Tcp {
 
 		private void CloseInternal(SocketError socketError, string reason) {
 			lock (_closeLock) {
-				if (_isClosed) return;
+				if (_isClosing) return;
+				_isClosing = true;
+			}
+
+			if (_socket != null) {
+				Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
+				Helper.EatException(() => _socket.Close());
+			}
+
+			lock (_closeLock) {
 				_isClosed = true;
 			}
 
@@ -367,11 +377,6 @@ namespace EventStore.Transport.Tcp {
 					"ES {connectionType} closed [{dateTime:HH:mm:ss.fff}: N{remoteEndPoint}, L{localEndPoint}, {connectionId:B}]:Close reason: [{socketError}] {reason}",
 					GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 					socketError, reason);
-			}
-
-			if (_socket != null) {
-				Helper.EatException(() => _socket.Shutdown(SocketShutdown.Both));
-				Helper.EatException(() => _socket.Close());
 			}
 
 			lock (_sendLock) {

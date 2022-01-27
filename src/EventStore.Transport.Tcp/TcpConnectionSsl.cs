@@ -90,6 +90,7 @@ namespace EventStore.Transport.Tcp {
 		private bool _isSending;
 		private int _receiveHandling;
 		private volatile bool _isClosed;
+		private volatile bool _isClosing;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
@@ -545,7 +546,17 @@ namespace EventStore.Transport.Tcp {
 
 		private void CloseInternal(SocketError socketError, string reason) {
 			lock (_closeLock) {
-				if (_isClosed) return;
+				if (_isClosing) return;
+				_isClosing = true;
+			}
+
+			if (_sslStream != null)
+				Helper.EatException(() => _sslStream.Close());
+
+			if (_socket != null)
+				Helper.EatException(() => _socket.Dispose());
+
+			lock (_closeLock) {
 				_isClosed = true;
 			}
 
@@ -569,12 +580,6 @@ namespace EventStore.Transport.Tcp {
 					GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 					socketError, reason);
 			}
-
-			if (_sslStream != null)
-				Helper.EatException(() => _sslStream.Close());
-
-			if (_socket != null)
-				Helper.EatException(() => _socket.Dispose());
 
 			var handler = ConnectionClosed;
 			if (handler != null)
