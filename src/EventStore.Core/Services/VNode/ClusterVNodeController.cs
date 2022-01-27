@@ -760,7 +760,7 @@ namespace EventStore.Core.Services.VNode {
 			}
 
 			var timeoutMessage = new ClientMessage.DeleteStreamCompleted(
-				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1);
+				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1, -1);
 			ForwardRequest(message, timeoutMessage);
 		}
 
@@ -882,7 +882,7 @@ namespace EventStore.Core.Services.VNode {
 				return;
 			}
 			var timeoutMessage = new ClientMessage.DeleteStreamCompleted(
-				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1);
+				message.CorrelationId, OperationResult.ForwardTimeout, "Forwarding timeout", -1, -1, -1);
 			ForwardRequest(message, timeoutMessage);
 		}
 

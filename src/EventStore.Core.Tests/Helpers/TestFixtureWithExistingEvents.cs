@@ -445,14 +445,14 @@ namespace EventStore.Core.Tests.Helpers {
 			List<EventRecord> list;
 			if (_deletedStreams.Contains(message.EventStreamId)) {
 				message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId,
-					OperationResult.StreamDeleted, string.Empty, -1, -1));
+					OperationResult.StreamDeleted, string.Empty, -1, -1, -1));
 				return;
 			}
 
 			if (!_streams.TryGetValue(message.EventStreamId, out list) || list == null) {
 				if (message.ExpectedVersion == ExpectedVersion.Any) {
 					message.Envelope.ReplyWith(new ClientMessage.DeleteStreamCompleted(message.CorrelationId,
-						OperationResult.StreamDeleted, string.Empty, -1, -1));
+						OperationResult.StreamDeleted, string.Empty, -1, -1, -1));
 					_deletedStreams.Add(message.EventStreamId);
 					return;
 				}
