@@ -113,7 +113,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return;
 				}
 
-				if (!(message is ClientMessage.DeleteStreamCompleted completed)) {
+				if (message is not ClientMessage.DeleteStreamCompleted completed) {
 					deleteResponseSource.TrySetException(
 						RpcExceptions.UnknownMessage<ClientMessage.DeleteStreamCompleted>(message));
 					return;
@@ -133,7 +133,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						return;
 					case OperationResult.WrongExpectedVersion:
 						deleteResponseSource.TrySetException(RpcExceptions.WrongExpectedVersion(streamName,
-							expectedVersion));
+							expectedVersion, completed.CurrentVersion));
 						return;
 					case OperationResult.StreamDeleted:
 						deleteResponseSource.TrySetException(RpcExceptions.StreamDeleted(streamName));
