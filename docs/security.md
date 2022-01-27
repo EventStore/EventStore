@@ -59,7 +59,7 @@ In this section, you can find settings related to protocol security (HTTPS and T
 
 SSL certificates can be created with a common name (CN), which is an arbitrary string. Usually is contains the DNS name for which the certificate is issued. When cluster nodes connect to each other, they need to ensure that they indeed talk to another node and not something that pretends to be a node. Therefore, EventStoreDB expects the connecting party to have a certificate with a pre-defined CN `eventstoredb-node`.
 
-When using the Event Store [certificate generator](#certificate-generation-cli), the CN is properly set by default. However, you might want to change the CN and in this case, you'd also need to tell EventStoreDB what value it should expect instead of the default one, using the setting below:
+When using the Event Store [certificate generator](#certificate-generation-tool), the CN is properly set by default. However, you might want to change the CN and in this case, you'd also need to tell EventStoreDB what value it should expect instead of the default one, using the setting below:
 
 | Format               | Syntax                                             |
 |:---------------------|:---------------------------------------------------|
