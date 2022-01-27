@@ -136,10 +136,11 @@ namespace EventStore.Client.Messages {
 	}
 
 	partial class DeleteStreamCompleted {
-		public DeleteStreamCompleted(OperationResult result, string message, long preparePosition, long commitPosition)
-		{
+		public DeleteStreamCompleted(OperationResult result, string message, long currentVersion, long preparePosition,
+			long commitPosition) {
 			Result = result;
 			if(!string.IsNullOrEmpty(message)) Message = message;
+			CurrentVersion = currentVersion;
 			PreparePosition = preparePosition;
 			CommitPosition = commitPosition;
 		}

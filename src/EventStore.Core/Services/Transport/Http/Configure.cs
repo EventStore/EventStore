@@ -410,7 +410,10 @@ namespace EventStore.Core.Services.Transport.Http {
 					case OperationResult.ForwardTimeout:
 						return InternalServerError("Delete timeout");
 					case OperationResult.WrongExpectedVersion:
-						return BadRequest("Wrong expected EventNumber");
+						return new ResponseConfiguration(HttpStatusCode.BadRequest, "Wrong expected EventNumber",
+							"text/plain", Helper.UTF8NoBom,
+							new KeyValuePair<string, string>(SystemHeaders.CurrentVersion,
+								msg.CurrentVersion.ToString()));
 					case OperationResult.StreamDeleted:
 						return Gone("Stream deleted");
 					case OperationResult.InvalidTransaction:
