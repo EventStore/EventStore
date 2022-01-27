@@ -21,7 +21,8 @@ export default defineUserConfig<DefaultThemeOptions>({
             replaceLink: (link: string, _) => link
                 .replace("@server", "")
                 .replace("@clients/http-api/", "/http-api/")
-                .replace("@http-api", "../../samples/http-api")
+                .replace("@clients/httpapi/", "/http-api/")
+                .replace("@httpapi", "../../samples/http-api")
         });
     },
     themeConfig: {
