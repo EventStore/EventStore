@@ -486,23 +486,25 @@ namespace EventStore.Core.Messages {
 			public readonly string Message;
 			public readonly long PreparePosition;
 			public readonly long CommitPosition;
+			public readonly long CurrentVersion;
 
 			public DeleteStreamCompleted(Guid correlationId, OperationResult result, string message,
-				long preparePosition, long commitPosition) {
+				long currentVersion, long preparePosition, long commitPosition) {
 				CorrelationId = correlationId;
 				Result = result;
 				Message = message;
+				CurrentVersion = currentVersion;
 				PreparePosition = preparePosition;
 				CommitPosition = commitPosition;
 			}
 
-			public DeleteStreamCompleted(Guid correlationId, OperationResult result, string message) : this(
-				correlationId, result, message, -1, -1) {
+			public DeleteStreamCompleted(Guid correlationId, OperationResult result, string message,
+				long currentVersion = -1L) : this(correlationId, result, message, currentVersion, -1, -1) {
 			}
 
-
 			public DeleteStreamCompleted WithCorrelationId(Guid newCorrId) {
-				return new DeleteStreamCompleted(newCorrId, Result, Message, PreparePosition, CommitPosition);
+				return new DeleteStreamCompleted(newCorrId, Result, Message, CurrentVersion, PreparePosition,
+					CommitPosition);
 			}
 		}
 
