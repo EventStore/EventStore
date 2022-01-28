@@ -77,6 +77,7 @@ message DeleteStreamCompleted {
 	optional string message = 2;
 	optional int64 prepare_position = 3;
 	optional int64 commit_position = 4;
+	optional int64 current_version = 5;
 }
 
 message TransactionStart {

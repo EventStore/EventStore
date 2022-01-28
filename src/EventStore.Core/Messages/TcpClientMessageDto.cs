@@ -249,13 +249,17 @@ namespace EventStore.Core.Messages
   
     [ProtoMember(4, IsRequired = false, Name=@"commit_position", DataFormat = DataFormat.TwosComplement)]
     public readonly long? CommitPosition;
+
+    [ProtoMember(5, IsRequired = false, Name=@"current_version", DataFormat = DataFormat.TwosComplement)]
+    public readonly long? CurrentVersion;
   
     private DeleteStreamCompleted() {}
   
-    public DeleteStreamCompleted(OperationResult result, string message, long? preparePosition, long? commitPosition)
+    public DeleteStreamCompleted(OperationResult result, string message, long? currentVersion, long? preparePosition, long? commitPosition)
     {
         Result = result;
         Message = message;
+        CurrentVersion = currentVersion;
         PreparePosition = preparePosition;
         CommitPosition = commitPosition;
     }

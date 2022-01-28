@@ -50,10 +50,11 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				 ClientCorrId,
 				 OperationResult.Success,
 				 null,
+				 LastEventNumber,
 				 CommitPosition,  //not technically correct, but matches current behavior correctly
 				 CommitPosition);
 
 		protected override Message ClientFailMsg =>
-			new ClientMessage.DeleteStreamCompleted(ClientCorrId, Result, FailureMessage);
+			new ClientMessage.DeleteStreamCompleted(ClientCorrId, Result, FailureMessage, FailureCurrentVersion);
 	}
 }
