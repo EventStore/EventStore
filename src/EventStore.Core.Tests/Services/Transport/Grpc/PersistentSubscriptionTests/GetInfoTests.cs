@@ -8,6 +8,8 @@ using EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests;
 using Google.Protobuf;
 using Grpc.Core;
 using NUnit.Framework;
+using ReadReq = EventStore.Client.PersistentSubscriptions.ReadReq;
+using ReadResp = EventStore.Client.PersistentSubscriptions.ReadResp;
 using StreamsReadReq = EventStore.Client.Streams.ReadReq;
 using StreamsReadResp = EventStore.Client.Streams.ReadResp;
 
@@ -27,6 +29,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 			protected override async Task Given() {
 				_persistentSubscriptionsClient = new PersistentSubscriptions.PersistentSubscriptionsClient(Channel);
 
+				var settings = WithoutExtraStatistics(TestPersistentSubscriptionSettings);
+				
 				await _persistentSubscriptionsClient.CreateAsync(new CreateReq {
 					Options = new CreateReq.Types.Options {
 						GroupName = _groupName,
@@ -36,11 +40,39 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 								StreamName = ByteString.CopyFromUtf8(_streamName)
 							}
 						},
-						Settings = TestPersistentSubscriptionSettings
+						Settings = settings
 					}
 				}, GetCallOptions(AdminCredentials));
-				_expectedSubscriptionInfo = GetSubscriptionInfoFromSettings(TestPersistentSubscriptionSettings,
-					_groupName, _streamName, "0", string.Empty);
+				
+				// create a connection to the persistent subscription
+				var call = _persistentSubscriptionsClient.Read(GetCallOptions(AdminCredentials));
+				await call.RequestStream.WriteAsync(new ReadReq {
+					Options = new ReadReq.Types.Options {
+						GroupName = _groupName,
+						StreamIdentifier = new StreamIdentifier {
+							StreamName = ByteString.CopyFromUtf8(_streamName)
+						},
+						UuidOption = new ReadReq.Types.Options.Types.UUIDOption {Structured = new Empty()},
+						BufferSize = 10
+					}
+				});
+
+				await call.ResponseStream.MoveNext().ConfigureAwait(false);
+				
+				Assert.IsTrue(call.ResponseStream.Current.ContentCase == ReadResp.ContentOneofCase.SubscriptionConfirmation);
+
+				var expectedConnection = new SubscriptionInfo.Types.ConnectionInfo() {
+					Username = "admin",
+					AvailableSlots = 10,
+					ConnectionName = "\u003cunknown\u003e"
+				};
+				_expectedSubscriptionInfo = GetSubscriptionInfoFromSettings(settings,
+					_groupName, _streamName, "0", string.Empty, new [] { expectedConnection });
+			}
+
+			private CreateReq.Types.Settings WithoutExtraStatistics(CreateReq.Types.Settings settings) {
+				settings.ExtraStatistics = false;
+				return settings;
 			}
 
 			protected override async Task When() {
@@ -325,8 +357,9 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 		};
 
 		private static SubscriptionInfo GetSubscriptionInfoFromSettings(
-			CreateReq.Types.Settings settings, string groupName, string streamName, string startFrom, string lastKnownEvent) {
-			return new() {
+			CreateReq.Types.Settings settings, string groupName, string streamName, string startFrom,
+			string lastKnownEvent, SubscriptionInfo.Types.ConnectionInfo[] connections=null ) {
+			var info = new SubscriptionInfo() {
 				EventSource = streamName,
 				GroupName = groupName,
 				Status = "Live",
@@ -355,6 +388,12 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 				MaxSubscriberCount = settings.MaxSubscriberCount,
 				ParkedMessageCount = 0
 			};
+
+			if (connections != null) {
+				info.Connections.AddRange(connections);
+			}
+
+			return info;
 		}
 	}
 }
