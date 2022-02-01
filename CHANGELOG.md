@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Only build ci container on master branch [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
 - Directory.EnumerateFiles regression causing slower startup/truncation times on large databases [EventStore#3363](https://github.com/EventStore/EventStore/pull/3363)
 - include current stream revision on internal delete messages [EventStore#3401](https://github.com/EventStore/EventStore/pull/3401)
+- Null reference exception when getting persistent subscription info [EventStore#3399](https://github.com/EventStore/EventStore/pull/3399)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
