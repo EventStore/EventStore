@@ -175,9 +175,9 @@ namespace EventStore.ClusterNode {
 						hostedService.Node.CertificateSelector(),
 						hostedService.Node.IntermediateCertificatesSelector(),
 						offline: true),
-					ClientCertificateRequired = true,
+					ClientCertificateRequired = true, // request a client certificate but it's not necessary for the client to supply one
 					RemoteCertificateValidationCallback = (_, certificate, chain, sslPolicyErrors) => {
-						if(certificate == null) // not required to have a client certificate
+						if(certificate == null) // not necessary to have a client certificate
 							return true;
 
 						var (isValid, error) =
