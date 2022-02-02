@@ -163,9 +163,11 @@ namespace EventStore.Transport.Tcp {
 					AllowRenegotiation = false,
 				});
 
-				if (_verbose)
-					DisplaySslStreamInfo(_sslStream);
-				_isAuthenticated = true;
+				lock (_streamLock) {
+					if (_verbose)
+						DisplaySslStreamInfo(_sslStream);
+					_isAuthenticated = true;
+				}
 			} catch (AuthenticationException exc) {
 				Log.Information(exc,
 					"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on AuthenticateAsServerAsync.",
