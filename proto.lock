@@ -3848,12 +3848,12 @@
                       },
                       {
                         "id": 2,
-                        "name": "track_emitted_streams",
+                        "name": "emit_enabled",
                         "type": "bool"
                       },
                       {
                         "id": 3,
-                        "name": "emit_enabled",
+                        "name": "track_emitted_streams",
                         "type": "bool"
                       }
                     ]
