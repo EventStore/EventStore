@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				ModeOneofCase.Continuous => options.Continuous.EmitEnabled,
 				_ => false
 			};
-			var trackEmittedStreams = (options.ModeCase, emitEnabled, options.Continuous.TrackEmittedStreams) switch {
+			var trackEmittedStreams = (options.ModeCase, emitEnabled, options.Continuous?.TrackEmittedStreams) switch {
 				(ModeOneofCase.Continuous, true, true) => true,
 				(ModeOneofCase.Continuous, false, true) =>
 					throw new InvalidOperationException("EmitEnabled must be set to true to track emitted streams."),
