@@ -27,8 +27,7 @@ export function resolveSamplesPath(src: string, srcCat: string | undefined) {
     const cats = {
         "@httpapi": {
             "default": {
-                path: "clients/http-api",
-                version: "v5"
+                path: "../../samples/http-api"
             }
         },
         "@samples": {

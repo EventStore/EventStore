@@ -1,4 +1,4 @@
-import {PluginSimple, PluginWithOptions} from "markdown-it";
+import {PluginWithOptions} from "markdown-it";
 import {logger} from "@vuepress/utils";
 import {isKnownPlaceholder} from "../../lib/externalPlaceholders";
 
