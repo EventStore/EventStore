@@ -40,6 +40,25 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		private LinkedListNode<EpochRecord> _lastCachedEpoch;
 		public EpochRecord GetLastEpoch() => _lastCachedEpoch?.Value;
 		public int LastEpochNumber => _lastCachedEpoch?.Value.EpochNumber ?? -1;
+		private bool _truncated;
+		private readonly object _truncateLock = new();
+		private long Checkpoint {
+			get {
+				lock (_truncateLock) {
+					if (_truncated)
+						throw new InvalidOperationException("Cannot read checkpoint since it has been truncated.");
+					return _checkpoint.Read();
+				}
+			}
+			set {
+				lock (_truncateLock) {
+					if (_truncated)
+						throw new InvalidOperationException("Cannot write checkpoint since it has been truncated.");
+					_checkpoint.Write(value);
+					_checkpoint.Flush();
+				}
+			}
+		}
 
 		public EpochManager(IPublisher bus,
 			int cachedEpochCount,
@@ -85,7 +104,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			lock (_locker) {
 				var reader = _readers.Get();
 				try {
-					long epochPos = _checkpoint.Read();
+					long epochPos = Checkpoint;
 					if (epochPos < 0) {
 						// we probably have lost/uninitialized epoch checkpoint scan back to find the most recent epoch in the log
 						Log.Information("No epoch checkpoint. Scanning log backwards for most recent epoch...");
@@ -447,8 +466,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					while (_epochs.Count > _cacheSize) { _epochs.RemoveFirst(); }
 					_firstCachedEpoch = _epochs.First;
 					// Now update epoch checkpoint, so on restart we don't scan sequentially TF.
-					_checkpoint.Write(_epochs.Last.Value.EpochPosition);
-					_checkpoint.Flush();
+					Checkpoint = _epochs.Last.Value.EpochPosition;
 					Log.Debug(
 						"=== Cached new Last Epoch E{epochNumber}@{epochPosition}:{epochId:B} (previous epoch at {lastEpochPosition}) L={leaderId:B}.",
 						epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId, epoch.PrevEpochPosition, epoch.LeaderInstanceId);
@@ -477,6 +495,36 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 		}
 
+		private bool TryGetEpochBefore(long position, out EpochRecord epoch) {
+			lock (_locker) {
+				var node = _epochs.Last;
+				while (node != null && node.Value.EpochPosition >= position) {
+					node = node.Previous;
+				}
 
+				if (node != null) {
+					epoch = node.Value;
+					return true;
+				}
+
+				epoch = null;
+				return false;
+			}
+		}
+
+		public bool TryTruncateBefore(long position, out EpochRecord epoch) {
+			lock (_truncateLock) {
+				if (_truncated)
+					throw new InvalidOperationException("Checkpoint has already been truncated.");
+
+				if (!TryGetEpochBefore(position, out epoch))
+					return false;
+
+				Checkpoint = epoch.EpochPosition;
+				_truncated = true;
+
+				return true;
+			}
+		}
 	}
 }

@@ -52,8 +52,6 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			}
 		}
 
-		
-
 		public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId) {
 			throw new NotImplementedException();
 		}
@@ -68,10 +66,8 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 			}
 		}
 
-		public IEnumerable<EpochRecord> GetCachedEpochs() {
-			lock (_epochs) {
-				return _epochs.AsReadOnly();
-			}
+		public bool TryTruncateBefore(long position, out EpochRecord epoch) {
+			throw new NotImplementedException();
 		}
 	}
 }
