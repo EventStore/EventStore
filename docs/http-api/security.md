@@ -60,21 +60,6 @@ You get a confirmation from the server:
 
 ## Default ACL
 
-::: tip
-All these examples assume you have created a user named `ouro` with password `ouroboros`.
-:::
-
-@[code](@httpapi/override-default.json)
-
-:::: code-group
-::: code-group-item Request
-@[code](@httpapi/update-default-acl.sh)
-:::
-::: code-group-item Response
-@[code](@httpapi/update-default-acl.http)
-:::
-::::
-
 If you try to access the `$settings` stream as an unauthorized user, the server returns a 401 response.
 
 :::: code-group
