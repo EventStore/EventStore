@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Updated gRPC to include fix for flaky tests [EventStore#3364](https://github.com/EventStore/EventStore/pull/3364)
+- Reject gRPC call to create a projection if `TrackEmittedStreams=true` and `EmitEnabled=false` [EventStore#3412](https://github.com/EventStore/EventStore/pull/3412)
+- Proto names of `emit_enabled` and `track_emitted_streams` swapped for backwards compatibility [EventStore#3412](https://github.com/EventStore/EventStore/pull/3412)
 
 ### Fixed
 - Use the term "certificate signed by a private CA" instead of "self-signed certificates" [EventStore#3361](https://github.com/EventStore/EventStore/pull/3361)
