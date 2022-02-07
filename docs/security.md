@@ -519,11 +519,11 @@ For external clients to connect over the secure TLS channel, you'd need to set t
 
 As for the `InternalTcpPortAdvertiseAs`, the same can be done for the external TCP port if the exposed port on the machine doesn't match the port exposed to the outside world. The setting value will be used for the gossip endpoint response for connecting clients.
 
-| Format               | Syntax        |
-|:---------------------|:--------------|
-| Command line         | `--`          |
-| YAML                 | ``            |
-| Environment variable | `EVENTSTORE_` |
+| Format               | Syntax                                        |
+|:---------------------|:----------------------------------------------|
+| Command line         | `--ext-securte-tcp-port-advertise-as`         |
+| YAML                 | `ExtSecureTcpPortAdvertiseAs`                 |
+| Environment variable | `EVENTSTORE_EXT_SECURE_TCP_PORT_ADVERTISE_AS` |
 
 **Default**: `0`, so the external gossip endpoint will advertise the value specified in the `ExtSecureTcpPort`
 
