@@ -213,7 +213,7 @@ This example shows how to build own Docker image based on the original EventStor
 Create file `Dockerfile` with following content:
 
 ```dockerfile
-FROM eventstore/eventstore:release-5.0.8
+FROM eventstore/eventstore:release-5.0.11
 RUN apt-get update -y \
   && apt-get install -y openssl \
   && openssl req -x509 -sha256 -nodes -days 3650 -subj "/CN=eventstore.org" -newkey rsa:2048 -keyout eventstore.pem -out eventstore.csr \

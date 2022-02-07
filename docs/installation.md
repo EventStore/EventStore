@@ -105,13 +105,13 @@ EventStoreDB has a Docker image available for any platform that supports Docker.
 Pull the Docker image:
 
 ```bash
-docker pull eventstore/eventstore:release-5.0.9
+docker pull eventstore/eventstore:release-5.0.11
 ```
 
 Run the container:
 
 ```bash
-docker run --name eventstore-node -it -p 2113:2113 -p 1113:1113 eventstore/eventstore:release-5.0.9
+docker run --name eventstore-node -it -p 2113:2113 -p 1113:1113 eventstore/eventstore:release-5.0.11
 ```
 
 Refer to the [image overview](https://hub.docker.com/r/eventstore/eventstore/) for more information.
