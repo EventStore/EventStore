@@ -107,7 +107,6 @@ $ eventstore --what-if
 "RUNTIME:"                ".NET 5.0.12/7211aa01b" (64-bit)
 "GC:"                     "3 GENERATIONS"
 "LOGS:"                   "/var/log/eventstore"
-"ES VERSION:"             "20.10.2.0" ("tags/oss-v20.10.2"/"7c3b13465", "Fri, 5 Mar 2021 16:29:41 +0100")
 
 MODIFIED OPTIONS:
 
