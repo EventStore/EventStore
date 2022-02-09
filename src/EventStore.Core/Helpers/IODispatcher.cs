@@ -894,7 +894,9 @@ namespace EventStore.Core.Helpers {
 		}
 
 		public void Handle(ClientMessage.NotHandled message) {
-			_requestTracker.RemovePendingRead(message.CorrelationId);
+			// we do not remove the pending read here but only the pending request.
+			// the pending read will be removed when calling the timeout action
+			_requestTracker.RemovePendingRequest(message.CorrelationId);
 		}
 	}
 }
