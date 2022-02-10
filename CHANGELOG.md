@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Directory.EnumerateFiles regression causing slower startup/truncation times on large databases [EventStore#3363](https://github.com/EventStore/EventStore/pull/3363)
 - include current stream revision on internal delete messages [EventStore#3401](https://github.com/EventStore/EventStore/pull/3401)
 - Null reference exception when getting persistent subscription info [EventStore#3399](https://github.com/EventStore/EventStore/pull/3399)
+- IODispatcher bug causing password change notifications to be missed sometimes [EventStore#3419](https://github.com/EventStore/EventStore/pull/3419)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
