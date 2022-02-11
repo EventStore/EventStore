@@ -329,8 +329,6 @@ create a projection with the web admin interface.
 
 <!-- TODO: Further explanation here -->
 
-@[code{curl}](@samples/projections/create-projection.sh)
-
 ### Emit options
 
 These options control how projections append events.
