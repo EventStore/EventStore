@@ -1547,12 +1547,6 @@ namespace EventStore.Core {
 				foreach (var intermediateCert in intermediates) {
 					Log.Information("Loading intermediate certificate. Subject: {subject}, Thumbprint: {thumbprint}", intermediateCert.SubjectName.Name, intermediateCert.Thumbprint);
 				}
-
-				// required for clients to send the full chain (excluding root)
-				// it is not critical, so we only log a warning if there were some errors updating the CA store
-				if (!CertificateUtils.UpdateCAStore(intermediates, _intermediateCerts, out var errors)) {
-					Log.Warning($"One or more errors have occurred while updating the CA store:\n {errors}");
-				}
 			}
 
 			var trustedRootCerts = options.LoadTrustedRootCertificates();
