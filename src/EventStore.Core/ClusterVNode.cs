@@ -1606,6 +1606,27 @@ namespace EventStore.Core {
 				error = true;
 			}
 
+			if (!error && intermediates != null) {
+				chainStatus = CertificateUtils.BuildChain(nodeCertificate, null, trustedRoots);
+
+				// Adding the intermediate certificates to the store is required so that
+				// i)  the full certificate chain (excluding the root) is sent from client to server (on both Windows/Linux)
+				//     and from server to client (on Windows only) during the TLS connection establishment
+				// ii) to prevent AIA certificate downloads
+				//
+				// see: https://github.com/dotnet/runtime/issues/47680#issuecomment-771093045
+				// and https://github.com/dotnet/runtime/issues/59979
+
+				if (chainStatus != X509ChainStatusFlags.NoError) {
+					Log.Warning(
+						"For correct functioning and optimal performance, please add your intermediate certificates to the current user's " +
+							(Runtime.IsWindows ?
+							"'Intermediate Certification Authorities' certificate store." :
+							"'CertificateAuthority' certificate store using the dotnet-certificate-tool.")
+					);
+				}
+			}
+
 			if (!error) {
 				Log.Information("Certificate chain verification successful.");
 			}
