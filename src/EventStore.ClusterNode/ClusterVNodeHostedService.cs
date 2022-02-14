@@ -40,7 +40,7 @@ namespace EventStore.ClusterNode {
 					new ProjectionSubsystemOptions(
 						options.Projections.ProjectionThreads, 
 						options.Projections.RunProjections, 
-						options.Application.StartStandardProjections, 
+						options.Projections.StartStandardProjections, 
 						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
 						options.Projections.FaultOutOfOrderProjections,
 						options.Projections.ProjectionCompilationTimeout,

@@ -93,9 +93,6 @@ namespace EventStore.Core {
 			[Description("Print effective configuration to console and then exit.")]
 			public bool WhatIf { get; init; } = false;
 
-			[Description("Start the built in system projections.")]
-			public bool StartStandardProjections { get; init; } = false;
-
 			[Description("Disable HTTP caching.")] public bool DisableHttpCaching { get; init; } = false;
 
 			[Description("The number of seconds between statistics gathers.")]
@@ -135,7 +132,6 @@ namespace EventStore.Core {
 				LogHttpRequests = configurationRoot.GetValue<bool>(nameof(LogHttpRequests)),
 				MaxAppendSize = configurationRoot.GetValue<int>(nameof(MaxAppendSize)),
 				StatsPeriodSec = configurationRoot.GetValue<int>(nameof(StatsPeriodSec)),
-				StartStandardProjections = configurationRoot.GetValue<bool>(nameof(StartStandardProjections)),
 				LogFailedAuthenticationAttempts =
 					configurationRoot.GetValue<bool>(nameof(LogFailedAuthenticationAttempts)),
 				SkipIndexScanOnReads = configurationRoot.GetValue<bool>(nameof(SkipIndexScanOnReads)),
@@ -683,6 +679,9 @@ namespace EventStore.Core {
 			             "All runs user projections.")]
 			public ProjectionType RunProjections { get; init; }
 
+			[Description("Start the built in system projections.")]
+			public bool StartStandardProjections { get; init; } = false;
+
 			[Description("The number of threads to use for projections.")]
 			public int ProjectionThreads { get; init; } = 3;
 
@@ -700,6 +699,7 @@ namespace EventStore.Core {
 
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
+				StartStandardProjections = configurationRoot.GetValue<bool>(nameof(StartStandardProjections)),
 				ProjectionThreads = configurationRoot.GetValue<int>(nameof(ProjectionThreads)),
 				ProjectionsQueryExpiry = configurationRoot.GetValue<int>(nameof(ProjectionsQueryExpiry)),
 				FaultOutOfOrderProjections = configurationRoot.GetValue<bool>(nameof(FaultOutOfOrderProjections)),
