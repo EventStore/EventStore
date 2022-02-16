@@ -13,6 +13,7 @@
 		<LangVersion>9.0</LangVersion>
 		<IsPackable>false</IsPackable>
 		<MinVerTagPrefix>oss-v</MinVerTagPrefix>
+		<MinVerMinimumMajorMinor>22.2</MinVerMinimumMajorMinor>
 	</PropertyGroup>
 	<Target Name="UpdateAssemblyVersion" AfterTargets="MinVer">
   		<PropertyGroup>
@@ -24,7 +25,7 @@
 		<None Include="..\..\ouro.png" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="MinVer" Version="2.3.0">
+		<PackageReference Include="MinVer" Version="2.5.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
