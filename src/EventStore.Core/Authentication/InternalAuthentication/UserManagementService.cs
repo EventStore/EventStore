@@ -74,7 +74,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 				WriteStreamAcl(
 					message, message.LoginName,
-					() => WriteUserEvent(message, userData, "$UserCreated", read.LastEventNumber,
+					() => WriteUserEventAnd(message, userData, "$UserCreated", read.LastEventNumber,
 						() => WriteUsersStreamEvent(userData.LoginName,
 							completed => WriteUsersStreamCompleted(completed, message))));
 			});
@@ -278,9 +278,11 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				message, (completed, data) => {
 					var updated = update(data);
 					if (updated != null) {
-						WritePasswordChangedEventConditionalAnd(
-							message, resetPasswordCache,
-							() => WriteUserEvent(message, updated, UserUpdated, completed.FromEventNumber, null));
+						WriteUserEventAnd(message, updated, UserUpdated, completed.FromEventNumber, () =>
+							WritePasswordChangedEventConditionalAnd(message, resetPasswordCache, () =>
+								ReplyUpdated(message)
+							)
+						);
 					}
 				});
 		}
@@ -369,7 +371,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				onCompleted);
 		}
 
-		private void WriteUserEvent(
+		private void WriteUserEventAnd(
 			UserManagementMessage.UserManagementRequestMessage message, UserData userData, string eventType,
 			long expectedVersion, Action after) {
 			WriteUserEvent(
