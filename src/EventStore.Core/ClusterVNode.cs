@@ -96,6 +96,7 @@ namespace EventStore.Core {
 		abstract public VNodeInfo NodeInfo { get; }
 		abstract public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator { get; }
 		abstract public Func<X509Certificate2> CertificateSelector { get; }
+		abstract public Func<X509Certificate2Collection> IntermediateCertificatesSelector { get; }
 		abstract public bool DisableHttps { get; }
 		abstract public void Start();
 		abstract public Task<ClusterVNode> StartAsync(bool waitUntilRead);
@@ -196,6 +197,7 @@ namespace EventStore.Core {
 
 		public override Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
 		public override Func<X509Certificate2> CertificateSelector => _certificateSelector;
+		public override Func<X509Certificate2Collection> IntermediateCertificatesSelector => _intermediateCertsSelector;
 		public override bool DisableHttps => _disableHttps;
 
 #if DEBUG
@@ -531,7 +533,7 @@ namespace EventStore.Core {
 
 			_certificateSelector = () => _certificate;
 			_trustedRootCertsSelector = () => _trustedRootCerts;
-			_intermediateCertsSelector = () => _intermediateCerts;
+			_intermediateCertsSelector = () => _intermediateCerts == null ? null : new X509Certificate2Collection(_intermediateCerts);
 
 			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
@@ -917,7 +919,7 @@ namespace EventStore.Core {
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, null, null,
+						_authenticationProvider, AuthorizationGateway, null, null, null,
 						options.Interface.ConnectionPendingSendBytesThreshold,
 						options.Interface.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extTcpService);
@@ -931,7 +933,8 @@ namespace EventStore.Core {
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
 						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
-						_authenticationProvider, AuthorizationGateway, _certificateSelector, _externalClientCertificateValidator,
+						_authenticationProvider, AuthorizationGateway,
+						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
 						options.Interface.ConnectionPendingSendBytesThreshold,
 						options.Interface.ConnectionQueueSizeThreshold);
 					_mainBus.Subscribe<SystemMessage.SystemInit>(extSecTcpService);
@@ -947,7 +950,7 @@ namespace EventStore.Core {
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
-							_authenticationProvider, AuthorizationGateway, null, null, ESConsts.UnrestrictedPendingSendBytes,
+							_authenticationProvider, AuthorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
 						_mainBus.Subscribe<SystemMessage.SystemStart>(intTcpService);
@@ -960,7 +963,8 @@ namespace EventStore.Core {
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
 							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
-							_authenticationProvider, AuthorizationGateway, _certificateSelector, _internalClientCertificateValidator,
+							_authenticationProvider, AuthorizationGateway,
+							_certificateSelector, _intermediateCertsSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
 							ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intSecTcpService);
@@ -1463,12 +1467,24 @@ namespace EventStore.Core {
 			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client");
 		}
 
-		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain _, SslPolicyErrors sslPolicyErrors,
+		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors,
 			Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector, string certificateOrigin) {
 			if (certificate == null)
 				return (false, $"No certificate was provided by the {certificateOrigin}");
 
-			var chainStatus = CertificateUtils.BuildChain(certificate, intermediateCertsSelector(), trustedRootCertsSelector());
+			var intermediates = intermediateCertsSelector();
+
+			// add any intermediate certificates received from the origin
+			if (chain != null) {
+				foreach (var chainElement in chain.ChainElements) {
+					if (CertificateUtils.IsValidIntermediateCertificate(chainElement.Certificate, out _)) {
+						intermediates ??= new X509Certificate2Collection();
+						intermediates.Add(new X509Certificate2(chainElement.Certificate));
+					}
+				}
+			}
+
+			var chainStatus = CertificateUtils.BuildChain(certificate, intermediates, trustedRootCertsSelector());
 			if (chainStatus == X509ChainStatusFlags.NoError)
 				sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors; //clear the RemoteCertificateChainErrors flag
 			else
@@ -1588,6 +1604,27 @@ namespace EventStore.Core {
 				Log.Error("Failed to build the certificate chain with the node's own certificate up to the root with error: {chainStatus}. " +
 				             "If you have intermediate certificates, please bundle them with the node's certificate (in PEM or PKCS #12 format).", chainStatus);
 				error = true;
+			}
+
+			if (!error && intermediates != null) {
+				chainStatus = CertificateUtils.BuildChain(nodeCertificate, null, trustedRoots);
+
+				// Adding the intermediate certificates to the store is required so that
+				// i)  the full certificate chain (excluding the root) is sent from client to server (on both Windows/Linux)
+				//     and from server to client (on Windows only) during the TLS connection establishment
+				// ii) to prevent AIA certificate downloads
+				//
+				// see: https://github.com/dotnet/runtime/issues/47680#issuecomment-771093045
+				// and https://github.com/dotnet/runtime/issues/59979
+
+				if (chainStatus != X509ChainStatusFlags.NoError) {
+					Log.Warning(
+						"For correct functioning and optimal performance, please add your intermediate certificates to the current user's " +
+							(Runtime.IsWindows ?
+							"'Intermediate Certification Authorities' certificate store." :
+							"'CertificateAuthority' certificate store using the dotnet-certificate-tool.")
+					);
+				}
 			}
 
 			if (!error) {

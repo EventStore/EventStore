@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using ILogger = Serilog.ILogger;
 
@@ -46,11 +47,12 @@ namespace EventStore.Transport.Tcp {
 		public static ITcpConnection CreateServerFromSocket(Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			Socket socket,
-			Func<X509Certificate> serverCertificateSelector,
+			Func<X509Certificate2> serverCertificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
 			bool verbose) {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
-			connection.InitServerSocket(socket, serverCertificateSelector, clientCertValidator, verbose);
+			connection.InitServerSocket(socket, serverCertificateSelector, intermediatesSelector, clientCertValidator, verbose);
 			return connection;
 		}
 
@@ -88,6 +90,7 @@ namespace EventStore.Transport.Tcp {
 		private bool _isSending;
 		private int _receiveHandling;
 		private volatile bool _isClosed;
+		private volatile bool _isClosing;
 
 		private Action<ITcpConnection, IEnumerable<ArraySegment<byte>>> _receiveCallback;
 
@@ -105,7 +108,12 @@ namespace EventStore.Transport.Tcp {
 			_verbose = verbose;
 		}
 
-		private void InitServerSocket(Socket socket, Func<X509Certificate> serverCertificateSelector, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator, bool verbose) {
+		private void InitServerSocket(
+			Socket socket,
+			Func<X509Certificate2> serverCertificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector,
+			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
+			bool verbose) {
 			InitConnectionBase(socket);
 			if (verbose)
 				Console.WriteLine("TcpConnectionSsl::InitClientSocket({0}, L{1})", RemoteEndPoint, LocalEndPoint);
@@ -124,59 +132,58 @@ namespace EventStore.Transport.Tcp {
 				}
 
 				try {
-					_sslStream = new SslStream(new NetworkStream(socket, true), false, ValidateClientCertificate, null);
+					_sslStream = new SslStream(new NetworkStream(socket, true), false);
 				} catch (IOException exc) {
 					Log.Debug(exc, "[S{remoteEndPoint}, L{localEndPoint}]: IOException on NetworkStream. The socket has already been disposed.", RemoteEndPoint,
 						LocalEndPoint);
 					return;
 				}
 
-				try {
-					var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
-					var certificate = serverCertificateSelector?.Invoke();
-					Ensure.NotNull(certificate, "certificate");
-					_sslStream.BeginAuthenticateAsServer(certificate, true, enabledSslProtocols, false,
-						OnEndAuthenticateAsServer, _sslStream);
-				} catch (AuthenticationException exc) {
-					Log.Information(exc,
-						"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on BeginAuthenticateAsServer.",
-						RemoteEndPoint, LocalEndPoint);
-					CloseInternal(SocketError.SocketError, exc.Message);
-				} catch (ObjectDisposedException) {
-					CloseInternal(SocketError.SocketError, "SslStream disposed.");
-				} catch (Exception exc) {
-					Log.Information(exc,
-						"[S{remoteEndPoint}, L{localEndPoint}]: Exception on BeginAuthenticateAsServer.",
-						RemoteEndPoint, LocalEndPoint);
-					CloseInternal(SocketError.SocketError, exc.Message);
-				}
+				Task.Run(async () => await AuthenticateAsServerAsync(serverCertificateSelector, intermediatesSelector));
 			}
 		}
 
-		private void OnEndAuthenticateAsServer(IAsyncResult ar) {
+		private async Task AuthenticateAsServerAsync(
+			Func<X509Certificate2> serverCertificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector) {
 			try {
+				var enabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+				var certificate = serverCertificateSelector?.Invoke();
+				var intermediates = intermediatesSelector?.Invoke();
+				Ensure.NotNull(certificate, "certificate");
+
+				await _sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions {
+					ServerCertificateContext = SslStreamCertificateContext.Create(
+						certificate!, intermediates, offline: true),
+					ClientCertificateRequired = true,
+					EnabledSslProtocols = enabledSslProtocols,
+					CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+					RemoteCertificateValidationCallback = ValidateClientCertificate,
+					ApplicationProtocols = new List<SslApplicationProtocol>(),
+					AllowRenegotiation = false,
+				});
+
 				lock (_streamLock) {
-					var sslStream = (SslStream)ar.AsyncState;
-					sslStream.EndAuthenticateAsServer(ar);
 					if (_verbose)
-						DisplaySslStreamInfo(sslStream);
+						DisplaySslStreamInfo(_sslStream);
 					_isAuthenticated = true;
 				}
-
-				StartReceive();
-				TrySend();
 			} catch (AuthenticationException exc) {
 				Log.Information(exc,
-					"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on EndAuthenticateAsServer.",
+					"[S{remoteEndPoint}, L{localEndPoint}]: Authentication exception on AuthenticateAsServerAsync.",
 					RemoteEndPoint, LocalEndPoint);
 				CloseInternal(SocketError.SocketError, exc.Message);
 			} catch (ObjectDisposedException) {
 				CloseInternal(SocketError.SocketError, "SslStream disposed.");
 			} catch (Exception exc) {
-				Log.Information(exc, "[S{remoteEndPoint}, L{localEndPoint}]: Exception on EndAuthenticateAsServer.",
+				Log.Information(exc,
+					"[S{remoteEndPoint}, L{localEndPoint}]: Exception on AuthenticateAsServerAsync.",
 					RemoteEndPoint, LocalEndPoint);
 				CloseInternal(SocketError.SocketError, exc.Message);
 			}
+
+			StartReceive();
+			TrySend();
 		}
 
 		private void InitClientSocket(Socket socket) {
@@ -541,7 +548,17 @@ namespace EventStore.Transport.Tcp {
 
 		private void CloseInternal(SocketError socketError, string reason) {
 			lock (_closeLock) {
-				if (_isClosed) return;
+				if (_isClosing) return;
+				_isClosing = true;
+			}
+
+			if (_sslStream != null)
+				Helper.EatException(() => _sslStream.Close());
+
+			if (_socket != null)
+				Helper.EatException(() => _socket.Dispose());
+
+			lock (_closeLock) {
 				_isClosed = true;
 			}
 
@@ -565,12 +582,6 @@ namespace EventStore.Transport.Tcp {
 					GetType().Name, DateTime.UtcNow, RemoteEndPoint, LocalEndPoint, _connectionId,
 					socketError, reason);
 			}
-
-			if (_sslStream != null)
-				Helper.EatException(() => _sslStream.Close());
-
-			if (_socket != null)
-				Helper.EatException(() => _socket.Dispose());
 
 			var handler = ConnectionClosed;
 			if (handler != null)

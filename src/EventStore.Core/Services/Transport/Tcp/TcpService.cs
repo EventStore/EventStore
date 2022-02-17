@@ -36,7 +36,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly TimeSpan _heartbeatInterval;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly IAuthenticationProvider _authProvider;
-		private readonly Func<X509Certificate> _certificateSelector;
+		private readonly Func<X509Certificate2> _certificateSelector;
+		private readonly Func<X509Certificate2Collection> _intermediatesSelector;
 		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslClientCertValidator;
 		private readonly int _connectionPendingSendBytesThreshold;
 		private readonly int _connectionQueueSizeThreshold;
@@ -52,12 +53,13 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
 			AuthorizationGateway authorizationGateway,
-			Func<X509Certificate> certificateSelector,
+			Func<X509Certificate2> certificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslClientCertValidator,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold)
 			: this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher,
-				heartbeatInterval, heartbeatTimeout, authProvider, authorizationGateway, certificateSelector, sslClientCertValidator, connectionPendingSendBytesThreshold, connectionQueueSizeThreshold) {
+				heartbeatInterval, heartbeatTimeout, authProvider, authorizationGateway, certificateSelector, intermediatesSelector, sslClientCertValidator, connectionPendingSendBytesThreshold, connectionQueueSizeThreshold) {
 		}
 
 		public TcpService(IPublisher publisher,
@@ -70,7 +72,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
 			AuthorizationGateway authorizationGateway,
-			Func<X509Certificate> certificateSelector,
+			Func<X509Certificate2> certificateSelector,
+			Func<X509Certificate2Collection> intermediatesSelector,
 			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslClientCertValidator,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold) {
@@ -95,6 +98,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			_authProvider = authProvider;
 			_authorizationGateway = authorizationGateway;
 			_certificateSelector = certificateSelector;
+			_intermediatesSelector = intermediatesSelector;
 			_sslClientCertValidator = sslClientCertValidator;
 		}
 
@@ -115,7 +119,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private void OnConnectionAccepted(IPEndPoint endPoint, Socket socket) {
 			var conn = _securityType == TcpSecurityType.Secure
-				? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificateSelector, _sslClientCertValidator, verbose: true)
+				? TcpConnectionSsl.CreateServerFromSocket(Guid.NewGuid(), endPoint, socket, _certificateSelector, _intermediatesSelector, _sslClientCertValidator, verbose: true)
 				: TcpConnection.CreateAcceptedTcpConnection(Guid.NewGuid(), endPoint, socket, verbose: true);
 			Log.Information(
 				"{serviceType} TCP connection accepted: [{securityType}, {remoteEndPoint}, L{localEndPoint}, {connectionId:B}].",
