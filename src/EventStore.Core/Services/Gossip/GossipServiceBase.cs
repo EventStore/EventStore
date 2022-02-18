@@ -261,8 +261,9 @@ namespace EventStore.Core.Services.Gossip {
 			if (_state != GossipState.Working)
 				return;
 
-			Log.Information("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD.",
-				message.Recipient);
+			Log.Information("Gossip Failed, The node [{nodeEndpoint}] is being marked as DEAD. Reason: {reason}",
+				message.Recipient,
+				message.Reason);
 
 			var oldCluster = _cluster;
 			_cluster = UpdateCluster(_cluster, x => x.Is(message.Recipient)

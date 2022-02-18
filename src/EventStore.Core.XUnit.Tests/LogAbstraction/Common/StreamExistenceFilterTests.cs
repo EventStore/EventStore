@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
-using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -29,7 +28,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 
 			checkpointInterval ??= TimeSpan.FromMilliseconds(10);
 			var checkpointPath = Path.Combine(_fixture.Directory, $"{name}.chk");
-			var checkpoint = new MemoryMappedFileCheckpoint(checkpointPath, name, cached: true, initValue: -1);
+			var checkpoint = new FileCheckpoint(checkpointPath, name, cached: true, initValue: -1);
 			var filter = new StreamExistenceFilter(
 				directory: _fixture.Directory,
 				checkpoint: checkpoint,
@@ -77,8 +76,12 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 			var sut = GenSut();
 			sut.Initialize(new MockExistenceFilterInitializer("0", "1", "2"), 0);
 			Assert.Equal(2L, sut.CurrentCheckpoint);
+			// wait for flush so that we have something to truncate (or it will do nothing)
+			AssertEx.IsOrBecomesTrue(() => sut.CurrentCheckpointFlushed == 2, TimeSpan.FromSeconds(5));
 
 			// truncate works
+			sut.Dispose();
+			sut = GenSut();
 			sut.TruncateTo(1);
 			Assert.Equal(1L, sut.CurrentCheckpoint);
 
