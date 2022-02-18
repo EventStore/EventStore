@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using System.Runtime;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
@@ -68,10 +69,12 @@ namespace EventStore.ClusterNode {
 				Log.Information("{description,-25} {osRuntimeVersion} ({architecture}-bit)", "RUNTIME:",
 					OS.GetRuntimeVersion(),
 					Marshal.SizeOf(typeof(IntPtr)) * 8);
-				Log.Information("{description,-25} {maxGeneration}", "GC:",
+				Log.Information("{description,-25} {maxGeneration} {isServerGC} {latencyMode}", "GC:",
 					GC.MaxGeneration == 0
 						? "NON-GENERATION (PROBABLY BOEHM)"
-						: $"{GC.MaxGeneration + 1} GENERATIONS");
+						: $"{GC.MaxGeneration + 1} GENERATIONS",
+					$"IsServerGC: {GCSettings.IsServerGC}",
+					$"Latency Mode: {GCSettings.LatencyMode}");
 				Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 				Log.Information(options.DumpOptions());
 
