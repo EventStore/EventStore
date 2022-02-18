@@ -38,31 +38,32 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				ModeOneofCase.Continuous => options.Continuous.EmitEnabled,
 				_ => false
 			};
-			var trackEmittedStreams = (options.ModeCase, emitEnabled) switch {
-				(ModeOneofCase.Continuous, true) => options.Continuous.TrackEmittedStreams,
+			var trackEmittedStreams = (options.ModeCase, emitEnabled, options.Continuous?.TrackEmittedStreams) switch {
+				(ModeOneofCase.Continuous, true, true) => true,
+				(ModeOneofCase.Continuous, false, true) =>
+					throw new InvalidOperationException("EmitEnabled must be set to true to track emitted streams."),
 				_ => false
 			};
-			var checkpointsEnables = options.ModeCase switch {
+			var checkpointsEnabled = options.ModeCase switch {
 				ModeOneofCase.Continuous => true,
 				ModeOneofCase.OneTime => false,
 				ModeOneofCase.Transient => false,
 				_ => throw new InvalidOperationException()
 			};
-			var enabled = true;
 
 			var runAs = new ProjectionManagementMessage.RunAs(user);
 
 			var envelope = new CallbackEnvelope(OnMessage);
 
 			_queue.Publish(new ProjectionManagementMessage.Command.Post(envelope, projectionMode, name, runAs,
-				handlerType, options.Query, enabled, checkpointsEnables, emitEnabled, trackEmittedStreams, true));
+				handlerType, options.Query, true, checkpointsEnabled, emitEnabled, trackEmittedStreams, true));
 
 			await createdSource.Task.ConfigureAwait(false);
 
 			return new CreateResp();
 
 			void OnMessage(Message message) {
-				if (!(message is ProjectionManagementMessage.Updated)) {
+				if (message is not ProjectionManagementMessage.Updated) {
 					createdSource.TrySetException(UnknownMessage<ProjectionManagementMessage.Updated>(message));
 					return;
 				}
