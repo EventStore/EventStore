@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Null reference exception when getting persistent subscription info [EventStore#3399](https://github.com/EventStore/EventStore/pull/3399)
 - IODispatcher bug causing password change notifications to be missed sometimes [EventStore#3419](https://github.com/EventStore/EventStore/pull/3419)
 - Make password changes more robust [EventStore#3418](https://github.com/EventStore/EventStore/pull/3418)
+- Send full certificate chain from both server and client side during TLS handshake (requires manually adding intermediate certificates to the store) [EventStore#3398](https://github.com/EventStore/EventStore/pull/3398)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
