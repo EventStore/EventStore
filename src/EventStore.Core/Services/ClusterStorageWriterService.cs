@@ -141,11 +141,15 @@ namespace EventStore.Core.Services {
 				// when starting up for truncation
 				var oldEpoch = EpochManager.GetLastEpoch();
 				if (EpochManager.TryTruncateBefore(message.SubscriptionPosition, out var newEpoch)) {
-					Log.Information("Truncated epoch from "
-						+ "E{oldEpochNumber}@{oldEpochPosition}:{oldEpochId:B} to "
-						+ "E{newEpochNumber}@{newEpochPosition}:{newEpochId:B}",
-						oldEpoch.EpochNumber, oldEpoch.EpochPosition, oldEpoch.EpochId,
-						newEpoch.EpochNumber, newEpoch.EpochPosition, newEpoch.EpochId);
+					if (newEpoch.EpochId != oldEpoch.EpochId) {
+						Log.Information("Truncated epoch from "
+						                + "E{oldEpochNumber}@{oldEpochPosition}:{oldEpochId:B} to "
+						                + "E{newEpochNumber}@{newEpochPosition}:{newEpochId:B}",
+							oldEpoch.EpochNumber, oldEpoch.EpochPosition, oldEpoch.EpochId,
+							newEpoch.EpochNumber, newEpoch.EpochPosition, newEpoch.EpochId);
+					} else {
+						Log.Information("Truncation of epoch not required.");
+					}
 				} else {
 					Log.Information("Could not find a valid epoch to truncate to before position: {truncatePosition} (0x{truncatePosition:X})",
 						message.SubscriptionPosition, message.SubscriptionPosition);
