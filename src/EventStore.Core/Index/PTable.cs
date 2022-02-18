@@ -10,7 +10,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog.Unbuffered;
 using ILogger = Serilog.ILogger;
 using Range = EventStore.Core.Data.Range;
-using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using System.Runtime.InteropServices;
 
 namespace EventStore.Core.Index {
@@ -82,7 +82,7 @@ namespace EventStore.Core.Index {
 		private readonly uint _midpointsCached = 0;
 		private readonly long _midpointsCacheSize = 0;
 
-		private readonly MemoryMappedFileBloomFilter _bloomFilter;
+		private readonly PersistentBloomFilter _bloomFilter;
 		private readonly LRUCache<StreamHash, CacheEntry> _lruCache;
 		private readonly LRUCache<StreamHash, bool> _lruConfirmedNotPresent;
 
@@ -424,13 +424,14 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private MemoryMappedFileBloomFilter TryOpenBloomFilter() {
+		private PersistentBloomFilter TryOpenBloomFilter() {
 			try {
 				// todo: if there is a bloom filter with a different size we could still use it
-				var bloomFilter = new MemoryMappedFileBloomFilter(
-					path: BloomFilterFilename,
-					create: false,
-					size: GenBloomFilterSizeBytes(_count));
+				var bloomFilter = new PersistentBloomFilter(
+					new FileStreamPersistence(
+						path: BloomFilterFilename,
+						create: false,
+						size: GenBloomFilterSizeBytes(_count)));
 
 				return bloomFilter;
 			} catch (FileNotFoundException) {

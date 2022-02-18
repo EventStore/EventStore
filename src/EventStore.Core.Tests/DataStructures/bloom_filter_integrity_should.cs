@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.InteropServices;
-using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using EventStore.Core.Index.Hashes;
 using NUnit.Framework;
 

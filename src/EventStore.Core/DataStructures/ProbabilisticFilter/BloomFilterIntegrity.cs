@@ -4,12 +4,15 @@ using EventStore.Common.Utils;
 using EventStore.Core.Index.Hashes;
 using Serilog;
 
-namespace EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter {
+namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 	// This class is responsible for maintaining and validating a 4 byte hash at the end
 	// of the cache line.
 	public class BloomFilterIntegrity {
 		public const int CacheLineSize = 64;
 		public const int HashSize = 4;
+		// amount of filter that is marked dirty for flushing
+		public const int PageSize = 8 * 1024;
+
 		private const int UintHashIndex = (CacheLineSize - HashSize) / HashSize;
 		static readonly ILogger Log = Serilog.Log.ForContext<BloomFilterIntegrity>();
 
