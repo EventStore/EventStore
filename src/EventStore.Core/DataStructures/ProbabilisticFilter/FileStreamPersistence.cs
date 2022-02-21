@@ -60,9 +60,10 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 			//
 			// For default filter this yields a batch size of 96 pages, 0.75 MiB
 			// For max size filter this yield a batch size of 1120 pages, 8.75 MiB
+			// For PTables up to 24gb this yields a batch size of 96 pages.
 			FlushBatchDelay = 128;
 			FlushBatchSize = DataAccessor.NumPages * FlushBatchDelay / 60_000;
-			FlushBatchSize = Math.Max(FlushBatchSize, 32);
+			FlushBatchSize = Math.Max(FlushBatchSize, 96);
 			FlushBatchSize = FlushBatchSize.RoundUpToMultipleOf(32);
 
 			// dirtypages: one bit per page, but pad to the nearest cacheline boundary
@@ -102,6 +103,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 				FileAccess.Read,
 				FileShare.ReadWrite,
 				bufferSize: 65_536,
+				// consider if we should do something similar to chunk file reduce file cache pressure?
 				options: FileOptions.SequentialScan);
 
 			if (bulkFileStream.Length != DataAccessor.FileSize)
@@ -115,9 +117,11 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 				var bytesToReadInBlock = bytesToRead > int.MaxValue
 					? int.MaxValue
 					: (int)bytesToRead;
-
-				bulkFileStream.Read(new Span<byte>(DataAccessor.Pointer + bytesRead, bytesToReadInBlock));
-
+				
+				// consider reading in buffer size blocks. or using random access in net6
+				var read = bulkFileStream.Read(new Span<byte>(DataAccessor.Pointer + bytesRead, bytesToReadInBlock));
+				if (read != bytesToReadInBlock)
+					throw new Exception($"Read fewer bytes ({read}) from bloom filter ({_path}) than expected ({bytesToReadInBlock})");
 				bytesRead += bytesToReadInBlock;
 				bytesToRead -= bytesToReadInBlock;
 			}
@@ -151,7 +155,6 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 				bufferSize: DataAccessor.PageSize);
 
 			fileStream.SetLength(DataAccessor.FileSize);
-
 			Span<byte> localCacheLine = stackalloc byte[BloomFilterIntegrity.CacheLineSize];
 			localCacheLine.Clear();
 
@@ -160,10 +163,12 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 			var pauses = 0;
 
 			var activelyFlushing = Stopwatch.StartNew();
-
-			for (var remaining = _dirtyPageBitmap.AsSpan();
-				remaining.Length > 0;
-				remaining = remaining[BloomFilterIntegrity.CacheLineSize..]) {
+			// consider Interlocked.Or/And into/outof the dirty page map. could remove need for lock
+			for (
+				var remaining = _dirtyPageBitmap.AsSpan();
+				!remaining.IsEmpty;
+				remaining = remaining[BloomFilterIntegrity.CacheLineSize..]
+				) {
 
 				lock (_bitmapLock) {
 					ThrowIfDisposed();
@@ -173,11 +178,13 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 				}
 
 				foreach (var @byte in localCacheLine) {
+					//we could skip based on 0L without checking each bit/byte
 					for (var bitOffset = 0; bitOffset < 8; bitOffset++) {
 						if (@byte.IsBitSet(bitOffset)) {
 							WritePage(pageNumber, fileStream);
 							flushedPages++;
 
+							// could be an unnecessary delay at the end
 							if (flushedPages % FlushBatchSize == 0) {
 								fileStream.FlushToDisk();
 								activelyFlushing.Stop();

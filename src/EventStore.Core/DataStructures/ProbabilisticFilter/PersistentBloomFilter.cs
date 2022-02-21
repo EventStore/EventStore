@@ -119,6 +119,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 					hash += hash2;
 					hash &= long.MaxValue; // make non-negative
 					long bitPosition = hash % _data.LogicalFilterSizeBits;
+					// Consider returning the dirty page from set bit and calling the
+					// persistence strategy directly from here to remove the callback delegate
 					_data.SetBit(bitPosition);
 				}
 				// lock release guarantees our STOREs are executed before we return
