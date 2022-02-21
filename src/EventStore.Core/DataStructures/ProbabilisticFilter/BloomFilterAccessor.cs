@@ -120,8 +120,8 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 			var pageSize = Math.Min(PageSize, FileSize - positionInFile);
 
 			if (pageNumber == 0) {
-				pageSize -= 64;
-				positionInFile += 64;
+				pageSize -= CacheLineSize;
+				positionInFile += CacheLineSize;
 			}
 
 			return (positionInFile, (int)pageSize);
