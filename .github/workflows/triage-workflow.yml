@@ -1,0 +1,19 @@
+name: Triage project automations
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+      - milestoned
+      - labeled
+jobs:
+  call-workflow:
+    uses: EventStore/Automations/.github/workflows/triage-project-automation.yml@master
+    with:
+      resource-node-id: ${{ github.event.issue.node_id }}
+      event-action: ${{ github.event.action }}
+      labels: ${{ join(github.event.issue.labels.*.name, ', ') }}
+    secrets:
+      project-number: ${{ secrets.TRIAGE_PROJECT_NUMBER }}
+      token: ${{ secrets.ORG_ACCESS_TOKEN }}
