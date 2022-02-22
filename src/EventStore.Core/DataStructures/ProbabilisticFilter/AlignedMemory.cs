@@ -14,6 +14,9 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 		public AlignedMemory(long size, int alignTo) : this(new IntPtr(size), alignTo) {
 		}
 
+		// todo probably better to use a safe handle
+		~AlignedMemory() => Dispose();
+
 		/// contents of memory are not initialized
 		public AlignedMemory(IntPtr size, int alignTo) {
 			_size = (long)size;
@@ -37,6 +40,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 				return;
 
 			_disposed = true;
+			GC.SuppressFinalize(this);
 			Marshal.FreeHGlobal(_intPtr);
 			GC.RemoveMemoryPressure(_bytesAllocated);
 		}
