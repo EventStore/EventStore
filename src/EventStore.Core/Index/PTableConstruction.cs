@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
-using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 
 namespace EventStore.Core.Index {
 	public unsafe partial class PTable {
@@ -24,7 +24,7 @@ namespace EventStore.Core.Index {
 
 		private const int MidpointsOverflowSafetyNet = 20;
 
-		private static MemoryMappedFileBloomFilter ConstructBloomFilter(
+		private static PersistentBloomFilter ConstructBloomFilter(
 			bool useBloomFilter,
 			string filename,
 			long indexEntryCount) {
@@ -32,10 +32,11 @@ namespace EventStore.Core.Index {
 			if (!useBloomFilter)
 				return null;
 
-			return new MemoryMappedFileBloomFilter(
+			return new PersistentBloomFilter(
+				new FileStreamPersistence(
 					path: GenBloomFilterFilename(filename),
 					create: true,
-					size: GenBloomFilterSizeBytes(indexEntryCount));
+					size: GenBloomFilterSizeBytes(indexEntryCount)));
 		}
 
 		public static PTable FromMemtable(IMemTable table, string filename, int initialReaders, int maxReaders,
