@@ -98,7 +98,7 @@ namespace EventStore.Core.XUnit.Tests.DataStructures.ProbabilisticFilter {
 			}
 
 			[Theory]
-			[InlineData(10_000, 32)]
+			[InlineData(10_000, 96)]
 			[InlineData(256_000_000, 96)]
 			[InlineData(4_000_000_000, 1120, Skip = "big")]
 			public void CalculatesIntendedFlushSize(long size, long expectedFlushBatchSize) {
