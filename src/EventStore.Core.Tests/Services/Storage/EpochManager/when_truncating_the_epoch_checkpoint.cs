@@ -94,8 +94,12 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 			public with_no_epochs() : base(0) { }
 
 			[Test]
-			public void cannot_truncate_before_any_position() {
+			public void cannot_truncate_before_position_zero() {
 				Assert.False(_epochManager.TryTruncateBefore(0, out _));
+			}
+
+			[Test]
+			public void cannot_truncate_before_arbitrary_position() {
 				Assert.False(_epochManager.TryTruncateBefore(12, out _));
 			}
 		}
@@ -141,9 +145,9 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 			}
 
 			[Test]
-			public void can_read_checkpoint_after_no_truncation() {
+			public void cannot_read_checkpoint_even_if_no_truncation() {
 				Assert.False(_epochManager.TryTruncateBefore(_epochs[0].EpochPosition, out _));
-				Assert.DoesNotThrow(() => {
+				Assert.Throws<InvalidOperationException>(() => {
 					_epochManager.Init(); // triggers a checkpoint read internally
 				});
 			}
@@ -157,9 +161,9 @@ namespace EventStore.Core.Tests.Services.Storage.EpochManager {
 			}
 
 			[Test]
-			public void can_write_checkpoint_after_no_truncation() {
+			public void cannot_write_checkpoint_even_if_no_truncation() {
 				Assert.False(_epochManager.TryTruncateBefore(_epochs[0].EpochPosition, out _));
-				Assert.DoesNotThrow(() => {
+				Assert.Throws<InvalidOperationException>(() => {
 					_epochManager.WriteNewEpoch(2); // triggers a checkpoint write internally
 				});
 			}

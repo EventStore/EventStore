@@ -42,6 +42,12 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		public int LastEpochNumber => _lastCachedEpoch?.Value.EpochNumber ?? -1;
 		private bool _truncated;
 		private readonly object _truncateLock = new();
+
+		// IMPORTANT
+		// Lock ordering to prevent deadlocks:
+		// 1)  _locker
+		// 2) _truncateLock
+
 		private long Checkpoint {
 			get {
 				lock (_truncateLock) {
@@ -516,15 +522,16 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			lock (_truncateLock) {
 				if (_truncated)
 					throw new InvalidOperationException("Checkpoint has already been truncated.");
-
-				if (!TryGetEpochBefore(position, out epoch))
-					return false;
-
-				Checkpoint = epoch.EpochPosition;
 				_truncated = true;
-
-				return true;
 			}
+
+			if (!TryGetEpochBefore(position, out epoch))
+				return false;
+
+			_checkpoint.Write(epoch.EpochPosition);
+			_checkpoint.Flush();
+
+			return true;
 		}
 	}
 }
