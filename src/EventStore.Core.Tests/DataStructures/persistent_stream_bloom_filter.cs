@@ -1,11 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
+using EventStore.Core.Index.Hashes;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.DataStructures {
-	public class memory_mapped_file_stream_bloom_filter : SpecificationWithDirectoryPerTestFixture {
+	public enum PersistenceStrategy {
+		MemoryMapped,
+		FileStream,
+	}
+
+	[TestFixture(PersistenceStrategy.MemoryMapped, PersistenceStrategy.MemoryMapped)]
+	[TestFixture(PersistenceStrategy.MemoryMapped, PersistenceStrategy.FileStream)]
+	[TestFixture(PersistenceStrategy.FileStream, PersistenceStrategy.MemoryMapped)]
+	[TestFixture(PersistenceStrategy.FileStream, PersistenceStrategy.FileStream)]
+	public class persistent_stream_bloom_filter : SpecificationWithDirectoryPerTestFixture {
+		private readonly PersistenceStrategy _forCreate;
+		private readonly PersistenceStrategy _forOpen;
+
+		public persistent_stream_bloom_filter(PersistenceStrategy forCreate, PersistenceStrategy forOpen) {
+			_forCreate = forCreate;
+			_forOpen = forOpen;
+		}
+
+		PersistentStreamBloomFilter GenSut(string path, bool create, long size, ILongHasher<string> hasher) =>
+			(create ? _forCreate : _forOpen) switch {
+				PersistenceStrategy.MemoryMapped =>
+					new PersistentStreamBloomFilter(
+						new MemoryMappedFilePersistence(size, path, create),
+						hasher: hasher),
+
+				PersistenceStrategy.FileStream =>
+					new PersistentStreamBloomFilter(
+						new FileStreamPersistence(size, path, create),
+						hasher: hasher),
+
+				_ => throw new ArgumentOutOfRangeException(),
+		};
+
 		private static string GenerateCharset() {
 			var charset = "";
 			for (var c = 'a'; c <= 'z'; c++) {
@@ -43,15 +76,22 @@ namespace EventStore.Core.Tests.DataStructures {
 			return strings.ToArray();
 		}
 
-		[TestFixture]
-		private class with_fixed_size_filter : memory_mapped_file_stream_bloom_filter {
-			private MemoryMappedFileStreamBloomFilter _filter;
+		[TestFixture(PersistenceStrategy.MemoryMapped, PersistenceStrategy.MemoryMapped)]
+		[TestFixture(PersistenceStrategy.MemoryMapped, PersistenceStrategy.FileStream)]
+		[TestFixture(PersistenceStrategy.FileStream, PersistenceStrategy.MemoryMapped)]
+		[TestFixture(PersistenceStrategy.FileStream, PersistenceStrategy.FileStream)]
+		private class with_fixed_size_filter : persistent_stream_bloom_filter {
+			private PersistentStreamBloomFilter _filter;
 			private string _path;
+
+			public with_fixed_size_filter(PersistenceStrategy forCreate, PersistenceStrategy forOpen)
+				: base(forCreate, forOpen) {
+			}
 
 			[SetUp]
 			public void SetUp() {
 				_path = GetTempFilePath();
-				_filter = new MemoryMappedFileStreamBloomFilter(_path, create: true, MemoryMappedFileBloomFilter.MinSizeKB * 1000, hasher: null);
+				_filter = GenSut(_path, create: true, BloomFilterAccessor.MinSizeKB * 1000, hasher: null);
 			}
 
 			[TearDown]
@@ -63,9 +103,21 @@ namespace EventStore.Core.Tests.DataStructures {
 			[Test]
 			public void can_close_and_reopen() {
 				_filter.Add("hello");
+				_filter.Flush();
 				_filter.Dispose();
-				using var newFilter = new MemoryMappedFileStreamBloomFilter(_path, create: false, MemoryMappedFileBloomFilter.MinSizeKB * 1000, hasher: null);
+				using var newFilter = GenSut(_path, create: false, BloomFilterAccessor.MinSizeKB * 1000, hasher: null);
 				Assert.IsTrue(newFilter.MightContain("hello"));
+			}
+
+			[Test]
+			public void can_detect_incorrect_size() {
+				_filter.Add("hello");
+				_filter.Flush();
+				_filter.Dispose();
+
+				Assert.Throws<SizeMismatchException>(() => {
+					using var newFilter = GenSut(_path, create: false, BloomFilterAccessor.MinSizeKB * 1000 + 1, hasher: null);
+				});
 			}
 
 			[Test]
@@ -82,7 +134,7 @@ namespace EventStore.Core.Tests.DataStructures {
 				var numBits = binaryReader.ReadInt64();
 				Assert.AreEqual( 0x01, version);
 				Assert.AreEqual( 0, corruptionRebuildCount);
-				Assert.AreEqual( MemoryMappedFileBloomFilter.MinSizeKB * 1000 * 8, numBits);
+				Assert.AreEqual(BloomFilterAccessor.MinSizeKB * 1000 * 8, numBits);
 			}
 
 			[Test]
@@ -99,10 +151,10 @@ namespace EventStore.Core.Tests.DataStructures {
 
 		[Test, Combinatorial]
 		public void has_false_positives_with_probability_p(
-			[Values(MemoryMappedFileBloomFilter.MinSizeKB*1000,2*MemoryMappedFileBloomFilter.MinSizeKB*1000)] long size,
+			[Values(BloomFilterAccessor.MinSizeKB*1000,2* BloomFilterAccessor.MinSizeKB*1000)] long size,
 			[Values(0.001,0.02,0.05,0.1,0.2)] double p
 		) {
-			using var filter = new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), create: true, size, hasher: null);
+			using var filter = GenSut(GetTempFilePath(), create: true, size, hasher: null);
 			var n = (int) filter.CalculateOptimalNumItems(p);
 
 			var random = new Random(123);
@@ -157,8 +209,8 @@ namespace EventStore.Core.Tests.DataStructures {
 
 		[Test, Category("LongRunning")]
 		public void always_returns_true_when_an_item_was_added([Range(10_000, 100_000, 13337)] long size) {
-			using var filter = new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), create: true, size, hasher: null);
-			var strings = GenerateRandomStrings((int)filter.CalculateOptimalNumItems(MemoryMappedFileBloomFilter.RecommendedFalsePositiveProbability), 100);
+			using var filter = GenSut(GetTempFilePath(), create: true, size, hasher: null);
+			var strings = GenerateRandomStrings((int)filter.CalculateOptimalNumItems(PersistentBloomFilter.RecommendedFalsePositiveProbability), 100);
 
 			//no items added yet
 			foreach (var s in strings) {
@@ -180,25 +232,25 @@ namespace EventStore.Core.Tests.DataStructures {
 		[Test]
 		public void throws_argument_out_of_range_exception_when_given_negative_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), create: true, -1, hasher: null));
+				GenSut(GetTempFilePath(), create: true, size: -1, hasher: null));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_given_zero_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), create: true, 0, hasher: null));
+				GenSut(GetTempFilePath(), create: true, size: 0, hasher: null));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_size_less_than_min_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), create: true, MemoryMappedFileBloomFilter.MinSizeKB * 1000 - 1, hasher: null));
+				GenSut(GetTempFilePath(), create: true, size: BloomFilterAccessor.MinSizeKB * 1000 - 1, hasher: null));
 		}
 
 		[Test]
 		public void throws_argument_out_of_range_exception_when_size_greater_than_max_size() {
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new MemoryMappedFileStreamBloomFilter(GetTempFilePath(), create: true, MemoryMappedFileBloomFilter.MaxSizeKB * 1000 + 1, hasher: null));
+				GenSut(GetTempFilePath(), create: true, size: BloomFilterAccessor.MaxSizeKB * 1000 + 1, hasher: null));
 		}
 	}
 }

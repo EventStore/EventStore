@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Core.DataStructures.ProbabilisticFilter.MemoryMappedFileBloomFilter;
+using EventStore.Core.DataStructures.ProbabilisticFilter;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog.Checkpoint;
 using Serilog;
@@ -14,7 +14,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 		INameExistenceFilter {
 		private readonly string _filterName;
 		private readonly TimeSpan _checkpointDelay;
-		private readonly MemoryMappedFileStreamBloomFilter _mmfStreamBloomFilter;
+		private readonly PersistentStreamBloomFilter _persistentBloomFilter;
 		private readonly ICheckpoint _checkpoint;
 		private readonly Debouncer _checkpointer;
 		private long _lastNonFlushedCheckpoint;
@@ -61,12 +61,13 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_filterName, create ? "Creating" : "Opening", DataFilePath);
 
 			try {
-				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
-					path: DataFilePath,
-					create: create,
-					corruptionRebuildCount: 0,
-					size: size,
-					hasher: hasher);
+				_persistentBloomFilter = new PersistentStreamBloomFilter(
+					persistenceStrategy: new FileStreamPersistence(
+						size: size,
+						path: DataFilePath,
+						create: create),
+					hasher: hasher,
+					corruptionRebuildCount: 0);
 			} catch (Exception exc) when (
 					exc is CorruptedFileException ||
 					exc is CorruptedHashException ||
@@ -90,26 +91,27 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_lastNonFlushedCheckpoint = -1L;
 				_checkpoint.Write(-1L);
 				_checkpoint.Flush();
-				_mmfStreamBloomFilter = new MemoryMappedFileStreamBloomFilter(
-					path: DataFilePath,
-					create: true,
-					size: size,
-					corruptionRebuildCount: corruptionRebuildCount,
-					hasher: hasher);
+				_persistentBloomFilter = new PersistentStreamBloomFilter(
+					persistenceStrategy: new FileStreamPersistence(
+						size: size,
+						path: DataFilePath,
+						create: true),
+					hasher: hasher,
+					corruptionRebuildCount: corruptionRebuildCount);
 			}
 
-			if (_mmfStreamBloomFilter.CorruptionRebuildCount == 0)
+			if (_persistentBloomFilter.CorruptionRebuildCount == 0)
 				Log.Information("{filterName} has successfully loaded.", _filterName);
 			else
 				Log.Information("{filterName} has successfully loaded. Filter has been rebuilt due to hash corruption {count} times.",
-					_filterName, _mmfStreamBloomFilter.CorruptionRebuildCount);
+					_filterName, _persistentBloomFilter.CorruptionRebuildCount);
 
-			const double p = MemoryMappedFileBloomFilter.RecommendedFalsePositiveProbability;
+			const double p = PersistentBloomFilter.RecommendedFalsePositiveProbability;
 			Log.Debug("Optimal number of items for a {filterName} with a configured size of " +
 			                "{size:N0} MB is approximately equal to: {n:N0} with false positive probability: {p:N2}",
 				_filterName,
 				size / 1000 / 1000,
-				_mmfStreamBloomFilter.CalculateOptimalNumItems(p),
+				_persistentBloomFilter.CalculateOptimalNumItems(p),
 				p);
 
 			_cancellationTokenSource = new();
@@ -121,7 +123,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_cancellationTokenSource.Token);
 		}
 
-		public void Verify(double corruptionThreshold) => _mmfStreamBloomFilter.Verify(corruptionThreshold);
+		public void Verify(double corruptionThreshold) => _persistentBloomFilter.Verify(corruptionThreshold);
 
 		private async Task TakeCheckpointAsync() {
 			try {
@@ -131,7 +133,7 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 				var startTime = DateTime.UtcNow;
 				Log.Debug("{filterName} is flushing at {checkpoint:N0}. Diff {diff:N0} ...", _filterName, checkpoint, diff);
-				_mmfStreamBloomFilter.Flush();
+				_persistentBloomFilter.Flush();
 				var endTime = DateTime.UtcNow;
 				Log.Debug("{filterName} has flushed at {checkpoint:N0}. Diff {diff:N0}. Took {flushLength}",
 					       _filterName, checkpoint, diff, endTime - startTime);
@@ -162,6 +164,20 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 		// any truncation must be done prior to calling Add or setting CurrentCheckpoint
 		public void TruncateTo(long checkpoint) {
+			if (CurrentCheckpoint <= checkpoint) {
+				// this was already guarded elsewhere but we want to guard it in this class so that we
+				// can guarantee that a checkpoint is only set at all if the filter was successfully
+				// flushed. otherwise here we might set the checkpoint even though we hadn't flushed
+				// that far.
+				Log.Information(
+					"{filterName} is NOT truncating from {current:N0} to {truncateTo:N0} " +
+					"since it already satisfies the truncation point.",
+					_filterName,
+					CurrentCheckpoint,
+					checkpoint);
+				return;
+			}
+
 			Log.Information("{filterName} is truncating from {current:N0} to {truncateTo:N0}.",
 				_filterName,
 				CurrentCheckpoint,
@@ -179,24 +195,24 @@ namespace EventStore.Core.LogAbstraction.Common {
 		}
 
 		public void Add(string name) {
-			_mmfStreamBloomFilter.Add(name);
+			_persistentBloomFilter.Add(name);
 			_addedSinceLoad++;
 		}
 
 		public void Add(ulong hash) {
-			_mmfStreamBloomFilter.Add(hash);
+			_persistentBloomFilter.Add(hash);
 			_addedSinceLoad++;
 		}
 
 		public bool MightContain(string name) {
 			if (Interlocked.CompareExchange(ref _initialized, 0, 0) == 0)
 				throw new InvalidOperationException("Initialize the filter before querying");
-			return _mmfStreamBloomFilter.MightContain(name);
+			return _persistentBloomFilter.MightContain(name);
 		}
 
 		public void Dispose() {
 			_cancellationTokenSource?.Cancel();
-			_mmfStreamBloomFilter?.Dispose();
+			_persistentBloomFilter?.Dispose();
 			GC.SuppressFinalize(this);
 		}
 	}
