@@ -98,6 +98,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				}
 			}
 
+			// Note: Prior to going offline for truncation, we attempt to set the epoch checkpoint to an epoch record
+			// located before the truncate position (if such a record is present in the epoch cache).
+			// This saves us from resetting it to -1 here and also saves us from scanning the transaction log for
+			// a proper epoch record during startup.
 			if (_config.EpochCheckpoint.Read() >= truncateChk) {
 				var epochChk = _config.EpochCheckpoint.Read();
 				Log.Information("Truncating epoch from {epochFrom} (0x{epochFrom:X}) to {epochTo} (0x{epochTo:X}).", epochChk,

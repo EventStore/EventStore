@@ -13,5 +13,6 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 		bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId);
 		void WriteNewEpoch(int epochNumber);
 		void CacheEpoch(EpochRecord epoch);
+		bool TryTruncateBefore(long position, out EpochRecord epoch);
 	}
 }

@@ -131,8 +131,40 @@ namespace EventStore.Core.Services {
 						"ATTEMPT TO TRUNCATE EPOCH WITH COMMITTED RECORDS. THIS MAY BE BAD, BUT IT IS OK IF A NEWLY-ELECTED LEADER FAILS IMMEDIATELY AFTER ELECTION.");
 				}
 
+				Log.Information("Setting the truncate checkpoint to: {truncatePosition} (0x{truncatePosition:X})",
+					message.SubscriptionPosition, message.SubscriptionPosition);
 				Db.Config.TruncateCheckpoint.Write(message.SubscriptionPosition);
 				Db.Config.TruncateCheckpoint.Flush();
+
+				// try to write the new epoch position prior to shutting down to
+				// avoid scanning the transaction log to find a valid epoch
+				// when starting up for truncation
+				var oldEpoch = EpochManager.GetLastEpoch();
+				if (EpochManager.TryTruncateBefore(message.SubscriptionPosition, out var newEpoch)) {
+					if (newEpoch.EpochId != oldEpoch.EpochId) {
+						Log.Information("Truncated epoch from "
+						                + "E{oldEpochNumber}@{oldEpochPosition}:{oldEpochId:B} to "
+						                + "E{newEpochNumber}@{newEpochPosition}:{newEpochId:B}",
+							oldEpoch.EpochNumber, oldEpoch.EpochPosition, oldEpoch.EpochId,
+							newEpoch.EpochNumber, newEpoch.EpochPosition, newEpoch.EpochId);
+					} else {
+						Log.Information("Truncation of epoch not required.");
+					}
+				} else {
+					Log.Information("Could not find a valid epoch to truncate to before position: {truncatePosition} (0x{truncatePosition:X})",
+						message.SubscriptionPosition, message.SubscriptionPosition);
+					var epochs = EpochManager.GetLastEpochs(int.MaxValue);
+					if (epochs.Length > 0) {
+						Log.Debug("Displaying cached epochs:");
+						foreach (var epoch in epochs) {
+							Log.Debug(
+								"=== E{epochNumber}@{epochPosition}:{epochId:B}",
+								epoch.EpochNumber, epoch.EpochPosition, epoch.EpochId);
+						}
+					} else {
+						Log.Debug("No cached epochs were found");
+					}
+				}
 
 				BlockWriter = true;
 				Bus.Publish(new ClientMessage.RequestShutdown(exitProcess: true, shutdownHttp: true));
