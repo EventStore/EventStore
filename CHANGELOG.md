@@ -21,10 +21,12 @@ All notable changes to this project will be documented in this file.
 - IODispatcher bug causing password change notifications to be missed sometimes [EventStore#3419](https://github.com/EventStore/EventStore/pull/3419)
 - Make password changes more robust [EventStore#3418](https://github.com/EventStore/EventStore/pull/3418)
 - Send full certificate chain from both server and client side during TLS handshake (requires manually adding intermediate certificates to the store) [EventStore#3398](https://github.com/EventStore/EventStore/pull/3398)
+- Update the epoch checkpoint with the proper position before going offline for truncation [EventStore#3414](https://github.com/EventStore/EventStore/pull/3414)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
 - //github.com/EventStore/EventStore/pull/3434 [EventStore#3439](https://github.com/EventStore/EventStore/pull/3439)
+- //github.com/EventStore/EventStore/pull/3425 [EventStore#3438](https://github.com/EventStore/EventStore/pull/3438)
 
 ### Added
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
