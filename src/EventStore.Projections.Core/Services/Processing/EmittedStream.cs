@@ -685,8 +685,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_awaitingLinkToResolution = true;
 					_ioDispatcher.ReadEvent(resolution.StreamId, resolution.Revision, _writeAs, resp => {
 						OnEmittedLinkEventResolved(anyFound, eventToWrite, resolution.TopCommitted, resp);
-					});
-					
+					}, () => {
+						Log.Warning(
+							"Timed out reading original event for emitted event at revision {eventNumber} in stream '{streamName}'.",
+							resolution.Revision, resolution.StreamId);
+					}, Guid.NewGuid());
 					break;
 				}
 			}
