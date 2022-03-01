@@ -12,19 +12,13 @@ using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using Newtonsoft.Json.Linq;
-using EventStore.Core.Services.TimerService;
-using EventStore.Core.Settings;
 using Serilog;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public class EmittedStream : IDisposable,
-		IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted>,
-		IHandle<ProjectionManagementMessage.Internal.ReadTimeout> {
-		private const string ReadUpTo = "upTo";
-		private const string ReadFromEventNumber = "readFromEventNumber";
+		IHandle<CoreProjectionProcessingMessage.EmittedStreamWriteCompleted> {
 		private readonly IODispatcher _ioDispatcher;
 		private readonly IPublisher _publisher;
-
 
 		private readonly ILogger _logger;
 		private readonly string _streamId;
@@ -400,32 +394,17 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_ioDispatcher.ReadBackward(
 				_streamId, fromEventNumber, 1, resolveLinks: false, principal: SystemAccounts.System,
 				action: completed => ReadStreamEventsBackwardCompleted(completed, upTo),
-				corrId: _pendingRequestCorrelationId);
-			ScheduleReadTimeoutMessage(_pendingRequestCorrelationId, _streamId, upTo, fromEventNumber);
+				corrId: _pendingRequestCorrelationId,
+				timeoutAction: CreateReadTimeoutAction(_pendingRequestCorrelationId, upTo, fromEventNumber));
 		}
 
-		private void ScheduleReadTimeoutMessage(Guid correlationId, string streamId, CheckpointTag upTo,
-			long fromEventNumber) {
-			_publisher.Publish(CreateReadTimeoutMessage(correlationId, streamId, new Dictionary<string, object> {
-				{ReadUpTo, upTo},
-				{ReadFromEventNumber, fromEventNumber}
-			}));
-		}
-
-		private Message CreateReadTimeoutMessage(Guid correlationId, string streamId,
-			Dictionary<string, object> parameters) {
-			return TimerMessage.Schedule.Create(
-				TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
-				new SendToThisEnvelope(this),
-				new ProjectionManagementMessage.Internal.ReadTimeout(correlationId, streamId, parameters));
-		}
-
-		public void Handle(ProjectionManagementMessage.Internal.ReadTimeout message) {
-			if (message.CorrelationId != _pendingRequestCorrelationId) return;
-			_pendingRequestCorrelationId = Guid.Empty;
-			_awaitingListEventsCompleted = false;
-			SubmitListEvents((CheckpointTag)message.Parameters[ReadUpTo],
-				(long)message.Parameters[ReadFromEventNumber]);
+		private Action CreateReadTimeoutAction(Guid correlationId, CheckpointTag upTo, long fromEventNumber) {
+			return () => {
+				if (correlationId != _pendingRequestCorrelationId) return;
+				_pendingRequestCorrelationId = Guid.Empty;
+				_awaitingListEventsCompleted = false;
+				SubmitListEvents(upTo, fromEventNumber);
+			};
 		}
 
 		private void SubmitWriteMetadata() {
@@ -706,8 +685,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_awaitingLinkToResolution = true;
 					_ioDispatcher.ReadEvent(resolution.StreamId, resolution.Revision, _writeAs, resp => {
 						OnEmittedLinkEventResolved(anyFound, eventToWrite, resolution.TopCommitted, resp);
-					});
-					
+					}, () => {
+						Log.Warning(
+							"Timed out reading original event for emitted event at revision {eventNumber} in stream '{streamName}'.",
+							resolution.Revision, resolution.StreamId);
+					}, Guid.NewGuid());
 					break;
 				}
 			}
