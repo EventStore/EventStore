@@ -52,7 +52,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 					if (!x.IsEndOfStream) {
 						ReadEmittedStreamStreamIdsIntoCache(x.NextEventNumber);
 					}
-				});
+				}, () => {
+					Log.Error(
+						"Timed out reading emitted stream ids into cache from {streamName} at position {position}.",
+						_projectionNamesBuilder.GetEmittedStreamsName(), position);
+				}, Guid.NewGuid());
 		}
 
 		public void TrackEmittedStream(EmittedEvent[] emittedEvents) {
