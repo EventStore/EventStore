@@ -271,7 +271,6 @@ namespace EventStore.Core.Helpers {
 			Guid? corrId = null) {
 			if (!corrId.HasValue)
 				corrId = Guid.NewGuid();
-			AddPendingRequest(corrId.Value);
 			return
 				BackwardReader.Publish(
 					new ClientMessage.ReadStreamEventsBackward(
@@ -285,10 +284,7 @@ namespace EventStore.Core.Helpers {
 						false,
 						null,
 						principal),
-					res => {
-						RemovePendingRequest(res.CorrelationId);
-						action(res);
-					});
+					action);
 		}
 
 		public Guid ReadBackward(
@@ -337,7 +333,6 @@ namespace EventStore.Core.Helpers {
 			Guid? corrId = null) {
 			if (!corrId.HasValue)
 				corrId = Guid.NewGuid();
-			AddPendingRequest(corrId.Value);
 			return
 				ForwardReader.Publish(
 					new ClientMessage.ReadStreamEventsForward(
@@ -351,10 +346,7 @@ namespace EventStore.Core.Helpers {
 						false,
 						null,
 						principal),
-					res => {
-						RemovePendingRequest(res.CorrelationId);
-						action(res);
-					});
+					action);
 		}
 
 		public Guid ReadForward(
@@ -398,23 +390,31 @@ namespace EventStore.Core.Helpers {
 			long fromEventNumber,
 			ClaimsPrincipal principal,
 			Action<ClientMessage.ReadEventCompleted> action,
-			Guid? corrId = null) {
-			corrId ??= Guid.NewGuid();
-			AddPendingRequest(corrId.Value);
-			return
-				EventReader.Publish(
-					new ClientMessage.ReadEvent(
-						corrId.Value,
-						corrId.Value,
-						EventReader.Envelope,
-						streamId,
-						fromEventNumber,
-						false,
-						false,
-						principal), res => {
-						RemovePendingRequest(res.CorrelationId);
+			Action timeoutAction,
+			Guid corrId) {
+			_requestTracker.AddPendingRead(corrId);
+
+			EventReader.Publish(
+				new ClientMessage.ReadEvent(
+					corrId,
+					corrId,
+					EventReader.Envelope,
+					streamId,
+					fromEventNumber,
+					false,
+					false,
+					principal),
+				res => {
+					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
-					});
+					}
+				});
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
+				if (_requestTracker.RemovePendingRead(corrId)) {
+					timeoutAction();
+				}
+			}, corrId);
+			return corrId;
 		}
 
 		public Guid ReadAllForward(

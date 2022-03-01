@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Services.TimerService;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Tests.Services.core_projection;
 using NUnit.Framework;
-using EventStore.Projections.Core.Messages;
-using EventStore.Core.Services.TimerService;
 using EventStore.Core.Tests;
 
 namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
@@ -15,6 +16,7 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 		private const string TestStreamId = "test_stream";
 		private EmittedStream _stream;
 		private TestCheckpointManagerMessageHandler _readyHandler;
+		private List<TimerMessage.Schedule> timerMessages = new();
 
 		protected override void Given() {
 			AllWritesQueueUp();
@@ -25,6 +27,8 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 		[SetUp]
 		public void setup() {
 			_readyHandler = new TestCheckpointManagerMessageHandler();
+			_bus.Subscribe(new AdHocHandler<TimerMessage.Schedule>(msg => timerMessages.Add(msg)));
+
 			_stream = new EmittedStream(
 				TestStreamId,
 				new EmittedStream.WriterConfiguration(new EmittedStreamsWriter(_ioDispatcher),
@@ -41,26 +45,18 @@ namespace EventStore.Projections.Core.Tests.Services.emitted_stream {
 				});
 		}
 
-
-		[Test]
-		public void should_have_attempted_a_single_read() {
-			var readEventsBackwards = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
-				.Where(x => x.EventStreamId == TestStreamId);
-			Assert.AreEqual(1, readEventsBackwards.Count());
-		}
-
 		[Test]
 		public void should_retry_the_read_upon_the_read_timing_out() {
-			var scheduledReadTimeout =
-				_consumer.HandledMessages.OfType<TimerMessage.Schedule>().First().ReplyMessage as
-					ProjectionManagementMessage.Internal.ReadTimeout;
-			_stream.Handle(scheduledReadTimeout);
+			var timerMessage = timerMessages.FirstOrDefault();
+			Assert.NotNull(timerMessage,
+				$"Expected a {nameof(TimerMessage.Schedule)} to have been published, but none were received");
+
+			timerMessage.Reply();
 
 			var readEventsBackwards = _consumer.HandledMessages.OfType<ClientMessage.ReadStreamEventsBackward>()
-				.Where(x => x.EventStreamId == TestStreamId);
-
-			Assert.AreEqual(2, readEventsBackwards.Count());
-			Assert.AreEqual(readEventsBackwards.First().FromEventNumber, readEventsBackwards.Last().FromEventNumber);
+							.Where(x => x.EventStreamId == TestStreamId).ToArray();
+			Assert.AreEqual(2, readEventsBackwards.Length);
+			Assert.AreEqual(readEventsBackwards[0].FromEventNumber, readEventsBackwards[1].FromEventNumber);
 		}
 	}
 }
