@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Reject gRPC call to create a projection if `TrackEmittedStreams=true` and `EmitEnabled=false` [EventStore#3412](https://github.com/EventStore/EventStore/pull/3412)
 - Proto names of `emit_enabled` and `track_emitted_streams` swapped for backwards compatibility [EventStore#3412](https://github.com/EventStore/EventStore/pull/3412)
 - fixed Incorrect version number in CI build [EventStore#3430](https://github.com/EventStore/EventStore/pull/3430)
+- Reads operations in IODispatcher are no longer tracked if they don't have a timeoutAction [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 
 ### Fixed
 - Use the term "certificate signed by a private CA" instead of "self-signed certificates" [EventStore#3361](https://github.com/EventStore/EventStore/pull/3361)
@@ -22,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Make password changes more robust [EventStore#3418](https://github.com/EventStore/EventStore/pull/3418)
 - Send full certificate chain from both server and client side during TLS handshake (requires manually adding intermediate certificates to the store) [EventStore#3398](https://github.com/EventStore/EventStore/pull/3398)
 - Update the epoch checkpoint with the proper position before going offline for truncation [EventStore#3414](https://github.com/EventStore/EventStore/pull/3414)
+- Prevent projections subsystem from getting stuck in a stopping state due to read timeouts [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
@@ -32,6 +34,7 @@ All notable changes to this project will be documented in this file.
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
 - Expose `emitEnabled` on creation of continuous projection. [EventStore#3384](https://github.com/EventStore/EventStore/pull/3384)
 - automatically update license file with current year [EventStore#3382](https://github.com/EventStore/EventStore/pull/3382)
+- Logging around read timeouts in projection emitted streams and emitted stream trackers [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
