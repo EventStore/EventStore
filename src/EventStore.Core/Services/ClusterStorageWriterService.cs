@@ -77,6 +77,7 @@ namespace EventStore.Core.Services {
 
 			_subscriptionId = message.SubscriptionId;
 			_ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
+			Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
 
 			Log.Information(
 				"=== SUBSCRIBED to [{leaderEndPoint},{leaderId:B}] at {subscriptionPosition} (0x{subscriptionPosition:X}). SubscriptionId: {subscriptionId:B}.",
