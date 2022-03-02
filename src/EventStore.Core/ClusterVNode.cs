@@ -717,7 +717,7 @@ namespace EventStore.Core {
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
-			var storageWriter = new ClusterStorageWriterService<TStreamId>(_mainQueue, _mainBus,
+			var storageWriter = new ReplicaStorageWriterService<TStreamId>(_mainQueue, _mainBus,
 				TimeSpan.FromMilliseconds(options.Database.MinFlushDelayMs), Db, writer, readIndex.IndexWriter,
 				logFormat.RecordFactory,
 				logFormat.StreamNameIndex,
