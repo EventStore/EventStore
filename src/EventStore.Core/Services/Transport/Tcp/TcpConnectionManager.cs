@@ -134,7 +134,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			EndPoint remoteEndPoint,
 			TcpClientConnector connector,
 			bool useSsl,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
+			CertificateDelegates.ServerCertificateValidator sslServerCertValidator,
 			Func<X509CertificateCollection> sslClientCertificatesSelector,
 			IPublisher networkSendQueue,
 			IAuthenticationProvider authProvider,

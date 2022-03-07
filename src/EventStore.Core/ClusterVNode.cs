@@ -94,7 +94,7 @@ namespace EventStore.Core {
 		abstract public AuthorizationGateway AuthorizationGateway { get; }
 		abstract public IHttpService HttpService { get; }
 		abstract public VNodeInfo NodeInfo { get; }
-		abstract public Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator { get; }
+		abstract public CertificateDelegates.ClientCertificateValidator InternalClientCertificateValidator { get; }
 		abstract public Func<X509Certificate2> CertificateSelector { get; }
 		abstract public Func<X509Certificate2Collection> IntermediateCertificatesSelector { get; }
 		abstract public bool DisableHttps { get; }
@@ -180,10 +180,10 @@ namespace EventStore.Core {
 		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate2Collection> _trustedRootCertsSelector;
 		private readonly Func<X509Certificate2Collection> _intermediateCertsSelector;
-		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalServerCertificateValidator;
-		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _internalClientCertificateValidator;
-		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalClientCertificateValidator;
-		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _externalServerCertificateValidator;
+		private readonly CertificateDelegates.ServerCertificateValidator _internalServerCertificateValidator;
+		private readonly CertificateDelegates.ClientCertificateValidator _internalClientCertificateValidator;
+		private readonly CertificateDelegates.ClientCertificateValidator _externalClientCertificateValidator;
+		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
@@ -195,7 +195,7 @@ namespace EventStore.Core {
 			get { return _tasks; }
 		}
 
-		public override Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> InternalClientCertificateValidator => _internalClientCertificateValidator;
+		public override CertificateDelegates.ClientCertificateValidator InternalClientCertificateValidator => _internalClientCertificateValidator;
 		public override Func<X509Certificate2> CertificateSelector => _certificateSelector;
 		public override Func<X509Certificate2Collection> IntermediateCertificatesSelector => _intermediateCertsSelector;
 		public override bool DisableHttps => _disableHttps;

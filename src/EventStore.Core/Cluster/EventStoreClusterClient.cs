@@ -19,7 +19,7 @@ namespace EventStore.Core.Cluster {
 		private readonly IPublisher _bus;
 		public bool Disposed { get; private set; }
 
-		public EventStoreClusterClient(Uri address, IPublisher bus, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
+		public EventStoreClusterClient(string uriScheme, EndPoint endpoint, IPublisher bus, CertificateDelegates.ServerCertificateValidator serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
 			HttpMessageHandler httpMessageHandler = null;
 			if (address.Scheme == Uri.UriSchemeHttps){
 				var socketsHttpHandler = new SocketsHttpHandler {

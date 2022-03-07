@@ -30,7 +30,7 @@ namespace EventStore.Core.Services {
 		private const string _httpSendHistogram = "http-send";
 		private MemberInfo _leaderInfo;
 
-		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> externServerCertValidator) {
+		public HttpSendService(HttpMessagePipe httpPipe, bool forwardRequests, CertificateDelegates.ServerCertificateValidator externServerCertValidator) {
 			Ensure.NotNull(httpPipe, "httpPipe");
 			_httpPipe = httpPipe;
 			_forwardRequests = forwardRequests;
