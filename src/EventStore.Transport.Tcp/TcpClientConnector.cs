@@ -50,7 +50,7 @@ namespace EventStore.Transport.Tcp {
 			string targetHost,
 			IPEndPoint remoteEndPoint,
 			TimeSpan connectionTimeout,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
+			CertificateDelegates.ServerCertificateValidator sslServerCertValidator,
 			Func<X509CertificateCollection> clientCertificatesSelector,
 			Action<ITcpConnection> onConnectionEstablished = null,
 			Action<ITcpConnection, SocketError> onConnectionFailed = null,

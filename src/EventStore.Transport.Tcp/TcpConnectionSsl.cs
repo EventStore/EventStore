@@ -18,7 +18,7 @@ namespace EventStore.Transport.Tcp {
 		public static ITcpConnection CreateConnectingConnection(Guid connectionId,
 			string targetHost,
 			IPEndPoint remoteEndPoint,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator,
+			CertificateDelegates.ServerCertificateValidator serverCertValidator,
 			Func<X509CertificateCollection> clientCertificatesSelector,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
@@ -47,9 +47,9 @@ namespace EventStore.Transport.Tcp {
 		public static ITcpConnection CreateServerFromSocket(Guid connectionId,
 			IPEndPoint remoteEndPoint,
 			Socket socket,
-			Func<X509Certificate2> serverCertificateSelector,
+			Func<X509Certificate> serverCertificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
+			CertificateDelegates.ClientCertificateValidator clientCertValidator,
 			bool verbose) {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
 			connection.InitServerSocket(socket, serverCertificateSelector, intermediatesSelector, clientCertValidator, verbose);
@@ -97,8 +97,8 @@ namespace EventStore.Transport.Tcp {
 		private SslStream _sslStream;
 		private bool _isAuthenticated;
 		private int _sendingBytes;
-		private Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _serverCertValidator;
-		private Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _clientCertValidator;
+		private CertificateDelegates.ServerCertificateValidator _serverCertValidator;
+		private CertificateDelegates.ClientCertificateValidator _clientCertValidator;
 		private readonly byte[] _receiveBuffer = new byte[TcpConnection.BufferManager.ChunkSize];
 
 		private TcpConnectionSsl(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose) : base(remoteEndPoint) {
@@ -112,7 +112,7 @@ namespace EventStore.Transport.Tcp {
 			Socket socket,
 			Func<X509Certificate2> serverCertificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
+			CertificateDelegates.ClientCertificateValidator clientCertValidator,
 			bool verbose) {
 			InitConnectionBase(socket);
 			if (verbose)
@@ -190,7 +190,7 @@ namespace EventStore.Transport.Tcp {
 			_socket = socket;
 		}
 
-		private void InitSslStream(string targetHost, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, Func<X509CertificateCollection> clientCertificatesSelector, bool verbose) {
+		private void InitSslStream(string targetHost, CertificateDelegates.ServerCertificateValidator serverCertValidator, Func<X509CertificateCollection> clientCertificatesSelector, bool verbose) {
 			Ensure.NotNull(targetHost, "targetHost");
 			InitConnectionBase(_socket);
 			if (verbose)
