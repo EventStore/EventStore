@@ -17,3 +17,5 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Tag and Push
         uses: EventStore/Automations/tag-docker-images@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
