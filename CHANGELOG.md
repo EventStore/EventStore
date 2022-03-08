@@ -14,31 +14,36 @@ All notable changes to this project will be documented in this file.
 - Reads operations in IODispatcher are no longer tracked if they don't have a timeoutAction [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 
 ### Fixed
-- Use the term "certificate signed by a private CA" instead of "self-signed certificates" [EventStore#3361](https://github.com/EventStore/EventStore/pull/3361)
-- Only build ci container on master branch [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
-- Directory.EnumerateFiles regression causing slower startup/truncation times on large databases [EventStore#3363](https://github.com/EventStore/EventStore/pull/3363)
-- include current stream revision on internal delete messages [EventStore#3401](https://github.com/EventStore/EventStore/pull/3401)
-- Null reference exception when getting persistent subscription info [EventStore#3399](https://github.com/EventStore/EventStore/pull/3399)
-- IODispatcher bug causing password change notifications to be missed sometimes [EventStore#3419](https://github.com/EventStore/EventStore/pull/3419)
-- Make password changes more robust [EventStore#3418](https://github.com/EventStore/EventStore/pull/3418)
-- Send full certificate chain from both server and client side during TLS handshake (requires manually adding intermediate certificates to the store) [EventStore#3398](https://github.com/EventStore/EventStore/pull/3398)
 - Update the epoch checkpoint with the proper position before going offline for truncation [EventStore#3414](https://github.com/EventStore/EventStore/pull/3414)
-- Prevent projections subsystem from getting stuck in a stopping state due to read timeouts [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 
 ### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/3365 [EventStore#3368](https://github.com/EventStore/EventStore/pull/3368)
-- //github.com/EventStore/EventStore/pull/3434 [EventStore#3439](https://github.com/EventStore/EventStore/pull/3439)
-- //github.com/EventStore/EventStore/pull/3425 [EventStore#3438](https://github.com/EventStore/EventStore/pull/3438)
-- //github.com/EventStore/EventStore/pull/3443 [EventStore#3445](https://github.com/EventStore/EventStore/pull/3445)
 
 ### Added
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
-- Expose `emitEnabled` on creation of continuous projection. [EventStore#3384](https://github.com/EventStore/EventStore/pull/3384)
 - automatically update license file with current year [EventStore#3382](https://github.com/EventStore/EventStore/pull/3382)
 - Logging around read timeouts in projection emitted streams and emitted stream trackers [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
+
+## [21.10.2] - 2022-03-04
+
+### Fixed
+- Set chunk end number to the max between current end number and the added chunk number [EventStore#3365](https://github.com/EventStore/EventStore/pull/3365)
+- Use the term "certificate signed by a private CA" instead of "self-signed certificates" [EventStore#3372](https://github.com/EventStore/EventStore/pull/3372)
+- Directory.EnumerateFiles regression causing slower startup/truncation times on large databases [EventStore#3385](https://github.com/EventStore/EventStore/pull/3385)
+- Include current stream revision on internal delete messages [EventStore#3405](https://github.com/EventStore/EventStore/pull/3405)
+- Null reference exception when getting persistent subscription info [EventStore#3408](https://github.com/EventStore/EventStore/pull/3408)
+- IODispatcher bug causing password change notifications to be missed sometimes [EventStore#3421](https://github.com/EventStore/EventStore/pull/3421)
+- Make password changes more robust [EventStore#3429](https://github.com/EventStore/EventStore/pull/3429)
+- Improved Stream Existence Filter flushes [EventStore#3425](https://github.com/EventStore/EventStore/pull/3425)
+- Send full certificate chain from both server and client side during TLS handshake (requires manually adding intermediate certificates to the store) [EventStore#3446](https://github.com/EventStore/EventStore/pull/3446)
+- Prevent projections subsystem from getting stuck in a stopping state due to read timeouts [EventStore#3441](https://github.com/EventStore/EventStore/pull/3441)
+- Risk of PreLeader not successfully transitioning to Leader if a TCP disconnect occurs at just the right time. [EventStore#3443](https://github.com/EventStore/EventStore/pull/3443)
+
+### Added
+- Expose `emitEnabled` on creation of continuous projection. [EventStore#3384](https://github.com/EventStore/EventStore/pull/3384)
+- Log GC settings on startup [EventStore#3434](https://github.com/EventStore/EventStore/pull/3434)
 
 ## [21.10.1] - 2021-12-16
 
