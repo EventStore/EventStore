@@ -8,15 +8,30 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.RequestManager {
 	public class CommitSource :
+	IHandle<ReplicationMessage.ReplicaSubscribed>,
 	IHandle<ReplicationTrackingMessage.IndexedTo>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo> {
-		private readonly ConcurrentDictionary<long, List<Action>> _notifyReplicated = new ConcurrentDictionary<long, List<Action>>();
-		private readonly ConcurrentDictionary<long, List<Action>> _notifyIndexed = new ConcurrentDictionary<long, List<Action>>();
+		private readonly ConcurrentDictionary<long, List<Action>> _notifyReplicated = new();
+		private readonly ConcurrentDictionary<long, List<Action>> _notifyIndexed = new();
 		private long _replicatedPosition;
 		private long _indexedPosition;
 
 		public long ReplicationPosition => _replicatedPosition;
 		public long IndexedPosition => _indexedPosition;
+
+		public void Handle(ReplicationMessage.ReplicaSubscribed message) {
+			// drop all notifications with log positions that are not prior to
+			// the subscription position since they represent writes that
+			// diverge from the leader's log and will eventually be truncated.
+
+			foreach (var pos in _notifyReplicated.Keys)
+				if (pos >= message.SubscriptionPosition)
+					_notifyReplicated.Remove(pos, out _);
+
+			foreach (var pos in _notifyIndexed.Keys)
+				if (pos >= message.SubscriptionPosition)
+					_notifyIndexed.Remove(pos, out _);
+		}
 
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) {
 			Interlocked.Exchange(ref _replicatedPosition, message.LogPosition);

@@ -21,6 +21,7 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.RequestCompleted>,
 		IHandle<StorageMessage.AlreadyCommitted>,
 		IHandle<StorageMessage.PrepareAck>,
+		IHandle<ReplicationMessage.ReplicaSubscribed>,
 		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 		IHandle<ReplicationTrackingMessage.IndexedTo>,
 		IHandle<StorageMessage.CommitIndexed>,
@@ -198,7 +199,8 @@ namespace EventStore.Core.Services.RequestManager {
 			if (!_currentRequests.Remove(message.CorrelationId))
 				throw new InvalidOperationException("Should never complete request twice.");
 		}
-		
+
+		public void Handle(ReplicationMessage.ReplicaSubscribed message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 
@@ -214,6 +216,6 @@ namespace EventStore.Core.Services.RequestManager {
 				var x = manager as IHandle<T>;
 				x?.Handle(message);
 			}
-		}		
+		}
 	}
 }
