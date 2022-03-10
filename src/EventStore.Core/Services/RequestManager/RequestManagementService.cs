@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.RequestManager {
 		private Stopwatch _requestServiceStopwatch = Stopwatch.StartNew();
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
-		private readonly CommitSource _commitSource;
+		private CommitSource _commitSource;
 		private readonly bool _explicitTransactionsSupported;
 		private VNodeState _nodeState;
 
@@ -175,12 +175,19 @@ namespace EventStore.Core.Services.RequestManager {
 
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
-
+			if (_nodeState != message.State) {
+				//state change == epoch change and the commit source is only valid for the current epoch
+				var commitSource = new CommitSource();
+				var previousEpoch = Interlocked.Exchange(ref _commitSource, commitSource);
+				//todo: do we need to do anything with the old epoch or will clearing _currentRequests cover it?
+			}
 			_nodeState = message.State;
 
-			if (_nodeState != VNodeState.Leader && _currentRequests.Any()) {
-				foreach (var request in _currentRequests.Values) {
-					request.CancelRequest();
+			if (_nodeState != VNodeState.Leader) {
+				if (_currentRequests.Any()) {
+					foreach (var request in _currentRequests.Values) {
+						request.CancelRequest();
+					}
 				}
 			}
 		}
