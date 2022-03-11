@@ -19,12 +19,22 @@ namespace EventStore.Common.Utils {
 
 		public static string GetHost(this EndPoint endpoint) =>
 			endpoint switch {
+				IPWithClusterDnsEndPoint ipWithClusterDns => ipWithClusterDns.Address.ToString(),
 				IPEndPoint ip => ip.Address.ToString(),
 				DnsEndPoint dns => dns.Host,
 				_ => throw new ArgumentOutOfRangeException(nameof(endpoint), endpoint?.GetType(),
 					"An invalid endpoint has been provided")
 			};
-		
+
+		public static string[] GetOtherNames(this EndPoint endpoint) =>
+			endpoint switch {
+				IPWithClusterDnsEndPoint ipWithClusterDns => new [] { ipWithClusterDns.ClusterDnsName },
+				IPEndPoint => null,
+				DnsEndPoint => null,
+				_ => throw new ArgumentOutOfRangeException(nameof(endpoint), endpoint?.GetType(),
+					"An invalid endpoint has been provided")
+			};
+
 		public static int GetPort(this EndPoint endpoint) =>
 			endpoint switch {
 				IPEndPoint ip => ip.Port,
@@ -41,6 +51,20 @@ namespace EventStore.Common.Utils {
 			if (ipaddress == null)
 				throw new Exception($"Could not get an IPv4 address for host '{endpoint.GetHost()}'");
 			return new IPEndPoint(ipaddress, endpoint.GetPort());
+		}
+
+		public static EndPoint WithClusterDns(this DnsEndPoint dnsEndPoint, string clusterDns) {
+			if (clusterDns != null && IPAddress.TryParse(dnsEndPoint.Host, out var ip))
+				return new IPWithClusterDnsEndPoint(ip, clusterDns, dnsEndPoint.Port);
+
+			return dnsEndPoint;
+		}
+
+		public static EndPoint WithClusterDns(this IPEndPoint ipEndPoint, string clusterDns) {
+			if (clusterDns != null)
+				return new IPWithClusterDnsEndPoint(ipEndPoint.Address, clusterDns, ipEndPoint.Port);
+
+			return ipEndPoint;
 		}
 
 		public static DnsEndPoint ToDnsEndPoint(this IPEndPoint ipEndPoint) {

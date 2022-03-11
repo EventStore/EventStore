@@ -166,6 +166,7 @@ namespace EventStore.Core.Services.Replication {
 				_tcpDispatcher,
 				_publisher,
 				leaderEndPoint.GetHost(),
+				leaderEndPoint.GetOtherNames(),
 				leaderEndPoint,
 				_connector,
 				_useSsl,

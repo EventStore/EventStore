@@ -36,7 +36,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly TimeSpan _heartbeatInterval;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly IAuthenticationProvider _authProvider;
-		private readonly Func<X509Certificate> _certificateSelector;
+		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate2Collection> _intermediatesSelector;
 		private readonly CertificateDelegates.ClientCertificateValidator _sslClientCertValidator;
 		private readonly int _connectionPendingSendBytesThreshold;
@@ -53,7 +53,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
 			AuthorizationGateway authorizationGateway,
-			Func<X509Certificate> certificateSelector,
+			Func<X509Certificate2> certificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
 			CertificateDelegates.ClientCertificateValidator sslClientCertValidator,
 			int connectionPendingSendBytesThreshold,
@@ -72,7 +72,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			TimeSpan heartbeatTimeout,
 			IAuthenticationProvider authProvider,
 			AuthorizationGateway authorizationGateway,
-			Func<X509Certificate> certificateSelector,
+			Func<X509Certificate2> certificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
 			CertificateDelegates.ClientCertificateValidator sslClientCertValidator,
 			int connectionPendingSendBytesThreshold,

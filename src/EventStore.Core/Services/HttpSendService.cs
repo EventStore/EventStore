@@ -39,7 +39,7 @@ namespace EventStore.Core.Services {
 				SslOptions = {
 					CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
 					RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
-						var (isValid, error) = externServerCertValidator(certificate, chain, errors);
+						var (isValid, error) = externServerCertValidator(certificate, chain, errors, _leaderInfo?.HttpEndPoint.GetOtherNames());
 						if (!isValid && error != null) {
 							Log.Error("Server certificate validation error: {e}", error);
 						}

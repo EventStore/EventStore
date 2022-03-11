@@ -49,6 +49,7 @@ namespace EventStore.Core {
 		private bool _ready;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly MultiQueuedHandler _httpMessageHandler;
+		private readonly string _clusterDns;
 
 		public ClusterVNodeStartup(ISubsystem[] subsystems,
 			IPublisher mainQueue,
@@ -61,7 +62,8 @@ namespace EventStore.Core {
 			IReadIndex<TStreamId> readIndex,
 			int maxAppendSize,
 			TimeSpan writeTimeout,
-			KestrelHttpService httpService) {
+			KestrelHttpService httpService,
+			string clusterDns) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
 			}
@@ -106,6 +108,7 @@ namespace EventStore.Core {
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_httpService = httpService;
+			_clusterDns = clusterDns;
 
 			_statusCheck = new StatusCheck(this);
 		}
@@ -161,8 +164,8 @@ namespace EventStore.Core {
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
-						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider))
-						.AddSingleton(new Elections(_mainQueue, _authorizationProvider))
+						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider, _clusterDns))
+						.AddSingleton(new Elections(_mainQueue, _authorizationProvider, _clusterDns))
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Monitoring(_monitoringQueue))
 						.AddSingleton<ServerFeatures>()
