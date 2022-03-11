@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
@@ -17,16 +18,18 @@ namespace EventStore.Core.Cluster {
 		
 		private readonly GrpcChannel _channel;
 		private readonly IPublisher _bus;
+		private readonly string _clusterDns;
 		public bool Disposed { get; private set; }
 
-		public EventStoreClusterClient(string uriScheme, EndPoint endpoint, IPublisher bus, CertificateDelegates.ServerCertificateValidator serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
+		public EventStoreClusterClient(string uriScheme, EndPoint endpoint, string clusterDns, IPublisher bus, CertificateDelegates.ServerCertificateValidator serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
 			HttpMessageHandler httpMessageHandler = null;
-			if (address.Scheme == Uri.UriSchemeHttps){
+			_clusterDns = clusterDns;
+			if (uriScheme == Uri.UriSchemeHttps){
 				var socketsHttpHandler = new SocketsHttpHandler {
 					SslOptions = {
 						CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
 						RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => {
-							var (isValid, error) = serverCertValidator(certificate, chain, errors);
+							var (isValid, error) = serverCertValidator(certificate, chain, errors, endpoint.GetOtherNames());
 							if (!isValid && error != null) {
 								Log.Error("Server certificate validation error: {e}", error);
 							}
@@ -41,14 +44,15 @@ namespace EventStore.Core.Cluster {
 				};
 
 				httpMessageHandler = socketsHttpHandler;
-			} else if (address.Scheme == Uri.UriSchemeHttp) {
+			} else if (uriScheme == Uri.UriSchemeHttp) {
 				httpMessageHandler = new SocketsHttpHandler();
 			}
 
+			var address = new UriBuilder(uriScheme, endpoint.GetHost(), endpoint.GetPort()).Uri;
 			_channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions {
 				HttpClient = new HttpClient(httpMessageHandler) {
 					Timeout = Timeout.InfiniteTimeSpan,
-					DefaultRequestVersion = new Version(2, 0),
+					DefaultRequestVersion = new Version(2, 0)
 				},
 				LoggerFactory = new SerilogLoggerFactory()
 			});

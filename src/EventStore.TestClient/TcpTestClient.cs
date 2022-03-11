@@ -103,9 +103,10 @@ namespace EventStore.TestClient {
 				connection = _connector.ConnectSslTo(
 					Guid.NewGuid(),
 					endpoint.GetHost(),
+					endpoint.GetOtherNames(),
 					endpoint.ResolveDnsToIPAddress(),
 					TcpConnectionManager.ConnectionTimeout,
-					(cert, chain, err) => (err == SslPolicyErrors.None || !_validateServer, err.ToString()),
+					(_, _, err, _) => (err == SslPolicyErrors.None || !_validateServer, err.ToString()),
 					() => null,
 					onConnectionEstablished,
 					onConnectionFailed,

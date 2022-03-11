@@ -535,10 +535,10 @@ namespace EventStore.Core {
 			_trustedRootCertsSelector = () => _trustedRootCerts;
 			_intermediateCertsSelector = () => _intermediateCerts == null ? null : new X509Certificate2Collection(_intermediateCerts);
 
-			_internalServerCertificateValidator = (cert, chain, errors) =>  ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
+			_internalServerCertificateValidator = (cert, chain, errors, otherNames) =>  ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
 			_externalClientCertificateValidator = delegate { return (true, null); };
-			_externalServerCertificateValidator = (cert, chain, errors) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
+			_externalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 
 			var forwardingProxy = new MessageForwardingProxy();
 			if (options.Application.EnableHistograms) {
@@ -572,9 +572,9 @@ namespace EventStore.Core {
 			_eventStoreClusterClientCache = new EventStoreClusterClientCache(_mainQueue,
 				(endpoint, publisher) =>
 					new EventStoreClusterClient(
-						new UriBuilder(options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps,
-							endpoint.GetHost(), endpoint.GetPort()).Uri, publisher, _internalServerCertificateValidator,
-						_certificateSelector));
+						options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps,
+						endpoint, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
+						publisher, _internalServerCertificateValidator, _certificateSelector));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -1346,7 +1346,7 @@ namespace EventStore.Core {
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
-				_httpService);
+				_httpService, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 		}
@@ -1458,17 +1458,19 @@ namespace EventStore.Core {
 		}
 
 		public static ValueTuple<bool, string> ValidateServerCertificate(X509Certificate certificate,
-			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector) {
-			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "server");
+			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector,
+			Func<X509Certificate2Collection> trustedRootCertsSelector, string[] otherNames) {
+			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "server", otherNames);
 		}
 
 		public static ValueTuple<bool, string> ValidateClientCertificate(X509Certificate certificate,
 			X509Chain chain, SslPolicyErrors sslPolicyErrors, Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector) {
-			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client");
+			return ValidateCertificate(certificate, chain, sslPolicyErrors, intermediateCertsSelector, trustedRootCertsSelector, "client", null);
 		}
 
 		private static ValueTuple<bool, string> ValidateCertificate(X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors,
-			Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector, string certificateOrigin) {
+			Func<X509Certificate2Collection> intermediateCertsSelector, Func<X509Certificate2Collection> trustedRootCertsSelector,
+			string certificateOrigin, string[] otherNames) {
 			if (certificate == null)
 				return (false, $"No certificate was provided by the {certificateOrigin}");
 
@@ -1489,6 +1491,12 @@ namespace EventStore.Core {
 				sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors; //clear the RemoteCertificateChainErrors flag
 			else
 				sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors; //set the RemoteCertificateChainErrors flag
+
+			if (otherNames != null && (sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0) {
+				if (otherNames.Any(certificate.MatchesName)) { // if we have a match,
+					sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNameMismatch; // clear the RemoteCertificateNameMismatch flag
+				}
+			}
 
 			if (sslPolicyErrors != SslPolicyErrors.None) {
 				return (false, $"The certificate ({certificate.Subject}) provided by the {certificateOrigin} failed validation with the following error(s): {sslPolicyErrors.ToString()} ({chainStatus})");

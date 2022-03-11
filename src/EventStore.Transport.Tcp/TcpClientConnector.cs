@@ -48,6 +48,7 @@ namespace EventStore.Transport.Tcp {
 
 		public ITcpConnection ConnectSslTo(Guid connectionId,
 			string targetHost,
+			string[] otherNames,
 			IPEndPoint remoteEndPoint,
 			TimeSpan connectionTimeout,
 			CertificateDelegates.ServerCertificateValidator sslServerCertValidator,
@@ -56,7 +57,7 @@ namespace EventStore.Transport.Tcp {
 			Action<ITcpConnection, SocketError> onConnectionFailed = null,
 			bool verbose = true) {
 			Ensure.NotNull(remoteEndPoint, "remoteEndPoint");
-			return TcpConnectionSsl.CreateConnectingConnection(connectionId, targetHost, remoteEndPoint, sslServerCertValidator,
+			return TcpConnectionSsl.CreateConnectingConnection(connectionId, targetHost, otherNames, remoteEndPoint, sslServerCertValidator,
 				clientCertificatesSelector, this, connectionTimeout, onConnectionEstablished, onConnectionFailed, verbose);
 		}
 

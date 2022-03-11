@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 							new AnonymousHttpAuthenticationProvider(),
 						}, new TestAuthorizationProvider(),
 						new FakeReadIndex<LogFormat.V2, string>(_ => false, new LogV2SystemStreams()),
-						1024 * 1024, _timeout, _service)));
+						1024 * 1024, _timeout, _service, null)));
 			_httpMessageHandler = _server.CreateHandler();
 			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);
 			

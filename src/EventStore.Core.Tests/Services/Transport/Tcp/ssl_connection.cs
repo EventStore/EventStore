@@ -68,6 +68,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
 				serverEndPoint.GetHost(),
+				null,
 				serverEndPoint,
 				delegate { return (true, null); },
 				null,

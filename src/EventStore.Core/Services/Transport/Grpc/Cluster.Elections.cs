@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
-using EventStore.Client;
 using EventStore.Cluster;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 using ClusterInfo = EventStore.Core.Cluster.ClusterInfo;
+using Empty = EventStore.Client.Empty;
 
 namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 	partial class Elections {
 		private static readonly Empty EmptyResult = new Empty();
 		private readonly IPublisher _bus;
 		private readonly IAuthorizationProvider _authorizationProvider;
+		private readonly string _clusterDns;
 		private static readonly Operation ViewChangeOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.ViewChange);
 		private static readonly Operation ViewChangeProofOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.ViewChangeProof);
 		private static readonly Operation PrepareOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.Prepare);
@@ -24,9 +26,10 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 		private static readonly Operation MasterIsResigningOkOperation = new Operation(Plugins.Authorization.Operations.Node.Elections.LeaderIsResigningOk);
 
 
-		public Elections(IPublisher bus, IAuthorizationProvider authorizationProvider) {
+		public Elections(IPublisher bus, IAuthorizationProvider authorizationProvider, string clusterDns) {
 			_bus = bus;
 			_authorizationProvider = authorizationProvider ?? throw new ArgumentNullException(nameof(authorizationProvider));
+			_clusterDns = clusterDns;
 		}
 		
 		public override async Task<Empty> ViewChange(ViewChangeRequest request, ServerCallContext context) {
@@ -36,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			}
 			_bus.Publish(new ElectionMessage.ViewChange(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
 				request.AttemptedView));
 			return EmptyResult;
 		}
@@ -48,7 +51,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			}
 			_bus.Publish(new ElectionMessage.ViewChangeProof(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
 				request.InstalledView));
 			return EmptyResult;
 		}
@@ -60,7 +63,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			}
 			_bus.Publish(new ElectionMessage.Prepare(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
 				request.View));
 			return EmptyResult;
 		}
@@ -73,7 +76,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			_bus.Publish(new ElectionMessage.PrepareOk(
 				request.View,
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
 				request.EpochNumber,
 				request.EpochPosition,
 				Uuid.FromDto(request.EpochId).ToGuid(),
@@ -82,7 +85,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 				request.WriterCheckpoint,
 				request.ChaserCheckpoint,
 				request.NodePriority,
-				ClusterInfo.FromGrpcClusterInfo(request.ClusterInfo)));
+				ClusterInfo.FromGrpcClusterInfo(request.ClusterInfo, _clusterDns)));
 			return EmptyResult;
 		}
 				
@@ -93,9 +96,9 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			}
 			_bus.Publish(new ElectionMessage.Proposal(
 				Uuid.FromDto(request.ServerId).ToGuid(),
-				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port),
+				new DnsEndPoint(request.ServerHttp.Address, (int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
-				new DnsEndPoint(request.LeaderHttp.Address, (int)request.LeaderHttp.Port),
+				new DnsEndPoint(request.LeaderHttp.Address, (int)request.LeaderHttp.Port).WithClusterDns(_clusterDns),
 				request.View,
 				request.EpochNumber,
 				request.EpochPosition,
@@ -116,10 +119,10 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			_bus.Publish(new ElectionMessage.Accept(
 				Uuid.FromDto(request.ServerId).ToGuid(),
 				new DnsEndPoint(request.ServerHttp.Address,
-					(int)request.ServerHttp.Port),
+					(int)request.ServerHttp.Port).WithClusterDns(_clusterDns),
 				Uuid.FromDto(request.LeaderId).ToGuid(),
 				new DnsEndPoint(request.LeaderHttp.Address,
-					(int)request.LeaderHttp.Port),
+					(int)request.LeaderHttp.Port).WithClusterDns(_clusterDns),
 				request.View));
 			return EmptyResult;
 		}
@@ -132,7 +135,7 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			_bus.Publish(new ElectionMessage.LeaderIsResigning(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
 				new DnsEndPoint(request.LeaderHttp.Address,
-					(int)request.LeaderHttp.Port)));
+					(int)request.LeaderHttp.Port).WithClusterDns(_clusterDns)));
 			return EmptyResult;
 		}
 		
@@ -144,10 +147,10 @@ namespace EventStore.Core.Services.Transport.Grpc.Cluster {
 			_bus.Publish(new ElectionMessage.LeaderIsResigningOk(
 				Uuid.FromDto(request.LeaderId).ToGuid(),
 				new DnsEndPoint(request.LeaderHttp.Address,
-					(int)request.LeaderHttp.Port),
+					(int)request.LeaderHttp.Port).WithClusterDns(_clusterDns),
 				Uuid.FromDto(request.ServerId).ToGuid(),
 				new DnsEndPoint(request.ServerHttp.Address,
-					(int)request.ServerHttp.Port)));
+					(int)request.ServerHttp.Port).WithClusterDns(_clusterDns)));
 			return EmptyResult;
 		}
 	}
