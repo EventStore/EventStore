@@ -103,11 +103,13 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected abstract Message ClientFailMsg { get; }
 		public void Start() {			
 			Publisher.Publish(WriteRequestMsg);
-			_phaseCancelTokenSource = new CancellationTokenSource(Timeout);
-			var delay = Task.Delay(Timeout, _phaseCancelTokenSource.Token);
-			try {
-				delay.ContinueWith((_) => CancelRequest(), TaskContinuationOptions.NotOnCanceled);
-			} finally { delay.Dispose(); }
+			_phaseCancelTokenSource = new CancellationTokenSource(Timeout);			
+			Task
+				.Delay(Timeout, _phaseCancelTokenSource.Token)
+				.ContinueWith((delay) => {
+					if (delay.IsCanceled) { delay.Dispose(); }
+					if (delay.IsCompleted) { CancelRequest(); }
+				});			
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
@@ -130,10 +132,12 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allPreparesWritten) { AllPreparesWritten(); }
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			var delay = Task.Delay(Timeout, _phaseCancelTokenSource.Token);
-			try {
-				delay.ContinueWith((_) => CancelRequest(), TaskContinuationOptions.NotOnCanceled);
-			} finally { delay.Dispose(); }
+			Task
+				.Delay(Timeout, _phaseCancelTokenSource.Token)
+				.ContinueWith((delay) => {
+					if (delay.IsCanceled) { delay.Dispose(); }
+					if (delay.IsCompleted) { CancelRequest(); }
+				});
 		}
 		public virtual void Handle(StorageMessage.CommitIndexed message) {
 			if (Interlocked.Read(ref _complete) == 1 || _commitReceived) { return; }
@@ -150,10 +154,12 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			LastEventNumber = message.LastEventNumber;
 			CommitPosition = message.LogPosition;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			var delay = Task.Delay(Timeout, _phaseCancelTokenSource.Token);
-			try {
-				delay.ContinueWith((_) => CancelRequest(), TaskContinuationOptions.NotOnCanceled);
-			} finally { delay.Dispose(); }
+			Task
+				.Delay(Timeout, _phaseCancelTokenSource.Token)
+				.ContinueWith((delay) => {
+					if (delay.IsCanceled) { delay.Dispose(); }
+					if (delay.IsCompleted) { CancelRequest(); }
+				});
 		}
 		protected virtual void AllPreparesWritten() { }
 
