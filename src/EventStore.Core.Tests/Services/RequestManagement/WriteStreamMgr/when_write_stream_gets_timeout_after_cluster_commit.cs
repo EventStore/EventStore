@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 		}
 
 		protected override Message When() {			
-			Manager.PhaseTimeout(2);
+			Manager.CancelRequest();
 			return new TestMessage();
 		}
 

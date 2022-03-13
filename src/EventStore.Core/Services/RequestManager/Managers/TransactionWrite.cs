@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_transactionId = transactionId;
 			Result = OperationResult.PrepareTimeout; // we need an unknown here
 		}
-		
+
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionData(
 					InternalCorrId,
@@ -47,9 +47,15 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		protected override void AllEventsWritten() {
 			if (!Registered) {
-				var phase = Interlocked.Increment(ref Phase);
-				CommitSource.NotifyOnReplicated(LastEventPosition, Committed);
-				//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+				var tokenSource = new CancellationTokenSource(Timeout);
+				var cancellationToken = tokenSource.Token;
+				try {
+					CommitSource
+						.WaitForReplication(LastEventPosition, cancellationToken)
+						.ContinueWith((_) => Committed());
+				} catch {
+					CancelRequest();
+				} finally { tokenSource.Dispose(); }
 				Registered = true;
 			}
 		}

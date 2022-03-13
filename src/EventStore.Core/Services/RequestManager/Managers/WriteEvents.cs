@@ -35,7 +35,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_streamId = streamId;
 			_events = events;
 			_cancellationToken = cancellationToken;
-			Result = OperationResult.CommitTimeout; // we need an unknown here
+			Result = OperationResult.CommitTimeout; // we need an unknown OperationResult type here
 		}
 
 		protected override Message WriteRequestMsg =>

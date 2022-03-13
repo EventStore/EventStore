@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 
@@ -8,25 +10,25 @@ namespace EventStore.Core.Services.RequestManager {
 	public class CommitSource :
 	IHandle<ReplicationTrackingMessage.IndexedTo>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo> {
-		private LogNotificationTracker _indexTracker = new LogNotificationTracker(false);
-		private LogNotificationTracker _replicatedTracker = new LogNotificationTracker(false);
-		private LogNotificationTracker _delayTracker = new LogNotificationTracker(true);
+		private LogNotificationTracker _indexTracker = new LogNotificationTracker("IndexedTracker");
+		private LogNotificationTracker _replicatedTracker = new LogNotificationTracker("ReplicatedTracker");
 
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo @event) {
-			_replicatedTracker.TryEnqueLogPostion(@event.LogPosition);
+			_replicatedTracker.UpdateLogPosition(@event.LogPosition);
 		}
 		public void Handle(ReplicationTrackingMessage.IndexedTo @event) {
-			_indexTracker.TryEnqueLogPostion(@event.LogPosition);
+			_indexTracker.UpdateLogPosition(@event.LogPosition);
+		}
+		public Task WaitForReplication(long position, CancellationToken token) {
+			return new Task(async () => {
+				await _replicatedTracker.Waitfor(position).ConfigureAwait(false);
+			}, token);
+		}
+		public Task WaitForIndexing(long position, CancellationToken token) {
+			return new Task(async () => {
+				await _indexTracker.Waitfor(position).ConfigureAwait(false);
+			}, token);
 		}
 
-		public void NotifyOnReplicated(long position, Action target) {
-			_replicatedTracker.Register(position, target);
-		}
-		public void NotifyOnIndexed(long position, Action target) {
-			_indexTracker.Register(position, target);
-		}
-		public void NotifyAfter(TimeSpan delay, Action target) {
-			_delayTracker.Register(delay, target);
-		}
 	}
 }

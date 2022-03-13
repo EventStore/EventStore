@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.TransactionMgr {
 
 		protected override Message When() {
 			Thread.Yield();
-			Manager.PhaseTimeout(2);
+			Manager.CancelRequest();
 			return new TestMessage();
 		}
 

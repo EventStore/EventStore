@@ -7,7 +7,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class TransactionStart : RequestManagerBase {
 		private readonly string _streamId;
-		
+
 		public TransactionStart(
 					IPublisher publisher,
 					long startOffset,
@@ -31,7 +31,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_streamId = streamId;
 			Result = OperationResult.PrepareTimeout; // we need an unknown here
 		}
-		
+
 		protected override Message WriteRequestMsg =>
 			new StorageMessage.WriteTransactionStart(
 					InternalCorrId,
@@ -41,10 +41,16 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					DateTime.UtcNow + Timeout);
 
 		protected override void AllEventsWritten() {
-			if (!Registered) {
-				var phase = Interlocked.Increment(ref Phase);
-				CommitSource.NotifyOnReplicated(LastEventPosition, Committed);
-				//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+			if (!Registered) {				
+				var tokenSource = new CancellationTokenSource(Timeout);
+				var cancellationToken = tokenSource.Token;
+				try {
+					CommitSource
+						.WaitForReplication(LastEventPosition, cancellationToken)
+						.ContinueWith((_) => Committed());				
+				} catch {
+					CancelRequest();
+				} finally { tokenSource.Dispose(); }
 				Registered = true;
 			}
 		}

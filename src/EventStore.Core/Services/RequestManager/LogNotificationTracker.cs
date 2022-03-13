@@ -7,93 +7,104 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.RequestManager {
-	public class LogNotificationTracker {
-		//todo: replace with custom sorted list for performance as time alows
-		private readonly SortedList<long, List<Action>> _registeredActions = new SortedList<long, List<Action>>();
-		private readonly bool _isTimeLog;
-		private long _logPosition;
-		private Channel<long> _positionQueue;
-		private object _registerLock = new object();
-		ManualResetEventSlim _cancelNotifyAt = new ManualResetEventSlim();
-		Stopwatch _mainStopwatch = Stopwatch.StartNew();
-
-		public LogNotificationTracker(bool isTimeLog) {
-			var discardingQueueOptions = new BoundedChannelOptions(1);
-			discardingQueueOptions.AllowSynchronousContinuations = false;
-			discardingQueueOptions.FullMode = BoundedChannelFullMode.DropOldest;
-			discardingQueueOptions.SingleReader = true;
-			_positionQueue = Channel.CreateBounded<long>(discardingQueueOptions);
-			Task.Run(() => Notify());
-			_isTimeLog = isTimeLog;
+	public class LogNotificationTracker : IDisposable {
+		//todo: allocate in a pool and reuse
+		public struct ActionNode {
+			public readonly long Position;
+			public readonly TaskCompletionSource WaitTask;
+			public ActionNode(long position) {
+				Position = position;
+				WaitTask = new TaskCompletionSource();
+			}
 		}
-		public bool TryEnqueLogPostion(long logPosition) => _positionQueue.Writer.TryWrite(logPosition);
-		private async void Notify() {
-			while (true) {
-				//We have a dedicated thread, it's faster to keep using it, (n.b. it's just a request to the scheduler) 
-#pragma warning disable CAC001 // ConfigureAwaitChecker
-				Notify(await _positionQueue.Reader.ReadAsync());
-#pragma warning restore CAC001 // ConfigureAwaitChecker
+		private readonly LinkedList<ActionNode> _registeredActions = new LinkedList<ActionNode>();
+		private long _logPosition;
+		private long _nextLogPosition;
+		private readonly Thread _thread;
+		private object _registerLock = new object();
+		private readonly AutoResetEvent _positionUpdated = new AutoResetEvent(true);
+		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(false);
+		private readonly string _name;
+		private CancellationTokenSource _cancelSource;
+		private CancellationToken _canceled;
+		private bool _disposedValue;
+
+		public LogNotificationTracker(string name) {
+			_cancelSource = new CancellationTokenSource();
+			_canceled = _cancelSource.Token;
+			_thread = new Thread(Notify) { IsBackground = true, Name = name };
+			_thread.Start();
+			_name = name;
+		}
+		public void UpdateLogPosition(long position) {
+			if (Interlocked.Read(ref _nextLogPosition) <= position) {
+				Interlocked.Exchange(ref _nextLogPosition, position);
+				_positionUpdated.Set();
+			}
+		}
+		private void Notify() {
+			while (!_canceled.IsCancellationRequested) {
+				Notify(Interlocked.Read(ref _nextLogPosition));
+				_positionUpdated.WaitOne(TimeSpan.FromMilliseconds(50));
 			}
 		}
 		private void Notify(long logPosition) {
+			if (Interlocked.Read(ref _logPosition) >= logPosition) { return; }
 			lock (_registerLock) {
 				_logPosition = logPosition;
-				while (!_registeredActions.Keys.IsEmpty() && _registeredActions.Keys[0] <= logPosition) {
-					if (_registeredActions.Remove(_registeredActions.Keys[0], out var targets)) {
-						foreach (Action target in targets) {
-							if (target != null) {
-								//n.b. targets should enque messages only
-								try {
-									target();
-								} catch {
-									//ignore									
-								}
-							}
-						}
-					}
-				}
-				if (_isTimeLog && !_registeredActions.Keys.IsEmpty()) {
-					_cancelNotifyAt = new ManualResetEventSlim();
-					Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
+				var node = _registeredActions.First;
+				while (node != null && node.Value.Position <= logPosition && !_canceled.IsCancellationRequested) {
+					var next = node.Next;
+					node.Value.WaitTask.TrySetResult();
+					_registeredActions.Remove(node);
+					node = next;
 				}
 			}
+			_stopped.Set();
 		}
-		private void NotifyAt(long timePosition, ManualResetEventSlim cancel) {
-			if (!_isTimeLog) { return; }
-			var now = _mainStopwatch.ElapsedMilliseconds;
-			var delay = timePosition - now;
-			if (delay > 0) {
-				cancel.Wait((int)delay);
-				if (cancel.IsSet) { return; }
-			}
-			Notify(timePosition);
-		}
-		public void Register(TimeSpan delay, Action target) {
-			if (!_isTimeLog) { throw new InvalidOperationException("Timespan Delays can only be registered on TimeLogs"); }
-			
-			var now = _mainStopwatch.ElapsedMilliseconds;
-			var position = now + (long)delay.TotalMilliseconds;
-			Register(position, target);
-		}
-		public void Register(long position, Action target) {
+
+		public Task Waitfor(long position) {
 			lock (_registerLock) {
-				if (_logPosition >= position) {
-					target();
-					return;
+				
+				if (_logPosition >= position) {					
+					return Task.CompletedTask;
 				};
-				if (!_registeredActions.TryGetValue(position, out var actionList)) {
-					actionList = new List<Action> { target };
-					_registeredActions.TryAdd(position, actionList);
-					if (_isTimeLog && !_registeredActions.Keys.IsEmpty() && position == _registeredActions.Keys[0]) {
-						_cancelNotifyAt.Set();
-						_cancelNotifyAt = new ManualResetEventSlim();
-						Task.Run(() => NotifyAt(_registeredActions.Keys[0], _cancelNotifyAt));
+				var node = new ActionNode(position);
+				if (_registeredActions.IsEmpty()|| _registeredActions.First.Value.Position >= position) {
+					_registeredActions.AddFirst(node);
+				} 
+				else if (_registeredActions.Last.Value.Position <= position) {
+					_registeredActions.AddLast(node);
+				} 
+				else {
+					//todo: better search needed, but this should be rare
+					var root = _registeredActions.First;
+					while (root.Value.Position <= position) {
+						root = root.Next;
 					}
-				} else {
-					actionList.Add(target);
+					_registeredActions.AddAfter(root, node);
 				}
+				return node.WaitTask.Task;
 			}
 		}
 
+		protected virtual void Dispose(bool disposing) {
+			if (!_disposedValue) {
+				if (disposing) {
+					_cancelSource.Cancel();
+					_cancelSource.Dispose();
+					if (_stopped.Wait(TimeSpan.FromMilliseconds(250))) {
+						_registeredActions.Clear();
+					}
+				}
+				// TODO: free unmanaged resources (unmanaged objects) and override finalizer
+				// TODO: set large fields to null
+				_disposedValue = true;
+			}
+		}
+		public void Dispose() {
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
 	}
 }

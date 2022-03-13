@@ -12,6 +12,7 @@ using EventStore.Core.Services.Histograms;
 using System.Linq;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.RequestManager {
 	public class RequestManagementService :
@@ -52,7 +53,7 @@ namespace EventStore.Core.Services.RequestManager {
 			_commitTimeout = commitTimeout;
 			_commitSource = new CommitSource();
 			_explicitTransactionsSupported = explicitTransactionsSupported;
-			_commitSource.NotifyAfter(TimeSpan.FromMilliseconds(100), Timeout);
+			Task.Delay(TimeSpan.FromMilliseconds(100)).ContinueWith((_) => Timeout());
 		}
 
 		public void Handle(ClientMessage.WriteEvents message) {
@@ -206,15 +207,16 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 		}
 		private void Timeout() {
+			//todo: review approach here
 			var currentTime = _requestServiceStopwatch.ElapsedMilliseconds;
 			var activeRequests = _activeRequests;
 			_activeRequests = new ConcurrentQueue<RequestManagerBase>();
 			while (activeRequests.TryDequeue(out var request)) {
-				if (request.Complete != 1 && !request.PhaseTimeout(currentTime)) {					;
+				if (request.Complete != 1) {
 					_activeRequests.Enqueue(request);
 				}
 			}
-			_commitSource.NotifyAfter( TimeSpan.FromMilliseconds(100), Timeout);
+			Task.Delay(TimeSpan.FromMilliseconds(100)).ContinueWith((_) => Timeout());
 		}
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);

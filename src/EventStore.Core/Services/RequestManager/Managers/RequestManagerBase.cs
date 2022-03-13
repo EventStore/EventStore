@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -24,7 +25,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected readonly IPublisher Publisher;
 		public readonly long StartOffset;
 		protected TimeSpan Timeout;		
-		protected long Phase;
+		//protected long Phase;
 
 		protected readonly IEnvelope WriteReplyEnvelope;
 
@@ -54,6 +55,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		private bool _commitReceived;
 		private readonly int _prepareCount;
+		private CancellationTokenSource _phaseCancelTokenSource;
 
 
 		protected RequestManagerBase(
@@ -99,15 +101,21 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		protected abstract Message WriteRequestMsg { get; }
 		protected abstract Message ClientSuccessMsg { get; }
 		protected abstract Message ClientFailMsg { get; }
-		public void Start() {
-			Phase = 0;
+		public void Start() {			
 			Publisher.Publish(WriteRequestMsg);
-			//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(0));
+			_phaseCancelTokenSource = new CancellationTokenSource(Timeout);
+			var delay = Task.Delay(Timeout, _phaseCancelTokenSource.Token);
+			try {
+				delay.ContinueWith((_) => CancelRequest(), TaskContinuationOptions.NotOnCanceled);
+			} finally { delay.Dispose(); }
 		}
 
 		public void Handle(StorageMessage.PrepareAck message) {
 			if (Interlocked.Read(ref _complete) == 1 || _allPreparesWritten) { return; }
-			var phase = Interlocked.Increment(ref Phase);
+			_phaseCancelTokenSource.Cancel();
+			_phaseCancelTokenSource.Dispose();
+			_phaseCancelTokenSource = new CancellationTokenSource(Timeout);
+
 			if (message.Flags.HasAnyOf(PrepareFlags.TransactionBegin)) {
 				TransactionId = message.LogPosition;
 			}
@@ -122,11 +130,17 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			if (_allPreparesWritten) { AllPreparesWritten(); }
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+			var delay = Task.Delay(Timeout, _phaseCancelTokenSource.Token);
+			try {
+				delay.ContinueWith((_) => CancelRequest(), TaskContinuationOptions.NotOnCanceled);
+			} finally { delay.Dispose(); }
 		}
 		public virtual void Handle(StorageMessage.CommitIndexed message) {
 			if (Interlocked.Read(ref _complete) == 1 || _commitReceived) { return; }
-			var phase = Interlocked.Increment(ref Phase);
+			_phaseCancelTokenSource.Cancel();
+			_phaseCancelTokenSource.Dispose();
+			_phaseCancelTokenSource = new CancellationTokenSource(Timeout);
+
 			_commitReceived = true;
 			_allEventsWritten = _commitReceived && _allPreparesWritten;
 			if (message.LogPosition > LastEventPosition) {
@@ -136,15 +150,28 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			LastEventNumber = message.LastEventNumber;
 			CommitPosition = message.LogPosition;
 			if (_allEventsWritten) { AllEventsWritten(); }
-			//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+			var delay = Task.Delay(Timeout, _phaseCancelTokenSource.Token);
+			try {
+				delay.ContinueWith((_) => CancelRequest(), TaskContinuationOptions.NotOnCanceled);
+			} finally { delay.Dispose(); }
 		}
 		protected virtual void AllPreparesWritten() { }
 
 		protected virtual void AllEventsWritten() {			
 			if (!Registered) {
-				var phase = Interlocked.Increment(ref Phase);
-				CommitSource.NotifyOnIndexed(LastEventPosition, Committed);
-				//CommitSource.NotifyAfter(Timeout, () => PhaseTimeout(phase));
+				_phaseCancelTokenSource.Cancel();
+				_phaseCancelTokenSource.Dispose();
+				_phaseCancelTokenSource = new CancellationTokenSource(Timeout);
+
+				var tokenSource = new CancellationTokenSource(Timeout);
+				var cancellationToken = tokenSource.Token;
+				try {
+					CommitSource
+						.WaitForIndexing(LastEventPosition, cancellationToken)
+						.ContinueWith((_) => Committed());				
+				} catch {
+					CancelRequest();
+				} finally { tokenSource.Dispose(); }
 				Registered = true;
 			}			
 		}
@@ -155,16 +182,9 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
 		}
-		public bool PhaseTimeout(long currentOffset) {
-			if (Interlocked.Read(ref _complete) == 1) { return false; }
-			//toto: simplify 
-			if ((StartOffset + ((Phase + 1) * Timeout.TotalMilliseconds)) < currentOffset) {
-				CancelRequest();
-				return true;
-			}
-			return false;
-		}
+		
 		public void CancelRequest() {
+			if (Interlocked.Read(ref _complete) == 1) { return; }
 			var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
 			var msg = !_allPreparesWritten ? "Prepare phase timeout." : "Commit phase timeout.";
 			CompleteFailedRequest(result, msg);

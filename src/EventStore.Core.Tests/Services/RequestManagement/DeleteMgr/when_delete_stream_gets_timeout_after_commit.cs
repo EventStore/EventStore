@@ -32,8 +32,8 @@ namespace EventStore.Core.Tests.Services.RequestManagement.DeleteMgr {
 			yield return new ReplicationTrackingMessage.ReplicatedTo(_commitPosition);
 		}
 
-		protected override Message When() {			
-			Manager.PhaseTimeout(2);
+		protected override Message When() {
+			Manager.CancelRequest();
 			return new TestMessage();
 		}
 
