@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -52,12 +53,32 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 				try {
 					CommitSource
 						.WaitForReplication(LastEventPosition, cancellationToken)
-						.ContinueWith((_) => Committed());
+						.ContinueWith((_) => RequestCompleted());
 				} catch {
 					CancelRequest();
 				} finally { tokenSource.Dispose(); }
 				Registered = true;
 			}
+		}
+
+		protected override Task WaitForLocalCommit() {
+			throw new NotImplementedException();
+		}
+
+		protected override Task WaitForClusterCommit() {
+			throw new NotImplementedException();
+		}
+
+		protected override Task WaitForLocalIndex() {
+			throw new NotImplementedException();
+		}
+
+		public override void Handle(StorageMessage.PrepareAck message) {
+			throw new NotImplementedException();
+		}
+
+		public override void Handle(StorageMessage.CommitIndexed message) {
+			throw new NotImplementedException();
 		}
 
 		protected override Message ClientSuccessMsg =>

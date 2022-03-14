@@ -48,7 +48,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement.WriteStreamMgr {
 		[Test]
 		public void the_envelope_is_replied_to() {
 			AssertEx.IsOrBecomesTrue(() => Envelope.Replies.Count == 1, TimeSpan.FromSeconds(1));
-
 		}
 	}
 }

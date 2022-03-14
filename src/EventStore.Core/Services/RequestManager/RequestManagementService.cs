@@ -5,7 +5,6 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using EventStore.Core.Services.TimerService;
 using System.Diagnostics;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
@@ -33,7 +32,6 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<SystemMessage.StateChangeMessage> {
 		private readonly IPublisher _bus;
 		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
-		private ConcurrentQueue<RequestManagerBase> _activeRequests = new ConcurrentQueue<RequestManagerBase>();
 		private const string _requestManagerHistogram = "request-manager";
 		private Stopwatch _requestServiceStopwatch = Stopwatch.StartNew();
 		private readonly TimeSpan _prepareTimeout;
@@ -53,7 +51,6 @@ namespace EventStore.Core.Services.RequestManager {
 			_commitTimeout = commitTimeout;
 			_commitSource = new CommitSource();
 			_explicitTransactionsSupported = explicitTransactionsSupported;
-			Task.Delay(TimeSpan.FromMilliseconds(100)).ContinueWith((_) => Timeout());
 		}
 
 		public void Handle(ClientMessage.WriteEvents message) {
@@ -71,7 +68,6 @@ namespace EventStore.Core.Services.RequestManager {
 								_commitSource,
 								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
-			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -90,7 +86,6 @@ namespace EventStore.Core.Services.RequestManager {
 								_commitSource,
 								message.CancellationToken);
 			_currentRequests.Add(message.InternalCorrId, manager);
-			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -117,7 +112,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.ExpectedVersion,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
-			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -144,7 +138,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.TransactionId,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
-			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -170,7 +163,6 @@ namespace EventStore.Core.Services.RequestManager {
 								message.TransactionId,
 								_commitSource);
 			_currentRequests.Add(message.InternalCorrId, manager);
-			_activeRequests.Enqueue(manager);
 			manager.Start();
 		}
 
@@ -205,19 +197,8 @@ namespace EventStore.Core.Services.RequestManager {
 			if (_nodeState == VNodeState.ResigningLeader && !_currentRequests.Any()) {
 				_bus.Publish(new SystemMessage.RequestQueueDrained());
 			}
-		}
-		private void Timeout() {
-			//todo: review approach here
-			var currentTime = _requestServiceStopwatch.ElapsedMilliseconds;
-			var activeRequests = _activeRequests;
-			_activeRequests = new ConcurrentQueue<RequestManagerBase>();
-			while (activeRequests.TryDequeue(out var request)) {
-				if (request.Complete != 1) {
-					_activeRequests.Enqueue(request);
-				}
-			}
-			Task.Delay(TimeSpan.FromMilliseconds(100)).ContinueWith((_) => Timeout());
-		}
+		}		
+
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
 		public void Handle(ReplicationTrackingMessage.IndexedTo message) => _commitSource.Handle(message);
 

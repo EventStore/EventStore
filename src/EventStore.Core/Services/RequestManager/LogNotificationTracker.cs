@@ -47,6 +47,7 @@ namespace EventStore.Core.Services.RequestManager {
 				Notify(Interlocked.Read(ref _nextLogPosition));
 				_positionUpdated.WaitOne(TimeSpan.FromMilliseconds(50));
 			}
+			_stopped.Set();
 		}
 		private void Notify(long logPosition) {
 			if (Interlocked.Read(ref _logPosition) >= logPosition) { return; }
@@ -59,8 +60,7 @@ namespace EventStore.Core.Services.RequestManager {
 					_registeredActions.Remove(node);
 					node = next;
 				}
-			}
-			_stopped.Set();
+			}			
 		}
 
 		public Task Waitfor(long position) {
@@ -97,8 +97,6 @@ namespace EventStore.Core.Services.RequestManager {
 						_registeredActions.Clear();
 					}
 				}
-				// TODO: free unmanaged resources (unmanaged objects) and override finalizer
-				// TODO: set large fields to null
 				_disposedValue = true;
 			}
 		}

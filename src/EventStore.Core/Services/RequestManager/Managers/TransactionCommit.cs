@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -64,20 +65,34 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					FailureMessage);
 
 		public override void Handle(StorageMessage.CommitIndexed message) {
-			base.Handle(message);
+			Handle(message);
 			_transactionWritten = true;
-			Committed();
+			RequestCompleted();
 		}
-		protected override void Committed() {
+		protected override void RequestCompleted() {
 			if (!_transactionWritten)
 				return;
-			base.Committed();
+			base.RequestCompleted();
 		}
 		protected override void ReturnCommitAt(long logPosition, long firstEvent, long lastEvent) {
 			_transactionWritten = true;
 			base.ReturnCommitAt(logPosition, firstEvent, lastEvent);
 		}
 
+		protected override Task WaitForLocalCommit() {
+			throw new NotImplementedException();
+		}
 
+		protected override Task WaitForClusterCommit() {
+			throw new NotImplementedException();
+		}
+
+		protected override Task WaitForLocalIndex() {
+			throw new NotImplementedException();
+		}
+
+		public override void Handle(StorageMessage.PrepareAck message) {
+			throw new NotImplementedException();
+		}
 	}
 }

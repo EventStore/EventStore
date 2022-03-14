@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -59,5 +60,25 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		protected override Message ClientFailMsg =>
 			new ClientMessage.DeleteStreamCompleted(ClientCorrId, Result, FailureMessage, FailureCurrentVersion);
+
+		public override void Handle(StorageMessage.PrepareAck message) {
+			throw new NotImplementedException();
+		}
+
+		public override void Handle(StorageMessage.CommitIndexed message) {
+			throw new NotImplementedException();
+		}
+
+		protected override Task WaitForClusterCommit() {
+			throw new NotImplementedException();
+		}
+
+		protected override Task WaitForLocalCommit() {
+			throw new NotImplementedException();
+		}
+
+		protected override Task WaitForLocalIndex() {
+			throw new NotImplementedException();
+		}
 	}
 }
