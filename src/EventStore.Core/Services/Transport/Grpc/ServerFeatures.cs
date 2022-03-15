@@ -5,19 +5,22 @@ using EventStore.Client.ServerFeatures;
 using Grpc.AspNetCore.Server;
 using Grpc.Core;
 using Microsoft.AspNetCore.Routing;
-
+using VersionInfo = EventStore.Common.Utils.VersionInfo;
 namespace EventStore.Core.Services.Transport.Grpc {
 	internal partial class ServerFeatures
 		: EventStore.Client.ServerFeatures.ServerFeatures.ServerFeaturesBase {
 		public const int ApiVersion = 1;
-		private readonly EndpointDataSource _endpointDataSource;
+		private readonly Task<SupportedMethods> _supportedMethods;
 
 		public ServerFeatures(EndpointDataSource endpointDataSource) {
-			_endpointDataSource = endpointDataSource;
+			_supportedMethods = GetSupportedMethods(endpointDataSource);
 		}
 
-		public override Task<SupportedMethods> GetSupportedMethods(Empty request, ServerCallContext context) {
-			var supportedEndpoints = _endpointDataSource.Endpoints
+		public override Task<SupportedMethods> GetSupportedMethods(Empty request, ServerCallContext context) =>
+			_supportedMethods;
+
+		private static Task<SupportedMethods> GetSupportedMethods(EndpointDataSource endpointDataSource) {
+			var supportedEndpoints = endpointDataSource.Endpoints
 				.Select(x => x.Metadata.FirstOrDefault(m => m is GrpcMethodMetadata))
 				.OfType<GrpcMethodMetadata>()
 				.Where(x => x.Method.ServiceName.Contains("client"))
@@ -38,11 +41,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					return method;
 				});
 
-			var versionParts = EventStore.Common.Utils.VersionInfo.Version.Split('.');
 			var result = new SupportedMethods {
-				EventStoreServerVersion = string.Join('.', versionParts.Take(3))
+				EventStoreServerVersion = string.Join('.', VersionInfo.Version.Split('.')[..3]),
+				Methods = { supportedEndpoints.Distinct() }
 			};
-			result.Methods.AddRange(supportedEndpoints.Distinct());
 			return Task.FromResult(result);
 		}
 	}
