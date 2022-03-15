@@ -26,6 +26,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.ServerFeaturesTests {
 				var streamEndPoints = GetEndPoints(Client.Streams.Streams.Descriptor);
 				foreach (var ep in streamEndPoints) {
 					if (ep.MethodName.Contains("read")) ep.Features.AddRange(new[] {"position", "events"});
+					else if (ep.MethodName.Contains("batchappend")) ep.Features.Add("deadline_duration");
 				}
 
 				var psubEndPoints = GetEndPoints(Client.PersistentSubscriptions.PersistentSubscriptions.Descriptor);

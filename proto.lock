@@ -5513,8 +5513,13 @@
                   },
                   {
                     "id": 6,
-                    "name": "deadline",
+                    "name": "deadline_21_10_0",
                     "type": "google.protobuf.Timestamp"
+                  },
+                  {
+                    "id": 7,
+                    "name": "deadline",
+                    "type": "google.protobuf.Duration"
                   }
                 ]
               },
@@ -5813,6 +5818,9 @@
           },
           {
             "path": "status.proto"
+          },
+          {
+            "path": "google/protobuf/duration.proto"
           },
           {
             "path": "google/protobuf/empty.proto"
