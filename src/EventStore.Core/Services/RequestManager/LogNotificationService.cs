@@ -63,7 +63,7 @@ namespace EventStore.Core.Services.RequestManager {
 			}			
 		}
 
-		public Task Waitfor(long position) {
+		public Task WaitFor(long position) {
 			lock (_registerLock) {
 				
 				if (_logPosition >= position) {					
