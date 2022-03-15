@@ -26,11 +26,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						MethodName = x.Method.Name.ToLower(),
 						ServiceName = x.Method.ServiceName.ToLower(),
 					};
+
 					if (x.Method.ServiceName.Contains("PersistentSubscriptions")) {
 						method.Features.AddRange(new[] {"stream", "all"});
 					} else if (x.Method.ServiceName.Contains("Streams") && x.Method.Name.Contains("Read")) {
 						method.Features.AddRange(new[] {"position", "events"});
+					} else if (x.Method.ServiceName.Contains("Streams") && x.Method.Name.Contains("BatchAppend")) {
+						method.Features.Add("deadline_duration");
 					}
+
 					return method;
 				});
 
