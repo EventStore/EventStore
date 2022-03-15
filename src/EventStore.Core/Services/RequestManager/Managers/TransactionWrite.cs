@@ -15,7 +15,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		public TransactionWrite(
 					IPublisher publisher,
-					long startOffset,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -25,14 +24,13 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					CommitSource commitSource)
 			: base(
 					 publisher,
-					 startOffset,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion: -1,
 					 commitSource,
-					 prepareCount: events.Length,
+					 //prepareCount: events.Length,
 					 transactionId) {
 			_events = events;
 			_transactionId = transactionId;

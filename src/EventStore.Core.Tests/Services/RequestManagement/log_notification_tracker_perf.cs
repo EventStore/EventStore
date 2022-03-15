@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 		}
 		[Test]
 		public void can_notify() {
-			LogNotificationTracker _tracker = new LogNotificationTracker("test");
+			LogNotificationService _tracker = new LogNotificationService("test");
 			long _notified = 0;
 			_tracker.Waitfor(1000).ContinueWith((_) => Increment(ref _notified));
 			
@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 
 		[Test]
 		public void can_notify_10_000() {
-			LogNotificationTracker _tracker = new LogNotificationTracker("test");
+			LogNotificationService _tracker = new LogNotificationService("test");
 			long _notified = 0;
 			var count = 10_000;
 			for (int i = 0; i < count; i++) {
@@ -40,7 +40,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 		
 		[Test]
 		public void can_notify_1_000_000_batched() {
-			LogNotificationTracker _tracker = new LogNotificationTracker("test");
+			LogNotificationService _tracker = new LogNotificationService("test");
 			long _notified = 0;
 			var count = 10_000;
 			var pos = 0;
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 		}
 		[Test]
 		public void can_notify_1_000_000() {
-			LogNotificationTracker _tracker = new LogNotificationTracker("Test");
+			LogNotificationService _tracker = new LogNotificationService("Test");
 			long _notified = 0;
 			var count = 1_000_000; 
 			var pos = 0;

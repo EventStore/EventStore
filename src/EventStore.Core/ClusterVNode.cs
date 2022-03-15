@@ -1068,31 +1068,54 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(forwardingService);
 
 			// REQUEST MANAGEMENT
+			var requestMgmtBus = new InMemoryBus("RequestManagmentBus", true, TimeSpan.FromMilliseconds(50));
+			var requestMgmtQueue = new QueuedHandlerThreadPool(requestMgmtBus, "RequestManagment", _queueStatsManager, false);
+			
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
+
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<ClientMessage.WriteEvents, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<ClientMessage.TransactionStart, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<ClientMessage.TransactionWrite, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<ClientMessage.TransactionCommit, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<ClientMessage.DeleteStream, Message>());
+
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<StorageMessage.AlreadyCommitted, Message>());
+
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<StorageMessage.PrepareAck, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<ReplicationTrackingMessage.ReplicatedTo, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<ReplicationTrackingMessage.IndexedTo, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<StorageMessage.RequestCompleted, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<StorageMessage.CommitIndexed, Message>());
+
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<StorageMessage.WrongExpectedVersion, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<StorageMessage.InvalidTransaction, Message>());
+			_mainBus.Subscribe(requestMgmtQueue.WidenFrom<StorageMessage.StreamDeleted, Message>());
+
 			var requestManagement = new RequestManagementService(
 				_mainQueue,
 				TimeSpan.FromMilliseconds(options.Database.PrepareTimeoutMs),
 				TimeSpan.FromMilliseconds(options.Database.CommitTimeoutMs),
 				logFormat.SupportsExplicitTransactions);
 						
-			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
-
-			_mainBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
-			_mainBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
-			_mainBus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
-			_mainBus.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
-			_mainBus.Subscribe<ClientMessage.DeleteStream>(requestManagement);
-
-			_mainBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
-
-			_mainBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
-			_mainBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(requestManagement);
-			_mainBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(requestManagement);
-			_mainBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
-			_mainBus.Subscribe<StorageMessage.CommitIndexed>(requestManagement);
-
-			_mainBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
-			_mainBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
-			_mainBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
+			requestMgmtBus.Subscribe<SystemMessage.StateChangeMessage>(requestManagement);
+			
+			requestMgmtBus.Subscribe<ClientMessage.WriteEvents>(requestManagement);
+			requestMgmtBus.Subscribe<ClientMessage.TransactionStart>(requestManagement);
+			requestMgmtBus.Subscribe<ClientMessage.TransactionWrite>(requestManagement);
+			requestMgmtBus.Subscribe<ClientMessage.TransactionCommit>(requestManagement);
+			requestMgmtBus.Subscribe<ClientMessage.DeleteStream>(requestManagement);
+			
+			requestMgmtBus.Subscribe<StorageMessage.AlreadyCommitted>(requestManagement);
+			
+			requestMgmtBus.Subscribe<StorageMessage.PrepareAck>(requestManagement);
+			requestMgmtBus.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(requestManagement);
+			requestMgmtBus.Subscribe<ReplicationTrackingMessage.IndexedTo>(requestManagement);
+			requestMgmtBus.Subscribe<StorageMessage.RequestCompleted>(requestManagement);
+			requestMgmtBus.Subscribe<StorageMessage.CommitIndexed>(requestManagement);
+			
+			requestMgmtBus.Subscribe<StorageMessage.WrongExpectedVersion>(requestManagement);
+			requestMgmtBus.Subscribe<StorageMessage.InvalidTransaction>(requestManagement);
+			requestMgmtBus.Subscribe<StorageMessage.StreamDeleted>(requestManagement);
 			
 
 			// SUBSCRIPTIONS

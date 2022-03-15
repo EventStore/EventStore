@@ -13,7 +13,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 
 		public DeleteStream(
 					IPublisher publisher,
-					long startOffset,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -25,14 +24,13 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					CancellationToken cancellationToken = default)
 			: base(
 					 publisher,
-					 startOffset,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion,
 					 commitSource,
-					 prepareCount: 0,
+					 //prepareCount: 0,
 					 waitForCommit: true) {
 			_hardDelete = hardDelete;
 			_cancellationToken = cancellationToken;

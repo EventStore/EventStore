@@ -5,13 +5,10 @@ using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.RequestManager.Managers;
-using System.Diagnostics;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Histograms;
 using System.Linq;
 using System.Threading;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace EventStore.Core.Services.RequestManager {
 	public class RequestManagementService :
@@ -30,34 +27,38 @@ namespace EventStore.Core.Services.RequestManager {
 		IHandle<StorageMessage.InvalidTransaction>,
 		IHandle<StorageMessage.StreamDeleted>,
 		IHandle<SystemMessage.StateChangeMessage> {
-		private readonly IPublisher _bus;
+		private readonly IPublisher _mainBus;
+		private readonly IPublisher _requestManagerQueue;
 		private readonly Dictionary<Guid, RequestManagerBase> _currentRequests = new Dictionary<Guid, RequestManagerBase>();
 		private const string _requestManagerHistogram = "request-manager";
-		private Stopwatch _requestServiceStopwatch = Stopwatch.StartNew();
 		private readonly TimeSpan _prepareTimeout;
 		private readonly TimeSpan _commitTimeout;
 		private CommitSource _commitSource;
 		private readonly bool _explicitTransactionsSupported;
 		private VNodeState _nodeState;
+		private DelaySendService _laterSvc;
 
-		public RequestManagementService(IPublisher bus,
+		public RequestManagementService(
+			IPublisher mainBus,
+			IPublisher requestManagerQueue,
 			TimeSpan prepareTimeout,
 			TimeSpan commitTimeout,
 			bool explicitTransactionsSupported) {
-			Ensure.NotNull(bus, "bus");
-			_bus = bus;
-
+			Ensure.NotNull(mainBus, nameof(mainBus));
+			Ensure.NotNull(requestManagerQueue, nameof(requestManagerQueue));
+			_mainBus = mainBus;
+			_requestManagerQueue = requestManagerQueue;
 			_prepareTimeout = prepareTimeout;
 			_commitTimeout = commitTimeout;
 			_commitSource = new CommitSource();
 			_explicitTransactionsSupported = explicitTransactionsSupported;
+			_laterSvc = new DelaySendService(_requestManagerQueue);
 		}
 
 		public void Handle(ClientMessage.WriteEvents message) {
 			if (_nodeState != VNodeState.Leader) { return; }
 			var manager = new WriteEvents(
-								_bus,
-								_requestServiceStopwatch.ElapsedMilliseconds,
+								_mainBus,
 								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -74,8 +75,7 @@ namespace EventStore.Core.Services.RequestManager {
 		public void Handle(ClientMessage.DeleteStream message) {
 			if (_nodeState != VNodeState.Leader) { return; }
 			var manager = new DeleteStream(
-								_bus,
-								_requestServiceStopwatch.ElapsedMilliseconds,
+								_mainBus,
 								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -102,8 +102,7 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 
 			var manager = new TransactionStart(
-								_bus,
-								_requestServiceStopwatch.ElapsedMilliseconds,
+								_mainBus,
 								_prepareTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -128,8 +127,7 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 
 			var manager = new TransactionWrite(
-								_bus,
-								_requestServiceStopwatch.ElapsedMilliseconds,
+								_mainBus,
 								_prepareTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -154,8 +152,7 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 
 			var manager = new TransactionCommit(
-								_bus,
-								_requestServiceStopwatch.ElapsedMilliseconds,
+								_mainBus,
 								_commitTimeout,
 								message.Envelope,
 								message.InternalCorrId,
@@ -195,7 +192,7 @@ namespace EventStore.Core.Services.RequestManager {
 				throw new InvalidOperationException("Should never complete request twice.");
 
 			if (_nodeState == VNodeState.ResigningLeader && !_currentRequests.Any()) {
-				_bus.Publish(new SystemMessage.RequestQueueDrained());
+				_mainBus.Publish(new SystemMessage.RequestQueueDrained());
 			}
 		}		
 

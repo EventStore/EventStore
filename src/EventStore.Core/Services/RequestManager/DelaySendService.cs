@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.RequestManager {
-	public class DelaySendService : IDisposable {
+	public class DelaySendService : IDisposable, IDelaySend {
 		//todo: allocate in a pool and reuse
-		public struct MessageNode {
+		public class MessageNode : IDisposable {
 			public readonly long Position;
-			public readonly Message Message;
+			public Message Message;
 			public MessageNode(long position, Message message) {
 				Position = position;
 				Message = message;
+			}
+			public void Dispose() {
+				Message = null;
 			}
 		}
 		private readonly LinkedList<MessageNode> _registeredMessages = new LinkedList<MessageNode>();
@@ -24,12 +24,12 @@ namespace EventStore.Core.Services.RequestManager {
 		private object _registerLock = new object();
 		private readonly AutoResetEvent _wakeEvent = new AutoResetEvent(true);
 		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(false);
-		private Action<Message> _target;
+		private IPublisher _target;
 		private CancellationTokenSource _cancelSource;
 		private CancellationToken _canceled;
 		private bool _disposed;
 
-		public DelaySendService(Action<Message> target) {
+		public DelaySendService(IPublisher target) {
 			_cancelSource = new CancellationTokenSource();
 			_canceled = _cancelSource.Token;
 			_thread = new Thread(Notify) { IsBackground = true, Name = nameof(DelaySendService) };
@@ -38,9 +38,8 @@ namespace EventStore.Core.Services.RequestManager {
 		}
 		private void Publish(Message message) {
 			try {
-				_target(message);
+				if (message != null) { _target.Publish(message); }
 			} catch {
-
 				//ignore;
 			}
 		}
@@ -56,7 +55,7 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 			_stopped.Set();
 		}
-		private void Notify(long logPosition) {			
+		private void Notify(long logPosition) {
 			lock (_registerLock) {
 				var node = _registeredMessages.First;
 				while (node != null && node.Value.Position <= logPosition && !_canceled.IsCancellationRequested) {
@@ -68,22 +67,22 @@ namespace EventStore.Core.Services.RequestManager {
 			}
 		}
 
-		public void DelaySend(TimeSpan delay, Message message) {
+		public IDisposable DelaySend(TimeSpan delay, Message message) {
 			lock (_registerLock) {
 				if (delay < TimeSpan.FromMilliseconds(2)) {
 					Publish(message);
-					return;
+					return Disposer.Disposed();
 				};
 				var position = (DateTime.UtcNow + delay).ToTicksSinceEpoch();
 				var node = new MessageNode(position, message);
 				if (_registeredMessages.IsEmpty() || _registeredMessages.First.Value.Position >= position) {
 					_registeredMessages.AddFirst(node);
 					_wakeEvent.Set();
-					return;
+					return node;
 				}
 				if (_registeredMessages.Last.Value.Position <= position) {
 					_registeredMessages.AddLast(node);
-					return;
+					return node;
 				}
 
 				//todo: better search needed
@@ -92,6 +91,7 @@ namespace EventStore.Core.Services.RequestManager {
 					root = root.Next;
 				}
 				_registeredMessages.AddAfter(root, node);
+				return node;
 			}
 		}
 

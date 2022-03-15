@@ -7,17 +7,17 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.RequestManager {
-	public class LogNotificationTracker : IDisposable {
+	public class LogNotificationService : IDisposable {
 		//todo: allocate in a pool and reuse
-		public struct ActionNode {
+		public struct PositionNode {
 			public readonly long Position;
 			public readonly TaskCompletionSource WaitTask;
-			public ActionNode(long position) {
+			public PositionNode(long position) {
 				Position = position;
 				WaitTask = new TaskCompletionSource();
 			}
 		}
-		private readonly LinkedList<ActionNode> _registeredActions = new LinkedList<ActionNode>();
+		private readonly LinkedList<PositionNode> _registeredActions = new LinkedList<PositionNode>();
 		private long _logPosition;
 		private long _nextLogPosition;
 		private readonly Thread _thread;
@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.RequestManager {
 		private CancellationToken _canceled;
 		private bool _disposedValue;
 
-		public LogNotificationTracker(string name) {
+		public LogNotificationService(string name) {
 			_cancelSource = new CancellationTokenSource();
 			_canceled = _cancelSource.Token;
 			_thread = new Thread(Notify) { IsBackground = true, Name = name };
@@ -69,7 +69,7 @@ namespace EventStore.Core.Services.RequestManager {
 				if (_logPosition >= position) {					
 					return Task.CompletedTask;
 				};
-				var node = new ActionNode(position);
+				var node = new PositionNode(position);
 				if (_registeredActions.IsEmpty()|| _registeredActions.First.Value.Position >= position) {
 					_registeredActions.AddFirst(node);
 				} 
@@ -78,6 +78,8 @@ namespace EventStore.Core.Services.RequestManager {
 				} 
 				else {
 					//todo: better search needed, but this should be rare
+					//todo: consider adding a simple binary search over the linkedlist here with a fairly wide scan (maybe 100 nodes wide??)
+					//n.b. this would need cached midpoints, or we're just scanning anyway
 					var root = _registeredActions.First;
 					while (root.Value.Position <= position) {
 						root = root.Next;

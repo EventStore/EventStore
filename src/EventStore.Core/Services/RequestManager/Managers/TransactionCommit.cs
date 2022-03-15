@@ -10,7 +10,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private bool _transactionWritten;
 		public TransactionCommit(
 					IPublisher publisher,
-					long startOffset,
 					TimeSpan timeout,					
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -19,7 +18,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					CommitSource commitSource)
 			: base(
 					 publisher,
-					 startOffset,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
@@ -27,7 +25,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 expectedVersion: -1,
 					 commitSource,
 					 transactionId: transactionId,
-					 prepareCount: 1,
+					 //prepareCount: 1,
 					 waitForCommit: true) {
 			Result = OperationResult.CommitTimeout; // we need an unknown here
 		}

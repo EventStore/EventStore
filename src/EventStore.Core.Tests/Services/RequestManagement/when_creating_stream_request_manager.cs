@@ -22,7 +22,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 			Assert.Throws<ArgumentNullException>(() =>
 				new FakeRequestManager(
 					null,
-					1,
 					CommitTimeout,
 					Envelope,
 					InternalCorrId,
@@ -30,26 +29,11 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 					ExpectedVersion,
 					new CommitSource()));
 		}
-		[Test]
-		public void negative_startTime_throws_argument_out_of_range_exception() {
-			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new FakeRequestManager(
-					Publisher,
-					-1,
-					CommitTimeout,
-					Envelope,
-					InternalCorrId,
-					ClientCorrId,
-					ExpectedVersion,
-					new CommitSource()));
-		}
-
 		[Test]
 		public void null_envelope_throws_argument_null_exception() {
 			Assert.Throws<ArgumentNullException>(() =>
 				new FakeRequestManager(
 					Publisher,
-					1,
 					CommitTimeout,
 					null,
 					InternalCorrId,
@@ -62,7 +46,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 			Assert.Throws<ArgumentException>(() =>
 				new FakeRequestManager(
 					Publisher,
-					1,
 					CommitTimeout,
 					Envelope,
 					Guid.Empty,
@@ -75,7 +58,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 			Assert.Throws<ArgumentException>(() =>
 				new FakeRequestManager(
 					Publisher,
-					1,
 					CommitTimeout,
 					Envelope,
 					InternalCorrId,
@@ -89,7 +71,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 			Assert.Throws<ArgumentNullException>(() =>
 				new FakeRequestManager(
 					Publisher,
-					1,
 					CommitTimeout,
 					Envelope,
 					InternalCorrId,

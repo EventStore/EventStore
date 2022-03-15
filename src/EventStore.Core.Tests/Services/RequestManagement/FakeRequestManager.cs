@@ -10,7 +10,6 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 	public class FakeRequestManager : RequestManagerBase {
 		public FakeRequestManager(
 				IPublisher publisher,
-				long startTime,
 				TimeSpan phaseTimeout,
 				IEnvelope clientResponseEnvelope,
 				Guid internalCorrId,
@@ -22,14 +21,13 @@ namespace EventStore.Core.Tests.Services.RequestManagement {
 				bool waitForCommit = false)
 			: base(
 				 publisher,
-				 startTime,
 				 phaseTimeout,
 				 clientResponseEnvelope,
 				 internalCorrId,
 				 clientCorrId,
 				 expectedVersion,
 				 commitSource,
-				 prepareCount,
+				// prepareCount,
 				 transactionId,
 				 waitForCommit)
 				{}

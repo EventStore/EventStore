@@ -12,7 +12,6 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		private CancellationTokenSource _stageTimeout;
 		public TransactionStart(
 					IPublisher publisher,
-					long startOffset,
 					TimeSpan timeout,
 					IEnvelope clientResponseEnvelope,
 					Guid internalCorrId,
@@ -22,22 +21,22 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					CommitSource commitSource)
 			: base(
 					 publisher,
-					 startOffset,
 					 timeout,
 					 clientResponseEnvelope,
 					 internalCorrId,
 					 clientCorrId,
 					 expectedVersion,
 					 commitSource,
-					 prepareCount: 1) {
+					 //prepareCount: 1
+					 ) {
 			_streamId = streamId;
 			Result = OperationResult.PrepareTimeout; // we need an unknown here			
 		}
 
 
 		protected override Task WaitForLocalCommit() {
-			if (CurrentState >= RequestState.WaitingLocalCommit) { return Task.CompletedTask; }
-			CurrentState = RequestState.WaitingLocalCommit;
+			if (State >= RequestState.WaitingLocalCommit) { return Task.CompletedTask; }
+			State = RequestState.WaitingLocalCommit;
 			_stageTask = new TaskCompletionSource();
 			_stageTimeout = new CancellationTokenSource();
 			Task.Delay(Timeout, _stageTimeout.Token)
@@ -52,8 +51,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		}
 
 		protected override Task WaitForClusterCommit() {
-			if (CurrentState >= RequestState.WaitingClusterCommit) { return Task.CompletedTask; }
-			CurrentState = RequestState.WaitingClusterCommit;
+			if (State >= RequestState.WaitingClusterCommit) { return Task.CompletedTask; }
+			State = RequestState.WaitingClusterCommit;
 			_stageTimeout = new CancellationTokenSource();
 			Task.Delay(Timeout, _stageTimeout.Token)
 				.ContinueWith((delay) => {
@@ -76,7 +75,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		public override void Handle(StorageMessage.PrepareAck message) {
 			TransactionId = message.LogPosition;
 			LastEventPosition = message.LogPosition;
-			CurrentState = RequestState.CommitedLocal;
+			State = RequestState.CommitedLocal;
 			_stageTimeout?.Cancel();
 			_stageTask?.SetResult();
 		}

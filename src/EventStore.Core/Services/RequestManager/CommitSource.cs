@@ -10,8 +10,8 @@ namespace EventStore.Core.Services.RequestManager {
 	public class CommitSource :
 	IHandle<ReplicationTrackingMessage.IndexedTo>,
 	IHandle<ReplicationTrackingMessage.ReplicatedTo> {
-		private LogNotificationTracker _indexTracker = new LogNotificationTracker("IndexedTracker");
-		private LogNotificationTracker _replicatedTracker = new LogNotificationTracker("ReplicatedTracker");
+		private LogNotificationService _indexTracker = new LogNotificationService("IndexedTracker");
+		private LogNotificationService _replicatedTracker = new LogNotificationService("ReplicatedTracker");
 
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo @event) {
 			_replicatedTracker.UpdateLogPosition(@event.LogPosition);
