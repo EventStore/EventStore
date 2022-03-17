@@ -83,19 +83,19 @@ namespace EventStore.Core.Data {
 					case SystemMetadata.MaxCount: {
 						Check(reader.Read(), reader);
 						Check(JsonToken.Integer, reader);
-						maxCount = (long)reader.Value;
+						maxCount = (long)reader.Value;  //qq possible bad cast from biginteger
 						break;
 					}
 					case SystemMetadata.MaxAge: {
 						Check(reader.Read(), reader);
 						Check(JsonToken.Integer, reader);
-						maxAge = TimeSpan.FromSeconds((long)reader.Value);
+						maxAge = TimeSpan.FromSeconds((long)reader.Value);  //qq possible bad cast from biginteger
 						break;
 					}
 					case SystemMetadata.TruncateBefore: {
 						Check(reader.Read(), reader);
 						Check(JsonToken.Integer, reader);
-						truncateBefore = (long)reader.Value;
+						truncateBefore = (long)reader.Value; //qq possible bad cast from biginteger
 						break;
 					}
 					case SystemMetadata.TempStream: {
@@ -107,7 +107,7 @@ namespace EventStore.Core.Data {
 					case SystemMetadata.CacheControl: {
 						Check(reader.Read(), reader);
 						Check(JsonToken.Integer, reader);
-						cacheControl = TimeSpan.FromSeconds((long)reader.Value);
+						cacheControl = TimeSpan.FromSeconds((long)reader.Value); //qq possible bad cast from biginteger
 						break;
 					}
 					case SystemMetadata.Acl: {
