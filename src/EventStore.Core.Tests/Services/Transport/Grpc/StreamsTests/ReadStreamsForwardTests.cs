@@ -168,6 +168,38 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 
 			[Test]
+			public async Task should_have_all_positions() {
+				// each (non transaction) event can be looked up in the all stream using its position
+				var events = _responses
+					.Where(x => x.ContentCase == ReadResp.ContentOneofCase.Event)
+					.Select(x => x.Event.Event);
+
+				foreach (var evt in events) {
+					Assert.AreEqual(evt.CommitPosition, evt.PreparePosition);
+
+					using var call = StreamsClient.Read(new() {
+						Options = new() {
+							UuidOption = new() { Structured = new() },
+							Count = 1,
+							ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
+							ResolveLinks = true,
+							All = new() {
+								Position = new() {
+									CommitPosition = evt.CommitPosition,
+									PreparePosition = evt.PreparePosition,
+								}
+							},
+							NoFilter = new(),
+						}
+					}, GetCallOptions(AdminCredentials));
+					
+					var readEvents = await call.ResponseStream.ReadAllAsync().ToArrayAsync();
+					Assert.AreEqual(1, readEvents.Length);
+					Assert.AreEqual(evt, readEvents[0].Event.Event);
+				}
+			}
+
+			[Test]
 			public void should_indicate_last_position_of_stream() {
 				var streamPosition =
 					_responses.Single(x => x.ContentCase == ReadResp.ContentOneofCase.LastStreamPosition);

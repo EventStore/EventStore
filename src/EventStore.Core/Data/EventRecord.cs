@@ -9,6 +9,8 @@ namespace EventStore.Core.Data {
 			get { return (Flags & PrepareFlags.IsJson) == PrepareFlags.IsJson; }
 		}
 
+		public bool IsSelfCommitted => Flags.HasAnyOf(PrepareFlags.IsCommitted);
+
 		public readonly long EventNumber;
 		public readonly long LogPosition;
 		public readonly Guid CorrelationId;
