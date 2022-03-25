@@ -139,12 +139,30 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly MemberInfo Leader;
-			public readonly Guid StateCorrelationId;
+			public readonly Guid ConnectionCorrelationId;
 
-			public ReconnectToLeader(Guid stateCorrelationId, MemberInfo leader) {
-				Ensure.NotEmptyGuid(stateCorrelationId, "stateCorrelationId");
-				Ensure.NotNull(leader, "leader");
-				StateCorrelationId = stateCorrelationId;
+			public ReconnectToLeader(Guid connectionCorrelationId, MemberInfo leader) {
+				Ensure.NotEmptyGuid(connectionCorrelationId, nameof(connectionCorrelationId));
+				Ensure.NotNull(leader, nameof(leader));
+				ConnectionCorrelationId = connectionCorrelationId;
+				Leader = leader;
+			}
+		}
+
+		public class LeaderConnectionFailed : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly MemberInfo Leader;
+			public readonly Guid LeaderConnectionCorrelationId;
+
+			public LeaderConnectionFailed(Guid leaderConnectionCorrelationId, MemberInfo leader) {
+				Ensure.NotEmptyGuid(leaderConnectionCorrelationId, nameof(leaderConnectionCorrelationId));
+				Ensure.NotNull(leader, nameof(leader));
+				LeaderConnectionCorrelationId = leaderConnectionCorrelationId;
 				Leader = leader;
 			}
 		}
