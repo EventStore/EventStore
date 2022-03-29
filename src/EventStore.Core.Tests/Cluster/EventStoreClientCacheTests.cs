@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Cluster {
 		private static readonly Func<EndPoint, IPublisher, EventStoreClusterClient> EventStoreClusterClientFactory =
 			(endpoint, bus) =>
 				new EventStoreClusterClient(
-					new UriBuilder(Uri.UriSchemeHttps, endpoint.GetHost(), endpoint.GetPort()).Uri, bus,
+					Uri.UriSchemeHttps, endpoint, null, bus,
 					delegate { return (true, null); }, null);
 
 		[Test]

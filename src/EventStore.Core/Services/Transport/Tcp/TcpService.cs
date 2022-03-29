@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly IAuthenticationProvider _authProvider;
 		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate2Collection> _intermediatesSelector;
-		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslClientCertValidator;
+		private readonly CertificateDelegates.ClientCertificateValidator _sslClientCertValidator;
 		private readonly int _connectionPendingSendBytesThreshold;
 		private readonly int _connectionQueueSizeThreshold;
 		private readonly AuthorizationGateway _authorizationGateway;
@@ -55,7 +55,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AuthorizationGateway authorizationGateway,
 			Func<X509Certificate2> certificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslClientCertValidator,
+			CertificateDelegates.ClientCertificateValidator sslClientCertValidator,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold)
 			: this(publisher, serverEndPoint, networkSendQueue, serviceType, securityType, (_, __) => dispatcher,
@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			AuthorizationGateway authorizationGateway,
 			Func<X509Certificate2> certificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslClientCertValidator,
+			CertificateDelegates.ClientCertificateValidator sslClientCertValidator,
 			int connectionPendingSendBytesThreshold,
 			int connectionQueueSizeThreshold) {
 			Ensure.NotNull(publisher, "publisher");

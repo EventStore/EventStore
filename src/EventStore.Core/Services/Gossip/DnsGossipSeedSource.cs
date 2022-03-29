@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.Services.Gossip {
 	public class DnsGossipSeedSource : IGossipSeedSource {
@@ -19,7 +20,7 @@ namespace EventStore.Core.Services.Gossip {
 		public EndPoint[] EndGetHostEndpoints(IAsyncResult asyncResult) {
 			var addresses = Dns.EndGetHostAddresses(asyncResult);
 
-			return addresses.Select(address => new IPEndPoint(address, _managerHttpPort)).ToArray();
+			return addresses.Select(address => new IPEndPoint(address, _managerHttpPort).WithClusterDns(_hostname)).ToArray();
 		}
 	}
 }

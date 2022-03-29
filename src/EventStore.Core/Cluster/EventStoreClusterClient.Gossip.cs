@@ -44,12 +44,12 @@ namespace EventStore.Core.Cluster {
 				Server = new GossipEndPoint(server.GetHost(), (uint)server.GetPort())
 			};
 			var clusterInfoDto = await _gossipClient.UpdateAsync(request, deadline: deadline.ToUniversalTime());
-			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto);
+			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
 		}
 
 		private async Task<ClusterInfo> GetGossipAsync(DateTime deadline) {
 			var clusterInfoDto = await _gossipClient.ReadAsync(new Empty(), deadline: deadline.ToUniversalTime());
-			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto);
+			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
 		}
 	}
 }

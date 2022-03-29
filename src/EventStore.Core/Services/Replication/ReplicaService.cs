@@ -39,7 +39,7 @@ namespace EventStore.Core.Services.Replication {
 		private readonly EndPoint _internalTcp;
 		private readonly bool _isReadOnlyReplica;
 		private readonly bool _useSsl;
-		private readonly Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _sslServerCertValidator;
+		private readonly CertificateDelegates.ServerCertificateValidator _sslServerCertValidator;
 		private readonly Func<X509Certificate> _sslClientCertificateSelector;
 		private readonly TimeSpan _heartbeatTimeout;
 		private readonly TimeSpan _heartbeatInterval;
@@ -58,7 +58,7 @@ namespace EventStore.Core.Services.Replication {
 			EndPoint internalTcp,
 			bool isReadOnlyReplica,
 			bool useSsl,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> sslServerCertValidator,
+			CertificateDelegates.ServerCertificateValidator sslServerCertValidator,
 			Func<X509Certificate> sslClientCertificateSelector,
 			TimeSpan heartbeatTimeout,
 			TimeSpan heartbeatInterval,
@@ -166,6 +166,7 @@ namespace EventStore.Core.Services.Replication {
 				_tcpDispatcher,
 				_publisher,
 				leaderEndPoint.GetHost(),
+				leaderEndPoint.GetOtherNames(),
 				leaderEndPoint,
 				_connector,
 				_useSsl,

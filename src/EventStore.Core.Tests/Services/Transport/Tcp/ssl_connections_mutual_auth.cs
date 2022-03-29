@@ -99,8 +99,9 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var clientSsl = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
 				serverEndPoint.GetHost(),
+				null,
 				serverEndPoint,
-				(cert, chain, err) => validateServerCertificate ? ClusterVNode<string>.ValidateServerCertificate(cert, chain, err, () => null, () => rootCertificates) : (true, null),
+				(cert, chain, err, _) => validateServerCertificate ? ClusterVNode<string>.ValidateServerCertificate(cert, chain, err, () => null, () => rootCertificates, null) : (true, null),
 				() => new X509CertificateCollection{clientCertificate},
 				new TcpClientConnector(),
 				TcpConnectionManager.ConnectionTimeout,
