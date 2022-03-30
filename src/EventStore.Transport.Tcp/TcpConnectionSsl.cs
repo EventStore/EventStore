@@ -17,8 +17,9 @@ namespace EventStore.Transport.Tcp {
 
 		public static ITcpConnection CreateConnectingConnection(Guid connectionId,
 			string targetHost,
+			string[] otherNames,
 			IPEndPoint remoteEndPoint,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator,
+			CertificateDelegates.ServerCertificateValidator serverCertValidator,
 			Func<X509CertificateCollection> clientCertificatesSelector,
 			TcpClientConnector connector,
 			TimeSpan connectionTimeout,
@@ -32,7 +33,7 @@ namespace EventStore.Transport.Tcp {
 					connection.InitClientSocket(socket);
 				},
 				(_, socket) => {
-					connection.InitSslStream(targetHost, serverCertValidator, clientCertificatesSelector, verbose);
+					connection.InitSslStream(targetHost, otherNames, serverCertValidator, clientCertificatesSelector, verbose);
 					if (onConnectionEstablished != null)
 						onConnectionEstablished(connection);
 				},
@@ -49,7 +50,7 @@ namespace EventStore.Transport.Tcp {
 			Socket socket,
 			Func<X509Certificate2> serverCertificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
+			CertificateDelegates.ClientCertificateValidator clientCertValidator,
 			bool verbose) {
 			var connection = new TcpConnectionSsl(connectionId, remoteEndPoint, verbose);
 			connection.InitServerSocket(socket, serverCertificateSelector, intermediatesSelector, clientCertValidator, verbose);
@@ -97,8 +98,9 @@ namespace EventStore.Transport.Tcp {
 		private SslStream _sslStream;
 		private bool _isAuthenticated;
 		private int _sendingBytes;
-		private Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _serverCertValidator;
-		private Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> _clientCertValidator;
+		private CertificateDelegates.ServerCertificateValidator _serverCertValidator;
+		private CertificateDelegates.ClientCertificateValidator _clientCertValidator;
+		private string[] _otherNames;
 		private readonly byte[] _receiveBuffer = new byte[TcpConnection.BufferManager.ChunkSize];
 
 		private TcpConnectionSsl(Guid connectionId, IPEndPoint remoteEndPoint, bool verbose) : base(remoteEndPoint) {
@@ -112,7 +114,7 @@ namespace EventStore.Transport.Tcp {
 			Socket socket,
 			Func<X509Certificate2> serverCertificateSelector,
 			Func<X509Certificate2Collection> intermediatesSelector,
-			Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> clientCertValidator,
+			CertificateDelegates.ClientCertificateValidator clientCertValidator,
 			bool verbose) {
 			InitConnectionBase(socket);
 			if (verbose)
@@ -190,13 +192,14 @@ namespace EventStore.Transport.Tcp {
 			_socket = socket;
 		}
 
-		private void InitSslStream(string targetHost, Func<X509Certificate, X509Chain, SslPolicyErrors, ValueTuple<bool, string>> serverCertValidator, Func<X509CertificateCollection> clientCertificatesSelector, bool verbose) {
+		private void InitSslStream(string targetHost, string[] otherNames, CertificateDelegates.ServerCertificateValidator serverCertValidator, Func<X509CertificateCollection> clientCertificatesSelector, bool verbose) {
 			Ensure.NotNull(targetHost, "targetHost");
 			InitConnectionBase(_socket);
 			if (verbose)
 				Console.WriteLine("TcpConnectionSsl::InitClientSslStream({0}, L{1})", RemoteEndPoint, LocalEndPoint);
 
 			_serverCertValidator = serverCertValidator;
+			_otherNames = otherNames;
 
 			lock (_streamLock) {
 				try {
@@ -266,7 +269,7 @@ namespace EventStore.Transport.Tcp {
 		// The following method is invoked by the RemoteCertificateValidationDelegate. 
 		public bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain,
 			SslPolicyErrors sslPolicyErrors) {
-			var (isValid, error) = _serverCertValidator(certificate, chain, sslPolicyErrors);
+			var (isValid, error) = _serverCertValidator(certificate, chain, sslPolicyErrors, _otherNames);
 			if (!isValid && error != null) {
 				Log.Error("Server certificate validation error: {e}", error);
 			}

@@ -38,6 +38,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				var clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 					Guid.NewGuid(),
 					listeningSocket.LocalEndPoint.GetHost(),
+					null,
 					(IPEndPoint)listeningSocket.LocalEndPoint,
 					delegate { return (true, null); },
 					null,
@@ -102,6 +103,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 					clientTcpConnection = TcpConnectionSsl.CreateConnectingConnection(
 						Guid.NewGuid(),
 						listeningSocket.LocalEndPoint.GetHost(),
+						null,
 						(IPEndPoint)listeningSocket.LocalEndPoint,
 						delegate { return (true, null); },
 						null,

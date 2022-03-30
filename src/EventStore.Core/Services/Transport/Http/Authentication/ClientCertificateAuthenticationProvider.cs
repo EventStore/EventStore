@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Utils;
 using EventStore.Core.Services.UserManagement;
 using Microsoft.AspNetCore.Http;
 
@@ -27,28 +28,9 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				return false;
 			}
 
-			bool hasIpOrDnsSan = false;
-			X509ExtensionCollection extensions;
-			try {
-				extensions = clientCertificate.Extensions;
-			} catch (CryptographicException) {
-				return false;
-			}
-			foreach (var extension in extensions) {
-				AsnEncodedData asnData = new AsnEncodedData(extension.Oid, extension.RawData);
-				if (extension.Oid.Value == "2.5.29.17") { //Oid for Subject Alternative Names extension
-					var data = asnData.Format(false);
-					string[] parts = data.Split(new[] {':', '=', ','}, StringSplitOptions.RemoveEmptyEntries);
-					var acceptedHeaders = new[] {"DNS", "DNS Name", "IP", "IP Address"};
-					for (int i = 0; i < parts.Length; i += 2) {
-						var header = parts[i].Trim();
-						if (acceptedHeaders.Any(x => x == header)) {
-							hasIpOrDnsSan = true;
-							break;
-						}
-					}
-				}
-			}
+			bool hasIpOrDnsSan = clientCertificate.GetSubjectAlternativeNames()
+				.Where(x => x.type is CertificateNameType.DnsName or CertificateNameType.IpAddress)
+				.IsNotEmpty();
 
 			if (hasReservedNodeCN && hasIpOrDnsSan) {
 				request = new HttpAuthenticationRequest(context, "system", "");

@@ -46,20 +46,20 @@ namespace EventStore.Core.Cluster {
 			return false;
 		}
 		
-		internal static ClusterInfo FromGrpcClusterInfo(EventStore.Cluster.ClusterInfo grpcCluster) {
+		internal static ClusterInfo FromGrpcClusterInfo(EventStore.Cluster.ClusterInfo grpcCluster, string clusterDns) {
 			var receivedMembers = Array.ConvertAll(grpcCluster.Members.ToArray(), x =>
 				new MemberInfo(
 					Uuid.FromDto(x.InstanceId).ToGuid(), x.TimeStamp.FromTicksSinceEpoch(), (VNodeState)x.State,
 					x.IsAlive,
-					!x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
-					x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port) : null,
+					!x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port).WithClusterDns(clusterDns) : null,
+					x.InternalTcpUsesTls ? new DnsEndPoint(x.InternalTcp.Address, (int)x.InternalTcp.Port).WithClusterDns(clusterDns) : null,
 					!x.ExternalTcpUsesTls && x.ExternalTcp != null
-						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port)
+						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port).WithClusterDns(clusterDns)
 						: null,
 					x.ExternalTcpUsesTls && x.ExternalTcp != null
-						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port)
+						? new DnsEndPoint(x.ExternalTcp.Address, (int)x.ExternalTcp.Port).WithClusterDns(clusterDns)
 						: null,
-					new DnsEndPoint(x.HttpEndPoint.Address, (int)x.HttpEndPoint.Port),
+					new DnsEndPoint(x.HttpEndPoint.Address, (int)x.HttpEndPoint.Port).WithClusterDns(clusterDns),
 					x.AdvertiseHostToClientAs, (int)x.AdvertiseHttpPortToClientAs, (int)x.AdvertiseTcpPortToClientAs,
 					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 					x.EpochPosition, x.EpochNumber, Uuid.FromDto(x.EpochId).ToGuid(), x.NodePriority,

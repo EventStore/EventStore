@@ -114,7 +114,7 @@ namespace EventStore.Transport.Tcp {
 		}
 
 		private Socket _socket;
-		private readonly IPEndPoint _remoteEndPoint;
+		protected readonly IPEndPoint _remoteEndPoint;
 		private IPEndPoint _localEndPoint;
 
 		private long _lastSendStarted = -1;

@@ -49,8 +49,9 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			_client = TcpConnectionSsl.CreateConnectingConnection(
 				Guid.NewGuid(),
 				_serverEndPoint.GetHost(),
+				null,
 				_serverEndPoint,
-				(certificate, chain, _) => {
+				(certificate, chain, _, _) => {
 					gotLeaf = _leaf.Equals(certificate);
 					foreach (var chainElement in chain.ChainElements) {
 						if (chainElement.Certificate.Equals(_intermediate)) {
@@ -99,8 +100,9 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 				_client = TcpConnectionSsl.CreateConnectingConnection(
 					Guid.NewGuid(),
 					_serverEndPoint.GetHost(),
+					null,
 					_serverEndPoint,
-					(_, _, _) => (true, null),
+					(_, _, _, _) => (true, null),
 					() => new X509Certificate2Collection(_cert),
 					new TcpClientConnector(),
 					TcpConnectionManager.ConnectionTimeout,
