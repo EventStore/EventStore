@@ -37,6 +37,7 @@ namespace EventStore.Core.Services.VNode {
 		private VNodeState _state = VNodeState.Initializing;
 		private MemberInfo _leader;
 		private Guid _stateCorrelationId = Guid.NewGuid();
+		private Guid _leaderConnectionCorrelationId = Guid.NewGuid();
 		private Guid _subscriptionId = Guid.Empty;
 		private readonly int _clusterSize;
 
@@ -246,12 +247,14 @@ namespace EventStore.Core.Services.VNode {
 				.When<SystemMessage.WaitForChaserToCatchUp>().Do(Handle)
 				.When<SystemMessage.ChaserCaughtUp>().Do(HandleAsPreReplica)
 				.When<ReplicationMessage.ReconnectToLeader>().Do(Handle)
+				.When<ReplicationMessage.LeaderConnectionFailed>().Do(Handle)
 				.When<ReplicationMessage.SubscribeToLeader>().Do(Handle)
 				.When<ReplicationMessage.ReplicaSubscriptionRetry>().Do(Handle)
 				.When<ReplicationMessage.ReplicaSubscribed>().Do(Handle)
 				.WhenOther().ForwardTo(_outputBus)
 				.InAllStatesExcept(VNodeState.PreReplica, VNodeState.PreReadOnlyReplica)
 				.When<ReplicationMessage.ReconnectToLeader>().Ignore()
+				.When<ReplicationMessage.LeaderConnectionFailed>().Ignore()
 				.When<ReplicationMessage.SubscribeToLeader>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscriptionRetry>().Ignore()
 				.When<ReplicationMessage.ReplicaSubscribed>().Ignore()
@@ -542,11 +545,12 @@ namespace EventStore.Core.Services.VNode {
 			_leader = message.Leader;
 			_subscriptionId = Guid.NewGuid();
 			_stateCorrelationId = Guid.NewGuid();
+			_leaderConnectionCorrelationId = Guid.NewGuid();
 			_outputBus.Publish(message);
 			if (_leader.InstanceId == _nodeInfo.InstanceId)
 				_fsm.Handle(new SystemMessage.BecomePreLeader(_stateCorrelationId));
 			else
-				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader));
+				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader));
 		}
 
 		private void Handle(SystemMessage.ServiceInitialized message) {
@@ -959,9 +963,10 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(SystemMessage.VNodeConnectionLost message) {
 			if (_leader != null && _leader.Is(message.VNodeEndPoint)) // leader connection failed
 			{
+				_leaderConnectionCorrelationId = Guid.NewGuid();
 				var msg = _state == VNodeState.PreReplica
-					? (Message)new ReplicationMessage.ReconnectToLeader(_stateCorrelationId, _leader)
-					: new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader);
+					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
+					: new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
 			}
 
@@ -971,9 +976,10 @@ namespace EventStore.Core.Services.VNode {
 		private void HandleAsReadOnlyReplica(SystemMessage.VNodeConnectionLost message) {
 			if (_leader != null && _leader.Is(message.VNodeEndPoint)) // leader connection failed
 			{
+				_leaderConnectionCorrelationId = Guid.NewGuid();
 				var msg = _state == VNodeState.PreReadOnlyReplica
-					? (Message)new ReplicationMessage.ReconnectToLeader(_stateCorrelationId, _leader)
-					: new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leader);
+					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
+					: new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
 			}
 
@@ -1004,6 +1010,7 @@ namespace EventStore.Core.Services.VNode {
 				Log.Debug(
 					(noLeader ? "NO LEADER found" : "LEADER CHANGE detected") + " in READ ONLY PRE-REPLICA/READ ONLY REPLICA state. Proceeding to READ ONLY LEADERLESS STATE. CURRENT LEADER: [{leader}]",_leader);
 				_stateCorrelationId = Guid.NewGuid();
+				_leaderConnectionCorrelationId = Guid.NewGuid();
 				_fsm.Handle(new SystemMessage.BecomeReadOnlyLeaderless(_stateCorrelationId));
 			}
 
@@ -1020,7 +1027,8 @@ namespace EventStore.Core.Services.VNode {
 				_leader = aliveLeaders.First();
 				Log.Information("LEADER found in READ ONLY LEADERLESS state. LEADER: [{leader}]. Proceeding to READ ONLY PRE-REPLICA state.", _leader);
 				_stateCorrelationId = Guid.NewGuid();
-				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leader));
+				_leaderConnectionCorrelationId = Guid.NewGuid();
+				_fsm.Handle(new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader));
 			} else {
 				Log.Debug(
 					"{leadersFound} found in READ ONLY LEADERLESS state, making further attempts.",
@@ -1058,7 +1066,8 @@ namespace EventStore.Core.Services.VNode {
 				Log.Information("Existing LEADER found during LEADER DISCOVERY stage. LEADER: [{leader}]. Proceeding to PRE-REPLICA state.", _leader);
 				_mainQueue.Publish(new LeaderDiscoveryMessage.LeaderFound(_leader));
 				_stateCorrelationId = Guid.NewGuid();
-				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leader));
+				_leaderConnectionCorrelationId = Guid.NewGuid();
+				_fsm.Handle(new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader));
 			} else {
 				Log.Debug(
 					"{leadersFound} found during LEADER DISCOVERY stage, making further attempts.",
@@ -1104,9 +1113,18 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(ReplicationMessage.ReconnectToLeader message) {
-			if (_leader.InstanceId != message.Leader.InstanceId || _stateCorrelationId != message.StateCorrelationId)
+			if (_leader.InstanceId != message.Leader.InstanceId || _leaderConnectionCorrelationId != message.ConnectionCorrelationId)
 				return;
 			_outputBus.Publish(message);
+		}
+
+		private void Handle(ReplicationMessage.LeaderConnectionFailed message) {
+			if (_leader.InstanceId != message.Leader.InstanceId || _leaderConnectionCorrelationId != message.LeaderConnectionCorrelationId)
+				return;
+			_leaderConnectionCorrelationId = Guid.NewGuid();
+			var msg = new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, message.Leader);
+			// Attempt the connection again after a timeout
+			_outputBus.Publish(TimerMessage.Schedule.Create(LeaderSubscriptionTimeout, _publishEnvelope, msg));
 		}
 
 		private void Handle(ReplicationMessage.SubscribeToLeader message) {
