@@ -4,4 +4,8 @@ namespace EventStore.Core.Index.Hashes {
 		uint Hash(byte[] data);
 		uint Hash(byte[] data, int offset, uint len, uint seed);
 	}
+
+	public interface IHasher<T> {
+		uint Hash(T t);
+	}
 }
