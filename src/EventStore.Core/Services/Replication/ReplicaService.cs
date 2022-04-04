@@ -108,12 +108,12 @@ namespace EventStore.Core.Services.Replication {
 				}
 				case VNodeState.PreReplica: {
 					var m = (SystemMessage.BecomePreReplica)message;
-					ConnectToLeader(m.Leader);
+					ConnectToLeader(m.LeaderConnectionCorrelationId, m.Leader);
 					break;
 				}
 				case VNodeState.PreReadOnlyReplica: {
 					var m = (SystemMessage.BecomePreReadOnlyReplica)message;
-					ConnectToLeader(m.Leader);
+					ConnectToLeader(m.LeaderConnectionCorrelationId, m.Leader);
 					break;
 				}
 				case VNodeState.CatchingUp:
@@ -145,10 +145,10 @@ namespace EventStore.Core.Services.Replication {
 		}
 
 		public void Handle(ReplicationMessage.ReconnectToLeader message) {
-			ConnectToLeader(message.Leader);
+			ConnectToLeader(message.ConnectionCorrelationId, message.Leader);
 		}
 
-		private void ConnectToLeader(MemberInfo leader) {
+		private void ConnectToLeader(Guid leaderConnectionCorrelationId, MemberInfo leader) {
 			Debug.Assert(_state == VNodeState.PreReplica || _state == VNodeState.PreReadOnlyReplica);
 
 			var leaderEndPoint = GetLeaderEndPoint(leader, _useSsl);
@@ -161,28 +161,33 @@ namespace EventStore.Core.Services.Replication {
 				_connection.Stop(string.Format("Reconnecting from old leader [{0}] to new leader: [{1}].",
 					_connection.RemoteEndPoint, leaderEndPoint));
 
-			_connection = new TcpConnectionManager(_useSsl ? "leader-secure" : "leader-normal",
-				Guid.NewGuid(),
-				_tcpDispatcher,
-				_publisher,
-				leaderEndPoint.GetHost(),
-				leaderEndPoint.GetOtherNames(),
-				leaderEndPoint,
-				_connector,
-				_useSsl,
-				_sslServerCertValidator,
-				() => {
-					var cert = _sslClientCertificateSelector();
-					return new X509CertificateCollection{cert};
-				},
-				_networkSendQueue,
-				_authProvider,
-				_authorizationGateway,
-				_heartbeatInterval,
-				_heartbeatTimeout,
-				OnConnectionEstablished,
-				OnConnectionClosed);
-			_connection.StartReceiving();
+			try {
+				_connection = new TcpConnectionManager(_useSsl ? "leader-secure" : "leader-normal",
+					Guid.NewGuid(),
+					_tcpDispatcher,
+					_publisher,
+					leaderEndPoint.GetHost(),
+					leaderEndPoint.GetOtherNames(),
+					leaderEndPoint,
+					_connector,
+					_useSsl,
+					_sslServerCertValidator,
+					() => {
+						var cert = _sslClientCertificateSelector();
+						return new X509CertificateCollection{cert};
+					},
+					_networkSendQueue,
+					_authProvider,
+					_authorizationGateway,
+					_heartbeatInterval,
+					_heartbeatTimeout,
+					OnConnectionEstablished,
+					OnConnectionClosed);
+				_connection.StartReceiving();
+			} catch (Exception ex) {
+				Log.Error(ex, "Failed to connect to leader [{leader}]. This will be retried.", leader);
+				_publisher.Publish(new ReplicationMessage.LeaderConnectionFailed(leaderConnectionCorrelationId, leader));
+			}
 		}
 
 		private static EndPoint GetLeaderEndPoint(MemberInfo leader, bool useSsl) {
@@ -202,6 +207,11 @@ namespace EventStore.Core.Services.Replication {
 			if (_state != VNodeState.PreReplica && _state != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("_state is {0}, but is expected to be {1} or {2}", _state,
 					VNodeState.PreReplica, VNodeState.PreReadOnlyReplica));
+			if (_connection is null) {
+				Log.Warning(
+					"Attempted to subscribe to LEADER [{leaderId:B}], but no connection has been established. This will be retried.", message.LeaderId);
+				return;
+			}
 
 			var logPosition = _db.Config.WriterCheckpoint.ReadNonFlushed();
 			var epochs = _epochManager.GetLastEpochs(ClusterConsts.SubscriptionLastEpochCount).ToArray();

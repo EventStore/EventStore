@@ -227,8 +227,11 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomePreReplica(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.PreReplica,
-				leader) {
+			public readonly Guid LeaderConnectionCorrelationId;
+
+			public BecomePreReplica(Guid correlationId, Guid leaderConnectionCorrelationId, MemberInfo leader)
+				: base(correlationId, VNodeState.PreReplica, leader) {
+				LeaderConnectionCorrelationId = leaderConnectionCorrelationId;
 			}
 		}
 
@@ -286,8 +289,11 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public BecomePreReadOnlyReplica(Guid correlationId, MemberInfo leader)
+			public readonly Guid LeaderConnectionCorrelationId;
+
+			public BecomePreReadOnlyReplica(Guid correlationId, Guid leaderConnectionCorrelationId, MemberInfo leader)
 				: base(correlationId, VNodeState.PreReadOnlyReplica, leader) {
+				LeaderConnectionCorrelationId = leaderConnectionCorrelationId;
 			}
 		}
 
