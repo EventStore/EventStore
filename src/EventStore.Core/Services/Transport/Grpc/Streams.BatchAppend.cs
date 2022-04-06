@@ -295,8 +295,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					new(Guid.NewGuid(), request.CorrelationId, envelope, requiresLeader, request.StreamId,
 						request.ExpectedVersion, request.Events.ToArray(), user, cancellationToken: token);
 
-				static TimeSpan GetRequestedTimeout(Options options) =>
-					(options.Deadline?.ToDateTime() ?? DateTime.MaxValue) - DateTime.UtcNow;
+				static TimeSpan GetRequestedTimeout(Options options) => options.DeadlineOptionCase switch {
+					DeadlineOptionOneofCase.Deadline => options.Deadline.ToTimeSpan(),
+					_ => (options.Deadline21100?.ToDateTime() ?? DateTime.MaxValue) - DateTime.UtcNow,
+				};
 
 				static TimeSpan Min(TimeSpan a, TimeSpan b) => a > b ? b : a;
 				static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
