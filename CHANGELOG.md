@@ -29,6 +29,15 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
 
+## [21.10.3] - 2022-04-11
+
+### Fixed
+- Attempt to reconnect to the leader every second if the node fails to establish a connection (for example due to DNS lookup timeout). [EventStore#3458](https://github.com/EventStore/EventStore/pull/3458)
+
+### Added
+- Support for DNS discovery with a secure cluster having only DNS SANs (including wildcard SANs) [EventStore#3427](https://github.com/EventStore/EventStore/pull/3427)
+- deadline_duration feature for batch append [EventStore#3454](https://github.com/EventStore/EventStore/pull/3454)
+
 ## [21.10.2] - 2022-03-04
 
 ### Fixed
