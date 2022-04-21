@@ -236,7 +236,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (records.Length > 0)
 					nextEventNumber = records[records.Length - 1].EventNumber + 1;
 				var isEndOfStream = endEventNumber >= lastEventNumber;
-				return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
+				return new IndexReadStreamResult(fromEventNumber, maxCount, records, metadata,
 					nextEventNumber, lastEventNumber, isEndOfStream);
 			}
 		}
