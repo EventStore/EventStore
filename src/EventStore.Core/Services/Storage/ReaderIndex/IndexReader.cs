@@ -264,7 +264,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (records.Length > 0)
 					nextEventNumber = records[records.Length - 1].EventNumber + 1;
 				var isEndOfStream = endEventNumber >= lastEventNumber;
-				return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
+				return new IndexReadStreamResult(fromEventNumber, maxCount, records, metadata,
 					nextEventNumber, lastEventNumber, isEndOfStream);
 			}
 
@@ -324,7 +324,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					Array.Reverse(resultsArray);
 
 					var isEndOfStream = endEventNumber >= lastEventNumber;
-					return new IndexReadStreamResult(endEventNumber, maxCount, resultsArray, metadata,
+					return new IndexReadStreamResult(fromEventNumber, maxCount, resultsArray, metadata,
 						nextEventNumber, lastEventNumber, isEndOfStream);
 				}
 
@@ -403,7 +403,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							isEndOfStream = false;
 						}
 
-						return new IndexReadStreamResult(endEventNumber, maxCount, resultsList.ToArray(), metadata,
+						return new IndexReadStreamResult(fromEventNumber, maxCount, resultsList.ToArray(), metadata,
 							nextEventNumber, lastEventNumber, isEndOfStream);
 					}
 
