@@ -15,6 +15,7 @@ namespace EventStore.Common.Configuration {
 			_sortOrder = _optionSections.SelectMany(optionSection =>
 					optionSection.GetProperties()
 						.Select(p => NameTranslators.CombineByPascalCase(p.Name, " ").ToUpper()))
+				.OrderBy(x => x)
 				.ToList();
 		}
 
