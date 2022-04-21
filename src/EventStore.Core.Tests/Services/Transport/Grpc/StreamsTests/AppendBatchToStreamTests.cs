@@ -80,8 +80,6 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 		}
 
-
-
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class multiple_batches<TLogFormat, TStreamId> : GrpcSpecification<TLogFormat, TStreamId> {
@@ -127,8 +125,45 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
+						StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8("stream")},
+						Deadline = Duration.FromTimeSpan(TimeSpan.Zero)
+					},
+					IsFinal = true,
+					ProposedMessages = {CreateEvents(1)},
+					CorrelationId = _correlationId.ToDto()
+				});
+			}
+
+			[Test]
+			public void is_error() {
+				Assert.AreEqual(_response.ResultCase, BatchAppendResp.ResultOneofCase.Error);
+				Assert.AreEqual(_response.Error.Code, Google.Rpc.Code.DeadlineExceeded);
+			}
+
+			[Test]
+			public void is_correlated() {
+				Assert.AreEqual(_correlationId.ToDto(), _response.CorrelationId);
+			}
+		}
+
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+		public class exceeded_deadline_timestamp<TLogFormat, TStreamId> : GrpcSpecification<TLogFormat, TStreamId> {
+			private BatchAppendResp _response;
+			private readonly Uuid _correlationId;
+
+			public exceeded_deadline_timestamp() {
+				_correlationId = Uuid.NewUuid();
+			}
+
+			protected override Task Given() => Task.CompletedTask;
+
+			protected override async Task When() {
+				_response = await AppendToStreamBatch(new BatchAppendReq {
+					Options = new() {
+						Any = new(),
 						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("stream") },
-						Deadline = Timestamp.FromDateTime(DateTime.UtcNow.AddSeconds(-1))
+						Deadline21100 = Timestamp.FromDateTime(DateTime.UtcNow)
 					},
 					IsFinal = true,
 					ProposedMessages = { CreateEvents(1) },
@@ -139,6 +174,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			[Test]
 			public void is_error() {
 				Assert.AreEqual(_response.ResultCase, BatchAppendResp.ResultOneofCase.Error);
+				Assert.AreEqual(_response.Error.Code, Google.Rpc.Code.DeadlineExceeded);
 			}
 			
 			[Test]
@@ -146,5 +182,6 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				Assert.AreEqual(_correlationId.ToDto(), _response.CorrelationId);
 			}
 		}
+
 	}
 }

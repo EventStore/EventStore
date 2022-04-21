@@ -4,6 +4,7 @@ option java_package = "com.eventstore.dbclient.proto.streams";
 
 import "shared.proto";
 import "status.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -214,7 +215,10 @@ message BatchAppendReq {
 			google.protobuf.Empty any = 4;
 			google.protobuf.Empty stream_exists = 5;
 		}
-		google.protobuf.Timestamp deadline = 6;
+		oneof deadline_option {
+			google.protobuf.Timestamp deadline_21_10_0 = 6;
+			google.protobuf.Duration deadline = 7;
+		}
 	}
 
 	message ProposedMessage {
