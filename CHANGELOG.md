@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Attempt to reconnect to the leader every second if the node fails to establish a connection (for example due to DNS lookup timeout). [EventStore#3458](https://github.com/EventStore/EventStore/pull/3458)
 
 ### Cherry picked from https
+- //github.com/thefringeninja/EventStore/pull/3454 [EventStore#3467](https://github.com/EventStore/EventStore/pull/3467)
 
 ### Added
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
