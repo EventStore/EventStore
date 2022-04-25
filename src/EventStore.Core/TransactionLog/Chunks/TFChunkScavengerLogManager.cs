@@ -213,7 +213,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							 || ev.Event.EventType == SystemEventTypes.ScavengeMergeCompleted
 							 || ev.Event.EventType == SystemEventTypes.ScavengeIndexCompleted) {
 								if (dictionary.TryGetValue("spaceSaved", out var spaceSavedEntry)) {
-									incompleteScavengeStats.SpaceSaved += (int)spaceSavedEntry;
+									incompleteScavengeStats.SpaceSaved += (long)spaceSavedEntry;
 								}
 								if (dictionary.TryGetValue("timeTaken", out var timeTakenEntry)) {
 									incompleteScavengeStats.TimeTaken += TimeSpan.Parse(timeTakenEntry.ToString());
@@ -221,7 +221,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 								if (ev.Event.EventType == SystemEventTypes.ScavengeChunksCompleted) {
 									if (dictionary.TryGetValue("chunkEndNumber", out var chunkEndNumberEntry)) {
-										incompleteScavengeStats.MaxChunkScavenged = Math.Max(incompleteScavengeStats.MaxChunkScavenged, (int)chunkEndNumberEntry);
+										incompleteScavengeStats.MaxChunkScavenged = Math.Max(incompleteScavengeStats.MaxChunkScavenged, (int)(long)chunkEndNumberEntry);
 									}
 								}
 							}
@@ -256,7 +256,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 
-			public int SpaceSaved { get; set; }
+			public long SpaceSaved { get; set; }
 			public int MaxChunkScavenged { get; set; }
 			public TimeSpan TimeTaken { get; set; } = TimeSpan.Zero;
 
