@@ -28,7 +28,8 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		private readonly SourceDefinitionBuilder _definitionBuilder;
 		private readonly List<EmittedEventEnvelope> _emitted;
 		private readonly InterpreterRuntime _interpreterRuntime;
-		private readonly JsonInstance _json;
+		JsonParser _parser;
+		JsonSerializer _serializer;
 		private CheckpointTag? _currentPosition;
 
 		private JsValue _state;
@@ -42,7 +43,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_definitionBuilder.AllEvents();
 			TimeConstraint timeConstraint = new(compilationTimeout, executionTimeout);
 			_engine = new Engine(opts => opts.Constraint(timeConstraint));
-			_engine.Global.RemoveOwnProperty("eval");
+			_engine.Realm.GlobalObject.RemoveOwnProperty("eval");
 			_state = JsValue.Undefined;
 			_sharedState = JsValue.Undefined;
 			_interpreterRuntime = new InterpreterRuntime(_engine, _definitionBuilder);
@@ -52,11 +53,11 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			timeConstraint.Compiling();
 			_engine.Execute(source);
 			timeConstraint.Executing();
-			_json = _interpreterRuntime.SwitchToExecutionMode();
-			_engine.Global.FastAddProperty("emit", new ClrFunctionInstance(_engine, "emit", Emit, 4), true, false, true);
-			_engine.Global.FastAddProperty("linkTo", new ClrFunctionInstance(_engine, "linkTo", LinkTo, 3), true, false, true);
-			_engine.Global.FastAddProperty("linkStreamTo", new ClrFunctionInstance(_engine, "linkStreamTo", LinkStreamTo, 3), true, false, true);
-			_engine.Global.FastAddProperty("copyTo", new ClrFunctionInstance(_engine, "copyTo", CopyTo, 3), true, false, true);
+			(_parser, _serializer) = _interpreterRuntime.SwitchToExecutionMode();
+			_engine.Realm.GlobalObject.FastAddProperty("emit", new ClrFunctionInstance(_engine, "emit", Emit, 4), true, false, true);
+			_engine.Realm.GlobalObject.FastAddProperty("linkTo", new ClrFunctionInstance(_engine, "linkTo", LinkTo, 3), true, false, true);
+			_engine.Realm.GlobalObject.FastAddProperty("linkStreamTo", new ClrFunctionInstance(_engine, "linkStreamTo", LinkStreamTo, 3), true, false, true);
+			_engine.Realm.GlobalObject.FastAddProperty("copyTo", new ClrFunctionInstance(_engine, "copyTo", CopyTo, 3), true, false, true);
 			_emitted = new List<EmittedEventEnvelope>();
 		}
 
@@ -73,7 +74,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		public void Load(string? state) {
 			_engine.ResetConstraints();
 			if (state != null) {
-				var jsValue = _json.Parse(_interpreterRuntime, new JsValue[] { new JsString(state) });
+				var jsValue = _parser.Parse(state);
 				LoadCurrentState(jsValue);
 			} else {
 				LoadCurrentState(JsValue.Null);
@@ -97,7 +98,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		public void LoadShared(string? state) {
 			_engine.ResetConstraints();
 			if (state != null) {
-				var jsValue = _json.Parse(_interpreterRuntime, new JsValue[] { new JsString(state) });
+				var jsValue = _parser.Parse(state);
 				LoadCurrentSharedState(jsValue);
 			} else {
 				LoadCurrentSharedState(JsValue.Null);
@@ -161,7 +162,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_currentPosition = deletePosition;
 
 			_interpreterRuntime.HandleDeleted(_state, partition, false);
-			newState = ConvertToStringHandlingNulls(_json, _state);
+			newState = ConvertToStringHandlingNulls(_serializer, _state);
 			return true;
 		}
 
@@ -170,7 +171,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			var result = _interpreterRuntime.TransformStateToResult(_state);
 			if (result == JsValue.Null || result == JsValue.Undefined)
 				return null;
-			return _json.Stringify(JsValue.Null, new[] { result }).AsString();
+			return _serializer.Serialize(result, JsValue.Undefined, JsValue.Undefined).AsString();
 		}
 
 		public bool ProcessEvent(string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event,
@@ -198,14 +199,14 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					if (_state.IsString()) {
 						newState = _state.AsString();
 					} else {
-						newState = ConvertToStringHandlingNulls(_json, state);
+						newState = ConvertToStringHandlingNulls(_serializer, state);
 					}
 				} else {
 					newState = "";
 				}
 
 				if (arr.TryGetValue(1, out var sharedState)) {
-					newSharedState = ConvertToStringHandlingNulls(_json, sharedState);
+					newSharedState = ConvertToStringHandlingNulls(_serializer, sharedState);
 				} else {
 					newSharedState = null;
 				}
@@ -214,15 +215,15 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				newState = _state.AsString();
 				newSharedState = null;
 			} else {
-				newState = ConvertToStringHandlingNulls(_json, _state);
+				newState = ConvertToStringHandlingNulls(_serializer, _state);
 				newSharedState = null;
 			}
 		}
 
-		private static string? ConvertToStringHandlingNulls(JsonInstance json, JsValue value) {
+		private static string? ConvertToStringHandlingNulls(JsonSerializer serializer, JsValue value) {
 			if (value.IsNull() || value.IsUndefined())
 				return null;
-			return json.Stringify(JsValue.Undefined, new[] { value }).AsString();
+			return serializer.Serialize(value, JsValue.Undefined, JsValue.Undefined).AsString();
 		}
 
 		JsValue Emit(JsValue thisValue, JsValue[] parameters) {
@@ -238,13 +239,13 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				throw new ArgumentException("object expected", "metadata");
 #pragma warning restore CA2208
 
-			var data = _json.Stringify(JsValue.Undefined, new JsValue[] { eventBody }).AsString();
+			var data = _serializer.Serialize(eventBody, JsValue.Undefined, JsValue.Undefined).AsString();
 			ExtraMetaData? metadata = null;
 			if (parameters.Length == 4) {
 				var md = parameters.At(3).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json, true));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _serializer, true));
 				}
 
 				metadata = new ExtraMetaData(d);
@@ -274,14 +275,14 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			throw new ArgumentException("string expected", parameterName);
 		}
 
-		static string? AsString(JsValue? value, JsonInstance json, bool formatForRaw) {
+		static string? AsString(JsValue? value, JsonSerializer serializer, bool formatForRaw) {
 			return value switch {
 				JsBoolean b => b.AsBoolean() ? "true" : "false",
 				JsString s => formatForRaw ? $"\"{s.AsString()}\"": s.AsString(),
 				JsNumber n => n.AsNumber().ToString(CultureInfo.InvariantCulture),
 				JsNull => null,
 				JsUndefined => null,
-				{ } v => json.Stringify(JsValue.Undefined, new[] { v }).AsString(),
+				{ } v => serializer.Serialize(v, JsValue.Undefined, JsValue.Undefined).AsString(),
 				_ => null
 			};
 		}
@@ -304,7 +305,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = EnsureNonNullObjectValue(parameters.At(2), "metaData");
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json, true));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _serializer, true));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -327,7 +328,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(4).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _json, true));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _serializer, true));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -395,7 +396,8 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private readonly JsValue _definesStateTransformInstance;
 
 			private readonly SourceDefinitionBuilder _definitionBuilder;
-			private readonly JsonInstance _json;
+			private readonly JsonParser _parser;
+			private readonly JsonSerializer _serializer;
 
 			private readonly ILogger _logger;
 
@@ -442,9 +444,10 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				_handlers = new Dictionary<string, ScriptFunctionInstance>(StringComparer.Ordinal);
 				_createdHandlers = new List<ScriptFunctionInstance>();
 				_transforms = new List<(TransformType, ScriptFunctionInstance)>();
-				_json = JsonInstance.CreateJsonObject(_engine);
+				_parser = new JsonParser(engine);
+				_serializer = new JsonSerializer(engine);
 				_definitionFunctions = new List<string>();
-				_engine.Global.FastAddProperty("log", new ClrFunctionInstance(_engine, "log", Log), false, false, false);
+				_engine.Realm.GlobalObject.FastAddProperty("log", new ClrFunctionInstance(_engine, "log", Log), false, false, false);
 				AddDefinitionFunction("options", SetOptions, 1);
 				AddDefinitionFunction("fromStream", FromStream, 1);
 				AddDefinitionFunction("fromCategory", FromCategory, 4);
@@ -466,7 +469,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 			private void AddDefinitionFunction(string name, Func<JsValue, JsValue[], JsValue> func, int length) {
 				_definitionFunctions.Add(name);
-				_engine.Global.FastAddProperty(name, new ClrFunctionInstance(_engine, name, func, length), true, false, true);
+				_engine.Realm.GlobalObject.FastAddProperty(name, new ClrFunctionInstance(_engine, name, func, length), true, false, true);
 			}
 
 			void Log(string message) {
@@ -481,7 +484,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					if (p0 != null && p0.IsPrimitive())
 						Log(p0.ToString());
 					if (p0 is ObjectInstance oi)
-						Log(_json.Stringify(Undefined, new JsValue[] { oi }).AsString());
+						Log(_serializer.Serialize(oi, Undefined, Undefined).AsString());
 					return Undefined;
 				}
 
@@ -495,7 +498,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 						if (p != null && p.IsPrimitive())
 							Log(p.ToString());
 						if (p is ObjectInstance oi)
-							sb.Append(_json.Stringify(Undefined, new JsValue[] { oi }).AsString());
+							sb.Append(_serializer.Serialize(oi, Undefined, Undefined));
 					}
 
 					Log(sb.ToString());
@@ -697,19 +700,19 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			}
 
 			public JsValue InitializeState() {
-				return _init == null ? new ObjectInstance(Engine) : _init.Invoke();
+				return _init == null ? new ObjectInstance(Engine) : _init.Call();
 			}
 
 			public JsValue InitializeSharedState() {
-				return _initShared == null ? new ObjectInstance(Engine) : _initShared.Invoke();
+				return _initShared == null ? new ObjectInstance(Engine) : _initShared.Call();
 			}
 
 			public JsValue Handle(JsValue state, EventEnvelope eventEnvelope) {
 				JsValue newState;
 				if (_handlers.TryGetValue(eventEnvelope.EventType, out var handler)) {
-					newState = handler.Invoke(state, FromObject(Engine, eventEnvelope));
+					newState = handler.Call(state, FromObject(Engine, eventEnvelope));
 				} else if (_any != null) {
-					newState = _any.Invoke(state, FromObject(Engine, eventEnvelope));
+					newState = _any.Call(state, FromObject(Engine, eventEnvelope));
 				} else {
 					newState = eventEnvelope.BodyRaw;
 				}
@@ -720,10 +723,10 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				foreach (var (type, transform) in _transforms) {
 					switch (type) {
 						case TransformType.Transform:
-							state = transform.Invoke(state);
+							state = transform.Call(state);
 							break;
 						case TransformType.Filter: {
-								var result = transform.Invoke(state);
+								var result = transform.Call(state);
 								if (!(result.IsBoolean() && result.AsBoolean()) || result == Null || result == Undefined) {
 									return Null;
 								}
@@ -781,7 +784,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 			public JsValue GetPartition(EventEnvelope envelope) {
 				if (_partitionFunction != null)
-					return _partitionFunction.Invoke(envelope);
+					return _partitionFunction.Call(envelope);
 				return Null;
 			}
 
@@ -797,16 +800,16 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				Transform
 			}
 
-			public JsonInstance SwitchToExecutionMode() {
+			public (JsonParser, JsonSerializer) SwitchToExecutionMode() {
 				RestrictProperties("execution");
 				foreach (var globalProp in _definitionFunctions) {
-					_engine.Global.RemoveOwnProperty(globalProp);
+					_engine.Realm.GlobalObject.RemoveOwnProperty(globalProp);
 				}
-				return _json;
+				return (_parser, _serializer);
 			}
 
 			public EventEnvelope CreateEnvelope(string partition, ResolvedEvent @event, string category) {
-				var envelope = new EventEnvelope(_engine, _json);
+				var envelope = new EventEnvelope(_engine, _parser, _serializer);
 				envelope.Partition = partition;
 				envelope.BodyRaw = @event.Data;
 				envelope.MetadataRaw = @event.Metadata;
@@ -820,8 +823,8 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				return envelope;
 			}
 			public sealed class EventEnvelope : ObjectInstance {
-				private readonly JsonInstance _json;
-
+				private readonly JsonParser _parser;
+				private readonly JsonSerializer _serializer;
 				public string StreamId {
 					set => SetOwnProperty("streamId", new PropertyDescriptor(value, false, true, false));
 				}
@@ -830,7 +833,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				}
 
 				public string EventType {
-					get => AsString(Get("eventType"), _json, false) ?? "";
+					get => AsString(Get("eventType"), _serializer, false) ?? "";
 					set => SetOwnProperty("eventType", new PropertyDescriptor(value, false, true, false));
 				}
 
@@ -847,9 +850,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 				private bool EnsureBody(out JsValue objectInstance) {
 					if (IsJson && TryGetValue("bodyRaw", out var raw)) {
-						var args = new JsValue[1];
-						args[0] = raw;
-						var body = _json.Parse(JsValue.Undefined, args);
+						var body = _parser.Parse(raw.AsString());
 						var pd = new PropertyDescriptor(body, false, true, false);
 						SetOwnProperty("body", pd);
 						SetOwnProperty("data", pd);
@@ -867,7 +868,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				}
 
 				public string? BodyRaw {
-					get => AsString(Get("bodyRaw"), _json, false);
+					get => AsString(Get("bodyRaw"), _serializer, false);
 					set => SetOwnProperty("bodyRaw", new PropertyDescriptor(value, false, true, false));
 				}
 
@@ -885,9 +886,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				{
 					if (TryGetValue("metadataRaw", out var raw))
 					{
-						var args = new JsValue[1];
-						args[0] = raw;
-						var metadata = _json.Parse(JsValue.Undefined, args);
+						var metadata = _parser.Parse(raw.AsString());
 						SetOwnProperty("metadata", new PropertyDescriptor(metadata, false, true, false));
 						{
 							value = metadata;
@@ -917,9 +916,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				{
 					if (TryGetValue("linkMetadataRaw", out var raw))
 					{
-						var args = new JsValue[1];
-						args[0] = raw;
-						var metadata = _json.Parse(JsValue.Undefined, args);
+						var metadata = _parser.Parse(raw.AsString());
 						SetOwnProperty("linkMetadata", new PropertyDescriptor(metadata, false, true, false));
 						{
 							value = metadata;
@@ -947,8 +944,9 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					set => SetOwnProperty("eventId", new PropertyDescriptor(value, false, true, false));
 				}
 
-				public EventEnvelope(Engine engine, JsonInstance json) : base(engine) {
-					_json = json;
+				public EventEnvelope(Engine engine, JsonParser parser, JsonSerializer serializer) : base(engine) {
+					_parser = parser;
+					_serializer = serializer;
 
 				}
 
