@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Update the epoch checkpoint with the proper position before going offline for truncation [EventStore#3414](https://github.com/EventStore/EventStore/pull/3414)
 - Authentication Error For Docker Tag Automation [EventStore#3447](https://github.com/EventStore/EventStore/pull/3447)
 - Attempt to reconnect to the leader every second if the node fails to establish a connection (for example due to DNS lookup timeout). [EventStore#3458](https://github.com/EventStore/EventStore/pull/3458)
+- overflow when trying to complete a scavenge after the scavenge has saved a lot of space. [EventStore#3476](https://github.com/EventStore/EventStore/pull/3476)
 
 ### Cherry picked from https
 - //github.com/thefringeninja/EventStore/pull/3454 [EventStore#3467](https://github.com/EventStore/EventStore/pull/3467)
@@ -26,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - automatically update license file with current year [EventStore#3382](https://github.com/EventStore/EventStore/pull/3382)
 - Logging around read timeouts in projection emitted streams and emitted stream trackers [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 - Support for DNS discovery with a secure cluster having only DNS SANs (including wildcard SANs) [EventStore#3427](https://github.com/EventStore/EventStore/pull/3427)
+- Fast path for forward reads that start after the LastEventNumber [EventStore#3474](https://github.com/EventStore/EventStore/pull/3474)
 
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
