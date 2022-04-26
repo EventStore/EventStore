@@ -17,6 +17,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public readonly EventRecord[] Records;
 		public readonly StreamMetadata Metadata;
 
+		/// <summary>
+		/// Failure Constructor
+		/// </summary>
 		public IndexReadStreamResult(long fromEventNumber, int maxCount, ReadStreamResult result,
 			StreamMetadata metadata, long lastEventNumber) {
 			if (result == ReadStreamResult.Success)
@@ -34,13 +37,29 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Metadata = metadata;
 		}
 
-		public IndexReadStreamResult(long fromEventNumber,
+		/// <summary>
+		/// Success Constructor
+		/// </summary>
+		/// <param name="fromEventNumber">
+		///     EventNumber that the read starts from. Usually as specified in the request.
+		///     Sometimes resolved (e.g. from EndOfStream to the actual lastEventNumber)
+		///     This is not returned to the client when reading forwards, only backwards.
+		/// </param>
+		/// <param name="maxCount">The maximum number of events requested</param>
+		/// <param name="records"></param>
+		/// <param name="metadata"></param>
+		/// <param name="nextEventNumber">The event number to start the next _request_</param>
+		/// <param name="lastEventNumber">The last event number of the _stream_</param>
+		/// <param name="isEndOfStream"></param>
+		public IndexReadStreamResult(
+			long fromEventNumber,
 			int maxCount,
 			EventRecord[] records,
 			StreamMetadata metadata,
 			long nextEventNumber,
 			long lastEventNumber,
 			bool isEndOfStream) {
+
 			Ensure.NotNull(records, "records");
 
 			FromEventNumber = fromEventNumber;

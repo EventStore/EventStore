@@ -205,15 +205,32 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				long startEventNumber = fromEventNumber;
 				long endEventNumber = Math.Min(long.MaxValue, fromEventNumber + maxCount - 1);
 
+				// calculate minEventNumber, which is the lower bound that we are allowed to read
+				// according to the MaxCount and TruncateBefore
 				long minEventNumber = 0;
 				if (metadata.MaxCount.HasValue)
 					minEventNumber = Math.Max(minEventNumber, lastEventNumber - metadata.MaxCount.Value + 1);
 				if (metadata.TruncateBefore.HasValue)
 					minEventNumber = Math.Max(minEventNumber, metadata.TruncateBefore.Value);
+
+				// early return if we are trying to read events that are all below the lower bound
 				if (endEventNumber < minEventNumber)
 					return new IndexReadStreamResult(fromEventNumber, maxCount, IndexReadStreamResult.EmptyRecords,
 						metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
+
+				// start our read at the lower bound if we were going to start it before hand.
 				startEventNumber = Math.Max(startEventNumber, minEventNumber);
+
+				// early return if we are trying to read events that are all above the upper bound
+				if (startEventNumber > lastEventNumber)
+					return new IndexReadStreamResult(
+						fromEventNumber: fromEventNumber,
+						maxCount: maxCount,
+						records: IndexReadStreamResult.EmptyRecords,
+						metadata: metadata,
+						nextEventNumber: lastEventNumber + 1,
+						lastEventNumber: lastEventNumber,
+						isEndOfStream: true);
 
 				if (metadata.MaxAge.HasValue) {
 					return ForStreamWithMaxAge(streamId,
@@ -236,7 +253,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				if (records.Length > 0)
 					nextEventNumber = records[records.Length - 1].EventNumber + 1;
 				var isEndOfStream = endEventNumber >= lastEventNumber;
-				return new IndexReadStreamResult(endEventNumber, maxCount, records, metadata,
+				return new IndexReadStreamResult(fromEventNumber, maxCount, records, metadata,
 					nextEventNumber, lastEventNumber, isEndOfStream);
 			}
 		}
