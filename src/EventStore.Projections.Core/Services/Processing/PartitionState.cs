@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using EventStore.Common.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -38,7 +39,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var stateJson = state != null ? state.ToCanonicalJson() : "";
 			var resultJson = result != null ? result.ToCanonicalJson() : null;
 
-			return new PartitionState(stateJson, resultJson, causedBy);
+			return new PartitionState(stateJson, serializedState, resultJson, causedBy);
 		}
 
 		private static void Error(JsonTextReader reader, string message) {
@@ -47,15 +48,27 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private readonly string _state;
 		private readonly string _result;
+		private readonly string _serializedState;
 		private readonly CheckpointTag _causedBy;
 
-		public PartitionState(string state, string result, CheckpointTag causedBy) {
+		private PartitionState(string state, string serializedState, string result, CheckpointTag causedBy) {
 			if (state == null) throw new ArgumentNullException("state");
 			if (causedBy == null) throw new ArgumentNullException("causedBy");
+
+			if (string.IsNullOrEmpty(serializedState) || serializedState[0] != '[' && serializedState[serializedState.Length-1] != ']') {
+				_serializedState = $"[{state}]";
+			} else {
+				_serializedState = serializedState;
+			}
 
 			_state = state;
 			_result = result;
 			_causedBy = causedBy;
+		}
+		
+
+		public PartitionState(string state, string result, CheckpointTag causedBy) : this(state, null, result, causedBy) {
+			
 		}
 
 		public string State {
@@ -74,9 +87,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var state = _state;
 			if (state == "" && Result != null)
 				throw new Exception("state == \"\" && Result != null");
-			return Result != null
-				? "[" + state + "," + _result + "]"
-				: "[" + state + "]";
+
+			return Result == null ? _serializedState : $"[{state},{Result}]";
 		}
 	}
 }
