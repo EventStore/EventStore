@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net5.0</TargetFramework>
+		<Platforms>x64;ARM64</Platforms>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EventStore.Projections.Core.Tests\EventStore.Projections.Core.Tests.csproj" />
+    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+  </ItemGroup>
+
+</Project>

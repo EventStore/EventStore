@@ -1,9 +1,15 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using EventStore.Core.Services;
 using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
@@ -22,6 +28,7 @@ using ILogger = Serilog.ILogger;
 #nullable enable
 namespace EventStore.Projections.Core.Services.Interpreted {
 	public class JintProjectionStateHandler : IProjectionStateHandler {
+		private readonly ILogger _logger = Serilog.Log.ForContext<JintProjectionStateHandler>();
 		private readonly bool _enableContentTypeValidation;
 		static readonly Stopwatch _sw = Stopwatch.StartNew();
 		private readonly Engine _engine;
@@ -29,7 +36,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		private readonly List<EmittedEventEnvelope> _emitted;
 		private readonly InterpreterRuntime _interpreterRuntime;
 		JsonParser _parser;
-		JsonSerializer _serializer;
 		private CheckpointTag? _currentPosition;
 
 		private JsValue _state;
@@ -47,21 +53,20 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_state = JsValue.Undefined;
 			_sharedState = JsValue.Undefined;
 			_interpreterRuntime = new InterpreterRuntime(_engine, _definitionBuilder);
-
-
+			_engine.Realm.GlobalObject.FastAddProperty("log", new ClrFunctionInstance(_engine, "log", Log), false, false, false);
 
 			timeConstraint.Compiling();
 			_engine.Execute(source);
 			timeConstraint.Executing();
-			(_parser, _serializer) = _interpreterRuntime.SwitchToExecutionMode();
+			_parser = _interpreterRuntime.SwitchToExecutionMode();
+			
+			
 			_engine.Realm.GlobalObject.FastAddProperty("emit", new ClrFunctionInstance(_engine, "emit", Emit, 4), true, false, true);
 			_engine.Realm.GlobalObject.FastAddProperty("linkTo", new ClrFunctionInstance(_engine, "linkTo", LinkTo, 3), true, false, true);
 			_engine.Realm.GlobalObject.FastAddProperty("linkStreamTo", new ClrFunctionInstance(_engine, "linkStreamTo", LinkStreamTo, 3), true, false, true);
 			_engine.Realm.GlobalObject.FastAddProperty("copyTo", new ClrFunctionInstance(_engine, "copyTo", CopyTo, 3), true, false, true);
 			_emitted = new List<EmittedEventEnvelope>();
 		}
-
-
 
 		public void Dispose() {
 		}
@@ -103,8 +108,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			} else {
 				LoadCurrentSharedState(JsValue.Null);
 			}
-
-
 		}
 
 		private void LoadCurrentSharedState(JsValue jsValue) {
@@ -137,7 +140,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		public string? GetStatePartition(CheckpointTag eventPosition, string category, ResolvedEvent data) {
 			_currentPosition = eventPosition;
 			_engine.ResetConstraints();
-			var envelope = _interpreterRuntime.CreateEnvelope("", data, category);
+			var envelope = CreateEnvelope("", data, category);
 			var partition = _interpreterRuntime.GetPartition(envelope);
 			if (partition == JsValue.Null || partition == JsValue.Undefined || !(partition.IsString() || partition.IsNumber()))
 				return null;
@@ -149,7 +152,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			out EmittedEventEnvelope[]? emittedEvents) {
 			_engine.ResetConstraints();
 			_currentPosition = createPosition;
-			var envelope = _interpreterRuntime.CreateEnvelope(partition, @event, "");
+			var envelope = CreateEnvelope(partition, @event, "");
 			_interpreterRuntime.HandleCreated(_state, envelope);
 
 			emittedEvents = _emitted.Count > 0 ? _emitted.ToArray() : null;
@@ -162,7 +165,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_currentPosition = deletePosition;
 
 			_interpreterRuntime.HandleDeleted(_state, partition, false);
-			newState = ConvertToStringHandlingNulls(_serializer, _state);
+			newState = ConvertToStringHandlingNulls(_state);
 			return true;
 		}
 
@@ -171,7 +174,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			var result = _interpreterRuntime.TransformStateToResult(_state);
 			if (result == JsValue.Null || result == JsValue.Undefined)
 				return null;
-			return _serializer.Serialize(result, JsValue.Undefined, JsValue.Undefined).AsString();
+			return Serialize(result);
 		}
 
 		public bool ProcessEvent(string partition, CheckpointTag eventPosition, string category, ResolvedEvent @event,
@@ -184,7 +187,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				return true;
 			}
 
-			var envelope = _interpreterRuntime.CreateEnvelope(partition, @event, category);
+			var envelope = CreateEnvelope(partition, @event, category);
 			_state = _interpreterRuntime.Handle(_state, envelope);
 			PrepareOutput(out newState, out newSharedState, out emittedEvents);
 			return true;
@@ -199,14 +202,14 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 					if (_state.IsString()) {
 						newState = _state.AsString();
 					} else {
-						newState = ConvertToStringHandlingNulls(_serializer, state);
+						newState = ConvertToStringHandlingNulls(state);
 					}
 				} else {
 					newState = "";
 				}
 
 				if (arr.TryGetValue(1, out var sharedState)) {
-					newSharedState = ConvertToStringHandlingNulls(_serializer, sharedState);
+					newSharedState = ConvertToStringHandlingNulls(sharedState);
 				} else {
 					newSharedState = null;
 				}
@@ -215,15 +218,15 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				newState = _state.AsString();
 				newSharedState = null;
 			} else {
-				newState = ConvertToStringHandlingNulls(_serializer, _state);
+				newState = ConvertToStringHandlingNulls(_state);
 				newSharedState = null;
 			}
 		}
 
-		private static string? ConvertToStringHandlingNulls(JsonSerializer serializer, JsValue value) {
+		private string? ConvertToStringHandlingNulls(JsValue value) {
 			if (value.IsNull() || value.IsUndefined())
 				return null;
-			return serializer.Serialize(value, JsValue.Undefined, JsValue.Undefined).AsString();
+			return Serialize(value);
 		}
 
 		JsValue Emit(JsValue thisValue, JsValue[] parameters) {
@@ -239,13 +242,13 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				throw new ArgumentException("object expected", "metadata");
 #pragma warning restore CA2208
 
-			var data = _serializer.Serialize(eventBody, JsValue.Undefined, JsValue.Undefined).AsString();
+			var data = Serialize(eventBody);
 			ExtraMetaData? metadata = null;
 			if (parameters.Length == 4) {
 				var md = parameters.At(3).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _serializer, true));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, true));
 				}
 
 				metadata = new ExtraMetaData(d);
@@ -275,14 +278,13 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			throw new ArgumentException("string expected", parameterName);
 		}
 
-		static string? AsString(JsValue? value, JsonSerializer serializer, bool formatForRaw) {
+		string? AsString(JsValue? value, bool formatForRaw) {
 			return value switch {
 				JsBoolean b => b.AsBoolean() ? "true" : "false",
-				JsString s => formatForRaw ? $"\"{s.AsString()}\"": s.AsString(),
+				JsString s => formatForRaw ? $"\"{s.AsString()}\"" : s.AsString(),
 				JsNumber n => n.AsNumber().ToString(CultureInfo.InvariantCulture),
 				JsNull => null,
-				JsUndefined => null,
-				{ } v => serializer.Serialize(v, JsValue.Undefined, JsValue.Undefined).AsString(),
+				JsUndefined => null, { } v => Serialize(value),
 				_ => null
 			};
 		}
@@ -305,7 +307,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = EnsureNonNullObjectValue(parameters.At(2), "metaData");
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _serializer, true));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, true));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -328,7 +330,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(4).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, _serializer, true));
+					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, true));
 				}
 				metadata = new ExtraMetaData(d);
 			}
@@ -338,6 +340,40 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		}
 
 		JsValue CopyTo(JsValue thisValue, JsValue[] parameters) {
+			return JsValue.Undefined;
+		}
+		
+		void Log(string message) {
+			_logger.Debug(message, Array.Empty<object>());
+		}
+
+		private JsValue Log(JsValue thisValue, JsValue[] parameters) {
+			if (parameters.Length == 0)
+				return JsValue.Undefined;
+			if (parameters.Length == 1) {
+				var p0 = parameters.At(0);
+				if (p0 != null && p0.IsPrimitive())
+					Log(p0.ToString());
+				if (p0 is ObjectInstance oi)
+					Log(Serialize(oi));
+				return JsValue.Undefined;
+			}
+
+
+			if (parameters.Length > 1) {
+				var sb = new StringBuilder();
+				for (int i = 0; i < parameters.Length; i++) {
+					if (i > 1)
+						sb.Append(" ,");
+					var p = parameters.At(i);
+					if (p != null && p.IsPrimitive())
+						Log(p.ToString());
+					if (p is ObjectInstance oi)
+						sb.Append(Serialize(oi));
+				}
+
+				Log(sb.ToString());
+			}
 			return JsValue.Undefined;
 		}
 
@@ -397,9 +433,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 			private readonly SourceDefinitionBuilder _definitionBuilder;
 			private readonly JsonParser _parser;
-			private readonly JsonSerializer _serializer;
-
-			private readonly ILogger _logger;
 
 			private static readonly IReadOnlyDictionary<string, Action<InterpreterRuntime>> _possibleProperties = new Dictionary<string, Action<InterpreterRuntime>>() {
 				["when"] = i => i.FastAddProperty("when", i._whenInstance, true, false, true),
@@ -439,15 +472,13 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private readonly List<string> _definitionFunctions;
 
 			public InterpreterRuntime(Engine engine, SourceDefinitionBuilder builder) : base(engine) {
-				_logger = Serilog.Log.ForContext<InterpreterRuntime>();
+				
 				_definitionBuilder = builder;
 				_handlers = new Dictionary<string, ScriptFunctionInstance>(StringComparer.Ordinal);
 				_createdHandlers = new List<ScriptFunctionInstance>();
 				_transforms = new List<(TransformType, ScriptFunctionInstance)>();
 				_parser = new JsonParser(engine);
-				_serializer = new JsonSerializer(engine);
 				_definitionFunctions = new List<string>();
-				_engine.Realm.GlobalObject.FastAddProperty("log", new ClrFunctionInstance(_engine, "log", Log), false, false, false);
 				AddDefinitionFunction("options", SetOptions, 1);
 				AddDefinitionFunction("fromStream", FromStream, 1);
 				AddDefinitionFunction("fromCategory", FromCategory, 4);
@@ -470,40 +501,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private void AddDefinitionFunction(string name, Func<JsValue, JsValue[], JsValue> func, int length) {
 				_definitionFunctions.Add(name);
 				_engine.Realm.GlobalObject.FastAddProperty(name, new ClrFunctionInstance(_engine, name, func, length), true, false, true);
-			}
-
-			void Log(string message) {
-				_logger.Debug(message, Array.Empty<object>());
-			}
-
-			private JsValue Log(JsValue thisValue, JsValue[] parameters) {
-				if (parameters.Length == 0)
-					return Undefined;
-				if (parameters.Length == 1) {
-					var p0 = parameters.At(0);
-					if (p0 != null && p0.IsPrimitive())
-						Log(p0.ToString());
-					if (p0 is ObjectInstance oi)
-						Log(_serializer.Serialize(oi, Undefined, Undefined).AsString());
-					return Undefined;
-				}
-
-
-				if (parameters.Length > 1) {
-					var sb = new StringBuilder();
-					for (int i = 0; i < parameters.Length; i++) {
-						if (i > 1)
-							sb.Append(" ,");
-						var p = parameters.At(i);
-						if (p != null && p.IsPrimitive())
-							Log(p.ToString());
-						if (p is ObjectInstance oi)
-							sb.Append(_serializer.Serialize(oi, Undefined, Undefined));
-					}
-
-					Log(sb.ToString());
-				}
-				return Undefined;
 			}
 
 			private JsValue FromStream(JsValue _, JsValue[] parameters) {
@@ -800,198 +797,416 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				Transform
 			}
 
-			public (JsonParser, JsonSerializer) SwitchToExecutionMode() {
+			public JsonParser SwitchToExecutionMode() {
 				RestrictProperties("execution");
 				foreach (var globalProp in _definitionFunctions) {
 					_engine.Realm.GlobalObject.RemoveOwnProperty(globalProp);
 				}
-				return (_parser, _serializer);
+				return _parser;
 			}
 
-			public EventEnvelope CreateEnvelope(string partition, ResolvedEvent @event, string category) {
-				var envelope = new EventEnvelope(_engine, _parser, _serializer);
-				envelope.Partition = partition;
-				envelope.BodyRaw = @event.Data;
-				envelope.MetadataRaw = @event.Metadata;
-				envelope.StreamId = @event.EventStreamId;
-				envelope.EventId = @event.EventId.ToString("D");
-				envelope.EventType = @event.EventType;
-				envelope.LinkMetadataRaw = @event.PositionMetadata;
-				envelope.IsJson = @event.IsJson;
-				envelope.Category = category;
-				envelope.SequenceNumber = @event.EventSequenceNumber;
-				return envelope;
-			}
-			public sealed class EventEnvelope : ObjectInstance {
-				private readonly JsonParser _parser;
-				private readonly JsonSerializer _serializer;
-				public string StreamId {
-					set => SetOwnProperty("streamId", new PropertyDescriptor(value, false, true, false));
-				}
-				public long SequenceNumber {
-					set => SetOwnProperty("sequenceNumber", new PropertyDescriptor(value, false, true, false));
-				}
-
-				public string EventType {
-					get => AsString(Get("eventType"), _serializer, false) ?? "";
-					set => SetOwnProperty("eventType", new PropertyDescriptor(value, false, true, false));
-				}
-
-				public JsValue Body {
-					get {
-						if (TryGetValue("body", out var value) && value is ObjectInstance oi)
-							return oi;
-						if (EnsureBody(out JsValue objectInstance))
-							return objectInstance;
-
-						return Undefined;
-					}
-				}
-
-				private bool EnsureBody(out JsValue objectInstance) {
-					if (IsJson && TryGetValue("bodyRaw", out var raw)) {
-						var body = _parser.Parse(raw.AsString());
-						var pd = new PropertyDescriptor(body, false, true, false);
-						SetOwnProperty("body", pd);
-						SetOwnProperty("data", pd);
-						objectInstance = (ObjectInstance)body;
-						return true;
-					}
-
-					objectInstance = Undefined;
-					return false;
-				}
-
-				public bool IsJson {
-					get => Get("isJson").AsBoolean();
-					set => SetOwnProperty("isJson", new PropertyDescriptor(value, false, true, false));
-				}
-
-				public string? BodyRaw {
-					get => AsString(Get("bodyRaw"), _serializer, false);
-					set => SetOwnProperty("bodyRaw", new PropertyDescriptor(value, false, true, false));
-				}
-
-				private JsValue Metadata {
-					get {
-						if (TryGetValue("metadata", out var value) && value is ObjectInstance oi)
-							return oi;
-						if (EnsureMetadata(out value)) return value;
-
-						return Undefined;
-					}
-				}
-
-				private bool EnsureMetadata(out JsValue value)
-				{
-					if (TryGetValue("metadataRaw", out var raw))
-					{
-						var metadata = _parser.Parse(raw.AsString());
-						SetOwnProperty("metadata", new PropertyDescriptor(metadata, false, true, false));
-						{
-							value = metadata;
-							return true;
-						}
-					}
-
-					value = Undefined;
-					return false;
-				}
-
-				public string MetadataRaw {
-					set => FastSetProperty("metadataRaw", new PropertyDescriptor(value, false, true, false));
-				}
-
-				private JsValue LinkMetadata {
-					get {
-						if (TryGetValue("linkMetadata", out var value) && value is ObjectInstance oi)
-							return oi;
-						if (EnsureLinkMetadata(out value)) return value;
-
-						return Undefined;
-					}
-				}
-
-				private bool EnsureLinkMetadata(out JsValue value)
-				{
-					if (TryGetValue("linkMetadataRaw", out var raw))
-					{
-						var metadata = _parser.Parse(raw.AsString());
-						SetOwnProperty("linkMetadata", new PropertyDescriptor(metadata, false, true, false));
-						{
-							value = metadata;
-							return true;
-						}
-					}
-
-					value = Undefined;
-					return false;
-				}
-
-				public string LinkMetadataRaw {
-					set => SetOwnProperty("linkMetadataRaw", new PropertyDescriptor(value, false, true, false));
-				}
-
-				public string Partition {
-					set => SetOwnProperty("partition", new PropertyDescriptor(value, false, true, false));
-				}
-
-				public string Category {
-					set => SetOwnProperty("category", new PropertyDescriptor(value, false, true, false));
-				}
-
-				public string EventId {
-					set => SetOwnProperty("eventId", new PropertyDescriptor(value, false, true, false));
-				}
-
-				public EventEnvelope(Engine engine, JsonParser parser, JsonSerializer serializer) : base(engine) {
-					_parser = parser;
-					_serializer = serializer;
-
-				}
-
-				public override JsValue Get(JsValue property, JsValue receiver) {
-					if (property == "body" || property == "data") {
-						return Body;
-					}
-
-					if (property == "metadata") {
-						return Metadata;
-					}
-
-					if (property == "linkMetadata") {
-						return LinkMetadata;
-					}
-					return base.Get(property, receiver);
-				}
-
-				public override List<JsValue> GetOwnPropertyKeys(Types types = Types.None | Types.String | Types.Symbol) {
-					var list = base.GetOwnPropertyKeys(types);
-					return list;
-				}
-
-				public override IEnumerable<KeyValuePair<JsValue, PropertyDescriptor>> GetOwnProperties() {
-					if (!HasOwnProperty("body")) {
-						EnsureBody(out _);
-					}
-
-					if (!HasOwnProperty("metadata")) {
-						EnsureMetadata(out _);
-					}
-
-					if (!HasOwnProperty("linkMetadata")) {
-						EnsureLinkMetadata(out _);
-					}
-
-					var list = base.GetOwnProperties();
-
-					return list;
-				}
-			}
 
 			public void HandleDeleted(JsValue state, string partition, bool isSoftDelete) {
 				if (_deleted != null) {
-					_deleted.Call(this, new JsValue[] {state, Null, partition, isSoftDelete });
+					_deleted.Call(this, new JsValue[] { state, Null, partition, isSoftDelete });
+				}
+			}
+		}
+
+		EventEnvelope CreateEnvelope(string partition, ResolvedEvent @event, string category) {
+			var envelope = new EventEnvelope(_engine, _parser, this);
+			envelope.Partition = partition;
+			envelope.BodyRaw = @event.Data;
+			envelope.MetadataRaw = @event.Metadata;
+			envelope.StreamId = @event.EventStreamId;
+			envelope.EventId = @event.EventId.ToString("D");
+			envelope.EventType = @event.EventType;
+			envelope.LinkMetadataRaw = @event.PositionMetadata;
+			envelope.IsJson = @event.IsJson;
+			envelope.Category = category;
+			envelope.SequenceNumber = @event.EventSequenceNumber;
+			return envelope;
+		}
+		sealed class EventEnvelope : ObjectInstance {
+			private readonly JsonParser _parser;
+			private readonly JintProjectionStateHandler _parent;
+
+			public string StreamId {
+				set => SetOwnProperty("streamId", new PropertyDescriptor(value, false, true, false));
+			}
+			public long SequenceNumber {
+				set => SetOwnProperty("sequenceNumber", new PropertyDescriptor(value, false, true, false));
+			}
+
+			public string EventType {
+				get => _parent.AsString(Get("eventType"), false) ?? "";
+				set => SetOwnProperty("eventType", new PropertyDescriptor(value, false, true, false));
+			}
+
+			public JsValue Body {
+				get {
+					if (TryGetValue("body", out var value) && value is ObjectInstance oi)
+						return oi;
+					if (EnsureBody(out JsValue objectInstance))
+						return objectInstance;
+
+					return Undefined;
+				}
+			}
+
+			private bool EnsureBody(out JsValue objectInstance) {
+				if (IsJson && TryGetValue("bodyRaw", out var raw) && raw is not JsUndefined) {
+					var body = raw.IsNull() ? raw : _parser.Parse(raw.AsString());
+					var pd = new PropertyDescriptor(body, false, true, false);
+					SetOwnProperty("body", pd);
+					SetOwnProperty("data", pd);
+					objectInstance = (ObjectInstance)body;
+					return true;
+				}
+
+				objectInstance = Undefined;
+				return false;
+			}
+
+			public bool IsJson {
+				get => Get("isJson").AsBoolean();
+				set => SetOwnProperty("isJson", new PropertyDescriptor(value, false, true, false));
+			}
+
+			public string? BodyRaw {
+				get => _parent.AsString(Get("bodyRaw"), false);
+				set => SetOwnProperty("bodyRaw", new PropertyDescriptor(value, false, true, false));
+			}
+
+			private JsValue Metadata {
+				get {
+					if (TryGetValue("metadata", out var value) && value is ObjectInstance oi)
+						return oi;
+					if (EnsureMetadata(out value))
+						return value;
+
+					return Undefined;
+				}
+			}
+
+			private bool EnsureMetadata(out JsValue value) {
+				if (TryGetValue("metadataRaw", out var raw) && raw is not JsUndefined) {
+					var metadata = raw.IsNull() ? raw : _parser.Parse(raw.AsString());
+					SetOwnProperty("metadata", new PropertyDescriptor(metadata, false, true, false));
+					{
+						value = metadata;
+						return true;
+					}
+				}
+
+				value = Undefined;
+				return false;
+			}
+
+			public string MetadataRaw {
+				set => FastSetProperty("metadataRaw", new PropertyDescriptor(value, false, true, false));
+			}
+
+			private JsValue LinkMetadata {
+				get {
+					if (TryGetValue("linkMetadata", out var value) && value is ObjectInstance oi)
+						return oi;
+					if (EnsureLinkMetadata(out value))
+						return value;
+
+					return Undefined;
+				}
+			}
+
+			private bool EnsureLinkMetadata(out JsValue value) {
+				if (TryGetValue("linkMetadataRaw", out var raw) && raw is not JsUndefined) {
+					var metadata = raw.IsNull() ? raw : _parser.Parse(raw.AsString());
+					SetOwnProperty("linkMetadata", new PropertyDescriptor(metadata, false, true, false));
+					{
+						value = metadata;
+						return true;
+					}
+				}
+
+				value = Undefined;
+				return false;
+			}
+
+			public string LinkMetadataRaw {
+				set => SetOwnProperty("linkMetadataRaw", new PropertyDescriptor(value, false, true, false));
+			}
+
+			public string Partition {
+				set => SetOwnProperty("partition", new PropertyDescriptor(value, false, true, false));
+			}
+
+			public string Category {
+				set => SetOwnProperty("category", new PropertyDescriptor(value, false, true, false));
+			}
+
+			public string EventId {
+				set => SetOwnProperty("eventId", new PropertyDescriptor(value, false, true, false));
+			}
+
+			public EventEnvelope(Engine engine, JsonParser parser, JintProjectionStateHandler parent) : base(engine) {
+				_parser = parser;
+				_parent = parent;
+			}
+
+			public override JsValue Get(JsValue property, JsValue receiver) {
+				if (property == "body" || property == "data") {
+					return Body;
+				}
+
+				if (property == "metadata") {
+					return Metadata;
+				}
+
+				if (property == "linkMetadata") {
+					return LinkMetadata;
+				}
+				return base.Get(property, receiver);
+			}
+
+			public override List<JsValue> GetOwnPropertyKeys(Types types = Types.None | Types.String | Types.Symbol) {
+				var list = base.GetOwnPropertyKeys(types);
+				return list;
+			}
+
+			public override IEnumerable<KeyValuePair<JsValue, PropertyDescriptor>> GetOwnProperties() {
+				if (!HasOwnProperty("body")) {
+					EnsureBody(out _);
+				}
+
+				if (!HasOwnProperty("metadata")) {
+					EnsureMetadata(out _);
+				}
+
+				if (!HasOwnProperty("linkMetadata")) {
+					EnsureLinkMetadata(out _);
+				}
+
+				var list = base.GetOwnProperties();
+
+				return list;
+			}
+		}
+
+		private readonly Serializer _serializer = new Serializer();
+		public string Serialize(JsValue value) {
+			var serialized = _serializer.Serialize(value);
+			return Encoding.UTF8.GetString(serialized.Span);
+		}
+
+		private class Serializer {
+			private readonly WriteState[] _iterators;
+			private readonly ArrayBufferWriter<byte> _bufferWriter;
+			private readonly Utf8JsonWriter _writer;
+			private readonly Dictionary<string, JsonEncodedText> _knownPropertyNames;
+			private int _depth;
+
+			public Serializer() {
+				_iterators = new WriteState[64];
+				_bufferWriter = new ArrayBufferWriter<byte>(1024 * 1024);
+				_writer = new Utf8JsonWriter(
+					_bufferWriter,
+					new JsonWriterOptions {
+						Indented = false,
+						SkipValidation = true,
+						Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+					});
+				_knownPropertyNames = new Dictionary<string, JsonEncodedText>();
+			}
+
+			public ReadOnlyMemory<byte> Serialize(JsValue value) {
+				_depth = 0;
+				_bufferWriter.Clear();
+				_writer.Reset();
+
+				if (value is ArrayInstance ai) {
+					_iterators[_depth] = new WriteState(ai);
+				} else if (value is ObjectInstance oi) {
+					_iterators[_depth] = new WriteState(oi);
+				} else {
+					_iterators[_depth] = new WriteState(value);
+				}
+				ref var current = ref _iterators[0];
+
+				while (current.Write(_writer, ref _depth, _iterators, _knownPropertyNames)) {
+					current = ref _iterators[_depth];
+				}
+				_writer.Flush();
+				return _bufferWriter.WrittenMemory;
+
+			}
+
+			struct WriteState {
+				private enum Type {
+					Complete,
+					Array,
+					Object,
+					Primitive,
+				}
+
+				private static readonly IEnumerator<KeyValuePair<JsValue, PropertyDescriptor>> _emptyIterator =
+					new NoopIterator();
+
+				class NoopIterator : IEnumerator<KeyValuePair<JsValue, PropertyDescriptor>> {
+					public KeyValuePair<JsValue, PropertyDescriptor> Current => default;
+
+					object? IEnumerator.Current => default;
+
+					public void Dispose() {
+					}
+
+					public bool MoveNext() {
+						return false;
+					}
+
+					public void Reset() {
+					}
+				}
+
+				public WriteState(ArrayInstance instance) {
+					_position = -1;
+					_length = (int)instance.Length;
+					_instance = instance;
+					_type = Type.Array;
+					_started = false;
+					_iterator = _emptyIterator;
+				}
+
+				public WriteState(ObjectInstance instance) {
+					_position = -1;
+					_length = -1;
+					_instance = JsValue.Null;
+					_type = Type.Object;
+					_started = false;
+					_iterator = instance.GetOwnProperties().GetEnumerator();
+				}
+
+				public WriteState(JsValue instance) {
+					if (instance.Type == Types.Object)
+						throw new ArgumentException("Primitive overload called for object instance");
+					_position = -1;
+					_length = -1;
+					_instance = instance;
+					_type = Type.Primitive;
+					_started = false;
+					_iterator = _emptyIterator;
+				}
+
+				private readonly JsValue _instance;
+				private readonly IEnumerator<KeyValuePair<JsValue, PropertyDescriptor>> _iterator;
+				private readonly Type _type;
+				private readonly int _length;
+				private int _position;
+				private bool _started;
+
+				[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+				public bool Write(
+					Utf8JsonWriter writer,
+					ref int depth,
+					WriteState[] writeStates,
+					Dictionary<string, JsonEncodedText> knownPropertyNames) {
+
+					switch (_type) {
+						case Type.Array:
+							if (_position == -1) {
+								writer.WriteStartArray();
+								_position++;
+							}
+							var instance = (ArrayInstance)_instance;
+							for (; _position < _length; _position++) {
+								var value = instance[(uint)_position];
+								if (value.Type == Types.Object) {
+									if (value is ArrayInstance ai) {
+										writeStates[++depth] = new WriteState(ai);
+									} else {
+										writeStates[++depth] = new WriteState(value.AsObject());
+									}
+									_position++;
+									return true;
+								}
+								SerializePrimitive(value, writer);
+							}
+							writer.WriteEndArray();
+							break;
+						case Type.Object:
+							if (!_started) {
+								writer.WriteStartObject();
+								_started = true;
+							}
+							while (_iterator.MoveNext()) {
+								var (name, propertyDescriptor) = _iterator.Current;
+								var value = propertyDescriptor.Value;
+								if (value.Type == Types.Undefined)
+									continue;
+								
+								WriteMaybeCachedPropertyName(name.AsString(), knownPropertyNames, writer);
+								if (value.Type == Types.Object) {
+									if (value is ArrayInstance ai) {
+										writeStates[++depth] = new WriteState(ai);
+									} else {
+										writeStates[++depth] = new WriteState(value.AsObject());
+									}
+									_position++;
+									return true;
+								} else {
+									SerializePrimitive(value, writer);
+								}
+
+							}
+
+							writer.WriteEndObject();
+							break;
+						case Type.Primitive:
+							SerializePrimitive(_instance, writer);
+							break;
+					}
+					writeStates[depth] = default;
+					depth--;
+					return depth >= 0;
+				}
+			}
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+			private static void WriteMaybeCachedPropertyName(string name, Dictionary<string, JsonEncodedText> knownPropertyNames, Utf8JsonWriter writer) {
+				if (!knownPropertyNames.TryGetValue(name, out var propertyName)) {
+					propertyName = JsonEncodedText.Encode(name);
+					if (knownPropertyNames.Count < 1000) {
+						knownPropertyNames.Add(name, propertyName);
+					}
+				}
+				writer.WritePropertyName(propertyName);
+			}
+
+			[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+			static void SerializePrimitive(JsValue value, Utf8JsonWriter writer) {
+
+				switch (value.Type) {
+					case Types.Null:
+					case Types.Undefined:
+					case Types.None:
+						writer.WriteNullValue();
+						break;
+					case Types.Boolean:
+						if (ReferenceEquals(value, JsBoolean.False))
+							writer.WriteBooleanValue(false);
+						else
+							writer.WriteBooleanValue(true);
+						break;
+					case Types.Number:
+						writer.WriteNumberValue(value.AsNumber());
+						break;
+					case Types.BigInt:
+						writer.WriteStringValue(value.ToString());
+						break;
+					case Types.String:
+						writer.WriteStringValue(value.AsString());
+						break;
+					default:
+						throw new Exception($"Cannot serialize {value.Type} as primitive");
 				}
 			}
 		}
