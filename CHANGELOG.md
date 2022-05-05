@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Proto names of `emit_enabled` and `track_emitted_streams` swapped for backwards compatibility [EventStore#3412](https://github.com/EventStore/EventStore/pull/3412)
 - fixed Incorrect version number in CI build [EventStore#3430](https://github.com/EventStore/EventStore/pull/3430)
 - Reads operations in IODispatcher are no longer tracked if they don't have a timeoutAction [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
+- Sort the dump of the configuration settings alphabetically [EventStore#3475](https://github.com/EventStore/EventStore/pull/3475)
 
 ### Fixed
 - Update the epoch checkpoint with the proper position before going offline for truncation [EventStore#3414](https://github.com/EventStore/EventStore/pull/3414)
