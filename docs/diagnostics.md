@@ -72,6 +72,8 @@ Here is how the structured log looks like:
 }
 ```
 
+This format is aligned with [Serilog Compact JSON format](https://github.com/serilog/serilog-formatting-compact).
+
 ### Logs location
 
 Log files are located in `/var/log/eventstore` for Linux and macOS, and in the `logs` subdirectory of the
@@ -84,7 +86,7 @@ verbose log level.
 :::
 
 | Format               | Syntax           |
-|:---------------------|:-----------------|
+| :------------------- | :--------------- |
 | Command line         | `--log`          |
 | YAML                 | `Log`            |
 | Environment variable | `EVENTSTORE_LOG` |
@@ -101,7 +103,7 @@ Log: /tmp/eventstore/logs
 You can change the level using the `LogLevel` setting:
 
 | Format               | Syntax                 |
-|:---------------------|:-----------------------|
+| :------------------- | :--------------------- |
 | Command line         | `--log-level`          |
 | YAML                 | `LogLevel`             |
 | Environment variable | `EVENTSTORE_LOG_LEVEL` |
@@ -117,7 +119,7 @@ You can tune the EventStoreDB logging further by using the logging options descr
 Specifies the location of the file which configures the logging levels of various components.
 
 | Format               | Syntax                  |
-|:---------------------|:------------------------|
+| :------------------- | :---------------------- |
 | Command line         | `--log-config`          |
 | YAML                 | `LogConfig`             |
 | Environment variable | `EVENTSTORE_LOG_CONFIG` |
@@ -133,7 +135,7 @@ before being processed, so unsuccessful requests are logged too.
 Use one of the following ways to enable the HTTP requests logging:
 
 | Format               | Syntax                         |
-|:---------------------|:-------------------------------|
+| :------------------- | :----------------------------- |
 | Command line         | `--log-http-requests`          |
 | YAML                 | `LogHttpRequests`              |
 | Environment variable | `EVENTSTORE_LOG_HTTP_REQUESTS` |
@@ -146,7 +148,7 @@ For security monitoring, you can enable logging failed authentication attempts b
 setting `LogFailedAuthenticationAttempts` setting to true.
 
 | Format               | Syntax                                          |
-|:---------------------|:------------------------------------------------|
+| :------------------- | :---------------------------------------------- |
 | Command line         | `--log-failed-authentication-attempts`          |
 | YAML                 | `LogFailedAuthenticationAttempts`               |
 | Environment variable | `EVENTSTORE_LOG_FAILED_AUTHENTICATION_ATTEMPTS` |
@@ -158,7 +160,7 @@ setting `LogFailedAuthenticationAttempts` setting to true.
 The format of the console logger. Use `Json` for structured log output.
 
 | Format               | Syntax                          |
-|:---------------------|:--------------------------------|
+| :------------------- | :------------------------------ |
 | Command line         | `--log-console-format`          |
 | YAML                 | `LogConsoleFormat`              |
 | Environment variable | `EVENTSTORE_LOG_CONSOLE_FORMAT` |
@@ -172,7 +174,7 @@ Acceptable values are: `Plain`, `Json`
 The maximum size of each log file, in bytes.
 
 | Format               | Syntax                     |
-|:---------------------|:---------------------------|
+| :------------------- | :------------------------- |
 | Command line         | `--log-file-size`          |
 | YAML                 | `LogFileSize`              |
 | Environment variable | `EVENTSTORE_LOG_FILE_SIZE` |
@@ -184,7 +186,7 @@ The maximum size of each log file, in bytes.
 How often to rotate logs.
 
 | Format               | Syntax                         |
-|:---------------------|:-------------------------------|
+| :------------------- | :----------------------------- |
 | Command line         | `--log-file-interval`          |
 | YAML                 | `LogFileInterval`              |
 | Environment variable | `EVENTSTORE_LOG_FILE_INTERVAL` |
@@ -198,7 +200,7 @@ Acceptable values are: `Minute`, `Hour`, `Day`, `Week`, `Month`, `Year`
 How many log files to hold on to.
 
 | Format               | Syntax                           |
-|:---------------------|:---------------------------------|
+| :------------------- | :------------------------------- |
 | Command line         | `--log-file-retention-count`     |
 | YAML                 | `LogFileRetentionCount`          |
 | Environment variable | `EVENTSTORE_LOG_RETENTION_COUNT` |
@@ -210,7 +212,7 @@ How many log files to hold on to.
 You can completely disable logging to a file by changing the `DisableLogFile` option.
 
 | Format               | Syntax                        |
-|:---------------------|:------------------------------|
+| :------------------- | :---------------------------- |
 | Command line         | `--disable-log-file`          |
 | YAML                 | `DisableLogFile`              |
 | Environment variable | `EVENTSTORE_DISABLE_LOG_FILE` |
@@ -549,7 +551,7 @@ event in 30 seconds. If you want to decrease network pressure on subscribers to 
 tell EventStoreDB to produce stats less often.
 
 | Format               | Syntax                        |
-|:---------------------|:------------------------------|
+| :------------------- | :---------------------------- |
 | Command line         | `--stats-period-sec`          |
 | YAML                 | `StatsPeriodSec`              |
 | Environment variable | `EVENTSTORE_STATS_PERIOD_SEC` |
@@ -566,7 +568,7 @@ As mentioned before, stats events have a TTL of 24 hours and when writing stats 
 you'd need to scavenge more often to release the disk space.
 
 | Format               | Syntax                         |
-|:---------------------|:-------------------------------|
+| :------------------- | :----------------------------- |
 | Command line         | `--write-stats-to-db`          |
 | YAML                 | `WriteStatsToDb`               |
 | Environment variable | `EVENTSTORE_WRITE_STATS_TO_DB` |
@@ -656,7 +658,7 @@ response. Here `2113` is the default external HTTP port.
 ### Available metrics
 
 | Endpoint                         | Measures time spent                                       |
-|:---------------------------------|:----------------------------------------------------------|
+| :------------------------------- | :-------------------------------------------------------- |
 | `reader-streamrange`             | `ReadStreamEventsForward` and `ReadStreamEventsBackwards` |
 | `writer-flush`                   | Flushing to disk in the storage writer service            |
 | `chaser-wait` and `chaser-flush` | Storage chaser                                            |
@@ -672,7 +674,7 @@ Use the option described below to enable histograms. Because collecting histogra
 are disabled by default.
 
 | Format               | Syntax                         |
-|:---------------------|:-------------------------------|
+| :------------------- | :----------------------------- |
 | Command line         | `--enable-histograms`          |
 | YAML                 | `EnableHistograms`             |
 | Environment variable | `EVENTSTORE_ENABLE_HISTOGRAMS` |
@@ -794,3 +796,199 @@ in [Datadog documentation](https://docs.datadoghq.com/integrations/eventstore/).
 [many different sinks]: https://vector.dev/docs/reference/configuration/sinks/
 
 [Console]: https://vector.dev/docs/reference/configuration/sinks/console/
+
+## Elastic
+
+Elastic Stack is one of the most popular tools for ingesting and analyzing logs and statistics:
+- [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/8.2/index.html) was built for advanced filtering and text analysis. 
+- [Filebeat](https://www.elastic.co/guide/en/beats/filebeat/8.2/index.html) allow tailing files efficiently. 
+- [Logstash](https://www.elastic.co/guide/en/logstash/current/getting-started-with-logstash.html) enables log transformations and processing pipelines. 
+- [Kibana](https://www.elastic.co/guide/en/kibana/8.2/index.html) is a dashboard and visualization UI for Elasticsearch data.
+
+EventStoreDB exposes structured information through its logs and statistics, allowing straightforward integration with mentioned tooling.
+
+### Logstash
+
+Logstash is the plugin based data processing component of the Elastic Stack which sends incoming data to Elasticsearch. It's excellent for building a text-based processing pipeline. It can also gather logs from files (although Elastic recommends now Filebeat for that, see more in the following paragraphs). Logstash needs to either be installed on the EventStoreDB node or have access to logs storage. The processing pipeline can be configured through the configuration file (e.g. `logstash.conf`). This file contains the three essential building blocks:
+- input - source of logs, e.g. log files, system output, Filebeat.
+- filter - processing pipeline, e.g. to modify, enrich, tag log data,
+- output - place where we'd like to put transformed logs. Typically that contains Elasticsearch configuration.
+
+See the sample Logstash 8.2 configuration file. It shows how to take the EventStoreDB log files, split them based on the log type (regular and stats) and output them to separate indices to Elasticsearch:
+
+```ruby
+#######################################################
+#  EventStoreDB logs file input
+#######################################################
+input {
+  file {
+    path => "/var/log/eventstore/*/log*.json"
+    start_position => "beginning"
+    codec => json
+  }
+}
+
+#######################################################
+#  Filter out stats from regular logs
+#  add respecting field with log type
+#######################################################
+filter {
+  # check if log path includes "log-stats"
+  # so pattern for stats
+  if [log][file][path] =~ "log-stats" {
+    mutate {
+      add_field => {
+        "log_type" => "stats"
+      }
+    }
+  }
+  else {
+    mutate {
+      add_field => {
+        "log_type" => "logs"
+      }
+    }
+  }
+}
+
+#######################################################
+#  Send logs to Elastic
+#  Create separate indexes for stats and regular logs
+#  using field defined in the filter transformation
+#######################################################
+output {
+  elasticsearch {
+    hosts => [ "elasticsearch:9200" ]
+    index => 'eventstoredb-%{[log_type]}'
+  }
+}
+```
+
+You can play with such configuration through the [sample docker-compose](https://github.com/EventStore/samples/blob/2829b0a90a6488e1eee73fad0be33a3ded7d13d2/Logging/Elastic/Logstash/docker-compose.yml).
+
+### Filebeat
+
+Logstash was the initial Elastic try to provide a log harvester tool. However, it appeared to have performance limitations. Elastic came up with the [Beats family](https://www.elastic.co/beats/), which allows gathering data from various specialized sources (files, metrics, network data, etc.). Elastic recommends Filebeat as the log collection and shipment tool off the host servers. Filebeat uses a backpressure-sensitive protocol when sending data to Logstash or Elasticsearch to account for higher volumes of data.
+
+Filebeat can pipe logs directly to Elasticsearch and set up a Kibana data view.
+
+Filebeat needs to either be installed on the EventStoreDB node or have access to logs storage. The processing pipeline can be configured through the configuration file (e.g. `filebeat.yml`). This file contains the three essential building blocks:
+- input - configuration for file source, e.g. if stored in JSON format.
+- output - place where we'd like to put transformed logs, e.g. Elasticsearch, Logstash,
+- setup - additional setup and simple transformations (e.g. Elasticsearch indices template, Kibana data view).
+
+See the sample Filebeat 8.2 configuration file. It shows how to take the EventStoreDB log files, output them to Elasticsearch prefixing index with `eventstoredb` and create a Kibana data view:
+
+```yml
+#######################################################
+#  EventStoreDB logs file input
+#######################################################
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/eventstore/*/log*.json
+    json.keys_under_root: true
+    json.add_error_key: true
+
+#######################################################
+#  ElasticSearch direct output
+#######################################################
+output.elasticsearch:
+  index: "eventstoredb-%{[agent.version]}"
+  hosts: ["elasticsearch:9200"]
+
+#######################################################
+#  ElasticSearch dashboard configuration
+#  (index pattern and data view)
+#######################################################
+setup.dashboards:
+  enabled: true
+  index: "eventstoredb-*"
+
+setup.template:
+  name: "eventstoredb"
+  pattern: "eventstoredb-%{[agent.version]}"
+
+#######################################################
+#  Kibana dashboard configuration
+#######################################################
+setup.kibana:
+  host: "kibana:5601"
+
+```
+
+You can play with such configuration through the [sample docker-compose](https://github.com/EventStore/samples/blob/2829b0a90a6488e1eee73fad0be33a3ded7d13d2/Logging/Elastic/Filebeat/docker-compose.yml).
+
+### Filebeat with Logstash
+
+Even though Filebeat can pipe logs directly to Elasticsearch and do a basic Kibana setup, you'd like to have more control and expand the processing pipeline. That's why for production, it's recommended to use both. Multiple Filebeat instances (e.g. from different EventStoreDB clusters) can collect logs and pipe them to Logstash, which will play an aggregator role. Filebeat can output logs to Logstash, and Logstash can receive and process these logs with the Beats input. Logstash can transform and route logs to Elasticsearch instance(s). 
+
+In that configuration, Filebeat should be installed on the EventStoreDB node (or have access to file logs) and define Logstash as output. See the sample Filebeat 8.2 configuration file.
+
+```yml
+#######################################################
+#  EventStoreDB logs file input
+#######################################################
+filebeat.inputs:
+  - type: log
+    paths:
+      - /var/log/eventstore/*/log*.json
+    json.keys_under_root: true
+    json.add_error_key: true
+
+#######################################################
+#  Logstash output to transform and prepare logs
+#######################################################
+output.logstash:
+  hosts: ["logstash:5044"]
+```
+
+Then the sample Logstash 8.2 configuration file will look like the below. It shows how to take the EventStoreDB logs from Filebeat, split them based on the log type (regular and stats) and output them to separate indices to Elasticsearch:
+
+```ruby
+#######################################################
+#  Filebeat input 
+#######################################################
+input {
+  beats {
+    port => 5044
+  }
+}
+
+#######################################################
+#  Filter out stats from regular logs
+#  add respecting field with log type
+#######################################################
+filter {
+  # check if log path includes "log-stats"
+  # so pattern for stats
+  if [log][file][path] =~ "log-stats" {
+    mutate {
+      add_field => {
+        "log_type" => "stats"
+      }
+    }
+  }
+  else {
+    mutate {
+      add_field => {
+        "log_type" => "logs"
+      }
+    }
+  }
+}
+
+#######################################################
+#  Send logs to Elastic
+#  Create separate indexes for stats and regular logs
+#  using field defined in the filter transformation
+#######################################################
+output {
+  elasticsearch {
+    hosts => [ "elasticsearch:9200" ]
+    index => 'eventstoredb-%{[log_type]}'
+  }
+}
+```
+
+You can play with such configuration through the [sample docker-compose](https://github.com/EventStore/samples/blob/2829b0a90a6488e1eee73fad0be33a3ded7d13d2/Logging/Elastic/FilebeatWithLogstash/docker-compose.yml).
