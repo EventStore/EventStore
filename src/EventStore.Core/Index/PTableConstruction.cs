@@ -459,6 +459,14 @@ namespace EventStore.Core.Index {
 									outputFile);
 							}
 
+							var bloomFilterFile = GenBloomFilterFilename(outputFile);
+							try {
+								File.Delete(bloomFilterFile);
+							} catch (Exception ex) {
+								Log.Error(ex, "Unable to delete unwanted bloom filter: {bloomFilterFile}",
+									bloomFilterFile);
+							}
+
 							spaceSaved = 0;
 							return null;
 						}
