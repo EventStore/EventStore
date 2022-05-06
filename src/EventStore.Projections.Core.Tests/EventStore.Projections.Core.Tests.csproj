@@ -17,6 +17,9 @@
 		<Compile Remove="Playground\LaunchpadBase.cs" />
 	</ItemGroup>
 	<ItemGroup>
+	  <None Remove="Services\Jint\Serialization\big_state.json" />
+	</ItemGroup>
+	<ItemGroup>
 		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
@@ -34,6 +37,9 @@
 		<Content Include="Queries\1Query.js">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="Services\Jint\Serialization\big_state.json" />
 	</ItemGroup>
 	<!-- TODO(jen20): Decide what is correct here -->
 	<PropertyGroup>
