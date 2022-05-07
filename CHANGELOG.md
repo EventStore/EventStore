@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Updated
 - Consolidate to single protobuf implementation [EventStore#3362](https://github.com/EventStore/EventStore/pull/3362)
+- Improves state serialization speed [EventStore#3485](https://github.com/EventStore/EventStore/pull/3485)
 
 ### Changed
 - Updated gRPC to include fix for flaky tests [EventStore#3364](https://github.com/EventStore/EventStore/pull/3364)
