@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
 - automatically update license file with current year [EventStore#3382](https://github.com/EventStore/EventStore/pull/3382)
 - Logging around read timeouts in projection emitted streams and emitted stream trackers [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
+- the initial documentation for moving EventStoreDB logs to Elasticsearch. [EventStore#3488](https://github.com/EventStore/EventStore/pull/3488)
 
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
