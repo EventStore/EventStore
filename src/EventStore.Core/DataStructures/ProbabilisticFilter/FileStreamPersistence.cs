@@ -30,6 +30,17 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 			Create = create;
 		}
 
+		// when we want to open an existing filter and we don't mind what size it is
+		public static FileStreamPersistence FromFile(string path) {
+			Ensure.NotNull(path, nameof(path));
+
+			var header = ReadHeader(path);
+			return new FileStreamPersistence(
+				size: header.NumBits / 8,
+				path: path,
+				create: false);
+		}
+
 		public BloomFilterAccessor DataAccessor { get; private set; }
 		public bool Create { get; }
 
@@ -227,11 +238,13 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 
 		// todo later: maybe could be a common implementation across the strategies that reads
 		// from the DataAccessor
-		public Header ReadHeader() {
-			try {
-				using var fileStream = new FileStream(
-					_path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+		public Header ReadHeader() => ReadHeader(_path);
 
+		private static Header ReadHeader(string path) {
+			using var fileStream = new FileStream(
+				path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+			try {
 				//read the version first
 				fileStream.Seek(offset: 0, SeekOrigin.Begin);
 				byte version = (byte)fileStream.ReadByte();
