@@ -426,12 +426,11 @@ namespace EventStore.Core.Index {
 
 		private PersistentBloomFilter TryOpenBloomFilter() {
 			try {
-				// todo: if there is a bloom filter with a different size we could still use it
+				// use existing filter without specifying what size it needs to be
+				// for scavenged ptables in particular we do not know exactly what size the bloom filter
+				// is because it is based on the pre-scavenge size
 				var bloomFilter = new PersistentBloomFilter(
-					new FileStreamPersistence(
-						path: BloomFilterFilename,
-						create: false,
-						size: GenBloomFilterSizeBytes(_count)));
+					FileStreamPersistence.FromFile(BloomFilterFilename));
 
 				return bloomFilter;
 			} catch (FileNotFoundException) {
