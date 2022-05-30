@@ -6,7 +6,7 @@
 		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
+		<PackageReference Include="GitHubActionsTestLogger" Version="2.0.0" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
 		<PackageReference Include="ObjectLayoutInspector" Version="0.1.2" />
 		<PackageReference Include="System.Linq.Async" Version="5.0.0" />
