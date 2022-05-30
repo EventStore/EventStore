@@ -20,7 +20,7 @@
 	  <None Remove="Services\Jint\Serialization\big_state.json" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
+		<PackageReference Include="GitHubActionsTestLogger" Version="2.0.0" PrivateAssets="all" />
 		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
