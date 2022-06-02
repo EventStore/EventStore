@@ -245,7 +245,10 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
-		/// Loads an <see cref="X509Certificate2Collection"/> from the options set
+		/// Loads an <see cref="X509Certificate2Collection"/> from the options set.
+		/// If either TrustedRootCertificateStoreLocation or TrustedRootCertificateStoreName is set,
+		/// then the certificates will only be loaded from the certificate store.
+		/// Otherwise, the certificates will be loaded from the path specified by TrustedRootCertificatesPath.
 		/// </summary>
 		/// <param name="options"></param>
 		/// <returns></returns>
@@ -253,6 +256,25 @@ namespace EventStore.Core {
 		public static X509Certificate2Collection LoadTrustedRootCertificates(this ClusterVNodeOptions options) {
 			if (options.TrustedRootCertificates != null) return options.TrustedRootCertificates;
 			var trustedRootCerts = new X509Certificate2Collection();
+
+			if (!string.IsNullOrWhiteSpace(options.CertificateStore.TrustedRootCertificateStoreLocation)) {
+				var location =
+					CertificateUtils.GetCertificateStoreLocation(options.CertificateStore.TrustedRootCertificateStoreLocation);
+				var name = CertificateUtils.GetCertificateStoreName(options.CertificateStore.TrustedRootCertificateStoreName);
+				trustedRootCerts.Add(CertificateUtils.LoadFromStore(location, name,
+					options.CertificateStore.TrustedRootCertificateSubjectName,
+					options.CertificateStore.TrustedRootCertificateThumbprint));
+				return trustedRootCerts;
+			}
+
+			if (!string.IsNullOrWhiteSpace(options.CertificateStore.TrustedRootCertificateStoreName)) {
+				var name = CertificateUtils.GetCertificateStoreName(options.CertificateStore.TrustedRootCertificateStoreName);
+				trustedRootCerts.Add(CertificateUtils.LoadFromStore(name,
+					options.CertificateStore.TrustedRootCertificateSubjectName,
+					options.CertificateStore.TrustedRootCertificateThumbprint));
+				return trustedRootCerts;
+			}
+
 			if (string.IsNullOrEmpty(options.Certificate.TrustedRootCertificatesPath)) {
 				throw new InvalidConfigurationException(
 					$"{nameof(options.Certificate.TrustedRootCertificatesPath)} must be specified unless insecure mode (--insecure) is set.");
@@ -268,7 +290,6 @@ namespace EventStore.Core {
 				throw new InvalidConfigurationException(
 					$"No trusted root certificate files were loaded from the specified path: {options.Certificate.TrustedRootCertificatesPath}");
 			return trustedRootCerts;
-
 		}
 	}
 }
