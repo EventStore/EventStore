@@ -248,7 +248,9 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				var md = parameters.At(3).AsObject();
 				var d = new Dictionary<string, string?>();
 				foreach (var kvp in md.GetOwnProperties()) {
-					d.Add(kvp.Key.AsString(), AsString(kvp.Value.Value, true));
+					if (kvp.Value.Value.Type is Types.None or Types.Undefined)
+						continue;
+					d.Add(kvp.Key.AsString(), Serialize(kvp.Value.Value));
 				}
 
 				metadata = new ExtraMetaData(d);
