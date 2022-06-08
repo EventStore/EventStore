@@ -205,7 +205,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 						if (Interlocked.Read(ref _complete) != 1) {
 							//todo (clc) need a better Result here, but need to see if this will impact the client API
 							var result = !_allPreparesWritten ? OperationResult.PrepareTimeout : OperationResult.CommitTimeout;
-							var msg = "Request canceled by server, likely deposed leader";
+							var msg = "Request canceled by server";
 							CompleteFailedRequest(result, msg);
 						}
 					} catch { /*don't throw in disposed*/}
