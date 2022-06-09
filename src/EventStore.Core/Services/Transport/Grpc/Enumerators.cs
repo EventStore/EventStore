@@ -47,10 +47,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private static ReadResp.Types.ReadEvent ConvertToReadEvent(ReadReq.Types.Options.Types.UUIDOption uuidOption,
 			ResolvedEvent e) {
 			var readEvent = new ReadResp.Types.ReadEvent {
-				Link = ConvertToRecordedEvent(uuidOption, e.Link, e.OriginalPosition?.CommitPosition,
-					e.OriginalPosition?.PreparePosition),
-				Event = ConvertToRecordedEvent(uuidOption, e.Event, e.OriginalPosition?.CommitPosition,
-					e.OriginalPosition?.PreparePosition),
+				Link = ConvertToRecordedEvent(uuidOption, e.Link, e.LinkPosition?.CommitPosition,
+					e.LinkPosition?.PreparePosition),
+				Event = ConvertToRecordedEvent(uuidOption, e.Event, e.EventPosition?.CommitPosition,
+					e.EventPosition?.PreparePosition),
 			};
 			if (e.OriginalPosition.HasValue) {
 				var position = Position.FromInt64(
