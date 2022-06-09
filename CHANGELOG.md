@@ -30,6 +30,9 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
 
+### For pretty summaries
+- ) [EventStore#3496](https://github.com/EventStore/EventStore/pull/3496)
+
 ## [21.10.4] - 2022-04-26
 
 ### Fixed
