@@ -56,6 +56,7 @@ namespace EventStore.Core.Tests.Services.RequestManagement.Service {
 			Dispatcher.Subscribe<StorageMessage.CommitIndexed>(Service);
 			Dispatcher.Subscribe<ReplicationTrackingMessage.IndexedTo>(Service);
 			Dispatcher.Subscribe<ReplicationTrackingMessage.ReplicatedTo>(Service);
+			Dispatcher.Subscribe<SystemMessage.StateChangeMessage>(Service);
 		}
 		[OneTimeSetUp]
 		public virtual void Setup() {
