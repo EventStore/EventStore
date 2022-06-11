@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Authentication Error For Docker Tag Automation [EventStore#3447](https://github.com/EventStore/EventStore/pull/3447)
 - Can now use the ptable bloom filters after an index scavenge [EventStore#3489](https://github.com/EventStore/EventStore/pull/3489)
 - Removed aggregate exception when closing a call to the stats endpoint [EventStore#3495](https://github.com/EventStore/EventStore/pull/3495)
+- Ensure no pending writes can be incorrectly acked or published when going offline for truncation.  [EventStore#3500](https://github.com/EventStore/EventStore/pull/3500)
 
 ### Added
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
