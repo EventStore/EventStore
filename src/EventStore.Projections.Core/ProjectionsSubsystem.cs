@@ -43,7 +43,9 @@ namespace EventStore.Projections.Core {
 		public InMemoryBus LeaderOutputBus {
 			get { return _leaderOutputBus; }
 		}
-		
+
+		public IPublisher LeaderQueue { get { return _leaderInputQueue; } }
+
 		private readonly int _projectionWorkerThreadCount;
 		private readonly ProjectionType _runProjections;
 		private readonly bool _startStandardProjections;
