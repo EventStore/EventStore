@@ -88,8 +88,7 @@ namespace EventStore.Core.Services {
 
 			_subscriptionId = message.SubscriptionId;
 			_ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
-			Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
-
+			
 			Log.Information(
 				"=== SUBSCRIBED to [{leaderEndPoint},{leaderId:B}] at {subscriptionPosition} (0x{subscriptionPosition:X}). SubscriptionId: {subscriptionId:B}.",
 				message.LeaderEndPoint, message.LeaderId, message.SubscriptionPosition, message.SubscriptionPosition,
@@ -142,6 +141,7 @@ namespace EventStore.Core.Services {
 
 			// subscription position == writer checkpoint
 			// everything is ok
+			Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
 		}
 
 		private bool AreAnyCommittedRecordsTruncatedWithLastEpoch(long subscriptionPosition, EpochRecord lastEpoch,
