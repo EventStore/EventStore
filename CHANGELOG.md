@@ -29,14 +29,42 @@ All notable changes to this project will be documented in this file.
 - Logging around read timeouts in projection emitted streams and emitted stream trackers [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 - the initial documentation for moving EventStoreDB logs to Elasticsearch. [EventStore#3488](https://github.com/EventStore/EventStore/pull/3488)
 - Populate $all position for stream reads/subscriptions/persistent subscriptions. gRPC only. Non-transaction events only. [EventStore#3459](https://github.com/EventStore/EventStore/pull/3459)
+- Better summaries for CI Runs [EventStore#3496](https://github.com/EventStore/EventStore/pull/3496)
 
 ### Removed
 - Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
 
-### For pretty summaries
-- ) [EventStore#3496](https://github.com/EventStore/EventStore/pull/3496)
+## [21.10.5] - 2022-06-15
 
-## [21.10.4] - 2022-04-26
+This changelog includes the fixes from 21.10.3 and 21.10.4, as these were cloud-only releases.
+
+### Added
+
+- Support for DNS discovery with a secure cluster having only DNS SANs (including wildcard SANs). [EventStore#3460](https://github.com/EventStore/EventStore/pull/3460)
+- `deadline_duration` feature for batch append. [EventStore#3454](https://github.com/EventStore/EventStore/pull/3454)
+- Fast path for forward reads that start after the LastEventNumber. [EventStore#3479](https://github.com/EventStore/EventStore/pull/3479)
+
+### Fixed
+
+- Attempt to reconnect to the leader every second if the node fails to establish a connection (for example due to DNS lookup timeout). [EventStore#3462](https://github.com/EventStore/EventStore/pull/3462)
+- Fix invalid cast when completing a scavenge after it has been interrupted. [EventStore#3478](https://github.com/EventStore/EventStore/pull/3478)
+- Can now use the ptable bloom filters after an index scavenge. [EventStore#3493](https://github.com/EventStore/EventStore/pull/3493)
+- Ensure no pending writes can be incorrectly acked or published when going offline for truncation. [EventStore#3502](https://github.com/EventStore/EventStore/pull/3502)
+- Metadata values need to be raw json format. [EventStore#3503](https://github.com/EventStore/EventStore/pull/3503)
+- Fix invalid event number error when opening a deleted event from $all in the UI. [EventStore.UI#326](https://github.com/EventStore/EventStore.UI/pull/326)
+- Fix previous button showing an empty screen in the UI if there are no events. [EventStore.UI#323](https://github.com/EventStore/EventStore.UI/pull/323)
+- Handle NotFound errors more gracefully in the UI. [EventStore.UI#324](https://github.com/EventStore/EventStore.UI/pull/324)
+- Fix off by one error in behind message count in persistent subscriptions UI. [EventStore.UI#320](https://github.com/EventStore/EventStore.UI/pull/320)
+
+### Changed
+
+- Improve state serialization speed. [EventStore#3490](https://github.com/EventStore/EventStore/pull/3490)
+
+### Removed
+
+- Remove the red and green status dots from persistent subscriptions UI. [EventStore.UI#318](https://github.com/EventStore/EventStore.UI/pull/318)
+
+## [21.10.4] - 2022-04-26 (Cloud only)
 
 ### Fixed
 - Invalid cast when trying to complete a scavenge after the scavenge was interrupted [EventStore#3476](https://github.com/EventStore/EventStore/pull/3476)
@@ -44,7 +72,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Fast path for forward reads that start after the LastEventNumber [EventStore#3474](https://github.com/EventStore/EventStore/pull/3474)
 
-## [21.10.3] - 2022-04-11
+## [21.10.3] - 2022-04-11 (Cloud only)
 
 ### Fixed
 - Attempt to reconnect to the leader every second if the node fails to establish a connection (for example due to DNS lookup timeout). [EventStore#3458](https://github.com/EventStore/EventStore/pull/3458)
