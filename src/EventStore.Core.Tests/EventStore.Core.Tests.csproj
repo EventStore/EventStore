@@ -40,4 +40,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <!-- qq Required to resolve netstandard2.0 references when using mono. Only required for ES5. -->
+  <ItemGroup>
+    <Reference Condition=" '$(FrameworkPathOverride)' != '' " Include="netstandard" />
+  </ItemGroup>
+  <PropertyGroup>
+    <AssemblySearchPaths Condition=" '$(FrameworkPathOverride)' != '' " >$(FrameworkPathOverride)/Facades/;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
 </Project>

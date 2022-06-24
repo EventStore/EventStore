@@ -135,6 +135,7 @@ namespace EventStore.Core {
 		private bool _reduceFileCachePressure;
 		private int _initializationThreads;
 		private int _maxAutoMergeIndexLevel;
+		private int _scavengeBackendCacheSize;
 		private int _scavengeThrottlePercent;
 
 		private bool _gossipOnSingleNode;
@@ -194,6 +195,7 @@ namespace EventStore.Core {
 			_disableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
 			_disableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			_scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
+			_scavengeBackendCacheSize = Opts.ScavengeBackendCacheSizeDefault;
 			_scavengeThrottlePercent = Opts.ScavengeThrottlePercentDefault;
 			_adminOnPublic = Opts.AdminOnExtDefault;
 			_statsOnPublic = Opts.StatsOnExtDefault;
@@ -902,6 +904,15 @@ namespace EventStore.Core {
 			_scavengeHistoryMaxAge = scavengeHistoryMaxAge;
 			return this;
 		}
+		
+		/// <summary>
+		/// The amount of memory to use for backend caching in bytes.
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithScavengeBackendCacheSize(int size) {
+			_scavengeBackendCacheSize = size;
+			return this;
+		}
 
 		/// <summary>
 		/// The average percentage (1-100) of time that scavenge will actively run for. When less than
@@ -1404,6 +1415,7 @@ namespace EventStore.Core {
 				_authenticationProviderFactory,
 				_disableScavengeMerging,
 				_scavengeHistoryMaxAge,
+				_scavengeBackendCacheSize,
 				_scavengeThrottlePercent,
 				_adminOnPublic,
 				_statsOnPublic,

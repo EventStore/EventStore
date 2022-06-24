@@ -41,4 +41,12 @@
     <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.dll" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
     <Copy ContinueOnError="ErrorAndStop" SourceFiles="..\libs\x64\win\js1.pdb" DestinationFolder="$(OutDir)" Condition=" '$(OS)' == 'Windows_NT' " />
   </Target>
+
+  <!-- qq Required to resolve netstandard2.0 references when using mono. Only required for ES5. -->
+  <ItemGroup>
+    <Reference Condition=" '$(FrameworkPathOverride)' != '' " Include="netstandard" />
+  </ItemGroup>
+  <PropertyGroup>
+    <AssemblySearchPaths Condition=" '$(FrameworkPathOverride)' != '' " >$(FrameworkPathOverride)/Facades/;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
 </Project>

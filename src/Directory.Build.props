@@ -4,7 +4,7 @@
 		<DebugType Condition=" '$(Configuration)' == 'Debug' ">full</DebugType>
 		<DebugType Condition=" '$(Configuration)' == 'Release' ">pdbonly</DebugType>
 		<OutputPath>$(MSBuildThisFileDirectory)..\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
-		<IntermediateOutputPath>$(MSBuildThisFileDirectory)\..\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+		<IntermediateOutputPath>$(MSBuildThisFileDirectory)..\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
 		<Authors>Event Store Ltd</Authors>
 		<PackageLicenseUrl>https://github.com/EventStore/EventStore/blob/master/LICENSE.md</PackageLicenseUrl>
 		<PackageProjectUrl>https://eventstore.com</PackageProjectUrl>
