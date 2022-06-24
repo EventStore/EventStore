@@ -5,44 +5,34 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
-using EventStore.Core.Index;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Scavenging;
 
 namespace EventStore.Core.Services.Storage {
-	public class StorageScavenger :
+	// This tracks the current scavenge and starts/stops/creates it according to the client instructions
+	class StorageScavenger :
 		IHandle<ClientMessage.ScavengeDatabase>,
 		IHandle<ClientMessage.StopDatabaseScavenge>,
 		IHandle<SystemMessage.StateChangeMessage> {
-		private readonly TFChunkDb _db;
-		private readonly ITableIndex _tableIndex;
-		private readonly IReadIndex _readIndex;
-		private readonly bool _alwaysKeepScavenged;
-		private readonly bool _mergeChunks;
-		private readonly bool _unsafeIgnoreHardDeletes;
+
 		private readonly ITFChunkScavengerLogManager _logManager;
+		private readonly ScavengerFactory _scavengerFactory;
 		private readonly object _lock = new object();
 
-		private TFChunkScavenger _currentScavenge;
+		private IScavenger _currentScavenge;
 		private CancellationTokenSource _cancellationTokenSource;
 
-		public StorageScavenger(TFChunkDb db, ITableIndex tableIndex, IReadIndex readIndex,
-			ITFChunkScavengerLogManager logManager, bool alwaysKeepScavenged, bool mergeChunks,
-			bool unsafeIgnoreHardDeletes) {
-			Ensure.NotNull(db, "db");
-			Ensure.NotNull(logManager, "logManager");
-			Ensure.NotNull(tableIndex, "tableIndex");
-			Ensure.NotNull(readIndex, "readIndex");
+		public StorageScavenger(
+			ITFChunkScavengerLogManager logManager,
+			ScavengerFactory scavengerFactory) {
 
-			_db = db;
-			_tableIndex = tableIndex;
-			_readIndex = readIndex;
-			_alwaysKeepScavenged = alwaysKeepScavenged;
-			_mergeChunks = mergeChunks;
-			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
+			Ensure.NotNull(logManager, "logManager");
+			Ensure.NotNull(scavengerFactory, "scavengerFactory");
+
 			_logManager = logManager;
+			_scavengerFactory = scavengerFactory;
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -62,10 +52,9 @@ namespace EventStore.Core.Services.Storage {
 						var tfChunkScavengerLog = _logManager.CreateLog();
 
 						_cancellationTokenSource = new CancellationTokenSource();
-						var newScavenge = _currentScavenge = new TFChunkScavenger(_db, tfChunkScavengerLog, _tableIndex,
-							_readIndex, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads);
-						var newScavengeTask = _currentScavenge.Scavenge(_alwaysKeepScavenged, _mergeChunks,
-							message.StartFromChunk, _cancellationTokenSource.Token);
+
+						var newScavenge = _currentScavenge = _scavengerFactory.Create(message, tfChunkScavengerLog);
+						var newScavengeTask = _currentScavenge.ScavengeAsync(_cancellationTokenSource.Token);
 
 						HandleCleanupWhenFinished(newScavengeTask, newScavenge);
 
@@ -95,9 +84,13 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private async void HandleCleanupWhenFinished(Task newScavengeTask, TFChunkScavenger newScavenge) {
+		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge) {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
-			await newScavengeTask;
+			try {
+				await newScavengeTask;
+			} finally {
+				newScavenge.Dispose();
+			}
 
 			lock (_lock) {
 				if (newScavenge == _currentScavenge) {

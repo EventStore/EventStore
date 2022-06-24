@@ -55,6 +55,15 @@ namespace EventStore.Core.Tests.Services.Storage {
 			ScavengeCount++;
 		}
 
+		public void Scavenge(
+			Action<PTable> checkSuitability,
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
+			Scavenge(log, ct);
+		}
+
 		public Task MergeIndexes() {
 			return Task.CompletedTask;
 		}

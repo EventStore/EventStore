@@ -434,6 +434,10 @@ namespace EventStore.Core.Util {
 
 		public static readonly int MaxAutoMergeIndexLevelDefault = int.MaxValue;
 
+		public const string ScavengeThrottlePercentDescr =
+			"The average percentage (1-100) of time that scavenge will actively run for. " +
+			"When less than 100, scavenge will take rests to reduce load on the node.";
+		public const int ScavengeThrottlePercentDefault = 100;
 		public const string WriteStatsToDbDescr = "Set this option to write statistics to the database.";
 		public const bool WriteStatsToDbDefault = true;
 	}

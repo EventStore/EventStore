@@ -46,7 +46,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			var streams = new Dictionary<string, StreamInfo>();
 			var streamUncommitedVersion = new Dictionary<string, long>();
 
+			// for each chunk i
 			for (int i = 0; i < _chunkRecs.Count; ++i) {
+				// for each record j in chunk i
 				for (int j = 0; j < _chunkRecs[i].Length; ++j) {
 					var rec = _chunkRecs[i][j];
 
@@ -82,16 +84,29 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				}
 			}
 
+			// convert the Recs into LogRecords and write them to the database.
+			// for each chunk i
 			for (int i = 0; i < _chunkRecs.Count; ++i) {
 				var chunk = i == 0 ? _db.Manager.GetChunk(0) : _db.Manager.AddNewChunk();
 				_db.Config.WriterCheckpoint.Write(i * (long)_db.Config.ChunkSize);
 
+				var completedChunk = false;
+				// for each record j in chunk i
 				for (int j = 0; j < _chunkRecs[i].Length; ++j) {
+					if (completedChunk)
+						throw new InvalidOperationException("Don't try to write more data to completed chunk");
 					var rec = _chunkRecs[i][j];
 					var transInfo = transactions[rec.Transaction];
 					var logPos = _db.Config.WriterCheckpoint.ReadNonFlushed();
 
 					long streamVersion = streamUncommitedVersion[rec.StreamId];
+
+					if (rec.EventNumber.HasValue && rec.EventNumber > streamVersion + 1) {
+						// advance the stream
+						streamVersion = rec.EventNumber.Value - 1;
+						streamUncommitedVersion[rec.StreamId] = streamVersion;
+					}
+
 					if (streamVersion == -1
 					    && rec.Type != Rec.RecType.TransStart
 					    && rec.Type != Rec.RecType.Prepare
@@ -111,7 +126,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 					LogRecord record;
 
-					var expectedVersion = transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.Any;
+					var expectedVersion =
+						(rec.EventNumber - 1) ??
+						(transInfo.FirstPrepareId == rec.Id ? streamVersion : ExpectedVersion.Any);
+
 					switch (rec.Type) {
 						case Rec.RecType.Prepare: {
 							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
@@ -163,23 +181,28 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						throw new Exception(string.Format("Could not write log record: {0}", record));
 					_db.Config.WriterCheckpoint.Write(i * (long)_db.Config.ChunkSize + writerRes.NewPosition);
 
+					if (record is PrepareLogRecord prepare && prepare.EventType == SystemEventTypes.ScavengePoint) {
+						chunk.Complete();
+						completedChunk = true;
+					}
+
 					records[i][j] = record;
 				}
 
-				if (i < _chunkRecs.Count - 1 || (_completeLast && i == _chunkRecs.Count - 1))
-					chunk.Complete();
-				else
-					chunk.Flush();
+				if (!completedChunk) {
+					if (i < _chunkRecs.Count - 1 || (_completeLast && i == _chunkRecs.Count - 1)) {
+						chunk.Complete();
+					} else {
+						chunk.Flush();
+					}
+				}
 			}
 
 			return new DbResult(_db, records, streams);
 		}
 
-		private byte[] FormatRecordMetadata(Rec rec) {
-			if (rec.Metadata == null) return null;
-
-			var meta = rec.Metadata;
-			return meta.ToJsonBytes();
+		private byte[] FormatData(Rec rec) {
+			return rec.Data ?? rec.Metadata?.ToJsonBytes() ?? rec.Id.ToByteArray();
 		}
 
 		private LogRecord CreateLogRecord(Rec rec, TransactionInfo transInfo, long logPos, long expectedVersion) {
@@ -190,7 +213,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 					if (rec.Version == LogRecordVersion.LogRecordV0) {
 						return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
-							rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
+							FormatData(rec),
 							PrepareFlags.Data
 							| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
@@ -209,7 +232,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
 						| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson),
 						rec.EventType,
-						rec.Metadata == null ? rec.Id.ToByteArray() : FormatRecordMetadata(rec),
+						FormatData(rec),
 						null,
 						rec.TimeStamp);
 				}
@@ -221,7 +244,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					if (rec.Version == LogRecordVersion.LogRecordV0) {
 						return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
 							LogRecord.NoData,
-							PrepareFlags.StreamDelete
+							rec.PrepareFlags
+							| PrepareFlags.StreamDelete
 							| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None));
 					}
@@ -233,7 +257,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						transOffset,
 						rec.StreamId,
 						expectedVersion,
-						PrepareFlags.StreamDelete
+						rec.PrepareFlags
+						| PrepareFlags.StreamDelete
 						| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 						| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None),
 						rec.EventType,
@@ -324,9 +349,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 	}
 
 	public class DbResult {
-		public readonly TFChunkDb Db;
-		public readonly LogRecord[][] Recs;
-		public readonly Dictionary<string, StreamInfo> Streams;
+		public TFChunkDb Db { get; }
+		public LogRecord[][] Recs { get; }
+		public Dictionary<string, StreamInfo> Streams { get; }
 
 		public DbResult(TFChunkDb db, LogRecord[][] recs, Dictionary<string, StreamInfo> streams) {
 			Ensure.NotNull(db, "db");
@@ -354,14 +379,21 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public readonly string StreamId;
 		public readonly string EventType;
 		public readonly DateTime TimeStamp;
+		public readonly long? EventNumber;
+		public readonly byte[] Data;
 		public readonly StreamMetadata Metadata;
 		public readonly PrepareFlags PrepareFlags;
 		public readonly byte Version;
 
 		public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version,
+			long? eventNumber = null,
+			byte[] data = null,
 			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data) {
 			Ensure.NotNullOrEmpty(streamId, "streamId");
 			Ensure.Nonnegative(transaction, "transaction");
+
+			if (data != null && metadata != null)
+				throw new Exception("two kinds of data were specified");
 
 			Type = type;
 			Id = Guid.NewGuid();
@@ -370,6 +402,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			EventType = eventType ?? string.Empty;
 			TimeStamp = timestamp ?? DateTime.UtcNow;
 			Version = version;
+			EventNumber = eventNumber;
+			Data = data;
 			Metadata = metadata;
 			PrepareFlags = prepareFlags;
 		}
@@ -379,15 +413,31 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			return new Rec(RecType.Delete, transaction, stream, SystemEventTypes.StreamDeleted, timestamp, version);
 		}
 
+		public static Rec CommittedDelete(int transaction, string stream, DateTime? timestamp = null,
+			byte version = PrepareLogRecord.PrepareRecordVersion) {
+			return new Rec(RecType.Delete, transaction, stream, SystemEventTypes.StreamDeleted, timestamp, version,
+				prepareFlags: PrepareFlags.IsCommitted);
+		}
+
 		public static Rec TransSt(int transaction, string stream, DateTime? timestamp = null,
 			byte version = PrepareLogRecord.PrepareRecordVersion) {
 			return new Rec(RecType.TransStart, transaction, stream, null, timestamp, version);
 		}
 
 		public static Rec Prepare(int transaction, string stream, string eventType = null, DateTime? timestamp = null,
+			long? eventNumber = null,
+			byte[] data = null,
 			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data,
 			byte version = PrepareLogRecord.PrepareRecordVersion) {
-			return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, metadata, prepareFlags);
+			return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, eventNumber, data, metadata, prepareFlags);
+		}
+
+		public static Rec Write(int transaction, string stream, string eventType = null, DateTime? timestamp = null,
+			long? eventNumber = null,
+			byte[] data = null,
+			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data | PrepareFlags.IsCommitted,
+			byte version = PrepareLogRecord.PrepareRecordVersion) {
+			return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, eventNumber, data, metadata, prepareFlags);
 		}
 
 		public static Rec TransEnd(int transaction, string stream, DateTime? timestamp = null,

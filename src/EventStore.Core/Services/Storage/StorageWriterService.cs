@@ -571,6 +571,10 @@ namespace EventStore.Core.Services.Storage {
 				}
 			}
 
+			if (prepare.EventType == SystemEventTypes.ScavengePoint) {
+				Writer.CompleteChunk();
+			}
+
 			return new WriteResult(writtenPos, newPos, record);
 		}
 

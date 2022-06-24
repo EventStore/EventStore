@@ -8,5 +8,7 @@
 		public ScavengeResultDto(string scavengeId) {
 			ScavengeId = scavengeId;
 		}
+
+		public override string ToString() => ScavengeId;
 	}
 }

@@ -22,6 +22,7 @@ namespace EventStore.Core.Services {
 		public const string SettingsStream = "$settings";
 		public const string StatsStreamPrefix = "$stats";
 		public const string ScavengesStream = "$scavenges";
+		public const string ScavengePointsStream = "$scavengePoints";
 
 		public static bool IsSystemStream(string streamId) {
 			return streamId.Length != 0 && streamId[0] == '$';
@@ -76,6 +77,7 @@ namespace EventStore.Core.Services {
 		public const string ScavengeChunksCompleted = "$scavengeChunksCompleted";
 		public const string ScavengeMergeCompleted = "$scavengeMergeCompleted";
 		public const string ScavengeIndexCompleted = "$scavengeIndexCompleted";
+		public const string ScavengePoint = "$scavengePoint";
 
 		public static string StreamReferenceEventToStreamId(string eventType, byte[] data) {
 			string streamId = null;

@@ -135,6 +135,7 @@ namespace EventStore.Core {
 		private bool _reduceFileCachePressure;
 		private int _initializationThreads;
 		private int _maxAutoMergeIndexLevel;
+		private int _scavengeThrottlePercent;
 
 		private bool _gossipOnSingleNode;
 
@@ -193,6 +194,7 @@ namespace EventStore.Core {
 			_disableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
 			_disableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			_scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
+			_scavengeThrottlePercent = Opts.ScavengeThrottlePercentDefault;
 			_adminOnPublic = Opts.AdminOnExtDefault;
 			_statsOnPublic = Opts.StatsOnExtDefault;
 			_gossipOnPublic = Opts.GossipOnExtDefault;
@@ -902,6 +904,16 @@ namespace EventStore.Core {
 		}
 
 		/// <summary>
+		/// The average percentage (1-100) of time that scavenge will actively run for. When less than
+		/// 100, scavenge will take rests to reduce load on the node.
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithScavengeThrottlePercent(int scavengeThrottlePercent) {
+			_scavengeThrottlePercent = scavengeThrottlePercent;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the path the index should be loaded/saved to
 		/// </summary>
 		/// <param name="indexPath">The index path</param>
@@ -1392,6 +1404,7 @@ namespace EventStore.Core {
 				_authenticationProviderFactory,
 				_disableScavengeMerging,
 				_scavengeHistoryMaxAge,
+				_scavengeThrottlePercent,
 				_adminOnPublic,
 				_statsOnPublic,
 				_gossipOnPublic,
