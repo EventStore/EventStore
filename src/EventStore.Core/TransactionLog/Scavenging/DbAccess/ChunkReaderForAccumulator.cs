@@ -69,7 +69,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 				switch (result.RecordType) {
 					case LogRecordType.Prepare:
-						var prepareView = new PrepareLogRecordView(result.RecordBuffer, result.Length);
+						var prepareView = new PrepareLogRecordView(result.RecordBuffer, result.RecordLength);
 						var streamId = _streamIdConverter.ToStreamId(prepareView.EventStreamId);
 
 						if (prepareView.Flags.HasAnyOf(PrepareFlags.StreamDelete)) {

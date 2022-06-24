@@ -27,23 +27,24 @@ namespace EventStore.Core.TransactionLog {
 	}
 
 	public struct RawReadResult {
-		public static readonly RawReadResult Failure = new RawReadResult(false,null, -1, -1);
+		public static readonly RawReadResult Failure = new RawReadResult(false, -1, null, 0);
 
 		public readonly bool Success;
 		public readonly long NextPosition;
 		public readonly byte[] RecordBuffer; // can be longer than the record
-		public readonly int Length;
-		public LogRecordType RecordType => (LogRecordType) RecordBuffer[0];
+		public readonly int RecordLength;
 
-		public RawReadResult(bool success, byte[] record, int length, long nextPosition) {
+		public LogRecordType RecordType => (LogRecordType)RecordBuffer[0];
+
+		public RawReadResult(bool success, long nextPosition, byte[] record, int recordLength) {
 			Success = success;
 			RecordBuffer = record;
-			Length = length;
 			NextPosition = nextPosition;
+			RecordLength = recordLength;
 		}
 
 		public override string ToString() {
-			return $"Success: {Success}, Record Length: {Length}, NextPosition: {NextPosition}";
+			return $"Success: {Success}, NextPosition: {NextPosition}, Record Length: {RecordLength}";
 		}
 	}
 

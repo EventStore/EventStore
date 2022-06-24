@@ -70,9 +70,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					if (logicalPosition >= Chunk.LogicalDataSize)
 						return RecordReadResult.Failure;
 
-					int length;
-					LogRecord record;
-					if (!TryReadForwardInternal(workItem, logicalPosition, out length, out record))
+					if (!TryReadForwardInternal(workItem, logicalPosition, out var length, out var record))
 						return RecordReadResult.Failure;
 
 					long nextLogicalPos = record.GetNextLogPosition(logicalPosition, length);
@@ -88,11 +86,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					if (logicalPosition >= Chunk.LogicalDataSize)
 						return RawReadResult.Failure;
 
-					if (!TryReadForwardRawInternal(workItem, logicalPosition, getBuffer,
-						    out var record, out var length))
+					if (!TryReadForwardRawInternal(workItem, logicalPosition, getBuffer, out var length, out var record))
 						return RawReadResult.Failure;
 
-					return new RawReadResult(true, record, length, logicalPosition + length + 2 * sizeof(int));
+					var nextLogicalPos = logicalPosition + length + 2 * sizeof(int);
+					return new RawReadResult(true, nextLogicalPos, record, length);
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
 				};
@@ -348,9 +346,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize)
 						return RecordReadResult.Failure;
 
-					int length;
-					LogRecord record;
-					if (!TryReadForwardInternal(workItem, actualPosition, out length, out record))
+					if (!TryReadForwardInternal(workItem, actualPosition, out var length, out var record))
 						return RecordReadResult.Failure;
 
 					long nextLogicalPos =
@@ -371,8 +367,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize)
 						return RawReadResult.Failure;
 
-					if (!TryReadForwardRawInternal(workItem, actualPosition, getBuffer,
-						    out var record, out var length))
+					if (!TryReadForwardRawInternal(workItem, actualPosition, getBuffer, out var length, out var record))
 						return RawReadResult.Failure;
 
 					// We need to read the record's log position from the buffer so that we can correctly compute
@@ -380,11 +375,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					// work properly with scavenged chunks since the computed position may still be before the current
 					// record's position, which would cause us to read it again.
 					const int logPositionOffset = 2;
+					//qq review: perhaps we should guard this with an endianness check, or at least comment about it
 					var recordLogPos = BitConverter.ToInt64(record, logPositionOffset);
 					long nextLogicalPos =
 						Chunk.ChunkHeader.GetLocalLogPosition(recordLogPos + length + 2 * sizeof(int));
 
-					return new RawReadResult(true, record, length, nextLogicalPos);
+					return new RawReadResult(true, nextLogicalPos, record, length);
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
 				}
@@ -572,7 +568,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 
 			protected bool TryReadForwardRawInternal(ReaderWorkItem workItem, long actualPosition, Func<int, byte[]> getBuffer,
-				out byte[] record, out int length) {
+				out int length, out byte[] record) {
 				length = -1;
 				record = null;
 
