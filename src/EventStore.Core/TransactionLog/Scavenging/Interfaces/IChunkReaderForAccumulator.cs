@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
-using EventStore.Core.Helpers;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IChunkReaderForAccumulator<TStreamId> {
-		IEnumerable<RecordForAccumulator<TStreamId>> ReadChunk(
+		// Each element in the enumerable indicates which of the three records has been populated for
+		// that iteration.
+		IEnumerable<AccumulatorRecordType> ReadChunk(
 			int logicalChunkNumber,
-			ReusableObject<RecordForAccumulator<TStreamId>.OriginalStreamRecord> originalStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.MetadataStreamRecord> metadataStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.TombStoneRecord> tombStoneRecord);
+			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
+			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
+			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord);
 	}
 }

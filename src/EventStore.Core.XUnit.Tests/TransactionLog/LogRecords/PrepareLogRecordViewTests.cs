@@ -43,8 +43,7 @@ namespace EventStore.Core.XUnit.Tests.TransactionLog.LogRecords {
 
 			var recordLen = (int)memoryStream.Length;
 			var record = memoryStream.GetBuffer();
-			_prepare = new PrepareLogRecordView();
-			_prepare.Initialize(new PrepareLogRecordViewInitParams(record, recordLen, () => {}));
+			_prepare = new PrepareLogRecordView(record, recordLen);
 		}
 
 		[Fact]
@@ -62,6 +61,5 @@ namespace EventStore.Core.XUnit.Tests.TransactionLog.LogRecords {
 			Assert.True(_prepare.Metadata.SequenceEqual(_metadata));
 			Assert.Equal(Version, _prepare.Version);
 		}
-
 	}
 }

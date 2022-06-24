@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using EventStore.Core.Helpers;
 using EventStore.Core.TransactionLog.Scavenging;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge {
@@ -16,11 +15,11 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			_trace = trace;
 		}
 
-		public IEnumerable<RecordForAccumulator<TStreamId>> ReadChunk(
+		public IEnumerable<AccumulatorRecordType> ReadChunk(
 			int logicalChunkNumber,
-			ReusableObject<RecordForAccumulator<TStreamId>.OriginalStreamRecord> originalStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.MetadataStreamRecord> metadataStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.TombStoneRecord> tombStoneRecord) {
+			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
+			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
+			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord) {
 
 			var ret = _wrapped.ReadChunk(
 				logicalChunkNumber,

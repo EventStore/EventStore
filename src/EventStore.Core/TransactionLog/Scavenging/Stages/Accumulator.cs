@@ -75,12 +75,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			var weights = new WeightAccumulator(state);
 
 			// reusable objects to avoid GC pressure
-			var originalStreamRecord = ReusableObject.Create(
-				new RecordForAccumulator<TStreamId>.OriginalStreamRecord());
-			var metadataStreamRecord = ReusableObject.Create(
-				new RecordForAccumulator<TStreamId>.MetadataStreamRecord());
-			var tombstoneRecord = ReusableObject.Create(
-				new RecordForAccumulator<TStreamId>.TombStoneRecord());
+			var originalStreamRecord = new RecordForAccumulator<TStreamId>.OriginalStreamRecord();
+			var metadataStreamRecord = new RecordForAccumulator<TStreamId>.MetadataStreamRecord();
+			var tombstoneRecord = new RecordForAccumulator<TStreamId>.TombStoneRecord();
 
 			while (AccumulateChunkAndRecordRange(
 					scavengePoint,
@@ -102,9 +99,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForAccumulator<TStreamId> state,
 			WeightAccumulator weights,
 			int logicalChunkNumber,
-			ReusableObject<RecordForAccumulator<TStreamId>.OriginalStreamRecord> originalStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.MetadataStreamRecord> metadataStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.TombStoneRecord> tombStoneRecord,
+			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
+			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
+			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord,
 			Stopwatch stopwatch,
 			CancellationToken cancellationToken) {
 
@@ -162,9 +159,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForAccumulator<TStreamId> state,
 			WeightAccumulator weights,
 			int logicalChunkNumber,
-			ReusableObject<RecordForAccumulator<TStreamId>.OriginalStreamRecord> originalStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.MetadataStreamRecord> metadataStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.TombStoneRecord> tombStoneRecord,
+			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
+			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
+			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord,
 			CancellationToken cancellationToken,
 			out int countAccumulatedRecords,
 			out DateTime chunkMinTimeStamp,
@@ -184,45 +181,43 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			var cancellationCheckCounter = 0;
-			foreach (var record in _chunkReader.ReadChunk(
+			foreach (var recordType in _chunkReader.ReadChunk(
 				         logicalChunkNumber,
 				         originalStreamRecord,
 				         metadataStreamRecord,
 				         tombStoneRecord)) {
-				using (record) {
-					if (record.LogPosition > scavengePointPosition) {
-						throw new Exception("Accumulator expected to find the scavenge point before now.");
-					}
 
-					if (record.TimeStamp < chunkMinTimeStamp)
-						chunkMinTimeStamp = record.TimeStamp;
+				RecordForAccumulator<TStreamId> record;
+				switch (recordType) {
+					case AccumulatorRecordType.OriginalStreamRecord:
+						ProcessOriginalStreamRecord(originalStreamRecord, state);
+						record = originalStreamRecord;
+						break;
+					case AccumulatorRecordType.MetadataStreamRecord:
+						ProcessMetastreamRecord(metadataStreamRecord, scavengePoint, state, weights);
+						record = metadataStreamRecord;
+						break;
+					case AccumulatorRecordType.TombstoneRecord:
+						ProcessTombstone(tombStoneRecord, scavengePoint, state, weights);
+						record = tombStoneRecord;
+						break;
+					default:
+						throw new InvalidOperationException($"Unexpected recordType: {recordType}");
+				}
 
-					if (record.TimeStamp > chunkMaxTimeStamp)
-						chunkMaxTimeStamp = record.TimeStamp;
+				if (record.TimeStamp < chunkMinTimeStamp)
+					chunkMinTimeStamp = record.TimeStamp;
 
-					switch (record) {
-						case RecordForAccumulator<TStreamId>.OriginalStreamRecord x:
-							ProcessOriginalStreamRecord(x, state);
-							originalStreamRecord.Release();
-							break;
-						case RecordForAccumulator<TStreamId>.MetadataStreamRecord x:
-							ProcessMetastreamRecord(x, scavengePoint, state, weights);
-							metadataStreamRecord.Release();
-							break;
-						case RecordForAccumulator<TStreamId>.TombStoneRecord x:
-							ProcessTombstone(x, scavengePoint, state, weights);
-							tombStoneRecord.Release();
-							break;
-						default:
-							throw new InvalidOperationException($"Unexpected record: {record}");
-					}
+				if (record.TimeStamp > chunkMaxTimeStamp)
+					chunkMaxTimeStamp = record.TimeStamp;
 
-					countAccumulatedRecords++;
+				countAccumulatedRecords++;
 
-					if (record.LogPosition == scavengePointPosition) {
-						// accumulated the scavenge point, time to stop.
-						return false;
-					}
+				if (record.LogPosition == scavengePointPosition) {
+					// accumulated the scavenge point, time to stop.
+					return false;
+				} else if (record.LogPosition > scavengePointPosition) {
+					throw new Exception("Accumulator expected to find the scavenge point before now.");
 				}
 
 				if (++cancellationCheckCounter == _cancellationCheckPeriod) {

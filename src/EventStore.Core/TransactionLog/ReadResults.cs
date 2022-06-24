@@ -31,13 +31,13 @@ namespace EventStore.Core.TransactionLog {
 
 		public readonly bool Success;
 		public readonly long NextPosition;
-		public readonly byte[] Record;
+		public readonly byte[] RecordBuffer; // can be longer than the record
 		public readonly int Length;
-		public LogRecordType RecordType => (LogRecordType) Record[0];
+		public LogRecordType RecordType => (LogRecordType) RecordBuffer[0];
 
 		public RawReadResult(bool success, byte[] record, int length, long nextPosition) {
 			Success = success;
-			Record = record;
+			RecordBuffer = record;
 			Length = length;
 			NextPosition = nextPosition;
 		}

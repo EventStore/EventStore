@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EventStore.Core.Data;
 using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -14,7 +15,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly ICheckpoint _replicationChk;
 		private readonly Func<int, byte[]> _getBuffer;
 		private readonly Action _releaseBuffer;
-		private readonly ReusableObject<PrepareLogRecordView> _reusablePrepareView;
 		private readonly int _chunkSize;
 
 		public ChunkReaderForAccumulator(
@@ -30,17 +30,15 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_chunkSize = chunkSize;
 
 			var reusableRecordBuffer = new ReusableBuffer(8192);
-
 			_getBuffer = size => reusableRecordBuffer.AcquireAsByteArray(size);
 			_releaseBuffer = () => reusableRecordBuffer.Release();
-			_reusablePrepareView = ReusableObject.Create(new PrepareLogRecordView());
 		}
 
-		public IEnumerable<RecordForAccumulator<TStreamId>> ReadChunk(
+		public IEnumerable<AccumulatorRecordType> ReadChunk(
 			int logicalChunkNumber,
-			ReusableObject<RecordForAccumulator<TStreamId>.OriginalStreamRecord> originalStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.MetadataStreamRecord> metadataStreamRecord,
-			ReusableObject<RecordForAccumulator<TStreamId>.TombStoneRecord> tombStoneRecord) {
+			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
+			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
+			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord) {
 
 			// the physical chunk might contain several logical chunks, we are only interested in one of them
 			var chunk = _manager.GetChunk(logicalChunkNumber);
@@ -63,25 +61,41 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						$"replication checkpoint: {replicationChk}.");
 
 				var localPos = chunk.ChunkHeader.GetLocalLogPosition(nextPos);
+
 				var result = chunk.TryReadClosestForwardRaw(localPos, _getBuffer);
 
 				if (!result.Success)
-					break; //qq review: or should this be an exception
+					break; //qq review: or should this be an exception? otherwise we might need to release the buffer too
 
 				switch (result.RecordType) {
 					case LogRecordType.Prepare:
-						var prepareViewInitParams = new PrepareLogRecordViewInitParams(result.Record, result.Length, _reusablePrepareView.Release);
-						var prepareView = _reusablePrepareView.Acquire(prepareViewInitParams);
-
+						var prepareView = new PrepareLogRecordView(result.RecordBuffer, result.Length);
 						var streamId = _streamIdConverter.ToStreamId(prepareView.EventStreamId);
-						var recordInitParams = new RecordForAccumulatorInitParams<TStreamId>(prepareView, streamId);
 
 						if (prepareView.Flags.HasAnyOf(PrepareFlags.StreamDelete)) {
-							yield return tombStoneRecord.Acquire(recordInitParams);
+							tombStoneRecord.Reset(
+								streamId,
+								prepareView.LogPosition,
+								prepareView.TimeStamp,
+								prepareView.ExpectedVersion + 1);
+							yield return AccumulatorRecordType.TombstoneRecord;
+
 						} else if (_metaStreamLookup.IsMetaStream(streamId)) {
-							yield return metadataStreamRecord.Acquire(recordInitParams);
+							metadataStreamRecord.Reset(
+								streamId,
+								prepareView.LogPosition,
+								prepareView.TimeStamp,
+								prepareView.ExpectedVersion + 1,
+								// todo: in the forward port we may be able to avoid the ToArray() call
+								StreamMetadata.TryFromJsonBytes(prepareView.Version, prepareView.Data.ToArray()));
+							yield return AccumulatorRecordType.MetadataStreamRecord;
+
 						} else {
-							yield return originalStreamRecord.Acquire(recordInitParams);
+							originalStreamRecord.Reset(
+								streamId,
+								prepareView.LogPosition,
+								prepareView.TimeStamp);
+							yield return AccumulatorRecordType.OriginalStreamRecord;
 						}
 						break;
 					case LogRecordType.Commit:

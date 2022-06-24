@@ -10,13 +10,11 @@ namespace EventStore.Core.Helpers {
 	public class ReusableBuffer {
 		private byte[] _buffer;
 		private int _state;
-		private int _lastSize;
 
 		private enum State {
 			Free = 0,
 			LockedToAcquire = 1,
 			Acquired = 2,
-			LockedToRelease = 3
 		}
 
 		public ReusableBuffer(int defaultSize) {
@@ -24,8 +22,7 @@ namespace EventStore.Core.Helpers {
 				throw new ArgumentOutOfRangeException(nameof(defaultSize), "default size must be positive");
 
 			_buffer = new byte[ClosestPowerOf2(defaultSize)];
-			_state = (int) State.Free;
-			_lastSize = 0;
+			_state = (int)State.Free;
 		}
 
 		private static int ClosestPowerOf2(int x) {
@@ -52,8 +49,6 @@ namespace EventStore.Core.Helpers {
 			if (_buffer.Length < size)
 				_buffer = new byte[ClosestPowerOf2(size)];
 
-			_lastSize = size;
-
 			TrySwitchState(State.LockedToAcquire, State.Acquired);
 			return _buffer;
 		}
@@ -63,12 +58,7 @@ namespace EventStore.Core.Helpers {
 		public Memory<byte> AcquireAsMemory(int size) => AcquireAsByteArray(size).AsMemory(0, size);
 
 		public void Release() {
-			TrySwitchState(State.Acquired, State.LockedToRelease);
-
-			Array.Clear(_buffer, 0, _lastSize);
-			_lastSize = 0;
-
-			TrySwitchState(State.LockedToRelease, State.Free);
+			TrySwitchState(State.Acquired, State.Free);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

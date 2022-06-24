@@ -1,14 +1,13 @@
 using System;
 using System.Text;
-using EventStore.Core.Helpers;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.TransactionLog.LogRecords {
 	// Use when parsing of a full prepare log record isn't required and only some bits need to be inspected.
 	// Note that the data structure is not aligned, so performance may degrade if heavily accessing properties.
 	// Designed to be reusable to avoid GC pressure when making a pass through the database.
-	public class PrepareLogRecordView : IReusableObject, IDisposable {
-		public byte Version => _record[1];
+	public struct PrepareLogRecordView {
+		public byte Version { get; }
 		public long LogPosition => BitConverter.ToInt64(_record, 2);
 		public PrepareFlags Flags => (PrepareFlags)BitConverter.ToUInt16(_record, 10);
 		public long TransactionPosition => BitConverter.ToInt64(_record, 12);
@@ -22,28 +21,26 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public ReadOnlySpan<byte> Data => _record.AsSpan(_dataOffset, _dataSize);
 		public ReadOnlySpan<byte> Metadata => _record.AsSpan(_metadataOffset, _metadataSize);
 
-		private byte[] _record;
-		private int _length;
-		private Action _onDispose;
-		private long _expectedVersion;
-		private int _streamIdSize;
-		private int _streamIdOffset;
-		private int _eventIdOffset;
-		private int _correlationIdOffset;
-		private int _timestampOffset;
-		private int _eventTypeSize;
-		private int _eventTypeOffset;
-		private int _dataSize;
-		private int _dataOffset;
-		private int _metadataSize;
-		private int _metadataOffset;
+		private readonly byte[] _record;
+		private readonly int _length;
+		private readonly long _expectedVersion;
+		private readonly int _streamIdSize;
+		private readonly int _streamIdOffset;
+		private readonly int _eventIdOffset;
+		private readonly int _correlationIdOffset;
+		private readonly int _timestampOffset;
+		private readonly int _eventTypeSize;
+		private readonly int _eventTypeOffset;
+		private readonly int _dataSize;
+		private readonly int _dataOffset;
+		private readonly int _metadataSize;
+		private readonly int _metadataOffset;
 
-		public void Initialize(IReusableObjectInitParams initParams) {
-			var p = (PrepareLogRecordViewInitParams)initParams;
-			_record = p.Record;
-			_length = p.Length;
-			_onDispose = p.OnDispose;
+		public PrepareLogRecordView(byte[] record, int length) {
+			_record = record;
+			_length = length;
 
+			Version = _record[1];
 			if (Version != LogRecordVersion.LogRecordV0 && Version != LogRecordVersion.LogRecordV1)
 				throw new ArgumentException(
 					$"PrepareRecord version {Version} is incorrect. Supported version: {PrepareLogRecord.PrepareRecordVersion}.");
@@ -96,28 +93,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				throw new Exception("Record too large.");
 		}
 
-		public void Reset() {
-			_record = default;
-			_length = default;
-			_onDispose = default;
-			_expectedVersion = default;
-			_streamIdSize = default;
-			_streamIdOffset = default;
-			_eventIdOffset = default;
-			_correlationIdOffset = default;
-			_timestampOffset = default;
-			_eventTypeSize = default;
-			_eventTypeOffset = default;
-			_dataSize = default;
-			_dataOffset = default;
-			_metadataSize = default;
-			_metadataOffset = default;
-		}
-
-		public void Dispose() {
-			_onDispose?.Invoke();
-		}
-
 		public override string ToString() {
 			return $"Version: {Version}, " +
 			       $"LogPosition: {LogPosition}, " +
@@ -152,18 +127,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				shift += 7;
 			} while ((b & 0x80) != 0);
 			return count;
-		}
-	}
-
-	public struct PrepareLogRecordViewInitParams : IReusableObjectInitParams {
-		public readonly byte[] Record;
-		public readonly int Length;
-		public readonly Action OnDispose;
-
-		public PrepareLogRecordViewInitParams(byte[] record, int length, Action onDispose) {
-			Record = record;
-			Length = length;
-			OnDispose = onDispose;
 		}
 	}
 }

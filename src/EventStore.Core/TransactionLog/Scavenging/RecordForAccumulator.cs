@@ -1,55 +1,63 @@
 ﻿using System;
 using EventStore.Core.Data;
-using EventStore.Core.Helpers;
-using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public abstract class RecordForAccumulator<TStreamId> : IDisposable, IReusableObject {
-		public TStreamId StreamId => _streamId;
-		public long LogPosition => _prepareView.LogPosition;
-		public DateTime TimeStamp => _prepareView.TimeStamp;
+	public enum AccumulatorRecordType {
+		OriginalStreamRecord,
+		MetadataStreamRecord,
+		TombstoneRecord,
+	}
 
-		private TStreamId _streamId;
-		private PrepareLogRecordView _prepareView;
+	public abstract class RecordForAccumulator<TStreamId> {
+		public TStreamId StreamId { get; private set; }
+		public long LogPosition { get; private set; }
+		public DateTime TimeStamp { get; private set; }
 
-		public virtual void Initialize(IReusableObjectInitParams initParams) {
-			var p = (RecordForAccumulatorInitParams<TStreamId>)initParams;
-			_prepareView = p.PrepareView;
-			_streamId = p.StreamId;
-		}
-
-		public virtual void Reset() {
-			_streamId = default;
-			_prepareView = default;
-		}
-
-		public void Dispose()
-		{
-			_prepareView?.Dispose();
+		protected void Reset(TStreamId streamId, long logPosition, DateTime timeStamp) {
+			StreamId = streamId;
+			LogPosition = logPosition;
+			TimeStamp = timeStamp;
 		}
 
 		// Record in original stream
-		public class OriginalStreamRecord : RecordForAccumulator<TStreamId> { }
+		public class OriginalStreamRecord : RecordForAccumulator<TStreamId> {
+			public new void Reset(TStreamId streamId, long logPosition, DateTime timeStamp) =>
+				base.Reset(streamId, logPosition, timeStamp);
+		}
 
 		// Record in metadata stream
 		public class MetadataStreamRecord : RecordForAccumulator<TStreamId> {
-			public StreamMetadata Metadata {
-				// todo: in the forward port we may be able to avoid the ToArray() call
-				get { return _metadata ?? (_metadata = StreamMetadata.TryFromJsonBytes(_prepareView.Version, _prepareView.Data.ToArray())); }
+			public void Reset(
+				TStreamId streamId,
+				long logPosition,
+				DateTime timeStamp,
+				long eventNumber,
+				StreamMetadata metadata) {
+
+				Reset(streamId, logPosition, timeStamp);
+				EventNumber = eventNumber;
+				Metadata = metadata;
 			}
-			private StreamMetadata _metadata;
-			public long EventNumber => _prepareView.ExpectedVersion + 1;
-			public override void Reset() {
-				base.Reset();
-				_metadata = default;
-			}
+
+			public StreamMetadata Metadata { get; private set; }
+			public long EventNumber { get; private set; }
 		}
 
 		public class TombStoneRecord : RecordForAccumulator<TStreamId> {
+			public void Reset(
+				TStreamId streamId,
+				long logPosition,
+				DateTime timeStamp,
+				long eventNumber) {
+
+				Reset(streamId, logPosition, timeStamp);
+				EventNumber = eventNumber;
+			}
+
 			// old scavenge, index writer and index committer are set up to handle
 			// tombstones that have abitrary event numbers, so lets handle them here
 			// in case it used to be possible to create them.
-			public long EventNumber => _prepareView.ExpectedVersion + 1;
+			public long EventNumber { get; private set; }
 		}
 	}
 }
