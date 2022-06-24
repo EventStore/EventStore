@@ -412,6 +412,8 @@ namespace EventStore.Core.Index {
 		}
 
 		public IEnumerable<IndexEntry> IterateAllInOrder() {
+			//qq old: might be nice if we got a workitem that was optimised for sequential reads
+			// bigger buffer too perhaps
 			var workItem = GetWorkItem();
 			try {
 				workItem.Stream.Position = PTableHeader.Size;
@@ -438,6 +440,178 @@ namespace EventStore.Core.Index {
 		public bool TryGetLatestEntry(ulong stream, out IndexEntry entry) {
 			ulong hash = GetHash(stream);
 			return TryGetLargestEntry(hash, 0, long.MaxValue, out entry);
+		}
+
+		public bool TryGetLatestEntry(
+			ulong stream,
+			long beforePosition,
+			Func<IndexEntry,bool> isForThisStream,
+			out IndexEntry entry) {
+			Ensure.Nonnegative(beforePosition, nameof(beforePosition));
+			stream = GetHash(stream);
+
+			entry = TableIndex.InvalidIndexEntry;
+
+			var startKey = BuildKey(stream, 0);
+			var endKey = BuildKey(stream, long.MaxValue);
+
+			if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
+				return false;
+
+			var workItem = GetWorkItem();
+			try {
+				var recordRange = LocateRecordRange(endKey, startKey, out var lowBoundsCheck, out var highBoundsCheck);
+
+				try {
+					if (!TryGetLatestEntryFast(
+						    stream,
+						    beforePosition,
+						    isForThisStream,
+						    recordRange,
+						    lowBoundsCheck,
+						    highBoundsCheck,
+						    workItem,
+						    out entry))
+						return false;
+				} catch(HashCollisionException) {
+					// fall back to linear search if there's a hash collision
+					if (!TryGetLatestEntrySlow(
+						    stream,
+						    beforePosition,
+						    isForThisStream,
+						    recordRange,
+						    lowBoundsCheck,
+						    highBoundsCheck,
+						    workItem,
+						    out entry))
+						return false;
+				}
+
+				return true;
+			} finally {
+				ReturnWorkItem(workItem);
+			}
+		}
+
+		private bool TryGetLatestEntrySlow(
+			ulong stream,
+			long beforePosition,
+			Func<IndexEntry, bool> isForThisStream,
+			Range recordRange,
+			IndexEntryKey lowBoundsCheck,
+			IndexEntryKey highBoundsCheck,
+			WorkItem workItem,
+			out IndexEntry entry) {
+
+			long maxBeforePosition = long.MinValue;
+			IndexEntry maxEntry = default;
+
+			for (var idx = recordRange.Lower; idx <= recordRange.Upper; idx++) {
+				var candidateEntry = ReadEntry(_indexEntrySize, idx, workItem, _version);
+				var candidateEntryKey = new IndexEntryKey(candidateEntry.Stream, candidateEntry.Version);
+
+				if (candidateEntryKey.GreaterThan(lowBoundsCheck)) {
+					throw new MaybeCorruptIndexException(
+						$"Candidate entry key (stream: {candidateEntryKey.Stream}, version: {candidateEntryKey.Version}) > "
+						+ $"low bounds check key (stream: {lowBoundsCheck.Stream}, version: {lowBoundsCheck.Version})");
+				}
+
+				if (candidateEntryKey.SmallerThan(highBoundsCheck)) {
+					throw new MaybeCorruptIndexException(
+						$"Candidate entry key (stream: {candidateEntryKey.Stream}, version: {candidateEntryKey.Version}) < "
+						+ $"high bounds check key (stream: {highBoundsCheck.Stream}, version: {highBoundsCheck.Version})");
+				}
+
+				if (candidateEntry.Stream == stream &&
+				    candidateEntry.Position < beforePosition &&
+				    candidateEntry.Position > maxBeforePosition &&
+				    isForThisStream(candidateEntry)) {
+					maxBeforePosition = candidateEntry.Position;
+					maxEntry = candidateEntry;
+				}
+			}
+
+			if (maxBeforePosition != long.MinValue) {
+				entry = maxEntry;
+				return true;
+			}
+
+			entry = TableIndex.InvalidIndexEntry;
+			return false;
+		}
+
+		private bool TryGetLatestEntryFast(
+			ulong stream,
+			long beforePosition,
+			Func<IndexEntry,bool> isForThisStream,
+			Range recordRange,
+			IndexEntryKey lowBoundsCheck,
+			IndexEntryKey highBoundsCheck,
+			WorkItem workItem,
+			out IndexEntry entry) {
+			var startKey = BuildKey(stream, 0);
+			var endKey = BuildKey(stream, long.MaxValue);
+
+			var low = recordRange.Lower;
+			var high = recordRange.Upper;
+
+			while (low < high) {
+				var mid = low + (high - low) / 2;
+				IndexEntry midpoint = ReadEntry(_indexEntrySize, mid, workItem, _version);
+
+				var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
+				if (midpointKey.GreaterThan(lowBoundsCheck)) {
+					throw new MaybeCorruptIndexException(
+						$"Midpoint key (stream: {midpointKey.Stream}, version: {midpointKey.Version}) > "
+					+ $"low bounds check key (stream: {lowBoundsCheck.Stream}, version: {lowBoundsCheck.Version})");
+				}
+
+				if (midpointKey.SmallerThan(highBoundsCheck)) {
+					throw new MaybeCorruptIndexException(
+						$"Midpoint key (stream: {midpointKey.Stream}, version: {midpointKey.Version}) < "
+					+ $"high bounds check key (stream: {highBoundsCheck.Stream}, version: {highBoundsCheck.Version})");
+				}
+
+				if (midpointKey.Stream != stream) {
+					if (midpointKey.GreaterThan(endKey)) {
+						low = mid + 1;
+						lowBoundsCheck = midpointKey;
+					} else if (midpointKey.SmallerThan(startKey)){
+						high = mid - 1;
+						highBoundsCheck = midpointKey;
+					} else 	throw new MaybeCorruptIndexException(
+						$"Midpoint key (stream: {midpointKey.Stream}, version: {midpointKey.Version}) >= "
+						+ $"start key (stream: {startKey.Stream}, version: {startKey.Version}) and <= "
+						+ $"end key (stream: {endKey.Stream}, version: {endKey.Version}) "
+						+ "but the stream hashes do not match.");
+					continue;
+				}
+
+				if (!isForThisStream(midpoint))
+					throw new HashCollisionException();
+
+				if (midpoint.Position >= beforePosition) {
+					low = mid + 1;
+					lowBoundsCheck = midpointKey;
+				} else {
+					high = mid;
+					highBoundsCheck = midpointKey;
+				}
+			}
+
+			var candidateEntry = ReadEntry(_indexEntrySize, high, workItem, _version);
+
+			if (!isForThisStream(candidateEntry))
+				throw new HashCollisionException();
+
+			if (candidateEntry.Stream == stream &&
+			    candidateEntry.Position < beforePosition) {
+				entry = candidateEntry;
+				return true;
+			}
+
+			entry = TableIndex.InvalidIndexEntry;
+			return false;
 		}
 
 		private bool TryGetLargestEntry(ulong stream, long startNumber, long endNumber, out IndexEntry entry) {
@@ -501,6 +675,24 @@ namespace EventStore.Core.Index {
 		public bool TryGetOldestEntry(ulong stream, out IndexEntry entry) {
 			ulong hash = GetHash(stream);
 			return TryGetSmallestEntry(hash, 0, long.MaxValue, out entry);
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			ulong hash = GetHash(stream);
+			if (afterVersion >= long.MaxValue) {
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+			return TryGetSmallestEntry(hash, afterVersion + 1, long.MaxValue, out entry);
+		}
+
+		public bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry) {
+			ulong hash = GetHash(stream);
+			if (beforeVersion <= 0) {
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+			return TryGetLargestEntry(hash, 0, beforeVersion - 1, out entry);
 		}
 
 		private bool TryGetSmallestEntry(ulong stream, long startNumber, long endNumber, out IndexEntry entry) {
@@ -632,18 +824,21 @@ namespace EventStore.Core.Index {
 			return new IndexEntryKey(stream, version);
 		}
 
-		private Range LocateRecordRange(IndexEntryKey key, out IndexEntryKey lowKey, out IndexEntryKey highKey) {
-			lowKey = new IndexEntryKey(ulong.MaxValue, long.MaxValue);
-			highKey = new IndexEntryKey(ulong.MinValue, long.MinValue);
+		private Range LocateRecordRange(IndexEntryKey key, out IndexEntryKey lowKey, out IndexEntryKey highKey) =>
+			LocateRecordRange(key, key, out lowKey, out highKey);
+
+		private Range LocateRecordRange(IndexEntryKey lowKey, IndexEntryKey highKey, out IndexEntryKey lowKeyOut, out IndexEntryKey highKeyOut) {
+			lowKeyOut = new IndexEntryKey(ulong.MaxValue, long.MaxValue);
+			highKeyOut = new IndexEntryKey(ulong.MinValue, long.MinValue);
 
 			var midpoints = _midpoints;
 			if (midpoints == null)
 				return new Range(0, Count - 1);
-			long lowerMidpoint = LowerMidpointBound(midpoints, key);
-			long upperMidpoint = UpperMidpointBound(midpoints, key);
+			long lowerMidpoint = LowerMidpointBound(midpoints, lowKey);
+			long upperMidpoint = UpperMidpointBound(midpoints, highKey);
 
-			lowKey = midpoints[lowerMidpoint].Key;
-			highKey = midpoints[upperMidpoint].Key;
+			lowKeyOut = midpoints[lowerMidpoint].Key;
+			highKeyOut = midpoints[upperMidpoint].Key;
 
 			return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
 		}
@@ -820,5 +1015,8 @@ namespace EventStore.Core.Index {
 				}
 			}
 		}
+	}
+
+	internal class HashCollisionException : Exception {
 	}
 }

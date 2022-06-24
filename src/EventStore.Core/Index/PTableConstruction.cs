@@ -329,6 +329,8 @@ namespace EventStore.Core.Index {
 			long droppedCount;
 
 			try {
+				//qq: old the output file is opened with a large buffer and for sequential scan, but the input is not.
+				// maybe it should be?
 				using (var f = new FileStream(outputFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
 					DefaultSequentialBufferSize, FileOptions.SequentialScan)) {
 					f.SetLength(fileSizeUpToIndexEntries);
