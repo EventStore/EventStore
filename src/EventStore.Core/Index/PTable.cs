@@ -287,6 +287,7 @@ namespace EventStore.Core.Index {
 
 							return midpoints;
 						} else
+							//qq got this, is this normal? check by running old scavenge.
 							Log.Debug(
 								"Skipping loading of cached midpoints from PTable due to count mismatch, cached midpoints: {midpointsCached} / required midpoints: {midpointsCount}",
 								_midpointsCached, midpointsCount);
@@ -412,8 +413,6 @@ namespace EventStore.Core.Index {
 		}
 
 		public IEnumerable<IndexEntry> IterateAllInOrder() {
-			//qq old: might be nice if we got a workitem that was optimised for sequential reads
-			// bigger buffer too perhaps
 			var workItem = GetWorkItem();
 			try {
 				workItem.Stream.Position = PTableHeader.Size;
@@ -445,8 +444,9 @@ namespace EventStore.Core.Index {
 		public bool TryGetLatestEntry(
 			ulong stream,
 			long beforePosition,
-			Func<IndexEntry,bool> isForThisStream,
+			Func<IndexEntry, bool> isForThisStream,
 			out IndexEntry entry) {
+
 			Ensure.Nonnegative(beforePosition, nameof(beforePosition));
 			stream = GetHash(stream);
 
@@ -464,26 +464,26 @@ namespace EventStore.Core.Index {
 
 				try {
 					if (!TryGetLatestEntryFast(
-						    stream,
-						    beforePosition,
-						    isForThisStream,
-						    recordRange,
-						    lowBoundsCheck,
-						    highBoundsCheck,
-						    workItem,
-						    out entry))
+							stream,
+							beforePosition,
+							isForThisStream,
+							recordRange,
+							lowBoundsCheck,
+							highBoundsCheck,
+							workItem,
+							out entry))
 						return false;
-				} catch(HashCollisionException) {
+				} catch (HashCollisionException) {
 					// fall back to linear search if there's a hash collision
 					if (!TryGetLatestEntrySlow(
-						    stream,
-						    beforePosition,
-						    isForThisStream,
-						    recordRange,
-						    lowBoundsCheck,
-						    highBoundsCheck,
-						    workItem,
-						    out entry))
+							stream,
+							beforePosition,
+							isForThisStream,
+							recordRange,
+							lowBoundsCheck,
+							highBoundsCheck,
+							workItem,
+							out entry))
 						return false;
 				}
 
@@ -493,6 +493,8 @@ namespace EventStore.Core.Index {
 			}
 		}
 
+		// linearly search the whole range for the entry with the greatest position that
+		// is for this stream and before the beforePosition.
 		private bool TryGetLatestEntrySlow(
 			ulong stream,
 			long beforePosition,
@@ -523,9 +525,10 @@ namespace EventStore.Core.Index {
 				}
 
 				if (candidateEntry.Stream == stream &&
-				    candidateEntry.Position < beforePosition &&
-				    candidateEntry.Position > maxBeforePosition &&
-				    isForThisStream(candidateEntry)) {
+					candidateEntry.Position < beforePosition &&
+					candidateEntry.Position > maxBeforePosition &&
+					isForThisStream(candidateEntry)) {
+
 					maxBeforePosition = candidateEntry.Position;
 					maxEntry = candidateEntry;
 				}
@@ -549,6 +552,7 @@ namespace EventStore.Core.Index {
 			IndexEntryKey highBoundsCheck,
 			WorkItem workItem,
 			out IndexEntry entry) {
+
 			var startKey = BuildKey(stream, 0);
 			var endKey = BuildKey(stream, long.MaxValue);
 
@@ -605,7 +609,7 @@ namespace EventStore.Core.Index {
 				throw new HashCollisionException();
 
 			if (candidateEntry.Stream == stream &&
-			    candidateEntry.Position < beforePosition) {
+				candidateEntry.Position < beforePosition) {
 				entry = candidateEntry;
 				return true;
 			}
@@ -824,6 +828,8 @@ namespace EventStore.Core.Index {
 			return new IndexEntryKey(stream, version);
 		}
 
+		// use the midpoints (if they exist) to narrow the search range.
+		// returns a range of indexes to search and corresponding IndexEntryKeys
 		private Range LocateRecordRange(IndexEntryKey key, out IndexEntryKey lowKey, out IndexEntryKey highKey) =>
 			LocateRecordRange(key, key, out lowKey, out highKey);
 

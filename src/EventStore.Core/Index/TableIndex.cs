@@ -592,11 +592,12 @@ namespace EventStore.Core.Index {
 			return TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry);
 		}
 
-		private bool TryGetLatestEntryInternal(ulong stream, long beforePosition, Func<IndexEntry,bool> isForThisStream, out IndexEntry entry) {
+		private bool TryGetLatestEntryInternal(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
 			var awaiting = _awaitingMemTables;
 
 			foreach (var t in awaiting) {
-				if(t.IsFromIndexMap) continue;
+				if (t.IsFromIndexMap)
+					continue;
 				if (t.Table.TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry))
 					return true;
 			}
@@ -732,11 +733,6 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 
-		//qq old: limit is quite dangerous because it prevents a full search of the tables.
-		// whatever we get back from a table will be  for the right stream hash and within the version ranges
-		// and it will definitely be in order. but if limit is set higher we might get extra duplicates
-		// which might override records that we would have returned with limit set lower.
-		//qq old: which probably means we need to look at the calls with limit really carefully - dont do something like pass maxcount from the client in as the limit.
 		public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion,
 			int? limit = null) => GetRange(CreateHash(streamId), startVersion, endVersion, limit);
 
@@ -757,20 +753,6 @@ namespace EventStore.Core.Index {
 			throw new InvalidOperationException("Files are locked.");
 		}
 
-		//qq old: what does this actually return? a readonly list of IndexEntries in descending order.
-		// this usually means the version is descending in the ouput, but the details are a bit complicated:
-		// it used to be always in IndexEntry default order (streamhash, version, position) descending
-		//  which means newest first. if we have a mix of 32bit and 64bit indexes then the same stream will have two different hashes
-		//  BUT the 64bit tables will be newer than the 32bit ones, and the 64bit hashes will be greater than the 32bit ones,
-		//  so the sort order isn't affected. EXCEPT when a later table contains an earlier version number as in the problem that
-		//  required indexscanonread. when that happens the versions will be returned out of order here, but we are deailing with that in indexreader.
-		//
-		// so it is the job of the caller to
-		//   1. resolve hash collisions
-		//   2. deal with one stream that has multiple events with the same version bug (for which the results here could be out of version order and will need sorting by version and then deduplicating.
-		// 
-		//qq old: what is limit here, in teh end it is the limit that gets passed to ptable.readforward.
-		// it is the maximum number of records that _each ptable_ will return, it's the HIGHER versions that they will return and leave behind the lower.
 		private IEnumerable<IndexEntry> GetRangeInternal(ulong hash, long startVersion, long endVersion,
 			int? limit = null) {
 			if (startVersion < 0)
@@ -804,14 +786,6 @@ namespace EventStore.Core.Index {
 				var winner = candidates[maxIdx];
 
 				var best = winner.Current;
-				// if it is the first then definitely not a duplicate
-				// if different position then definitely not a duplicate
-				// but just being a different stream doesn't stop it being a duplicate. it has to be a different stream and version to not be a duplicate.
-				// so if it is the same stream OR same version it can be a duplicate if it has the same position.
-				//qq old: so we are saying we if have two entries that point to the same position (but why would this ever happen??)
-				//   if they are for the same stream hash but different version, then remove it as a duplicate - afaik this isn't possible??
-				//   if they are for the same version but different stream hash, then remove it as a duplicate - 32bit vs 64bit could explain why perhaps
-				//   different version and different strema hash: keep it even though it is for same position.
 				if (first ||
 					((last.Stream != best.Stream) && (last.Version != best.Version)) ||
 					last.Position != best.Position) {

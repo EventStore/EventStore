@@ -13,9 +13,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly IMetastreamLookup<TStreamId> _metaStreamLookup;
 		private readonly IStreamIdConverter<TStreamId> _streamIdConverter;
 		private readonly ICheckpoint _replicationChk;
+		private readonly int _chunkSize;
+
 		private readonly Func<int, byte[]> _getBuffer;
 		private readonly Action _releaseBuffer;
-		private readonly int _chunkSize;
 
 		public ChunkReaderForAccumulator(
 			TFChunkManager manager,
@@ -23,6 +24,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IStreamIdConverter<TStreamId> streamIdConverter,
 			ICheckpoint replicationChk,
 			int chunkSize) {
+
 			_manager = manager;
 			_metaStreamLookup = metastreamLookup;
 			_streamIdConverter = streamIdConverter;

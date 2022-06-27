@@ -6,6 +6,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 	// Use when parsing of a full prepare log record isn't required and only some bits need to be inspected.
 	// Note that the data structure is not aligned, so performance may degrade if heavily accessing properties.
 	// Designed to be reusable to avoid GC pressure when making a pass through the database.
+	//qq review: perhaps we should guard this with an endianness check, or at least comment about it
 	public struct PrepareLogRecordView {
 		public byte Version { get; }
 		public long LogPosition => BitConverter.ToInt64(_record, 2);

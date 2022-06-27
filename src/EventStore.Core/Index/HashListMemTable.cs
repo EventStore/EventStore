@@ -141,12 +141,14 @@ namespace EventStore.Core.Index {
 			if (!_hash.TryGetValue(hash, out var list))
 				return false;
 
-			if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
+			if (!Monitor.TryEnter(list, 10000))
+				throw new UnableToAcquireLockInReasonableTimeException();
+
 			try {
 				int endIdx = list.UpperBound(
 					key: new Entry(long.MaxValue, beforePosition - 1),
 					comparer: LogPosComparer,
-					continueSearch: e=> isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
+					continueSearch: e => isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
 
 				if (endIdx == -1)
 					return false;
@@ -156,6 +158,7 @@ namespace EventStore.Core.Index {
 				return true;
 			} catch (SearchStoppedException) {
 				// fall back to linear search if there was a hash collision
+				//qq review: is it correct that we are not passing LogPosComparer here?
 				int maxIdx = list.FindMax(e =>
 					e.LogPos < beforePosition &&
 					isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
@@ -203,7 +206,8 @@ namespace EventStore.Core.Index {
 
 			SortedList<Entry, byte> list;
 			if (_hash.TryGetValue(hash, out list)) {
-				if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
+				if (!Monitor.TryEnter(list, 10000))
+					throw new UnableToAcquireLockInReasonableTimeException();
 				try {
 					int endIdx = list.LowerBound(new Entry(afterNumber + 1, 0));
 					if (endIdx == -1)
@@ -232,7 +236,8 @@ namespace EventStore.Core.Index {
 
 			SortedList<Entry, byte> list;
 			if (_hash.TryGetValue(hash, out list)) {
-				if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
+				if (!Monitor.TryEnter(list, 10000))
+					throw new UnableToAcquireLockInReasonableTimeException();
 				try {
 					int endIdx = list.UpperBound(new Entry(beforeNumber - 1, long.MaxValue));
 					if (endIdx == -1)

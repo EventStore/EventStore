@@ -37,6 +37,7 @@ namespace EventStore.Core.Index {
 			TKey key,
 			IComparer<TKey> comparer = null,
 			Func<TKey, bool> continueSearch = null) {
+
 			if (continueSearch == null)
 				continueSearch = _ => true;
 
@@ -79,6 +80,7 @@ namespace EventStore.Core.Index {
 			this SortedList<TKey, TValue> list,
 			Func<TKey, bool> predicate,
 			IComparer<TKey> comparer = null) {
+
 			if (comparer == null)
 				comparer = list.Comparer;
 
