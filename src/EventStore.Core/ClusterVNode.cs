@@ -608,7 +608,7 @@ namespace EventStore.Core {
 						throttle: throttle);
 
 					var calculator = new Calculator<string>(
-						new IndexReaderForCalculator(readIndex, state.LookupStreamIds),
+						new IndexReaderForCalculator(readIndex, state.LookupUniqueHashUser),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
 						checkpointPeriod: 32_768, //qq tuning: sensible?
