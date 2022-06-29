@@ -510,9 +510,13 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						ScavengePointRec(t++))) // <-- SP-1
 				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
 				.MutateState(x => {
+					x.DetectCollisions("$$ab-1");
+					x.DetectCollisions("ab-1");
 					x.SetOriginalStreamMetadata("ab-1", MaxCount1);
 					x.SetOriginalStreamDiscardPoints(
-						StreamHandle.ForHash<string>(98),
+						Scenario.CollideEverything
+							? StreamHandle.ForStreamId("ab-1")
+							: StreamHandle.ForHash<string>(98),
 						CalculationStatus.Active,
 						DiscardPoint.DiscardBefore(2),
 						DiscardPoint.DiscardBefore(2));

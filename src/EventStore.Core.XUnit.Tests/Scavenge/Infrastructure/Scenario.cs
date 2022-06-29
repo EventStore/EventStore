@@ -26,6 +26,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 	// sort of similar to ScavengeTestScenario
 	public class Scenario {
 		private const int Threads = 1;
+		public const bool CollideEverything = false;
 
 		private Func<TFChunkDbConfig, DbResult> _getDb;
 		private Func<ScavengeStateBuilder, ScavengeStateBuilder> _stateTransform;
@@ -198,17 +199,23 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				maxCount: ESConsts.PTableMaxReaderCount,
 				factory: () => new TFChunkReader(dbResult.Db, dbResult.Db.Config.WriterCheckpoint));
 
-			IHasher lowHasher = new XXHashUnsafe();
-			IHasher highHasher = new Murmur3AUnsafe();
-			ILongHasher<string> hasher = new CompositeHasher<string>(
-				new XXHashUnsafe(),
-				new Murmur3AUnsafe());
+			IHasher lowHasher;
+			IHasher highHasher;
+			ILongHasher<string> hasher;
 
 			var humanHashers = true;
-			if (humanHashers) {
+			if (CollideEverything) {
+				lowHasher = new ConstantHasher(0);
+				highHasher = new ConstantHasher(0);
+				hasher = new CompositeHasher<string>(new ConstantHasher(0), new ConstantHasher(0));
+			} else if (humanHashers) {
 				lowHasher = new ConstantHasher(0);
 				highHasher = new HumanReadableHasher32();
 				hasher = new CompositeHasher<string>(new ConstantHasher(0), new HumanReadableHasher32());
+			} else {
+				lowHasher = new XXHashUnsafe();
+				highHasher = new Murmur3AUnsafe();
+				hasher = new CompositeHasher<string>(new XXHashUnsafe(), new Murmur3AUnsafe());
 			}
 
 			var tableIndex = new TableIndex(
@@ -269,12 +276,12 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var calculatorIndexReader = new AdHocIndexReaderInterceptor<string>(
 					new IndexReaderForCalculator(readIndex, scavengeState.LookupUniqueHashUser),
 					(f, handle, from, maxCount, x) => {
-						if (_calculatingCancellationTrigger != null &&
-							handle.Kind == StreamHandle.Kind.Hash &&
-							handle.StreamHash == hasher.Hash(_calculatingCancellationTrigger)) {
+						if (_calculatingCancellationTrigger != null)
+							if ((handle.Kind == StreamHandle.Kind.Hash && handle.StreamHash == hasher.Hash(_calculatingCancellationTrigger)) ||
+								(handle.Kind == StreamHandle.Kind.Id && handle.StreamId == _calculatingCancellationTrigger)) {
 
-							cancellationTokenSource.Cancel();
-						}
+								cancellationTokenSource.Cancel();
+							}
 						return f(handle, from, maxCount, x);
 					});
 
@@ -392,7 +399,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				}
 
 				// check the trace. only when Threads == 1 or the order isn't guaranteed.
-				if (_expectedTrace != null && Threads == 1) {
+				// only when not colliding everything, because the collisions will change the trace
+				if (_expectedTrace != null && Threads == 1 && !CollideEverything) {
 					var expected = _expectedTrace;
 					var actual = Tracer.ToArray();
 					for (var i = 0; i < Math.Max(expected.Length, actual.Length); i++) {
@@ -459,18 +467,19 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					}
 				}
 
-				//   - Assert list of collisions.
-				Assert.Equal(collidingStreams.OrderBy(x => x), scavengeState.AllCollisions().OrderBy(x => x));
+				if (CollideEverything) {
+					// collidingStreams is all collisions in the log, not just up to the scavenge point
+					// so can contains extra collisions, which becomes apparent when everything collides.
+				} else {
+					//   - Assert list of collisions.
+					Assert.Equal(collidingStreams.OrderBy(x => x), scavengeState.AllCollisions().OrderBy(x => x));
+				}
 
 				// The records we expected to keep are kept
 				// The index entries we expected to be kept are kept
-				var collisions = new HashSet<string>();
-				foreach (var stream in scavengeState.AllCollisions())
-					collisions.Add(stream);
-
 				if (keptRecords != null) {
 					CheckRecords(keptRecords, dbResult);
-					CheckIndex(keptIndexEntries, readIndex, collisions, hasher);
+					CheckIndex(keptIndexEntries, readIndex, collidingStreams, hasher);
 				}
 
 				_assertState?.Invoke(scavengeState);
@@ -552,15 +561,15 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 					var result = collisions.Contains(streamId)
 						? actual.ReadEventInfoForward_KnownCollisions(
-							streamId: streamId,
-							fromEventNumber: eventNumber,
-							maxCount: 1,
+						streamId: streamId,
+						fromEventNumber: eventNumber,
+						maxCount: 1,
 							beforePosition: long.MaxValue)
 						: actual.ReadEventInfoForward_NoCollisions(
 							stream: hasher.Hash(streamId),
 							fromEventNumber: eventNumber,
 							maxCount: 1,
-							beforePosition: long.MaxValue);
+						beforePosition: long.MaxValue);
 
 					if (result.EventInfos.Length != 1) {
 						// remember this applies metadata, so is of limited use
@@ -586,15 +595,15 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 				var result = collisions.Contains(streamId)
 					? actual.ReadEventInfoForward_KnownCollisions(
-						streamId: streamId,
-						fromEventNumber: 0,
-						maxCount: 1000,
+					streamId: streamId,
+					fromEventNumber: 0,
+					maxCount: 1000,
 						beforePosition: long.MaxValue)
 					: actual.ReadEventInfoForward_NoCollisions(
 						stream: hasher.Hash(streamId),
 						fromEventNumber: 0,
 						maxCount: 1000,
-						beforePosition: long.MaxValue);
+					beforePosition: long.MaxValue);
 
 				if (result.EventInfos.Length > 100)
 					throw new Exception("wasn't expecting a stream this long in the tests");

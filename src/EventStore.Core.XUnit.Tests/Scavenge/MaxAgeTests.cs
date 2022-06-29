@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
@@ -10,7 +11,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 	public class MaxAgeTests : SqliteDbPerTest<MaxAgeTests> {
 		[Fact]
 		public async Task simple_maxage() {
-			// records kept in the index because they are 'maybe' expired
 			var t = 0;
 			await new Scenario()
 				.WithDbPath(Fixture.Directory)
@@ -28,10 +28,15 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						x.Recs[0].KeepIndexes(2, 3, 4),
 						x.Recs[1],
 					},
-					x => new[] {
-						x.Recs[0],
-						x.Recs[1],
-					});
+					Scenario.CollideEverything
+						// index is the same as the log because it tries to find the log records
+						// and fails, so must remove the index entries.
+						? default(Func<DbResult, LogRecord[][]>)
+						// records kept in the index because they are 'maybe' expired
+						: x => new[] {
+							x.Recs[0],
+							x.Recs[1],
+						});
 		}
 
 		[Fact]
@@ -53,10 +58,12 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						x.Recs[0].KeepIndexes(2, 3),
 						x.Recs[1],
 					},
-					x => new[] {
-						x.Recs[0],
-						x.Recs[1],
-					});
+					Scenario.CollideEverything
+						? default(Func<DbResult, LogRecord[][]>)
+						: x => new[] {
+							x.Recs[0],
+							x.Recs[1],
+						});
 		}
 
 		[Fact]
