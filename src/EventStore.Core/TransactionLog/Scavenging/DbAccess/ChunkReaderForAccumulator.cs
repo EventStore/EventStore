@@ -36,7 +36,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_releaseBuffer = () => reusableRecordBuffer.Release();
 		}
 
-		public IEnumerable<AccumulatorRecordType> ReadChunk(
+		public IEnumerable<AccumulatorRecordType> ReadChunkInto(
 			int logicalChunkNumber,
 			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
 			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,

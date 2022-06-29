@@ -181,7 +181,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			var cancellationCheckCounter = 0;
-			foreach (var recordType in _chunkReader.ReadChunk(
+			foreach (var recordType in _chunkReader.ReadChunkInto(
 				         logicalChunkNumber,
 				         originalStreamRecord,
 				         metadataStreamRecord,

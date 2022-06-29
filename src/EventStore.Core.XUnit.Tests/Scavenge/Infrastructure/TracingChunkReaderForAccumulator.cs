@@ -15,13 +15,13 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			_trace = trace;
 		}
 
-		public IEnumerable<AccumulatorRecordType> ReadChunk(
+		public IEnumerable<AccumulatorRecordType> ReadChunkInto(
 			int logicalChunkNumber,
 			RecordForAccumulator<TStreamId>.OriginalStreamRecord originalStreamRecord,
 			RecordForAccumulator<TStreamId>.MetadataStreamRecord metadataStreamRecord,
 			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord) {
 
-			var ret = _wrapped.ReadChunk(
+			var ret = _wrapped.ReadChunkInto(
 				logicalChunkNumber,
 				originalStreamRecord,
 				metadataStreamRecord,

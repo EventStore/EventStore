@@ -26,7 +26,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			Ensure.Positive(degreeOfParallelism, nameof(degreeOfParallelism));
 
-			// in each slot the store the checkpoint that can be emitted when every item before the one
+			// in each slot we store the checkpoint that can be emitted when every item before the one
 			// being processed in that slot is completed.
 			// null means it cannot emit a checkpoint at all.
 			// int.max means it places no limit on the checkpoint.
