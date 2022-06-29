@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using EventStore.Core.Index.Hashes;
 
@@ -133,18 +134,16 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			return CollisionResult.NewCollision;
 		}
 
-		//qq review: perhaps this shouldn't return an enumerable, this is only ever used when we
-		// expect there to be exactly one user of this hash
-		// not certain this should be on this class, it might be enough for the scavengestate to
-		// query the hashes directly
-		public IEnumerable<T> LookupStreamIds(ulong streamHash) {
+		public T LookupUniqueHashUser(ulong streamHash) {
 			if (!_hashUsers.TryGetValue(streamHash, out var stream))
-				return default;
+				throw new Exception($"Tried to get unique user for stream hash: {streamHash} but it is unused");
 
-			if (!IsCollisionHash(streamHash))
-				return new[] { stream };
+			if (IsCollisionHash(streamHash)) {
+				var collisions = AllCollisions().Where(x => _hasher.Hash(x) == streamHash);
+				throw new Exception($"Tried to get unique user for stream hash: {streamHash} but there are multiple: {string.Join(",", collisions)}");
+			}
 
-			return AllCollisions().Where(x => _hasher.Hash(x) == streamHash);
+			return stream;
 		}
 	}
 }

@@ -189,8 +189,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public bool TryGetChunkTimeStampRange(int logicalChunkNumber, out ChunkTimeStampRange range) =>
 			_chunkTimeStampRanges.TryGetValue(logicalChunkNumber, out range);
 
-		public IEnumerable<TStreamId> LookupStreamIds(ulong streamHash) =>
-			_collisionDetector.LookupStreamIds(streamHash);
+		public TStreamId LookupUniqueHashUser(ulong streamHash) =>
+			_collisionDetector.LookupUniqueHashUser(streamHash);
 
 		//
 		// FOR CHUNK EXECUTOR

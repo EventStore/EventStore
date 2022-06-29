@@ -267,7 +267,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					});
 
 				var calculatorIndexReader = new AdHocIndexReaderInterceptor<string>(
-					new IndexReaderForCalculator(readIndex, scavengeState.LookupStreamIds),
+					new IndexReaderForCalculator(readIndex, scavengeState.LookupUniqueHashUser),
 					(f, handle, from, maxCount, x) => {
 						if (_calculatingCancellationTrigger != null &&
 							handle.Kind == StreamHandle.Kind.Hash &&

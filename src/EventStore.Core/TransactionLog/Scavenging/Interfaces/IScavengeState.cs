@@ -89,7 +89,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			DiscardPoint discardPoint,
 			DiscardPoint maybeDiscardPoint);
 
-		IEnumerable<TStreamId> LookupStreamIds(ulong streamHash);
+		TStreamId LookupUniqueHashUser(ulong streamHash);
 	}
 
 	public interface IIncreaseChunkWeights {
@@ -116,6 +116,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		bool TryGetIndexExecutionInfo(
 			StreamHandle<TStreamId> streamHandle,
 			out IndexExecutionInfo info);
+		TStreamId LookupUniqueHashUser(ulong streamHash);
 	}
 
 	public interface IScavengeStateForCleaner : IScavengeStateCommon {

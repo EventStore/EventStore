@@ -1,29 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class IndexReaderForCalculator : IIndexReaderForCalculator<string> {
 		private readonly IReadIndex _readIndex;
-		private readonly Func<ulong, string> _getStreamId;
+		private readonly Func<ulong, string> _lookupUniqueHashUser;
 
 		public IndexReaderForCalculator(
 			IReadIndex readIndex,
-			Func<ulong, IEnumerable<string>> lookupStreamIds) {
+			Func<ulong, string> lookupUniqueHashUser) {
 
 			_readIndex = readIndex;
-			_getStreamId = hash => {
-				//qq review: maybe lookupStreamIds can just return the single element
-				var streamIds = lookupStreamIds(hash).ToArray();
-				if (streamIds.Length == 0)
-					throw new Exception($"Failed to look up stream id for stream hash: {hash}");
-
-				if (streamIds.Length > 1)
-					throw new Exception($"Stream hash: {hash} has collisions: {string.Join(",", streamIds)}");
-
-				return streamIds[0];
-			};
+			_lookupUniqueHashUser = lookupUniqueHashUser;
 		}
 
 		public long GetLastEventNumber(
@@ -35,7 +23,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					// tries as far as possible to use the index without consulting the log to fetch the last event number
 					return _readIndex.GetStreamLastEventNumber_NoCollisions(
 						handle.StreamHash,
-						_getStreamId,
+						_lookupUniqueHashUser,
 						scavengePoint.Position);
 				case StreamHandle.Kind.Id:
 					// uses the index and the log to fetch the last event number
