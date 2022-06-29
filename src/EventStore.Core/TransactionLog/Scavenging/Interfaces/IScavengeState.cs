@@ -38,8 +38,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		void UnregisterOnRollback();
 	}
 
-		// abstraction for the backing store. memory, sqlite etc.
-		public interface ITransactionFactory<TTransaction> {
+	// abstraction for the backing store. memory, sqlite etc.
+	public interface ITransactionFactory<TTransaction> {
 		TTransaction Begin();
 		void Rollback(TTransaction transaction);
 		void Commit(TTransaction transaction);

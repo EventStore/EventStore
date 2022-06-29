@@ -10,7 +10,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	// The Accumulator calculates them for Metadata streams because (a) it is simple and
 	// (b) it is updating the state for each metastream record anyway.
 	// The Calculator calculates them for Original streams so save us updating them repeatedly as
-	// we acumulate each event.
+	// we accumulate each event.
 	//
 	// For streams that do not collide (which is ~all of them) the calculation can be done index-only.
 	// that is, without hitting the log at all.

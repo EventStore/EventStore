@@ -54,7 +54,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			lastBatch.Add(posMap);
 
-			// ocasionaly flush the chunk. based on TFChunkScavenger.ScavengeChunk
+			// occasionally flush the chunk. based on TFChunkScavenger.ScavengeChunk
 			var currentPage = _outputChunk.RawWriterPosition / 4046;
 			if (currentPage - _lastFlushedPage > TFChunkScavenger.FlushPageInterval) {
 				_outputChunk.Flush();

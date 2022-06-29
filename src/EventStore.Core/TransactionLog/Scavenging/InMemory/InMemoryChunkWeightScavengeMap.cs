@@ -13,7 +13,7 @@
 		}
 
 		public void IncreaseWeight(int logicalChunkNumber, float extraWeight) {
-			// sqlite implementaiton would update table set weight = weight + extraWeight
+			// sqlite implementation would update table set weight = weight + extraWeight
 			if (!TryGetValue(logicalChunkNumber, out var weight))
 				weight = 0;
 			this[logicalChunkNumber] = weight + extraWeight;

@@ -2,7 +2,7 @@
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// store a range per chunk so that the calculator can definitely get a timestamp range for each event
-	// that is guaranteed to to contain the real timestamp of that event.
+	// that is guaranteed to contain the real timestamp of that event.
 	public struct ChunkTimeStampRange : IEquatable<ChunkTimeStampRange> {
 		public ChunkTimeStampRange(DateTime min, DateTime max) {
 			Min = min;
