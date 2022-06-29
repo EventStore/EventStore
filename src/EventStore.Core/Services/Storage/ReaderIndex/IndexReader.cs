@@ -248,14 +248,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(string streamId, long fromEventNumber, int maxCount, long beforePosition) {
 			using (var reader = _backend.BorrowReader()) {
 				return ReadEventInfoForwardInternal(
-					(startEventNumber, endEventNumber) => {
-						return _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
-							.Select(x => new { IndexEntry = x, Prepare = ReadPrepareInternal(reader, x.Position) })
-							.Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId)
+					streamId,
+					reader,
+					(self, streamHandle, reader2, startEventNumber, endEventNumber) => {
+						return self._tableIndex.GetRange(streamHandle, startEventNumber, endEventNumber)
+							.Select(x => new { IndexEntry = x, Prepare = ReadPrepareInternal(reader2, x.Position) })
+							.Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamHandle)
 							.Select(x => x.IndexEntry);
 					},
-					afterEventNumber => {
-						if (!_tableIndex.TryGetNextEntry(streamId, afterEventNumber, out var entry))
+					(self, streamHandle, afterEventNumber) => {
+						if (!self._tableIndex.TryGetNextEntry(streamHandle, afterEventNumber, out var entry))
 							return -1;
 
 						// Note that this event number may be for a colliding stream. It is not a major issue since these
@@ -271,11 +273,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		// note for simplicity skipIndexScanOnRead is always treated as false. see ReadEventInfoInternal
 		public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition) {
 			return ReadEventInfoForwardInternal(
-				//qq review: maybe we can take stream as a param then reuse the lambdas
-				(startEventNumber, endEventNumber) =>
-					_tableIndex.GetRange(stream, startEventNumber, endEventNumber),
-				afterEventNumber => {
-					if (!_tableIndex.TryGetNextEntry(stream, afterEventNumber, out var entry))
+				stream,
+				default,
+				(self, streamHandle, reader, startEventNumber, endEventNumber) =>
+					self._tableIndex.GetRange(streamHandle, startEventNumber, endEventNumber),
+				(self, streamHandle, afterEventNumber) => {
+					if (!self._tableIndex.TryGetNextEntry(streamHandle, afterEventNumber, out var entry))
 						return -1;
 
 					return entry.Version;
@@ -285,9 +288,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				beforePosition);
 		}
 
-		private static IndexReadEventInfoResult ReadEventInfoForwardInternal(
-			Func<long, long, IEnumerable<IndexEntry>> readIndexEntries,
-			Func<long, long> getNextEventNumber,
+		private IndexReadEventInfoResult ReadEventInfoForwardInternal<TStreamHandle>(
+			TStreamHandle streamHandle,
+			TFReaderLease reader,
+			Func<IndexReader, TStreamHandle, TFReaderLease, long, long, IEnumerable<IndexEntry>> readIndexEntries,
+			Func<IndexReader, TStreamHandle, long, long> getNextEventNumber,
 			long fromEventNumber,
 			int maxCount,
 			long beforePosition) {
@@ -299,14 +304,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var endEventNumber = fromEventNumber > long.MaxValue - maxCount + 1 ?
 				long.MaxValue : fromEventNumber + maxCount - 1;
 
-			var eventInfos = ReadEventInfoInternal(readIndexEntries, startEventNumber, endEventNumber, beforePosition);
+			var eventInfos = ReadEventInfoInternal(streamHandle, reader, readIndexEntries, startEventNumber, endEventNumber, beforePosition);
 			Array.Reverse(eventInfos);
 
 			long nextEventNumber;
 			if (endEventNumber >= long.MaxValue)
 				nextEventNumber = -1;
 			else if (eventInfos.Length == 0)
-				nextEventNumber = getNextEventNumber(endEventNumber);
+				nextEventNumber = getNextEventNumber(this, streamHandle, endEventNumber);
 			else
 				nextEventNumber = endEventNumber + 1;
 
@@ -391,14 +396,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			using (var reader = _backend.BorrowReader()) {
 				return ReadEventInfoBackwardInternal(
-					(startEventNumber, endEventNumber) => {
-						return _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
-							.Select(x => new { IndexEntry = x, Prepare = ReadPrepareInternal(reader, x.Position) })
-							.Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId)
+					streamId,
+					reader,
+					(self, streamHandle, reader2, startEventNumber, endEventNumber) => {
+						return self._tableIndex.GetRange(streamHandle, startEventNumber, endEventNumber)
+							.Select(x => new { IndexEntry = x, Prepare = ReadPrepareInternal(reader2, x.Position) })
+							.Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamHandle)
 							.Select(x => x.IndexEntry);
 					},
-					beforeEventNumber => {
-						if (!_tableIndex.TryGetPreviousEntry(streamId, beforeEventNumber, out var entry))
+					(self, streamHandle, beforeEventNumber) => {
+						if (!self._tableIndex.TryGetPreviousEntry(streamHandle, beforeEventNumber, out var entry))
 							return -1;
 
 						// Note that this event number may be for a colliding stream. It is not a major issue since these
@@ -425,10 +432,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return new IndexReadEventInfoResult(new EventInfo[] { }, -1);
 
 			return ReadEventInfoBackwardInternal(
-				(startEventNumber, endEventNumber) =>
-					_tableIndex.GetRange(stream, startEventNumber,  endEventNumber),
-				beforeEventNumber => {
-					if (!_tableIndex.TryGetPreviousEntry(stream, beforeEventNumber, out var entry))
+				stream,
+				default,
+				(self, streamHandle, _, startEventNumber, endEventNumber) =>
+					self._tableIndex.GetRange(streamHandle, startEventNumber,  endEventNumber),
+				(self, streamHandle, beforeEventNumber) => {
+					if (!self._tableIndex.TryGetPreviousEntry(streamHandle, beforeEventNumber, out var entry))
 						return -1;
 					return entry.Version;
 				},
@@ -437,9 +446,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				beforePosition);
 		}
 
-		private static IndexReadEventInfoResult ReadEventInfoBackwardInternal(
-			Func<long, long, IEnumerable<IndexEntry>> readIndexEntries,
-			Func<long, long> getNextEventNumber,
+		private IndexReadEventInfoResult ReadEventInfoBackwardInternal<TStreamHandle>(
+			TStreamHandle streamHandle,
+			TFReaderLease reader,
+			Func<IndexReader, TStreamHandle, TFReaderLease, long, long, IEnumerable<IndexEntry>> readIndexEntries,
+			Func<IndexReader, TStreamHandle, long, long> getNextEventNumber,
 			long fromEventNumber,
 			int maxCount,
 			long beforePosition) {
@@ -449,13 +460,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var startEventNumber = Math.Max(0L, fromEventNumber - maxCount + 1);
 			var endEventNumber = fromEventNumber;
 
-			var eventInfos = ReadEventInfoInternal(readIndexEntries, startEventNumber, endEventNumber, beforePosition);
+			var eventInfos = ReadEventInfoInternal(streamHandle, reader, readIndexEntries, startEventNumber, endEventNumber, beforePosition);
 
 			long nextEventNumber;
 			if (startEventNumber <= 0)
 				nextEventNumber = -1;
 			else if (eventInfos.Length == 0)
-				nextEventNumber = getNextEventNumber(startEventNumber);
+				nextEventNumber = getNextEventNumber(this, streamHandle, startEventNumber);
 			else
 				nextEventNumber = startEventNumber - 1;
 
@@ -464,13 +475,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		// used forward and backward
 		// resulting array is in descending order
-		private static EventInfo[] ReadEventInfoInternal(
-			Func<long, long, IEnumerable<IndexEntry>> readIndexEntries,
+		private EventInfo[] ReadEventInfoInternal<TStreamHandle>(
+			TStreamHandle streamHandle,
+			TFReaderLease reader,
+			Func<IndexReader, TStreamHandle, TFReaderLease, long, long, IEnumerable<IndexEntry>> readIndexEntries,
 			long startEventNumber,
 			long endEventNumber,
 			long beforePosition) {
 
-			var entries = readIndexEntries(startEventNumber, endEventNumber);
+			var entries = readIndexEntries(this, streamHandle, reader, startEventNumber, endEventNumber);
 			var eventInfos = new List<EventInfo>();
 
 			var prevEntry = new IndexEntry(long.MaxValue, long.MaxValue, long.MaxValue);
