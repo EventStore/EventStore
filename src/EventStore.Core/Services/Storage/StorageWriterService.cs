@@ -573,6 +573,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (prepare.EventType == SystemEventTypes.ScavengePoint) {
 				Writer.CompleteChunk();
+				newPos = Writer.Checkpoint.ReadNonFlushed();
 			}
 
 			return new WriteResult(writtenPos, newPos, record);

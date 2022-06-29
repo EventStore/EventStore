@@ -29,8 +29,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		// State that is scoped to the event.
 		public EventInfo EventInfo { get; private set; }
 
-		public bool IsLastEventInStream => EventInfo.EventNumber == Stream.LastEventNumber;
-
 		public bool IsOnOrAfterScavengePoint => EventInfo.LogPosition >= ScavengePoint.Position;
 
 		public int LogicalChunkNumber => (int)(EventInfo.LogPosition / ChunkSize);
@@ -49,7 +47,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			// keep last event instream
-			if (IsLastEventInStream) {
+			// to be extra safe, we keep if it is after the 'last event' too, which should never happen.
+			if (EventInfo.EventNumber >= Stream.LastEventNumber) {
 				return DiscardDecision.Keep;
 			}
 

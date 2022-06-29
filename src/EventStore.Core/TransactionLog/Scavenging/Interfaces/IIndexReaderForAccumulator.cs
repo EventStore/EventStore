@@ -2,7 +2,6 @@
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public interface IIndexReaderForAccumulator<TStreamId> {
-		//qq review: consider whether to have maxposition / positionlimit instead of scavengepoint?
 		IndexReadEventInfoResult ReadEventInfoForward(
 			StreamHandle<TStreamId> handle,
 			long fromEventNumber,
