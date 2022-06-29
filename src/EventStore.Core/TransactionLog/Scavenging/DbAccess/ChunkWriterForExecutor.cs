@@ -21,6 +21,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			_manager = manager;
 
+			// list of lists to avoid having an enormous list which could make it to the LoH
+			// and to avoid expensive resize operations on large lists
 			_posMapss = new List<List<PosMap>>(capacity: BatchLength) {
 				new List<PosMap>(capacity: BatchLength)
 			};

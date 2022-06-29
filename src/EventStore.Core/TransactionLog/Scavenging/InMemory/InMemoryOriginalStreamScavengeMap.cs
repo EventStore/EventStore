@@ -19,7 +19,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				MaxCount = x.MaxCount,
 				TruncateBefore = x.TruncateBefore,
 
-				// sqlite implementation would insert the record or update these columns
 				Status = CalculationStatus.Active,
 				IsTombstoned = true,
 			};
@@ -34,7 +33,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				DiscardPoint = x.DiscardPoint,
 				IsTombstoned = x.IsTombstoned,
 
-				// sqlite implementation would insert the record or update these columns
 				Status = CalculationStatus.Active,
 				MaxAge = metadata.MaxAge,
 				MaxCount = metadata.MaxCount,
@@ -57,7 +55,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				MaxCount = x.MaxCount,
 				TruncateBefore = x.TruncateBefore,
 
-				// sqlite implementation would insert the record or update these columns
 				Status = status,
 				DiscardPoint = discardPoint,
 				MaybeDiscardPoint = maybeDiscardPoint,
@@ -70,7 +67,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				return false;
 			}
 
-			// sqlite implementation would just select these columns
 			info = new ChunkExecutionInfo(
 				isTombstoned: data.IsTombstoned,
 				discardPoint: data.DiscardPoint,

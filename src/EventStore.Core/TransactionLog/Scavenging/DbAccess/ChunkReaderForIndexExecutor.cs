@@ -12,12 +12,13 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public bool TryGetStreamId(long position, out string streamId) {
 			using (var reader = _tfReaderFactory()) {
 				var result = reader.TryReadAt(position);
-				if (!result.Success ||
-					!(result.LogRecord is PrepareLogRecord prepare)) {
-
+				if (!result.Success) {
 					streamId = default;
 					return false;
 				}
+
+				if (!(result.LogRecord is PrepareLogRecord prepare))
+					throw new Exception($"Record in index at position {position} is not a prepare");
 
 				streamId = prepare.EventStreamId;
 				return true;
