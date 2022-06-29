@@ -1,4 +1,4 @@
-# Event Store License
+# EventStoreDB License
 
 Copyright (c) 2011-2022, Event Store Ltd. All rights reserved.
 
