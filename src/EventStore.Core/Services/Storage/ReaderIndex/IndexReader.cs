@@ -487,7 +487,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var eventInfos = new List<EventInfo>();
 
 			var prevEntry = new IndexEntry(long.MaxValue, long.MaxValue, long.MaxValue);
-			//qqqqqq review: we should probably rename mayHaveDuplicates to requiresSortingOrDeduplicating and set it to true
+			//qq review: we should probably rename mayHaveDuplicates to requiresSortingOrDeduplicating and set it to true
 			// if we discover any of the Versions repeated or out of order.
 			// as it is now it wont detect it if the duplicate event happens to hit the transaction to 64bit tables
 			var mayHaveDuplicates = false;
