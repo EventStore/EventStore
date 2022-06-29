@@ -571,7 +571,9 @@ namespace EventStore.Core.Services.Storage {
 				}
 			}
 
-			if (prepare.EventType == SystemEventTypes.ScavengePoint) {
+			if (prepare.EventType == SystemEventTypes.ScavengePoint &&
+				prepare.EventStreamId == SystemStreams.ScavengePointsStream) {
+
 				Writer.CompleteChunk();
 				newPos = Writer.Checkpoint.ReadNonFlushed();
 			}

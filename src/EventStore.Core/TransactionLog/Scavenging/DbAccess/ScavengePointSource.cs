@@ -56,6 +56,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			var scavengePointEvent = events[0].Event;
+
+			if (scavengePointEvent.EventType != SystemEventTypes.ScavengePoint)
+				throw new Exception($"Last event in {SystemStreams.ScavengePointsStream} is not a scavenge point.");
+
 			var scavengePointPayload = ScavengePointPayload.FromBytes(scavengePointEvent.Data);
 
 			var scavengePoint = new ScavengePoint(
