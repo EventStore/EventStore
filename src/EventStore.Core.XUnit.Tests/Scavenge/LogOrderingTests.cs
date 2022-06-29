@@ -198,5 +198,52 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						x.Recs[5],
 					});
 		}
+
+		[Fact]
+		public async Task wrong_order_in_original_stream_a() {
+			var t = 0;
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						Rec.Write(t++, "ab-1", eventNumber: 0),
+						Rec.Write(t++, "ab-1", eventNumber: 1),
+						Rec.Write(t++, "ab-1", eventNumber: 2),
+						Rec.Write(t++, "ab-1", eventNumber: 0),
+						Rec.Write(t++, "$$ab-1", "$metadata", metadata: MaxCount1))
+					.Chunk(ScavengePointRec(t++)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.RunAsync(x => new[] {
+					x.Recs[0].KeepIndexes(2, 4),
+					x.Recs[1],
+				});
+		}
+
+		[Fact]
+		public async Task wrong_order_in_original_stream_b() {
+			var t = 0;
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						Rec.Write(t++, "ab-1", eventNumber: 0),
+						Rec.Write(t++, "ab-1", eventNumber: 0),
+						Rec.Write(t++, "ab-1", eventNumber: 0),
+						Rec.Write(t++, "$$ab-1", "$metadata", metadata: MaxCount1))
+					.Chunk(ScavengePointRec(t++)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.RunAsync(
+					x => new[] {
+						// they all have the same eventnumber so they will all be kept
+						x.Recs[0].KeepIndexes(0, 1, 2, 3),
+						x.Recs[1],
+					},
+					x => new[] {
+						// however, only 0 and 3 can be found in the index when looking up by eventNumber
+						// since 0, 1 and 2 all have event number 0.
+						x.Recs[0].KeepIndexes(0, 3),
+						x.Recs[1],
+					});
+		}
 	}
 }

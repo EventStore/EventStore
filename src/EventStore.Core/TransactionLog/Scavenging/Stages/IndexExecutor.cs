@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using EventStore.Common.Log;
 using EventStore.Core.Index;
@@ -74,6 +75,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// typically be invoked repeatedly for the same stream.
 			var currentHash = (ulong?)null;
 			var currentHashIsCollision = false;
+			var currentPosition = long.MaxValue;
 			var currentDiscardPoint = DiscardPoint.KeepAll;
 			var currentIsTombstoned = false;
 			var currentIsDefinitelyMetastream = false;
@@ -100,6 +102,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 					currentHash = indexEntry.Stream;
 					currentHashIsCollision = state.IsCollision(indexEntry.Stream);
+					currentPosition = indexEntry.Position;
 
 					StreamHandle<TStreamId> handle = default;
 
@@ -137,6 +140,27 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				} else {
 					// same hash as the previous invocation, and it is not a collision, so it must be for
 					// the same stream, so the current* variables are already correct.
+
+					if (indexEntry.Position >= currentPosition) {
+						// ptables are arranged (hash, version, position) descending. so for a given hash
+						// we will iterate through the versions descending. previous bugs have allowed
+						// events to be written occasionally with the wrong version number. we spot this
+						// here and log about it.
+						var stream = default(TStreamId);
+						try {
+							stream = state.LookupUniqueHashUser(indexEntry.Stream);
+						} catch {
+							// probably this isn't possible
+						}
+
+						Log.Trace(
+							"SCAVENGING: Found out of order index entry. " +
+							"Stream \"{stream}\" has index entry {indexEntry} but " +
+							"previously saw index entry with position {previousPosition}.",
+							stream, indexEntry,
+							currentPosition);
+					}
+					currentPosition = indexEntry.Position;
 				}
 
 				// all the current* variables are now set correctly.
