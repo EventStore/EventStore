@@ -614,10 +614,6 @@ namespace EventStore.Core.Index {
 
 		public bool TryGetOldestEntry(string streamId, out IndexEntry entry) {
 			ulong stream = CreateHash(streamId);
-			return TryGetOldestEntry(stream, out entry);
-		}
-
-		public bool TryGetOldestEntry(ulong stream, out IndexEntry entry) {
 			var counter = 0;
 			while (counter < 5) {
 				counter++;

@@ -19,7 +19,6 @@ namespace EventStore.Core.Index {
 		bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry);
 		bool TryGetLatestEntry(string streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry);
 		bool TryGetOldestEntry(string streamId, out IndexEntry entry);
-		bool TryGetOldestEntry(ulong stream, out IndexEntry indexEntry);
 		bool TryGetNextEntry(string streamId, long afterVersion, out IndexEntry entry);
 		bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry);
 		bool TryGetPreviousEntry(string streamId, long beforeVersion, out IndexEntry entry);

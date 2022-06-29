@@ -98,10 +98,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 			throw new NotImplementedException();
 		}
 
-		public bool TryGetOldestEntry(ulong stream, out IndexEntry indexEntry) {
-			throw new NotImplementedException();
-		}
-
 		public bool TryGetNextEntry(string streamId, long afterVersion, out IndexEntry entry) {
 			throw new NotImplementedException();
 		}

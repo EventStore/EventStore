@@ -647,7 +647,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 				// fetch the correct stream name from the log if we haven't yet
 				if (streamId == null)
-					streamId = GetStreamId(stream, getStreamId, beforePosition, reader);
+					streamId = getStreamId(stream);
 
 				// compare the correct stream name against this index entry's stream name fetched from the log
 				var prepare = ReadPrepareInternal(reader, indexEntry.Position);
@@ -658,19 +658,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				return ExpectedVersion.NoStream;
 
 			return entry.Version;
-		}
-
-		private string GetStreamId(ulong stream, Func<ulong, string> getStreamId, long beforePosition, TFReaderLease reader) {
-			// TODO: we can call getStreamId() directly if it's faster than TryGetOldestEntry()
-			//qqq review: it is simpler, so yeah probably best just call getStreamId(stream)
-			if (_tableIndex.TryGetOldestEntry(stream, out var indexEntry) &&
-				indexEntry.Position < beforePosition) {
-				var prepare = ReadPrepareInternal(reader, indexEntry.Position);
-				if (prepare != null)
-					return prepare.EventStreamId;
-			}
-
-			return getStreamId(stream);
 		}
 
 		StreamMetadata IIndexReader.GetStreamMetadata(string streamId) {

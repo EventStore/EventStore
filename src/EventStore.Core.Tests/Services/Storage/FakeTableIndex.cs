@@ -54,11 +54,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return false;
 		}
 
-		public bool TryGetOldestEntry(ulong stream, out IndexEntry entry) {
-			entry = InvalidIndexEntry;
-			return false;
-		}
-
 		public bool TryGetNextEntry(string streamId, long afterVersion, out IndexEntry entry) {
 			throw new NotImplementedException();
 		}
