@@ -44,7 +44,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 					return true;
 				} 
 				if (affectedRows > 1) {
-					throw new SystemException("More values removed then expected!");
+					throw new SystemException("More values removed than expected!");
 				}
 			}
 
