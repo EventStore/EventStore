@@ -16,8 +16,9 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 		public static StreamMetadata MaxCount3 { get; } = new StreamMetadata(maxCount: 3);
 		public static StreamMetadata MaxCount4 { get; } = new StreamMetadata(maxCount: 4);
 
+		public static TimeSpan MaxAgeTimeSpan { get; } = TimeSpan.FromDays(2);
 		public static StreamMetadata MaxAgeMetadata { get; } =
-			new StreamMetadata(maxAge: TimeSpan.FromDays(2));
+			new StreamMetadata(maxAge: MaxAgeTimeSpan);
 
 		public static StreamMetadata SoftDelete { get; } =
 			new StreamMetadata(truncateBefore: EventNumber.DeletedStream);
