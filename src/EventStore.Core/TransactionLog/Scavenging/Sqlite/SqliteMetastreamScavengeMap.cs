@@ -88,7 +88,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 				var sql = $@"
 					INSERT INTO {tableName}
 					VALUES($key, $isTombstoned, $discardPoint)
-				    ON CONFLICT(key) DO UPDATE SET
+					ON CONFLICT(key) DO UPDATE SET
 						isTombstoned=$isTombstoned,
 						discardPoint=$discardPoint";
 
