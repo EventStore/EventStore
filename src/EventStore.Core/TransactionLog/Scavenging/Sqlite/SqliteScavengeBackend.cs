@@ -20,7 +20,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		private const int SqliteNormalSynchronousValue = 1;
 		private const int DefaultSqliteCacheSize = 2 * 1024 * 1024;
 		private const int SqlitePageSize = 16 * 1024;
-		private readonly SqliteCacheSize _cacheSize;
+		private readonly int _cacheSizeInBytes;
 		private SqliteBackend _sqliteBackend;
 
 		private const int SchemaVersion = 1;
@@ -39,7 +39,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 		public SqliteScavengeBackend(int cacheSizeInBytes = DefaultSqliteCacheSize) {
 			Ensure.Positive(cacheSizeInBytes, nameof(cacheSizeInBytes));
-			_cacheSize = new SqliteCacheSize(cacheSizeInBytes);
+			_cacheSizeInBytes = cacheSizeInBytes;
 		}
 
 		public void Dispose() {
@@ -113,13 +113,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 				throw new Exception($"Failed to configure synchronous mode, unexpected value: {synchronousMode}");
 			}
 
-			// cache size in kibi bytes is passed as a negative value, otherwise it's amount of pages
-			var cacheSize = _cacheSize.NegativeKibibytes;
-			_sqliteBackend.SetPragmaValue(SqliteBackend.CacheSize, cacheSize.ToString());
-			var currentCacheSize = int.Parse(_sqliteBackend.GetPragmaValue(SqliteBackend.CacheSize));
-			if (currentCacheSize != cacheSize) {
-				throw new Exception($"Failed to configure cache size, unexpected value: {currentCacheSize}");
-			}
+			_sqliteBackend.SetCacheSize(_cacheSizeInBytes);
 		}
 
 		private void InitializeSchemaVersion() {
@@ -147,20 +141,6 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 		public void LogStats() {
 			Log.Trace($"SCAVENGING: {GetStats().PrettyPrint()}");
-		}
-
-		struct SqliteCacheSize {
-			public SqliteCacheSize(int cacheSizeInBytes) {
-				CacheSizeInBytes = cacheSizeInBytes;
-			}
-
-			public int CacheSizeInBytes { get; }
-			public int NegativeKibibytes {
-				get {
-					var cacheSizeInKibiBytes = CacheSizeInBytes / 1024;
-					return -1 * cacheSizeInKibiBytes;
-				}
-			}
 		}
 	}
 }

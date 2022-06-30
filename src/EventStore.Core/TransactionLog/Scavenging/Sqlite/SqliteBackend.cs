@@ -112,10 +112,9 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 		
 		public Stats GetStats() {
-			var databaseSize = int.Parse(GetPragmaValue(PageSize)) * int.Parse(GetPragmaValue(PageCount));
-			var cacheSizeInKibiBytes = -1 * int.Parse(GetPragmaValue(CacheSize));
-			var cacheSizeInBytes = cacheSizeInKibiBytes * 1024;
-			return new Stats(raw.sqlite3_memory_used(), databaseSize, cacheSizeInBytes);
+			var databaseSize = long.Parse(GetPragmaValue(PageSize)) * long.Parse(GetPragmaValue(PageCount));
+			var cacheSize = SqliteCacheSize.FromPragmaValue(GetPragmaValue(CacheSize));
+			return new Stats(raw.sqlite3_memory_used(), databaseSize, cacheSize.CacheSizeInBytes);
 		}
 
 		public void SetPragmaValue(string name, string value) {
@@ -136,9 +135,19 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 			throw new Exception("Unexpected pragma result!");
 		}
+
+		public void SetCacheSize(int cacheSizeInBytes) {
+			// cache size in kibi bytes is passed as a negative value, otherwise it's amount of pages
+			var cacheSize = new SqliteCacheSize(cacheSizeInBytes);
+			SetPragmaValue(CacheSize, cacheSize.NegativeKibibytes.ToString());
+			var currentCacheSize = int.Parse(GetPragmaValue(CacheSize));
+			if (currentCacheSize != cacheSize.NegativeKibibytes) {
+				throw new Exception($"Failed to configure cache size, unexpected value: {currentCacheSize}");
+			}
+		}
 		
 		public class Stats {
-			public Stats(long memoryUsage, int databaseSize, int cacheSize) {
+			public Stats(long memoryUsage, long databaseSize, int cacheSize) {
 				MemoryUsage = memoryUsage;
 				DatabaseSize = databaseSize;
 				CacheSize = cacheSize;
@@ -146,7 +155,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 			public long MemoryUsage { get; }
 			public long DatabaseSize { get; }
-			public long CacheSize { get; }
+			public int CacheSize { get; }
 
 			public string PrettyPrint() {
 				var dbSizeMb = (float)DatabaseSize / 1_000_000;
@@ -156,6 +165,25 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 					$"ScavengeState size: {dbSizeMb:N2} MB. " +
 					$"Cache size: {cacheSizeMb:N2} MB. " +
 					$"Memory usage: {memSizeMb:N2} MB";
+			}
+		}
+
+		readonly struct SqliteCacheSize {
+			public SqliteCacheSize(int cacheSizeInBytes) {
+				CacheSizeInBytes = cacheSizeInBytes;
+			}
+
+			public static SqliteCacheSize FromPragmaValue(string value) {
+				var cacheSizeInKibiBytes = int.Parse(value);
+				return new SqliteCacheSize(-1 * cacheSizeInKibiBytes * 1024);
+			}
+
+			public int CacheSizeInBytes { get; }
+			public int NegativeKibibytes {
+				get {
+					var cacheSizeInKibiBytes = CacheSizeInBytes / 1024;
+					return -1 * cacheSizeInKibiBytes;
+				}
 			}
 		}
 	}

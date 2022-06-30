@@ -45,7 +45,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 			public IncreaseWeightCommand(string tableName, SqliteBackend sqlite) {
 				var sql = $@"
-					INSERT INTO {tableName}(key, value)
+					INSERT INTO {tableName} (key, value)
 					VALUES($key, $value)
 				    ON CONFLICT(key) DO UPDATE SET value=value+$value";
 				
