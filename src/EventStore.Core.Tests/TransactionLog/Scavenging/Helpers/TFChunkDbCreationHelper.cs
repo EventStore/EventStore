@@ -215,7 +215,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 					if (rec.Version == LogRecordVersion.LogRecordV0) {
 						return CreateLogRecordV0(rec, transInfo, transOffset, logPos, expectedVersion,
 							FormatData(rec),
-							PrepareFlags.Data
+							rec.PrepareFlags
+							| PrepareFlags.Data
 							| (transInfo.FirstPrepareId == rec.Id ? PrepareFlags.TransactionBegin : PrepareFlags.None)
 							| (transInfo.LastPrepareId == rec.Id ? PrepareFlags.TransactionEnd : PrepareFlags.None)
 							| (rec.Metadata == null ? PrepareFlags.None : PrepareFlags.IsJson));

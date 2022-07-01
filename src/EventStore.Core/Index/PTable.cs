@@ -287,7 +287,6 @@ namespace EventStore.Core.Index {
 
 							return midpoints;
 						} else
-							//qq got this, is this normal? check by running old scavenge.
 							Log.Debug(
 								"Skipping loading of cached midpoints from PTable due to count mismatch, cached midpoints: {midpointsCached} / required midpoints: {midpointsCount}",
 								_midpointsCached, midpointsCount);

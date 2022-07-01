@@ -26,5 +26,41 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					x.Recs[1],
 				});
 		}
+
+		[Fact]
+		public async Task no_stream() {
+			var t = 0;
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						Rec.Write(t++, "$$ab-1", "$metadata", metadata: MaxCount1))
+					.Chunk(ScavengePointRec(t++)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.RunAsync(x => new[] {
+					x.Recs[0],
+					x.Recs[1],
+				});
+		}
+
+		[Fact]
+		public async Task large_maxcount() {
+			var t = 0;
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						Rec.Write(t++, "ab-1"),
+						Rec.Write(t++, "ab-1"),
+						Rec.Write(t++, "ab-1"),
+						Rec.Write(t++, "ab-1"),
+						Rec.Write(t++, "$$ab-1", "$metadata", metadata: MaxCount50))
+					.Chunk(ScavengePointRec(t++)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.RunAsync(x => new[] {
+					x.Recs[0],
+					x.Recs[1],
+				});
+		}
 	}
 }

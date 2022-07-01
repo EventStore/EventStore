@@ -54,6 +54,63 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 		}
 
 		[Fact]
+		public async Task non_contiguous_events() {
+			var t = 0;
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						Rec.Write(t++, "ab-1", eventNumber: 0), // weight: 2
+						Rec.Write(t++, "ab-1", eventNumber: 1), // weight: 2
+						Rec.Write(t++, "ab-1", eventNumber: 5), // weight: 2
+						Rec.Write(t++, "ab-1", eventNumber: 6), // weight: 2
+						Rec.Write(t++, "ab-1", eventNumber: 7), // weight: 0 - last event
+						Rec.Write(t++, "$$ab-1", "$metadata", metadata: MaxCount1))
+					.Chunk(
+						ScavengePointRec(t++, threshold: 1000)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.AssertState(state => {
+					Assert.Equal(8, state.SumChunkWeights(0, 0));
+					Assert.Equal(0, state.SumChunkWeights(1, 1));
+					Assert.True(state.TryGetOriginalStreamData("ab-1", out var data));
+					Assert.Equal(DiscardPoint.DiscardBefore(7), data.DiscardPoint);
+					Assert.Equal(DiscardPoint.DiscardBefore(7), data.MaybeDiscardPoint);
+				})
+				.RunAsync();
+		}
+
+		[Fact]
+		public async Task long_stream() {
+			var t = 0;
+
+			var numRecords = 260;
+
+			var records = new Rec[numRecords];
+			for (var i = 0; i < numRecords; i++) {
+				records[i] = Rec.Write(t++, "ab-1");
+			}
+
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						records)
+					.Chunk(
+						Rec.Write(t++, "ab-1"),
+						Rec.Write(t++, "$$ab-1", "$metadata", metadata: MaxCount1),
+						ScavengePointRec(t++, threshold: 1000)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.AssertState(state => {
+					Assert.Equal(numRecords * 2, state.SumChunkWeights(0, 0));
+					Assert.Equal(0, state.SumChunkWeights(1, 1));
+					Assert.True(state.TryGetOriginalStreamData("ab-1", out var data));
+					Assert.Equal(DiscardPoint.DiscardBefore(numRecords), data.DiscardPoint);
+					Assert.Equal(DiscardPoint.DiscardBefore(numRecords), data.MaybeDiscardPoint);
+				})
+				.RunAsync();
+		}
+
+		[Fact]
 		public async Task metadata_replaced_by_metadata() {
 			var t = 0;
 			await new Scenario()
