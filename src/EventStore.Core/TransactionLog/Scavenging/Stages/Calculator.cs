@@ -187,8 +187,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			discardPoint = DiscardPoint.KeepAll;
 			maybeDiscardPoint = DiscardPoint.KeepAll;
 
-			//qq tuning: what would be sensible? probably pretty large
-			const int maxCount = 100;
+			const int maxCount = 256;
 
 			var first = true;
 

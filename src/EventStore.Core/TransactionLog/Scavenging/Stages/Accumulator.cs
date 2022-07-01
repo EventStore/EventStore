@@ -135,14 +135,20 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				}
 
 				var accumulationElapsed = stopwatch.Elapsed;
+				var rate = countAccumulatedRecords / accumulationElapsed.TotalSeconds;
 
 				weights.Flush();
 				transaction.Commit(new ScavengeCheckpoint.Accumulating(
 					scavengePoint,
 					doneLogicalChunkNumber: logicalChunkNumber));
 
-				Log.Trace("SCAVENGING: Accumulated {countAccumulatedRecords:N0} records in chunk {chunk} in {elapsed}. Chunk total: {chunkTotalElapsed}",
-					countAccumulatedRecords, logicalChunkNumber, accumulationElapsed, stopwatch.Elapsed);
+				Log.Trace(
+					"SCAVENGING: Accumulated {countAccumulatedRecords:N0} records in chunk {chunk} in {elapsed}. " +
+					"{rate:N2} records per second. " +
+					"Chunk total: {chunkTotalElapsed}",
+					countAccumulatedRecords, logicalChunkNumber, accumulationElapsed,
+					rate,
+					stopwatch.Elapsed);
 
 				return ret;
 			} catch {

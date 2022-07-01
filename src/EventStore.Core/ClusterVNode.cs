@@ -566,7 +566,7 @@ namespace EventStore.Core {
 
 					var metastreamLookup = new LogV2SystemStreams();
 					var streamIdConverter = new LogV2StreamIdConverter();
-					var cancellationCheckPeriod = 1024; //qq tuning: sensible?
+					var cancellationCheckPeriod = 1024;
 
 					var longHasher = new CompositeHasher<string>(lowHasher, highHasher);
 
@@ -611,7 +611,7 @@ namespace EventStore.Core {
 						new IndexReaderForCalculator(readIndex, state.LookupUniqueHashUser),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
-						checkpointPeriod: 32_768, //qq tuning: sensible?
+						checkpointPeriod: 32_768,
 						throttle: throttle);
 
 					var chunkExecutor = new ChunkExecutor<string, LogRecord>(
@@ -632,7 +632,7 @@ namespace EventStore.Core {
 						new IndexScavenger(tableIndex),
 						new ChunkReaderForIndexExecutor(() => new TFReaderLease(readerPool)),
 						unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes,
-						restPeriod: 32_768, //qq tuning: sensible?
+						restPeriod: 32_768,
 						throttle: throttle);
 
 					var cleaner = new Cleaner(

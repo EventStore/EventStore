@@ -435,7 +435,7 @@ namespace EventStore.Core.Util {
 		public static readonly int MaxAutoMergeIndexLevelDefault = int.MaxValue;
 		
 		public const string ScavengeBackendCacheSizeDescr = "The amount of memory to use for backend caching in bytes.";
-		public static readonly int ScavengeBackendCacheSizeDefault = 2 * 1024 * 1024; //qq tuning: check default value - 2MB
+		public static readonly int ScavengeBackendCacheSizeDefault = 32 * 1024 * 1024;
 		public const string ScavengeThrottlePercentDescr =
 			"The average percentage (1-100) of time that scavenge will actively run for. " +
 			"When less than 100, scavenge will take rests to reduce load on the node.";
