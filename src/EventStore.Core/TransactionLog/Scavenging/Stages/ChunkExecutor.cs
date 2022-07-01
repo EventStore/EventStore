@@ -295,19 +295,40 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (record.LogPosition >= scavengePoint.Position)
 				return false;
 
-			if (!record.IsSelfCommitted) {
-				// we could discard from transactions sometimes, either by accumulating a state for them
-				// or doing a similar trick as old scavenge and limiting it to transactions that were
-				// stated and commited in the same chunk. however for now this isn't considered so
-				// important because someone with transactions to scavenge has probably scavenged them
-				// already with old scavenge. could be added later
-				return false;
-			}
-
 			var details = GetStreamExecutionDetails(
 				state,
 				record.StreamId);
 
+			if (!record.IsSelfCommitted) {
+				// deal with transactions first. since it is not self committed, this prepare is
+				// associated with an explicit transaction. is one of: begin, data, end.
+				if (details.IsTombstoned) {
+					// explicit transaction in a tombstoned stream.
+					if (_unsafeIgnoreHardDeletes) {
+						// remove all prepares including the tombstone
+						return true;
+					} else {
+						// remove all the prepares except
+						// - the tombstone itself and
+						// - any TransactionBegins (because old scavenge keeps these if there is any
+						//   doubt about whether it has been committed)
+						if (record.IsTombstone || record.IsTransactionBegin) {
+							return false;
+						} else {
+							return true;
+						}
+					}
+				} else {
+					// keep it all.
+					// we could discard from transactions sometimes, either by accumulating a state for them
+					// or doing a similar trick as old scavenge and limiting it to transactions that were
+					// stated and commited in the same chunk. however for now this isn't considered so
+					// important because someone with transactions to scavenge has probably scavenged them
+					// already with old scavenge. could be added later
+					return false;
+				}
+			}
+			
 			if (details.IsTombstoned) {
 				if (_unsafeIgnoreHardDeletes) {
 					// remove _everything_ for metadata and original streams

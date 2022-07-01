@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -15,6 +16,7 @@ using EventStore.Core.Tests.Index.Hashers;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
+using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -225,7 +227,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				memTableFactory: () => new HashListMemTable(PTableVersions.IndexV4, maxSize: 200),
 				tfReaderFactory: () => new TFReaderLease(readerPool),
 				ptableVersion: PTableVersions.IndexV4,
-				maxAutoMergeIndexLevel: 5,
+				maxAutoMergeIndexLevel: int.MaxValue,
 				maxSizeForMemory: 1, // convert everything to ptables immediately
 				maxTablesPerLevel: 2,
 				inMem: memDb);
@@ -546,7 +548,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			foreach (var chunk in expected) {
 				foreach (var record in chunk) {
 					if (!(record is PrepareLogRecord prepare))
-						continue;
+						throw new Exception("expected to find commit record in index but this is impossible");
 
 					var streamId = prepare.EventStreamId;
 					var eventNumber = prepare.ExpectedVersion + 1;

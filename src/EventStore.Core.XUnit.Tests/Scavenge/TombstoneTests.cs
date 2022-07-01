@@ -133,5 +133,60 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			Assert.Equal(EventStore.Core.TransactionLog.Chunks.ScavengeResult.Failed, logger.Result);
 			Assert.Equal("Error while scavenging DB: Found Tombstone in transaction in stream ab-1.", logger.Error);
 		}
+
+		[Fact]
+		public async Task tombstone_stream_with_transaction() {
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						Rec.Write(0, "ab-1"),
+						Rec.TransSt(1, "ab-1"), // <-- keep transaction start
+						Rec.Prepare(1, "ab-1"),
+						Rec.TransEnd(1, "ab-1"),
+						Rec.Commit(1, "ab-1"), // <-- keep comit
+						Rec.Write(2, "ab-1"),
+						Rec.Write(3, "$$ab-1", "$metadata", metadata: MaxCount1),
+						Rec.CommittedDelete(4, "ab-1")) // <-- keep tombstone
+					.Chunk(ScavengePointRec(5)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.RunAsync(
+					x => new[] {
+						x.Recs[0].KeepIndexes(1, 4, 7),
+						x.Recs[1],
+					},
+					x => new[] {
+						x.Recs[0].KeepIndexes(7),
+						x.Recs[1],
+					});
+		}
+
+		[Fact]
+		public async Task tombstone_stream_with_transaction_and_unsafe_ignore_hard_deletes() {
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithUnsafeIgnoreHardDeletes(true)
+				.WithDb(x => x
+					.Chunk(
+						Rec.Write(0, "ab-1"),
+						Rec.TransSt(1, "ab-1"),
+						Rec.Prepare(1, "ab-1"),
+						Rec.TransEnd(1, "ab-1"),
+						Rec.Commit(1, "ab-1"), // <-- keep commit only
+						Rec.Write(2, "ab-1"),
+						Rec.Write(3, "$$ab-1", "$metadata", metadata: MaxCount1),
+						Rec.CommittedDelete(4, "ab-1"))
+					.Chunk(ScavengePointRec(5)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.RunAsync(
+					x => new[] {
+						x.Recs[0].KeepIndexes(4),
+						x.Recs[1],
+					},
+					x => new[] {
+						x.Recs[0].KeepIndexes(),
+						x.Recs[1],
+					});
+		}
 	}
 }

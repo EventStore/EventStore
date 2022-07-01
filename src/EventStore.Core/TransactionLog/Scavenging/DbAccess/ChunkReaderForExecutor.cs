@@ -44,6 +44,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						timeStamp: sourcePrepare.TimeStamp,
 						streamId: sourcePrepare.EventStreamId,
 						isSelfCommitted: sourcePrepare.Flags.HasAnyOf(PrepareFlags.IsCommitted),
+						isTombstone: sourcePrepare.Flags.HasAnyOf(PrepareFlags.StreamDelete),
+						isTransactionBegin: sourcePrepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin),
 						eventNumber: sourcePrepare.ExpectedVersion + 1);
 					yield return true;
 				}

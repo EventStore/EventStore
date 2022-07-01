@@ -198,6 +198,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				}
 			}
 
+			_db.Config.WriterCheckpoint.Flush();
 			return new DbResult(_db, records, streams);
 		}
 

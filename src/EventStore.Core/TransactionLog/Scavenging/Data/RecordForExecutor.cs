@@ -16,6 +16,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				DateTime timeStamp,
 				TStreamId streamId,
 				bool isSelfCommitted,
+				bool isTombstone,
+				bool isTransactionBegin,
 				long eventNumber) {
 
 				Length = length;
@@ -24,6 +26,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				TimeStamp = timeStamp;
 				StreamId = streamId;
 				IsSelfCommitted = isSelfCommitted;
+				IsTombstone = isTombstone;
+				IsTransactionBegin = isTransactionBegin;
 				EventNumber = eventNumber;
 			}
 
@@ -31,6 +35,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			public DateTime TimeStamp { get; private set; }
 			public TStreamId StreamId { get; private set; }
 			public bool IsSelfCommitted { get; private set; }
+			public bool IsTombstone { get; private set; }
+			public bool IsTransactionBegin { get; private set; }
 			public long EventNumber { get; private set; }
 		}
 
