@@ -487,27 +487,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var eventInfos = new List<EventInfo>();
 
 			var prevEntry = new IndexEntry(long.MaxValue, long.MaxValue, long.MaxValue);
-			//qq review: we should probably rename mayHaveDuplicates to requiresSortingOrDeduplicating and set it to true
-			// if we discover any of the Versions repeated or out of order.
-			// as it is now it wont detect it if the duplicate event happens to hit the transaction to 64bit tables
-			var mayHaveDuplicates = false;
+
+			// entries are from TableIndex.GetRange. They are in IndexEntry order descending.
+			// we need to return EventInfos in EventNumber order descending. As we go we check if this
+			// criteria is already met, and avoid the sorting and deduplicating linq query if it is.
+			var sortAndDeduplicate = false;
 			foreach (var entry in entries) {
 				if (entry.Position >= beforePosition)
 					continue;
 
-				if (prevEntry.CompareTo(entry) <= 0)
-					mayHaveDuplicates = true;
-
-				if (prevEntry.Stream == entry.Stream &&
-					prevEntry.Version == entry.Version)
-					mayHaveDuplicates = true;
+				if (prevEntry.Version <= entry.Version)
+					sortAndDeduplicate = true;
 
 				eventInfos.Add(new EventInfo(entry.Position, entry.Version));
 				prevEntry = entry;
 			}
 
 			EventInfo[] result;
-			if (mayHaveDuplicates) {
+			if (sortAndDeduplicate) {
 				// note that even if _skipIndexScanOnReads = True, we're still reordering and filtering out duplicates here.
 				result = eventInfos
 					.OrderByDescending(x => x.EventNumber)
