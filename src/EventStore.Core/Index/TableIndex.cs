@@ -491,6 +491,31 @@ namespace EventStore.Core.Index {
 			}
 		}
 
+		public void Visit(Action<PTable> f) {
+			int counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					VisitInternal(f);
+					return;
+				} catch (FileBeingDeletedException) {
+					Log.Trace("File being deleted.");
+				} catch (MaybeCorruptIndexException e) {
+					ForceIndexVerifyOnNextStartup();
+					throw e;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		private void VisitInternal(Action<PTable> f) {
+			var map = _indexMap;
+			foreach (var table in map.InOrder()) {
+				f(table);
+			}
+		}
+
 		public bool TryGetOneValue(string streamId, long version, out long position) {
 			ulong stream = CreateHash(streamId);
 			int counter = 0;

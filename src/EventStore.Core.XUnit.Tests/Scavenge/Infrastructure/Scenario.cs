@@ -373,6 +373,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var successLogger = expectSuccess ? new FakeTFScavengerLog() : null;
 
 				sut = new Scavenger<string>(
+					checkPreconditions: () => { },
 					scavengeState,
 					accumulator,
 					calculator,

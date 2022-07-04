@@ -641,6 +641,13 @@ namespace EventStore.Core {
 					var scavengePointSource = new ScavengePointSource(ioDispatcher);
 
 					return new Scavenger<string>(
+						checkPreconditions: () => {
+							tableIndex.Visit(table => {
+								if (table.Version <= PTableVersions.IndexV1)
+									throw new NotSupportedException(
+										$"PTable {table.Filename} has version {table.Version}. Scavenge requires V2 index files and above. Please rebuild the indexes to upgrade them.");
+							});
+						},
 						state: state,
 						accumulator: accumulator,
 						calculator: calculator,

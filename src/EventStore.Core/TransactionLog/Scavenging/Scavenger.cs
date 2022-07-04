@@ -14,6 +14,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	}
 
 	public class Scavenger<TStreamId> : Scavenger, IScavenger {
+		private readonly Action _checkPreconditions;
 		private readonly IScavengeState<TStreamId> _state;
 		private readonly IAccumulator<TStreamId> _accumulator;
 		private readonly ICalculator<TStreamId> _calculator;
@@ -31,6 +32,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			new Dictionary<string, TimeSpan>();
 
 		public Scavenger(
+			Action checkPreconditions,
 			IScavengeState<TStreamId> state,
 			IAccumulator<TStreamId> accumulator,
 			ICalculator<TStreamId> calculator,
@@ -44,6 +46,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			bool syncOnly,
 			Func<string> getThrottleStats) {
 
+			_checkPreconditions = checkPreconditions;
 			_state = state;
 			_accumulator = accumulator;
 			_calculator = calculator;
@@ -118,6 +121,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			ITFChunkScavengerLog scavengerLogger,
 			Stopwatch stopwatch,
 			CancellationToken cancellationToken) {
+
+			_checkPreconditions();
 
 			// each component can be started with either
 			//  (i) a checkpoint that it wrote previously (it will continue from there)
