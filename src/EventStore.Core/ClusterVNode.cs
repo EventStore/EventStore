@@ -555,9 +555,6 @@ namespace EventStore.Core {
 
 			var newScavenge = true;
 			if (newScavenge) {
-				var scavengeDirectory = Path.Combine(indexPath, "scavenging");
-				Directory.CreateDirectory(scavengeDirectory);
-
 				scavengerFactory = new ScavengerFactory((message, logger) => {
 					var throttle = new Throttle(
 						minimumRest: TimeSpan.FromMilliseconds(1000),
@@ -577,6 +574,8 @@ namespace EventStore.Core {
 						initialCount: 1,
 						maxCount: TFChunkScavenger.MaxThreadCount + 1,
 						factory: () => {
+							var scavengeDirectory = Path.Combine(indexPath, "scavenging");
+							Directory.CreateDirectory(scavengeDirectory);
 							var connectionStringBuilder = new SqliteConnectionStringBuilder {
 								DataSource = Path.Combine(scavengeDirectory, "scavenging.db")
 							};
