@@ -145,6 +145,8 @@ namespace EventStore.Core.Index {
 				throw new UnableToAcquireLockInReasonableTimeException();
 
 			try {
+				// we use LogPosComparer here so that it only compares the position part of the key we
+				// are passing in and not the evNum (maxvalue) which is meaningless
 				int endIdx = list.UpperBound(
 					key: new Entry(long.MaxValue, beforePosition - 1),
 					comparer: LogPosComparer,
@@ -158,7 +160,6 @@ namespace EventStore.Core.Index {
 				return true;
 			} catch (SearchStoppedException) {
 				// fall back to linear search if there was a hash collision
-				//qq review: is it correct that we are not passing LogPosComparer here?
 				int maxIdx = list.FindMax(e =>
 					e.LogPos < beforePosition &&
 					isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
