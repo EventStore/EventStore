@@ -18,12 +18,11 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 		public void ScavengeIndex(
 			long scavengePoint,
-			Action<PTable> checkSuitability,
 			Func<IndexEntry, bool> shouldKeep,
 			IIndexScavengerLog log,
 			CancellationToken cancellationToken) {
 
-			_wrapped.ScavengeIndex(scavengePoint, checkSuitability, _f(shouldKeep), log, cancellationToken);
+			_wrapped.ScavengeIndex(scavengePoint, _f(shouldKeep), log, cancellationToken);
 		}
 	}
 }

@@ -12,12 +12,11 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		public void ScavengeIndex(
 			long scavengePoint,
-			Action<PTable> checkSuitability,
 			Func<IndexEntry, bool> shouldKeep,
 			IIndexScavengerLog log,
 			CancellationToken cancellationToken) {
 
-			_tableIndex.Scavenge(checkSuitability, shouldKeep, log, cancellationToken);
+			_tableIndex.Scavenge(shouldKeep, log, cancellationToken);
 		}
 	}
 }

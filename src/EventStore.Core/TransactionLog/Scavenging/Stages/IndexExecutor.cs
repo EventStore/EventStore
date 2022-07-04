@@ -54,10 +54,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			_indexScavenger.ScavengeIndex(
 				scavengePoint: checkpoint.ScavengePoint.Position,
-				checkSuitability: table => {
-					if (table.Version == PTableVersions.IndexV1)
-						throw new NotSupportedException("Scavenge is not supported with V1 index files. Please rebuild the indexes.");
-				},
 				shouldKeep: GenShouldKeep(
 					checkpoint.ScavengePoint,
 					state,

@@ -30,7 +30,7 @@ namespace EventStore.Core.Index {
 		// this overload keeps IndexEntries that exist in the log
 		void Scavenge(IIndexScavengerLog log, CancellationToken ct);
 		// this overload keeps IndexEntries that pass the keep predicate
-		void Scavenge(Action<PTable> checkSuitability, Func<IndexEntry, bool> shouldKeep, IIndexScavengerLog log, CancellationToken ct);
+		void Scavenge(Func<IndexEntry, bool> shouldKeep, IIndexScavengerLog log, CancellationToken ct);
 		Task MergeIndexes();
 		bool IsBackgroundTaskRunning { get; }
 	}
