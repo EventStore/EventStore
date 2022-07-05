@@ -291,7 +291,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			RecordForExecutor<TStreamId, TRecord>.Prepare record) {
 
 			// the discard points ought to be sufficient, but sometimes this will be quicker
-			// and it is a nice safty net
+			// and it is a nice safety net
 			if (record.LogPosition >= scavengePoint.Position)
 				return false;
 
