@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -16,7 +16,6 @@ using EventStore.Core.Tests.Index.Hashers;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -554,6 +553,9 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					var streamId = prepare.EventStreamId;
 					var eventNumber = prepare.ExpectedVersion + 1;
 
+					if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete))
+						eventNumber = EventNumber.DeletedStream;
+
 					if (!minEventNumbers.TryGetValue(streamId, out var min))
 						min = eventNumber;
 					minEventNumbers[streamId] = Math.Min(eventNumber, min);
@@ -564,9 +566,9 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 					var result = collisions.Contains(streamId)
 						? actual.ReadEventInfoForward_KnownCollisions(
-						streamId: streamId,
-						fromEventNumber: eventNumber,
-						maxCount: 1,
+							streamId: streamId,
+							fromEventNumber: eventNumber,
+							maxCount: 1,
 							beforePosition: long.MaxValue)
 						: actual.ReadEventInfoForward_NoCollisions(
 							stream: hasher.Hash(streamId),
@@ -583,7 +585,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 					var info = result.EventInfos[0];
 					Assert.Equal(prepare.LogPosition, info.LogPosition);
-					Assert.Equal(prepare.ExpectedVersion + 1, info.EventNumber);
+					Assert.Equal(eventNumber, info.EventNumber);
 				}
 			}
 		

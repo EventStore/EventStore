@@ -142,6 +142,20 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						}
 
 						case Rec.RecType.Delete: {
+							if (rec.PrepareFlags.HasAnyOf(PrepareFlags.IsCommitted)) {
+								// modern style tombstone has IsCommitted flag and max event number.
+								// introduced in 19f7cd351329f7bd2be0f6c00b4beee45e2a4777
+								expectedVersion = rec.Version == LogRecordVersion.LogRecordV0
+									? int.MaxValue - 1
+									: EventNumber.DeletedStream - 1;
+							} else {
+								// legacy style tombstone has 'normal' expected version in the log record
+								// (probably -1 because it is committed separately)
+								// a subsequent commit record to commit it
+								// special handling in indexcommitter to give it a max event number in
+								// the index.
+							}
+
 							record = CreateLogRecord(rec, transInfo, logPos, expectedVersion);
 
 							streamUncommitedVersion[rec.StreamId] = rec.Version == LogRecordVersion.LogRecordV0
