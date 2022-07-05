@@ -269,8 +269,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					} else {
 						// we found some and discarded them all, oops.
 						throw new Exception(
-							$"Discarded all events for stream {originalStreamHandle}. " +
-							$"This should be impossible.");
+							$"Calculated that all events for stream {originalStreamHandle} " +
+							$"should be discarded. This should be impossible.");
 					}
 				} else {
 					// we aren't done reading slices, read the next slice.
