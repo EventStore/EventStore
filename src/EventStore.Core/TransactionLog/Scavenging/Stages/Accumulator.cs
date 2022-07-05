@@ -89,7 +89,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					tombstoneRecord,
 					stopwatch,
 					cancellationToken)) {
-				_throttle.Rest(cancellationToken);
 				logicalChunkNumber++;
 			}
 		}
@@ -229,6 +228,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				if (++cancellationCheckCounter == _cancellationCheckPeriod) {
 					cancellationCheckCounter = 0;
 					cancellationToken.ThrowIfCancellationRequested();
+					_throttle.Rest(cancellationToken);
 				}
 			}
 
