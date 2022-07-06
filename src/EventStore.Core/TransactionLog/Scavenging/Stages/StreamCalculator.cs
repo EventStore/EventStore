@@ -59,7 +59,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				? DiscardPoint.DiscardIncluding(LastEventNumber - OriginalStreamData.MaxCount.Value)
 				: DiscardPoint.KeepAll;
 
-		// accounts for tombstone, truncateBefore, maxCount.
 		private DiscardPoint? _truncateBeforeOrMaxCountDiscardPoint;
 		public DiscardPoint TruncateBeforeOrMaxCountDiscardPoint {
 			get {

@@ -237,8 +237,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				}
 
 				Log.Trace(
-					"SCAVENGING: Scavenging {oldChunkName} traversed {recordsCount} including {filteredCount}.",
-					oldChunkName, discardedCount + keptCount, keptCount);
+					"SCAVENGING: Scavenging {oldChunkName} traversed {recordsCount:N0}. " +
+					" Kept {keptCount:N0}. Discarded {discardedCount:N0}",
+					oldChunkName, discardedCount + keptCount,
+					keptCount, discardedCount);
 
 				outputChunk.Complete(out var newFileName, out var newFileSize);
 
