@@ -346,7 +346,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				// otherwise obey the discard points below.
 			}
 
-			// if definitePoint says discard then discard.
+			// if discardPoint says discard then discard.
 			if (details.DiscardPoint.ShouldDiscard(record.EventNumber)) {
 				return true;
 			}
