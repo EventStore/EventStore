@@ -95,7 +95,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (OriginalStreamData.MaxCount.HasValue) {
 				// new evernts might have been added so discard point might need moving
 				// (unless the accumulator tracked when new events have been written per stream, but
-				// this would likely not be worth it.
+				// this would likely not be worth it.)
 				return CalculationStatus.Active;
 			}
 
