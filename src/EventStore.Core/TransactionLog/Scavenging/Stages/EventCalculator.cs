@@ -80,7 +80,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			// range is guanranteed to be non-empty
-			if (cutoffTime < createdAtRange.Min) {
+			if (cutoffTime <= createdAtRange.Min) {
+				// if the cutoff time is equal to the minimum then the record timestamp is definitely
+				// greater than or equal to the cutoff, so we keep it
 				return DiscardDecision.Keep;
 			}
 

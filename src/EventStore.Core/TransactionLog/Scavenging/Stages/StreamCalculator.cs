@@ -74,7 +74,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		public bool IsTombstoned => OriginalStreamData.IsTombstoned;
 
-		// We can discard the event when it is as old or older than the cutoff
+		// We can discard the event when it is older than the cutoff
 		public DateTime? CutoffTime => ScavengePoint.EffectiveNow - OriginalStreamData.MaxAge;
 
 		// Calculates whether this stream needs recalculating, assuming the metadata and istombstoned
