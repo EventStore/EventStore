@@ -604,17 +604,25 @@ namespace EventStore.Core.Index {
 
 			var candidateEntry = ReadEntry(_indexEntrySize, high, workItem, _version);
 
+			// index entry is for a different hash
+			if (candidateEntry.Stream != stream) {
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+
+			// index entry is for the correct hash but for a colliding stream
 			if (!isForThisStream(candidateEntry))
 				throw new HashCollisionException();
 
-			if (candidateEntry.Stream == stream &&
-				candidateEntry.Position < beforePosition) {
-				entry = candidateEntry;
-				return true;
+			// index entry is for the correct stream but does not respect the position limit
+			if (candidateEntry.Position >= beforePosition) {
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
 			}
 
-			entry = TableIndex.InvalidIndexEntry;
-			return false;
+			// index entry is for the correct stream and respects the position limit
+			entry = candidateEntry;
+			return true;
 		}
 
 		private bool TryGetLargestEntry(ulong stream, long startNumber, long endNumber, out IndexEntry entry) {
