@@ -6,11 +6,13 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	public class EventCalculator<TStreamId> {
 		public EventCalculator(
 			int chunkSize,
+			IIndexReaderForCalculator<TStreamId> index,
 			IScavengeStateForCalculatorReadOnly<TStreamId> state,
 			ScavengePoint scavengePoint,
 			StreamCalculator<TStreamId> streamCalc) {
 
 			ChunkSize = chunkSize;
+			Index = index;
 			State = state;
 			ScavengePoint = scavengePoint;
 			Stream = streamCalc;
@@ -22,6 +24,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		// State that doesn't change. scoped to the scavenge.
 		public int ChunkSize { get; }
+		public IIndexReaderForCalculator<TStreamId> Index { get; }
 		public IScavengeStateForCalculatorReadOnly<TStreamId> State { get; }
 		public ScavengePoint ScavengePoint { get; }
 		public StreamCalculator<TStreamId> Stream { get; }
@@ -52,8 +55,24 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				return DiscardDecision.Keep;
 			}
 
-			// for tombstoned streams, discard everything that isn't the last event
+			// for tombstoned streams, discard everything before the tombstone
 			if (Stream.IsTombstoned) {
+				// the tombstone is nearly always the last event and therefore already kept above ^
+				// BUT if the tombstone was created when event numbers were 32bit, and the index has
+				// not been _rebuilt_ since event numbers have been 64bit (merges and scavenges are not
+				// sufficient) then the tombstone will still appear in the index as having event number
+				// int.max instead of long.max. the system does not treat such a stream as deleted, so
+				// more events could be written and read after the tombstone, but rebuilding the index
+				// will make the whole stream deleted again.
+				//
+				// to avoid complicating this further in scavenge, we keep an eye out for such tombstones
+				// and keep the tombstone and any the events after it. without this check we would
+				// discard the tombstone and subsequent events except the last one, leaving the stream
+				// in a state where it is unclear why events were removed.
+				if (EventInfo.EventNumber == int.MaxValue && Index.IsTombstone(EventInfo.LogPosition)) {
+					return DiscardDecision.Keep;
+				}
+
 				// we already know this is not the last event, so discard it.
 				return DiscardDecision.Discard;
 			}

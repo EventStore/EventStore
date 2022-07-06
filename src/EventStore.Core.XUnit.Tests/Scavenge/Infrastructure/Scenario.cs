@@ -27,7 +27,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 	// sort of similar to ScavengeTestScenario
 	public class Scenario {
 		private const int Threads = 1;
-		public const bool CollideEverything = false;
+		public const bool CollideEverything = true;
 
 		private Func<TFChunkDbConfig, DbResult> _getDb;
 		private Func<ScavengeStateBuilder, ScavengeStateBuilder> _stateTransform;
@@ -275,7 +275,10 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					});
 
 				var calculatorIndexReader = new AdHocIndexReaderInterceptor<string>(
-					new IndexReaderForCalculator(readIndex, scavengeState.LookupUniqueHashUser),
+					new IndexReaderForCalculator(
+						readIndex,
+						() => new TFReaderLease(readerPool),
+						scavengeState.LookupUniqueHashUser),
 					(f, handle, from, maxCount, x) => {
 						if (_calculatingCancellationTrigger != null)
 							if ((handle.Kind == StreamHandle.Kind.Hash && handle.StreamHash == hasher.Hash(_calculatingCancellationTrigger)) ||
@@ -553,7 +556,10 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					var streamId = prepare.EventStreamId;
 					var eventNumber = prepare.ExpectedVersion + 1;
 
-					if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete))
+					// indexcommitter blesses tombstones with EventNumber.DeletedStream when they are
+					// committed with an explicit commit record
+					if (prepare.Flags.HasAnyOf(PrepareFlags.StreamDelete) &&
+						prepare.Flags.HasNoneOf(PrepareFlags.IsCommitted))
 						eventNumber = EventNumber.DeletedStream;
 
 					if (!minEventNumbers.TryGetValue(streamId, out var min))

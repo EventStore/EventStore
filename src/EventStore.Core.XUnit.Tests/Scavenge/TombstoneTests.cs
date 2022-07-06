@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
 using Xunit;
 using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
@@ -187,6 +188,44 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						x.Recs[0].KeepIndexes(),
 						x.Recs[1],
 					});
+		}
+
+		// see comments in EventCalculator.cs
+		[Fact]
+		public async Task int32max_tombstone_with_subsequent_events() {
+			var t = 0;
+			await new Scenario()
+				.WithDbPath(Fixture.Directory)
+				.WithDb(x => x
+					.Chunk(
+						// old data
+						Rec.Write(t++, "ab-1"),
+						Rec.Write(t++, "ab-1"),
+
+						// int32max tombstone that has not been upgraded in the index
+						Rec.Write(t++, "ab-1",
+							eventType: "$streamDeleted",
+							eventNumber: int.MaxValue,
+							prepareFlags:
+								PrepareFlags.StreamDelete |
+								PrepareFlags.TransactionBegin |
+								PrepareFlags.TransactionEnd |
+								PrepareFlags.IsCommitted),
+
+						// additional data
+						Rec.Write(t++, "ab-1"),
+						Rec.Write(t++, "ab-1"))
+					.Chunk(ScavengePointRec(t++)))
+				.WithState(x => x.WithConnectionPool(Fixture.DbConnectionPool))
+				.AssertState(state => {
+					// still counted as tombstoned by scavenge
+					Assert.True(state.TryGetOriginalStreamData("ab-1", out var data));
+					Assert.True(data.IsTombstoned);
+				})
+				.RunAsync(x => new[] {
+					x.Recs[0].KeepIndexes(2, 3, 4), // keep the int32max tombstone
+					x.Recs[1],
+				});
 		}
 	}
 }

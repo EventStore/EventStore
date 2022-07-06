@@ -35,5 +35,9 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 			return _f(_wrapped.ReadEventInfoForward, stream, fromEventNumber, maxCount, scavengePoint);
 		}
+
+		public bool IsTombstone(long logPosition) {
+			return _wrapped.IsTombstone(logPosition);
+		}
 	}
 }

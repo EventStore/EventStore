@@ -607,7 +607,10 @@ namespace EventStore.Core {
 						throttle: throttle);
 
 					var calculator = new Calculator<string>(
-						new IndexReaderForCalculator(readIndex, state.LookupUniqueHashUser),
+						new IndexReaderForCalculator(
+							readIndex,
+							() => new TFReaderLease(readerPool),
+							state.LookupUniqueHashUser),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
 						checkpointPeriod: 32_768,

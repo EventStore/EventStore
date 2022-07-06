@@ -55,7 +55,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			var weights = new WeightAccumulator(state);
 			var scavengePoint = checkpoint.ScavengePoint;
 			var streamCalc = new StreamCalculator<TStreamId>(_index, scavengePoint);
-			var eventCalc = new EventCalculator<TStreamId>(_chunkSize, state, scavengePoint, streamCalc);
+			var eventCalc = new EventCalculator<TStreamId>(_chunkSize, _index, state, scavengePoint, streamCalc);
 
 			var checkpointCounter = 0;
 			var cancellationCheckCounter = 0;

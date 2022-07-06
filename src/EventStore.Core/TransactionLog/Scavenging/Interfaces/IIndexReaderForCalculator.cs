@@ -9,5 +9,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			long fromEventNumber,
 			int maxCount,
 			ScavengePoint scavengePoint);
+
+		bool IsTombstone(long logPosition);
 	}
 }
