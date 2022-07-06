@@ -247,7 +247,7 @@ namespace EventStore.Core {
 			[Description("The certificate store location name.")]
 			public string CertificateStoreLocation { get; init; } = string.Empty;
 
-			[Description("The certificate store location name.")]
+			[Description("The certificate store name.")]
 			public string CertificateStoreName { get; init; } = string.Empty;
 
 			[Description("The certificate store subject name.")]
@@ -256,11 +256,27 @@ namespace EventStore.Core {
 			[Description("The certificate fingerprint/thumbprint.")]
 			public string CertificateThumbprint { get; init; } = string.Empty;
 
+			[Description("The name of the certificate store that contains the trusted root certificate.")]
+			public string TrustedRootCertificateStoreName { get; init; } = string.Empty;
+
+			[Description("The certificate store location that contains the trusted root certificate.")]
+			public string TrustedRootCertificateStoreLocation { get; init; } = string.Empty;
+
+			[Description("The trusted root certificate subject name.")]
+			public string TrustedRootCertificateSubjectName { get; init; } = string.Empty;
+
+			[Description("The trusted root certificate fingerprint/thumbrint.")]
+			public string TrustedRootCertificateThumbprint { get; init; } = string.Empty;
+
 			internal static CertificateStoreOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				CertificateStoreLocation = configurationRoot.GetValue<string>(nameof(CertificateStoreLocation)),
 				CertificateStoreName = configurationRoot.GetValue<string>(nameof(CertificateStoreName)),
 				CertificateSubjectName = configurationRoot.GetValue<string>(nameof(CertificateSubjectName)),
-				CertificateThumbprint = configurationRoot.GetValue<string>(nameof(CertificateThumbprint))
+				CertificateThumbprint = configurationRoot.GetValue<string>(nameof(CertificateThumbprint)),
+				TrustedRootCertificateStoreLocation = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreLocation)),
+				TrustedRootCertificateStoreName = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreName)),
+				TrustedRootCertificateThumbprint = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateThumbprint)),
+				TrustedRootCertificateSubjectName = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateSubjectName))
 			};
 		}
 

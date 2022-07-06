@@ -147,7 +147,6 @@ namespace EventStore.Core {
 				if (certificates.Count == 0)
 					throw new Exception($"Could not find valid certificate with thumbprint '{certificateThumbprint}'.");
 
-				//Can this even happen?
 				if (certificates.Count > 1)
 					throw new Exception(
 						$"Could not determine a unique certificate from thumbprint '{certificateThumbprint}'.");
@@ -162,12 +161,26 @@ namespace EventStore.Core {
 					throw new Exception(
 						$"Could not find valid certificate with subject name '{certificateSubjectName}'.");
 
-				//Can this even happen?
-				if (certificates.Count > 1)
-					throw new Exception(
-						$"Could not determine a unique certificate from subject name '{certificateSubjectName}'.");
+				if (certificates.Count == 1) {
+					return certificates[0];
+				}
 
-				return certificates[0];
+				// If we get multiple of the same certificate, pick the one which expires last to allow rolling certificates
+				var certs = certificates.GetEnumerator();
+				X509Certificate2 mostRecentCert = null;
+				while (certs.MoveNext()) {
+					if (certs.Current is null) {
+						continue;
+					}
+
+					if (mostRecentCert is null) {
+						mostRecentCert = certs.Current;
+					} else if (certs.Current.NotAfter > mostRecentCert.NotAfter) {
+						mostRecentCert = certs.Current;
+					}
+				}
+
+				return mostRecentCert;
 			}
 
 			throw new ArgumentException(
