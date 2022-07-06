@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
@@ -49,7 +49,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				return DiscardDecision.Keep;
 			}
 
-			// keep last event instream
+			// keep last event in stream
 			// to be extra safe, we keep if it is after the 'last event' too, which should never happen.
 			if (EventInfo.EventNumber >= Stream.LastEventNumber) {
 				return DiscardDecision.Keep;
