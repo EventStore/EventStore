@@ -107,7 +107,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				// unspent TB. new events would cause the discard point to move.
 				// EventNumber.DeletedStream counts as spent because we would only need to
 				// recalculate if a new event is written but in that case the database will
-				// create for us a new metadta record, too.
+				// create for us a new metadata record, too.
 				// this also works if LastEventNumber is NoStream (-1)
 				return CalculationStatus.Active;
 			}
