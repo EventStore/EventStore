@@ -93,7 +93,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		private DiscardDecision ShouldDiscardForMaxAge(DateTime cutoffTime) {
-			// establish a the range that the event was definitely created between.
+			// establish a range that the event was definitely created between.
 			if (!State.TryGetChunkTimeStampRange(LogicalChunkNumber, out var createdAtRange)) {
 				throw new Exception($"Could not get TimeStamp range for chunk {LogicalChunkNumber}");
 			}
