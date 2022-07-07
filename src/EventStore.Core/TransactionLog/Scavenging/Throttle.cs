@@ -29,7 +29,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_logThresholdMs = restLoggingThreshold.TotalMilliseconds;
 			_restFactor = 1 - (activePercent / 100);
 
-			_mres = new ManualResetEventSlim();
+			_mres = new ManualResetEventSlim(false, 0);
 			Reset();
 		}
 
