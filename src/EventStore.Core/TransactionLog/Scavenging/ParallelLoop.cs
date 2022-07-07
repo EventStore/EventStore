@@ -42,7 +42,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			var endCheckpoint = default(int?);
 			var lastEmittedCheckpoint = default(int?);
 
-			void PreparePrcessingItem(int slot, T item) {
+			void PrepareProcessingItem(int slot, T item) {
 				checkpoints[slot] = getCheckpointExclusive(item);
 			}
 
@@ -84,11 +84,11 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			foreach (var item in source) {
 				endCheckpoint = getCheckpointInclusive(item);
 				if (slotsInUse < tasksInProgress.Length) {
-					PreparePrcessingItem(slotsInUse, item);
+					PrepareProcessingItem(slotsInUse, item);
 					StartProcessingItem(slotsInUse++, item);
 				} else {
 					var slot = WaitForSlot();
-					PreparePrcessingItem(slot, item);
+					PrepareProcessingItem(slot, item);
 					EmitCheckpoint();
 					StartProcessingItem(slot, item);
 				}
