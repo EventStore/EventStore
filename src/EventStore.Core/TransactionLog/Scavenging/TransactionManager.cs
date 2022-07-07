@@ -2,7 +2,7 @@
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// This makes sure we dont accidentally start trying to nest transactions or begin them concurrently
-	// and facilities commiting the open transaction with a checkpoint
+	// and facilitates committing the open transaction with a checkpoint
 	public class TransactionManager<TTransaction> : ITransactionManager {
 		private readonly ITransactionFactory<TTransaction> _factory;
 		private readonly IScavengeMap<Unit, ScavengeCheckpoint> _storage;

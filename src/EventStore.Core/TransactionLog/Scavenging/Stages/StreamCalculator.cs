@@ -81,7 +81,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public CalculationStatus CalculateStatus() {
 			if (OriginalStreamData.IsTombstoned) {
 				// discard points will not move after this, BUT it cannot be deleted because we might
-				// run a scavenge with UnsafeHardDeletes in which case we will need to know this is
+				// run a scavenge with UnsafeIgnoreHardDeletes in which case we will need to know this is
 				// tombstoned in order to discard the tombstone from the index.
 				return CalculationStatus.Archived;
 			}
