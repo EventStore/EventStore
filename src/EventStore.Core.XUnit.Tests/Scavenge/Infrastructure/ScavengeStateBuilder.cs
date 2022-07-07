@@ -68,7 +68,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				throw new Exception("call WithConnectionPool(...)");
 
 			var map = new ConcurrentDictionary<IScavengeStateBackend<string>, SqliteConnection>();
-			ObjectPool<IScavengeStateBackend<string>> backendPool = new ObjectPool<IScavengeStateBackend<string>>(
+			var backendPool = new ObjectPool<IScavengeStateBackend<string>>(
 				objectPoolName: "scavenge backend pool",
 				initialCount: 1,
 				maxCount: TFChunkScavenger.MaxThreadCount + 1,

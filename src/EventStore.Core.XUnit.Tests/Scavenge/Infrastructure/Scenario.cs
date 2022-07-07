@@ -27,7 +27,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 	// sort of similar to ScavengeTestScenario
 	public class Scenario {
 		private const int Threads = 1;
-		public const bool CollideEverything = true;
+		public const bool CollideEverything = false;
 
 		private Func<TFChunkDbConfig, DbResult> _getDb;
 		private Func<ScavengeStateBuilder, ScavengeStateBuilder> _stateTransform;
