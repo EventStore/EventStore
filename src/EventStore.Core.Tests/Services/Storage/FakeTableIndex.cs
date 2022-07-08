@@ -41,14 +41,42 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return false;
 		}
 
+		public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetLatestEntry(string streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public bool TryGetOldestEntry(string streamId, out IndexEntry entry) {
 			entry = InvalidIndexEntry;
 			return false;
 		}
 
+		public bool TryGetNextEntry(string streamId, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetPreviousEntry(string streamId, long beforeVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion,
 			int? limit = null) {
 			yield break;
+		}
+
+		public IEnumerable<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			throw new NotImplementedException();
 		}
 
 		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
