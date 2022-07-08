@@ -606,15 +606,15 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 				var result = collisions.Contains(streamId)
 					? actual.ReadEventInfoForward_KnownCollisions(
-					streamId: streamId,
-					fromEventNumber: 0,
-					maxCount: 1000,
+						streamId: streamId,
+						fromEventNumber: 0,
+						maxCount: 1000,
 						beforePosition: long.MaxValue)
 					: actual.ReadEventInfoForward_NoCollisions(
 						stream: hasher.Hash(streamId),
 						fromEventNumber: 0,
 						maxCount: 1000,
-					beforePosition: long.MaxValue);
+						beforePosition: long.MaxValue);
 
 				if (result.EventInfos.Length > 100)
 					throw new Exception("wasn't expecting a stream this long in the tests");
