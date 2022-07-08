@@ -5,6 +5,8 @@
 		<Platform>x64</Platform>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<!-- qq Only required for ES5 -->
+    	<LangVersion>7.3</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
@@ -21,4 +23,33 @@
 	  <ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
 	  <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 	</ItemGroup>
+
+	<!-- qq Required to get the native assembly e_sqlite3.dll, from Microsoft.Data.Sqlite/SQLitePCLRaw, copied to \bin,
+          probably can be removed on later frameworks/.net core -->
+	<PropertyGroup>
+    	<IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(MSBuildRuntimeType)' == 'Core'">
+		<IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+		<IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(IsWindows)' == 'true' And '$(TargetFramework)' == 'net471' ">
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(IsLinux)' == 'true' And '$(TargetFramework)' == 'net471' ">
+		<RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(IsOSX)' == 'true' And '$(TargetFramework)' == 'net471' ">
+		<RuntimeIdentifier>osx-x64</RuntimeIdentifier>
+	</PropertyGroup>
+
+  <!-- qq Required to resolve netstandard2.0 references when using mono. Only required for ES5. -->
+  <ItemGroup>
+	<Reference Condition=" '$(FrameworkPathOverride)' != '' " Include="netstandard" />
+	<Reference Condition=" '$(FrameworkPathOverride)' != '' " Include="System.Runtime" />
+	<Reference Condition=" '$(FrameworkPathOverride)' != '' " Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <PropertyGroup>
+    <AssemblySearchPaths Condition=" '$(FrameworkPathOverride)' != '' ">$(FrameworkPathOverride)/Facades/;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
 </Project>

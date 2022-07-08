@@ -166,6 +166,10 @@ Function Start-Build{
           if (-Not $?) { throw "Exit code is $?" }
         }
     }
+
+    # Fix output for packaging, caused by using x64 RuntimeIdentifier
+    Move-Item "$binDirectory\$Configuration\EventStore.ClusterNode\net471\win-x64\*" "$binDirectory\$Configuration\EventStore.ClusterNode\net471\"
+    Remove-Item "$binDirectory\$Configuration\EventStore.ClusterNode\net471\win-x64"
 }
 
 Start-Build
