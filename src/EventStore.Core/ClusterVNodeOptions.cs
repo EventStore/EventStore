@@ -487,6 +487,9 @@ namespace EventStore.Core {
 			             "Use 0 to disable the filter. Resizing the filter will cause a full rebuild.")]
 			public long StreamExistenceFilterSize { get; init; } = Opts.StreamExistenceFilterSizeDefault;
 
+			[Description("The amount of memory to use for backend caching in bytes.")]
+			public long ScavengeBackendCacheSize { get; init; } = Opts.ScavengeBackendCacheSizeDefault;
+
 			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
 				                           + 1 /* StorageChaser */
@@ -543,6 +546,7 @@ namespace EventStore.Core {
 				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation)),
 				DbLogFormat = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat)),
 				StreamExistenceFilterSize = configurationRoot.GetValue<long>(nameof(StreamExistenceFilterSize)),
+				ScavengeBackendCacheSize = configurationRoot.GetValue<long>(nameof(ScavengeBackendCacheSize)),
 			};
 		}
 		
