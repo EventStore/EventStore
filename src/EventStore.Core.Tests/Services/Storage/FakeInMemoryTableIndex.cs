@@ -58,6 +58,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 			throw new NotImplementedException();
 		}
 
+		public void Scavenge(
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
+			throw new NotImplementedException();
+		}
+
 		public bool TryGetLatestEntry(string streamId, out IndexEntry entry)
 		{
 			if(_indexEntries.ContainsKey(streamId)){

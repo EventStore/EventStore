@@ -610,7 +610,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 		private ClientMessage.ScavengeDatabase UnwrapScavengeDatabase(TcpPackage package, IEnvelope envelope,
 			IPrincipal user) {
-			return new ClientMessage.ScavengeDatabase(envelope, package.CorrelationId, user, 0, 1);
+			return new ClientMessage.ScavengeDatabase(envelope, package.CorrelationId, user, 0, 1, null, null, false);
 		}
 
 		private TcpPackage WrapScavengeDatabaseResponse(ClientMessage.ScavengeDatabaseResponse msg) {

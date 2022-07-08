@@ -36,8 +36,11 @@ using System.Threading;
 using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using System.Threading.Tasks;
-using System.Collections;
-using System.Diagnostics;
+using EventStore.Core.TransactionLog.Scavenging;
+using EventStore.Core.LogV2;
+using EventStore.Core.TransactionLog.Scavenging.Sqlite;
+using EventStore.Core.TransactionLog.LogRecords;
+using Microsoft.Data.Sqlite;
 
 namespace EventStore.Core {
 	public class ClusterVNode :
@@ -89,7 +92,6 @@ namespace EventStore.Core {
 		private readonly ISubsystem[] _subsystems;
 		private readonly ManualResetEvent _shutdownEvent = new ManualResetEvent(false);
 		private readonly IAuthenticationProvider _internalAuthenticationProvider;
-
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
@@ -206,9 +208,13 @@ namespace EventStore.Core {
 				"ReadIndex readers pool", ESConsts.PTableInitialReaderCount, maxReaderCount,
 				() => new TFChunkReader(db, db.Config.WriterCheckpoint,
 					optimizeReadSideCache: db.Config.OptimizeReadSideCache));
+
+			var lowHasher = new XXHashUnsafe();
+			var highHasher = new Murmur3AUnsafe();
+
 			var tableIndex = new TableIndex(indexPath,
-				new XXHashUnsafe(),
-				new Murmur3AUnsafe(),
+				lowHasher,
+				highHasher,
 				() => new HashListMemTable(vNodeSettings.IndexBitnessVersion,
 					maxSize: vNodeSettings.MaxMemtableEntryCount * 2),
 				() => new TFReaderLease(readerPool),
@@ -545,22 +551,152 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 
 			// STORAGE SCAVENGER
-			var scavengerLogManager = new TFChunkScavengerLogManager(_nodeInfo.ExternalHttp.ToString(),
-				TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge), ioDispatcher);
-			var storageScavenger = new StorageScavenger(db,
-				tableIndex,
-				readIndex,
-				scavengerLogManager,
-				vNodeSettings.AlwaysKeepScavenged,
-				!vNodeSettings.DisableScavengeMerging,
-				unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
+			ScavengerFactory scavengerFactory;
+
+			var newScavenge = true;
+			if (newScavenge) {
+				scavengerFactory = new ScavengerFactory((message, logger) => {
+					var throttle = new Throttle(
+						minimumRest: TimeSpan.FromMilliseconds(1000),
+						restLoggingThreshold: TimeSpan.FromMilliseconds(10_000),
+						activePercent: message.ThrottlePercent ?? vNodeSettings.ScavengeThrottlePercent);
+
+					var metastreamLookup = new LogV2SystemStreams();
+					var streamIdConverter = new LogV2StreamIdConverter();
+					var cancellationCheckPeriod = 1024;
+
+					var longHasher = new CompositeHasher<string>(lowHasher, highHasher);
+
+					// the backends (and therefore connections) are scoped to the run of the scavenge
+					// so that we don't keep hold of memory used for the page caches between scavenges
+					var backendPool = new ObjectPool<IScavengeStateBackend<string>>(
+						objectPoolName: "scavenge backend pool",
+						initialCount: 1,
+						maxCount: TFChunkScavenger.MaxThreadCount + 1,
+						factory: () => {
+							var scavengeDirectory = Path.Combine(indexPath, "scavenging");
+							Directory.CreateDirectory(scavengeDirectory);
+							var connectionStringBuilder = new SqliteConnectionStringBuilder {
+								DataSource = Path.Combine(scavengeDirectory, "scavenging.db")
+							};
+							var connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
+							connection.Open();
+							var sqlite = new SqliteScavengeBackend<string>(
+								cacheSizeInBytes: vNodeSettings.ScavengeBackendCacheSize);
+							sqlite.Initialize(connection);
+							return sqlite;
+						},
+						dispose: backend => backend.Dispose());
+
+					var state = new ScavengeState<string>(
+						longHasher,
+						metastreamLookup,
+						backendPool);
+
+					var accumulator = new Accumulator<string>(
+						chunkSize: TFConsts.ChunkSize,
+						metastreamLookup: metastreamLookup,
+						chunkReader: new ChunkReaderForAccumulator<string>(
+							db.Manager,
+							metastreamLookup,
+							streamIdConverter,
+							db.Config.ReplicationCheckpoint,
+							TFConsts.ChunkSize),
+						index: new IndexReaderForAccumulator(readIndex),
+						cancellationCheckPeriod: cancellationCheckPeriod,
+						throttle: throttle);
+
+					var calculator = new Calculator<string>(
+						new IndexReaderForCalculator(
+							readIndex,
+							() => new TFReaderLease(readerPool),
+							state.LookupUniqueHashUser),
+						chunkSize: TFConsts.ChunkSize,
+						cancellationCheckPeriod: cancellationCheckPeriod,
+						checkpointPeriod: 32_768,
+						throttle: throttle);
+
+					var chunkExecutor = new ChunkExecutor<string, LogRecord>(
+						metastreamLookup,
+						new ChunkManagerForExecutor(db.Manager, db.Config),
+						chunkSize: db.Config.ChunkSize,
+						unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes,
+						cancellationCheckPeriod: cancellationCheckPeriod,
+						threads: message.Threads,
+						throttle: throttle);
+
+					var chunkMerger = new ChunkMerger(
+						mergeChunks: !vNodeSettings.DisableScavengeMerging,
+						backend: new OldScavengeChunkMergerBackend(db: db),
+						throttle: throttle);
+
+					var indexExecutor = new IndexExecutor<string>(
+						new IndexScavenger(tableIndex),
+						new ChunkReaderForIndexExecutor(() => new TFReaderLease(readerPool)),
+						unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes,
+						restPeriod: 32_768,
+						throttle: throttle);
+
+					var cleaner = new Cleaner(
+						unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
+
+					var scavengePointSource = new ScavengePointSource(ioDispatcher);
+
+					return new Scavenger<string>(
+						checkPreconditions: () => {
+							tableIndex.Visit(table => {
+								if (table.Version <= PTableVersions.IndexV1)
+									throw new NotSupportedException(
+										$"PTable {table.Filename} has version {table.Version}. Scavenge requires V2 index files and above. Please rebuild the indexes to upgrade them.");
+							});
+						},
+						state: state,
+						accumulator: accumulator,
+						calculator: calculator,
+						chunkExecutor: chunkExecutor,
+						chunkMerger: chunkMerger,
+						indexExecutor: indexExecutor,
+						cleaner: cleaner,
+						scavengePointSource: scavengePointSource,
+						scavengerLogger: logger,
+						// threshold < 0: execute all chunks, even those with no weight
+						// threshold = 0: execute all chunks with weight greater than 0
+						// threshold > 0: execute all chunks above a certain weight
+						thresholdForNewScavenge: message.Threshold ?? 0,
+						syncOnly: message.SyncOnly,
+						getThrottleStats: () => throttle.PrettyPrint());
+				});
+
+			} else {
+				scavengerFactory = new ScavengerFactory((message, logger) =>
+					new OldScavenger(
+						alwaysKeepScaveged: vNodeSettings.AlwaysKeepScavenged,
+						mergeChunks: !vNodeSettings.DisableScavengeMerging,
+						startFromChunk: message.StartFromChunk,
+						tfChunkScavenger: new TFChunkScavenger(
+							db: db,
+							scavengerLog: logger,
+							tableIndex: tableIndex,
+							readIndex: readIndex,
+							unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes,
+							threads: message.Threads)));
+
+			}
+
+			var scavengerLogManager = new TFChunkScavengerLogManager(
+				nodeEndpoint: _nodeInfo.ExternalHttp.ToString(),
+				scavengeHistoryMaxAge: TimeSpan.FromDays(vNodeSettings.ScavengeHistoryMaxAge),
+				ioDispatcher: ioDispatcher);
+
+			var storageScavenger = new StorageScavenger(
+				logManager: scavengerLogManager,
+				scavengerFactory: scavengerFactory);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
 			_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
-
 
 			// TIMER
 			_timeProvider = new RealTimeProvider();

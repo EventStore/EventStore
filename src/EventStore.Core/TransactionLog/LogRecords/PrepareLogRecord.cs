@@ -20,7 +20,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		IsJson = 0x100, // indicates data & metadata are valid json
 
 		// aggregate flag set
-		DeleteTombstone = TransactionBegin | TransactionEnd | StreamDelete,
+		// unused and easily confused with StreamDelete:  DeleteTombstone = TransactionBegin | TransactionEnd | StreamDelete,
 		SingleWrite = Data | TransactionBegin | TransactionEnd
 	}
 

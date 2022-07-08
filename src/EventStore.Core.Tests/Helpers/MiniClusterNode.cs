@@ -95,6 +95,7 @@ namespace EventStore.Core.Tests.Helpers {
 				"", gossipSeeds, TFConsts.MinFlushDelayMs, 3, 2, 2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10),
 				false, false, "", false, TimeSpan.FromHours(1), StatsStorage.None, 0,
 				new InternalAuthenticationProviderFactory(), disableScavengeMerging: true, scavengeHistoryMaxAge: 30,
+				scavengeThrottlePercent: Opts.ScavengeThrottlePercentDefault,
 				adminOnPublic: true,
 				statsOnPublic: true, gossipOnPublic: true, gossipInterval: TimeSpan.FromSeconds(1),
 				gossipAllowedTimeDifference: TimeSpan.FromSeconds(1), gossipTimeout: TimeSpan.FromSeconds(1),
