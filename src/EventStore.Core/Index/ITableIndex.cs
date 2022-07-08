@@ -26,8 +26,15 @@ namespace EventStore.Core.Index {
 
 		bool TryGetOneValue(TStreamId streamId, long version, out long position);
 		bool TryGetLatestEntry(TStreamId streamId, out IndexEntry entry);
+		bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry);
+		bool TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry);
 		bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry);
+		bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry);
+		bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry);
+		bool TryGetPreviousEntry(TStreamId streamId, long beforeVersion, out IndexEntry entry);
+		bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry);
 
 		IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null);
+		IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null);
 	}
 }

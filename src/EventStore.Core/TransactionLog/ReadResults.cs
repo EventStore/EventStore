@@ -1,4 +1,6 @@
+using System;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogCommon;
 
 namespace EventStore.Core.TransactionLog {
 	public struct RecordReadResult {
@@ -22,6 +24,28 @@ namespace EventStore.Core.TransactionLog {
 				NextPosition,
 				RecordLength,
 				LogRecord);
+		}
+	}
+
+	public struct RawReadResult {
+		public static readonly RawReadResult Failure = new RawReadResult(false, -1, null, 0);
+
+		public readonly bool Success;
+		public readonly long NextPosition;
+		public readonly byte[] RecordBuffer; // can be longer than the record
+		public readonly int RecordLength;
+
+		public LogRecordType RecordType => (LogRecordType)RecordBuffer[0];
+
+		public RawReadResult(bool success, long nextPosition, byte[] record, int recordLength) {
+			Success = success;
+			RecordBuffer = record;
+			NextPosition = nextPosition;
+			RecordLength = recordLength;
+		}
+
+		public override string ToString() {
+			return $"Success: {Success}, NextPosition: {NextPosition}, Record Length: {RecordLength}";
 		}
 	}
 

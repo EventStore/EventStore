@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
-using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
-using EventStore.Core.Helpers;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messaging;
@@ -30,7 +28,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected readonly int StreamInfoCacheCapacity;
 		protected readonly long MetastreamMaxCount;
 		protected readonly bool PerformAdditionalCommitChecks;
-		private readonly int _chunkSize;
 		protected readonly byte IndexBitnessVersion;
 		protected LogFormatAbstractor<TStreamId> _logFormat;
 		protected IRecordFactory<TStreamId> _recordFactory;
@@ -39,25 +36,39 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected TableIndex<TStreamId> TableIndex;
 		protected IReadIndex<TStreamId> ReadIndex;
 
+		protected IHasher<TStreamId> LowHasher { get; private set; }
+		protected IHasher<TStreamId> HighHasher { get; private set; }
+		protected ILongHasher<TStreamId> Hasher { get; private set; }
+
 		protected TFChunkDb Db;
 		protected TFChunkWriter Writer;
 		protected ICheckpoint WriterCheckpoint;
 		protected ICheckpoint ChaserCheckpoint;
 
+		private readonly int _chunkSize;
 		private TFChunkScavenger<TStreamId> _scavenger;
 		private bool _scavenge;
 		private bool _completeLastChunkOnScavenge;
 		private bool _mergeChunks;
 
-		protected ReadIndexTestScenario(int maxEntriesInMemTable = 20, long metastreamMaxCount = 1,
+		protected ReadIndexTestScenario(
+			int maxEntriesInMemTable = 20,
+			long metastreamMaxCount = 1,
 			int streamInfoCacheCapacity = 0,
-			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault, bool performAdditionalChecks = true, int chunkSize = 10000) {
+			byte indexBitnessVersion = Opts.IndexBitnessVersionDefault,
+			bool performAdditionalChecks = true,
+			int chunkSize = 10_000,
+			IHasher<TStreamId> lowHasher = null,
+			IHasher<TStreamId> highHasher = null) {
+
 			Ensure.Positive(maxEntriesInMemTable, "maxEntriesInMemTable");
 			MaxEntriesInMemTable = maxEntriesInMemTable;
 			StreamInfoCacheCapacity = streamInfoCacheCapacity;
 			MetastreamMaxCount = metastreamMaxCount;
 			IndexBitnessVersion = indexBitnessVersion;
 			PerformAdditionalCommitChecks = performAdditionalChecks;
+			LowHasher = lowHasher;
+			HighHasher = highHasher;
 			_chunkSize = chunkSize;
 		}
 
@@ -92,10 +103,11 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 				() => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
-			var lowHasher = _logFormat.LowHasher;
-			var highHasher = _logFormat.HighHasher;
+			LowHasher ??= _logFormat.LowHasher;
+			HighHasher ??= _logFormat.HighHasher;
+			Hasher = new CompositeHasher<TStreamId>(LowHasher, HighHasher);
 			var emptyStreamId = _logFormat.EmptyStreamId;
-			TableIndex = new TableIndex<TStreamId>(indexDirectory, lowHasher, highHasher, emptyStreamId,
+			TableIndex = new TableIndex<TStreamId>(indexDirectory, LowHasher, HighHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
@@ -126,6 +138,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
 			ReadIndex = readIndex;
+
+			// wait for tables to be merged
+			TableIndex.WaitForBackgroundTasks();
 
 			// scavenge must run after readIndex is built
 			if (_scavenge) {
