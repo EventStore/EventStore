@@ -1,3 +1,4 @@
+using System;
 using System.Security.Claims;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
@@ -47,9 +48,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber);
 		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
 		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
+		IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
+		IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition);
+		IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
+		IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber, int maxCount, long beforePosition);
 
 		bool IsStreamDeleted(TStreamId streamId);
 		long GetStreamLastEventNumber(TStreamId streamId);
+		long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition);
+		long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition);
 		StreamMetadata GetStreamMetadata(TStreamId streamId);
 		StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId);
 		TStreamId GetEventStreamIdByTransactionId(long transactionId);
