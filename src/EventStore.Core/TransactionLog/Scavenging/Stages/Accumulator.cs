@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
-using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
