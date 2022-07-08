@@ -197,7 +197,7 @@ function buildEventStore {
         rm -R ./bin/Release/EventStore.ClusterNode/net471/linux-x64
     elif [ "$OS" == "MacOS" ]; then
         mv ./bin/Release/EventStore.ClusterNode/net471/osx-x64/* ./bin/Release/EventStore.ClusterNode/net471/
-        rm -R ./bin/Release/EventStore.ClusterNode/net471/linux-x64
+        rm -R ./bin/Release/EventStore.ClusterNode/net471/osx-x64
     fi
 }
 
