@@ -43,6 +43,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			Func<IndexEntry, Tuple<string, bool>> readRecord = x =>
 				new Tuple<string, bool>(x.Stream.ToString(), x.Position % 2 == 0);
 			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(), _upgradeHash, existsAt, readRecord, _newVersion,
+				existsAt,
 				out spaceSaved, skipIndexVerify: _skipIndexVerify);
 		}
 

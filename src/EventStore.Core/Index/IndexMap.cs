@@ -505,6 +505,7 @@ namespace EventStore.Core.Index {
 		}
 
 		public ScavengeResult Scavenge(Guid toScavenge, CancellationToken ct,
+			Func<IndexEntry, bool> shouldKeep,
 			Func<string, ulong, ulong> upgradeHash,
 			Func<IndexEntry, bool> existsAt,
 			Func<IndexEntry, Tuple<string, bool>> recordExistsAt,
@@ -521,7 +522,7 @@ namespace EventStore.Core.Index {
 						var oldTable = scavengedMap[level][i];
 
 						PTable scavenged = PTable.Scavenged(oldTable, filename, upgradeHash, existsAt, recordExistsAt,
-							version, out spaceSaved, indexCacheDepth, skipIndexVerify, ct);
+							version, shouldKeep, out spaceSaved, indexCacheDepth, skipIndexVerify, ct);
 
 						if (scavenged == null) {
 							return ScavengeResult.Failed(oldTable, level, i);

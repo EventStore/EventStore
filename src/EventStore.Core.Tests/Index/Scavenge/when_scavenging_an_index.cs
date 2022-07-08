@@ -39,7 +39,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			};
 
 			_newtable = PTable.Scavenged(_oldTable, GetTempFilePath(), upgradeHash, existsAt, readRecord,
-				PTableVersions.IndexV4, out spaceSaved, skipIndexVerify: _skipIndexVerify);
+				PTableVersions.IndexV4, existsAt, out spaceSaved, skipIndexVerify: _skipIndexVerify);
 		}
 
 		[OneTimeTearDown]

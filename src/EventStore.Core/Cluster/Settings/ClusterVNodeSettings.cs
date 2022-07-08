@@ -50,6 +50,7 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool DisableFirstLevelHttpAuthorization;
 		public readonly bool DisableScavengeMerging;
 		public readonly int ScavengeHistoryMaxAge;
+		public readonly int ScavengeThrottlePercent;
 		public bool AdminOnPublic;
 		public bool StatsOnPublic;
 		public bool GossipOnPublic;
@@ -119,6 +120,7 @@ namespace EventStore.Core.Cluster.Settings {
 			IAuthenticationProviderFactory authenticationProviderFactory,
 			bool disableScavengeMerging,
 			int scavengeHistoryMaxAge,
+			int scavengeThrottlePercent,
 			bool adminOnPublic,
 			bool statsOnPublic,
 			bool gossipOnPublic,
@@ -176,6 +178,9 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.Positive(initializationThreads, "initializationThreads");
 			Ensure.NotNull(gossipAdvertiseInfo, "gossipAdvertiseInfo");
 
+			if (scavengeThrottlePercent <= 0 || scavengeThrottlePercent > 100)
+				throw new ArgumentException($"ScavengeThrottlePercent must be in the range 1-100 inclusive. Provided value was {scavengeThrottlePercent}");
+
 			if (discoverViaDns && string.IsNullOrWhiteSpace(clusterDns))
 				throw new ArgumentException(
 					"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
@@ -226,6 +231,7 @@ namespace EventStore.Core.Cluster.Settings {
 			NodePriority = nodePriority;
 			DisableScavengeMerging = disableScavengeMerging;
 			ScavengeHistoryMaxAge = scavengeHistoryMaxAge;
+			ScavengeThrottlePercent = scavengeThrottlePercent;
 			AdminOnPublic = adminOnPublic;
 			StatsOnPublic = statsOnPublic;
 			GossipOnPublic = gossipOnPublic;
