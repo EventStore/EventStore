@@ -80,7 +80,8 @@ namespace EventStore.Core.Services.Storage {
 		private const string _writerFlushHistogram = "writer-flush";
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly TStreamId _emptyEventTypeId;
-
+		private readonly TStreamId _scavengePointsStreamId;
+		private readonly TStreamId _scavengePointEventTypeId;
 		public IEnumerable<Task> Tasks {
 			get { return _tasks; }
 		}
@@ -119,6 +120,9 @@ namespace EventStore.Core.Services.Storage {
 			_systemStreams = systemStreams;
 			_emptyEventTypeId = emptyEventTypeId;
 			EpochManager = epochManager;
+
+			_scavengePointsStreamId = _streamNameIndex.GetExisting(SystemStreams.ScavengePointsStream);
+			_scavengePointEventTypeId = _eventTypeIndex.GetExisting(SystemEventTypes.ScavengePoint);
 
 			_minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
 			_lastFlushDelay = 0;
@@ -664,6 +668,13 @@ namespace EventStore.Core.Services.Storage {
 							prepare.LogPosition,
 							writtenPos));
 				}
+			}
+
+			if (StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId) &&
+				StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
+
+				Writer.CompleteChunk();
+				newPos = Writer.Checkpoint.ReadNonFlushed();
 			}
 
 			return new WriteResult(writtenPos, newPos, record);

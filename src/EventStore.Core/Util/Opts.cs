@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using EventStore.Common.Options;
 using EventStore.Core.TransactionLog.Chunks;

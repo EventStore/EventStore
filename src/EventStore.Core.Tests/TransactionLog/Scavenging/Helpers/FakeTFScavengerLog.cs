@@ -16,6 +16,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 		public bool Completed { get; private set; }
 
+		public string Error { get; private set; }
+
 		public ScavengeResult Result { get; private set; }
 
 		public event EventHandler<EventArgs> StartedCallback;
@@ -26,6 +28,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public IList<ScavengedLog> Scavenged { get; } = new List<ScavengedLog>();
 		public IList<ScavengedLog> Merged { get; } = new List<ScavengedLog>();
 		public IList<IndexScavengedLog> ScavengedIndices { get; } = new List<IndexScavengedLog>();
+
+		public void ScavengeStarted() {
+			Started = true;
+			StartedCallback?.Invoke(this, EventArgs.Empty);
+		}
 
 		public void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads) {
 			AlwaysKeepScavenged = alwaysKeepScavenged;
@@ -78,6 +85,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public void ScavengeCompleted(ScavengeResult result, string error, TimeSpan elapsed) {
 			Completed = true;
 			Result = result;
+			Error = error;
 			CompletedCallback?.Invoke(this, EventArgs.Empty);
 		}
 

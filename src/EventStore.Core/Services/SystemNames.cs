@@ -26,6 +26,7 @@ namespace EventStore.Core.Services {
 		public const string StatsStreamPrefix = "$stats";
 		public const string ScavengesStream = "$scavenges";
 		public const string EpochInformationStream = "$epoch-information";
+		public const string ScavengePointsStream = "$scavengePoints";
 
 		public static bool IsSystemStream(string streamId) {
 			return streamId.Length != 0 && streamId[0] == '$';
@@ -84,6 +85,7 @@ namespace EventStore.Core.Services {
 		public const string ScavengeIndexCompleted = "$scavengeIndexCompleted";
 		public const string EmptyEventType = "";
 		public const string EventTypeDefined = "$event-type";
+		public const string ScavengePoint = "$scavengePoint";
 
 		public static string StreamReferenceEventToStreamId(string eventType, ReadOnlyMemory<byte> data) {
 			string streamId = null;

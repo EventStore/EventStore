@@ -692,17 +692,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			if (prepare.Data.Length == 0 || prepare.Flags.HasNoneOf(PrepareFlags.IsJson))
 				return StreamMetadata.Empty;
 
-			try {
-				var metadata = StreamMetadata.FromJsonBytes(prepare.Data);
-				if (prepare.Version == LogRecordVersion.LogRecordV0 && metadata.TruncateBefore == int.MaxValue) {
-					metadata = new StreamMetadata(metadata.MaxCount, metadata.MaxAge, EventNumber.DeletedStream,
-						metadata.TempStream, metadata.CacheControl, metadata.Acl);
-				}
-
-				return metadata;
-			} catch (Exception) {
-				return StreamMetadata.Empty;
-			}
+			var metadata = StreamMetadata.TryFromJsonBytes(prepare.Version, prepare.Data);
+			return metadata;
 		}
 
 		private EventRecord CreateEventRecord(long version, IPrepareLogRecord<TStreamId> prepare, string streamName) {
