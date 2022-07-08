@@ -3,7 +3,11 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests {
 	public class DirectoryPerTest<T> : IAsyncLifetime {
-		protected DirectoryFixture<T> Fixture { get; private set; } = new DirectoryFixture<T>();
+		protected DirectoryFixture<T> Fixture { get; }
+
+		public DirectoryPerTest() {
+			Fixture = new DirectoryFixture<T>();
+		}
 
 		public async Task InitializeAsync() {
 			await Fixture.InitializeAsync();

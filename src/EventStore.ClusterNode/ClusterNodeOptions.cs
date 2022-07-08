@@ -316,6 +316,9 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.MaxAutoMergeIndexLevelDescr, Opts.DbGroup)]
 		public int MaxAutoMergeIndexLevel { get; set; }
 
+		[ArgDescription(Opts.ScavengeBackendCacheSizeDescr, Opts.DbGroup)]
+		public int ScavengeBackendCacheSize { get; set; }
+
 		[ArgDescription(Opts.ScavengeThrottlePercentDescr, Opts.DbGroup)]
 		public int ScavengeThrottlePercent { get; set; }
 
@@ -448,6 +451,7 @@ namespace EventStore.ClusterNode {
 			StreamInfoCacheCapacity = Opts.StreamInfoCacheCapacityDefault;
 
 			MaxAutoMergeIndexLevel = Opts.MaxAutoMergeIndexLevelDefault;
+			ScavengeBackendCacheSize = Opts.ScavengeBackendCacheSizeDefault;
 			ScavengeThrottlePercent = Opts.ScavengeThrottlePercentDefault;
 
 			WriteStatsToDb = Opts.WriteStatsToDbDefault;

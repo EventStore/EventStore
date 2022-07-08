@@ -433,7 +433,9 @@ namespace EventStore.Core.Util {
 			"During large Index Merge operations, writes may be slowed down. Set this to the maximum index file level for which automatic merges should happen.  Merging indexes above this level should be done manually.";
 
 		public static readonly int MaxAutoMergeIndexLevelDefault = int.MaxValue;
-
+		
+		public const string ScavengeBackendCacheSizeDescr = "The amount of memory to use for backend caching in bytes.";
+		public static readonly int ScavengeBackendCacheSizeDefault = 32 * 1024 * 1024;
 		public const string ScavengeThrottlePercentDescr =
 			"The average percentage (1-100) of time that scavenge will actively run for. " +
 			"When less than 100, scavenge will take rests to reduce load on the node.";
