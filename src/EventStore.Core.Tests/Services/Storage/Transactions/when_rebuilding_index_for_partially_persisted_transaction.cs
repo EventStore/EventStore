@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				() => new TFReaderLease(readers),
 				PTableVersions.IndexV2,
 				5,
-				maxSizeForMemory: MaxEntriesInMemTable);
+				MaxEntriesInMemTable);
 			ReadIndex = new ReadIndex(new NoopPublisher(),
 				readers,
 				TableIndex,
