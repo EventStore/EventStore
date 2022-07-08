@@ -26,5 +26,7 @@ namespace EventStore.Core.Util {
 		public const bool SkipIndexScanOnReadsDefault = false;
 
 		public const long StreamExistenceFilterSizeDefault = 256_000_000;
+
+		public static readonly int ScavengeBackendCacheSizeDefault = 32 * 1024 * 1024;
 	}
 }
