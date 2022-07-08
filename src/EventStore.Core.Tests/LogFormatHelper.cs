@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests {
 		public class V3{}
 	}
 
-	internal static class LogFormatHelper<TLogFormat, TStreamId> {
+	public static class LogFormatHelper<TLogFormat, TStreamId> {
 		public static bool IsV2 => typeof(TLogFormat) == typeof(LogFormat.V2);
 		public static bool IsV3 => typeof(TLogFormat) == typeof(LogFormat.V3);
 

@@ -61,6 +61,7 @@ namespace EventStore.Core.Index {
 		private long _commitCheckpoint = -1;
 		private long _prepareCheckpoint = -1;
 
+		// there are two background processes, scavenge and writing/merging ptables.
 		private volatile bool _backgroundRunning;
 		private readonly ManualResetEventSlim _backgroundRunningEvent = new ManualResetEventSlim(true);
 
@@ -415,13 +416,20 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
+		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) =>
+			Scavenge(shouldKeep: null, log: log, ct: ct);
+
+		public void Scavenge(
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
 			GetExclusiveBackgroundTask(ct);
 			var sw = Stopwatch.StartNew();
 
 			try {
 				Log.Information("Starting scavenge of TableIndex.");
-				ScavengeInternal(log, ct);
+				ScavengeInternal(shouldKeep, log, ct);
 			} finally {
 				// Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed. 
 				TFChunkReaderExistsAtOptimizer.Instance.DeOptimizeAll();
@@ -437,7 +445,11 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private void ScavengeInternal(IIndexScavengerLog log, CancellationToken ct) {
+		private void ScavengeInternal(
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
 			var toScavenge = _indexMap.InOrder().ToList();
 
 			foreach (var pTable in toScavenge) {
@@ -449,9 +461,11 @@ namespace EventStore.Core.Index {
 					using (var reader = _tfReaderFactory()) {
 						var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
+						Func<IndexEntry, bool> existsAt = entry => reader.ExistsAt(entry.Position);
 						var scavengeResult = _indexMap.Scavenge(pTable.Id, ct,
+							shouldKeep ?? existsAt,
 							(streamId, currentHash) => UpgradeHash(streamId, currentHash),
-							entry => reader.ExistsAt(entry.Position),
+							existsAt,
 							entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion,
 							_indexCacheDepth,
 							_skipIndexVerify,
@@ -541,6 +555,31 @@ namespace EventStore.Core.Index {
 				if (!swapped)
 					ptable.MarkForDestruction();
 				toPutOnDisk--;
+			}
+		}
+
+		public void Visit(Action<PTable> f) {
+			int counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					VisitInternal(f);
+					return;
+				} catch (FileBeingDeletedException) {
+					Log.Debug("File being deleted.");
+				} catch (MaybeCorruptIndexException) {
+					ForceIndexVerifyOnNextStartup();
+					throw;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		private void VisitInternal(Action<PTable> f) {
+			var map = _indexMap;
+			foreach (var table in map.InOrder()) {
+				f(table);
 			}
 		}
 
