@@ -374,8 +374,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					// the next position. Simply adding the record's length, suffix & prefix to "logicalPosition" won't
 					// work properly with scavenged chunks since the computed position may still be before the current
 					// record's position, which would cause us to read it again.
+					if (!BitConverter.IsLittleEndian)
+						throw new NotSupportedException();
+
 					const int logPositionOffset = 2;
-					//qq review: perhaps we should guard this with an endianness check, or at least comment about it
 					var recordLogPos = BitConverter.ToInt64(record, logPositionOffset);
 					long nextLogicalPos =
 						Chunk.ChunkHeader.GetLocalLogPosition(recordLogPos + length + 2 * sizeof(int));
