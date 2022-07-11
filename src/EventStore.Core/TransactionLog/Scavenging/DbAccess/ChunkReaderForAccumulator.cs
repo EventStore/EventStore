@@ -66,8 +66,13 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 				var result = chunk.TryReadClosestForwardRaw(localPos, _getBuffer);
 
-				if (!result.Success)
-					break; //qq review: or should this be an exception? otherwise we might need to release the buffer too
+				if (!result.Success) {
+					// there is no need to release the reusable buffer here since result.Success is false
+					// when attempting to read outside the bounds of a chunk and thus, the buffer will not
+					// have been acquired. in other words, whenever the buffer is acquired, either result.Success
+					// is true or an exception is thrown.
+					break;
+				}
 
 				switch (result.RecordType) {
 					case LogRecordType.Prepare:
