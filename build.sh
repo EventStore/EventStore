@@ -190,6 +190,15 @@ function buildEventStore {
     rm -rf bin/
     dotnet build -c $CONFIGURATION /p:Version=$VERSIONSTRING src/EventStore.sln || err
     revertVersionInfo
+
+    # Fix output for packaging, caused by using x64 RuntimeIdentifier
+    if [ "$OS" == "Linux" ]; then
+        mv ./bin/Release/EventStore.ClusterNode/net471/linux-x64/* ./bin/Release/EventStore.ClusterNode/net471/
+        rm -R ./bin/Release/EventStore.ClusterNode/net471/linux-x64
+    elif [ "$OS" == "MacOS" ]; then
+        mv ./bin/Release/EventStore.ClusterNode/net471/osx-x64/* ./bin/Release/EventStore.ClusterNode/net471/
+        rm -R ./bin/Release/EventStore.ClusterNode/net471/osx-x64
+    fi
 }
 
 function exitWithError {

@@ -44,6 +44,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return entries;
 		}
 
+		public IEnumerable<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			throw new NotImplementedException();
+		}
+
 		public void Initialize(long chaserCheckpoint)
 		{
 		}
@@ -55,6 +59,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		public void Scavenge(IIndexScavengerLog log, CancellationToken ct)
 		{
+			throw new NotImplementedException();
+		}
+
+		public void Scavenge(
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
 			throw new NotImplementedException();
 		}
 
@@ -72,8 +84,32 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 		}
 
+		public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetLatestEntry(string streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public bool TryGetOldestEntry(string streamId, out IndexEntry entry)
 		{
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(string streamId, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetPreviousEntry(string streamId, long beforeVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry) {
 			throw new NotImplementedException();
 		}
 

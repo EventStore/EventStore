@@ -74,6 +74,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _indexReader.ReadStreamEventsForward(streamId, fromEventNumber, maxCount);
 		}
 
+		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(string streamId, long fromEventNumber, int maxCount, long beforePosition) {
+			return _indexReader.ReadEventInfoForward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition);
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition) {
+			return _indexReader.ReadEventInfoForward_NoCollisions(stream, fromEventNumber, maxCount, beforePosition);
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(string streamId, long fromEventNumber, int maxCount,
+			long beforePosition) {
+			return _indexReader.ReadEventInfoBackward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition);
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, string> getStreamId,
+			long fromEventNumber, int maxCount, long beforePosition) {
+			return _indexReader.ReadEventInfoBackward_NoCollisions(stream, getStreamId, fromEventNumber, maxCount, beforePosition);
+		}
+
 		IndexReadStreamResult IReadIndex.ReadStreamEventsBackward(string streamId, long fromEventNumber, int maxCount) {
 			return _indexReader.ReadStreamEventsBackward(streamId, fromEventNumber, maxCount);
 		}
@@ -84,6 +102,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		long IReadIndex.GetStreamLastEventNumber(string streamId) {
 			return _indexReader.GetStreamLastEventNumber(streamId);
+		}
+
+		public long GetStreamLastEventNumber_KnownCollisions(string streamId, long beforePosition) {
+			return _indexReader.GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition);
+		}
+
+		public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, string> getStreamId, long beforePosition) {
+			return _indexReader.GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition);
 		}
 
 		StreamMetadata IReadIndex.GetStreamMetadata(string streamId) {

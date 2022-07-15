@@ -50,6 +50,8 @@ namespace EventStore.Core.Cluster.Settings {
 		public readonly bool DisableFirstLevelHttpAuthorization;
 		public readonly bool DisableScavengeMerging;
 		public readonly int ScavengeHistoryMaxAge;
+		public readonly int ScavengeBackendCacheSize;
+		public readonly int ScavengeThrottlePercent;
 		public bool AdminOnPublic;
 		public bool StatsOnPublic;
 		public bool GossipOnPublic;
@@ -119,6 +121,8 @@ namespace EventStore.Core.Cluster.Settings {
 			IAuthenticationProviderFactory authenticationProviderFactory,
 			bool disableScavengeMerging,
 			int scavengeHistoryMaxAge,
+			int scavengeBackendCacheSize,
+			int scavengeThrottlePercent,
 			bool adminOnPublic,
 			bool statsOnPublic,
 			bool gossipOnPublic,
@@ -175,6 +179,10 @@ namespace EventStore.Core.Cluster.Settings {
 			Ensure.Positive(commitAckCount, "commitAckCount");
 			Ensure.Positive(initializationThreads, "initializationThreads");
 			Ensure.NotNull(gossipAdvertiseInfo, "gossipAdvertiseInfo");
+			Ensure.Positive(scavengeBackendCacheSize, "scavengeBackendCacheSize");
+
+			if (scavengeThrottlePercent <= 0 || scavengeThrottlePercent > 100)
+				throw new ArgumentException($"ScavengeThrottlePercent must be in the range 1-100 inclusive. Provided value was {scavengeThrottlePercent}");
 
 			if (discoverViaDns && string.IsNullOrWhiteSpace(clusterDns))
 				throw new ArgumentException(
@@ -226,6 +234,8 @@ namespace EventStore.Core.Cluster.Settings {
 			NodePriority = nodePriority;
 			DisableScavengeMerging = disableScavengeMerging;
 			ScavengeHistoryMaxAge = scavengeHistoryMaxAge;
+			ScavengeBackendCacheSize = scavengeBackendCacheSize;
+			ScavengeThrottlePercent = scavengeThrottlePercent;
 			AdminOnPublic = adminOnPublic;
 			StatsOnPublic = statsOnPublic;
 			GossipOnPublic = gossipOnPublic;

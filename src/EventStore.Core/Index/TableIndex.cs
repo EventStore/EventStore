@@ -51,6 +51,7 @@ namespace EventStore.Core.Index {
 		private long _commitCheckpoint = -1;
 		private long _prepareCheckpoint = -1;
 
+		// there are two background processes, scavenge and writing/merging ptables.
 		private volatile bool _backgroundRunning;
 		private readonly ManualResetEventSlim _backgroundRunningEvent = new ManualResetEventSlim(true);
 
@@ -350,19 +351,26 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		internal void WaitForBackgroundTasks() {
+		public void WaitForBackgroundTasks() {
 			if (!_backgroundRunningEvent.Wait(7000)) {
 				throw new TimeoutException("Waiting for background tasks took too long.");
 			}
 		}
 
-		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
+		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) =>
+			Scavenge(shouldKeep: null, log: log, ct: ct);
+
+		public void Scavenge(
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
 			GetExclusiveBackgroundTask(ct);
 			var sw = Stopwatch.StartNew();
 
 			try {
 				Log.Info("Starting scavenge of TableIndex.");
-				ScavengeInternal(log, ct);
+				ScavengeInternal(shouldKeep, log, ct);
 			} finally {
 				// Since scavenging indexes is the only place the ExistsAt optimization makes sense (and takes up a lot of memory), we can clear it after an index scavenge has completed. 
 				TFChunkReaderExistsAtOptimizer.Instance.DeOptimizeAll();
@@ -378,7 +386,11 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private void ScavengeInternal(IIndexScavengerLog log, CancellationToken ct) {
+		private void ScavengeInternal(
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
 			var toScavenge = _indexMap.InOrder().ToList();
 
 			foreach (var pTable in toScavenge) {
@@ -390,9 +402,11 @@ namespace EventStore.Core.Index {
 					using (var reader = _tfReaderFactory()) {
 						var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
+						Func<IndexEntry, bool> existsAt = entry => reader.ExistsAt(entry.Position);
 						var scavengeResult = _indexMap.Scavenge(pTable.Id, ct,
+							shouldKeep ?? existsAt,
 							(streamId, currentHash) => UpgradeHash(streamId, currentHash),
-							entry => reader.ExistsAt(entry.Position),
+							existsAt,
 							entry => ReadEntry(reader, entry.Position), _fileNameProvider, _ptableVersion,
 							_indexCacheDepth, _skipIndexVerify);
 
@@ -477,6 +491,31 @@ namespace EventStore.Core.Index {
 			}
 		}
 
+		public void Visit(Action<PTable> f) {
+			int counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					VisitInternal(f);
+					return;
+				} catch (FileBeingDeletedException) {
+					Log.Trace("File being deleted.");
+				} catch (MaybeCorruptIndexException e) {
+					ForceIndexVerifyOnNextStartup();
+					throw e;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		private void VisitInternal(Action<PTable> f) {
+			var map = _indexMap;
+			foreach (var table in map.InOrder()) {
+				f(table);
+			}
+		}
+
 		public bool TryGetOneValue(string streamId, long version, out long position) {
 			ulong stream = CreateHash(streamId);
 			int counter = 0;
@@ -536,7 +575,7 @@ namespace EventStore.Core.Index {
 
 		private bool TryGetLatestEntryInternal(ulong stream, out IndexEntry entry) {
 			var awaiting = _awaitingMemTables;
-			
+
 			foreach (var t in awaiting) {
 				if(t.IsFromIndexMap) continue;
 				if (t.Table.TryGetLatestEntry(stream, out entry))
@@ -546,6 +585,48 @@ namespace EventStore.Core.Index {
 			var map = _indexMap;
 			foreach (var table in map.InOrder()) {
 				if (table.TryGetLatestEntry(stream, out entry))
+					return true;
+			}
+
+			entry = InvalidIndexEntry;
+			return false;
+		}
+
+		public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			var counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					return TryGetLatestEntryInternal(stream, beforePosition, isForThisStream, out entry);
+				} catch (FileBeingDeletedException) {
+					Log.Trace("File being deleted.");
+				} catch (MaybeCorruptIndexException e) {
+					ForceIndexVerifyOnNextStartup();
+					throw e;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		public bool TryGetLatestEntry(string streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			ulong stream = CreateHash(streamId);
+			return TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry);
+		}
+
+		private bool TryGetLatestEntryInternal(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			var awaiting = _awaitingMemTables;
+
+			foreach (var t in awaiting) {
+				if (t.IsFromIndexMap)
+					continue;
+				if (t.Table.TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry))
+					return true;
+			}
+
+			var map = _indexMap;
+			foreach (var table in map.InOrder()) {
+				if (table.TryGetLatestEntry(stream, beforePosition, isForThisStream, out entry))
 					return true;
 			}
 
@@ -589,14 +670,96 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 
-		public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion,
-			int? limit = null) {
-			ulong hash = CreateHash(streamId);
+		public bool TryGetNextEntry(string streamId, long afterVersion, out IndexEntry entry) {
+			ulong stream = CreateHash(streamId);
+			return TryGetNextEntry(stream, afterVersion, out entry);
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
 			var counter = 0;
 			while (counter < 5) {
 				counter++;
 				try {
-					return GetRangeInternal(hash, startVersion, endVersion, limit);
+					return TryGetNextEntryInternal(stream, afterVersion, out entry);
+				} catch (FileBeingDeletedException) {
+					Log.Trace("File being deleted.");
+				} catch (MaybeCorruptIndexException e) {
+					ForceIndexVerifyOnNextStartup();
+					throw e;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		private bool TryGetNextEntryInternal(ulong stream, long afterVersion, out IndexEntry entry) {
+			var map = _indexMap;
+			foreach (var table in map.InReverseOrder()) {
+				if (table.TryGetNextEntry(stream, afterVersion, out entry))
+					return true;
+			}
+
+			var awaiting = _awaitingMemTables;
+			for (var index = awaiting.Count - 1; index >= 0; index--) {
+				if(awaiting[index].IsFromIndexMap) continue;
+				if (awaiting[index].Table.TryGetNextEntry(stream, afterVersion, out entry))
+					return true;
+			}
+
+			entry = InvalidIndexEntry;
+			return false;
+		}
+
+		public bool TryGetPreviousEntry(string streamId, long beforeVersion, out IndexEntry entry) {
+			ulong stream = CreateHash(streamId);
+			return TryGetPreviousEntry(stream, beforeVersion, out entry);
+		}
+
+		public bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry) {
+			var counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					return TryGetPreviousEntryInternal(stream, beforeVersion, out entry);
+				} catch (FileBeingDeletedException) {
+					Log.Trace("File being deleted.");
+				} catch (MaybeCorruptIndexException e) {
+					ForceIndexVerifyOnNextStartup();
+					throw e;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		private bool TryGetPreviousEntryInternal(ulong stream, long beforeVersion, out IndexEntry entry) {
+			var awaiting = _awaitingMemTables;
+
+			foreach (var t in awaiting) {
+				if(t.IsFromIndexMap) continue;
+				if (t.Table.TryGetPreviousEntry(stream, beforeVersion, out entry))
+					return true;
+			}
+
+			var map = _indexMap;
+			foreach (var table in map.InOrder()) {
+				if (table.TryGetPreviousEntry(stream, beforeVersion, out entry))
+					return true;
+			}
+
+			entry = InvalidIndexEntry;
+			return false;
+		}
+
+		public IEnumerable<IndexEntry> GetRange(string streamId, long startVersion, long endVersion,
+			int? limit = null) => GetRange(CreateHash(streamId), startVersion, endVersion, limit);
+
+		public IEnumerable<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			var counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					return GetRangeInternal(stream, startVersion, endVersion, limit);
 				} catch (FileBeingDeletedException) {
 					Log.Trace("File being deleted.");
 				} catch (MaybeCorruptIndexException e) {
@@ -641,8 +804,9 @@ namespace EventStore.Core.Index {
 				var winner = candidates[maxIdx];
 
 				var best = winner.Current;
-				if (first || ((last.Stream != best.Stream) && (last.Version != best.Version)) ||
-				    last.Position != best.Position) {
+				if (first ||
+					((last.Stream != best.Stream) && (last.Version != best.Version)) ||
+					last.Position != best.Position) {
 					last = best;
 					sortedCandidates.Add(best);
 					first = false;
@@ -656,7 +820,11 @@ namespace EventStore.Core.Index {
 		}
 
 		private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators) {
-			var max = new IndexEntry(ulong.MinValue, 0, long.MinValue);
+			var max = new IndexEntry(
+				stream: ulong.MinValue,
+				version: 0,
+				position: long.MinValue);
+
 			int idx = 0;
 			for (int i = 0; i < enumerators.Count; i++) {
 				var cur = enumerators[i].Current;
