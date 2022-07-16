@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - fixed Incorrect version number in CI build [EventStore#3430](https://github.com/EventStore/EventStore/pull/3430)
 - Reads operations in IODispatcher are no longer tracked if they don't have a timeoutAction [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 - Sort the dump of the configuration settings alphabetically [EventStore#3475](https://github.com/EventStore/EventStore/pull/3475)
+- Update UI for 22.6.0 [EventStore#3519](https://github.com/EventStore/EventStore/pull/3519)
 
 ### Fixed
 - Update the epoch checkpoint with the proper position before going offline for truncation [EventStore#3414](https://github.com/EventStore/EventStore/pull/3414)
