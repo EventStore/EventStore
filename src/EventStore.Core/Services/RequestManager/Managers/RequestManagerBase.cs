@@ -143,8 +143,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			}
 		}
 		protected virtual void Committed() {
-			if (Interlocked.Read(ref _complete) == 1) { return; }
-			Interlocked.Exchange(ref _complete, 1);
+			if (Interlocked.CompareExchange(ref _complete, 1, 0) == 1) { return; }
 			Result = OperationResult.Success;
 			_clientResponseEnvelope.ReplyWith(ClientSuccessMsg);
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, true));
@@ -186,9 +185,8 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 		}
 
 		private void CompleteFailedRequest(OperationResult result, string error, long currentVersion = -1) {
-			if (Interlocked.Read(ref _complete) == 1) { return; }
 			Debug.Assert(result != OperationResult.Success);
-			Interlocked.Exchange(ref _complete, 1);
+			if (Interlocked.CompareExchange(ref _complete, 1, 0) == 1) { return; }
 			Result = result;
 			FailureMessage = error;
 			Publisher.Publish(new StorageMessage.RequestCompleted(InternalCorrId, false, currentVersion));

@@ -162,8 +162,11 @@ namespace EventStore.Core.Services.RequestManager {
 				_currentTimedRequests.Remove(message.CorrelationId);
 			}
 
-			if (!_currentRequests.Remove(message.CorrelationId))
-				throw new InvalidOperationException("Should never complete request twice.");
+			if (!_currentRequests.Remove(message.CorrelationId)) {
+				// noop. RequestManager guarantees not complete twice now.
+				// and we will legitimately get in here when StateChangeMessage removes
+				// entries from _currentRequests
+			}
 		}
 		
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo message) => _commitSource.Handle(message);
