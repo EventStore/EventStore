@@ -370,6 +370,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ReplicationTrackingMessage.WriterCheckpointFlushed>(replicationTracker);
 			_mainBus.Subscribe<ReplicationTrackingMessage.LeaderReplicatedTo>(replicationTracker);
 			_mainBus.Subscribe<SystemMessage.VNodeConnectionLost>(replicationTracker);
+			_mainBus.Subscribe<ReplicationMessage.ReplicaSubscribed>(replicationTracker);
 
 			var indexCommitterService = new IndexCommitterService(readIndex.IndexCommitter, _mainQueue,
 				db.Config.WriterCheckpoint, db.Config.ReplicationCheckpoint, vNodeSettings.CommitAckCount, tableIndex, _queueStatsManager);

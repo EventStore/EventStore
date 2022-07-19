@@ -20,7 +20,8 @@ namespace EventStore.Core.Services.Replication {
 		IHandle<ReplicationTrackingMessage.ReplicaWriteAck>,
 		IHandle<ReplicationTrackingMessage.WriterCheckpointFlushed>,
 		IHandle<ReplicationTrackingMessage.LeaderReplicatedTo>,
-		IHandle<SystemMessage.VNodeConnectionLost> {
+		IHandle<SystemMessage.VNodeConnectionLost>,
+		IHandle<ReplicationMessage.ReplicaSubscribed> {
 		private readonly ILogger _log = Serilog.Log.ForContext<ReplicationTrackingService>();		private readonly IPublisher _publisher;
 		private readonly ICheckpoint _replicationCheckpoint;
 		private readonly ICheckpoint _writerCheckpoint;
@@ -87,15 +88,12 @@ namespace EventStore.Core.Services.Replication {
 				_tcs.TrySetException(exc);
 				Application.Exit(ExitCode.Error,
 					$"Error in {nameof(ReplicationTrackingService)}. Terminating...\nError: " + exc.Message);
-				//TODO(clc): is this right, are we waiting for someone to clean us up???
-				while (!_stop) {
-					Thread.Sleep(100);
-				}
 			}
 			_publisher.Publish(new SystemMessage.ServiceShutdown(nameof(ReplicationTrackingService)));
 		}
 
 		public void Handle(ReplicationTrackingMessage.LeaderReplicatedTo message) {
+			if (_stop) return;
 			if (_state != VNodeState.Leader && _state != VNodeState.PreLeader && message.LogPosition > _replicationCheckpoint.Read()) {
 				_replicationCheckpoint.Write(message.LogPosition);
 				_replicationCheckpoint.Flush();
@@ -169,6 +167,12 @@ namespace EventStore.Core.Services.Replication {
 			Start();
 		}
 
-
+		public void Handle(ReplicationMessage.ReplicaSubscribed message) {
+			if (message.SubscriptionPosition < _writerCheckpoint.ReadNonFlushed()) {
+				//Going offline for truncation
+				_log.Information("Offline truncation will happen, shutting down {service}",nameof(ReplicationTrackingService));
+				Stop();
+			}
+		}
 	}
 }
