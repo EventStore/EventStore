@@ -36,14 +36,17 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		protected Guid ReplicaId = Guid.NewGuid();
 		protected Guid ReplicaId2 = Guid.NewGuid();
 		protected Guid ReadOnlyReplicaId = Guid.NewGuid();
+		protected Guid ReplicaIdV0 = Guid.NewGuid();
 
 		protected Guid ReplicaSubscriptionId;
 		protected Guid ReplicaSubscriptionId2;
 		protected Guid ReadOnlyReplicaSubscriptionId;
+		protected Guid ReplicaSubscriptionIdV0;
 
 		protected TcpConnectionManager ReplicaManager1;
 		protected TcpConnectionManager ReplicaManager2;
 		protected TcpConnectionManager ReadOnlyReplicaManager;
+		protected TcpConnectionManager ReplicaManagerV0;
 
 		protected TFChunkDbConfig DbConfig;
 
@@ -70,10 +73,10 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.SystemStart());
 			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
 
-			ReplicaSubscriptionId = AddSubscription(ReplicaId, true, out ReplicaManager1);
-			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, true, out ReplicaManager2);
-			ReadOnlyReplicaSubscriptionId = AddSubscription(ReadOnlyReplicaId, false, out ReadOnlyReplicaManager);
-
+			ReplicaSubscriptionId = AddSubscription(ReplicaId, ReplicationSubscriptionVersions.V1, true, out ReplicaManager1);
+			ReplicaSubscriptionId2 = AddSubscription(ReplicaId2, ReplicationSubscriptionVersions.V1, true, out ReplicaManager2);
+			ReadOnlyReplicaSubscriptionId = AddSubscription(ReadOnlyReplicaId, ReplicationSubscriptionVersions.V1, false, out ReadOnlyReplicaManager);
+			ReplicaSubscriptionIdV0 = AddSubscription(ReplicaIdV0, ReplicationSubscriptionVersions.V0, true, out ReplicaManagerV0);
 
 			When();
 		}
@@ -84,7 +87,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Service.Handle(new SystemMessage.BecomeShuttingDown(Guid.NewGuid(), true, true));
 		}
 
-		private Guid AddSubscription(Guid replicaId, bool isPromotable, out TcpConnectionManager manager) {
+		private Guid AddSubscription(Guid replicaId, int version, bool isPromotable, out TcpConnectionManager manager) {
 			var tcpConn = new DummyTcpConnection() { ConnectionId = replicaId };
 
 			manager = new TcpConnectionManager(
@@ -100,6 +103,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				Guid.NewGuid(),
 				new NoopEnvelope(),
 				manager,
+				version,
 				0,
 				Guid.NewGuid(),
 				new Epoch[0],

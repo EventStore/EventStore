@@ -57,6 +57,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			return new ReplicationMessage.ReplicaSubscriptionRequest(package.CorrelationId,
 				envelope,
 				connection,
+				dto.Version,
 				dto.LogPosition,
 				new Guid(dto.ChunkId),
 				lastEpochs,
@@ -76,7 +77,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				msg.ReplicaEndPoint.GetPort(),
 				msg.LeaderId.ToByteArray(),
 				msg.SubscriptionId.ToByteArray(),
-				msg.IsPromotable);
+				msg.IsPromotable,
+				msg.Version);
 			return new TcpPackage(TcpCommand.SubscribeReplica, Guid.NewGuid(), dto.Serialize());
 		}
 
@@ -84,12 +86,14 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			IEnvelope envelope, TcpConnectionManager connection) {
 			var dto = package.Data.Deserialize<ReplicationMessageDto.ReplicaLogPositionAck>();
 			return new ReplicationMessage.ReplicaLogPositionAck(new Guid(dto.SubscriptionId),
-				dto.ReplicationLogPosition);
+				dto.ReplicationLogPosition,
+				dto.WriterLogPosition);
 		}
 
 		private TcpPackage WrapAckLogPosition(ReplicationMessage.AckLogPosition msg) {
 			var dto = new ReplicationMessageDto.ReplicaLogPositionAck(msg.SubscriptionId.ToByteArray(),
-				msg.ReplicationLogPosition);
+				msg.ReplicationLogPosition,
+				msg.WriterLogPosition);
 			return new TcpPackage(TcpCommand.ReplicaLogPositionAck, Guid.NewGuid(), dto.Serialize());
 		}
 
