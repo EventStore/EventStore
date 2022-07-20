@@ -265,7 +265,7 @@ namespace EventStore.Core {
 			[Description("The trusted root certificate subject name.")]
 			public string TrustedRootCertificateSubjectName { get; init; } = string.Empty;
 
-			[Description("The trusted root certificate fingerprint/thumbrint.")]
+			[Description("The trusted root certificate fingerprint/thumbprint.")]
 			public string TrustedRootCertificateThumbprint { get; init; } = string.Empty;
 
 			internal static CertificateStoreOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
