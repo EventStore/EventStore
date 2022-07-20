@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Removed aggregate exception when closing a call to the stats endpoint [EventStore#3495](https://github.com/EventStore/EventStore/pull/3495)
 - Ensure no pending writes can be incorrectly acked or published when going offline for truncation.  [EventStore#3500](https://github.com/EventStore/EventStore/pull/3500)
 - metadata values need to be raw json format [EventStore#3499](https://github.com/EventStore/EventStore/pull/3499)
+- Removed unnecessary `Should never complete request twice` error [EventStore#3522](https://github.com/EventStore/EventStore/pull/3522)
 
 ### Added
 - More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
