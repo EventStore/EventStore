@@ -104,6 +104,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				Guid.NewGuid(),
 				new NoopEnvelope(),
 				manager,
+				ReplicationSubscriptionVersions.V1,
 				logPosition,
 				Guid.NewGuid(),
 				epochs,

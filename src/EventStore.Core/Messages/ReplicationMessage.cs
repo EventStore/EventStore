@@ -18,6 +18,7 @@ namespace EventStore.Core.Messages {
 				get { return TypeId; }
 			}
 
+			public readonly int Version;
 			public readonly long LogPosition;
 			public readonly Guid ChunkId;
 			public readonly EpochRecord[] LastEpochs;
@@ -26,15 +27,20 @@ namespace EventStore.Core.Messages {
 			public readonly Guid SubscriptionId;
 			public readonly bool IsPromotable;
 
-			public SubscribeReplica(long logPosition, Guid chunkId, EpochRecord[] lastEpochs,
+			public SubscribeReplica(
+				int version,
+				long logPosition, Guid chunkId, EpochRecord[] lastEpochs,
 				EndPoint replicaEndPoint,
 				Guid leaderId, Guid subscriptionId, bool isPromotable) {
+
+				Ensure.Nonnegative(version, "version");
 				Ensure.Nonnegative(logPosition, "logPosition");
 				Ensure.NotNull(lastEpochs, "lastEpochs");
 				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				Ensure.NotNull(replicaEndPoint, "replicaEndPoint");
 
+				Version = version;
 				LogPosition = logPosition;
 				ChunkId = chunkId;
 				LastEpochs = lastEpochs;
@@ -53,12 +59,25 @@ namespace EventStore.Core.Messages {
 			}
 
 			public readonly Guid SubscriptionId;
+
+			// where the replication subscription is up to.
+			// used for managing the subscription
 			public readonly long ReplicationLogPosition;
 
-			public AckLogPosition(Guid subscriptionId, long replicationLogPosition) {
+			// where we are up to writing data to the log.
+			// can be behind ReplicationLogPosition.
+			// used for determining what has been replicated
+			public readonly long WriterLogPosition;
+
+			public AckLogPosition(
+				Guid subscriptionId,
+				long replicationLogPosition,
+				long writerLogPosition) {
+
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 				SubscriptionId = subscriptionId;
 				ReplicationLogPosition = replicationLogPosition;
+				WriterLogPosition = writerLogPosition;
 			}
 		}
 
@@ -71,12 +90,18 @@ namespace EventStore.Core.Messages {
 
 			public readonly Guid SubscriptionId;
 			public readonly long ReplicationLogPosition;
+			public readonly long WriterLogPosition;
 
-			public ReplicaLogPositionAck(Guid subscriptionId, long replicationLogPosition) {
+			public ReplicaLogPositionAck(
+				Guid subscriptionId,
+				long replicationLogPosition,
+				long writerLogPosition) {
+
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 
 				SubscriptionId = subscriptionId;
 				ReplicationLogPosition = replicationLogPosition;
+				WriterLogPosition = writerLogPosition;
 			}
 		}
 
@@ -91,6 +116,7 @@ namespace EventStore.Core.Messages {
 			public readonly IEnvelope Envelope;
 			public readonly TcpConnectionManager Connection;
 
+			public readonly int Version;
 			public readonly long LogPosition;
 			public readonly Guid ChunkId;
 			public readonly Epoch[] LastEpochs;
@@ -102,6 +128,7 @@ namespace EventStore.Core.Messages {
 			public ReplicaSubscriptionRequest(Guid correlationId,
 				IEnvelope envelope,
 				TcpConnectionManager connection,
+				int version,
 				long logPosition,
 				Guid chunkId,
 				Epoch[] lastEpochs,
@@ -112,12 +139,14 @@ namespace EventStore.Core.Messages {
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
 				Ensure.NotNull(connection, "connection");
+				Ensure.Nonnegative(version, "version");
 				Ensure.Nonnegative(logPosition, "logPosition");
 				Ensure.NotNull(lastEpochs, "lastEpochs");
 				Ensure.NotNull(replicaEndPoint, "ReplicaEndPoint");
 				Ensure.NotEmptyGuid(leaderId, "leaderId");
 				Ensure.NotEmptyGuid(subscriptionId, "subscriptionId");
 
+				Version = version;
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				Connection = connection;

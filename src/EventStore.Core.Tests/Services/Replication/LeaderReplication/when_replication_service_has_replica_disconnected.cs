@@ -26,7 +26,8 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		[Test]
 		public void post_disconnect_replica_Log_written_to_should_not_be_published() {
 			AssertEx.IsOrBecomesTrue(() => ReplicaLostMessages.Count == 1, msg: "ReplicaLost msg not received");
-			Service.Handle(new ReplicationMessage.ReplicaLogPositionAck(ReplicaId, DbConfig.WriterCheckpoint.Read() + 200));
+			var replicationLogPosition = DbConfig.WriterCheckpoint.Read() + 200;
+			Service.Handle(new ReplicationMessage.ReplicaLogPositionAck(ReplicaId, replicationLogPosition, replicationLogPosition));
 			
 			Assert.True(ReplicaWriteAcks.Count == 0, $"Got unexpected ReplicaLogAck Message");
 		}

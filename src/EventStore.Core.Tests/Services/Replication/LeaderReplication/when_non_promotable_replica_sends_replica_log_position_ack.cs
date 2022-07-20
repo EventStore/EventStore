@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		
 		public override void When() {
 			_logPosition = 4000;
-			Service.Handle(new ReplicationMessage.ReplicaLogPositionAck(ReadOnlyReplicaId, _logPosition));
+			Service.Handle(new ReplicationMessage.ReplicaLogPositionAck(ReadOnlyReplicaId, _logPosition, _logPosition));
 		}
 
 		[Test]

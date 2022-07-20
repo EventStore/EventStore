@@ -130,7 +130,10 @@ namespace EventStore.Core.Services {
 
 			// subscription position == writer checkpoint
 			// everything is ok
-			Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
+			Bus.Publish(new ReplicationMessage.AckLogPosition(
+				subscriptionId: _subscriptionId,
+				replicationLogPosition: _ackedSubscriptionPos,
+				writerLogPosition: writerCheck));
 		}
 
 		private bool AreAnyCommittedRecordsTruncatedWithLastEpoch(long subscriptionPosition, EpochRecord lastEpoch,
@@ -165,7 +168,10 @@ namespace EventStore.Core.Services {
 
 			_subscriptionPos = message.ChunkHeader.ChunkStartPosition;
 			_ackedSubscriptionPos = _subscriptionPos;
-			Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
+			Bus.Publish(new ReplicationMessage.AckLogPosition(
+				subscriptionId: _subscriptionId,
+				replicationLogPosition: _ackedSubscriptionPos,
+				writerLogPosition: Writer.Checkpoint.ReadNonFlushed()));
 		}
 
 		public void Handle(ReplicationMessage.RawChunkBulk message) {
@@ -213,7 +219,10 @@ namespace EventStore.Core.Services {
 
 			if (message.CompleteChunk || _subscriptionPos > _ackedSubscriptionPos) {
 				_ackedSubscriptionPos = _subscriptionPos;
-				Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
+				Bus.Publish(new ReplicationMessage.AckLogPosition(
+					subscriptionId: _subscriptionId,
+					replicationLogPosition: _ackedSubscriptionPos,
+					writerLogPosition: Writer.Checkpoint.ReadNonFlushed()));
 			}
 		}
 
@@ -268,7 +277,11 @@ namespace EventStore.Core.Services {
 
 			if (message.CompleteChunk || _subscriptionPos > _ackedSubscriptionPos) {
 				_ackedSubscriptionPos = _subscriptionPos;
-				Bus.Publish(new ReplicationMessage.AckLogPosition(_subscriptionId, _ackedSubscriptionPos));
+				Bus.Publish(new ReplicationMessage.AckLogPosition(
+					subscriptionId: _subscriptionId,
+					replicationLogPosition: _ackedSubscriptionPos,
+					// we leave it up to the Flush call above whether to truly flush or not
+					writerLogPosition: Writer.Checkpoint.ReadNonFlushed()));
 			}
 		}
 
