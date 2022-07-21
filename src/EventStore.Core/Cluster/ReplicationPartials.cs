@@ -24,7 +24,7 @@ namespace EventStore.Cluster {
 	}
 	partial class SubscribeReplica {
 		public SubscribeReplica(long logPosition, byte[] chunkId, Epoch[] lastEpochs, byte[] ip, int port,
-			byte[] leaderId, byte[] subscriptionId, bool isPromotable) {
+			byte[] leaderId, byte[] subscriptionId, bool isPromotable, int version) {
 			LogPosition = logPosition;
 			ChunkId = ByteString.CopyFrom(chunkId);
 			LastEpochs.AddRange(lastEpochs);
@@ -34,6 +34,7 @@ namespace EventStore.Cluster {
 			LeaderId = ByteString.CopyFrom(leaderId);
 			SubscriptionId = ByteString.CopyFrom(subscriptionId);
 			IsPromotable = isPromotable;
+			Version = version;
 		}
 	}
 
@@ -59,9 +60,14 @@ namespace EventStore.Cluster {
 	}
 
 	partial class ReplicaLogPositionAck {
-		public ReplicaLogPositionAck(byte[] subscriptionId, long replicationLogPosition) {
+		public ReplicaLogPositionAck(
+			byte[] subscriptionId,
+			long replicationLogPosition,
+			long writerLogPosition) {
+
 			SubscriptionId = ByteString.CopyFrom(subscriptionId);
 			ReplicationLogPosition = replicationLogPosition;
+			WriterLogPosition = writerLogPosition;
 		}
 	}
 

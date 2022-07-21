@@ -2074,6 +2074,11 @@
                 "id": 8,
                 "name": "is_promotable",
                 "type": "bool"
+              },
+              {
+                "id": 9,
+                "name": "version",
+                "type": "int32"
               }
             ]
           },
@@ -2123,6 +2128,11 @@
               {
                 "id": 2,
                 "name": "replication_log_position",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "writer_log_position",
                 "type": "int64"
               }
             ]
