@@ -171,6 +171,7 @@ message SubscribeReplica{
 	bytes leader_id = 6;
 	bytes subscription_id = 7;
 	bool is_promotable = 8;
+	int32 version = 9;
 }
 
 message ReplicaSubscriptionRetry{
@@ -187,6 +188,7 @@ message ReplicaSubscribed{
 message ReplicaLogPositionAck{
 	bytes subscription_id = 1;
 	int64 replication_log_position = 2;
+	int64 writer_log_position = 3;
 }
 
 message CreateChunk{

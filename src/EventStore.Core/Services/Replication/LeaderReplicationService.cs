@@ -23,6 +23,14 @@ using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Replication {
+	public static class ReplicationSubscriptionVersions {
+		// original
+		public const int V0 = 0;
+
+		// explicit writer checkpoint in acks
+		public const int V1 = 1;
+	}
+
 	public class LeaderReplicationService : IMonitoredQueue,
 		IHandle<SystemMessage.SystemStart>,
 		IHandle<SystemMessage.StateChangeMessage>,
@@ -154,6 +162,7 @@ namespace EventStore.Core.Services.Replication {
 			}
 
 			var subscription = new ReplicaSubscription(_tcpSendPublisher,
+				message.Version,
 				message.Connection,
 				message.SubscriptionId,
 				message.ReplicaEndPoint,
@@ -189,7 +198,10 @@ namespace EventStore.Core.Services.Replication {
 			if (_subscriptions.TryGetValue(message.SubscriptionId, out var subscription)) {
 				Interlocked.Exchange(ref subscription.AckedLogPosition, message.ReplicationLogPosition);
 				if (subscription.IsPromotable) {
-					_publisher.Publish(new ReplicationTrackingMessage.ReplicaWriteAck(message.SubscriptionId,message.ReplicationLogPosition));
+					var replicatedToLogPosition = subscription.Version == ReplicationSubscriptionVersions.V0
+						? message.ReplicationLogPosition
+						: message.WriterLogPosition;
+					_publisher.Publish(new ReplicationTrackingMessage.ReplicaWriteAck(message.SubscriptionId, replicatedToLogPosition));
 				}
 			}
 		}
@@ -219,8 +231,8 @@ namespace EventStore.Core.Services.Replication {
 			try {
 				var epochs = lastEpochs ?? new Epoch[0];
 				Log.Information(
-					"SUBSCRIBE REQUEST from [{replicaEndPoint},C:{connectionId:B},S:{subscriptionId:B},{logPosition}(0x{logPosition:X}),{epochs}]...",
-					replica.ReplicaEndPoint, replica.ConnectionId, replica.SubscriptionId, logPosition, logPosition,
+					"SUBSCRIBE REQUEST from [{replicaEndPoint},V:{version},C:{connectionId:B},S:{subscriptionId:B},{logPosition}(0x{logPosition:X}),{epochs}]...",
+					replica.ReplicaEndPoint, replica.Version, replica.ConnectionId, replica.SubscriptionId, logPosition, logPosition,
 					string.Join(", ", epochs.Select(x => EpochRecordExtensions.AsString((Epoch)x))));
 
 				var epochCorrectedLogPos =
@@ -705,6 +717,7 @@ namespace EventStore.Core.Services.Replication {
 				get { return _connection.IsClosed; }
 			}
 
+			public readonly int Version;
 			public readonly bool IsPromotable;
 			public readonly EndPoint ReplicaEndPoint;
 			public readonly Guid SubscriptionId;
@@ -723,9 +736,12 @@ namespace EventStore.Core.Services.Replication {
 			private readonly IPublisher _tcpSendPublisher;
 			private readonly TcpConnectionManager _connection;
 
-			public ReplicaSubscription(IPublisher tcpSendPublisher, TcpConnectionManager connection,
+			public ReplicaSubscription(IPublisher tcpSendPublisher,
+				int version,
+				TcpConnectionManager connection,
 				Guid subscriptionId, EndPoint replicaEndPoint, bool isPromotable) {
 				_tcpSendPublisher = tcpSendPublisher;
+				Version = version;
 				_connection = connection;
 				SubscriptionId = subscriptionId;
 				ReplicaEndPoint = replicaEndPoint;
