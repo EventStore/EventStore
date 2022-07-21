@@ -67,11 +67,13 @@ namespace EventStore.Core.Messages {
 
 			[ProtoMember(8)] public bool IsPromotable { get; set; }
 
+			[ProtoMember(9)] public int Version { get; set; }
+
 			public SubscribeReplica() {
 			}
 
 			public SubscribeReplica(long logPosition, byte[] chunkId, Epoch[] lastEpochs, byte[] ip, int port,
-				byte[] leaderId, byte[] subscriptionId, bool isPromotable) {
+				byte[] leaderId, byte[] subscriptionId, bool isPromotable, int version) {
 				LogPosition = logPosition;
 				ChunkId = chunkId;
 				LastEpochs = lastEpochs;
@@ -81,6 +83,7 @@ namespace EventStore.Core.Messages {
 				LeaderId = leaderId;
 				SubscriptionId = subscriptionId;
 				IsPromotable = isPromotable;
+				Version = version;
 			}
 		}
 
@@ -129,13 +132,19 @@ namespace EventStore.Core.Messages {
 			[ProtoMember(1)] public byte[] SubscriptionId { get; set; }
 
 			[ProtoMember(2)] public long ReplicationLogPosition { get; set; }
+			[ProtoMember(3)] public long WriterLogPosition { get; set; }
 
 			public ReplicaLogPositionAck() {
 			}
 
-			public ReplicaLogPositionAck(byte[] subscriptionId, long replicationLogPosition) {
+			public ReplicaLogPositionAck(
+				byte[] subscriptionId,
+				long replicationLogPosition,
+				long writerLogPosition) {
+
 				SubscriptionId = subscriptionId;
 				ReplicationLogPosition = replicationLogPosition;
+				WriterLogPosition = writerLogPosition;
 			}
 		}
 

@@ -227,6 +227,7 @@ namespace EventStore.Core.Services.Replication {
 				throw new Exception(string.Format("Chunk was null during subscribing at {0} (0x{0:X}).", logPosition));
 			SendTcpMessage(_connection,
 				new ReplicationMessage.SubscribeReplica(
+					version: ReplicationSubscriptionVersions.V1,
 					logPosition, chunk.ChunkHeader.ChunkId, epochs, _internalTcp,
 					message.LeaderId, message.SubscriptionId, isPromotable: !_isReadOnlyReplica));
 		}
