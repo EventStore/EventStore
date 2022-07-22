@@ -40,6 +40,10 @@ All notable changes to this project will be documented in this file.
 - `TrustedRootCertificateStoreName`, `TrustedRootCertificateStoreLocation`, `TrustedRootCertificateSubjectName` and `TrustedRootCertificateThumbprint` certificate options. [EventStore#3498](https://github.com/EventStore/EventStore/pull/3498)
 - Allow loading trusted root certificates from the Windows cert store. [EventStore#3498](https://github.com/EventStore/EventStore/pull/3498)
 
+### Cherry picked from https
+- //github.com/EventStore/EventStore/pull/3530 [EventStore#3531](https://github.com/EventStore/EventStore/pull/3531)
+- //github.com/EventStore/EventStore/pull/3523 [EventStore#3528](https://github.com/EventStore/EventStore/pull/3528)
+
 ## [21.10.5] - 2022-06-15
 
 This changelog includes the fixes from 21.10.3 and 21.10.4, as these were cloud-only releases.
