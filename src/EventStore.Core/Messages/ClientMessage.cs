@@ -581,10 +581,12 @@ namespace EventStore.Core.Messages {
 
 			public readonly long? ValidationStreamVersion;
 			public readonly TimeSpan? LongPollTimeout;
+			public readonly bool ReplyOnExpired;
 
 			public ReadStreamEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
 				bool requireLeader, long? validationStreamVersion, ClaimsPrincipal user,
+				bool replyOnExpired,
 				TimeSpan? longPollTimeout = null, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
@@ -597,6 +599,7 @@ namespace EventStore.Core.Messages {
 				RequireLeader = requireLeader;
 				ValidationStreamVersion = validationStreamVersion;
 				LongPollTimeout = longPollTimeout;
+				ReplyOnExpired = replyOnExpired;
 			}
 
 			public override string ToString() {
@@ -637,7 +640,7 @@ namespace EventStore.Core.Messages {
 				long tfLastCommitPosition) {
 				Ensure.NotNull(events, "events");
 
-				if (result != ReadStreamResult.Success) {
+				if (result != ReadStreamResult.Success && result != ReadStreamResult.Expired) {
 					Ensure.Equal(nextEventNumber, -1, "nextEventNumber");
 					Ensure.Equal(isEndOfStream, true, "isEndOfStream");
 				}
@@ -771,10 +774,12 @@ namespace EventStore.Core.Messages {
 
 			public readonly long? ValidationTfLastCommitPosition;
 			public readonly TimeSpan? LongPollTimeout;
+			public readonly bool ReplyOnExpired;
 
 			public ReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
 				bool requireLeader, long? validationTfLastCommitPosition, ClaimsPrincipal user,
+				bool replyOnExpired,
 				TimeSpan? longPollTimeout = null, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				CommitPosition = commitPosition;
@@ -784,6 +789,7 @@ namespace EventStore.Core.Messages {
 				RequireLeader = requireLeader;
 				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
 				LongPollTimeout = longPollTimeout;
+				ReplyOnExpired = replyOnExpired;
 			}
 		}
 
@@ -919,6 +925,7 @@ namespace EventStore.Core.Messages {
 			public readonly bool RequireLeader;
 			public readonly int MaxSearchWindow;
 			public readonly IEventFilter EventFilter;
+			public readonly bool ReplyOnExpired;
 
 			public readonly long? ValidationTfLastCommitPosition;
 			public readonly TimeSpan? LongPollTimeout;
@@ -926,6 +933,7 @@ namespace EventStore.Core.Messages {
 			public FilteredReadAllEventsForward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireLeader,
 				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, ClaimsPrincipal user,
+				bool replyOnExpired,
 				TimeSpan? longPollTimeout = null, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				CommitPosition = commitPosition;
@@ -937,6 +945,7 @@ namespace EventStore.Core.Messages {
 				LongPollTimeout = longPollTimeout;
 				MaxSearchWindow = maxSearchWindow;
 				EventFilter = eventFilter;
+				ReplyOnExpired = replyOnExpired;
 			}
 		}
 

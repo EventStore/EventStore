@@ -249,14 +249,16 @@ namespace EventStore.Core.Services {
 				return new ClientMessage.ReadStreamEventsForward(
 					streamReq.InternalCorrId, streamReq.CorrelationId, streamReq.Envelope,
 					streamReq.EventStreamId, streamReq.FromEventNumber, streamReq.MaxCount, streamReq.ResolveLinkTos,
-					streamReq.RequireLeader, streamReq.ValidationStreamVersion, streamReq.User);
+					streamReq.RequireLeader, streamReq.ValidationStreamVersion, streamReq.User,
+					replyOnExpired: streamReq.ReplyOnExpired);
 
 			var allReq = originalRequest as ClientMessage.ReadAllEventsForward;
 			if (allReq != null)
 				return new ClientMessage.ReadAllEventsForward(
 					allReq.InternalCorrId, allReq.CorrelationId, allReq.Envelope,
 					allReq.CommitPosition, allReq.PreparePosition, allReq.MaxCount, allReq.ResolveLinkTos,
-					allReq.RequireLeader, allReq.ValidationTfLastCommitPosition, allReq.User);
+					allReq.RequireLeader, allReq.ValidationTfLastCommitPosition, allReq.User,
+					replyOnExpired: allReq.ReplyOnExpired);
 
 			throw new Exception(string.Format("Unexpected read request of type {0} for long polling: {1}.",
 				originalRequest.GetType(), originalRequest));

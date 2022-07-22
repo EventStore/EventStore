@@ -345,7 +345,8 @@ namespace EventStore.Core.Helpers {
 						resolveLinks,
 						false,
 						null,
-						principal),
+						principal,
+						replyOnExpired: false),
 					action);
 		}
 
@@ -371,7 +372,8 @@ namespace EventStore.Core.Helpers {
 					resolveLinks,
 					false,
 					null,
-					principal),
+					principal,
+					replyOnExpired: false),
 				res => {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
@@ -443,7 +445,8 @@ namespace EventStore.Core.Helpers {
 					requireLeader,
 					validationTfLastCommitPosition,
 					user,
-					longPollTimeout
+					replyOnExpired: false,
+					longPollTimeout: longPollTimeout
 					),
 				res => {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
@@ -528,7 +531,8 @@ namespace EventStore.Core.Helpers {
 					validationTfLastCommitPosition,
 					eventFilter,
 					user,
-					longPollTimeout
+					replyOnExpired: false,
+					longPollTimeout: longPollTimeout
 				),
 				res => {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {

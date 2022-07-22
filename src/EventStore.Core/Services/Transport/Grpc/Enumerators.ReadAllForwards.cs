@@ -78,7 +78,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_bus.Publish(new ClientMessage.ReadAllEventsForward(
 					correlationId, correlationId, new ContinuationEnvelope(OnMessage, _semaphore, _cancellationToken),
 					commitPosition, preparePosition, (int)Math.Min(ReadBatchSize, _maxCount), _resolveLinks,
-					_requiresLeader, default, _user, expires: _deadline));
+					_requiresLeader, default, _user, replyOnExpired: false, expires: _deadline));
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&

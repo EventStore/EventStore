@@ -693,7 +693,8 @@ namespace EventStore.Projections.Core.Services.Management {
 					resolveLinkTos: false,
 					requireLeader: false,
 					validationStreamVersion: null,
-					user: SystemAccounts.System),
+					user: SystemAccounts.System,
+					replyOnExpired: false),
 				m => OnProjectionsListReadCompleted(m, registeredProjections, from, completedAction));
 		}
 

@@ -17,6 +17,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		public class AllSubscription : IAsyncEnumerator<ReadResp> {
 			private static readonly ILogger Log = Serilog.Log.ForContext<AllSubscription>();
 
+			private readonly IExpiryStrategy _expiryStrategy;
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly bool _resolveLinks;
@@ -37,6 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public string SubscriptionId { get; }
 
 			public AllSubscription(IPublisher bus,
+				IExpiryStrategy expiryStrategy,
 				Position? startPosition,
 				bool resolveLinks,
 				ClaimsPrincipal user,
@@ -52,6 +54,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentNullException(nameof(readIndex));
 				}
 
+				_expiryStrategy = expiryStrategy;
 				_subscriptionId = Guid.NewGuid();
 				_bus = bus;
 				_resolveLinks = resolveLinks;
@@ -181,6 +184,13 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							ReadPage(nextPosition, OnMessage);
 							return;
+						case ReadAllResult.Expired:
+							ReadPage(
+								Position.FromInt64(
+									completed.CurrentPos.CommitPosition,
+									completed.CurrentPos.PreparePosition),
+								OnMessage);
+							return;
 						case ReadAllResult.AccessDenied:
 							Fail(RpcExceptions.AccessDenied());
 							return;
@@ -296,6 +306,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 											completed.NextPos.PreparePosition));
 										return;
 
+									case ReadAllResult.Expired:
+										ReadHistoricalEvents(Position.FromInt64(
+											completed.CurrentPos.CommitPosition,
+											completed.CurrentPos.PreparePosition));
+										return;
+
 									case ReadAllResult.AccessDenied:
 										Fail(RpcExceptions.AccessDenied());
 										return;
@@ -396,7 +412,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.ReadAllEventsForward(
 					correlationId, correlationId, new ContinuationEnvelope(onMessage, _semaphore, _cancellationToken),
-					commitPosition, preparePosition, ReadBatchSize, _resolveLinks, _requiresLeader, null, _user));
+					commitPosition, preparePosition, ReadBatchSize, _resolveLinks, _requiresLeader, null, _user,
+					replyOnExpired: true,
+					expires: _expiryStrategy.GetExpiry()));
 			}
 
 			private void Unsubscribe() => _bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(),
