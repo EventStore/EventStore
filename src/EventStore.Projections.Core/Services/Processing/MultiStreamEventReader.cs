@@ -266,7 +266,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var readEventsForward = new ClientMessage.ReadStreamEventsForward(
 				Guid.NewGuid(), pendingRequestCorrelationId, new SendToThisEnvelope(this), stream,
 				_fromPositions.Streams[stream],
-				_maxReadCount, _resolveLinkTos, false, null, ReadAs);
+				_maxReadCount, _resolveLinkTos, false, null, ReadAs, replyOnExpired: false);
 			if (delay) {
 				_publisher.Publish(
 					new AwakeServiceMessage.SubscribeAwake(

@@ -17,6 +17,9 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			private readonly List<ReadResp> _responses = new();
 			private Position _positionOfLastWrite;
 
+			public when_subscribing_to_all() : base(new LotsOfExpiriesStrategy()) {
+			}
+
 			protected override async Task Given() {
 				var response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
@@ -39,7 +42,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards,
 						UuidOption = new() { Structured = new() },
 						All = new() {
-							Start = new ()
+							Start = new()
 							// Position = new() {
 							// 	CommitPosition = _positionOfLastWrite.CommitPosition,
 							// 	PreparePosition = _positionOfLastWrite.PreparePosition
@@ -48,12 +51,22 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					}
 				}, GetCallOptions(AdminCredentials));
 
+				var stopOnNextCheckpoint = false;
 				_responses.AddRange(await call.ResponseStream.ReadAllAsync()
-					.TakeWhile(response => response.ContentCase switch {
-						ReadResp.ContentOneofCase.Event => _positionOfLastWrite <=
-						                                   new Position(response.Event.Event.CommitPosition,
-							                                   response.Event.Event.PreparePosition),
-						_ => true
+					.TakeWhile(response => {
+						if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
+							if (stopOnNextCheckpoint)
+								return false;
+						}
+
+						if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
+							if (_positionOfLastWrite == new Position(
+								response.Event.Event.CommitPosition,
+								response.Event.Event.PreparePosition))
+							stopOnNextCheckpoint = true;
+						}
+
+						return true;
 					})
 					.ToArrayAsync());
 			}

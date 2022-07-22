@@ -9,6 +9,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using Serilog;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -22,6 +23,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		}
 
 		public class StreamSubscription<TStreamId> : StreamSubscription {
+			private readonly IExpiryStrategy _expiryStrategy;
 			private readonly Guid _subscriptionId;
 			private readonly IPublisher _bus;
 			private readonly string _streamName;
@@ -43,6 +45,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public StreamSubscription(
 				IPublisher bus,
+				IExpiryStrategy expiryStrategy,
 				string streamName,
 				StreamRevision? startRevision,
 				bool resolveLinks,
@@ -58,6 +61,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new ArgumentNullException(nameof(streamName));
 				}
 
+				_expiryStrategy = expiryStrategy;
 				_subscriptionId = Guid.NewGuid();
 				_bus = bus;
 				_streamName = streamName;
@@ -177,6 +181,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 							ReadPage(StreamRevision.FromInt64(completed.NextEventNumber), OnMessage);
 							return;
+						case ReadStreamResult.Expired:
+							ReadPage(StreamRevision.FromInt64(completed.FromEventNumber), OnMessage);
+							return;
 						case ReadStreamResult.NoStream:
 							await ConfirmSubscription().ConfigureAwait(false);
 							await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(false);
@@ -291,6 +298,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 										ReadHistoricalEvents(StreamRevision.FromInt64(completed.NextEventNumber));
 
+										return;
+									case ReadStreamResult.Expired:
+										ReadHistoricalEvents(StreamRevision.FromInt64(completed.FromEventNumber));
 										return;
 									case ReadStreamResult.NoStream:
 										Log.Verbose(
@@ -415,7 +425,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_bus.Publish(new ClientMessage.ReadStreamEventsForward(
 					correlationId, correlationId, new ContinuationEnvelope(onMessage, _semaphore, _cancellationToken),
 					_streamName, startRevision.ToInt64(), ReadBatchSize, _resolveLinks, _requiresLeader, null,
-					_user));
+					_user,
+					replyOnExpired: true,
+					expires: _expiryStrategy.GetExpiry()));
 			}
 
 			private void Unsubscribe() => _bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(),

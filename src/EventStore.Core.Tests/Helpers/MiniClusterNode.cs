@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniClusterNode<TLogFormat, TStreamId> {
@@ -66,7 +67,8 @@ namespace EventStore.Core.Tests.Helpers {
 		public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
 			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null, int? chunkSize = null,
 			int? cachedChunkSize = null, bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
-			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0, string intHostAdvertiseAs = null) {
+			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0, string intHostAdvertiseAs = null,
+			IExpiryStrategy expiryStrategy = null) {
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
@@ -174,7 +176,9 @@ namespace EventStore.Core.Tests.Helpers {
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),
-				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(), Guid.NewGuid(), debugIndex);
+				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
+				expiryStrategy,
+				Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 
 			_host = new WebHostBuilder()

@@ -55,7 +55,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			private long _expected;
 
 			public when_subscribing_to_all_with_a_filter(uint checkpointIntervalMultiplier, uint maxSearchWindow,
-				int filteredEventCount) {
+				int filteredEventCount)
+				: base (new LotsOfExpiriesStrategy()) {
 				_maxSearchWindow = maxSearchWindow;
 				_checkpointIntervalMultiplier = checkpointIntervalMultiplier;
 				_checkpointInterval = checkpointIntervalMultiplier * maxSearchWindow;
@@ -121,8 +122,15 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards
 					}
 				}, GetCallOptions(AdminCredentials));
+
+				var receivedTheEvent = false;
 				await foreach (var response in call.ResponseStream.ReadAllAsync()) {
 					if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
+						if (receivedTheEvent) {
+							// we have received the event, so this checkpoint is the one that indicates
+							// we have successfully transitioned to live (and will receive no more events)
+							break;
+						}
 						_positions.Add(new Position(response.Checkpoint.CommitPosition,
 							response.Checkpoint.PreparePosition));
 						continue;
@@ -130,7 +138,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 					if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
 						Assert.AreEqual(StreamName, response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
-						return;
+						receivedTheEvent = true;
 					}
 				}
 			}
