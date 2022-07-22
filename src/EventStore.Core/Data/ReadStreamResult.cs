@@ -5,6 +5,7 @@ namespace EventStore.Core.Data {
 		StreamDeleted = 2,
 		NotModified = 3,
 		Error = 4,
-		AccessDenied = 5
+		AccessDenied = 5,
+		Expired = 6,
 	}
 }

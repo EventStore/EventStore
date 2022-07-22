@@ -55,7 +55,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				new ClientMessage.ReadStreamEventsForward(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
 					msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, msg.ResolveLinkTos, msg.RequireLeader,
-					msg.ValidationStreamVersion, msg.User));
+					msg.ValidationStreamVersion, msg.User, replyOnExpired: false));
 		}
 
 		public void Handle(ClientMessage.ReadAllEventsForward msg) {
@@ -63,7 +63,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				new ClientMessage.ReadAllEventsForward(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope),
 					msg.CommitPosition, msg.PreparePosition, msg.MaxCount, msg.ResolveLinkTos, msg.RequireLeader,
-					msg.ValidationTfLastCommitPosition, msg.User));
+					msg.ValidationTfLastCommitPosition, msg.User, replyOnExpired: false));
 		}
 
 		public void Handle(SystemMessage.SubSystemInitialized msg) {

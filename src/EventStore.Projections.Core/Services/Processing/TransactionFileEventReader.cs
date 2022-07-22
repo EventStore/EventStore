@@ -143,7 +143,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			return new ClientMessage.ReadAllEventsForward(
 				correlationId, correlationId, new SendToThisEnvelope(this), _from.CommitPosition,
 				_from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount,
-				_resolveLinkTos, false, null, ReadAs);
+				_resolveLinkTos, false, null, ReadAs, replyOnExpired: false);
 		}
 
 		private void DeliverLastCommitPosition(TFPos lastPosition) {

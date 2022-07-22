@@ -457,7 +457,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				} else {
 					readRequest = new ClientMessage.ReadStreamEventsForward(
 						pendingRequestCorrelationId, pendingRequestCorrelationId, new SendToThisEnvelope(this), "$et",
-						_lastKnownIndexCheckpointEventNumber + 1, 100, false, false, null, _readAs);
+						_lastKnownIndexCheckpointEventNumber + 1, 100, false, false, null, _readAs, replyOnExpired: false);
 				}
 
 				var timeoutMessage = TimerMessage.Schedule.Create(
@@ -492,7 +492,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 					corrId, corrId, new SendToThisEnvelope(this), stream,
 					_reader._fromPositions[stream], EventByTypeIndexEventReader.MaxReadCount, _reader._resolveLinkTos,
 					false, null,
-					_readAs);
+					_readAs,
+					replyOnExpired: false);
 
 				var timeoutMessage = TimerMessage.Schedule.Create(
 					TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
@@ -662,7 +663,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_fromTfPosition.CommitPosition,
 					_fromTfPosition.PreparePosition == -1 ? 0 : _fromTfPosition.PreparePosition,
 					EventByTypeIndexEventReader.MaxReadCount,
-					true, false, null, _readAs);
+					true, false, null, _readAs, replyOnExpired: false);
 
 				var timeoutMessage = TimerMessage.Schedule.Create(
 					TimeSpan.FromMilliseconds(ESConsts.ReadRequestTimeout),
