@@ -3,42 +3,35 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Updated
-- Consolidate to single protobuf implementation [EventStore#3362](https://github.com/EventStore/EventStore/pull/3362)
-- Improves state serialization speed [EventStore#3485](https://github.com/EventStore/EventStore/pull/3485)
+## [22.6.0] - 2022-07-21
 
 ### Changed
+- Consolidate to single protobuf implementation [EventStore#3362](https://github.com/EventStore/EventStore/pull/3362)
 - Updated gRPC to include fix for flaky tests [EventStore#3364](https://github.com/EventStore/EventStore/pull/3364)
 - Reject gRPC call to create a projection if `TrackEmittedStreams=true` and `EmitEnabled=false` [EventStore#3412](https://github.com/EventStore/EventStore/pull/3412)
 - Proto names of `emit_enabled` and `track_emitted_streams` swapped for backwards compatibility [EventStore#3412](https://github.com/EventStore/EventStore/pull/3412)
-- fixed Incorrect version number in CI build [EventStore#3430](https://github.com/EventStore/EventStore/pull/3430)
-- Reads operations in IODispatcher are no longer tracked if they don't have a timeoutAction [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
+- Read operations in IODispatcher are no longer tracked if they don't have a timeoutAction [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
 - Sort the dump of the configuration settings alphabetically [EventStore#3475](https://github.com/EventStore/EventStore/pull/3475)
 - Update UI for 22.6.0 [EventStore#3519](https://github.com/EventStore/EventStore/pull/3519)
 
 ### Fixed
 - Update the epoch checkpoint with the proper position before going offline for truncation [EventStore#3414](https://github.com/EventStore/EventStore/pull/3414)
-- Authentication Error For Docker Tag Automation [EventStore#3447](https://github.com/EventStore/EventStore/pull/3447)
-- Can now use the ptable bloom filters after an index scavenge [EventStore#3489](https://github.com/EventStore/EventStore/pull/3489)
 - Removed aggregate exception when closing a call to the stats endpoint [EventStore#3495](https://github.com/EventStore/EventStore/pull/3495)
-- Ensure no pending writes can be incorrectly acked or published when going offline for truncation.  [EventStore#3500](https://github.com/EventStore/EventStore/pull/3500)
-- metadata values need to be raw json format [EventStore#3499](https://github.com/EventStore/EventStore/pull/3499)
-- Removed unnecessary `Should never complete request twice` error [EventStore#3522](https://github.com/EventStore/EventStore/pull/3522)
+- Possiblility of unreplicated writes appearing in reads and subscriptions [EventStore#3527](https://github.com/EventStore/EventStore/pull/3527)
+- Removed unnecessary "Should never complete request twice error" [EventStore#3522](https://github.com/EventStore/EventStore/pull/3522)
 
 ### Added
-- More detailed documentation for intermediate CA certificates [EventStore#3373](https://github.com/EventStore/EventStore/pull/3373)
-- automatically update license file with current year [EventStore#3382](https://github.com/EventStore/EventStore/pull/3382)
 - Logging around read timeouts in projection emitted streams and emitted stream trackers [EventStore#3435](https://github.com/EventStore/EventStore/pull/3435)
-- the initial documentation for moving EventStoreDB logs to Elasticsearch. [EventStore#3488](https://github.com/EventStore/EventStore/pull/3488)
 - Populate $all position for stream reads/subscriptions/persistent subscriptions. gRPC only. Non-transaction events only. [EventStore#3459](https://github.com/EventStore/EventStore/pull/3459)
-- Better summaries for CI Runs [EventStore#3496](https://github.com/EventStore/EventStore/pull/3496)
-
-### Removed
-- Stop publishing to deprecated registry [EventStore#3378](https://github.com/EventStore/EventStore/pull/3378)
-
-### added
 - `TrustedRootCertificateStoreName`, `TrustedRootCertificateStoreLocation`, `TrustedRootCertificateSubjectName` and `TrustedRootCertificateThumbprint` certificate options. [EventStore#3498](https://github.com/EventStore/EventStore/pull/3498)
 - Allow loading trusted root certificates from the Windows cert store. [EventStore#3498](https://github.com/EventStore/EventStore/pull/3498)
+- Better summaries for CI Runs [EventStore#3496](https://github.com/EventStore/EventStore/pull/3496) - Thanks [@Tyrrrz](https://github.com/Tyrrrz)!
+
+## [21.10.6] - 2022-07-20
+
+### Fixed
+- Possiblility of unreplicated writes appearing in reads and subscriptions [EventStore#3527](https://github.com/EventStore/EventStore/pull/3527)
+- Removed unnecessary "Should never complete request twice error" [EventStore#3522](https://github.com/EventStore/EventStore/pull/3522)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3530 [EventStore#3531](https://github.com/EventStore/EventStore/pull/3531)
