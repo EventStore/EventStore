@@ -76,6 +76,11 @@ namespace EventStore.Core.Services.Storage {
 
 		void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward msg) {
 			if (msg.Expires < DateTime.UtcNow) {
+				if (msg.ReplyOnExpired) {
+					msg.Envelope.ReplyWith(new ClientMessage.ReadStreamEventsForwardCompleted(
+						msg.CorrelationId, msg.EventStreamId, msg.FromEventNumber, msg.MaxCount, ReadStreamResult.Expired,
+						ResolvedEvent.EmptyArray, default, default, default, default, default, default, default));
+				}
 				if (LogExpiredMessage(msg.Expires))
 					Log.Debug(
 						"Read Stream Events Forward operation has expired for Stream: {stream}, From Event Number: {fromEventNumber}, Max Count: {maxCount}. Operation Expired at {expiryDateTime}",
@@ -124,6 +129,13 @@ namespace EventStore.Core.Services.Storage {
 
 		void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward msg) {
 			if (msg.Expires < DateTime.UtcNow) {
+				if (msg.ReplyOnExpired) {
+					msg.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(
+						msg.CorrelationId, ReadAllResult.Expired,
+						default, ResolvedEvent.EmptyArray, default, default, default,
+						currentPos: new TFPos(msg.CommitPosition, msg.PreparePosition),
+						TFPos.Invalid, TFPos.Invalid, default));
+				}
 				if (LogExpiredMessage(msg.Expires))
 					Log.Debug(
 						"Read All Stream Events Forward operation has expired for C:{commitPosition}/P:{preparePosition}. Operation Expired at {expiryDateTime}",
@@ -177,6 +189,13 @@ namespace EventStore.Core.Services.Storage {
 
 		void IHandle<ClientMessage.FilteredReadAllEventsForward>.Handle(ClientMessage.FilteredReadAllEventsForward msg) {
 			if (msg.Expires < DateTime.UtcNow) {
+				if (msg.ReplyOnExpired) {
+					msg.Envelope.ReplyWith(new ClientMessage.FilteredReadAllEventsForwardCompleted(
+						msg.CorrelationId, FilteredReadAllResult.Expired,
+						default, ResolvedEvent.EmptyArray, default, default, default,
+						currentPos: new TFPos(msg.CommitPosition, msg.PreparePosition),
+						TFPos.Invalid, TFPos.Invalid, default, default, default));
+				}
 				Log.Debug(
 					"Read All Stream Events Forward Filtered operation has expired for C:{0}/P:{1}. Operation Expired at {2}",
 					msg.CommitPosition, msg.PreparePosition, msg.Expires);

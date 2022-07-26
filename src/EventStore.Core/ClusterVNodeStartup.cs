@@ -43,6 +43,7 @@ namespace EventStore.Core {
 		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly int _maxAppendSize;
 		private readonly TimeSpan _writeTimeout;
+		private readonly IExpiryStrategy _expiryStrategy;
 		private readonly KestrelHttpService _httpService;
 		private readonly StatusCheck _statusCheck;
 
@@ -62,6 +63,7 @@ namespace EventStore.Core {
 			IReadIndex<TStreamId> readIndex,
 			int maxAppendSize,
 			TimeSpan writeTimeout,
+			IExpiryStrategy expiryStrategy,
 			KestrelHttpService httpService,
 			string clusterDns) {
 			if (subsystems == null) {
@@ -107,6 +109,7 @@ namespace EventStore.Core {
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
+			_expiryStrategy = expiryStrategy;
 			_httpService = httpService;
 			_clusterDns = clusterDns;
 
@@ -160,7 +163,7 @@ namespace EventStore.Core {
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
 						.AddSingleton(new Streams<TStreamId>(_mainQueue, _readIndex, _maxAppendSize,
-							_writeTimeout, _authorizationProvider))
+							_writeTimeout, _expiryStrategy, _authorizationProvider))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))

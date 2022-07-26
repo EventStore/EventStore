@@ -79,8 +79,8 @@ namespace EventStore.Core {
 				authenticationProviderFactory,
 				authorizationProviderFactory,
 				factories,
-				instanceId,
-				debugIndex);
+				instanceId: instanceId,
+				debugIndex: debugIndex);
 		}
 
 		abstract public TFChunkDb Db { get; }
@@ -217,6 +217,7 @@ namespace EventStore.Core {
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
 				additionalPersistentSubscriptionConsumerStrategyFactories = null,
+			IExpiryStrategy expiryStrategy = null,
 			Guid? instanceId = null, int debugIndex = 0) {
 
 			if (options == null) {
@@ -1346,6 +1347,7 @@ namespace EventStore.Core {
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
+				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);

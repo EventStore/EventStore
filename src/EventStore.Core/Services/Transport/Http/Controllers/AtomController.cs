@@ -759,7 +759,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Publish(new ClientMessage.ReadAllEventsForward(corrId, corrId, envelope,
 				position.CommitPosition, position.PreparePosition, count, resolveLinkTos,
 				requireLeader, GetETagTFPosition(manager), manager.User,
-				longPollTimeout));
+				replyOnExpired: false,
+				longPollTimeout: longPollTimeout));
 			return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
 		}
 
@@ -795,7 +796,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Publish(new ClientMessage.FilteredReadAllEventsForward(corrId, corrId, envelope,
 				position.CommitPosition, position.PreparePosition, count, true,
 				requireLeader, 1000, GetETagTFPosition(manager), filter, manager.User,
-				longPollTimeout));
+				replyOnExpired: false,
+				longPollTimeout: longPollTimeout));
 			return new RequestParams((longPollTimeout ?? TimeSpan.Zero) + ESConsts.HttpTimeout);
 		}
 
@@ -1008,7 +1010,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				Configure.GetStreamEventsForward);
 			var corrId = Guid.NewGuid();
 			Publish(new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope, stream, eventNumber, count,
-				resolveLinkTos, requireLeader, etag, manager.User, longPollTimeout));
+				resolveLinkTos, requireLeader, etag, manager.User,
+				replyOnExpired: false,
+				longPollTimeout: longPollTimeout));
 		}
 
 		private long? GetETagStreamVersion(HttpEntityManager manager) {
