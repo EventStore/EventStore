@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Http;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using EventStore.Core.TransactionLog.Chunks;
@@ -64,7 +65,8 @@ namespace EventStore.Core.Tests.Helpers {
 			string dbPath = "", bool isReadOnlyReplica = false,
 			long streamExistenceFilterSize = Util.Opts.StreamExistenceFilterSizeDefault,
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
-			int streamExistenceFilterCheckpointDelayMs = 5_000) {
+			int streamExistenceFilterCheckpointDelayMs = 5_000,
+			IExpiryStrategy expiryStrategy = null) {
 			RunningTime.Start();
 			RunCount += 1;
 
@@ -156,7 +158,8 @@ namespace EventStore.Core.Tests.Helpers {
 					streamExistenceFilterCheckpointDelayMs: streamExistenceFilterCheckpointDelayMs));
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
+				expiryStrategy: expiryStrategy);
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

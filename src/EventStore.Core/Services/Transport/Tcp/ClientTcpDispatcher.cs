@@ -137,7 +137,8 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			if (dto == null) return null;
 			return new ClientMessage.ReadStreamEventsForward(Guid.NewGuid(), package.CorrelationId, envelope,
 				dto.EventStreamId, dto.FromEventNumber, dto.MaxCount,
-				dto.ResolveLinkTos, dto.RequireLeader, null, user);
+				dto.ResolveLinkTos, dto.RequireLeader, null, user,
+				replyOnExpired: false);
 		}
 
 		private static TcpPackage WrapReadStreamEventsForwardCompleted(
@@ -184,7 +185,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			return new ClientMessage.ReadAllEventsForward(Guid.NewGuid(), package.CorrelationId, envelope,
 				dto.CommitPosition, dto.PreparePosition, dto.MaxCount,
-				dto.ResolveLinkTos, dto.RequireLeader, null, user, null);
+				dto.ResolveLinkTos, dto.RequireLeader, null, user,
+				replyOnExpired: false,
+				longPollTimeout: null);
 		}
 
 
@@ -227,7 +230,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			return new ClientMessage.FilteredReadAllEventsForward(Guid.NewGuid(), package.CorrelationId, envelope,
 				dto.CommitPosition, dto.PreparePosition, dto.MaxCount,
-				dto.ResolveLinkTos, dto.RequireLeader, maxSearchWindow, null, eventFilter, user, null);
+				dto.ResolveLinkTos, dto.RequireLeader, maxSearchWindow, null, eventFilter, user,
+				replyOnExpired: false,
+				longPollTimeout: null);
 		}
 
 		private static TcpPackage WrapFilteredReadAllEventsForwardCompleted(

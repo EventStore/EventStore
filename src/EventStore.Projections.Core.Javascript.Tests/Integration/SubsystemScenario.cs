@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 			var tmwid = new TellMeWhenItsDone(TestTimeout);
 			_mainQueue.Publish(new ClientMessage.ReadStreamEventsForward(Guid.NewGuid(),
 				Guid.NewGuid(), tmwid, stream, from, 100, true, false, null,
-				ClaimsPrincipal.Current, null, null));
+				ClaimsPrincipal.Current, replyOnExpired: false, null, null));
 			var msg = await tmwid.Task.WaitAsync(TestTimeout);
 			var rr = Assert.IsType<ClientMessage.ReadStreamEventsForwardCompleted>(msg);
 			return rr.Events;

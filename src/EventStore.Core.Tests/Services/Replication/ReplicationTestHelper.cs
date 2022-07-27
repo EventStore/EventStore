@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 							readResult = (ClientMessage.ReadAllEventsForwardCompleted)msg;
 							readEvent.Set();
 						}),
-					0, 0, 100, false, false, null, SystemAccounts.System);
+					0, 0, 100, false, false, null, SystemAccounts.System, replyOnExpired: false);
 				node.Node.MainQueue.Publish(read);
 
 				if (!readEvent.Wait(_timeout)) {
@@ -109,7 +109,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 						readResult = (ClientMessage.ReadStreamEventsForwardCompleted)msg;
 						resetEvent.Set();
 					}), streamId, 0, 10,
-				false, false, null, SystemAccounts.System);
+				false, false, null, SystemAccounts.System, replyOnExpired: false);
 			node.Node.MainQueue.Publish(read);
 
 			if (!resetEvent.Wait(_timeout)) {

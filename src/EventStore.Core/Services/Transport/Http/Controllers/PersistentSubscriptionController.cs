@@ -131,7 +131,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				Configure.GetStreamEventsForward);
 			var corrId = Guid.NewGuid();
 			Publish(new ClientMessage.ReadStreamEventsForward(corrId, corrId, envelope, stream, eventNumber, count,
-				resolveLinkTos, requireLeader, etag, manager.User, longPollTimeout));
+				resolveLinkTos, requireLeader, etag, manager.User,
+				replyOnExpired: false,
+				longPollTimeout: longPollTimeout));
 		}
 		private void ViewParkedMessagesBackward(HttpEntityManager http, UriTemplateMatch match) {
 			var stream = match.BoundVariables["stream"];

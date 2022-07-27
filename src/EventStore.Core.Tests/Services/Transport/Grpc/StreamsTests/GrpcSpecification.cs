@@ -18,6 +18,7 @@ using NUnit.Framework;
 using Convert = System.Convert;
 using Streams = EventStore.Client.Streams.Streams;
 using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
+using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	public abstract class GrpcSpecification<TLogFormat, TStreamId> : IDisposable {
@@ -29,8 +30,10 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 		internal Streams.StreamsClient StreamsClient { get; }
 		private readonly BatchAppender _batchAppender;
 
-		protected GrpcSpecification() {
-			_node = new MiniNode<TLogFormat, TStreamId>(GetType().FullName, inMemDb: true);
+		protected GrpcSpecification(IExpiryStrategy expiryStrategy = null) {
+			_node = new MiniNode<TLogFormat, TStreamId>(GetType().FullName,
+				inMemDb: true,
+				expiryStrategy: expiryStrategy);
 			var builder = new HostBuilder()
 				.ConfigureWebHostDefaults(webHost => webHost.UseTestServer()
 					.ConfigureServices(services => _node.Node.Startup.ConfigureServices(services))
@@ -62,7 +65,11 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				throw new Exception("Given Failed", ex);
 			}
 
-			await When().WithTimeout(TimeSpan.FromSeconds(10));
+			try {
+				await When().WithTimeout(TimeSpan.FromSeconds(10));
+			} catch (Exception ex) {
+				throw new Exception("When Failed", ex);
+			}
 		}
 
 		private static CallCredentials CallCredentialsFromUser((string userName, string password) credentials) =>

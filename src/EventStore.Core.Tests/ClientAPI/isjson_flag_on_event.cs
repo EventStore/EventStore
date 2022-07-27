@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 						Assert.IsTrue(msg.Events.All(x => (x.OriginalEvent.Flags & PrepareFlags.IsJson) != 0));
 
 						done.Set();
-					}), stream, 0, 100, false, false, null, null));
+					}), stream, 0, 100, false, false, null, null, replyOnExpired: false));
 				Assert.IsTrue(done.Wait(10000), "Read was not completed in time.");
 			}
 		}
