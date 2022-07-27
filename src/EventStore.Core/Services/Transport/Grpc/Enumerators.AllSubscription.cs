@@ -210,8 +210,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					"Live subscription {subscriptionId} to $all running from {position}...",
 					_subscriptionId, startPosition);
 
+				ContinuationEnvelope envelope = null;
+				envelope = new ContinuationEnvelope(OnSubscriptionMessage, _semaphore, _cancellationToken);
 				_bus.Publish(new ClientMessage.SubscribeToStream(Guid.NewGuid(), _subscriptionId,
-					new ContinuationEnvelope(OnSubscriptionMessage, _semaphore, _cancellationToken), _subscriptionId,
+					envelope, _subscriptionId,
 					string.Empty, _resolveLinks, _user));
 
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
@@ -350,22 +352,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								return;
 							}
 
-							using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-							try {
-								Log.Verbose(
-									"Live subscription {subscriptionId} to $all enqueuing live message {position}.",
-									_subscriptionId, appeared.Event.OriginalPosition);
+							Log.Verbose(
+								"Live subscription {subscriptionId} to $all enqueuing live message {position}.",
+								_subscriptionId, appeared.Event.OriginalPosition);
 
-								await liveEvents.Writer.WriteAsync(appeared.Event, cts.Token)
-									.ConfigureAwait(false);
-							} catch (Exception e) {
+							if (!liveEvents.Writer.TryWrite(appeared.Event)) {
 								if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0) return;
 
 								Log.Verbose(
-									e,
 									"Live subscription {subscriptionId} to $all timed out at {position}; unsubscribing...",
 									_subscriptionId, appeared.Event.OriginalPosition.GetValueOrDefault());
 
+								envelope.StopReplies();
 								Unsubscribe();
 
 								liveEvents.Writer.Complete();

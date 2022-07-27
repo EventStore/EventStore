@@ -20,6 +20,8 @@ namespace EventStore.Core.Messaging {
 		private readonly SemaphoreSlim _semaphore;
 		private readonly CancellationToken _cancellationToken;
 
+		private int _stopped;
+
 		public ContinuationEnvelope(Func<Message, CancellationToken, Task> onMessage, SemaphoreSlim semaphore,
 			CancellationToken cancellationToken) {
 			_onMessage = onMessage;
@@ -27,9 +29,16 @@ namespace EventStore.Core.Messaging {
 			_cancellationToken = cancellationToken;
 		}
 
+		public void StopReplies() {
+			Interlocked.Or(ref _stopped, 1);
+		}
+
 		public void ReplyWith<T>(T message) where T : Message {
 			try {
-				_semaphore.Wait(_cancellationToken);
+				do {
+					if (Interlocked.And(ref _stopped, 1) == 1)
+						return;
+				} while (!_semaphore.Wait(50, _cancellationToken));
 				_onMessage(message, _cancellationToken).ContinueWith(_ => _semaphore.Release(), _cancellationToken);
 			}
 			catch (ObjectDisposedException) {}
