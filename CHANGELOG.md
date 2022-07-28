@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Cherry picked from https
+- //github.com/EventStore/EventStore/pull/3532 [EventStore#3536](https://github.com/EventStore/EventStore/pull/3536)
+
 ## [22.6.0] - 2022-07-21
 
 ### Changed
