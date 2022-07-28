@@ -291,9 +291,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 											Log.Verbose(
 												"Live subscription {subscriptionId} to {streamName} enqueuing historical message {streamRevision}.",
 												_subscriptionId, _streamName, streamRevision);
-											await _channel.Writer.WriteAsync(new ReadResp {
-												Event = ConvertToReadEvent(_uuidOption, @event)
-											}, _cancellationToken).ConfigureAwait(false);
+											if (!_channel.Writer.TryWrite(new ReadResp {
+												Event = ConvertToReadEvent(_uuidOption, @event)})) {
+
+												ConsumerTooSlow(@event);
+												return;
+											}
 										}
 
 										ReadHistoricalEvents(StreamRevision.FromInt64(completed.NextEventNumber));
@@ -364,28 +367,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								return;
 							}
 
-							using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-							try {
-								Log.Verbose(
-									"Live subscription {subscriptionId} to {streamName} received event {streamRevision}.",
-									_subscriptionId, _streamName, appeared.Event.OriginalEventNumber);
+							Log.Verbose(
+								"Live subscription {subscriptionId} to {streamName} received event {streamRevision}.",
+								_subscriptionId, _streamName, appeared.Event.OriginalEventNumber);
 
-								await liveEvents.Writer.WriteAsync(appeared.Event, cts.Token)
-									.ConfigureAwait(false);
-							} catch (Exception e) {
-								if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0) return;
-
-								Log.Verbose(
-									e,
-									"Live subscription {subscriptionId} to {streamName} timed out at {streamRevision}; unsubscribing...",
-									_subscriptionId, _streamName,
-									StreamRevision.FromInt64(appeared.Event.OriginalEventNumber));
-
-								Unsubscribe();
-
-								liveEvents.Writer.Complete();
-
-								CatchUp(_currentRevision);
+							if (!liveEvents.Writer.TryWrite(appeared.Event)) {
+								ConsumerTooSlow(appeared.Event);
 							}
 
 							return;
@@ -395,6 +382,24 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
 							return;
 					}
+				}
+
+				void ConsumerTooSlow(ResolvedEvent evt) {
+					if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0)
+						return;
+
+					var state = caughtUpSource.Task.Status == TaskStatus.RanToCompletion ? "live" : "transitioning to live";
+					var msg = $"Consumer too slow to handle event while {state}. Client resubscription required.";
+					Log.Information(
+						"Live subscription {subscriptionId} to {streamName} timed out at {streamRevision}. {msg}. unsubscribing...",
+						_subscriptionId, _streamName,
+						StreamRevision.FromInt64(evt.OriginalEventNumber), msg);
+
+					Unsubscribe();
+
+					liveEvents.Writer.Complete();
+
+					Fail(RpcExceptions.Timeout(msg));
 				}
 
 				void Fail(Exception exception) {
