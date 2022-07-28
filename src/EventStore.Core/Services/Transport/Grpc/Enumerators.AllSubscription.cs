@@ -264,7 +264,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								caughtUpSource.TrySetResult(position);
 							}
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 							async Task OnHistoricalEventsMessage(Message message, CancellationToken ct) {
+#pragma warning restore CS1998
 								if (message is ClientMessage.NotHandled notHandled &&
 								    RpcExceptions.TryHandleNotHandled(notHandled, out var ex)) {
 									Fail(ex);
@@ -295,10 +297,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 												return;
 											}
 
-											await _channel.Writer.WriteAsync(new ReadResp {
-													Event = ConvertToReadEvent(_uuidOption, @event)
-												}, _cancellationToken)
-												.ConfigureAwait(false);
+											if (!_channel.Writer.TryWrite(new ReadResp {
+													Event = ConvertToReadEvent(_uuidOption, @event)})) {
+
+												ConsumerTooSlow(@event);
+												return;
+											}
 										}
 
 										ReadHistoricalEvents(Position.FromInt64(
@@ -350,28 +354,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								return;
 							}
 
-							using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-							try {
-								Log.Verbose(
-									"Live subscription {subscriptionId} to $all enqueuing live message {position}.",
-									_subscriptionId, appeared.Event.OriginalPosition);
+							Log.Verbose(
+								"Live subscription {subscriptionId} to $all enqueuing live message {position}.",
+								_subscriptionId, appeared.Event.OriginalPosition);
 
-								await liveEvents.Writer.WriteAsync(appeared.Event, cts.Token)
-									.ConfigureAwait(false);
-							} catch (Exception e) {
-								if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0) return;
-
-								Log.Verbose(
-									e,
-									"Live subscription {subscriptionId} to $all timed out at {position}; unsubscribing...",
-									_subscriptionId, appeared.Event.OriginalPosition.GetValueOrDefault());
-
-								Unsubscribe();
-
-								liveEvents.Writer.Complete();
-
-								CatchUp(Position.FromInt64(appeared.Event.OriginalPosition.Value.CommitPosition,
-									appeared.Event.OriginalPosition.Value.PreparePosition));
+							if (!liveEvents.Writer.TryWrite(appeared.Event)) {
+								ConsumerTooSlow(appeared.Event);
 							}
 
 							return;
@@ -381,6 +369,23 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								RpcExceptions.UnknownMessage<ClientMessage.SubscriptionConfirmation>(message));
 							return;
 					}
+				}
+
+				void ConsumerTooSlow(ResolvedEvent evt) {
+					if (Interlocked.Exchange(ref liveMessagesCancelled, 1) != 0)
+						return;
+
+					var state = caughtUpSource.Task.Status == TaskStatus.RanToCompletion ? "live" : "transitioning to live";
+					var msg = $"Consumer too slow to handle event while {state}. Client resubscription required.";
+					Log.Information(
+						"Live subscription {subscriptionId} to $all timed out at {position}. {msg}. unsubscribing...",
+						_subscriptionId, evt.OriginalPosition.GetValueOrDefault(), msg);
+
+					Unsubscribe();
+
+					liveEvents.Writer.Complete();
+
+					Fail(RpcExceptions.Timeout(msg));
 				}
 
 				void Fail(Exception exception) {
