@@ -30,15 +30,18 @@ All notable changes to this project will be documented in this file.
 - Allow loading trusted root certificates from the Windows cert store. [EventStore#3498](https://github.com/EventStore/EventStore/pull/3498)
 - Better summaries for CI Runs [EventStore#3496](https://github.com/EventStore/EventStore/pull/3496) - Thanks [@Tyrrrz](https://github.com/Tyrrrz)!
 
+## [21.10.7] - 2022-07-29
+
+## Fixed
+
+- Prevent gRPC subscriptions from hanging while catching up [EventStore#3532](https://github.com/EventStore/EventStore/pull/3532)
+- Fix "Known" and "Current" values showing as NaN in Persistent Subscriptions Commercial UI
+
 ## [21.10.6] - 2022-07-20
 
 ### Fixed
 - Possiblility of unreplicated writes appearing in reads and subscriptions [EventStore#3527](https://github.com/EventStore/EventStore/pull/3527)
 - Removed unnecessary "Should never complete request twice error" [EventStore#3522](https://github.com/EventStore/EventStore/pull/3522)
-
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/3530 [EventStore#3531](https://github.com/EventStore/EventStore/pull/3531)
-- //github.com/EventStore/EventStore/pull/3523 [EventStore#3528](https://github.com/EventStore/EventStore/pull/3528)
 
 ## [21.10.5] - 2022-06-15
 
