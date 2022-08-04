@@ -21,7 +21,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
 		<PackageReference Include="NUnit" Version="3.13.2" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
