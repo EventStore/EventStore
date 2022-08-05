@@ -32,18 +32,19 @@ namespace EventStore.Core.LogV3.FASTER {
 		public void ReadCompletionCallback(ref SpanByte key, ref TValue input, ref TValue output, Empty context, Status status) =>
 			throw new NotImplementedException();
 
-		public void CopyUpdater(ref SpanByte key, ref TValue input, ref TValue oldValue, ref TValue newValue) =>
+		public void CopyUpdater(ref SpanByte key, ref TValue input, ref TValue oldValue, ref TValue newValue, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public void InitialUpdater(ref SpanByte key, ref TValue input, ref TValue value) =>
+		public void InitialUpdater(ref SpanByte key, ref TValue input, ref TValue value, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public bool InPlaceUpdater(ref SpanByte key, ref TValue input, ref TValue value) =>
+		public bool InPlaceUpdater(ref SpanByte key, ref TValue input, ref TValue value, ref TValue output) =>
 			throw new NotImplementedException();
 
-		public void RMWCompletionCallback(ref SpanByte key, ref TValue input, Empty context, Status status) =>
+		public void RMWCompletionCallback(ref SpanByte key, ref TValue input, ref TValue output, Empty context, Status status) {
 			throw new NotImplementedException();
-
+		}
+		
 		public void DeleteCompletionCallback(ref SpanByte key, Empty context) =>
 			throw new NotImplementedException();
 

@@ -22,7 +22,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="HdrHistogram" Version="2.5.0" />
-		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.5" />
+		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.16" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
 		<PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
 		<PackageReference Include="System.Linq.Async" Version="5.0.0" />
