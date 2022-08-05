@@ -36,6 +36,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						method.Features.AddRange(new[] {"position", "events"});
 					} else if (x.Method.ServiceName.Contains("Streams") && x.Method.Name.Contains("BatchAppend")) {
 						method.Features.Add("deadline_duration");
+					} else if (x.Method.ServiceName.Contains("Projections") && x.Method.Name.Contains("Create")) {
+						method.Features.Add("track_emitted_streams");
 					}
 
 					return method;

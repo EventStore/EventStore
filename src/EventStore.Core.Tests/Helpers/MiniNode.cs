@@ -22,6 +22,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using ILogger = Serilog.ILogger;
 using EventStore.Core.LogAbstraction;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -44,6 +46,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public readonly TFChunkDb Db;
 		public readonly string DbPath;
 		public readonly HttpClient HttpClient;
+		private readonly IWebHost _host;
 		public readonly HttpMessageHandler HttpMessageHandler;
 
 		private readonly TestServer _kestrelTestServer;
@@ -174,6 +177,30 @@ namespace EventStore.Core.Tests.Helpers {
 					Scheme = Uri.UriSchemeHttps
 				}.Uri
 			};
+
+			_host = new WebHostBuilder()
+				.UseKestrel(o => {
+					o.Listen(HttpEndPoint, options => {
+						if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+							options.Protocols = HttpProtocols.Http2;
+						} else {
+							options.UseHttps(new HttpsConnectionAdapterOptions {
+								ServerCertificate = ssl_connections.GetServerCertificate(),
+								ClientCertificateMode = ClientCertificateMode.AllowCertificate,
+								ClientCertificateValidation = (certificate, chain, sslPolicyErrors) => {
+									var (isValid, error) =
+										ClusterVNode<string>.ValidateClientCertificate(certificate, chain, sslPolicyErrors, () => null, () => new X509Certificate2Collection(ssl_connections.GetRootCertificate()));
+									if (!isValid && error != null) {
+										Log.Error("Client certificate validation error: {e}", error);
+									}
+									return isValid;
+								}
+							});
+						}
+					});
+				})
+				.UseStartup(Node.Startup)
+				.Build();
 		}
 
 		public async Task Start() {
@@ -196,6 +223,7 @@ namespace EventStore.Core.Tests.Helpers {
 				Node.MainBus.Unsubscribe(waitForAdminUser);
 			}
 
+			await _host.StartAsync().WithTimeout();
 			await Node.StartAsync(true).WithTimeout(TimeSpan.FromSeconds(60))
 				.ConfigureAwait(false); //starts the node
 
@@ -209,6 +237,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			StoppingTime.Start();
 
+			_host?.Dispose();
 			_kestrelTestServer.Dispose();
 			HttpMessageHandler.Dispose();
 			HttpClient.Dispose();
