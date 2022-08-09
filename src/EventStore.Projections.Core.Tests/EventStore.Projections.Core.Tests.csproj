@@ -26,12 +26,21 @@
 		<PackageReference Include="NUnit" Version="3.13.2" />
 		<PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
 		<PackageReference Include="Serilog.Sinks.TextWriter" Version="2.1.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.18.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.41.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
 		<ProjectReference Include="..\EventStore.Core.Tests\EventStore.Core.Tests.csproj" />
 		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
 		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<Protobuf Include="..\Protos\Grpc\projections.proto" Link="Protos\projections.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\serverfeatures.proto" Link="Protos\serverfeatures.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 	</ItemGroup>
 	<ItemGroup>
 		<Content Include="Queries\1Query.js">
