@@ -51,6 +51,7 @@ namespace EventStore.Core.LogAbstraction {
 				metastreams: new LogV2SystemStreams(),
 				streamNamesProvider: GenStreamNamesProvider(options, streamNameIndex, eventTypeIndex),
 				streamIdValidator: new LogV2StreamIdValidator(),
+				streamIdConverter: new LogV2StreamIdConverter(),
 				emptyStreamId: string.Empty,
 				emptyEventTypeId: string.Empty,
 				streamIdSizer: new LogV2Sizer(),
@@ -126,6 +127,7 @@ namespace EventStore.Core.LogAbstraction {
 				metastreams: metastreams,
 				streamNamesProvider: GenStreamNamesProvider(metastreams),
 				streamIdValidator: new LogV3StreamIdValidator(),
+				streamIdConverter: new LogV3StreamIdConverter(),
 				emptyStreamId: 0,
 				emptyEventTypeId: 0,
 				streamIdSizer: new LogV3Sizer(),
@@ -241,6 +243,7 @@ namespace EventStore.Core.LogAbstraction {
 			IMetastreamLookup<TStreamId> metastreams,
 			IStreamNamesProvider<TStreamId> streamNamesProvider,
 			IValidator<TStreamId> streamIdValidator,
+			IStreamIdConverter<TStreamId> streamIdConverter,
 			TStreamId emptyStreamId,
 			TStreamId emptyEventTypeId,
 			ISizer<TStreamId> streamIdSizer,
@@ -262,6 +265,7 @@ namespace EventStore.Core.LogAbstraction {
 			Metastreams = metastreams;
 			StreamNamesProvider = streamNamesProvider;
 			StreamIdValidator = streamIdValidator;
+			StreamIdConverter = streamIdConverter;
 			EmptyStreamId = emptyStreamId;
 			EmptyEventTypeId = emptyEventTypeId;
 			StreamIdSizer = streamIdSizer;
@@ -287,6 +291,7 @@ namespace EventStore.Core.LogAbstraction {
 		public IMetastreamLookup<TStreamId> Metastreams { get; }
 		public IStreamNamesProvider<TStreamId> StreamNamesProvider { get; }
 		public IValidator<TStreamId> StreamIdValidator { get; }
+		public IStreamIdConverter<TStreamId> StreamIdConverter { get; }
 		public TStreamId EmptyStreamId { get; }
 		public TStreamId EmptyEventTypeId { get; }
 		public ISizer<TStreamId> StreamIdSizer { get; }

@@ -1994,15 +1994,29 @@ namespace EventStore.Core.Messages {
 			public readonly ClaimsPrincipal User;
 			public readonly int StartFromChunk;
 			public readonly int Threads;
+			public readonly int? Threshold;
+			public readonly int? ThrottlePercent;
+			public readonly bool SyncOnly;
 
-			public ScavengeDatabase(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user, int startFromChunk,
-				int threads) {
+			public ScavengeDatabase(
+				IEnvelope envelope,
+				Guid correlationId,
+				ClaimsPrincipal user,
+				int startFromChunk,
+				int threads,
+				int? threshold,
+				int? throttlePercent,
+				bool syncOnly) {
+
 				Ensure.NotNull(envelope, "envelope");
 				Envelope = envelope;
 				CorrelationId = correlationId;
 				User = user;
 				StartFromChunk = startFromChunk;
 				Threads = threads;
+				Threshold = threshold;
+				ThrottlePercent = throttlePercent;
+				SyncOnly = syncOnly;
 			}
 		}
 

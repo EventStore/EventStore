@@ -18,7 +18,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 			_publisher.Publish(new ClientMessage.ScavengeDatabase(new CallbackEnvelope(OnMessage), Guid.NewGuid(), user,
-				request.Options.StartFromChunk, request.Options.ThreadCount));
+				request.Options.StartFromChunk, request.Options.ThreadCount, null, null, false));
 
 			var (scavengeId, scavengeResult) = await scavengeResultSource.Task.ConfigureAwait(false);
 

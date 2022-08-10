@@ -24,6 +24,9 @@ namespace EventStore.Core.Tests.Services.Replication {
 		public string ScavengeId { get; }
 		public long SpaceSaved { get; }
 
+		public void ScavengeStarted() {
+		}
+
 		public void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads) {
 		}
 

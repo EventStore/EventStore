@@ -17,14 +17,13 @@ namespace EventStore.Core.Index {
 
 		public int CompareTo(IndexEntry other) {
 			var keyCmp = Stream.CompareTo(other.Stream);
-			if (keyCmp == 0) {
-				keyCmp = Version.CompareTo(other.Version);
-				if (keyCmp != 0)
-					return keyCmp;
-			}
-
 			if (keyCmp != 0)
 				return keyCmp;
+
+			keyCmp = Version.CompareTo(other.Version);
+			if (keyCmp != 0)
+				return keyCmp;
+
 			return Position.CompareTo(other.Position);
 		}
 

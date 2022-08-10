@@ -36,7 +36,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			_expectedOutputFile = GetTempFilePath();
 			Assert.That(
 				() => PTable.Scavenged(_oldTable, _expectedOutputFile, upgradeHash, existsAt, readRecord,
-					PTableVersions.IndexV4, out spaceSaved, ct: cancellationTokenSource.Token,
+					PTableVersions.IndexV4, existsAt, out spaceSaved, ct: cancellationTokenSource.Token,
 					initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
 					useBloomFilter: true),
 				Throws.InstanceOf<OperationCanceledException>());

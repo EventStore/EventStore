@@ -383,6 +383,7 @@ namespace EventStore.Core.Index {
 
 		public static PTable Scavenged<TStreamId>(PTable table, string outputFile, Func<TStreamId, ulong, ulong> upgradeHash,
 			Func<IndexEntry, bool> existsAt, Func<IndexEntry, Tuple<TStreamId, bool>> readRecord, byte version,
+			Func<IndexEntry, bool> shouldKeep,
 			out long spaceSaved,
 			int initialReaders, int maxReaders,
 			int cacheDepth = 16, bool skipIndexVerify = false,
@@ -426,7 +427,7 @@ namespace EventStore.Core.Index {
 							ulong? previousHash = null;
 							while (enumerator.MoveNext()) {
 								ct.ThrowIfCancellationRequested();
-								if (existsAt(enumerator.Current)) {
+								if (shouldKeep(enumerator.Current)) {
 									var current = enumerator.Current;
 									AppendRecordTo(bs, buffer, version, enumerator.Current, indexEntrySize);
 									// WRITE BLOOM FILTER ENTRY
@@ -688,10 +689,12 @@ namespace EventStore.Core.Index {
 				_readRecord = readRecord;
 
 				if (table.Version == PTableVersions.IndexV1 && mergedPTableVersion != PTableVersions.IndexV1) {
+					// upgrading 32 to 64 bit
 					_list = new List<IndexEntry>();
 					_enumerator = _list.GetEnumerator();
 					_ptableEnumerator = _ptable.IterateAllInOrder().GetEnumerator();
 				} else {
+					// regular
 					_enumerator = _ptable.IterateAllInOrder().GetEnumerator();
 				}
 			}
@@ -709,7 +712,7 @@ namespace EventStore.Core.Index {
 				if (_list == null || hasMovedToNext)
 					return hasMovedToNext;
 
-				// upgrading a V1 table
+				// upgrading a V1 table 32 to 64 bit
 				_enumerator.Dispose();
 				_list = ReadUntilDifferentHash(_mergedPTableVersion, _ptableEnumerator, _upgradeHash, _existsAt,
 					_readRecord);
@@ -718,6 +721,7 @@ namespace EventStore.Core.Index {
 				return _enumerator.MoveNext();
 			}
 
+			// only called when upgrading 32 to 64 bit
 			private List<IndexEntry> ReadUntilDifferentHash(byte version, IEnumerator<IndexEntry> ptableEnumerator,
 				Func<TStreamId, ulong, ulong> upgradeHash, Func<IndexEntry, bool> existsAt,
 				Func<IndexEntry, Tuple<TStreamId, bool>> readRecord) {

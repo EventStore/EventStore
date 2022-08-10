@@ -40,6 +40,8 @@ namespace EventStore.Core.LogV3 {
 
 		public const StreamId EpochInformationStreamNumber = 12;
 
+		public const StreamId ScavengePointsStreamNumber = 14;
+
 		public StreamId AllStream => AllStreamNumber;
 		public StreamId SettingsStream => SettingsStreamNumber;
 
@@ -64,6 +66,7 @@ namespace EventStore.Core.LogV3 {
 				AllStreamNumber => SystemStreams.AllStream,
 				EpochInformationStreamNumber => SystemStreams.EpochInformationStream,
 				EventTypesStreamNumber => SystemStreams.EventTypesStream,
+				ScavengePointsStreamNumber => SystemStreams.ScavengePointsStream,
 				SettingsStreamNumber => SystemStreams.SettingsStream,
 				StreamsCreatedStreamNumber => SystemStreams.StreamsCreatedStream,
 				_ => null,
@@ -82,6 +85,9 @@ namespace EventStore.Core.LogV3 {
 					return true;
 				case SystemStreams.EventTypesStream:
 					streamId = EventTypesStreamNumber;
+					return true;
+				case SystemStreams.ScavengePointsStream:
+					streamId = ScavengePointsStreamNumber;
 					return true;
 				case SystemStreams.StreamsCreatedStream:
 					streamId = StreamsCreatedStreamNumber;

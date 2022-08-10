@@ -58,5 +58,15 @@ namespace EventStore.Core.LogAbstraction {
 
 			return preExisting;
 		}
+
+		public static TStreamId GetExisting<TStreamId>(
+			this INameIndex<TStreamId> nameIndex,
+			string name) {
+
+			if (!nameIndex.GetOrReserve(name, out var value, out _, out _))
+				throw new Exception($"{name} was expected to already exist but it didn not");
+
+			return value;
+		}
 	}
 }

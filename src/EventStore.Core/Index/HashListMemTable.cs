@@ -8,7 +8,8 @@ using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.Index {
 	public class HashListMemTable : IMemTable, ISearchTable {
-		private static readonly IComparer<Entry> MemTableComparer = new EntryComparer();
+		private static readonly IComparer<Entry> MemTableComparer = new EventNumberComparer();
+		private static readonly IComparer<Entry> LogPosComparer = new LogPositionComparer();
 
 		public long Count {
 			get { return _count; }
@@ -130,6 +131,50 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 
+		public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			if (beforePosition < 0)
+				throw new ArgumentOutOfRangeException(nameof(beforePosition));
+
+			ulong hash = GetHash(stream);
+			entry = TableIndex.InvalidIndexEntry;
+
+			if (!_hash.TryGetValue(hash, out var list))
+				return false;
+
+			if (!Monitor.TryEnter(list, 10000))
+				throw new UnableToAcquireLockInReasonableTimeException();
+
+			try {
+				// we use LogPosComparer here so that it only compares the position part of the key we
+				// are passing in and not the evNum (maxvalue) which is meaningless
+				int endIdx = list.UpperBound(
+					key: new Entry(long.MaxValue, beforePosition - 1),
+					comparer: LogPosComparer,
+					continueSearch: e => isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
+
+				if (endIdx == -1)
+					return false;
+
+				var latestBeforePosition = list.Keys[endIdx];
+				entry = new IndexEntry(hash, latestBeforePosition.EvNum, latestBeforePosition.LogPos);
+				return true;
+			} catch (SearchStoppedException) {
+				// fall back to linear search if there was a hash collision
+				int maxIdx = list.FindMax(e =>
+					e.LogPos < beforePosition &&
+					isForThisStream(new IndexEntry(hash, e.EvNum, e.LogPos)));
+
+				if (maxIdx == -1)
+					return false;
+
+				var latestBeforePosition = list.Keys[maxIdx];
+				entry = new IndexEntry(hash, latestBeforePosition.EvNum, latestBeforePosition.LogPos);
+				return true;
+			} finally {
+				Monitor.Exit(list);
+			}
+		}
+
 		public bool TryGetOldestEntry(ulong stream, out IndexEntry entry) {
 			ulong hash = GetHash(stream);
 			entry = TableIndex.InvalidIndexEntry;
@@ -141,6 +186,66 @@ namespace EventStore.Core.Index {
 				try {
 					var oldest = list.Keys[0];
 					entry = new IndexEntry(hash, oldest.EvNum, oldest.LogPos);
+					return true;
+				} finally {
+					Monitor.Exit(list);
+				}
+			}
+
+			return false;
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterNumber, out IndexEntry entry) {
+			if (afterNumber < 0)
+				throw new ArgumentOutOfRangeException(nameof(afterNumber));
+
+			ulong hash = GetHash(stream);
+			entry = TableIndex.InvalidIndexEntry;
+
+			if (afterNumber >= long.MaxValue)
+				return false;
+
+			SortedList<Entry, byte> list;
+			if (_hash.TryGetValue(hash, out list)) {
+				if (!Monitor.TryEnter(list, 10000))
+					throw new UnableToAcquireLockInReasonableTimeException();
+				try {
+					int endIdx = list.LowerBound(new Entry(afterNumber + 1, 0));
+					if (endIdx == -1)
+						return false;
+
+					var e = list.Keys[endIdx];
+					entry = new IndexEntry(hash, e.EvNum, e.LogPos);
+					return true;
+				} finally {
+					Monitor.Exit(list);
+				}
+			}
+
+			return false;
+		}
+
+		public bool TryGetPreviousEntry(ulong stream, long beforeNumber, out IndexEntry entry) {
+			if (beforeNumber < 0)
+				throw new ArgumentOutOfRangeException(nameof(beforeNumber));
+
+			ulong hash = GetHash(stream);
+			entry = TableIndex.InvalidIndexEntry;
+
+			if (beforeNumber <= 0)
+				return false;
+
+			SortedList<Entry, byte> list;
+			if (_hash.TryGetValue(hash, out list)) {
+				if (!Monitor.TryEnter(list, 10000))
+					throw new UnableToAcquireLockInReasonableTimeException();
+				try {
+					int endIdx = list.UpperBound(new Entry(beforeNumber - 1, long.MaxValue));
+					if (endIdx == -1)
+						return false;
+
+					var e = list.Keys[endIdx];
+					entry = new IndexEntry(hash, e.EvNum, e.LogPos);
 					return true;
 				} finally {
 					Monitor.Exit(list);
@@ -213,10 +318,18 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		private class EntryComparer : IComparer<Entry> {
+		private class EventNumberComparer : IComparer<Entry> {
 			public int Compare(Entry x, Entry y) {
 				if (x.EvNum < y.EvNum) return -1;
 				if (x.EvNum > y.EvNum) return 1;
+				if (x.LogPos < y.LogPos) return -1;
+				if (x.LogPos > y.LogPos) return 1;
+				return 0;
+			}
+		}
+
+		private class LogPositionComparer : IComparer<Entry> {
+			public int Compare(Entry x, Entry y) {
 				if (x.LogPos < y.LogPos) return -1;
 				if (x.LogPos > y.LogPos) return 1;
 				return 0;
