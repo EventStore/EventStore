@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3532 [EventStore#3536](https://github.com/EventStore/EventStore/pull/3536)
 - //github.com/EventStore/EventStore/pull/3543 [EventStore#3545](https://github.com/EventStore/EventStore/pull/3545)
+- //github.com/EventStore/EventStore/pull/3549 [EventStore#3556](https://github.com/EventStore/EventStore/pull/3556)
 
 ### Security
 - Updated Newtonsoft.Json from 11.0.2 to 13.0.1. [EventStore#3507](https://github.com/EventStore/EventStore/pull/3507)
