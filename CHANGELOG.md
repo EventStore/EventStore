@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 ### Security
 - Updated Newtonsoft.Json from 11.0.2 to 13.0.1. [EventStore#3507](https://github.com/EventStore/EventStore/pull/3507)
 
+### Added
+- New scavenge algorithm [EventStore#3520](https://github.com/EventStore/EventStore/pull/3520)
+
 ## [22.6.0] - 2022-07-21
 
 ### Changed
