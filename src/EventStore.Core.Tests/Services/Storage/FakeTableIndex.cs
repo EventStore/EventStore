@@ -41,9 +41,33 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return false;
 		}
 
+		public bool TryGetLatestEntry(ulong stream, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetLatestEntry(TStreamId streamId, long beforePosition, Func<IndexEntry, bool> isForThisStream, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry) {
 			entry = InvalidIndexEntry;
 			return false;
+		}
+
+		public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetPreviousEntry(TStreamId streamId, long beforeVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetPreviousEntry(ulong stream, long beforeVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
 		}
 
 		public IEnumerable<ISearchTable> IterateAllInOrder() => throw new NotImplementedException();
@@ -53,8 +77,20 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return Array.Empty<IndexEntry>();
 		}
 
+		public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			throw new NotImplementedException();
+		}
+
 		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
 			ScavengeCount++;
+		}
+
+		public void Scavenge(
+			Func<IndexEntry, bool> shouldKeep,
+			IIndexScavengerLog log,
+			CancellationToken ct) {
+
+			Scavenge(log, ct);
 		}
 
 		public Task MergeIndexes() {

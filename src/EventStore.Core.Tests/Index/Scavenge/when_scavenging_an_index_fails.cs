@@ -31,7 +31,7 @@ namespace EventStore.Core.Tests.Index.Scavenge {
 			_expectedOutputFile = GetTempFilePath();
 			Assert.That(
 				() => PTable.Scavenged(_oldTable, _expectedOutputFile, upgradeHash, existsAt, readRecord,
-					PTableVersions.IndexV4, out spaceSaved, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
+					PTableVersions.IndexV4, existsAt, out spaceSaved, initialReaders: Constants.PTableInitialReaderCount, maxReaders: Constants.PTableMaxReaderCountDefault,
 					useBloomFilter: true),
 				Throws.Exception.With.Message.EqualTo("Expected exception"));
 		}

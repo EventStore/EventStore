@@ -73,12 +73,20 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public long GetLocalLogPosition(long globalLogicalPosition) {
 			if (globalLogicalPosition < ChunkStartPosition || globalLogicalPosition > ChunkEndPosition) {
-				throw new Exception(string.Format(
-					"globalLogicalPosition {0} is out of chunk logical positions [{1}, {2}].",
-					globalLogicalPosition, ChunkStartPosition, ChunkEndPosition));
+				throw new Exception(
+					$"globalLogicalPosition {globalLogicalPosition} is out of chunk logical positions [{ChunkStartPosition}, {ChunkEndPosition}].");
 			}
 
 			return globalLogicalPosition - ChunkStartPosition;
+		}
+
+		public long GetGlobalLogPosition(long localLogicalPosition) {
+			if (ChunkStartPosition + localLogicalPosition > ChunkEndPosition) {
+				throw new Exception(
+					$"localLogicalPosition {localLogicalPosition} is out of chunk logical positions [{ChunkStartPosition}, {ChunkEndPosition}].");
+			}
+
+			return ChunkStartPosition + localLogicalPosition;
 		}
 
 		public override string ToString() {

@@ -44,7 +44,25 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public long SpaceSaved => Interlocked.Read(ref _spaceSaved);
 
+		public void ScavengeStarted() {
+			ScavengeStartedInternal(new Dictionary<string, object> {
+				{"scavengeId", _scavengeId},
+				{"nodeEndpoint", _nodeId},
+			});
+		}
+
 		public void ScavengeStarted(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk, int threads) {
+			ScavengeStartedInternal(new Dictionary<string, object> {
+				{"scavengeId", _scavengeId},
+				{"nodeEndpoint", _nodeId},
+				{"alwaysKeepScavenged", alwaysKeepScavenged},
+				{"mergeChunks", mergeChunks},
+				{"startFromChunk", startFromChunk},
+				{"threads", threads},
+			});
+		}
+
+		private void ScavengeStartedInternal(Dictionary<string, object> payload) {
 			var metadataEventId = Guid.NewGuid();
 			var metaStreamId = SystemStreams.MetastreamOf(_streamName);
 			var acl = new StreamAcl(
@@ -66,14 +84,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			});
 
 			var scavengeStartedEvent = new Event(Guid.NewGuid(), SystemEventTypes.ScavengeStarted, true,
-				new Dictionary<string, object> {
-					{"scavengeId", _scavengeId},
-					{"nodeEndpoint", _nodeId},
-					{"alwaysKeepScavenged", alwaysKeepScavenged},
-					{"mergeChunks", mergeChunks},
-					{"startFromChunk", startFromChunk},
-					{"threads", threads},
-				}.ToJsonBytes(), null);
+				payload.ToJsonBytes(), null);
 			WriteScavengeDetailEvent(_streamName, scavengeStartedEvent, _retryAttempts);
 		}
 

@@ -11,8 +11,6 @@ namespace EventStore.Core.Messages {
 			ScavengeId = scavengeId;
 		}
 
-		public override string ToString() {
-			return String.Format("ScavengeId: {0}", ScavengeId);
-		}
+		public override string ToString() => $"ScavengeId: {ScavengeId}";
 	}
 }

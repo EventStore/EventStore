@@ -1,4 +1,4 @@
-﻿using EventStore.Common.Utils;
+using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;

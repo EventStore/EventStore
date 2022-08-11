@@ -13,6 +13,7 @@ namespace EventStore.Core.LogV3 {
 		public const EventTypeId StreamMetadataNumber = 3;
 		public const EventTypeId StreamDeletedNumber = 4;
 		public const EventTypeId EpochInformationNumber = 5;
+		public const EventTypeId ScavengePointNumber = 6;
 
 		public static bool TryGetSystemEventTypeId(string type, out EventTypeId eventTypeId) {
 			switch (type) {
@@ -24,6 +25,9 @@ namespace EventStore.Core.LogV3 {
 					return true;
 				case SystemEventTypes.EventTypeDefined:
 					eventTypeId = EventTypeDefinedNumber;
+					return true;
+				case SystemEventTypes.ScavengePoint:
+					eventTypeId = ScavengePointNumber;
 					return true;
 				case SystemEventTypes.StreamCreated:
 					eventTypeId = StreamCreatedNumber;
@@ -50,6 +54,7 @@ namespace EventStore.Core.LogV3 {
 				EmptyEventTypeNumber => SystemEventTypes.EmptyEventType,
 				EpochInformationNumber => SystemEventTypes.EpochInformation,
 				EventTypeDefinedNumber => SystemEventTypes.EventTypeDefined,
+				ScavengePointNumber => SystemEventTypes.ScavengePoint,
 				StreamCreatedNumber => SystemEventTypes.StreamCreated,
 				StreamMetadataNumber => SystemEventTypes.StreamMetadata,
 				StreamDeletedNumber => SystemEventTypes.StreamDeleted,

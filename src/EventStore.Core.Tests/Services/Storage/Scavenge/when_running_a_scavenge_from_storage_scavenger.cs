@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
-	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint), IgnoreReason = "new scavenge in logv3 later")]
 	public class when_running_scavenge_from_storage_scavenger<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		private static readonly ILogger Log = Serilog.Log.ForContext<when_running_scavenge_from_storage_scavenger<TLogFormat, TStreamId>>();
 		private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
@@ -25,11 +25,11 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			_node = new MiniNode<TLogFormat, TStreamId>(PathName);
+			_node = new MiniNode<TLogFormat, TStreamId>(PathName, inMemDb: false);
 			await _node.Start();
 
 			var scavengeMessage =
-				new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccounts.System, 0, 1);
+				new ClientMessage.ScavengeDatabase(new NoopEnvelope(), Guid.NewGuid(), SystemAccounts.System, 0, 1, null, null, false);
 			_node.Node.MainQueue.Publish(scavengeMessage);
 
 			try {

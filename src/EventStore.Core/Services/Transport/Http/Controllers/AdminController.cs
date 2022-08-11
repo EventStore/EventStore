@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
@@ -38,7 +39,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				new ControllerAction("/admin/reloadconfig", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.ReloadConfiguration)),
 				OnPostReloadConfig);
 			service.RegisterAction(
-				new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}",
+				new ControllerAction("/admin/scavenge?startFromChunk={startFromChunk}&threads={threads}&threshold={threshold}&throttlePercent={throttlePercent}&syncOnly={syncOnly}",
 					HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Start)), OnPostScavenge);
 			service.RegisterAction(
 				new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs,
@@ -121,7 +122,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnPostScavenge(HttpEntityManager entity, UriTemplateMatch match) {
 			int startFromChunk = 0;
-
 			var startFromChunkVariable = match.BoundVariables["startFromChunk"];
 			if (startFromChunkVariable != null) {
 				if (!int.TryParse(startFromChunkVariable, out startFromChunk) || startFromChunk < 0) {
@@ -131,7 +131,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			}
 
 			int threads = 1;
-
 			var threadsVariable = match.BoundVariables["threads"];
 			if (threadsVariable != null) {
 				if (!int.TryParse(threadsVariable, out threads) || threads < 1) {
@@ -140,9 +139,68 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				}
 			}
 
-			Log.Information(
-				"Request scavenging because /admin/scavenge?startFromChunk={chunkStartNumber}&threads={numThreads} request has been received.",
-				startFromChunk, threads);
+			int? threshold = null;
+			var thresholdVariable = match.BoundVariables["threshold"];
+			if (thresholdVariable != null) {
+				if (!int.TryParse(thresholdVariable, out var x)) {
+					SendBadRequest(entity, "threshold must be an integer");
+					return;
+				}
+
+				threshold = x;
+			}
+
+			int? throttlePercent = null;
+			var throttlePercentVariable = match.BoundVariables["throttlePercent"];
+			if (throttlePercentVariable != null) {
+				if (!int.TryParse(throttlePercentVariable, out var x) || x <= 0 || x > 100) {
+					SendBadRequest(entity, "throttlePercent must be between 1 and 100 inclusive");
+					return;
+				}
+
+				if (x != 100 && threads > 1) {
+					SendBadRequest(entity, "throttlePercent must be 100 for a multi-threaded scavenge");
+					return;
+				}
+
+				throttlePercent = x;
+			}
+
+			var syncOnly = false;
+			var syncOnlyVariable = match.BoundVariables["syncOnly"];
+			if (syncOnlyVariable != null) {
+				if (!bool.TryParse(syncOnlyVariable, out var x)) {
+					SendBadRequest(entity, "syncOnly must be a boolean");
+					return;
+				}
+
+				syncOnly = x;
+			}
+
+			var sb = new StringBuilder();
+			var args = new List<object>();
+
+			sb.Append("Request scavenging because /admin/scavenge");
+			sb.Append("?startFromChunk={chunkStartNumber}");
+			args.Add(startFromChunk);
+			sb.Append("&threads={numThreads}");
+			args.Add(threads);
+
+			if (threshold != null) {
+				sb.Append("&threshold={threshold}");
+				args.Add(threshold);
+			}
+
+			if (throttlePercent != null) {
+				sb.Append("&throttlePercent={throttlePercent}");
+				args.Add(throttlePercent);
+			}
+
+			sb.Append("&syncOnly={syncOnly}");
+			args.Add(syncOnly);
+
+			sb.Append(" request has been received.");
+			Log.Information(sb.ToString(), args.ToArray());
 
 			var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) => {
 					var completed = message as ClientMessage.ScavengeDatabaseResponse;
@@ -163,7 +221,15 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				}
 			);
 
-			Publish(new ClientMessage.ScavengeDatabase(envelope, Guid.Empty, entity.User, startFromChunk, threads));
+			Publish(new ClientMessage.ScavengeDatabase(
+				envelope: envelope,
+				correlationId: Guid.Empty,
+				user: entity.User,
+				startFromChunk: startFromChunk,
+				threads: threads,
+				threshold: threshold,
+				throttlePercent: throttlePercent,
+				syncOnly: syncOnly));
 		}
 
 		private void OnStopScavenge(HttpEntityManager entity, UriTemplateMatch match) {

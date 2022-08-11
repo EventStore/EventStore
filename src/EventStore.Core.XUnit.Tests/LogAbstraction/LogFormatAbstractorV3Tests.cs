@@ -351,6 +351,24 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 
 			public IndexReadStreamResult ReadStreamEventsForward(string streamName, StreamId streamId, long fromEventNumber, int maxCount) =>
 				throw new NotImplementedException();
+
+			public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition) =>
+				throw new NotImplementedException();
+
+			public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition) =>
+				throw new NotImplementedException();
+
+			public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(uint streamId, long fromEventNumber, int maxCount, long beforePosition) =>
+				throw new NotImplementedException();
+
+			public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long fromEventNumber, int maxCount, long beforePosition) =>
+				throw new NotImplementedException();
+
+			public long GetStreamLastEventNumber_KnownCollisions(uint streamId, long beforePosition) =>
+				throw new NotImplementedException();
+
+			public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, uint> getStreamId, long beforePosition) =>
+				throw new NotImplementedException();
 		}
 	}
 

@@ -104,6 +104,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _streamIds.LookupValue(streamName);
 		}
 
+		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition) {
+			return _indexReader.ReadEventInfoForward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition);
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition) {
+			return _indexReader.ReadEventInfoForward_NoCollisions(stream, fromEventNumber, maxCount, beforePosition);
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
+			long beforePosition) {
+			return _indexReader.ReadEventInfoBackward_KnownCollisions(streamId, fromEventNumber, maxCount, beforePosition);
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId,
+			long fromEventNumber, int maxCount, long beforePosition) {
+			return _indexReader.ReadEventInfoBackward_NoCollisions(stream, getStreamId, fromEventNumber, maxCount, beforePosition);
+		}
+
 		string IReadIndex<TStreamId>.GetStreamName(TStreamId streamId) {
 			return _streamNames.LookupName(streamId);
 		}
@@ -114,6 +132,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		long IReadIndex<TStreamId>.GetStreamLastEventNumber(TStreamId streamId) {
 			return _indexReader.GetStreamLastEventNumber(streamId);
+		}
+
+		public long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition) {
+			return _indexReader.GetStreamLastEventNumber_KnownCollisions(streamId, beforePosition);
+		}
+
+		public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition) {
+			return _indexReader.GetStreamLastEventNumber_NoCollisions(stream, getStreamId, beforePosition);
 		}
 
 		StreamMetadata IReadIndex<TStreamId>.GetStreamMetadata(TStreamId streamId) {

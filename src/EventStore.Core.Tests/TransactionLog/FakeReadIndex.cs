@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
-using EventStore.ClientAPI.Common;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
-using EventStore.Core.Util;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	internal class FakeReadIndex<TLogFormat, TStreamId> : IReadIndex<TStreamId> {
@@ -61,6 +59,25 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
+		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
+			long beforePosition) {
+			throw new NotImplementedException();
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition) {
+			throw new NotImplementedException();
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount,
+			long beforePosition) {
+			throw new NotImplementedException();
+		}
+
+		public IndexReadEventInfoResult ReadEventInfoBackward_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long fromEventNumber,
+			int maxCount, long beforePosition) {
+			throw new NotImplementedException();
+		}
+
 		public IndexReadAllResult ReadAllEventsForward(TFPos pos, int maxCount) {
 			throw new NotImplementedException();
 		}
@@ -87,6 +104,14 @@ namespace EventStore.Core.Tests.TransactionLog {
 			if (_metastreams.IsMetaStream(streamId))
 				return GetStreamLastEventNumber(_metastreams.OriginalStreamOf(streamId));
 			return _isStreamDeleted(streamId) ? EventNumber.DeletedStream : 1000000;
+		}
+
+		public long GetStreamLastEventNumber_KnownCollisions(TStreamId streamId, long beforePosition) {
+			throw new NotImplementedException();
+		}
+
+		public long GetStreamLastEventNumber_NoCollisions(ulong stream, Func<ulong, TStreamId> getStreamId, long beforePosition) {
+			throw new NotImplementedException();
 		}
 
 		public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId) {
