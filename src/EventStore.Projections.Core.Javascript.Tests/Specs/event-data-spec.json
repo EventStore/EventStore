@@ -80,7 +80,7 @@
 			"allStreams": true,
 			"events": ["baz"] ,
 			"partitioned": false,
-			"definesStateTransform": true,
+			"definesStateTransform": false,
 			"handlesDeletedNotifications": false,
 			"producesResults": false,
 			"definesFold": true,
