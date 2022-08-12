@@ -655,7 +655,6 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				switch (name) {
 					case "$init":
 						_init = handler;
-						_definitionBuilder.SetDefinesStateTransform();
 						break;
 					case "$initShared":
 						_definitionBuilder.SetIsBiState(true);
