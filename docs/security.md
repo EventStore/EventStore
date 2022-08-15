@@ -80,6 +80,8 @@ When getting an incoming connection, the server needs to ensure if the certifica
 
 EventStoreDB will not use the default trusted root certificates store location of the platform. So, even if you use a certificate signed by a publicly trusted CA, you'd need to explicitly tell the node to use the OS default root certificate store. For certificates signed by a private CA, you just provide the path to the CA certificate file (but not the filename).
 
+If you are running on Windows, you can also load the trusted root certificate from the Windows Certificate Store. The available options for configuring this are described [below](#certificate-store-windows).
+
 | Format               | Syntax                                      |
 |:---------------------|:--------------------------------------------|
 | Command line         | `--trusted-root-certificates-paths`         |
@@ -143,13 +145,64 @@ The certificate store name is the name of the Windows certificate store, for exa
 | YAML                 | `CertificateStoreName`              |
 | Environment variable | `EVENTSTORE_CERTIFICATE_STORE_NAME` |
 
-You need to add the certificate thumbprint setting on Windows so the server can ensure that it's using the correct certificate found in the certificates store.
+You can load a certificate using either its thumbprint or its subject name.
+If using the thumbprint, the server expects to only find one certificate file matching that thumbprint in the cert store.
 
 | Format               | Syntax                              |
 |:---------------------|:------------------------------------|
 | Command line         | `--certificate-thumbprint`          |
 | YAML                 | `CertificateThumbprint`             |
 | Environment variable | `EVENTSTORE_CERTIFICATE_THUMBPRINT` |
+
+The subject name matches any certificate that contains the specified name. This means that multiple matching certificates could be found.
+To match any certificate made by the es-gencert-cli, you can set the subject name to `eventstoredb-node`.
+
+If multiple matching certificates are found, then the certificate with the latest expiry date will be selected.
+
+| Format               | Syntax                                |
+|:---------------------|:--------------------------------------|
+| Command line         | `--certificate-subject-name`          |
+| YAML                 | `CertificateSubjectName`              |
+| Environment variable | `EVENTSTORE_CERTIFICATE_SUBJECT_NAME` |
+
+When you are loading your node certificates from the Windows cert store, you are likely to want to load the trusted root certificate from the cert store as well.
+The options to configure this are similar to the ones for node certificates.
+
+The trusted root certificate store location is the location of the Windows certificate store in which the trusted root certificate is installed, for example `CurrentUser`.
+
+| Format               | Syntax                                               |
+|:---------------------|:-----------------------------------------------------|
+| Command line         | `--trusted-root-certificate-store-location`          |
+| YAML                 | `TrustedRootCertificateStoreLocation`                |
+| Environment variable | `EVENTSTORE_TRUSTED_ROOT_CERTIFICATE_STORE_LOCATION` |
+
+The trusted root certificate store name is the name of the Windows certificate store in which the trusted root certificate is installed, for example `Root`.
+
+| Format               | Syntax                                           |
+|:---------------------|:-------------------------------------------------|
+| Command line         | `--trusted-root-certificate-store-name`          |
+| YAML                 | `TrustedRootCertificateStoreName`                |
+| Environment variable | `EVENTSTORE_TRUSTED_ROOT_CERTIFICATE_STORE_NAME` |
+
+Trusted root certificates can also be loaded using either its thumbprint or its subject name.
+If using the thumbprint, the server expects to only find one trusted root certificate file matching that thumbprint in the cert store.
+
+| Format               | Syntax                                           |
+|:---------------------|:-------------------------------------------------|
+| Command line         | `--trusted-root-certificate-thumbprint`          |
+| YAML                 | `TrustedRootCertificateThumbprint`               |
+| Environment variable | `EVENTSTORE_TRUSTED_ROOT_CERTIFICATE_THUMBPRINT` |
+
+The subject name matches any certificate that contains the specified name. This means that multiple matching certificates could be found.
+To match any root certificate made through the es-gencert-cli, you can set the Subject Name to `EventStoreDB CA`.
+
+If multiple matching root certificates are found, then the root certificate with the latest expiry date will be selected.
+
+| Format               | Syntax                                             |
+|:---------------------|:---------------------------------------------------|
+| Command line         | `--trusted-root-certificate-subject-name`          |
+| YAML                 | `TrustedRootCertificateSubjectName`                |
+| Environment variable | `EVENTSTORE_TRUSTED_ROOT_CERTIFICATE_SUBJECT_NAME` |
 
 ### Certificate generation tool
 
