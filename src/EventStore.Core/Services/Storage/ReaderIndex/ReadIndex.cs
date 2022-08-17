@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -46,7 +47,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameExistenceFilter streamExistenceFilter,
 			IExistenceFilterReader<TStreamId> streamExistenceFilterReader,
 			INameIndexConfirmer<TStreamId> eventTypeIndex,
-			int streamInfoCacheCapacity,
+			ICacheSettings streamInfoCacheSettings,
 			bool additionalCommitChecks,
 			long metastreamMaxCount,
 			int hashCollisionReadLimit,
@@ -63,14 +64,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.NotNull(streamExistenceFilter, nameof(streamExistenceFilter));
 			Ensure.NotNull(streamExistenceFilterReader, nameof(streamExistenceFilterReader));
 
-			Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
+			Ensure.NotNull(streamInfoCacheSettings, "streamInfoCacheSettings");
 			Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 			Ensure.NotNull(indexCheckpoint, "indexCheckpoint");
 
 			var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
-			var indexBackend = new IndexBackend<TStreamId>(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
+			var indexBackend = new IndexBackend<TStreamId>(readerPool, sizer, streamInfoCacheSettings);
 
 			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator,
 				streamExistenceFilterReader, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads);

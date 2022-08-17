@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -267,7 +268,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				logFormat.StreamExistenceFilter,
 				logFormat.StreamExistenceFilterReader,
 				logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity: 100,
+				streamInfoCacheSettings: CacheSettings.Static("StreamInfo", 100L * 1024),
 				additionalCommitChecks: true,
 				metastreamMaxCount: 1,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,

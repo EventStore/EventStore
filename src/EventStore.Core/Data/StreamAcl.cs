@@ -1,3 +1,8 @@
+using System;
+using System.Runtime.CompilerServices;
+using EventStore.Common.Utils;
+using EventStore.Core.Caching;
+
 namespace EventStore.Core.Data {
 	public class StreamAcl {
 		public readonly string[] ReadRoles;
@@ -31,6 +36,23 @@ namespace EventStore.Core.Data {
 				DeleteRoles == null ? "<null>" : "[" + string.Join(",", DeleteRoles) + "]",
 				MetaReadRoles == null ? "<null>" : "[" + string.Join(",", MetaReadRoles) + "]",
 				MetaWriteRoles == null ? "<null>" : "[" + string.Join(",", MetaWriteRoles) + "]");
+		}
+
+		public int Size {
+			get
+			{
+				var size = 0;
+				size += MemSizer.ObjectHeaderSize; // StreamAcl object header
+				size += (Unsafe.SizeOf<string[]>() * 5) // string arrays refs
+					.RoundUpToMultipleOf(IntPtr.Size); // padding
+				size += MemSizer.SizeOf(ReadRoles);
+				size += MemSizer.SizeOf(WriteRoles);
+				size += MemSizer.SizeOf(DeleteRoles);
+				size += MemSizer.SizeOf(MetaReadRoles);
+				size += MemSizer.SizeOf(MetaWriteRoles);
+
+				return size;
+			}
 		}
 	}
 }

@@ -1,8 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
+using Serilog;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexBackend {
@@ -24,18 +29,69 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 	public class IndexBackend<TStreamId> : IIndexBackend<TStreamId> {
 		private readonly ObjectPool<ITransactionFileReader> _readers;
-		private readonly ILRUCache<TStreamId, EventNumberCached> _streamLastEventNumberCache;
-		private readonly ILRUCache<TStreamId, MetadataCached> _streamMetadataCache;
+		private readonly IDynamicLRUCache<TStreamId, EventNumberCached> _streamLastEventNumberCache;
+		private readonly IDynamicLRUCache<TStreamId, MetadataCached> _streamMetadataCache;
+		private readonly ISizer<TStreamId> _streamIdSizer;
+
+		// very rough approximation of memory taken by one item in the stream info cache.
+		// used only when cache is configured in terms of "max items" rather than "max bytes".
+		public const long StreamInfoCacheUnitSize = 1000;
+
+		private const int LastEventNumberCacheRatio = 60;
+		private const int StreamMetadataCacheRatio = 100 - LastEventNumberCacheRatio;
+
+		private const string LastEventNumberCacheName = "LastEventNumber";
+		private const string StreamMetadataCacheName = "StreamMetadata";
+
 		private SystemSettings _systemSettings;
 
-		public IndexBackend(ObjectPool<ITransactionFileReader> readers,
-			int lastEventNumberCacheCapacity,
-			int metadataCacheCapacity) {
-			Ensure.NotNull(readers, "readers");
+		public IndexBackend(ObjectPool<ITransactionFileReader> readers, ISizer<TStreamId> streamIdSizer, ICacheSettings streamInfoCacheSettings) {
+			Ensure.NotNull(readers, nameof(readers));
+			Ensure.NotNull(streamIdSizer, nameof(streamIdSizer));
 
 			_readers = readers;
-			_streamLastEventNumberCache = new LRUCache<TStreamId, EventNumberCached>(lastEventNumberCacheCapacity);
-			_streamMetadataCache = new LRUCache<TStreamId, MetadataCached>(metadataCacheCapacity);
+			_streamIdSizer = streamIdSizer;
+
+			var lastEventNumberCacheCapacity =
+				streamInfoCacheSettings.InitialMaxMemAllocation * LastEventNumberCacheRatio / 100;
+			var streamMetadataCacheCapacity =
+				streamInfoCacheSettings.InitialMaxMemAllocation * StreamMetadataCacheRatio / 100;
+
+			_streamLastEventNumberCache = new DynamicLRUCache<TStreamId, EventNumberCached>(lastEventNumberCacheCapacity, CalcLastEventNumberItemSize);
+			_streamMetadataCache = new DynamicLRUCache<TStreamId, MetadataCached>(streamMetadataCacheCapacity, CalcMetadataItemSize);
+
+			Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", LastEventNumberCacheName, lastEventNumberCacheCapacity);
+			Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", StreamMetadataCacheName, streamMetadataCacheCapacity);
+
+			streamInfoCacheSettings.GetMemoryUsage = () => _streamLastEventNumberCache.Size + _streamMetadataCache.Size;
+			streamInfoCacheSettings.UpdateMaxMemoryAllocation = UpdateMaxMemoryAllocation;
+		}
+
+		private int CalcLastEventNumberItemSize(TStreamId streamId, EventNumberCached eventNumberCached) =>
+			_streamIdSizer.GetSizeInBytes(streamId) + EventNumberCached.Size + EventNumberCached.DictionaryEntryOverhead;
+
+		private int CalcMetadataItemSize(TStreamId streamId, MetadataCached metadataCached) =>
+			_streamIdSizer.GetSizeInBytes(streamId) + metadataCached.Size + MetadataCached.DictionaryEntryOverhead;
+
+		private void UpdateMaxMemoryAllocation(long allocatedMem) {
+			UpdateCapacity(_streamLastEventNumberCache, LastEventNumberCacheName,
+				allocatedMem * LastEventNumberCacheRatio / 100);
+			UpdateCapacity(_streamMetadataCache, StreamMetadataCacheName,
+				allocatedMem * StreamMetadataCacheRatio / 100);
+		}
+
+		private delegate void LogAction(string msg, params object[] args);
+		private static void UpdateCapacity(IDynamicLRUCache cache, string cacheName, long newCapacity) {
+			var prevCapacity = cache.Capacity;
+
+			var sw = Stopwatch.StartNew();
+			cache.Resize(newCapacity, out var removedCount, out var removedSize);
+			sw.Stop();
+
+			LogAction logAction = removedCount > 0 ? Log.Information : Log.Debug;
+			logAction("{name} cache resized from ~{prevCapacity:N0} bytes to ~{newCapacity:N0} bytes in {elapsed}. "
+			          + "Removed {numEntries:N0} entries amounting to ~{numBytes:N0} bytes.",
+				cacheName, prevCapacity, newCapacity, sw.Elapsed, removedCount, removedSize);
 		}
 
 		public TFReaderLease BorrowReader() {
@@ -106,6 +162,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				Version = version;
 				LastEventNumber = lastEventNumber;
 			}
+
+			public static int Size => Unsafe.SizeOf<EventNumberCached>();
+			public const int DictionaryEntryOverhead = 20;
 		}
 
 		public struct MetadataCached {
@@ -116,6 +175,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				Version = version;
 				Metadata = metadata;
 			}
+
+			public int Size => Unsafe.SizeOf<MetadataCached>() + (Metadata?.Size ?? 0);
+			public const int DictionaryEntryOverhead = 20;
 		}
 	}
 }

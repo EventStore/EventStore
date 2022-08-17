@@ -2,6 +2,9 @@ using System;
 
 namespace EventStore.Core.DataStructures {
 	public class NoLRUCache<TKey, TValue> : ILRUCache<TKey, TValue> {
+		public long Size => 0;
+		public long Capacity => 0;
+
 		public void Clear() {
 		}
 

@@ -14,6 +14,7 @@ using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 using System;
 using System.Threading.Tasks;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -160,7 +161,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
 				_logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity: 100_000,
+				streamInfoCacheSettings: CacheSettings.Static(
+					"StreamInfo", 100L * 1024 * 1024),
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
@@ -204,7 +206,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
 				_logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity: 100_000,
+				streamInfoCacheSettings: CacheSettings.Static(
+					"StreamInfo", 100L * 1024 * 1024),
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,

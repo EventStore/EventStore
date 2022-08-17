@@ -47,6 +47,7 @@ using EventStore.Common.Options;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.Caching;
 using EventStore.Core.Cluster;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -367,13 +368,13 @@ namespace EventStore.Core {
 				out var statsHelper,
 				out var readerThreadsCount,
 				out var workerThreadsCount,
-				out var streamInfoCacheCapacity));
+				out var streamInfoCacheSettings));
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
 				out int readerThreadsCount,
 				out int workerThreadsCount,
-				out int streamInfoCacheCapacity) {
+				out ICacheSettings streamInfoCacheSettings) {
 
 				ICheckpoint writerChk;
 				ICheckpoint chaserChk;
@@ -463,7 +464,6 @@ namespace EventStore.Core {
 					? (long)options.Application.StatsPeriodSec * 1000
 					: Timeout.Infinite;
 				statsHelper = new SystemStatsHelper(Log, writerChk.AsReadOnly(), dbPath, statsCollectionPeriod);
-				var availableMem = statsHelper.GetFreeMem();
 
 				var processorCount = Environment.ProcessorCount;
 				readerThreadsCount = ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, processorCount);
@@ -480,13 +480,13 @@ namespace EventStore.Core {
 					workerThreadsCount,
 					readerThreadsCount, options.Application.WorkerThreads);
 
-				var configuredCapacity = options.Cluster.StreamInfoCacheCapacity;
-				streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
-				Log.Information(
-					"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
-					"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
-					streamInfoCacheCapacity,
-					availableMem, configuredCapacity);
+				if (options.Cluster.StreamInfoCacheCapacity > 0) {
+					var configuredMem = options.Cluster.StreamInfoCacheCapacity * IndexBackend<TStreamId>.StreamInfoCacheUnitSize;
+					streamInfoCacheSettings = CacheSettings.Static("StreamInfo", configuredMem);
+				} else {
+					var streamInfoMinMem = 100L * 1024 * 1024; // 100 MiB
+					streamInfoCacheSettings = CacheSettings.Dynamic("StreamInfo", streamInfoMinMem, 100);
+				}
 
 				return new TFChunkDbConfig(dbPath,
 					new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
@@ -632,6 +632,20 @@ namespace EventStore.Core {
 				truncator.TruncateDb(truncPos);
 			}
 
+			// DYNAMIC CACHE MANAGER
+			var dynamicCacheManager = new DynamicCacheManager(
+				_mainQueue,
+				() => (long) statsHelper.GetFreeMem(),
+				(long) statsHelper.GetTotalMem(),
+				20,
+				4L * 1024 * 1024 * 1024, // 4 GiB
+				TimeSpan.FromSeconds(15),
+				TimeSpan.FromMinutes(10),
+				streamInfoCacheSettings);
+
+			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
+			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
+
 			// STORAGE SUBSYSTEM
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
@@ -689,7 +703,7 @@ namespace EventStore.Core {
 				logFormat.StreamExistenceFilter,
 				logFormat.StreamExistenceFilterReader,
 				logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity,
+				streamInfoCacheSettings,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
 				options.Database.HashCollisionReadLimit,

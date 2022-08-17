@@ -8,6 +8,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Monitoring.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Native.Monitoring;
 using EventStore.Transport.Tcp;
 using ILogger = Serilog.ILogger;
 
@@ -21,6 +22,7 @@ namespace EventStore.Core.Services.Monitoring {
 		private PerfCounterHelper _perfCounter;
 		private readonly EventCountersHelper _eventCountersHelper;
 		private readonly HostStat.HostStat _hostStat;
+		private readonly ulong _totalMem;
 		private bool _giveup;
 
 		public SystemStatsHelper(ILogger log, IReadOnlyCheckpoint writerCheckpoint, string dbPath, long collectIntervalMs) {
@@ -33,6 +35,7 @@ namespace EventStore.Core.Services.Monitoring {
 			_eventCountersHelper = new EventCountersHelper(collectIntervalMs);
 			_hostStat = new HostStat.HostStat();
 			_dbPath = dbPath;
+			_totalMem = GetTotalMem();
 		}
 
 		public void Start() {
@@ -138,6 +141,7 @@ namespace EventStore.Core.Services.Monitoring {
 				}
 
 				stats["sys-freeMem"] = GetFreeMem();
+				stats["sys-totalMem"] = _totalMem;
 
 				var gcStats = _eventCountersHelper.GetGcStats();
 				stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
@@ -171,6 +175,21 @@ namespace EventStore.Core.Services.Monitoring {
 				case OsFlavor.Linux:
 				case OsFlavor.MacOS:
 					return _hostStat.GetFreeMemory();
+				default:
+					return 0;
+			}
+		}
+
+		///<summary>
+		///Total system memory in bytes
+		///</summary>
+		public ulong GetTotalMem() {
+			switch (OS.OsFlavor) {
+				case OsFlavor.Windows:
+					return WinNativeMemoryStatus.GetTotalMemory();
+				case OsFlavor.Linux:
+				case OsFlavor.MacOS:
+					return _hostStat.GetTotalMemory();
 				default:
 					return 0;
 			}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -134,7 +135,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_readerPool = new ObjectPool<ITransactionFileReader>(
 				"ReadIndex readers pool", 5, 100,
 				() => _tfReader);
-			_indexBackend = new IndexBackend<TStreamId>(_readerPool, 100000, 100000);
+			_indexBackend = new IndexBackend<TStreamId>(_readerPool, _logFormat.StreamIdSizer,
+				CacheSettings.Static("StreamInfo", 100L * 1024 * 1024));
 			_streamIds = _logFormat.StreamIds;
 			_validator = _logFormat.StreamIdValidator;
 			var emptyStreamId = _logFormat.EmptyStreamId;

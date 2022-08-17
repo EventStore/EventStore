@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
+using EventStore.Core.Caching;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Services.Storage.ReaderIndex;
@@ -59,7 +60,7 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
 				_logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity: 0,
+				streamInfoCacheSettings: CacheSettings.Static("StreamInfo", 0),
 				additionalCommitChecks: true,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
