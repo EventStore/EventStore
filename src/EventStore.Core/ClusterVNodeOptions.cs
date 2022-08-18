@@ -338,7 +338,7 @@ namespace EventStore.Core {
 
 			internal static ClusterOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				GossipSeed = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)),
-					ParseEndPoint),
+					ParseGossipEndPoint),
 				DiscoverViaDns = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
 				ClusterSize = configurationRoot.GetValue<int>(nameof(ClusterSize)),
 				NodePriority = configurationRoot.GetValue<int>(nameof(NodePriority)),

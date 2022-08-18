@@ -60,11 +60,18 @@ namespace EventStore.Core {
 			return builder.Length != 0 ? builder.ToString() : null;
 		}
 
-		private static EndPoint ParseEndPoint(string val) {
+		private static EndPoint ParseGossipEndPoint(string val) {
 			var parts = val.Split(':', 2);
+			
+			if (parts.Length != 2)
+				throw new Exception("You must specify the ports in the gossip seed");
+
+			if (!int.TryParse(parts[1], out var port))
+				throw new Exception($"Invalid format for gossip seed port: {parts[1]}");
+
 			return IPAddress.TryParse(parts[0], out var ip)
-				? new IPEndPoint(ip, int.Parse(parts[1]))
-				: new DnsEndPoint(parts[0], int.Parse(parts[1]));
+				? new IPEndPoint(ip, port)
+				: new DnsEndPoint(parts[0], port);
 		}
 
 		private static string GetHelpText() {
