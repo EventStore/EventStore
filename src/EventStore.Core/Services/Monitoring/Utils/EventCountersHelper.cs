@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using EventStore.Core.Services.Monitoring.Stats;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using ILogger = Serilog.ILogger;
 
@@ -18,6 +17,11 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		private EventPipeSession _session;
 		private readonly List<EventPipeProvider> _providers;
 		private readonly IDictionary<string, double> _collectedStats = new Dictionary<string, double>();
+		private readonly HashSet<string> _gcCollectionNames = new HashSet<string>() {
+			"gen-0-gc-count",
+			"gen-1-gc-count",
+			"gen-2-gc-count"
+		};
 
 		private readonly int _pid;
 
@@ -28,7 +32,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 			_providers = new List<EventPipeProvider> {
 				new EventPipeProvider("System.Runtime", EventLevel.Informational,
 					(long)(ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Threading |
-					       ClrTraceEventParser.Keywords.Exception | ClrTraceEventParser.Keywords.Contention),
+						   ClrTraceEventParser.Keywords.Exception | ClrTraceEventParser.Keywords.Contention),
 					new Dictionary<string, string> {
 						{"EventCounterIntervalSec", $"{collectIntervalInMs / 1000}"}
 					}),
@@ -44,19 +48,6 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 					_session = client.StartEventPipeSession(_providers, false);
 					using var source = new EventPipeEventSource(_session.EventStream);
 
-					source.NeedLoadedDotNetRuntimes();
-					source.AddCallbackOnProcessStart(proc => {
-						if (proc.ProcessID != _pid)
-							return;
-
-						proc.AddCallbackOnDotNetRuntimeLoad(runtime => {
-							runtime.GCEnd += (process, gc) => {
-								var key = $"gen-{gc.Generation}-gc-collection-count";
-								_collectedStats.TryGetValue(key, out var collected);
-								_collectedStats[key] = ++collected;
-							};
-						});
-					});
 
 					source.Dynamic.All += obj => {
 						if (obj.EventName.Equals("EventCounters")) {
@@ -64,6 +55,16 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 							var pairs = (IDictionary<string, object>)(payload["Payload"]);
 
 							var name = string.Intern(pairs["Name"].ToString());
+
+							if (_gcCollectionNames.Contains(name)) {
+								var gcCounterType = pairs["CounterType"];
+								if (gcCounterType.Equals("Sum")) {
+									var gcCollectionsInTimeInterval = double.Parse(pairs["Increment"].ToString());
+									_collectedStats.TryGetValue(name, out var previousGcCollectionCount);
+									_collectedStats[name] = previousGcCollectionCount + gcCollectionsInTimeInterval;
+								}
+								return;
+							}
 
 							var counterType = pairs["CounterType"];
 							if (counterType.Equals("Sum")) {
@@ -121,11 +122,11 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		public GcStats GetGcStats() {
 			return new GcStats(
 				gcAllocationSpeed: (float)GetCounterValue("alloc-rate"),
-				gcGen0Items: (long)GetCounterValue("gen-0-gc-collection-count"),
+				gcGen0Items: (long)GetCounterValue("gen-0-gc-count"),
 				gcGen0Size: (long)GetCounterValue("gen-0-size"),
-				gcGen1Items: (long)GetCounterValue("gen-1-gc-collection-count"),
+				gcGen1Items: (long)GetCounterValue("gen-1-gc-count"),
 				gcGen1Size: (long)GetCounterValue("gen-1-size"),
-				gcGen2Items: (long)GetCounterValue("gen-2-gc-collection-count"),
+				gcGen2Items: (long)GetCounterValue("gen-2-gc-count"),
 				gcGen2Size: (long)GetCounterValue("gen-2-size"),
 				gcLargeHeapSize: (long)GetCounterValue("loh-size"),
 				gcTimeInGc: (long)GetCounterValue("time-in-gc"),
