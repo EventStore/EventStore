@@ -54,8 +54,8 @@ There are two types of projections in EventStoreDB:
 
 ### Performance impact
 
-Keep in mind that all projections emit events as a reaction to events that they process. We call this effect _
-write amplification_ because emitting new events or link events creates additional load on the server IO.
+Keep in mind that all projections emit events as a reaction to events that they process. We call this effect _write amplification_
+because emitting new events or link events creates additional load on the server IO.
 
 Some system projections emit link events to their streams for each event appended to the database. These
 projections are By Category, By Event Type and By Correlation Id. If all those three projections are enabled
