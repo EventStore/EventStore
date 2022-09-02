@@ -168,11 +168,12 @@ namespace EventStore.Core.Caching {
 			}
 		}
 
+		// Memory available for caching
 		private long CalcAvailableMemory(long freeMem, long cachedMem) {
 			var keepFreeMem = Math.Max(_keepFreeMemBytes, _totalMem * _keepFreeMemPercent / 100);
 			var availableMem = Math.Max(0L, freeMem + cachedMem - keepFreeMem);
 
-			Log.Debug($"Calculating memory available for caching based on:\n" +
+			Log.Debug("Calculating memory available for caching based on:\n" +
 			          "Free memory: {freeMem:N0} bytes\n" +
 			          "Total memory: {totalMem:N0} bytes\n" +
 			          "Cached memory: ~{cachedMem:N0} bytes\n" +

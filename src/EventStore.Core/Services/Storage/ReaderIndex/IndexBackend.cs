@@ -45,7 +45,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		private SystemSettings _systemSettings;
 
-		public IndexBackend(ObjectPool<ITransactionFileReader> readers, ISizer<TStreamId> streamIdSizer, ICacheSettings streamInfoCacheSettings) {
+		public IndexBackend(
+			ObjectPool<ITransactionFileReader> readers,
+			ISizer<TStreamId> streamIdSizer,
+			ICacheSettings streamInfoCacheSettings) {
+
 			Ensure.NotNull(readers, nameof(readers));
 			Ensure.NotNull(streamIdSizer, nameof(streamIdSizer));
 
@@ -57,8 +61,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var streamMetadataCacheCapacity =
 				streamInfoCacheSettings.InitialMaxMemAllocation * StreamMetadataCacheRatio / 100;
 
-			_streamLastEventNumberCache = new DynamicLRUCache<TStreamId, EventNumberCached>(lastEventNumberCacheCapacity, CalcLastEventNumberItemSize);
-			_streamMetadataCache = new DynamicLRUCache<TStreamId, MetadataCached>(streamMetadataCacheCapacity, CalcMetadataItemSize);
+			_streamLastEventNumberCache = new DynamicLRUCache<TStreamId, EventNumberCached>(
+				lastEventNumberCacheCapacity,
+				CalcLastEventNumberItemSize);
+			_streamMetadataCache = new DynamicLRUCache<TStreamId, MetadataCached>(
+				streamMetadataCacheCapacity,
+				CalcMetadataItemSize);
 
 			Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", LastEventNumberCacheName, lastEventNumberCacheCapacity);
 			Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", StreamMetadataCacheName, streamMetadataCacheCapacity);

@@ -482,10 +482,15 @@ namespace EventStore.Core {
 
 				if (options.Cluster.StreamInfoCacheCapacity > 0) {
 					var configuredMem = options.Cluster.StreamInfoCacheCapacity * IndexBackend<TStreamId>.StreamInfoCacheUnitSize;
-					streamInfoCacheSettings = CacheSettings.Static("StreamInfo", configuredMem);
+					streamInfoCacheSettings = CacheSettings.Static(
+						name: "StreamInfo",
+						memAllocation: configuredMem);
 				} else {
 					var streamInfoMinMem = 100L * 1024 * 1024; // 100 MiB
-					streamInfoCacheSettings = CacheSettings.Dynamic("StreamInfo", streamInfoMinMem, 100);
+					streamInfoCacheSettings = CacheSettings.Dynamic(
+						name: "StreamInfo",
+						minMemAllocation: streamInfoMinMem,
+						weight: 100);
 				}
 
 				return new TFChunkDbConfig(dbPath,
@@ -634,14 +639,14 @@ namespace EventStore.Core {
 
 			// DYNAMIC CACHE MANAGER
 			var dynamicCacheManager = new DynamicCacheManager(
-				_mainQueue,
-				() => (long) statsHelper.GetFreeMem(),
-				(long) statsHelper.GetTotalMem(),
-				20,
-				4L * 1024 * 1024 * 1024, // 4 GiB
-				TimeSpan.FromSeconds(15),
-				TimeSpan.FromMinutes(10),
-				streamInfoCacheSettings);
+				bus: _mainQueue,
+				getFreeMem: () => (long) statsHelper.GetFreeMem(),
+				totalMem: (long) statsHelper.GetTotalMem(),
+				keepFreeMemPercent: 20,
+				keepFreeMemBytes: 4L * 1024 * 1024 * 1024, // 4 GiB
+				monitoringInterval: TimeSpan.FromSeconds(15),
+				minResizeInterval: TimeSpan.FromMinutes(10),
+				cachesSettings: streamInfoCacheSettings);
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);

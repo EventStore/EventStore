@@ -4,9 +4,9 @@ using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Caching {
 	public class DynamicLRUCache<TKey, TValue> : LRUCache<TKey, TValue>, IDynamicLRUCache<TKey, TValue> {
-		const int ResizeBatchSize = 100000;
+		const int ResizeBatchSize = 100_000;
 
-		public DynamicLRUCache(long capacity, Func<TKey, TValue, int> calculateItemSize = null)
+		public DynamicLRUCache(long capacity, Func<TKey, TValue, int> calculateItemSize)
 			: base(capacity, calculateItemSize) { }
 
 		public void Resize(long newCapacity, out int removedCount, out long removedSize) {
@@ -17,7 +17,8 @@ namespace EventStore.Core.Caching {
 			removedSize = 0L;
 
 			// when decreasing the capacity, remove items batch by batch to prevent
-			// other threads from starving when trying to access the cache
+			// other threads from starving when trying to access the cache.
+			// when increasing, jump straight up.
 			var curCapacity = Interlocked.Read(ref _capacity);
 
 			while (curCapacity != newCapacity) {

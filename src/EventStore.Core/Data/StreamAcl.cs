@@ -39,8 +39,7 @@ namespace EventStore.Core.Data {
 		}
 
 		public int Size {
-			get
-			{
+			get {
 				var size = 0;
 				size += MemSizer.ObjectHeaderSize; // StreamAcl object header
 				size += (Unsafe.SizeOf<string[]>() * 5) // string arrays refs

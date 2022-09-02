@@ -9,15 +9,13 @@ namespace EventStore.Core.Caching {
 		public const int ArraySize = 24;
 		public const int StringSize = 20;
 
-		public static int SizeOf(string s)
-		{
+		public static int SizeOf(string s) {
 			if (s.Length == 0)
 				return 0;
 			return (StringSize + s.Length * 2 + 1).RoundUpToMultipleOf(IntPtr.Size);
 		}
 
-		public static int SizeOf(string[] arr)
-		{
+		public static int SizeOf(string[] arr) {
 			if (arr == null)
 				return 0;
 
