@@ -27,8 +27,8 @@
 		<PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
 		<PackageReference Include="System.Linq.Async" Version="5.0.0" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
-		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.61701" />
-		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.57" />
+		<PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.328102" />
+		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.0.3" />
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
 		<PackageReference Include="HostStat.NET" Version="1.0.2" />
 		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="5.0.1" />
