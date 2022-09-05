@@ -45,12 +45,13 @@ namespace EventStore.Core.Caching {
 			if (keepFreeMemBytes < 0)
 				throw new ArgumentException($"{nameof(keepFreeMemBytes)} must be non-negative.");
 
-			var dynamicWeightsPositive = cachesSettings
-				.Where(x => x.IsDynamic)
-				.All(x => x.Weight > 0);
+			//qq dont need this check, guaranteed by construction
+			//var dynamicWeightsPositive = cachesSettings
+			//	.Where(x => x.IsDynamic)
+			//	.All(x => x.Weight > 0);
 
-			if (!dynamicWeightsPositive)
-				throw new ArgumentException("Weight of all dynamic caches should be positive.");
+			//if (!dynamicWeightsPositive)
+			//	throw new ArgumentException("Weight of all dynamic caches should be positive.");
 
 			_bus = bus;
 			_getFreeMem = getFreeMem;
@@ -61,7 +62,6 @@ namespace EventStore.Core.Caching {
 			_minResizeInterval = minResizeInterval;
 			_cachesSettings = cachesSettings;
 			_totalWeight = cachesSettings
-				.Where(x => x.IsDynamic)
 				.Sum(x => x.Weight);
 			_maxMemAllocation = new long[cachesSettings.Length];
 			Array.Fill(_maxMemAllocation, -1);
@@ -93,8 +93,8 @@ namespace EventStore.Core.Caching {
 				stats[statNamePrefix + "name"] = _cachesSettings[i].Name;
 				stats[statNamePrefix + "weight"] = _cachesSettings[i].Weight;
 				stats[statNamePrefix + "mem-used"] = _cachesSettings[i].GetMemoryUsage();
-				stats[statNamePrefix + "mem-minAlloc"] = _cachesSettings[i].MinMemAllocation;
-				stats[statNamePrefix + "mem-maxAlloc"] = Interlocked.Read(ref _maxMemAllocation[i]);
+				stats[statNamePrefix + "mem-minAlloc"] = _cachesSettings[i].MinMemAllocation; //qq curious casing convention.
+				stats[statNamePrefix + "mem-maxAlloc"] = Interlocked.Read(ref _maxMemAllocation[i]); //qq min/max alloc here alloc refers to two different things
 			}
 
 			message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
@@ -106,31 +106,12 @@ namespace EventStore.Core.Caching {
 			foreach (var cacheSettings in _cachesSettings) {
 				cacheIndex++;
 
-				if (!cacheSettings.IsDynamic) {
-					Log.Information("{name} cache size configured to ~{configuredMem:N0} bytes.",
-						cacheSettings.Name, cacheSettings.InitialMaxMemAllocation);
-					_maxMemAllocation[cacheIndex] = cacheSettings.InitialMaxMemAllocation;
-				} else {
-					//qq maybe we should subtract the static allowances from the availableMem.
-					// otherwise wont we allocate all the availableMem to dynamic caches and then allocate
-					// more to the static ones
-					//qq suspect this should actuall be a method on CacheSettings and cache settings should maybe be renamed.
-					//qq ought to be checked by one of the DynamicCacheManagerTests
+				var allotment = cacheSettings.CalcMemAllotment(availableMem, _totalWeight);
+				cacheSettings.InitialMaxMemAllocation = allotment;
 
-					//qq if the size calculation under-estimates, what will happen?
-					//	- the cache will use up more memory than it is supposed to
-					//  - if significant enough the caches will be resized downwards
-					//  - that will free up more space than expected, caches might resize upwards
-					//  - and repeatedly osciliate
-					// if it over-estimates, what will happen?
-					//  - the cache will just be smaller than it could have been
-					var allocatedMem = CalcMemAllocation(availableMem, cacheSettings.Weight, cacheSettings.MinMemAllocation);
-					cacheSettings.InitialMaxMemAllocation = allocatedMem;
-					Log.Information(
-						"{name} cache size auto-configured to ~{allocatedMem:N0} bytes.",
-						cacheSettings.Name, allocatedMem);
-					_maxMemAllocation[cacheIndex] = allocatedMem;
-				}
+				Log.Information("{name} cache size configured to ~{alottedMem:N0} bytes.",
+					cacheSettings.Name, allotment);
+				_maxMemAllocation[cacheIndex] = allotment;
 			}
 		}
 
@@ -164,9 +145,6 @@ namespace EventStore.Core.Caching {
 			foreach (var cacheSettings in _cachesSettings) {
 				cacheIndex++;
 
-				if (!cacheSettings.IsDynamic)
-					continue;
-
 				//qq same here about subtracting static allowances from the availableMem
 				// although available mem here does include cachedMem................... maybe
 				// we shouldn't be counting the actual memory usage of the static caches in cachedMem
@@ -177,7 +155,7 @@ namespace EventStore.Core.Caching {
 
 				//qq also if we are resizing down... thats only going to achieve anything if some of the caches are full enough
 				// to cause evictions... otherwise it wont free the memory and it will try again every 15s
-				var allocatedMem = CalcMemAllocation(availableMem, cacheSettings.Weight, cacheSettings.MinMemAllocation);
+				var allocatedMem = cacheSettings.CalcMemAllotment(availableMem, _totalWeight);
 
 				// do not resize if the amount of memory allocated to the cache hasn't changed
 				if (_maxMemAllocation[cacheIndex] == allocatedMem)
@@ -209,10 +187,6 @@ namespace EventStore.Core.Caching {
 				_keepFreeMemPercent, _keepFreeMemBytes, availableMem);
 
 			return availableMem;
-		}
-
-		private long CalcMemAllocation(long availableMem, int cacheWeight, long minMemAllocation) {
-			return Math.Max(availableMem * cacheWeight / _totalWeight, minMemAllocation);
 		}
 
 		private void Tick() {

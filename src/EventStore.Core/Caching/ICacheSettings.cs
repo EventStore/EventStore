@@ -9,14 +9,18 @@ namespace EventStore.Core.Caching {
 	// ahh some of these are read by the dynamic cache manager and some are _set_ by it
 	public interface ICacheSettings {
 		string Name { get; }
-		bool IsDynamic { get; }
+
+		//qq static weight 0
 		int Weight { get; }
 
 		//qq bit odd that some of these are setters, are they used?
 		// static => this is the static allowance
 		// dynamic => this starts as -1 and is populated by the manager
+		//qq rename to InitialAllotment?
 		long InitialMaxMemAllocation { get; set; }
 
+		//qq maxallocation => current allotment
+		//qq minallocation => min allotment
 		long MinMemAllocation { get; }
 		//qq bit odd that some of these are setters, are they used?
 
@@ -33,14 +37,19 @@ namespace EventStore.Core.Caching {
 		// set by index backend
 		Action<long> UpdateMaxMemoryAllocation { get; set; }
 
+
+
+		long CalcMemAllotment(long availableMem, int totalWeight);
+
+
 		//qq for dynamic the cache itself finds out its allotment via
 		// InitialMaxMemAllocation and UpdateMaxMemoryAllocation
 
 		//qqq tripping over the word 'allocation' a bit, i think here we dont mean
 		// the amount of space allocated on the heap, but how much space has been
-		// allocated to the cache by the manager. perhaps we should call it allowence
+		// allocated to the cache by the manager. perhaps we should call it allotment
 		// and then in the manger _maxMemAllocation might be better named 
-		// _allowances. 
+		// _allotments 
 
 	}
 }

@@ -10,7 +10,6 @@ namespace EventStore.Core.Tests.Caching {
 			var cacheSettings = CacheSettings.Dynamic("test", 10, 12);
 
 			Assert.AreEqual("test", cacheSettings.Name);
-			Assert.True(cacheSettings.IsDynamic);
 			Assert.AreEqual(12, cacheSettings.Weight);
 			Assert.AreEqual(10, cacheSettings.MinMemAllocation);
 			Assert.Throws<InvalidOperationException>(() => {
@@ -25,7 +24,6 @@ namespace EventStore.Core.Tests.Caching {
 			var cacheSettings = CacheSettings.Static("test", 10);
 
 			Assert.AreEqual("test", cacheSettings.Name);
-			Assert.False(cacheSettings.IsDynamic);
 			Assert.AreEqual(0, cacheSettings.Weight);
 			Assert.AreEqual(10, cacheSettings.MinMemAllocation);
 			Assert.AreEqual(10, cacheSettings.InitialMaxMemAllocation);
