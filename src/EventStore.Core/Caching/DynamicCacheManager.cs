@@ -1,3 +1,4 @@
+//qq seen
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -72,7 +73,7 @@ namespace EventStore.Core.Caching {
 		public void Handle(MonitoringMessage.DynamicCacheManagerTick message) {
 			ThreadPool.QueueUserWorkItem(_ => {
 				try {
-					lock (_lock) { // only to add read/write barriers
+					lock (_lock) { // only to add read/write barriers //qq tasks are wrapped with these already i think
 						ResizeCachesIfNeeded();
 					}
 				} finally {
@@ -82,6 +83,7 @@ namespace EventStore.Core.Caching {
 		}
 
 		public void Handle(MonitoringMessage.InternalStatsRequest message) {
+			//qq are all these things thread safe?
 			Thread.MemoryBarrier(); // just to ensure we're seeing latest values
 
 			var stats = new Dictionary<string, object>();
@@ -109,6 +111,19 @@ namespace EventStore.Core.Caching {
 						cacheSettings.Name, cacheSettings.InitialMaxMemAllocation);
 					_maxMemAllocation[cacheIndex] = cacheSettings.InitialMaxMemAllocation;
 				} else {
+					//qq maybe we should subtract the static allowances from the availableMem.
+					// otherwise wont we allocate all the availableMem to dynamic caches and then allocate
+					// more to the static ones
+					//qq suspect this should actuall be a method on CacheSettings and cache settings should maybe be renamed.
+					//qq ought to be checked by one of the DynamicCacheManagerTests
+
+					//qq if the size calculation under-estimates, what will happen?
+					//	- the cache will use up more memory than it is supposed to
+					//  - if significant enough the caches will be resized downwards
+					//  - that will free up more space than expected, caches might resize upwards
+					//  - and repeatedly osciliate
+					// if it over-estimates, what will happen?
+					//  - the cache will just be smaller than it could have been
 					var allocatedMem = CalcMemAllocation(availableMem, cacheSettings.Weight, cacheSettings.MinMemAllocation);
 					cacheSettings.InitialMaxMemAllocation = allocatedMem;
 					Log.Information(
@@ -152,6 +167,16 @@ namespace EventStore.Core.Caching {
 				if (!cacheSettings.IsDynamic)
 					continue;
 
+				//qq same here about subtracting static allowances from the availableMem
+				// although available mem here does include cachedMem................... maybe
+				// we shouldn't be counting the actual memory usage of the static caches in cachedMem
+				//qqqq im a bit suspicious that anything that undercounts that true size of the cache (say, because
+				// we dont count the cost of the infra, just the data, or if we dont count the whole cost of the data)
+				// will cause the caches to continually resize... i'll see if this is the case. but when
+				// increasing the size of the cache maybe we should only do so we are increasing it by a lot.
+
+				//qq also if we are resizing down... thats only going to achieve anything if some of the caches are full enough
+				// to cause evictions... otherwise it wont free the memory and it will try again every 15s
 				var allocatedMem = CalcMemAllocation(availableMem, cacheSettings.Weight, cacheSettings.MinMemAllocation);
 
 				// do not resize if the amount of memory allocated to the cache hasn't changed

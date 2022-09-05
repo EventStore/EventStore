@@ -1,9 +1,11 @@
-﻿using System;
+﻿//qq seen
+using System;
 using System.Threading;
 using EventStore.Core.DataStructures;
 
 namespace EventStore.Core.Caching {
 	public class DynamicLRUCache<TKey, TValue> : LRUCache<TKey, TValue>, IDynamicLRUCache<TKey, TValue> {
+		//qq in bytes?
 		const int ResizeBatchSize = 100_000;
 
 		public DynamicLRUCache(long capacity, Func<TKey, TValue, int> calculateItemSize)

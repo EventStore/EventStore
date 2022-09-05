@@ -1,4 +1,5 @@
-﻿using System;
+﻿//qq ok
+using System;
 using System.Runtime.InteropServices;
 using EventStore.Common.Utils;
 

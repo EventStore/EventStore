@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
 
@@ -16,7 +15,7 @@ namespace EventStore.Core.DataStructures {
 		private readonly Queue<LinkedListNode<LRUItem>> _nodesPool = new();
 		private readonly object _lock = new();
 		private readonly Func<object, bool> _onPut, _onRemove; //_onPut is not called if a key-value pair already exists in the cache
-		protected long _capacity;
+		protected long _capacity; //qq prefer private field
 		private long _size;
 		protected readonly Func<TKey, TValue, int> _calculateItemSize;
 		private static readonly Func<TKey, TValue, int> _unitSize = (_, _) => 1;
@@ -25,7 +24,7 @@ namespace EventStore.Core.DataStructures {
 		public long Capacity => Interlocked.Read(ref _capacity);
 
 		public LRUCache(
-			long capacity,
+			long capacity, //qq in bytes
 			Func<TKey, TValue, int> calculateItemSize = null) {
 			Ensure.Nonnegative(capacity, nameof(capacity));
 			_capacity = capacity;

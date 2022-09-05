@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿//qq seen
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
@@ -57,6 +58,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamIdSizer = streamIdSizer;
 
 			var lastEventNumberCacheCapacity =
+				//qq (sort of) risk of overflow
 				streamInfoCacheSettings.InitialMaxMemAllocation * LastEventNumberCacheRatio / 100;
 			var streamMetadataCacheCapacity =
 				streamInfoCacheSettings.InitialMaxMemAllocation * StreamMetadataCacheRatio / 100;
@@ -82,6 +84,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamIdSizer.GetSizeInBytes(streamId) + metadataCached.Size + MetadataCached.DictionaryEntryOverhead;
 
 		private void UpdateMaxMemoryAllocation(long allocatedMem) {
+			//qq potential overflow
 			UpdateCapacity(_streamLastEventNumberCache, LastEventNumberCacheName,
 				allocatedMem * LastEventNumberCacheRatio / 100);
 			UpdateCapacity(_streamMetadataCache, StreamMetadataCacheName,

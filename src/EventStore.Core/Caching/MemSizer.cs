@@ -1,3 +1,4 @@
+//qq seen
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -22,7 +23,7 @@ namespace EventStore.Core.Caching {
 			var size = 0;
 			size += ArraySize; // string array
 			size += arr.Length * Unsafe.SizeOf<string>(); // string refs
-			size += arr.Sum(SizeOf); // strings
+			size += arr.Sum(static x => SizeOf(x)); // strings
 			return size;
 		}
 	}
