@@ -70,8 +70,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			//Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", LastEventNumberCacheName, lastEventNumberCacheCapacity);
 			//Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", StreamMetadataCacheName, streamMetadataCacheCapacity);
 
-			streamInfoCacheSettings.GetMemoryUsage = () => _streamLastEventNumberCache.Size + _streamMetadataCache.Size;
-			streamInfoCacheSettings.UpdateMaxMemoryAllocation = UpdateMaxMemoryAllocation;
+			//qq wire thes up when constructing
+			//streamInfoCacheSettings.GetMemoryUsage = () => _streamLastEventNumberCache.Size + _streamMetadataCache.Size;
+			//streamInfoCacheSettings.UpdateMaxMemoryAllocation = UpdateMaxMemoryAllocation;
 		}
 
 		private int CalcLastEventNumberItemSize(TStreamId streamId, EventNumberCached eventNumberCached) =>

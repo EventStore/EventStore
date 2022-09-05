@@ -7,6 +7,7 @@ namespace EventStore.Core.Caching {
 	//qq especially do some of these apply only to dynamic/static
 	//  i wonder if dynamic/static should be subclasses
 	// ahh some of these are read by the dynamic cache manager and some are _set_ by it
+	//qq perhaps rename to ICacheSizeManager
 	public interface ICacheSettings {
 		string Name { get; }
 
@@ -18,13 +19,13 @@ namespace EventStore.Core.Caching {
 		// caches are supposed to leave free
 		// static and dynamic, called by manager for stats and resizing
 		// set by indexbackend
-		Func<long> GetMemoryUsage { get; set; }
+		long GetMemoryUsage();
 
 		//qq bit odd that some of these are setters, are they used?
 		// static => not called
 		// dynamic => called by manager
 		// set by index backend
-		Action<long> UpdateMaxMemoryAllocation { get; set; }
+		void UpdateMaxMemoryAllocation(long allotment);
 
 
 

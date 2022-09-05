@@ -8,12 +8,15 @@ namespace EventStore.Core.Caching {
 
 		//qq could these two be initialied in the ctor? or otherwise implemented with inheritance?
 		// would be odd to need inheritance for a settings object though
-		public Func<long> GetMemoryUsage { get; set; } = () => throw new InvalidOperationException("GetMemoryUsage not initialized");
-		public Action<long> UpdateMaxMemoryAllocation { get; set; } = _ => throw new InvalidOperationException("UpdateMaxMemoryAllocation not initialized");
+		private readonly Func<long> _getMemoryUsage;
+		private readonly Action<long> _updateMaxMemoryAllocation;
 
 		protected CacheSettings(string name) {
 			Name = name;
 		}
+
+		public long GetMemoryUsage() => _getMemoryUsage();
+		public void UpdateMaxMemoryAllocation(long allotment) => _updateMaxMemoryAllocation(allotment);
 
 		//qq get rid of these two methods
 		public static ICacheSettings Static(string name, long memAllocation) {
