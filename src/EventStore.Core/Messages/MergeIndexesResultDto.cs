@@ -8,5 +8,6 @@
 		public MergeIndexesResultDto(string mergeIndexesId) {
 			MergeIndexesId = mergeIndexesId;
 		}
+		public override string ToString() => $"MergeIndexesId: {MergeIndexesId}";
 	}
 }
