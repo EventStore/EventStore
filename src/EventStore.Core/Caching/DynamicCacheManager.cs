@@ -66,6 +66,7 @@ namespace EventStore.Core.Caching {
 			_maxMemAllocation = new long[cachesSettings.Length];
 			Array.Fill(_maxMemAllocation, -1);
 
+			//qq we might want to kick it off later, after the indexbackend has subscribed to the updates
 			InitCacheSizes();
 			Tick();
 		}
@@ -93,7 +94,7 @@ namespace EventStore.Core.Caching {
 				stats[statNamePrefix + "name"] = _cachesSettings[i].Name;
 				stats[statNamePrefix + "weight"] = _cachesSettings[i].Weight;
 				stats[statNamePrefix + "mem-used"] = _cachesSettings[i].GetMemoryUsage();
-				stats[statNamePrefix + "mem-minAlloc"] = _cachesSettings[i].MinMemAllocation; //qq curious casing convention.
+				stats[statNamePrefix + "mem-minAlloc"] = 123; //qq to be removed
 				stats[statNamePrefix + "mem-maxAlloc"] = Interlocked.Read(ref _maxMemAllocation[i]); //qq min/max alloc here alloc refers to two different things
 			}
 
@@ -107,7 +108,6 @@ namespace EventStore.Core.Caching {
 				cacheIndex++;
 
 				var allotment = cacheSettings.CalcMemAllotment(availableMem, _totalWeight);
-				cacheSettings.InitialMaxMemAllocation = allotment;
 
 				Log.Information("{name} cache size configured to ~{alottedMem:N0} bytes.",
 					cacheSettings.Name, allotment);

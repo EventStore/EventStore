@@ -57,11 +57,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_readers = readers;
 			_streamIdSizer = streamIdSizer;
 
-			var lastEventNumberCacheCapacity =
-				//qq (sort of) risk of overflow
-				streamInfoCacheSettings.InitialMaxMemAllocation * LastEventNumberCacheRatio / 100;
-			var streamMetadataCacheCapacity =
-				streamInfoCacheSettings.InitialMaxMemAllocation * StreamMetadataCacheRatio / 100;
+			var lastEventNumberCacheCapacity = 100_000;
+			var streamMetadataCacheCapacity = 100_000;
 
 			_streamLastEventNumberCache = new DynamicLRUCache<TStreamId, EventNumberCached>(
 				lastEventNumberCacheCapacity,
@@ -70,8 +67,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				streamMetadataCacheCapacity,
 				CalcMetadataItemSize);
 
-			Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", LastEventNumberCacheName, lastEventNumberCacheCapacity);
-			Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", StreamMetadataCacheName, streamMetadataCacheCapacity);
+			//Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", LastEventNumberCacheName, lastEventNumberCacheCapacity);
+			//Log.Information("{name} cache capacity set to ~{numEntries:N0} bytes.", StreamMetadataCacheName, streamMetadataCacheCapacity);
 
 			streamInfoCacheSettings.GetMemoryUsage = () => _streamLastEventNumberCache.Size + _streamMetadataCache.Size;
 			streamInfoCacheSettings.UpdateMaxMemoryAllocation = UpdateMaxMemoryAllocation;

@@ -13,17 +13,6 @@ namespace EventStore.Core.Caching {
 		//qq static weight 0
 		int Weight { get; }
 
-		//qq bit odd that some of these are setters, are they used?
-		// static => this is the static allowance
-		// dynamic => this starts as -1 and is populated by the manager
-		//qq rename to InitialAllotment?
-		long InitialMaxMemAllocation { get; set; }
-
-		//qq maxallocation => current allotment
-		//qq minallocation => min allotment
-		long MinMemAllocation { get; }
-		//qq bit odd that some of these are setters, are they used?
-
 		//qqq if this just gets the number of bytes for values in the cache
 		// then the cost of the cache infra itself goes in the memory that the 
 		// caches are supposed to leave free

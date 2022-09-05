@@ -6,30 +6,13 @@ namespace EventStore.Core.Caching {
 	public abstract class CacheSettings {
 		public string Name { get; }
 
-		private long _initialMaxMemAllocation = -1;
-		public long InitialMaxMemAllocation {
-			get {
-				if (_initialMaxMemAllocation < 0)
-					//qq its initialised in the constructor, so perhaps the check should be when it is set
-					throw new InvalidOperationException("InitialMaxMemAllocation not initialized");
-				return _initialMaxMemAllocation;
-			}
-			//qq do we need the set now that it is set in the ctor
-			//qqqq ah but for dynamic it is set to -1 in the ctor
-			set => _initialMaxMemAllocation = value;
-		}
-
 		//qq could these two be initialied in the ctor? or otherwise implemented with inheritance?
 		// would be odd to need inheritance for a settings object though
 		public Func<long> GetMemoryUsage { get; set; } = () => throw new InvalidOperationException("GetMemoryUsage not initialized");
 		public Action<long> UpdateMaxMemoryAllocation { get; set; } = _ => throw new InvalidOperationException("UpdateMaxMemoryAllocation not initialized");
 
-		protected CacheSettings(
-			string name,
-			long initialMaxMemAllocation) {
-
+		protected CacheSettings(string name) {
 			Name = name;
-			InitialMaxMemAllocation = initialMaxMemAllocation;
 		}
 
 		//qq get rid of these two methods
@@ -46,30 +29,28 @@ namespace EventStore.Core.Caching {
 	public class StaticCacheSettings : CacheSettings, ICacheSettings {
 		public long _allotment;
 
-		public StaticCacheSettings(string name, long memAllocation)
-			: base(name, memAllocation) {
+		public StaticCacheSettings(string name, long memAllocation) : base(name) {
 			Ensure.Nonnegative(memAllocation, nameof(memAllocation));
 			_allotment = memAllocation;
 		}
 
 		public int Weight => 0; //qq rather get rid of weight from the interface altogether
-		public long MinMemAllocation => _allotment;
 
 		public long CalcMemAllotment(long availableMem, int totalWeight) => _allotment;
 	}
 
 	public class DynamicCacheSettings : CacheSettings, ICacheSettings {
-		public DynamicCacheSettings(string name, long minMemAllocation, int weight)
-			: base(name, -1) {
+		private readonly long _minMemAllocation;
+
+		public DynamicCacheSettings(string name, long minMemAllocation, int weight) : base(name) {
 			Ensure.Positive(weight, nameof(weight));
 			Ensure.Nonnegative(minMemAllocation, nameof(minMemAllocation));
 
 			Weight = weight;
-			MinMemAllocation = minMemAllocation;
+			_minMemAllocation = minMemAllocation;
 		}
 
 		public int Weight { get; }
-		public long MinMemAllocation { get; }
 
 		public long CalcMemAllotment(long availableMem, int totalWeight) {
 			//qq maybe we should subtract the static allowances from the availableMem.
@@ -85,7 +66,7 @@ namespace EventStore.Core.Caching {
 			//  - and repeatedly osciliate
 			// if it over-estimates, what will happen?
 			//  - the cache will just be smaller than it could have been
-			var allocatedMem = CalcMemAllocation(availableMem, Weight, MinMemAllocation, totalWeight);
+			var allocatedMem = CalcMemAllocation(availableMem, Weight, _minMemAllocation, totalWeight);
 			return allocatedMem;
 		}
 

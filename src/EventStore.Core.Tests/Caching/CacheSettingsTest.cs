@@ -11,10 +11,6 @@ namespace EventStore.Core.Tests.Caching {
 
 			Assert.AreEqual("test", cacheSettings.Name);
 			Assert.AreEqual(12, cacheSettings.Weight);
-			Assert.AreEqual(10, cacheSettings.MinMemAllocation);
-			Assert.Throws<InvalidOperationException>(() => {
-				var x = cacheSettings.InitialMaxMemAllocation;
-			});
 			Assert.Throws<InvalidOperationException>(() => cacheSettings.GetMemoryUsage());
 			Assert.Throws<InvalidOperationException>(() => cacheSettings.UpdateMaxMemoryAllocation(10));
 		}
@@ -25,8 +21,6 @@ namespace EventStore.Core.Tests.Caching {
 
 			Assert.AreEqual("test", cacheSettings.Name);
 			Assert.AreEqual(0, cacheSettings.Weight);
-			Assert.AreEqual(10, cacheSettings.MinMemAllocation);
-			Assert.AreEqual(10, cacheSettings.InitialMaxMemAllocation);
 			Assert.Throws<InvalidOperationException>(() => cacheSettings.GetMemoryUsage());
 			Assert.Throws<InvalidOperationException>(() => cacheSettings.UpdateMaxMemoryAllocation(10));
 		}
