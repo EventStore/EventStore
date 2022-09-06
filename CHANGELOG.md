@@ -17,6 +17,9 @@ All notable changes to this project will be documented in this file.
 - New scavenge algorithm [EventStore#3520](https://github.com/EventStore/EventStore/pull/3520)
 - Support for custom log templates [EventStore#3577](https://github.com/EventStore/EventStore/pull/3577)
 
+### Fixed
+- Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
+
 ## [22.6.0] - 2022-07-21
 
 ### Changed
