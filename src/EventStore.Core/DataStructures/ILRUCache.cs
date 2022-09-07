@@ -1,8 +1,12 @@
 using System;
+using EventStore.Core.Caching;
 
 namespace EventStore.Core.DataStructures {
-	public interface ILRUCache<TKey, TValue> {
+	public interface ILRUCache : IDynamicCache {
 		void Clear();
+	}
+
+	public interface ILRUCache<TKey, TValue>: ILRUCache {
 		bool TryGet(TKey key, out TValue value);
 		TValue Put(TKey key, TValue value);
 

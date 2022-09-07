@@ -393,6 +393,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			Interlocked.Exchange(ref _isCached, 1);
 			_cachedLength = fileSize;
 			_cachedData = Marshal.AllocHGlobal(_cachedLength);
+			GC.AddMemoryPressure(_cachedLength);
 
 			// WRITER STREAM
 			var memStream =
@@ -641,6 +642,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				var dataSize = _isReadOnly ? _physicalDataSize + ChunkFooter.MapSize : _chunkHeader.ChunkSize;
 				_cachedLength = GetAlignedSize(ChunkHeader.Size + dataSize + ChunkFooter.Size);
 				var cachedData = Marshal.AllocHGlobal(_cachedLength);
+				GC.AddMemoryPressure(_cachedLength);
+
 				try {
 					using (var unmanagedStream = new UnmanagedMemoryStream((byte*)cachedData, _cachedLength,
 						_cachedLength, FileAccess.ReadWrite)) {
@@ -658,6 +661,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					}
 				} catch {
 					Marshal.FreeHGlobal(cachedData);
+					GC.RemoveMemoryPressure(_cachedLength);
 					throw;
 				}
 
@@ -889,6 +893,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (workItem.StreamLength < newFileSize) {
 				var pos = workItem.StreamPosition;
 				var newCachedData = Marshal.AllocHGlobal(newFileSize);
+				GC.AddMemoryPressure(newFileSize);
+
 				var memStream = new UnmanagedMemoryStream((byte*)newCachedData,
 					workItem.StreamLength,
 					newFileSize,
@@ -896,8 +902,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				workItem.WorkingStream.Position = 0;
 				workItem.WorkingStream.CopyTo(memStream);
 
-				if (!TryDestructMemStreams())
+				if (!TryDestructMemStreams()) {
+					Marshal.FreeHGlobal(newCachedData);
+					GC.RemoveMemoryPressure(newFileSize);
 					throw new Exception("MemStream readers are in use when writing scavenged chunk.");
+				}
 
 				_cachedLength = newFileSize;
 				_cachedData = newCachedData;
@@ -995,8 +1004,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private void FreeCachedData() {
 			var cachedData = Interlocked.Exchange(ref _cachedData, IntPtr.Zero);
-			if (cachedData != IntPtr.Zero)
+			if (cachedData != IntPtr.Zero) {
 				Marshal.FreeHGlobal(cachedData);
+				GC.RemoveMemoryPressure(_cachedLength);
+			}
 		}
 
 		public void WaitForDestroy(int timeoutMs) {

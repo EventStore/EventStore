@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
+using EventStore.Core.Caching;
 using EventStore.Core.Services;
-using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.LogCommon;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -310,5 +311,17 @@ namespace EventStore.Core.Data {
 				jsonWriter.WriteEndArray();
 			}
 		}
+
+		public int ApproximateSize =>
+			MemSizer.ObjectHeaderSize // StreamMetadata object header
+			+ (
+				Unsafe.SizeOf<long?>() // MaxCount
+				+ Unsafe.SizeOf<TimeSpan?>() // MaxAge
+				+ Unsafe.SizeOf<long?>() // TruncateBefore
+				+ Unsafe.SizeOf<bool?>() // TempStream
+				+ Unsafe.SizeOf<TimeSpan?>() // CacheControl
+				+ Unsafe.SizeOf<StreamAcl>()
+			).RoundUpToMultipleOf(IntPtr.Size) // padding
+			+ (Acl?.ApproximateSize ?? 0); // Acl
 	}
 }

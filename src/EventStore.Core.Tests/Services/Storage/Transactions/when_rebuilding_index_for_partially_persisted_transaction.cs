@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -50,7 +51,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
 				_logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity: 0,
+				new NoLRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(),
+				new NoLRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(),
 				additionalCommitChecks: true,
 				metastreamMaxCount: 1,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,

@@ -28,7 +28,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			int cacheSize, bool logFailedAuthenticationAttempts) {
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
-			_userPasswordsCache = new LRUCache<string, Tuple<string, ClaimsPrincipal>>(cacheSize);
+			_userPasswordsCache = new LRUCache<string, Tuple<string, ClaimsPrincipal>>("UserPasswords", cacheSize);
 			_logFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
 			
 			var userManagement = new UserManagementService(ioDispatcher, _passwordHashAlgorithm,
