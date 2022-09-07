@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -128,7 +129,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
 				_logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity: StreamInfoCacheCapacity,
+				new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>("LastEventNumber", StreamInfoCacheCapacity),
+				new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>("StreamMetadata", StreamInfoCacheCapacity),
 				additionalCommitChecks: PerformAdditionalCommitChecks,
 				metastreamMaxCount: MetastreamMaxCount,
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,

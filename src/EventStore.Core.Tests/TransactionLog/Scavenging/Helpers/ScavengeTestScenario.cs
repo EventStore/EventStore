@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using EventStore.Core.Caching;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
@@ -79,7 +80,9 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
 				_logFormat.EventTypeIndexConfirmer,
-				100, true, _metastreamMaxCount,
+				new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>("LastEventNumber", 100_000),
+				new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>("StreamMetadata", 100_000),
+				true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
 			readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());

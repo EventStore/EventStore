@@ -1,8 +1,15 @@
 using System;
 
 namespace EventStore.Core.DataStructures {
-	public interface ILRUCache<TKey, TValue> {
+	public interface ILRUCache {
+		string Name { get; }
+		long Size { get; }
+		long Capacity { get; }
 		void Clear();
+		void Resize(long capacity, out int removedCount, out long removedSize);
+	}
+
+	public interface ILRUCache<TKey, TValue>: ILRUCache {
 		bool TryGet(TKey key, out TValue value);
 		TValue Put(TKey key, TValue value);
 

@@ -1,8 +1,8 @@
-﻿using EventStore.Core.DataStructures.ProbabilisticFilter;
+﻿using EventStore.Common.Utils;
 using Xunit;
 
-namespace EventStore.Core.XUnit.Tests.DataStructures.ProbabilisticFilter {
-	public class RoundingExtensionsTests {
+namespace EventStore.Core.XUnit.Tests.Utils {
+	public class NumberExtensionsTests {
 		[Fact]
 		public void CanRoundUp() {
 			Assert.Equal(0, 0L.RoundUpToMultipleOf(4));

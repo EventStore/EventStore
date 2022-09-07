@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using EventStore.Common.Utils;
 
 namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 	// net6 can do aligned allocations directly

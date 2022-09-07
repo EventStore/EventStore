@@ -10,7 +10,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		public LruCachingScavengeMap(IScavengeMap<TKey, TValue> wrapped, int cacheMaxCount) {
 			_wrapped = wrapped;
-			_cache = new LRUCache<TKey, TValue>(cacheMaxCount);
+			_cache = new LRUCache<TKey, TValue>("ScavengeMap", cacheMaxCount);
 		}
 
 		public TValue this[TKey key] {
