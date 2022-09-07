@@ -81,9 +81,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 			[Test]
 			public async Task ShouldAuthenticateUser() {
-				Assert.True(await _request.AuthenticateAsync());
-				Assert.NotNull(_context.User);
-				Assert.AreEqual("user", _context?.User?.Identity?.Name);
+				var (status, principal) = await _request.AuthenticateAsync();
+				Assert.AreEqual(HttpAuthenticationRequestStatus.Authenticated, status);
+				Assert.NotNull(principal);
+				Assert.AreEqual("user", principal?.Identity?.Name);
 			}
 		}
 
@@ -115,8 +116,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 			[Test]
 			public async Task ShouldNotBeAuthenticated() {
-				Assert.False(await _request.AuthenticateAsync());
+				var (status, principal) = await _request.AuthenticateAsync();
 
+				Assert.AreEqual(HttpAuthenticationRequestStatus.Unauthenticated, status);
+				Assert.Null(principal);
 				Assert.IsEmpty(_context.User.Claims);
 			}
 		}
@@ -154,9 +157,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 			[Test]
 			public async Task ShouldAuthenticateUser() {
-				Assert.True(await _request.AuthenticateAsync());
-				Assert.NotNull(_context.User);
-				Assert.AreEqual("user", _context?.User?.Identity?.Name);
+				var (status, principal) = await _request.AuthenticateAsync();
+				Assert.AreEqual(HttpAuthenticationRequestStatus.Authenticated, status);
+				Assert.NotNull(principal);
+				Assert.AreEqual("user", principal?.Identity?.Name);
 			}
 		}
 	}
