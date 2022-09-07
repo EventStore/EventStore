@@ -1,8 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
+using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog;
+using Serilog;
+using Serilog.Events;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexBackend {
@@ -26,16 +32,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ILRUCache<TStreamId, EventNumberCached> _streamLastEventNumberCache;
 		private readonly ILRUCache<TStreamId, MetadataCached> _streamMetadataCache;
+
+		// very rough approximation of memory taken by one item in the stream info cache.
+		// used only when cache is configured in terms of "max items" rather than "max bytes".
+		public const long StreamInfoCacheUnitSize = 1000;
+
 		private SystemSettings _systemSettings;
 
-		public IndexBackend(ObjectPool<ITransactionFileReader> readers,
-			int lastEventNumberCacheCapacity,
-			int metadataCacheCapacity) {
-			Ensure.NotNull(readers, "readers");
+		public IndexBackend(
+			ObjectPool<ITransactionFileReader> readers,
+			ILRUCache<TStreamId, EventNumberCached> streamLastEventNumberCache,
+			ILRUCache<TStreamId, MetadataCached> streamMetadataCache) {
+
+			Ensure.NotNull(readers, nameof(readers));
+			Ensure.NotNull(streamLastEventNumberCache, nameof(streamLastEventNumberCache));
+			Ensure.NotNull(streamMetadataCache, nameof(streamMetadataCache));
 
 			_readers = readers;
-			_streamLastEventNumberCache = new LRUCache<TStreamId, EventNumberCached>(lastEventNumberCacheCapacity);
-			_streamMetadataCache = new LRUCache<TStreamId, MetadataCached>(metadataCacheCapacity);
+			_streamLastEventNumberCache = streamLastEventNumberCache;
+			_streamMetadataCache = streamMetadataCache;
 		}
 
 		public TFReaderLease BorrowReader() {
@@ -106,6 +121,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				Version = version;
 				LastEventNumber = lastEventNumber;
 			}
+
+			public static int ApproximateSize => Unsafe.SizeOf<EventNumberCached>();
 		}
 
 		public struct MetadataCached {
@@ -116,6 +133,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				Version = version;
 				Metadata = metadata;
 			}
+
+			public int ApproximateSize => Unsafe.SizeOf<MetadataCached>() + (Metadata?.ApproximateSize ?? 0);
 		}
 	}
 }
