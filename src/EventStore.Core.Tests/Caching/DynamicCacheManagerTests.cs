@@ -22,6 +22,7 @@ namespace EventStore.Core.Tests.Caching {
 			long keepFreeMemBytes,
 			TimeSpan monitoringInterval,
 			TimeSpan minResizeInterval,
+			long minResizeThreshold,
 			ICacheResizer rootCacheResizer) {
 			var sut = new DynamicCacheManager(
 				_fakePublisher,
@@ -31,6 +32,7 @@ namespace EventStore.Core.Tests.Caching {
 				keepFreeMemBytes,
 				monitoringInterval,
 				minResizeInterval,
+				minResizeThreshold,
 				rootCacheResizer);
 			sut.Start();
 
@@ -55,6 +57,7 @@ namespace EventStore.Core.Tests.Caching {
 				0,
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
+				0,
 				new StaticCacheResizer("cache", 0, EmptyAllotment.Instance));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
@@ -82,6 +85,7 @@ namespace EventStore.Core.Tests.Caching {
 				bytes,
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
+				0,
 				new CompositeCacheResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
@@ -113,6 +117,7 @@ namespace EventStore.Core.Tests.Caching {
 				0,
 				TimeSpan.MaxValue,
 				TimeSpan.Zero,
+				0,
 				new CompositeCacheResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
@@ -143,6 +148,7 @@ namespace EventStore.Core.Tests.Caching {
 				89,
 				TimeSpan.FromSeconds(1),
 				TimeSpan.FromMinutes(1),
+				0,
 				new CompositeCacheResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
@@ -168,6 +174,7 @@ namespace EventStore.Core.Tests.Caching {
 				0,
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
+				0,
 				new CompositeCacheResizer("root", 123, cache1, cache2));
 
 			var envelope = new FakeEnvelope();

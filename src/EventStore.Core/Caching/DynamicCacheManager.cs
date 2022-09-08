@@ -22,11 +22,13 @@ namespace EventStore.Core.Caching {
 		private readonly long _keepFreeMemBytes;
 		private readonly long _keepFreeMem;
 		private readonly TimeSpan _minResizeInterval;
+		private readonly long _minResizeThreshold;
 		private readonly ICacheResizer _rootCacheResizer;
 		private readonly Message _scheduleTick;
 		private readonly object _lock = new();
 
 		private DateTime _lastResize = DateTime.UtcNow;
+		private long _lastAvailableMem = -1;
 
 		public DynamicCacheManager(
 			IPublisher bus,
@@ -36,6 +38,7 @@ namespace EventStore.Core.Caching {
 			long keepFreeMemBytes,
 			TimeSpan monitoringInterval,
 			TimeSpan minResizeInterval,
+			long minResizeThreshold,
 			ICacheResizer rootCacheResizer) {
 
 			if (keepFreeMemPercent is < 0 or > 100)
@@ -51,6 +54,7 @@ namespace EventStore.Core.Caching {
 			_keepFreeMemBytes = keepFreeMemBytes;
 			_keepFreeMem = Math.Max(_keepFreeMemBytes, _totalMem.ScaleByPercent(_keepFreeMemPercent));
 			_minResizeInterval = minResizeInterval;
+			_minResizeThreshold = minResizeThreshold;
 			_rootCacheResizer = rootCacheResizer;
 			_scheduleTick = TimerMessage.Schedule.Create(
 				monitoringInterval,
@@ -59,7 +63,8 @@ namespace EventStore.Core.Caching {
 		}
 
 		public void Start() {
-			ResizeCaches(_getFreeMem(), 0);
+			var availableMem = CalcAvailableMemory(_getFreeMem(), 0);
+			ResizeCaches(availableMem);
 			Tick();
 		}
 
@@ -98,6 +103,12 @@ namespace EventStore.Core.Caching {
 			if (freeMem >= _keepFreeMem && DateTime.UtcNow - _lastResize < _minResizeInterval)
 				return;
 
+			var cachedMem = _rootCacheResizer.GetMemUsage();
+			var availableMem = CalcAvailableMemory(freeMem, cachedMem);
+
+			if (_lastAvailableMem != -1 && Math.Abs(availableMem - _lastAvailableMem) < _minResizeThreshold)
+				return;
+
 			if (freeMem < _keepFreeMem) {
 				Log.Debug("Available system memory is lower than "
 				          + "{thresholdPercent}% or {thresholdBytes:N0} bytes: {freeMem:N0} bytes. Resizing caches.",
@@ -105,18 +116,17 @@ namespace EventStore.Core.Caching {
 			}
 
 			try {
-				var cachedMem = _rootCacheResizer.GetMemUsage();
-				ResizeCaches(freeMem, cachedMem);
+				ResizeCaches(availableMem);
 				GC.Collect(Math.Min(2, GC.MaxGeneration), GCCollectionMode.Forced);
 			} catch(Exception ex) {
 				Log.Error(ex, "Error while resizing caches");
 			} finally {
 				_lastResize = DateTime.UtcNow;
+				_lastAvailableMem = availableMem;
 			}
 		}
 
-		private void ResizeCaches(long freeMem, long cachedMem) {
-			var availableMem = CalcAvailableMemory(freeMem, cachedMem);
+		private void ResizeCaches(long availableMem) {
 			_rootCacheResizer.CalcAllotment(availableMem, _rootCacheResizer.Weight);
 		}
 
@@ -124,7 +134,7 @@ namespace EventStore.Core.Caching {
 		private long CalcAvailableMemory(long freeMem, long cachedMem) {
 			var availableMem = Math.Max(0L, freeMem + cachedMem - _keepFreeMem);
 
-			Log.Debug("Calculating memory available for caching based on:\n" +
+			Log.Verbose("Calculating memory available for caching based on:\n" +
 			          "Free memory: {freeMem:N0} bytes\n" +
 			          "Total memory: {totalMem:N0} bytes\n" +
 			          "Cached memory: ~{cachedMem:N0} bytes\n" +

@@ -708,6 +708,7 @@ namespace EventStore.Core {
 				keepFreeMemBytes: 4L * 1024 * 1024 * 1024, // 4 GiB
 				monitoringInterval: TimeSpan.FromSeconds(15),
 				minResizeInterval: TimeSpan.FromMinutes(10),
+				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
 				rootCacheResizer: streamInfoCacheResizer);
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
