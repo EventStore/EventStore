@@ -148,12 +148,14 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 		[Test]
 		public async Task passes_authentication() {
-			Assert.IsTrue(await _authenticateRequest.AuthenticateAsync());
+			var (status, _) = await _authenticateRequest.AuthenticateAsync();
+			Assert.AreEqual(HttpAuthenticationRequestStatus.Authenticated, status);
 		}
 
 		[Test]
-		public void sets_user_to_system_user() {
-			Assert.AreEqual(SystemAccounts.System.Claims, _context.User.Claims);
+		public async Task sets_user_to_system_user() {
+			var (_, user) = await _authenticateRequest.AuthenticateAsync();
+			Assert.AreEqual(SystemAccounts.System.Claims, user.Claims);
 		}
 	}
 
@@ -191,12 +193,14 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 		[Test]
 		public async Task passes_authentication() {
-			Assert.IsTrue(await _authenticateRequest.AuthenticateAsync());
+			var (status, _) = await _authenticateRequest.AuthenticateAsync();
+			Assert.AreEqual(HttpAuthenticationRequestStatus.Authenticated, status);
 		}
 
 		[Test]
-		public void sets_user_to_system_user() {
-			Assert.AreEqual(SystemAccounts.System.Claims, _context.User.Claims);
+		public async Task sets_user_to_system_user() {
+			var (_, user) = await _authenticateRequest.AuthenticateAsync();
+			Assert.AreEqual(SystemAccounts.System.Claims, user.Claims);
 		}
 	}
 
@@ -278,12 +282,14 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 
 		[Test]
 		public async Task passes_authentication() {
-			Assert.IsTrue(await _authenticateRequest.AuthenticateAsync());
+			var (status, _) = await _authenticateRequest.AuthenticateAsync();
+			Assert.AreEqual(HttpAuthenticationRequestStatus.Authenticated, status);
 		}
 
 		[Test]
-		public void sets_user_to_system_user() {
-			Assert.AreEqual(SystemAccounts.System.Claims, _context.User.Claims);
+		public async Task sets_user_to_system_user() {
+			var (_, user) = await _authenticateRequest.AuthenticateAsync();
+			Assert.AreEqual(SystemAccounts.System.Claims, user.Claims);
 		}
 	}
 

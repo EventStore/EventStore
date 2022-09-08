@@ -56,10 +56,11 @@ namespace EventStore.Core.Authorization {
 				if (result.Grant == Grant.Allow && _logSuccesses)
 					_logger.Information(
 						"Successful authorization check for {identity} in {duration} with {evaluationResult}",
-						cp.FindFirst(ClaimTypes.Name).Value, sw.Elapsed.Subtract(startedAt), result);
+						cp.FindFirst(ClaimTypes.Name)?.Value ?? "(anonymous)", sw.Elapsed.Subtract(startedAt), result);
 				else if (result.Grant != Grant.Allow)
-					_logger.Warning("Failed authorization check for {identity} in {duration} with {evaluationResult}",
-						cp.FindFirst(ClaimTypes.Name)?.Value ?? "(anonymous)", startedAt, result);
+					_logger.Warning(
+						"Failed authorization check for {identity} in {duration} with {evaluationResult}",
+						cp.FindFirst(ClaimTypes.Name)?.Value ?? "(anonymous)", sw.Elapsed.Subtract(startedAt), result);
 			}
 
 			return result.Grant == Grant.Allow;
