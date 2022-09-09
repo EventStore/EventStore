@@ -52,8 +52,19 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				AuthenticateWithPassword(authenticationRequest, cached.Item1, cached.Item2);
 			} else {
 				var userStreamId = "$user-" + authenticationRequest.Name;
-				_ioDispatcher.ReadBackward(userStreamId, -1, 1, false, SystemAccounts.System,
-					m => ReadUserDataCompleted(m, authenticationRequest));
+				_ioDispatcher.ReadBackward(
+					streamId: userStreamId,
+					fromEventNumber: -1,
+					maxCount: 1,
+					resolveLinks: false,
+					principal: SystemAccounts.System,
+					action: m => {
+						ReadUserDataCompleted(m, authenticationRequest);
+					},
+					timeoutAction: () => {
+						ReadUserDataTimedOut(authenticationRequest);
+					},
+					Guid.NewGuid());
 			}
 		}
 		public string Name => "internal";
@@ -84,8 +95,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 				if (completed.Result == ReadStreamResult.Error) {
 					if (_logFailedAuthenticationAttempts)
 						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
-							"The system is not ready.");
-					authenticationRequest.NotReady();
+							"Unexpected error.");
+					authenticationRequest.Error();
 					return;
 				}
 
@@ -106,6 +117,13 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			} catch {
 				authenticationRequest.Unauthorized();
 			}
+		}
+
+		private void ReadUserDataTimedOut(AuthenticationRequest authenticationRequest) {
+			if (_logFailedAuthenticationAttempts)
+				Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
+					"The system is not ready.");
+			authenticationRequest.NotReady();
 		}
 
 		private void AuthenticateWithPasswordHash(AuthenticationRequest authenticationRequest, UserData userData) {
