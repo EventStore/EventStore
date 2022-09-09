@@ -29,6 +29,20 @@ All notable changes to this project will be documented in this file.
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
 - Deleting persistent subscriptions to $all over HTTP is not supported [EventStore#3593](https://github.com/EventStore/EventStore/pull/3593)
 
+## [21.10.8] - 2022-09-16
+
+### Security
+- Updated Newtonsoft.Json from 11.0.2 to 13.0.1. [EventStore#3507](https://github.com/EventStore/EventStore/pull/3507)
+
+### Added
+- Support for custom log templates [EventStore#3577](https://github.com/EventStore/EventStore/pull/3577)
+- Support for logical chunk numbers up to 400k [EventStore#3589](https://github.com/EventStore/EventStore/pull/3589)
+
+### Fixed
+- gRPC calls can no longer stall if received during server initialization. [EventStore#3584](https://github.com/EventStore/EventStore/pull/3584)
+- Memory leak caused by EventPipeEventSource. [EventStore#3578](https://github.com/EventStore/EventStore/pull/3578) - Thanks [@PaskeS](https://github.com/PaskeS)!
+- Double serialization of projections using $init function [EventStore#3564](https://github.com/EventStore/EventStore/pull/3564) - Thanks [@PaskeS](https://github.com/PaskeS)!
+
 ## [22.6.0] - 2022-07-21
 
 ### Changed
