@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
+- gRPC calls can no longer stall if received during server initialization. [EventStore#3584](https://github.com/EventStore/EventStore/pull/3584)
 
 ## [22.6.0] - 2022-07-21
 
