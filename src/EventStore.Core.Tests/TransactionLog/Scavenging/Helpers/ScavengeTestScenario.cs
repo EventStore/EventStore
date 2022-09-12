@@ -80,8 +80,8 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				_logFormat.StreamExistenceFilter,
 				_logFormat.StreamExistenceFilterReader,
 				_logFormat.EventTypeIndexConfirmer,
-				new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>("LastEventNumber", 100_000),
-				new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>("StreamMetadata", 100_000),
+				new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>("LastEventNumber", 100),
+				new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>("StreamMetadata", 100),
 				true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
 				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint);
