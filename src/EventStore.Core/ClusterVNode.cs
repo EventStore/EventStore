@@ -282,12 +282,16 @@ namespace EventStore.Core {
 					$"{nameof(options.Database.InitializationThreads)} must be greater than 0.");
 			}
 
-			if (options.Grpc.KeepAliveTimeout <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Grpc.KeepAliveTimeout));
+			if (options.Grpc.KeepAliveTimeout < 0) {
+				throw new ArgumentOutOfRangeException($"Invalid {nameof(options.Grpc.KeepAliveTimeout)} {options.Grpc.KeepAliveTimeout}. Please provide a positive integer.");
 			}
 
-			if (options.Grpc.KeepAliveInterval <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Grpc.KeepAliveInterval));
+			if (options.Grpc.KeepAliveInterval < 0) {
+				throw new ArgumentOutOfRangeException($"Invalid {nameof(options.Grpc.KeepAliveInterval)} {options.Grpc.KeepAliveInterval}. Please provide a positive integer.");
+			}
+
+			if (options.Grpc.KeepAliveInterval >= 0 && options.Grpc.KeepAliveInterval < 10) {
+				Log.Warning($"Specified {nameof(options.Grpc.KeepAliveInterval)} of {options.Grpc.KeepAliveInterval} is less than recommended 10_000 ms.");
 			}
 
 			if (options.Application.MaxAppendSize > TFConsts.EffectiveMaxLogRecordSize) {

@@ -56,8 +56,6 @@ You can customise the following Keepalive settings:
 
 After a duration of `keepAliveInterval` (in milliseconds), if the server doesn't see any activity, it pings the client to see if the transport is still alive.
 
-To disable the Keepalive ping, you need to set the `keepAliveInterval` value to `-1`.
-
 | Format               | Syntax                  |
 |:---------------------|:------------------------|
 | Command line         | `--keep-alive-interval` |
