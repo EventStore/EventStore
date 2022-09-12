@@ -117,8 +117,8 @@ namespace EventStore.Core.Caching {
 
 			try {
 				ResizeCaches(availableMem);
-				GC.Collect(Math.Min(2, GC.MaxGeneration), GCCollectionMode.Forced);
-			} catch(Exception ex) {
+				GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+			} catch (Exception ex) {
 				Log.Error(ex, "Error while resizing caches");
 			} finally {
 				_lastResize = DateTime.UtcNow;
