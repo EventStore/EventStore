@@ -2,7 +2,7 @@ using System;
 
 namespace EventStore.Core.DataStructures {
 	public class NoLRUCache<TKey, TValue> : ILRUCache<TKey, TValue> {
-		public string Name => string.Empty;
+		public string Name => "No Cache";
 		public long Size => 0;
 		public long Capacity => 0;
 

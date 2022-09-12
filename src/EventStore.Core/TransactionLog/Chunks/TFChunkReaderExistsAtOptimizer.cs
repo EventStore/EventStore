@@ -47,7 +47,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				return true;
 			};
 
-			_cache = new LRUCache<string, TFChunk.TFChunk>("OptimizedChunks", maxCached, onPut, onRemove);
+			_cache = new LRUCache<string, TFChunk.TFChunk>("ExistsAtOptimizedChunks", maxCached, onPut, onRemove);
 		}
 
 		public void Optimize(TFChunk.TFChunk chunk) {

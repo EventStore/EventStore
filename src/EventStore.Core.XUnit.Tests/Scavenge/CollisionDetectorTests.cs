@@ -105,6 +105,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 			var sut = new CollisionDetector<string>(
 				new LruCachingScavengeMap<ulong, string>(
+					"HashUsers",
 					hashes,
 					cacheMaxCount: 1000),
 				collisions,

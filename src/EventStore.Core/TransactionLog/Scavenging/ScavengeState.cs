@@ -51,6 +51,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// since there are no collisions.
 			_collisionDetector = new CollisionDetector<TStreamId>(
 				hashUsers: new LruCachingScavengeMap<ulong, TStreamId>(
+					"HashUsers",
 					_backend.Hashes,
 					cacheMaxCount: 100_000),
 				collisionStorage: _backend.CollisionStorage,
