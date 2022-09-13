@@ -7,19 +7,16 @@ using Serilog;
 
 namespace EventStore.Core.Caching {
 	public abstract class CacheResizer {
-		public string Name { get; }
+		public string Name => Allotment.Name;
 		protected IAllotment Allotment { get; }
 		public string Unit { get; }
 
 		protected CacheResizer(
-			string name,
 			string unit,
 			IAllotment allotment) {
-			Ensure.NotNullOrEmpty(name, nameof(name));
 			Ensure.NotNull(unit, nameof(unit));
 			Ensure.NotNull(allotment, nameof(allotment));
 
-			Name = name;
 			Allotment = allotment;
 			Unit = unit;
 		}
@@ -47,8 +44,8 @@ namespace EventStore.Core.Caching {
 		private readonly long _capacity;
 		private bool _isAllotted;
 
-		public StaticCacheResizer(string name, string unit, long capacity, IAllotment allotment)
-			: base(name, unit, allotment) {
+		public StaticCacheResizer(string unit, long capacity, IAllotment allotment)
+			: base(unit, allotment) {
 
 			Ensure.Nonnegative(capacity, nameof(capacity));
 			_capacity = capacity;
@@ -75,8 +72,8 @@ namespace EventStore.Core.Caching {
 	public class DynamicCacheResizer : CacheResizer, ICacheResizer {
 		private readonly long _minCapacity;
 
-		public DynamicCacheResizer(string name, string unit, long minCapacity, int weight, IAllotment allotment)
-			: base(name, unit, allotment) {
+		public DynamicCacheResizer(string unit, long minCapacity, int weight, IAllotment allotment)
+			: base(unit, allotment) {
 
 			Ensure.Positive(weight, nameof(weight));
 			Ensure.Nonnegative(minCapacity, nameof(minCapacity));
@@ -103,7 +100,7 @@ namespace EventStore.Core.Caching {
 		private readonly ICacheResizer[] _children;
 
 		public CompositeCacheResizer(string name, string unit, int weight, params ICacheResizer[] children) :
-		base(name, unit, new CompositeAllotment(children)) {
+		base(unit, new CompositeAllotment(name, children)) {
 			Weight = weight;
 			_children = children;
 		}
@@ -137,10 +134,14 @@ namespace EventStore.Core.Caching {
 		private readonly ICacheResizer[] _children;
 		private readonly int _childrenWeight;
 
-		public CompositeAllotment(ICacheResizer[] children) {
+		public CompositeAllotment(string name, params ICacheResizer[] children) {
+			Ensure.NotNullOrEmpty(name, nameof(name));
+			Name = name;
 			_children = children;
 			_childrenWeight = children.Sum(static x => x.Weight);
 		}
+
+		public string Name { get; }
 
 		private long _capacity;
 		public long Capacity {

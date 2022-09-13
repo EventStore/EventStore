@@ -3,7 +3,6 @@ using EventStore.Core.Caching;
 
 namespace EventStore.Core.DataStructures {
 	public interface ILRUCache : IAllotment {
-		string Name { get; }
 		void Clear();
 	}
 

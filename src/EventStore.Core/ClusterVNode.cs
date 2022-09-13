@@ -1531,8 +1531,8 @@ namespace EventStore.Core {
 				name: "StreamInfo",
 				unit: "bytes",
 				weight: 100,
-				new StaticCacheResizer(streamLastEventNumberCache.Name, "entries", streamInfoCacheCapacity, streamLastEventNumberCache),
-				new StaticCacheResizer(streamMetadataCache.Name, "entries", streamInfoCacheCapacity, streamMetadataCache));
+				new StaticCacheResizer("entries", streamInfoCacheCapacity, streamLastEventNumberCache),
+				new StaticCacheResizer("entries", streamInfoCacheCapacity, streamMetadataCache));
 		}
 
 		private static void CreateDynamicStreamInfoCache(
@@ -1563,8 +1563,8 @@ namespace EventStore.Core {
 				name: "StreamInfo",
 				unit: "bytes",
 				weight: 100,
-				new DynamicCacheResizer(streamLastEventNumberCache.Name, "bytes", minMemAllotted, 60, streamLastEventNumberCache),
-				new DynamicCacheResizer(streamMetadataCache.Name, "bytes", minMemAllotted, 40, streamMetadataCache));
+				new DynamicCacheResizer("bytes", minMemAllotted, 60, streamLastEventNumberCache),
+				new DynamicCacheResizer("bytes", minMemAllotted, 40, streamMetadataCache));
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {

@@ -6,10 +6,17 @@ namespace EventStore.Core.Tests.Caching {
 		private readonly Func<long> _getSize;
 		private readonly Action<long> _setCapacity;
 
-		public AdHocAllotment(Func<long> getSize, Action<long> setCapacity) {
+		public AdHocAllotment(
+			Func<long> getSize,
+			Action<long> setCapacity,
+			string name = null) {
+
 			_getSize = getSize;
 			_setCapacity = setCapacity;
+			Name = name ?? nameof(AdHocAllotment);
 		}
+
+		public string Name { get; }
 
 		private long _capacity;
 		public long Capacity {

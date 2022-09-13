@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new StaticCacheResizer("cache", "", 0, EmptyAllotment.Instance));
+				new StaticCacheResizer("", 0, EmptyAllotment.Instance));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished().WithTimeout(TimeSpan.FromSeconds(10));
@@ -68,10 +68,10 @@ namespace EventStore.Core.Tests.Caching {
 		[TestCase(0, 20)]
 		public async Task caches_resized_when_memory_below_keep_free_mem(int percent, long bytes) {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer("cache1", "", 1, 60, new AdHocAllotment(
+			var cache1 = new DynamicCacheResizer("", 1, 60, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicCacheResizer("cache2", "", 2, 40, new AdHocAllotment(
+			var cache2 = new DynamicCacheResizer("", 2, 40, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
@@ -100,10 +100,10 @@ namespace EventStore.Core.Tests.Caching {
 		[Test]
 		public async Task caches_resized_after_min_resize_interval() {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer("cache1", "", 1, 60, new AdHocAllotment(
+			var cache1 = new DynamicCacheResizer("", 1, 60, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicCacheResizer("cache2", "", 2, 40, new AdHocAllotment(
+			var cache2 = new DynamicCacheResizer("", 2, 40, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
@@ -135,8 +135,8 @@ namespace EventStore.Core.Tests.Caching {
 			var allotment = new AdHocAllotment(
 				() => 0,
 				_ => Interlocked.Increment(ref numResize));
-			var cache1 = new DynamicCacheResizer("cache1", "", 1, 60, allotment);
-			var cache2 = new DynamicCacheResizer("cache2", "", 2, 40, allotment);
+			var cache1 = new DynamicCacheResizer("", 1, 60, allotment);
+			var cache2 = new DynamicCacheResizer("", 2, 40, allotment);
 
 			var request = 0;
 			var freeMem = new[] { 100, 90 /* before GC */ };
@@ -160,12 +160,14 @@ namespace EventStore.Core.Tests.Caching {
 
 		[Test]
 		public void correct_stats_are_produced() {
-			var cache1 = new DynamicCacheResizer("test1", "", 10, 100, new AdHocAllotment(
+			var cache1 = new DynamicCacheResizer("", 10, 100, new AdHocAllotment(
 				() => 12,
-				mem => { }));
-			var cache2 = new StaticCacheResizer("test2", "", 15, new AdHocAllotment(
+				mem => { },
+				"test1"));
+			var cache2 = new StaticCacheResizer("", 15, new AdHocAllotment(
 				() => 10,
-				mem => { }));
+				mem => { },
+				"test2"));
 
 			var sut = GenSut(
 				() => 80,
