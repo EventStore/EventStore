@@ -57,7 +57,7 @@ namespace EventStore.Core.Caching {
 
 		public int Weight => 0;
 
-		public long GetSize() => Allotment.GetSize();
+		public long Size => Allotment.Size;
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			if (_isAllotted)
@@ -68,7 +68,7 @@ namespace EventStore.Core.Caching {
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
-			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Capacity, GetSize());
+			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Capacity, Size);
 		}
 	}
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Caching {
 
 		public int Weight { get; }
 
-		public long GetSize() => Allotment.GetSize();
+		public long Size => Allotment.Size;
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			var capacity = Math.Max(totalCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
@@ -95,7 +95,7 @@ namespace EventStore.Core.Caching {
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
-			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Capacity, GetSize());
+			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Capacity, Size);
 		}
 	}
 
@@ -114,7 +114,7 @@ namespace EventStore.Core.Caching {
 			TimeAllotment(() => Allotment.Capacity = totalCapacity.ScaleByWeight(Weight, totalWeight));
 		}
 
-		public long GetSize() => Allotment.GetSize();
+		public long Size => Allotment.Size;
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
 			var key = BuildStatsKey(parentKey);
@@ -136,7 +136,7 @@ namespace EventStore.Core.Caching {
 	public class EmptyAllotment : IAllotment {
 		public static EmptyAllotment Instance { get; } = new();
 		public long Capacity { get; set; }
-		public long GetSize() => 0;
+		public long Size => 0;
 	}
 
 	public class AdHocAllotment : IAllotment {
@@ -157,7 +157,7 @@ namespace EventStore.Core.Caching {
 			}
 		}
 
-		public long GetSize() => _getSize();
+		public long Size => _getSize();
 	}
 
 	public class CompositeAllotment : IAllotment {
@@ -179,6 +179,6 @@ namespace EventStore.Core.Caching {
 			}
 		}
 
-		public long GetSize() => _children.Sum(static x => x.GetSize());
+		public long Size => _children.Sum(static x => x.Size);
 	}
 }

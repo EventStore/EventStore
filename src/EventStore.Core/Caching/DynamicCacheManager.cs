@@ -121,7 +121,7 @@ namespace EventStore.Core.Caching {
 			if (freeMem >= _keepFreeMem && DateTime.UtcNow - _lastResize < _minResizeInterval)
 				return false;
 
-			var cachedMem = _rootCacheResizer.GetSize();
+			var cachedMem = _rootCacheResizer.Size;
 			availableMem = CalcAvailableMemory(freeMem, cachedMem);
 
 			if (_lastAvailableMem != -1 && Math.Abs(availableMem - _lastAvailableMem) < _minResizeThreshold)

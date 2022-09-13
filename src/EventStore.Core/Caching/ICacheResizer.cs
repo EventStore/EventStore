@@ -4,13 +4,13 @@ namespace EventStore.Core.Caching {
 	public interface ICacheResizer {
 		string Name { get; }
 		int Weight { get; }
-		long GetSize();
+		long Size { get; }
 		void CalcCapacity(long totalCapacity, int totalWeight);
 		IEnumerable<ICacheStats> GetStats(string parentKey);
 	}
 
 	public interface IAllotment {
 		long Capacity { get; set; }
-		long GetSize();
+		long Size { get; }
 	}
 }
