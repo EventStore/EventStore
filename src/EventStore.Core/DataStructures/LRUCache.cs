@@ -4,9 +4,14 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Caching;
+using Serilog;
 
 namespace EventStore.Core.DataStructures {
-	public class LRUCache<TKey, TValue> : ILRUCache<TKey, TValue> {
+	public class LRUCache {
+		protected static readonly ILogger Log = Serilog.Log.ForContext<LRUCache>();
+	}
+
+	public class LRUCache<TKey, TValue> : LRUCache, ILRUCache<TKey, TValue> {
 		private class LRUItem {
 			public TKey Key;
 			public TValue Value;
@@ -29,6 +34,7 @@ namespace EventStore.Core.DataStructures {
 		protected long _capacity;
 		private long _size;
 		protected readonly Func<TKey, TValue, int> _calculateItemSize;
+		private string _unit;
 		private static readonly Func<TKey, TValue, int> _unitSize = (_, _) => 1;
 
 		public string Name { get; }
@@ -38,21 +44,23 @@ namespace EventStore.Core.DataStructures {
 		public LRUCache(
 			string name,
 			long capacity,
-			Func<TKey, TValue, int> calculateItemSize = null) {
+			Func<TKey, TValue, int> calculateItemSize = null,
+			string unit = null) {
+
 			Ensure.NotNull(name, nameof(name));
 			Ensure.Nonnegative(capacity, nameof(capacity));
 			Name = name;
 			_capacity = capacity;
 			_size = 0L;
 			_calculateItemSize = calculateItemSize ?? _unitSize;
+			_unit = unit ?? "items";
 		}
 
 		public LRUCache(
 			string name,
 			long capacity,
 			Func<object, bool> onPut,
-			Func<object, bool> onRemove,
-			Func<TKey, TValue, int> calculateItemSize = null) {
+			Func<object, bool> onRemove) {
 			Ensure.NotNull(name, nameof(name));
 			Ensure.Nonnegative(capacity, "capacity");
 			Name = name;
@@ -60,7 +68,8 @@ namespace EventStore.Core.DataStructures {
 			_size = 0L;
 			_onPut = onPut;
 			_onRemove = onRemove;
-			_calculateItemSize = calculateItemSize ?? _unitSize;
+			_calculateItemSize = _unitSize;
+			_unit = "items";
 		}
 
 		public static int ApproximateItemSize(int keyRefsSize, int valueRefsSize) =>
@@ -229,6 +238,11 @@ namespace EventStore.Core.DataStructures {
 				removedCount += curRemovedCount;
 				removedSize += curRemovedSize;
 			}
+
+			if (removedCount > 0)
+				Log.Information(
+					"{name} cache removed {removedCount:N0} entries amounting to ~{removedSize:N0} " + _unit,
+					Name, removedCount, removedSize);
 		}
 
 		private LinkedListNode<LRUItem> GetNode() {
