@@ -1568,7 +1568,7 @@ namespace EventStore.Core {
 						metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>()));
 
 			static void UpdateCapacity(ILRUCache cache, long newCapacity) {
-				cache.Resize(newCapacity);
+				cache.Capacity = newCapacity;
 			}
 
 			var lastEventNumberCacheAllotment = new AdHocAllotment(

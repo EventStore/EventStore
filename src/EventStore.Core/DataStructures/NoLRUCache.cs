@@ -4,7 +4,7 @@ namespace EventStore.Core.DataStructures {
 	public class NoLRUCache<TKey, TValue> : ILRUCache<TKey, TValue> {
 		public string Name => "No Cache";
 		public long Size => 0;
-		public long Capacity => 0;
+		public long Capacity { get; set; }
 
 		public void Clear() {
 		}
@@ -21,9 +21,6 @@ namespace EventStore.Core.DataStructures {
 		public TValue Put<T>(TKey key, T userData, Func<TKey, T, TValue> addFactory,
 			Func<TKey, TValue, T, TValue> updateFactory) {
 			return addFactory(key, userData);
-		}
-
-		public void Resize(long capacity) {
 		}
 	}
 }

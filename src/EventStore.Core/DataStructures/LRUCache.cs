@@ -31,15 +31,18 @@ namespace EventStore.Core.DataStructures {
 		private readonly Queue<LinkedListNode<LRUItem>> _nodesPool = new();
 		private readonly object _lock = new();
 		private readonly Func<object, bool> _onPut, _onRemove; //_onPut is not called if a key-value pair already exists in the cache
-		protected long _capacity;
+		private long _capacity;
 		private long _size;
-		protected readonly Func<TKey, TValue, int> _calculateItemSize;
+		private readonly Func<TKey, TValue, int> _calculateItemSize;
 		private string _unit;
 		private static readonly Func<TKey, TValue, int> _unitSize = (_, _) => 1;
 
 		public string Name { get; }
 		public long Size => Interlocked.Read(ref _size);
-		public long Capacity => Interlocked.Read(ref _capacity);
+		public long Capacity {
+			get => Interlocked.Read(ref _capacity);
+			set => SetCapacity(value);
+		}
 
 		public LRUCache(
 			string name,
@@ -204,7 +207,7 @@ namespace EventStore.Core.DataStructures {
 			}
 		}
 
-		protected void EnsureCapacity(int forItemSize, bool reuseNodes, out int removedCount, out long removedSize) {
+		private void EnsureCapacity(int forItemSize, bool reuseNodes, out int removedCount, out long removedSize) {
 			lock (_lock) {
 				var initialCount = _items.Count;
 				var initialSize = _size;
@@ -217,7 +220,7 @@ namespace EventStore.Core.DataStructures {
 			}
 		}
 
-		public void Resize(long newCapacity) {
+		private void SetCapacity(long newCapacity) {
 			const int resizeBatchSize = 100_000;
 
 			if (newCapacity < 0)
