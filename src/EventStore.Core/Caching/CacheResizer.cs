@@ -29,16 +29,6 @@ namespace EventStore.Core.Caching {
 			var index = key.LastIndexOf('-');
 			return index < 0 ? null : key[..index];
 		}
-
-		protected void TimeAllotment(Action allotmentAction) {
-			var sw = Stopwatch.StartNew();
-			allotmentAction();
-			sw.Stop();
-
-			Log.Debug(
-				"{name} cache allotted {allottedMem:N0} " + Unit + ". Took {elapsed}.",
-				Name, Allotment.Capacity, sw.Elapsed);
-		}
 	}
 
 	public class StaticCacheResizer : CacheResizer, ICacheResizer {
@@ -60,7 +50,7 @@ namespace EventStore.Core.Caching {
 				return;
 
 			_isAllotted = true;
-			TimeAllotment(() => Allotment.Capacity = _capacity);
+			Allotment.Capacity = _capacity;
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
@@ -84,8 +74,15 @@ namespace EventStore.Core.Caching {
 		public int Weight { get; }
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
+			var sw = Stopwatch.StartNew();
+
 			var capacity = Math.Max(totalCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
-			TimeAllotment(() => Allotment.Capacity = capacity);
+			Allotment.Capacity = capacity;
+
+			sw.Stop();
+			Log.Debug(
+				"{name} cache allotted {allottedMem:N0} " + Unit + ". Took {elapsed}.",
+				Name, Allotment.Capacity, sw.Elapsed);
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
@@ -105,7 +102,7 @@ namespace EventStore.Core.Caching {
 		public int Weight { get; }
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
-			TimeAllotment(() => Allotment.Capacity = totalCapacity.ScaleByWeight(Weight, totalWeight));
+			Allotment.Capacity = totalCapacity.ScaleByWeight(Weight, totalWeight);
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
