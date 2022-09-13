@@ -15,7 +15,7 @@ namespace EventStore.Core.Caching {
 			string name,
 			string unit,
 			IAllotment allotment) {
-			Ensure.NotNull(name, nameof(name));
+			Ensure.NotNullOrEmpty(name, nameof(name));
 			Ensure.NotNull(unit, nameof(unit));
 			Ensure.NotNull(allotment, nameof(allotment));
 
@@ -27,15 +27,19 @@ namespace EventStore.Core.Caching {
 		protected string BuildStatsKey(string parentKey) =>
 			parentKey.Length == 0 ? Name : $"{parentKey}-{Name}";
 
+		protected static string GetParentKey(string key) {
+			var index = key.LastIndexOf('-');
+			return index < 0 ? null : key[..index];
+		}
+
 		protected void TimeAllotment(Action allotmentAction) {
 			var sw = Stopwatch.StartNew();
 			allotmentAction();
 			sw.Stop();
 
-			if (Name != string.Empty)
-				Log.Debug(
-					"{name} cache allotted {allottedMem:N0} " + Unit + ". Took {elapsed}.",
-					Name, Allotment.Current, sw.Elapsed);
+			Log.Debug(
+				"{name} cache allotted {allottedMem:N0} " + Unit + ". Took {elapsed}.",
+				Name, Allotment.Current, sw.Elapsed);
 		}
 	}
 
@@ -118,7 +122,9 @@ namespace EventStore.Core.Caching {
 
 			foreach (var child in _children) {
 				foreach (var childStats in child.GetStats(key)) {
-					memUsed += childStats.MemUsed;
+					if (GetParentKey(childStats.Key) == key)
+						memUsed += childStats.MemUsed;
+
 					yield return childStats;
 				}
 			}
