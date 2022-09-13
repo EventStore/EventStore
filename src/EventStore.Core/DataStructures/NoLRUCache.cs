@@ -23,9 +23,7 @@ namespace EventStore.Core.DataStructures {
 			return addFactory(key, userData);
 		}
 
-		public void Resize(long capacity, out int removedCount, out long removedSize) {
-			removedCount = 0;
-			removedSize = 0;
+		public void Resize(long capacity) {
 		}
 	}
 }

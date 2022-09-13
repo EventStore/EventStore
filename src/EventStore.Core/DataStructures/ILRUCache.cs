@@ -6,7 +6,7 @@ namespace EventStore.Core.DataStructures {
 		long Size { get; }
 		long Capacity { get; }
 		void Clear();
-		void Resize(long capacity, out int removedCount, out long removedSize);
+		void Resize(long capacity);
 	}
 
 	public interface ILRUCache<TKey, TValue>: ILRUCache {

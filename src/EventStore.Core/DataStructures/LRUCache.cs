@@ -217,14 +217,14 @@ namespace EventStore.Core.DataStructures {
 			}
 		}
 
-		public void Resize(long newCapacity, out int removedCount, out long removedSize) {
+		public void Resize(long newCapacity) {
 			const int resizeBatchSize = 100_000;
 
 			if (newCapacity < 0)
 				throw new ArgumentOutOfRangeException(nameof(newCapacity));
 
-			removedCount = 0;
-			removedSize = 0L;
+			var removedCount = 0;
+			var removedSize = 0L;
 
 			// when decreasing the capacity, remove items batch by batch to prevent
 			// other threads from starving when trying to access the cache.

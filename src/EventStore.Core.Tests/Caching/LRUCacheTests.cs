@@ -127,11 +127,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			    Assert.AreEqual(6, sut.Size);
 
-			    sut.Resize(10, out var removedCount, out var removedSize);
-
-			    // no items removed
-			    Assert.AreEqual(0, removedCount);
-			    Assert.AreEqual(0, removedSize);
+			    sut.Resize(10);
 
 			    Assert.AreEqual(6, sut.Size);
 			    Assert.AreEqual(10, sut.Capacity);
@@ -147,11 +143,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			    Assert.AreEqual(6, sut.Size);
 
-			    sut.Resize(3, out var removedCount, out var removedSize);
-
-			    // 1 & 2 should be removed
-			    Assert.AreEqual(2, removedCount);
-			    Assert.AreEqual(3, removedSize);
+			    sut.Resize(3);
 
 			    Assert.AreEqual(3, sut.Size);
 			    Assert.AreEqual(3, sut.Capacity);
@@ -167,11 +159,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			    Assert.AreEqual(6, sut.Size);
 
-			    sut.Resize(0, out var removedCount, out var removedSize);
-
-			    // all items should be removed
-			    Assert.AreEqual(3, removedCount);
-			    Assert.AreEqual(6, removedSize);
+			    sut.Resize(0);
 
 			    Assert.AreEqual(0, sut.Size);
 			    Assert.AreEqual(0, sut.Capacity);
@@ -182,7 +170,7 @@ namespace EventStore.Core.Tests.Caching {
 			    var sut = GenSut<int, int>(6, (k, v) => k + v);
 
 			    Assert.Throws<ArgumentOutOfRangeException>(() =>
-			        sut.Resize(-1, out _, out _));
+			        sut.Resize(-1));
 			}
 		}
 	}
