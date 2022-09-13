@@ -97,27 +97,64 @@ namespace EventStore.Core.Caching {
 			message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
 		}
 
-		private void ResizeCachesIfNeeded() {
-			var freeMem = _getFreeMem();
+		private static void TriggerGc() {
+			var sw = new Stopwatch();
+			Log.Debug("Triggering gen {generation} garbage collection", GC.MaxGeneration);
+
+			sw.Reset();
+			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+			sw.Stop();
+
+			Log.Debug("GC took {elapsed}", sw.Elapsed);
+
+			sw.Reset();
+			GC.WaitForPendingFinalizers();
+			sw.Stop();
+
+			Log.Debug("GC finalization took {elapsed}", sw.Elapsed);
+		}
+
+		private bool ResizeConditionsMet(out long freeMem, out long availableMem) {
+			availableMem = 0L;
+			freeMem = _getFreeMem();
 
 			if (freeMem >= _keepFreeMem && DateTime.UtcNow - _lastResize < _minResizeInterval)
-				return;
+				return false;
 
 			var cachedMem = _rootCacheResizer.GetMemUsage();
-			var availableMem = CalcAvailableMemory(freeMem, cachedMem);
+			availableMem = CalcAvailableMemory(freeMem, cachedMem);
 
 			if (_lastAvailableMem != -1 && Math.Abs(availableMem - _lastAvailableMem) < _minResizeThreshold)
+				return false;
+
+			return true;
+		}
+
+		private void ResizeCachesIfNeeded() {
+			// We need to trigger the GC before resizing the caches, since things that have
+			// been deleted from the caches may not yet have been garbage collected and
+			// this will result in a lower calculation of "availableMem", which in turn
+			// will result in a smaller memory allotment to the caches.
+			// Triggering the GC is not cheap, so we want to do it as rarely as we can.
+			// We first check if the conditions for resizing the caches are met, then trigger the GC.
+			// But now, we may have enough free memory and resizing the caches may no longer be necessary,
+			// so we verify the conditions again before finally resizing the caches.
+
+			if (!ResizeConditionsMet(out _, out _))
 				return;
 
-			if (freeMem < _keepFreeMem) {
+			TriggerGc();
+
+			if (!ResizeConditionsMet(out var freeMem, out var availableMem))
+				return;
+
+			if (freeMem < _keepFreeMem)
 				Log.Debug("Available system memory is lower than "
 				          + "{thresholdPercent}% or {thresholdBytes:N0} bytes: {freeMem:N0} bytes. Resizing caches.",
 					_keepFreeMemPercent, _keepFreeMemBytes, freeMem);
-			}
 
 			try {
 				ResizeCaches(availableMem);
-				GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 			} catch (Exception ex) {
 				Log.Error(ex, "Error while resizing caches");
 			} finally {
