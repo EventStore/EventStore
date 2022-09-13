@@ -10,8 +10,7 @@ namespace EventStore.Core.Caching {
 	}
 
 	public interface IAllotment {
-		long Capacity { get; }
+		long Capacity { get; set; }
 		long GetSize();
-		void SetCapacity(long capacity);
 	}
 }

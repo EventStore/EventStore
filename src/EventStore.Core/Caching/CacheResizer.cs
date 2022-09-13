@@ -64,7 +64,7 @@ namespace EventStore.Core.Caching {
 				return;
 
 			_isAllotted = true;
-			TimeAllotment(() => Allotment.SetCapacity(_capacity));
+			TimeAllotment(() => Allotment.Capacity = _capacity);
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
@@ -91,7 +91,7 @@ namespace EventStore.Core.Caching {
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			var capacity = Math.Max(totalCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
-			TimeAllotment(() => Allotment.SetCapacity(capacity));
+			TimeAllotment(() => Allotment.Capacity = capacity);
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
@@ -111,7 +111,7 @@ namespace EventStore.Core.Caching {
 		public int Weight { get; }
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
-			TimeAllotment(() => Allotment.SetCapacity(totalCapacity.ScaleByWeight(Weight, totalWeight)));
+			TimeAllotment(() => Allotment.Capacity = totalCapacity.ScaleByWeight(Weight, totalWeight));
 		}
 
 		public long GetSize() => Allotment.GetSize();
@@ -135,12 +135,8 @@ namespace EventStore.Core.Caching {
 
 	public class EmptyAllotment : IAllotment {
 		public static EmptyAllotment Instance { get; } = new();
-		public long Capacity { get; private set; }
+		public long Capacity { get; set; }
 		public long GetSize() => 0;
-
-		public void SetCapacity(long capacity) {
-			Capacity = capacity;
-		}
 	}
 
 	public class AdHocAllotment : IAllotment {
@@ -152,14 +148,16 @@ namespace EventStore.Core.Caching {
 			_setCapacity = setCapacity;
 		}
 
-		public long Capacity { get; private set; }
+		private long _capacity;
+		public long Capacity {
+			get => _capacity;
+			set {
+				_capacity = value;
+				_setCapacity(value);
+			}
+		}
 
 		public long GetSize() => _getSize();
-
-		public void SetCapacity(long capacity) {
-			Capacity = capacity;
-			_setCapacity(capacity);
-		}
 	}
 
 	public class CompositeAllotment : IAllotment {
@@ -171,13 +169,16 @@ namespace EventStore.Core.Caching {
 			_childrenWeight = children.Sum(static x => x.Weight);
 		}
 
-		public long Capacity { get; private set; }
-		public long GetSize() => _children.Sum(static x => x.GetSize());
-
-		public void SetCapacity(long capacity) {
-			Capacity = capacity;
-			foreach (var child in _children)
-				child.CalcCapacity(capacity, _childrenWeight);
+		private long _capacity;
+		public long Capacity {
+			get => _capacity;
+			set {
+				_capacity = value;
+				foreach (var child in _children)
+					child.CalcCapacity(_capacity, _childrenWeight);
+			}
 		}
+
+		public long GetSize() => _children.Sum(static x => x.GetSize());
 	}
 }
