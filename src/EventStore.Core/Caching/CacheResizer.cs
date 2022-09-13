@@ -9,14 +9,19 @@ namespace EventStore.Core.Caching {
 	public abstract class CacheResizer {
 		public string Name { get; }
 		protected IAllotment Allotment { get; }
+		public string Unit { get; }
 
 		protected CacheResizer(
 			string name,
+			string unit,
 			IAllotment allotment) {
-			Ensure.NotNullOrEmpty(name, nameof(name));
+			Ensure.NotNull(name, nameof(name));
+			Ensure.NotNull(unit, nameof(unit));
 			Ensure.NotNull(allotment, nameof(allotment));
+
 			Name = name;
 			Allotment = allotment;
+			Unit = unit;
 		}
 
 		protected string BuildStatsKey(string parentKey) =>
@@ -27,9 +32,10 @@ namespace EventStore.Core.Caching {
 			allotmentAction();
 			sw.Stop();
 
-			Log.Debug(
-				"{name} cache allotted {allottedMem:N0} bytes. Took {elapsed}.",
-				Name, Allotment.Current, sw.Elapsed);
+			if (Name != string.Empty)
+				Log.Debug(
+					"{name} cache allotted {allottedMem:N0} " + Unit + ". Took {elapsed}.",
+					Name, Allotment.Current, sw.Elapsed);
 		}
 	}
 
@@ -37,8 +43,8 @@ namespace EventStore.Core.Caching {
 		private readonly long _allotment;
 		private bool _isAllotted;
 
-		public StaticCacheResizer(string name, long memAllotted, IAllotment allotment)
-			: base(name, allotment) {
+		public StaticCacheResizer(string name, string unit, long memAllotted, IAllotment allotment)
+			: base(name, unit, allotment) {
 
 			Ensure.Nonnegative(memAllotted, nameof(memAllotted));
 			_allotment = memAllotted;
@@ -65,8 +71,8 @@ namespace EventStore.Core.Caching {
 	public class DynamicCacheResizer : CacheResizer, ICacheResizer {
 		private readonly long _minMemAllotment;
 
-		public DynamicCacheResizer(string name, long minMemAllotted, int weight, IAllotment allotment)
-			: base(name, allotment) {
+		public DynamicCacheResizer(string name, string unit, long minMemAllotted, int weight, IAllotment allotment)
+			: base(name, unit, allotment) {
 
 			Ensure.Positive(weight, nameof(weight));
 			Ensure.Nonnegative(minMemAllotted, nameof(minMemAllotted));
@@ -92,8 +98,8 @@ namespace EventStore.Core.Caching {
 	public class CompositeCacheResizer : CacheResizer, ICacheResizer {
 		private readonly ICacheResizer[] _children;
 
-		public CompositeCacheResizer(string name, int weight, params ICacheResizer[] children) :
-		base(name, new CompositeAllotment(children)) {
+		public CompositeCacheResizer(string name, string unit, int weight, params ICacheResizer[] children) :
+		base(name, unit, new CompositeAllotment(children)) {
 			Weight = weight;
 			_children = children;
 		}

@@ -32,11 +32,6 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly ObjectPool<ITransactionFileReader> _readers;
 		private readonly ILRUCache<TStreamId, EventNumberCached> _streamLastEventNumberCache;
 		private readonly ILRUCache<TStreamId, MetadataCached> _streamMetadataCache;
-
-		// very rough approximation of memory taken by one item in the stream info cache.
-		// used only when cache is configured in terms of "max items" rather than "max bytes".
-		public const long StreamInfoCacheUnitSize = 1000;
-
 		private SystemSettings _systemSettings;
 
 		public IndexBackend(
