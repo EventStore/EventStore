@@ -101,13 +101,13 @@ namespace EventStore.Core.Caching {
 			var sw = new Stopwatch();
 			Log.Debug("Triggering gen {generation} garbage collection", GC.MaxGeneration);
 
-			sw.Reset();
+			sw.Restart();
 			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
 			sw.Stop();
 
 			Log.Debug("GC took {elapsed}", sw.Elapsed);
 
-			sw.Reset();
+			sw.Restart();
 			GC.WaitForPendingFinalizers();
 			sw.Stop();
 
