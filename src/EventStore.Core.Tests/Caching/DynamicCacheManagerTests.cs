@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new StaticCacheResizer("cache", 0, EmptyAllotment.Instance));
+				new StaticCacheResizer("cache", "", 0, EmptyAllotment.Instance));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished().WithTimeout(TimeSpan.FromSeconds(10));
@@ -68,15 +68,15 @@ namespace EventStore.Core.Tests.Caching {
 		[TestCase(0, 20)]
 		public async Task caches_resized_when_memory_below_keep_free_mem(int percent, long bytes) {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer("cache1", 1, 60, new AdHocAllotment(
+			var cache1 = new DynamicCacheResizer("cache1", "", 1, 60, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicCacheResizer("cache2", 2, 40, new AdHocAllotment(
+			var cache2 = new DynamicCacheResizer("cache2", "", 2, 40, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
 			var request = 0;
-			var freeMem = new[] { 100, 19 };
+			var freeMem = new[] { 100, 19 /* before GC */, 19 /* after GC */};
 
 			var sut = GenSut(
 				() => freeMem[request++],
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new CompositeCacheResizer("root", 100, cache1, cache2));
+				new CompositeCacheResizer("root", "", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 
@@ -100,15 +100,15 @@ namespace EventStore.Core.Tests.Caching {
 		[Test]
 		public async Task caches_resized_after_min_resize_interval() {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer("cache1", 1, 60, new AdHocAllotment(
+			var cache1 = new DynamicCacheResizer("cache1", "", 1, 60, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicCacheResizer("cache2", 2, 40, new AdHocAllotment(
+			var cache2 = new DynamicCacheResizer("cache2", "", 2, 40, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
 			var request = 0;
-			var freeMem = new[] { 100, 90 };
+			var freeMem = new[] { 100, 90 /* before GC */ , 90 /* after GC */ };
 
 			var sut = GenSut(
 				() => freeMem[request++],
@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.Zero,
 				0,
-				new CompositeCacheResizer("root", 100, cache1, cache2));
+				new CompositeCacheResizer("root", "", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 
@@ -135,11 +135,11 @@ namespace EventStore.Core.Tests.Caching {
 			var allotment = new AdHocAllotment(
 				() => 0,
 				_ => Interlocked.Increment(ref numResize));
-			var cache1 = new DynamicCacheResizer("cache1", 1, 60, allotment);
-			var cache2 = new DynamicCacheResizer("cache2", 2, 40, allotment);
+			var cache1 = new DynamicCacheResizer("cache1", "", 1, 60, allotment);
+			var cache2 = new DynamicCacheResizer("cache2", "", 2, 40, allotment);
 
 			var request = 0;
-			var freeMem = new[] { 100, 90 };
+			var freeMem = new[] { 100, 90 /* before GC */ };
 
 			var sut = GenSut(
 				() => freeMem[request++],
@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.FromSeconds(1),
 				TimeSpan.FromMinutes(1),
 				0,
-				new CompositeCacheResizer("root", 100, cache1, cache2));
+				new CompositeCacheResizer("root", "", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished();
@@ -160,10 +160,10 @@ namespace EventStore.Core.Tests.Caching {
 
 		[Test]
 		public void correct_stats_are_produced() {
-			var cache1 = new DynamicCacheResizer("test1", 10, 100, new AdHocAllotment(
+			var cache1 = new DynamicCacheResizer("test1", "", 10, 100, new AdHocAllotment(
 				() => 12,
 				mem => { }));
-			var cache2 = new StaticCacheResizer("test2", 15, new AdHocAllotment(
+			var cache2 = new StaticCacheResizer("test2", "", 15, new AdHocAllotment(
 				() => 10,
 				mem => { }));
 
@@ -175,7 +175,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new CompositeCacheResizer("root", 123, cache1, cache2));
+				new CompositeCacheResizer("root", "", 123, cache1, cache2));
 
 			var envelope = new FakeEnvelope();
 			sut.Handle(new MonitoringMessage.InternalStatsRequest(envelope));
