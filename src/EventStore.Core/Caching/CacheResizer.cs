@@ -8,6 +8,7 @@ using Serilog;
 namespace EventStore.Core.Caching {
 	public abstract class CacheResizer {
 		public string Name => Allotment.Name;
+		public long Size => Allotment.Size;
 		protected IAllotment Allotment { get; }
 		public string Unit { get; }
 
@@ -54,8 +55,6 @@ namespace EventStore.Core.Caching {
 
 		public int Weight => 0;
 
-		public long Size => Allotment.Size;
-
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			if (_isAllotted)
 				return;
@@ -84,8 +83,6 @@ namespace EventStore.Core.Caching {
 
 		public int Weight { get; }
 
-		public long Size => Allotment.Size;
-
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			var capacity = Math.Max(totalCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
 			TimeAllotment(() => Allotment.Capacity = capacity);
@@ -110,8 +107,6 @@ namespace EventStore.Core.Caching {
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			TimeAllotment(() => Allotment.Capacity = totalCapacity.ScaleByWeight(Weight, totalWeight));
 		}
-
-		public long Size => Allotment.Size;
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
 			var key = BuildStatsKey(parentKey);
