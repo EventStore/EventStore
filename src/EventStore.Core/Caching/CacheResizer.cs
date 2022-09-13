@@ -133,33 +133,6 @@ namespace EventStore.Core.Caching {
 		}
 	}
 
-	public class EmptyAllotment : IAllotment {
-		public static EmptyAllotment Instance { get; } = new();
-		public long Capacity { get; set; }
-		public long Size => 0;
-	}
-
-	public class AdHocAllotment : IAllotment {
-		private readonly Func<long> _getSize;
-		private readonly Action<long> _setCapacity;
-
-		public AdHocAllotment(Func<long> getSize, Action<long> setCapacity) {
-			_getSize = getSize;
-			_setCapacity = setCapacity;
-		}
-
-		private long _capacity;
-		public long Capacity {
-			get => _capacity;
-			set {
-				_capacity = value;
-				_setCapacity(value);
-			}
-		}
-
-		public long Size => _getSize();
-	}
-
 	public class CompositeAllotment : IAllotment {
 		private readonly ICacheResizer[] _children;
 		private readonly int _childrenWeight;
