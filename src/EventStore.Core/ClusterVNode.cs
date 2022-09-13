@@ -1521,26 +1521,26 @@ namespace EventStore.Core {
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
 			out ICacheResizer streamInfoCacheResizer) {
 
-				streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
-					"LastEventNumber", streamInfoCacheCapacity);
+			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
+				"LastEventNumber", streamInfoCacheCapacity);
 
-				streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
-					"StreamMetadata", streamInfoCacheCapacity);
+			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
+				"StreamMetadata", streamInfoCacheCapacity);
 
-				var lastEventNumberCacheAllotment = new AdHocAllotment(
-					() => 0,
-					_ => {});
+			var lastEventNumberCacheAllotment = new AdHocAllotment(
+				() => 0,
+				_ => {});
 
-				var streamMetadataCacheAllotment = new AdHocAllotment(
-					() => 0,
-					_ => {});
+			var streamMetadataCacheAllotment = new AdHocAllotment(
+				() => 0,
+				_ => {});
 
-				streamInfoCacheResizer = new CompositeCacheResizer(
-					name: "StreamInfo",
-					unit: "bytes",
-					weight: 100,
-					new StaticCacheResizer(streamLastEventNumberCache.Name, "entries", streamInfoCacheCapacity, lastEventNumberCacheAllotment),
-					new StaticCacheResizer(streamMetadataCache.Name, "entries", streamInfoCacheCapacity, streamMetadataCacheAllotment));
+			streamInfoCacheResizer = new CompositeCacheResizer(
+				name: "StreamInfo",
+				unit: "bytes",
+				weight: 100,
+				new StaticCacheResizer(streamLastEventNumberCache.Name, "entries", streamInfoCacheCapacity, lastEventNumberCacheAllotment),
+				new StaticCacheResizer(streamMetadataCache.Name, "entries", streamInfoCacheCapacity, streamMetadataCacheAllotment));
 		}
 
 		private static void CreateDynamicStreamInfoCache(
