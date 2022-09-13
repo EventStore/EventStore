@@ -8,9 +8,4 @@ namespace EventStore.Core.Caching {
 		void CalcCapacity(long totalCapacity, int totalWeight);
 		IEnumerable<ICacheStats> GetStats(string parentKey);
 	}
-
-	public interface IAllotment {
-		long Capacity { get; set; }
-		long Size { get; }
-	}
 }

@@ -1,10 +1,9 @@
 using System;
+using EventStore.Core.Caching;
 
 namespace EventStore.Core.DataStructures {
-	public interface ILRUCache {
+	public interface ILRUCache : IAllotment {
 		string Name { get; }
-		long Size { get; }
-		long Capacity { get; set; }
 		void Clear();
 	}
 
