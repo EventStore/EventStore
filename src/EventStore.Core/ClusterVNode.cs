@@ -1515,7 +1515,7 @@ namespace EventStore.Core {
 			dynamicCacheManager.Start();
 		}
 
-		private void CreateStaticStreamInfoCache(
+		private static void CreateStaticStreamInfoCache(
 			int streamInfoCacheCapacity,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
