@@ -121,7 +121,7 @@ namespace EventStore.Core.Caching {
 			if (freeMem >= _keepFreeMem && DateTime.UtcNow - _lastResize < _minResizeInterval)
 				return false;
 
-			var cachedMem = _rootCacheResizer.GetMemUsage();
+			var cachedMem = _rootCacheResizer.GetSize();
 			availableMem = CalcAvailableMemory(freeMem, cachedMem);
 
 			if (_lastAvailableMem != -1 && Math.Abs(availableMem - _lastAvailableMem) < _minResizeThreshold)
@@ -164,10 +164,10 @@ namespace EventStore.Core.Caching {
 		}
 
 		private void ResizeCaches(long availableMem) {
-			_rootCacheResizer.CalcAllotment(availableMem, _rootCacheResizer.Weight);
+			_rootCacheResizer.CalcCapacity(availableMem, _rootCacheResizer.Weight);
 		}
 
-		// Memory available for caching
+		// Memory available for dynamic caches
 		private long CalcAvailableMemory(long freeMem, long cachedMem) {
 			var availableMem = Math.Max(0L, freeMem + cachedMem - _keepFreeMem);
 

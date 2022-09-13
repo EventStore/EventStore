@@ -39,63 +39,63 @@ namespace EventStore.Core.Caching {
 
 			Log.Debug(
 				"{name} cache allotted {allottedMem:N0} " + Unit + ". Took {elapsed}.",
-				Name, Allotment.Current, sw.Elapsed);
+				Name, Allotment.Capacity, sw.Elapsed);
 		}
 	}
 
 	public class StaticCacheResizer : CacheResizer, ICacheResizer {
-		private readonly long _allotment;
+		private readonly long _capacity;
 		private bool _isAllotted;
 
-		public StaticCacheResizer(string name, string unit, long memAllotted, IAllotment allotment)
+		public StaticCacheResizer(string name, string unit, long capacity, IAllotment allotment)
 			: base(name, unit, allotment) {
 
-			Ensure.Nonnegative(memAllotted, nameof(memAllotted));
-			_allotment = memAllotted;
+			Ensure.Nonnegative(capacity, nameof(capacity));
+			_capacity = capacity;
 			_isAllotted = false;
 		}
 
 		public int Weight => 0;
 
-		public long GetMemUsage() => Allotment.GetUsage();
+		public long GetSize() => Allotment.GetSize();
 
-		public void CalcAllotment(long availableMem, int totalWeight) {
+		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			if (_isAllotted)
 				return;
 
 			_isAllotted = true;
-			TimeAllotment(() => Allotment.Update(_allotment));
+			TimeAllotment(() => Allotment.SetCapacity(_capacity));
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
-			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Current, GetMemUsage());
+			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Capacity, GetSize());
 		}
 	}
 
 	public class DynamicCacheResizer : CacheResizer, ICacheResizer {
-		private readonly long _minMemAllotment;
+		private readonly long _minCapacity;
 
-		public DynamicCacheResizer(string name, string unit, long minMemAllotted, int weight, IAllotment allotment)
+		public DynamicCacheResizer(string name, string unit, long minCapacity, int weight, IAllotment allotment)
 			: base(name, unit, allotment) {
 
 			Ensure.Positive(weight, nameof(weight));
-			Ensure.Nonnegative(minMemAllotted, nameof(minMemAllotted));
+			Ensure.Nonnegative(minCapacity, nameof(minCapacity));
 
 			Weight = weight;
-			_minMemAllotment = minMemAllotted;
+			_minCapacity = minCapacity;
 		}
 
 		public int Weight { get; }
 
-		public long GetMemUsage() => Allotment.GetUsage();
+		public long GetSize() => Allotment.GetSize();
 
-		public void CalcAllotment(long availableMem, int totalWeight) {
-			var allotment = Math.Max(availableMem.ScaleByWeight(Weight, totalWeight), _minMemAllotment);
-			TimeAllotment(() => Allotment.Update(allotment));
+		public void CalcCapacity(long totalCapacity, int totalWeight) {
+			var capacity = Math.Max(totalCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
+			TimeAllotment(() => Allotment.SetCapacity(capacity));
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
-			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Current, GetMemUsage());
+			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Capacity, GetSize());
 		}
 	}
 
@@ -110,11 +110,11 @@ namespace EventStore.Core.Caching {
 
 		public int Weight { get; }
 
-		public void CalcAllotment(long availableMem, int totalWeight) {
-			TimeAllotment(() => Allotment.Update(availableMem.ScaleByWeight(Weight, totalWeight)));
+		public void CalcCapacity(long totalCapacity, int totalWeight) {
+			TimeAllotment(() => Allotment.SetCapacity(totalCapacity.ScaleByWeight(Weight, totalWeight)));
 		}
 
-		public long GetMemUsage() => Allotment.GetUsage();
+		public long GetSize() => Allotment.GetSize();
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
 			var key = BuildStatsKey(parentKey);
@@ -129,36 +129,36 @@ namespace EventStore.Core.Caching {
 				}
 			}
 
-			yield return new CacheStats(key, Name, Weight, Allotment.Current, memUsed);
+			yield return new CacheStats(key, Name, Weight, Allotment.Capacity, memUsed);
 		}
 	}
 
 	public class EmptyAllotment : IAllotment {
 		public static EmptyAllotment Instance { get; } = new();
-		public long Current { get; private set; }
-		public long GetUsage() => 0;
+		public long Capacity { get; private set; }
+		public long GetSize() => 0;
 
-		public void Update(long allotment) {
-			Current = allotment;
+		public void SetCapacity(long capacity) {
+			Capacity = capacity;
 		}
 	}
 
 	public class AdHocAllotment : IAllotment {
-		private readonly Func<long> _getMemUsage;
-		private readonly Action<long> _updateMemAllotment;
+		private readonly Func<long> _getSize;
+		private readonly Action<long> _setCapacity;
 
-		public AdHocAllotment(Func<long> getMemUsage, Action<long> updateMemAllotment) {
-			_getMemUsage = getMemUsage;
-			_updateMemAllotment = updateMemAllotment;
+		public AdHocAllotment(Func<long> getSize, Action<long> setCapacity) {
+			_getSize = getSize;
+			_setCapacity = setCapacity;
 		}
 
-		public long Current { get; private set; }
+		public long Capacity { get; private set; }
 
-		public long GetUsage() => _getMemUsage();
+		public long GetSize() => _getSize();
 
-		public void Update(long allotment) {
-			Current = allotment;
-			_updateMemAllotment(allotment);
+		public void SetCapacity(long capacity) {
+			Capacity = capacity;
+			_setCapacity(capacity);
 		}
 	}
 
@@ -171,13 +171,13 @@ namespace EventStore.Core.Caching {
 			_childrenWeight = children.Sum(static x => x.Weight);
 		}
 
-		public long Current { get; private set; }
-		public long GetUsage() => _children.Sum(static x => x.GetMemUsage());
+		public long Capacity { get; private set; }
+		public long GetSize() => _children.Sum(static x => x.GetSize());
 
-		public void Update(long allotment) {
-			Current = allotment;
+		public void SetCapacity(long capacity) {
+			Capacity = capacity;
 			foreach (var child in _children)
-				child.CalcAllotment(allotment, _childrenWeight);
+				child.CalcCapacity(capacity, _childrenWeight);
 		}
 	}
 }
