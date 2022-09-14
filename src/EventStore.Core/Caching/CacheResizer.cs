@@ -45,6 +45,8 @@ namespace EventStore.Core.Caching {
 
 		public int Weight => 0;
 
+		public long ReservedCapacity => _capacity;
+
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			if (_isAllotted)
 				return;
@@ -73,6 +75,8 @@ namespace EventStore.Core.Caching {
 
 		public int Weight { get; }
 
+		public long ReservedCapacity => 0;
+
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			var sw = Stopwatch.StartNew();
 
@@ -97,9 +101,12 @@ namespace EventStore.Core.Caching {
 		base(unit, new CompositeAllotment(name, children)) {
 			Weight = weight;
 			_children = children;
+			ReservedCapacity = _children.Sum(x => x.ReservedCapacity);
 		}
 
 		public int Weight { get; }
+
+		public long ReservedCapacity { get; }
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
 			Allotment.Capacity = totalCapacity.ScaleByWeight(Weight, totalWeight);
@@ -125,12 +132,14 @@ namespace EventStore.Core.Caching {
 	public class CompositeAllotment : IAllotment {
 		private readonly ICacheResizer[] _children;
 		private readonly int _childrenWeight;
+		private readonly long _reservedCapacity;
 
 		public CompositeAllotment(string name, params ICacheResizer[] children) {
 			Ensure.NotNullOrEmpty(name, nameof(name));
 			Name = name;
 			_children = children;
 			_childrenWeight = children.Sum(static x => x.Weight);
+			_reservedCapacity = children.Sum(static x => x.ReservedCapacity);
 		}
 
 		public string Name { get; }
@@ -140,8 +149,11 @@ namespace EventStore.Core.Caching {
 			get => _capacity;
 			set {
 				_capacity = value;
-				foreach (var child in _children)
-					child.CalcCapacity(_capacity, _childrenWeight);
+				var dynamicCapacity = _capacity - _reservedCapacity;
+				foreach (var child in _children) {
+					var capacityAvailableToChild = Math.Max(dynamicCapacity + child.ReservedCapacity, 0);
+					child.CalcCapacity(capacityAvailableToChild, _childrenWeight);
+				}
 			}
 		}
 

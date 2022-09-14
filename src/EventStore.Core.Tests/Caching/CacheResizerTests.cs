@@ -94,10 +94,91 @@ namespace EventStore.Core.Tests.Caching {
 			Assert.AreEqual(4000, allotmentA.Capacity);
 			Assert.AreEqual(6000, allotmentB.Capacity);
 
+			// nb: we overflow the capacity available in order to meet the minimums
+			sut.CalcCapacity(5000, 100);
+			Assert.AreEqual(3000, allotmentA.Capacity); // <-- minimum
+			Assert.AreEqual(3000, allotmentB.Capacity); // <-- 60% of 5000
+
 			sut.CalcCapacity(200, 100);
 			Assert.AreEqual(3000, allotmentA.Capacity);
 			Assert.AreEqual(1000, allotmentB.Capacity);
 
+		}
+
+		[Test]
+		public void composite_calculates_capacity_correctly_mixed() {
+			var allotmentA = new EmptyAllotment();
+			var allotmentB = new EmptyAllotment();
+
+			var sut = new CompositeCacheResizer("root", "bytes", 100,
+				new StaticCacheResizer("bytes", 1000, allotmentA),
+				new DynamicCacheResizer("bytes", 1000, 60, allotmentB));
+
+			sut.CalcCapacity(10_000, 100);
+			Assert.AreEqual(1000, allotmentA.Capacity);
+			Assert.AreEqual(9000, allotmentB.Capacity);
+		}
+
+		[Test]
+		public void composite_calculates_capacity_correctly_complex() {
+			var allotmentA = new EmptyAllotment();
+			var allotmentB = new EmptyAllotment();
+			var allotmentC = new EmptyAllotment();
+			var allotmentD = new EmptyAllotment();
+
+			// root
+			//  -> static 1000                 A
+			//  -> composite
+			//      -> static 1000             B
+			//      -> dynamic 60% min 1000    C
+			//      -> dynamic 40% min 1000    D
+
+			var sut = new CompositeCacheResizer(
+				name: "root",
+				unit: "bytes",
+				weight: 100,
+				new StaticCacheResizer(
+					unit: "bytes",
+					capacity: 1000,
+					allotment: allotmentA),
+				new CompositeCacheResizer(
+					name: "composite",
+					unit: "bytes",
+					weight: 50,
+					new StaticCacheResizer(
+						unit: "bytes",
+						capacity: 1000,
+						allotment: allotmentB),
+					new DynamicCacheResizer(
+						unit: "bytes",
+						minCapacity: 1000,
+						weight: 60,
+						allotment: allotmentC),
+					new DynamicCacheResizer(
+						unit: "bytes",
+						minCapacity: 1000,
+						weight: 40,
+						allotment: allotmentD)));
+
+			// lots of space
+			sut.CalcCapacity(
+				totalCapacity: 12_000,
+				totalWeight: 100);
+
+			Assert.AreEqual(1000, allotmentA.Capacity);
+			Assert.AreEqual(1000, allotmentB.Capacity);
+			Assert.AreEqual(6000, allotmentC.Capacity);
+			Assert.AreEqual(4000, allotmentD.Capacity);
+
+			// low space
+			sut.CalcCapacity(
+				totalCapacity: 1_000,
+				totalWeight: 100);
+
+			Assert.AreEqual(1000, allotmentA.Capacity);
+			Assert.AreEqual(1000, allotmentB.Capacity);
+			Assert.AreEqual(1000, allotmentC.Capacity);
+			Assert.AreEqual(1000, allotmentD.Capacity);
 		}
 	}
 }
