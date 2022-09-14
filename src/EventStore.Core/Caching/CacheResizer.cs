@@ -97,8 +97,8 @@ namespace EventStore.Core.Caching {
 	public class CompositeCacheResizer : CacheResizer, ICacheResizer {
 		private readonly ICacheResizer[] _children;
 
-		public CompositeCacheResizer(string name, string unit, int weight, params ICacheResizer[] children) :
-		base(unit, new CompositeAllotment(name, children)) {
+		public CompositeCacheResizer(string name, string unit, int weight, params ICacheResizer[] children)
+			: base(unit, new CompositeAllotment(name, children)) {
 			Weight = weight;
 			_children = children;
 			ReservedCapacity = _children.Sum(x => x.ReservedCapacity);
@@ -127,36 +127,36 @@ namespace EventStore.Core.Caching {
 
 			yield return new CacheStats(key, Name, Weight, Allotment.Capacity, memUsed);
 		}
-	}
 
-	public class CompositeAllotment : IAllotment {
-		private readonly ICacheResizer[] _children;
-		private readonly int _childrenWeight;
-		private readonly long _reservedCapacity;
+		class CompositeAllotment : IAllotment {
+			private readonly ICacheResizer[] _children;
+			private readonly int _childrenWeight;
+			private readonly long _reservedCapacity;
 
-		public CompositeAllotment(string name, params ICacheResizer[] children) {
-			Ensure.NotNullOrEmpty(name, nameof(name));
-			Name = name;
-			_children = children;
-			_childrenWeight = children.Sum(static x => x.Weight);
-			_reservedCapacity = children.Sum(static x => x.ReservedCapacity);
-		}
+			public CompositeAllotment(string name, params ICacheResizer[] children) {
+				Ensure.NotNullOrEmpty(name, nameof(name));
+				Name = name;
+				_children = children;
+				_childrenWeight = children.Sum(static x => x.Weight);
+				_reservedCapacity = children.Sum(static x => x.ReservedCapacity);
+			}
 
-		public string Name { get; }
+			public string Name { get; }
 
-		private long _capacity;
-		public long Capacity {
-			get => _capacity;
-			set {
-				_capacity = value;
-				var dynamicCapacity = _capacity - _reservedCapacity;
-				foreach (var child in _children) {
-					var capacityAvailableToChild = Math.Max(dynamicCapacity + child.ReservedCapacity, 0);
-					child.CalcCapacity(capacityAvailableToChild, _childrenWeight);
+			private long _capacity;
+			public long Capacity {
+				get => _capacity;
+				set {
+					_capacity = value;
+					var dynamicCapacity = _capacity - _reservedCapacity;
+					foreach (var child in _children) {
+						var capacityAvailableToChild = Math.Max(dynamicCapacity + child.ReservedCapacity, 0);
+						child.CalcCapacity(capacityAvailableToChild, _childrenWeight);
+					}
 				}
 			}
-		}
 
-		public long Size => _children.Sum(static x => x.Size);
+			public long Size => _children.Sum(static x => x.Size);
+		}
 	}
 }
