@@ -33,14 +33,11 @@ namespace EventStore.Core.Caching {
 
 	public class StaticCacheResizer : CacheResizer, ICacheResizer {
 		private readonly long _capacity;
-		private bool _isAllotted;
 
 		public StaticCacheResizer(string unit, long capacity, IAllotment allotment)
 			: base(unit, allotment) {
-
 			Ensure.Nonnegative(capacity, nameof(capacity));
 			_capacity = capacity;
-			_isAllotted = false;
 		}
 
 		public int Weight => 0;
@@ -48,10 +45,6 @@ namespace EventStore.Core.Caching {
 		public long ReservedCapacity => _capacity;
 
 		public void CalcCapacity(long totalCapacity, int totalWeight) {
-			if (_isAllotted)
-				return;
-
-			_isAllotted = true;
 			Allotment.Capacity = _capacity;
 		}
 
@@ -65,7 +58,6 @@ namespace EventStore.Core.Caching {
 
 		public DynamicCacheResizer(string unit, long minCapacity, int weight, IAllotment allotment)
 			: base(unit, allotment) {
-
 			Ensure.Positive(weight, nameof(weight));
 			Ensure.Nonnegative(minCapacity, nameof(minCapacity));
 
