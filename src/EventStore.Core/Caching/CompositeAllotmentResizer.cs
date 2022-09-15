@@ -7,7 +7,7 @@ namespace EventStore.Core.Caching {
 	public class CompositeAllotmentResizer : AllotmentResizer, IAllotmentResizer {
 		private readonly IAllotmentResizer[] _children;
 
-		public CompositeAllotmentResizer(string name, string unit, int weight, params IAllotmentResizer[] children)
+		public CompositeAllotmentResizer(string name, ResizerUnit unit, int weight, params IAllotmentResizer[] children)
 			: base(unit, new CompositeAllotment(name, children)) {
 			Weight = weight;
 			_children = children;

@@ -675,7 +675,7 @@ namespace EventStore.Core {
 				monitoringInterval: TimeSpan.FromSeconds(15),
 				minResizeInterval: TimeSpan.FromMinutes(10),
 				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
-				rootAllotmentResizer: new CompositeAllotmentResizer("Root", "bytes", 100, streamInfoCacheResizer));
+				rootAllotmentResizer: new CompositeAllotmentResizer("Root", ResizerUnit.Bytes, 100, streamInfoCacheResizer));
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
@@ -1529,10 +1529,10 @@ namespace EventStore.Core {
 
 			streamInfoCacheResizer = new CompositeAllotmentResizer(
 				name: "StreamInfo",
-				unit: "bytes",
+				unit: ResizerUnit.Bytes,
 				weight: 100,
-				new StaticAllotmentResizer("entries", streamInfoCacheCapacity, streamLastEventNumberCache),
-				new StaticAllotmentResizer("entries", streamInfoCacheCapacity, streamMetadataCache));
+				new StaticAllotmentResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamLastEventNumberCache),
+				new StaticAllotmentResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamMetadataCache));
 		}
 
 		private static void CreateDynamicStreamInfoCache(
@@ -1561,10 +1561,10 @@ namespace EventStore.Core {
 
 			streamInfoCacheResizer = new CompositeAllotmentResizer(
 				name: "StreamInfo",
-				unit: "bytes",
+				unit: ResizerUnit.Bytes,
 				weight: 100,
-				new DynamicAllotmentResizer("bytes", minMemAllotted, 60, streamLastEventNumberCache),
-				new DynamicAllotmentResizer("bytes", minMemAllotted, 40, streamMetadataCache));
+				new DynamicAllotmentResizer(ResizerUnit.Bytes, minMemAllotted, 60, streamLastEventNumberCache),
+				new DynamicAllotmentResizer(ResizerUnit.Bytes, minMemAllotted, 40, streamMetadataCache));
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {

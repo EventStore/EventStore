@@ -5,7 +5,7 @@ namespace EventStore.Core.Caching {
 	public class StaticAllotmentResizer : AllotmentResizer, IAllotmentResizer {
 		private readonly long _capacity;
 
-		public StaticAllotmentResizer(string unit, long capacity, IAllotment allotment)
+		public StaticAllotmentResizer(ResizerUnit unit, long capacity, IAllotment allotment)
 			: base(unit, allotment) {
 			Ensure.Nonnegative(capacity, nameof(capacity));
 			_capacity = capacity;

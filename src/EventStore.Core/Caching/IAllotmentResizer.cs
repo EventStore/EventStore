@@ -26,6 +26,13 @@ namespace EventStore.Core.Caching {
 		IEnumerable<ICacheStats> GetStats(string parentKey);
 	}
 
+	// We support Entries for backwards compatibility. In the future all cache
+	// sizes will likely be specified in bytes and we can remove this enum.
+	public enum ResizerUnit {
+		Bytes,
+		Entries,
+	}
+
 	public static class CacheResizerExtensions {
 		// Helper for the top level to just pass in the totalCapacity
 		public static void CalcCapacityTopLevel(this IAllotmentResizer self, long totalCapacity) {

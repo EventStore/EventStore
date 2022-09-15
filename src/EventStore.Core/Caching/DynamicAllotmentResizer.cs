@@ -8,7 +8,7 @@ namespace EventStore.Core.Caching {
 	public class DynamicAllotmentResizer : AllotmentResizer, IAllotmentResizer {
 		private readonly long _minCapacity;
 
-		public DynamicAllotmentResizer(string unit, long minCapacity, int weight, IAllotment allotment)
+		public DynamicAllotmentResizer(ResizerUnit unit, long minCapacity, int weight, IAllotment allotment)
 			: base(unit, allotment) {
 			Ensure.Positive(weight, nameof(weight));
 			Ensure.Nonnegative(minCapacity, nameof(minCapacity));

@@ -5,12 +5,11 @@ namespace EventStore.Core.Caching {
 		public string Name => Allotment.Name;
 		public long Size => Allotment.Size;
 		protected IAllotment Allotment { get; }
-		public string Unit { get; }
+		public ResizerUnit Unit { get; }
 
 		protected AllotmentResizer(
-			string unit,
+			ResizerUnit unit,
 			IAllotment allotment) {
-			Ensure.NotNull(unit, nameof(unit));
 			Ensure.NotNull(allotment, nameof(allotment));
 
 			Allotment = allotment;

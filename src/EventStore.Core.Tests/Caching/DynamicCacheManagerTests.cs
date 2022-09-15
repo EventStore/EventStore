@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new StaticAllotmentResizer("", 0, EmptyAllotment.Instance));
+				new StaticAllotmentResizer(ResizerUnit.Bytes, 0, EmptyAllotment.Instance));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished().WithTimeout(TimeSpan.FromSeconds(10));
@@ -68,10 +68,10 @@ namespace EventStore.Core.Tests.Caching {
 		[TestCase(0, 20)]
 		public async Task caches_resized_when_memory_below_keep_free_mem(int percent, long bytes) {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicAllotmentResizer("", 1, 60, new AdHocAllotment(
+			var cache1 = new DynamicAllotmentResizer(ResizerUnit.Bytes, 1, 60, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicAllotmentResizer("", 2, 40, new AdHocAllotment(
+			var cache2 = new DynamicAllotmentResizer(ResizerUnit.Bytes, 2, 40, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new CompositeAllotmentResizer("root", "", 100, cache1, cache2));
+				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 
@@ -100,10 +100,10 @@ namespace EventStore.Core.Tests.Caching {
 		[Test]
 		public async Task caches_resized_after_min_resize_interval() {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicAllotmentResizer("", 1, 60, new AdHocAllotment(
+			var cache1 = new DynamicAllotmentResizer(ResizerUnit.Bytes, 1, 60, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicAllotmentResizer("", 2, 40, new AdHocAllotment(
+			var cache2 = new DynamicAllotmentResizer(ResizerUnit.Bytes, 2, 40, new AdHocAllotment(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.Zero,
 				0,
-				new CompositeAllotmentResizer("root", "", 100, cache1, cache2));
+				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 
@@ -135,8 +135,8 @@ namespace EventStore.Core.Tests.Caching {
 			var allotment = new AdHocAllotment(
 				() => 0,
 				_ => Interlocked.Increment(ref numResize));
-			var cache1 = new DynamicAllotmentResizer("", 1, 60, allotment);
-			var cache2 = new DynamicAllotmentResizer("", 2, 40, allotment);
+			var cache1 = new DynamicAllotmentResizer(ResizerUnit.Bytes, 1, 60, allotment);
+			var cache2 = new DynamicAllotmentResizer(ResizerUnit.Bytes, 2, 40, allotment);
 
 			var request = 0;
 			var freeMem = new[] { 100, 90 /* before GC */ };
@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.FromSeconds(1),
 				TimeSpan.FromMinutes(1),
 				0,
-				new CompositeAllotmentResizer("root", "", 100, cache1, cache2));
+				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished();
@@ -160,11 +160,11 @@ namespace EventStore.Core.Tests.Caching {
 
 		[Test]
 		public void correct_stats_are_produced() {
-			var cache1 = new DynamicAllotmentResizer("", 10, 100, new AdHocAllotment(
+			var cache1 = new DynamicAllotmentResizer(ResizerUnit.Bytes, 10, 100, new AdHocAllotment(
 				() => 12,
 				mem => { },
 				"test1"));
-			var cache2 = new StaticAllotmentResizer("", 15, new AdHocAllotment(
+			var cache2 = new StaticAllotmentResizer(ResizerUnit.Bytes, 15, new AdHocAllotment(
 				() => 10,
 				mem => { },
 				"test2"));
@@ -177,7 +177,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new CompositeAllotmentResizer("root", "", 123, cache1, cache2));
+				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 123, cache1, cache2));
 
 			var envelope = new FakeEnvelope();
 			sut.Handle(new MonitoringMessage.InternalStatsRequest(envelope));
