@@ -63,6 +63,9 @@ namespace EventStore.Core.Caching {
 		}
 
 		public void Start() {
+			if (_rootAllotmentResizer.Unit == ResizerUnit.Entries)
+				return;
+
 			var availableMem = CalcAvailableMemory(_getFreeMem(), 0);
 			ResizeCaches(availableMem);
 			Tick();
