@@ -8,7 +8,7 @@ namespace EventStore.Core.Caching {
 	// To trigger resizing, the parent calls the CalcCapacity method, passing in
 	//   - its unreserved capacity (i.e. the capacity to be shared among the children by weight)
 	//   - total weight of the children (so that they can draw the correct amount according to their weight)
-	public interface ICacheResizer {
+	public interface IAllotmentResizer {
 		string Name { get; }
 
 		// How much of the capacity given to this resizer is reserved.
@@ -28,7 +28,7 @@ namespace EventStore.Core.Caching {
 
 	public static class CacheResizerExtensions {
 		// Helper for the top level to just pass in the totalCapacity
-		public static void CalcCapacityTopLevel(this ICacheResizer self, long totalCapacity) {
+		public static void CalcCapacityTopLevel(this IAllotmentResizer self, long totalCapacity) {
 			self.CalcCapacity(
 				unreservedCapacity: totalCapacity - self.ReservedCapacity,
 				totalWeight: self.Weight);

@@ -4,44 +4,44 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Caching {
 	[TestFixture]
-	public class CacheResizerTests {
+	public class AllotmentResizerTests {
 		[Test]
 		public void dynamic_cache_resizer_loopback() {
-			var cacheResizer = new DynamicCacheResizer("", 10, 12, EmptyAllotment.Instance);
+			var cacheResizer = new DynamicAllotmentResizer("", 10, 12, EmptyAllotment.Instance);
 			Assert.AreEqual(12, cacheResizer.Weight);
 		}
 
 		[Test]
 		public void static_cache_resizer_loopback() {
-			var cacheResizer = new StaticCacheResizer("", 10, EmptyAllotment.Instance);
+			var cacheResizer = new StaticAllotmentResizer("", 10, EmptyAllotment.Instance);
 			Assert.AreEqual(0, cacheResizer.Weight);
 		}
 
 		[Test]
 		public void dynamic_cache_resizer_with_zero_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-					new DynamicCacheResizer("", 0, 0, EmptyAllotment.Instance));
+					new DynamicAllotmentResizer("", 0, 0, EmptyAllotment.Instance));
 
 		[Test]
 		public void dynamic_cache_resizer_with_negative_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new DynamicCacheResizer("", 0, -1, EmptyAllotment.Instance));
+				new DynamicAllotmentResizer("", 0, -1, EmptyAllotment.Instance));
 
 		[Test]
 		public void dynamic_cache_resizer_with_negative_mem_allotment_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new DynamicCacheResizer("", -1, 10, EmptyAllotment.Instance));
+				new DynamicAllotmentResizer("", -1, 10, EmptyAllotment.Instance));
 
 		[Test]
 		public void static_cache_resizer_with_negative_mem_allotment_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new StaticCacheResizer("", -1, EmptyAllotment.Instance));
+				new StaticAllotmentResizer("", -1, EmptyAllotment.Instance));
 
 		[Test]
 		public void static_calculates_capacity_correctly() {
 			var allotment = new EmptyAllotment();
 
-			var sut = new StaticCacheResizer("bytes", 1000, allotment);
+			var sut = new StaticAllotmentResizer("bytes", 1000, allotment);
 
 			sut.CalcCapacityTopLevel(2000);
 			Assert.AreEqual(1000, allotment.Capacity);
@@ -54,7 +54,7 @@ namespace EventStore.Core.Tests.Caching {
 		public void dynamic_calculates_capacity_correctly() {
 			var allotment = new EmptyAllotment();
 
-			var sut = new DynamicCacheResizer("bytes", 1000, 50, allotment);
+			var sut = new DynamicAllotmentResizer("bytes", 1000, 50, allotment);
 
 			sut.CalcCapacityTopLevel(4000);
 			Assert.AreEqual(4000, allotment.Capacity);
@@ -68,9 +68,9 @@ namespace EventStore.Core.Tests.Caching {
 			var allotmentA = new EmptyAllotment();
 			var allotmentB = new EmptyAllotment();
 
-			var sut = new CompositeCacheResizer("root", "bytes", 100,
-				new StaticCacheResizer("bytes", 1000, allotmentA),
-				new StaticCacheResizer("bytes", 2000, allotmentB));
+			var sut = new CompositeAllotmentResizer("root", "bytes", 100,
+				new StaticAllotmentResizer("bytes", 1000, allotmentA),
+				new StaticAllotmentResizer("bytes", 2000, allotmentB));
 
 			sut.CalcCapacityTopLevel(4000);
 			Assert.AreEqual(1000, allotmentA.Capacity);
@@ -86,9 +86,9 @@ namespace EventStore.Core.Tests.Caching {
 			var allotmentA = new EmptyAllotment();
 			var allotmentB = new EmptyAllotment();
 
-			var sut = new CompositeCacheResizer("root", "bytes", 100,
-				new DynamicCacheResizer("bytes", 3000, 40, allotmentA),
-				new DynamicCacheResizer("bytes", 1000, 60, allotmentB));
+			var sut = new CompositeAllotmentResizer("root", "bytes", 100,
+				new DynamicAllotmentResizer("bytes", 3000, 40, allotmentA),
+				new DynamicAllotmentResizer("bytes", 1000, 60, allotmentB));
 
 			sut.CalcCapacityTopLevel(10_000);
 			Assert.AreEqual(4000, allotmentA.Capacity);
@@ -110,9 +110,9 @@ namespace EventStore.Core.Tests.Caching {
 			var allotmentA = new EmptyAllotment();
 			var allotmentB = new EmptyAllotment();
 
-			var sut = new CompositeCacheResizer("root", "bytes", 100,
-				new StaticCacheResizer("bytes", 1000, allotmentA),
-				new DynamicCacheResizer("bytes", 1000, 60, allotmentB));
+			var sut = new CompositeAllotmentResizer("root", "bytes", 100,
+				new StaticAllotmentResizer("bytes", 1000, allotmentA),
+				new DynamicAllotmentResizer("bytes", 1000, 60, allotmentB));
 
 			sut.CalcCapacityTopLevel(10_000);
 			Assert.AreEqual(1000, allotmentA.Capacity);
@@ -133,28 +133,28 @@ namespace EventStore.Core.Tests.Caching {
 			//      -> dynamic 60% min 1000    C
 			//      -> dynamic 40% min 1000    D
 
-			var sut = new CompositeCacheResizer(
+			var sut = new CompositeAllotmentResizer(
 				name: "root",
 				unit: "bytes",
 				weight: 100,
-				new StaticCacheResizer(
+				new StaticAllotmentResizer(
 					unit: "bytes",
 					capacity: 1000,
 					allotment: allotmentA),
-				new CompositeCacheResizer(
+				new CompositeAllotmentResizer(
 					name: "composite",
 					unit: "bytes",
 					weight: 50,
-					new StaticCacheResizer(
+					new StaticAllotmentResizer(
 						unit: "bytes",
 						capacity: 1000,
 						allotment: allotmentB),
-					new DynamicCacheResizer(
+					new DynamicAllotmentResizer(
 						unit: "bytes",
 						minCapacity: 1000,
 						weight: 60,
 						allotment: allotmentC),
-					new DynamicCacheResizer(
+					new DynamicAllotmentResizer(
 						unit: "bytes",
 						minCapacity: 1000,
 						weight: 40,

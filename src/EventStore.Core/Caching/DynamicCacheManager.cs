@@ -23,7 +23,7 @@ namespace EventStore.Core.Caching {
 		private readonly long _keepFreeMem;
 		private readonly TimeSpan _minResizeInterval;
 		private readonly long _minResizeThreshold;
-		private readonly ICacheResizer _rootCacheResizer;
+		private readonly IAllotmentResizer _rootAllotmentResizer;
 		private readonly Message _scheduleTick;
 		private readonly object _lock = new();
 
@@ -39,7 +39,7 @@ namespace EventStore.Core.Caching {
 			TimeSpan monitoringInterval,
 			TimeSpan minResizeInterval,
 			long minResizeThreshold,
-			ICacheResizer rootCacheResizer) {
+			IAllotmentResizer rootAllotmentResizer) {
 
 			if (keepFreeMemPercent is < 0 or > 100)
 				throw new ArgumentException($"{nameof(keepFreeMemPercent)} must be between 0 to 100 inclusive.");
@@ -55,7 +55,7 @@ namespace EventStore.Core.Caching {
 			_keepFreeMem = Math.Max(_keepFreeMemBytes, _totalMem.ScaleByPercent(_keepFreeMemPercent));
 			_minResizeInterval = minResizeInterval;
 			_minResizeThreshold = minResizeThreshold;
-			_rootCacheResizer = rootCacheResizer;
+			_rootAllotmentResizer = rootAllotmentResizer;
 			_scheduleTick = TimerMessage.Schedule.Create(
 				monitoringInterval,
 				new PublishEnvelope(_bus),
@@ -84,7 +84,7 @@ namespace EventStore.Core.Caching {
 			Thread.MemoryBarrier(); // just to ensure we're seeing latest values
 
 			var stats = new Dictionary<string, object>();
-			var cachesStats = _rootCacheResizer.GetStats(string.Empty);
+			var cachesStats = _rootAllotmentResizer.GetStats(string.Empty);
 
 			foreach(var cacheStat in cachesStats) {
 				var statNamePrefix = $"es-cache-{cacheStat.Key}-";
@@ -121,7 +121,7 @@ namespace EventStore.Core.Caching {
 			if (freeMem >= _keepFreeMem && DateTime.UtcNow - _lastResize < _minResizeInterval)
 				return false;
 
-			var cachedMem = _rootCacheResizer.Size;
+			var cachedMem = _rootAllotmentResizer.Size;
 			availableMem = CalcAvailableMemory(freeMem, cachedMem);
 
 			if (_lastAvailableMem != -1 && Math.Abs(availableMem - _lastAvailableMem) < _minResizeThreshold)
@@ -164,7 +164,7 @@ namespace EventStore.Core.Caching {
 		}
 
 		private void ResizeCaches(long availableMem) {
-			_rootCacheResizer.CalcCapacityTopLevel(availableMem);
+			_rootAllotmentResizer.CalcCapacityTopLevel(availableMem);
 		}
 
 		// Memory available for dynamic caches
