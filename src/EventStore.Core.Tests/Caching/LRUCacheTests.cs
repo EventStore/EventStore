@@ -119,58 +119,58 @@ namespace EventStore.Core.Tests.Caching {
 
 			[Test]
 			public void can_increase_capacity() {
-			    var sut = GenSut<int, int>(6, (k, v) => k + v);
+				var sut = GenSut<int, int>(6, (k, v) => k + v);
 
-			    sut.Put(1, 0);
-			    sut.Put(2, 0);
-			    sut.Put(3, 0);
+				sut.Put(1, 0);
+				sut.Put(2, 0);
+				sut.Put(3, 0);
 
-			    Assert.AreEqual(6, sut.Size);
+				Assert.AreEqual(6, sut.Size);
 
-			    sut.SetCapacity(10);
+				sut.SetCapacity(10);
 
-			    Assert.AreEqual(6, sut.Size);
-			    Assert.AreEqual(10, sut.Capacity);
+				Assert.AreEqual(6, sut.Size);
+				Assert.AreEqual(10, sut.Capacity);
 			}
 
 			[Test]
 			public void can_decrease_capacity() {
-			    var sut = GenSut<int, int>(6, (k, v) => k + v);
+				var sut = GenSut<int, int>(6, (k, v) => k + v);
 
-			    sut.Put(1, 0);
-			    sut.Put(2, 0);
-			    sut.Put(3, 0);
+				sut.Put(1, 0);
+				sut.Put(2, 0);
+				sut.Put(3, 0);
 
-			    Assert.AreEqual(6, sut.Size);
+				Assert.AreEqual(6, sut.Size);
 
-			    sut.SetCapacity(3);
+				sut.SetCapacity(3);
 
-			    Assert.AreEqual(3, sut.Size);
-			    Assert.AreEqual(3, sut.Capacity);
+				Assert.AreEqual(3, sut.Size);
+				Assert.AreEqual(3, sut.Capacity);
 			}
 
 			[Test]
 			public void can_set_capacity_to_zero() {
-			    var sut = GenSut<int, int>(6, (k, v) => k + v);
+				var sut = GenSut<int, int>(6, (k, v) => k + v);
 
-			    sut.Put(1, 0);
-			    sut.Put(2, 0);
-			    sut.Put(3, 0);
+				sut.Put(1, 0);
+				sut.Put(2, 0);
+				sut.Put(3, 0);
 
-			    Assert.AreEqual(6, sut.Size);
+				Assert.AreEqual(6, sut.Size);
 
-			    sut.SetCapacity(0);
+				sut.SetCapacity(0);
 
-			    Assert.AreEqual(0, sut.Size);
-			    Assert.AreEqual(0, sut.Capacity);
+				Assert.AreEqual(0, sut.Size);
+				Assert.AreEqual(0, sut.Capacity);
 			}
 
 			[Test]
 			public void throws_when_setting_negative_capacity() {
-			    var sut = GenSut<int, int>(6, (k, v) => k + v);
+				var sut = GenSut<int, int>(6, (k, v) => k + v);
 
-			    Assert.Throws<ArgumentOutOfRangeException>(() =>
-			        sut.SetCapacity(-1));
+				Assert.Throws<ArgumentOutOfRangeException>(() =>
+					sut.SetCapacity(-1));
 			}
 		}
 	}
