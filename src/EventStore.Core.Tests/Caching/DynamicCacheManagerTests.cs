@@ -187,19 +187,19 @@ namespace EventStore.Core.Tests.Caching {
 			var msg = (MonitoringMessage.InternalStatsRequestResponse) envelope.Replies.First();
 			var expectedStats = new Dictionary<string, object> {
 				{"es-cache-root-name", "root"},
-				{"es-cache-root-weight", 123},
-				{"es-cache-root-mem-used", 22L},
-				{"es-cache-root-mem-allotted", 80L},
+				{"es-cache-root-sizeBytes", 22L},
+				{"es-cache-root-capacityBytes", 80L},
+				{"es-cache-root-utilizationPercent", 100.0 * 22 / 80},
 
 				{"es-cache-root-test1-name", "test1"},
-				{"es-cache-root-test1-weight", 100},
-				{"es-cache-root-test1-mem-used", 12L},
-				{"es-cache-root-test1-mem-allotted", 65L},
+				{"es-cache-root-test1-sizeBytes", 12L},
+				{"es-cache-root-test1-capacityBytes", 65L},
+				{"es-cache-root-test1-utilizationPercent", 100.0 * 12 / 65},
 
 				{"es-cache-root-test2-name", "test2"},
-				{"es-cache-root-test2-weight", 0},
-				{"es-cache-root-test2-mem-used", 10L},
-				{"es-cache-root-test2-mem-allotted", 15L}
+				{"es-cache-root-test2-sizeBytes", 10L},
+				{"es-cache-root-test2-capacityBytes", 15L},
+				{"es-cache-root-test2-utilizationPercent", 100.0 * 10 / 15},
 			};
 
 			AssertEx.AssertUsingDeepCompare(msg.Stats, expectedStats);

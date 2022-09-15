@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -63,8 +62,10 @@ namespace EventStore.Core.Caching {
 		}
 
 		public void Start() {
-			if (_rootAllotmentResizer.Unit == ResizerUnit.Entries)
+			if (_rootAllotmentResizer.Unit == ResizerUnit.Entries) {
+				_rootAllotmentResizer.CalcCapacityTopLevel(_rootAllotmentResizer.ReservedCapacity);
 				return;
+			}
 
 			var availableMem = CalcAvailableMemory(_getFreeMem(), 0);
 			ResizeCaches(availableMem);
@@ -92,9 +93,9 @@ namespace EventStore.Core.Caching {
 			foreach(var cacheStat in cachesStats) {
 				var statNamePrefix = $"es-cache-{cacheStat.Key}-";
 				stats[statNamePrefix + "name"] = cacheStat.Name;
-				stats[statNamePrefix + "weight"] = cacheStat.Weight;
-				stats[statNamePrefix + "mem-used"] = cacheStat.MemUsed;
-				stats[statNamePrefix + "mem-allotted"] = cacheStat.MemAllotted;
+				stats[statNamePrefix + "size" + _rootAllotmentResizer.Unit] = cacheStat.Size;
+				stats[statNamePrefix + "capacity" + _rootAllotmentResizer.Unit] = cacheStat.Capacity;
+				stats[statNamePrefix + "utilizationPercent"] = cacheStat.UtilizationPercent;
 			}
 
 			message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));

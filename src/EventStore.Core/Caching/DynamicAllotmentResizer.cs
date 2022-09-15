@@ -33,8 +33,8 @@ namespace EventStore.Core.Caching {
 				Name, Allotment.Capacity, sw.Elapsed);
 		}
 
-		public IEnumerable<ICacheStats> GetStats(string parentKey) {
-			yield return new CacheStats(BuildStatsKey(parentKey), Name, Weight, Allotment.Capacity, Size);
+		public IEnumerable<AllotmentStats> GetStats(string parentKey) {
+			yield return new AllotmentStats(BuildStatsKey(parentKey), Name, Allotment.Capacity, Size);
 		}
 	}
 }

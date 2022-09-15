@@ -25,7 +25,7 @@ namespace EventStore.Core.Caching {
 
 		void CalcCapacity(long unreservedCapacity, int totalWeight);
 
-		IEnumerable<ICacheStats> GetStats(string parentKey);
+		IEnumerable<AllotmentStats> GetStats(string parentKey);
 	}
 
 	// We support Entries for backwards compatibility. In the future all cache

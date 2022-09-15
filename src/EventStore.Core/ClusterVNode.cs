@@ -1532,8 +1532,6 @@ namespace EventStore.Core {
 				weight: 100,
 				new StaticAllotmentResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamLastEventNumberCache),
 				new StaticAllotmentResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamMetadataCache));
-
-			streamInfoCacheResizer.CalcCapacityTopLevel(0);
 		}
 
 		private static void CreateDynamicStreamInfoCache(

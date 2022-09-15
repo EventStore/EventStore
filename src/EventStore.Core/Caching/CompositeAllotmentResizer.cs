@@ -23,20 +23,20 @@ namespace EventStore.Core.Caching {
 			Allotment.Capacity = totalCapactiy.ScaleByWeight(Weight, totalWeight);
 		}
 
-		public IEnumerable<ICacheStats> GetStats(string parentKey) {
+		public IEnumerable<AllotmentStats> GetStats(string parentKey) {
 			var key = BuildStatsKey(parentKey);
-			var memUsed = 0L;
+			var size = 0L;
 
 			foreach (var child in _children) {
 				foreach (var childStats in child.GetStats(key)) {
 					if (GetParentKey(childStats.Key) == key)
-						memUsed += childStats.MemUsed;
+						size += childStats.Size;
 
 					yield return childStats;
 				}
 			}
 
-			yield return new CacheStats(key, Name, Weight, Allotment.Capacity, memUsed);
+			yield return new AllotmentStats(key, Name, Allotment.Capacity, size);
 		}
 
 		private static ResizerUnit GetUniqueUnit(IAllotmentResizer[] children) {
