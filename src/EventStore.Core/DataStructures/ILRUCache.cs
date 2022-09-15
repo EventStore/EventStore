@@ -2,7 +2,7 @@ using System;
 using EventStore.Core.Caching;
 
 namespace EventStore.Core.DataStructures {
-	public interface ILRUCache : IAllotment {
+	public interface ILRUCache : IDynamicCache {
 		void Clear();
 	}
 

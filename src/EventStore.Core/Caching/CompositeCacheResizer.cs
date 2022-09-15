@@ -4,11 +4,11 @@ using System.Linq;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Caching {
-	public class CompositeAllotmentResizer : AllotmentResizer, IAllotmentResizer {
-		private readonly IAllotmentResizer[] _children;
+	public class CompositeCacheResizer : CacheResizer, ICacheResizer {
+		private readonly ICacheResizer[] _children;
 
-		public CompositeAllotmentResizer(string name, int weight, params IAllotmentResizer[] children)
-			: base(GetUniqueUnit(children), new CompositeAllotment(name, children)) {
+		public CompositeCacheResizer(string name, int weight, params ICacheResizer[] children)
+			: base(GetUniqueUnit(children), new CompositeCache(name, children)) {
 			Weight = weight;
 			_children = children;
 			ReservedCapacity = _children.Sum(x => x.ReservedCapacity);
@@ -20,10 +20,10 @@ namespace EventStore.Core.Caching {
 
 		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
 			var totalCapactiy = unreservedCapacity + ReservedCapacity;
-			Allotment.Capacity = totalCapactiy.ScaleByWeight(Weight, totalWeight);
+			Cache.Capacity = totalCapactiy.ScaleByWeight(Weight, totalWeight);
 		}
 
-		public IEnumerable<AllotmentStats> GetStats(string parentKey) {
+		public IEnumerable<CacheStats> GetStats(string parentKey) {
 			var key = BuildStatsKey(parentKey);
 			var size = 0L;
 
@@ -36,10 +36,10 @@ namespace EventStore.Core.Caching {
 				}
 			}
 
-			yield return new AllotmentStats(key, Name, Allotment.Capacity, size);
+			yield return new CacheStats(key, Name, Cache.Capacity, size);
 		}
 
-		private static ResizerUnit GetUniqueUnit(IAllotmentResizer[] children) {
+		private static ResizerUnit GetUniqueUnit(ICacheResizer[] children) {
 			if (children.Length < 1)
 				throw new ArgumentException("There must be at least one child", nameof(children));
 
@@ -51,12 +51,12 @@ namespace EventStore.Core.Caching {
 			return unit;
 		}
 
-		class CompositeAllotment : IAllotment {
-			private readonly IAllotmentResizer[] _children;
+		class CompositeCache : IDynamicCache {
+			private readonly ICacheResizer[] _children;
 			private readonly int _childrenWeight;
 			private readonly long _reservedCapacity;
 
-			public CompositeAllotment(string name, params IAllotmentResizer[] children) {
+			public CompositeCache(string name, params ICacheResizer[] children) {
 				Ensure.NotNullOrEmpty(name, nameof(name));
 				Name = name;
 				_children = children;

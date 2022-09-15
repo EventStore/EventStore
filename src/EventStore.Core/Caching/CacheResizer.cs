@@ -1,18 +1,18 @@
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Caching {
-	public abstract class AllotmentResizer {
-		public string Name => Allotment.Name;
-		public long Size => Allotment.Size;
-		protected IAllotment Allotment { get; }
+	public abstract class CacheResizer {
+		public string Name => Cache.Name;
+		public long Size => Cache.Size;
+		protected IDynamicCache Cache { get; }
 		public ResizerUnit Unit { get; }
 
-		protected AllotmentResizer(
+		protected CacheResizer(
 			ResizerUnit unit,
-			IAllotment allotment) {
-			Ensure.NotNull(allotment, nameof(allotment));
+			IDynamicCache cache) {
+			Ensure.NotNull(cache, nameof(cache));
 
-			Allotment = allotment;
+			Cache = cache;
 			Unit = unit;
 		}
 

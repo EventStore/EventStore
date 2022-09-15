@@ -649,7 +649,7 @@ namespace EventStore.Core {
 				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
 			});
 
-			IAllotmentResizer streamInfoCacheResizer;
+			ICacheResizer streamInfoCacheResizer;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache;
 
@@ -675,7 +675,7 @@ namespace EventStore.Core {
 				monitoringInterval: TimeSpan.FromSeconds(15),
 				minResizeInterval: TimeSpan.FromMinutes(10),
 				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
-				rootAllotmentResizer: new CompositeAllotmentResizer("Root", 100, streamInfoCacheResizer));
+				rootCacheResizer: new CompositeCacheResizer("Root", 100, streamInfoCacheResizer));
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
@@ -1519,7 +1519,7 @@ namespace EventStore.Core {
 			int streamInfoCacheCapacity,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
-			out IAllotmentResizer streamInfoCacheResizer) {
+			out ICacheResizer streamInfoCacheResizer) {
 
 			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 				"LastEventNumber", streamInfoCacheCapacity);
@@ -1527,24 +1527,24 @@ namespace EventStore.Core {
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 				"StreamMetadata", streamInfoCacheCapacity);
 
-			streamInfoCacheResizer = new CompositeAllotmentResizer(
+			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
 				weight: 100,
-				new StaticAllotmentResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamLastEventNumberCache),
-				new StaticAllotmentResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamMetadataCache));
+				new StaticCacheResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamLastEventNumberCache),
+				new StaticCacheResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamMetadataCache));
 		}
 
 		private static void CreateDynamicStreamInfoCache(
 			ISizer<TStreamId> sizer,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
-			out IAllotmentResizer streamInfoCacheResizer) {
+			out ICacheResizer streamInfoCacheResizer) {
 
-			const long minMemAllotted = 100_000_000; // 100 MiB
+			const long minCapacity = 100_000_000; // 100 MB
 
 			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 				"LastEventNumber",
-				minMemAllotted,
+				minCapacity,
 				(streamId, eventNumberCached) =>
 					LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
 						sizer.GetSizeInBytes(streamId),
@@ -1552,17 +1552,17 @@ namespace EventStore.Core {
 
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 				"StreamMetadata",
-				minMemAllotted,
+				minCapacity,
 				(streamId, metadataCached) =>
 					LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>.ApproximateItemSize(
 						sizer.GetSizeInBytes(streamId),
 						metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>()));
 
-			streamInfoCacheResizer = new CompositeAllotmentResizer(
+			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
 				weight: 100,
-				new DynamicAllotmentResizer(ResizerUnit.Bytes, minMemAllotted, 60, streamLastEventNumberCache),
-				new DynamicAllotmentResizer(ResizerUnit.Bytes, minMemAllotted, 40, streamMetadataCache));
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, 60, streamLastEventNumberCache),
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, 40, streamMetadataCache));
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {
