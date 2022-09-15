@@ -194,7 +194,7 @@ namespace EventStore.Core.Tests.Caching {
 				{"es-cache-root-test1-name", "test1"},
 				{"es-cache-root-test1-weight", 100},
 				{"es-cache-root-test1-mem-used", 12L},
-				{"es-cache-root-test1-mem-allotted", 80L},
+				{"es-cache-root-test1-mem-allotted", 65L},
 
 				{"es-cache-root-test2-name", "test2"},
 				{"es-cache-root-test2-weight", 0},
