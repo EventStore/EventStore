@@ -171,7 +171,9 @@ namespace EventStore.Core.Caching {
 			_rootCacheResizer.CalcCapacityTopLevel(availableMem);
 		}
 
-		// Memory available for dynamic caches
+		// Memory available for static and dynamic caches
+		// freeMem is free memory in the system
+		// cachedMem is approximate amount of memory used by static and dynamic caches
 		private long CalcAvailableMemory(long freeMem, long cachedMem) {
 			var availableMem = Math.Max(0L, freeMem + cachedMem - _keepFreeMem);
 
