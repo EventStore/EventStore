@@ -38,6 +38,13 @@ namespace EventStore.Core.Tests.Caching {
 				new StaticAllotmentResizer(ResizerUnit.Bytes, -1, EmptyAllotment.Instance));
 
 		[Test]
+		public void composite_cache_resizer_with_mixed_units_throws() =>
+			Assert.Throws<ArgumentException>(() =>
+				new CompositeAllotmentResizer("root", 100,
+					new StaticAllotmentResizer(ResizerUnit.Bytes, 10, EmptyAllotment.Instance),
+					new StaticAllotmentResizer(ResizerUnit.Entries, 10, EmptyAllotment.Instance)));
+
+		[Test]
 		public void static_calculates_capacity_correctly() {
 			var allotment = new EmptyAllotment();
 
@@ -68,7 +75,7 @@ namespace EventStore.Core.Tests.Caching {
 			var allotmentA = new EmptyAllotment();
 			var allotmentB = new EmptyAllotment();
 
-			var sut = new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100,
+			var sut = new CompositeAllotmentResizer("root", 100,
 				new StaticAllotmentResizer(ResizerUnit.Bytes, 1000, allotmentA),
 				new StaticAllotmentResizer(ResizerUnit.Bytes, 2000, allotmentB));
 
@@ -86,7 +93,7 @@ namespace EventStore.Core.Tests.Caching {
 			var allotmentA = new EmptyAllotment();
 			var allotmentB = new EmptyAllotment();
 
-			var sut = new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100,
+			var sut = new CompositeAllotmentResizer("root", 100,
 				new DynamicAllotmentResizer(ResizerUnit.Bytes, 3000, 40, allotmentA),
 				new DynamicAllotmentResizer(ResizerUnit.Bytes, 1000, 60, allotmentB));
 
@@ -110,7 +117,7 @@ namespace EventStore.Core.Tests.Caching {
 			var allotmentA = new EmptyAllotment();
 			var allotmentB = new EmptyAllotment();
 
-			var sut = new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100,
+			var sut = new CompositeAllotmentResizer("root", 100,
 				new StaticAllotmentResizer(ResizerUnit.Bytes, 1000, allotmentA),
 				new DynamicAllotmentResizer(ResizerUnit.Bytes, 1000, 60, allotmentB));
 
@@ -135,7 +142,6 @@ namespace EventStore.Core.Tests.Caching {
 
 			var sut = new CompositeAllotmentResizer(
 				name: "root",
-				unit: ResizerUnit.Bytes,
 				weight: 100,
 				new StaticAllotmentResizer(
 					unit: ResizerUnit.Bytes,
@@ -143,7 +149,6 @@ namespace EventStore.Core.Tests.Caching {
 					allotment: allotmentA),
 				new CompositeAllotmentResizer(
 					name: "composite",
-					unit: ResizerUnit.Bytes,
 					weight: 50,
 					new StaticAllotmentResizer(
 						unit: ResizerUnit.Bytes,

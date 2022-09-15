@@ -11,6 +11,8 @@ namespace EventStore.Core.Caching {
 	public interface IAllotmentResizer {
 		string Name { get; }
 
+		ResizerUnit Unit { get; }
+
 		// How much of the capacity given to this resizer is reserved.
 		// The remaining (unreserved) capacity can be allotted by weight among the children.
 		long ReservedCapacity { get; }

@@ -7,8 +7,8 @@ namespace EventStore.Core.Caching {
 	public class CompositeAllotmentResizer : AllotmentResizer, IAllotmentResizer {
 		private readonly IAllotmentResizer[] _children;
 
-		public CompositeAllotmentResizer(string name, ResizerUnit unit, int weight, params IAllotmentResizer[] children)
-			: base(unit, new CompositeAllotment(name, children)) {
+		public CompositeAllotmentResizer(string name, int weight, params IAllotmentResizer[] children)
+			: base(GetUniqueUnit(children), new CompositeAllotment(name, children)) {
 			Weight = weight;
 			_children = children;
 			ReservedCapacity = _children.Sum(x => x.ReservedCapacity);
@@ -37,6 +37,18 @@ namespace EventStore.Core.Caching {
 			}
 
 			yield return new CacheStats(key, Name, Weight, Allotment.Capacity, memUsed);
+		}
+
+		private static ResizerUnit GetUniqueUnit(IAllotmentResizer[] children) {
+			if (children.Length < 1)
+				throw new ArgumentException("There must be at least one child", nameof(children));
+
+			var unit = children[0].Unit;
+
+			if (children.Any(x => x.Unit != unit))
+				throw new ArgumentException("All children must have the same unit", nameof(children));
+
+			return unit;
 		}
 
 		class CompositeAllotment : IAllotment {

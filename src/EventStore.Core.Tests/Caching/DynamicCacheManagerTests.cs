@@ -86,7 +86,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100, cache1, cache2));
+				new CompositeAllotmentResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 
@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.Zero,
 				0,
-				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100, cache1, cache2));
+				new CompositeAllotmentResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 
@@ -149,7 +149,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.FromSeconds(1),
 				TimeSpan.FromMinutes(1),
 				0,
-				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 100, cache1, cache2));
+				new CompositeAllotmentResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished();
@@ -177,7 +177,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new CompositeAllotmentResizer("root", ResizerUnit.Bytes, 123, cache1, cache2));
+				new CompositeAllotmentResizer("root", 123, cache1, cache2));
 
 			var envelope = new FakeEnvelope();
 			sut.Handle(new MonitoringMessage.InternalStatsRequest(envelope));
