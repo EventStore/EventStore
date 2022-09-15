@@ -29,7 +29,7 @@ namespace EventStore.Core.Caching {
 
 			sw.Stop();
 			Log.Debug(
-				"{name} cache allotted {allottedMem:N0} " + Unit + ". Took {elapsed}.",
+				"{name} dynamically allotted {capacity:N0} " + Unit + ". Took {elapsed}.",
 				Name, Allotment.Capacity, sw.Elapsed);
 		}
 

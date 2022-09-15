@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using EventStore.Common.Utils;
+using Serilog;
 
 namespace EventStore.Core.Caching {
 	public class StaticAllotmentResizer : AllotmentResizer, IAllotmentResizer {
@@ -17,6 +18,9 @@ namespace EventStore.Core.Caching {
 
 		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
 			Allotment.Capacity = _capacity;
+			Log.Debug(
+				"{name} statically allotted {capacity:N0} " + Unit,
+				Name, Allotment.Capacity);
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
