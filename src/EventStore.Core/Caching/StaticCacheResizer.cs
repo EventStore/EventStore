@@ -17,7 +17,7 @@ namespace EventStore.Core.Caching {
 		public long ReservedCapacity => _capacity;
 
 		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
-			Cache.Capacity = _capacity;
+			Cache.SetCapacity(_capacity);
 			Log.Debug(
 				"{name} statically allotted {capacity:N0} " + Unit,
 				Name, Cache.Capacity);

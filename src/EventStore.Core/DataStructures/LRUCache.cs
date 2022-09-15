@@ -39,10 +39,7 @@ namespace EventStore.Core.DataStructures {
 
 		public string Name { get; }
 		public long Size => Interlocked.Read(ref _size);
-		public long Capacity {
-			get => Interlocked.Read(ref _capacity);
-			set => SetCapacity(value);
-		}
+		public long Capacity => Interlocked.Read(ref _capacity);
 
 		public LRUCache(
 			string name,
@@ -220,7 +217,7 @@ namespace EventStore.Core.DataStructures {
 			}
 		}
 
-		private void SetCapacity(long newCapacity) {
+		public void SetCapacity(long newCapacity) {
 			const int resizeBatchSize = 100_000;
 
 			if (newCapacity < 0)

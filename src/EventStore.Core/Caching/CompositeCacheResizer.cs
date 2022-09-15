@@ -20,7 +20,7 @@ namespace EventStore.Core.Caching {
 
 		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
 			var totalCapactiy = unreservedCapacity + ReservedCapacity;
-			Cache.Capacity = totalCapactiy.ScaleByWeight(Weight, totalWeight);
+			Cache.SetCapacity(totalCapactiy.ScaleByWeight(Weight, totalWeight));
 		}
 
 		public IEnumerable<CacheStats> GetStats(string parentKey) {
@@ -66,15 +66,13 @@ namespace EventStore.Core.Caching {
 
 			public string Name { get; }
 
-			private long _capacity;
-			public long Capacity {
-				get => _capacity;
-				set {
-					_capacity = value;
-					var unreservedCapacity = Math.Max(_capacity - _reservedCapacity, 0);
-					foreach (var child in _children) {
-						child.CalcCapacity(unreservedCapacity, _childrenWeight);
-					}
+			public long Capacity { get; private set; }
+
+			public void SetCapacity(long value) {
+				Capacity = value;
+				var unreservedCapacity = Math.Max(Capacity - _reservedCapacity, 0);
+				foreach (var child in _children) {
+					child.CalcCapacity(unreservedCapacity, _childrenWeight);
 				}
 			}
 

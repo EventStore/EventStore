@@ -127,7 +127,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			    Assert.AreEqual(6, sut.Size);
 
-			    sut.Capacity = 10;
+			    sut.SetCapacity(10);
 
 			    Assert.AreEqual(6, sut.Size);
 			    Assert.AreEqual(10, sut.Capacity);
@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			    Assert.AreEqual(6, sut.Size);
 
-			    sut.Capacity = 3;
+			    sut.SetCapacity(3);
 
 			    Assert.AreEqual(3, sut.Size);
 			    Assert.AreEqual(3, sut.Capacity);
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			    Assert.AreEqual(6, sut.Size);
 
-			    sut.Capacity = 0;
+			    sut.SetCapacity(0);
 
 			    Assert.AreEqual(0, sut.Size);
 			    Assert.AreEqual(0, sut.Capacity);
@@ -170,7 +170,7 @@ namespace EventStore.Core.Tests.Caching {
 			    var sut = GenSut<int, int>(6, (k, v) => k + v);
 
 			    Assert.Throws<ArgumentOutOfRangeException>(() =>
-			        sut.Capacity = -1);
+			        sut.SetCapacity(-1));
 			}
 		}
 	}

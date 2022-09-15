@@ -18,13 +18,11 @@ namespace EventStore.Core.Tests.Caching {
 
 		public string Name { get; }
 
-		private long _capacity;
-		public long Capacity {
-			get => _capacity;
-			set {
-				_capacity = value;
-				_setCapacity(value);
-			}
+		public long Capacity { get; private set; }
+
+		public void SetCapacity(long value) {
+			Capacity = value;
+			_setCapacity(value);
 		}
 
 		public long Size => _getSize();

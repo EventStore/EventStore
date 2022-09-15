@@ -25,7 +25,7 @@ namespace EventStore.Core.Caching {
 			var sw = Stopwatch.StartNew();
 
 			var capacity = Math.Max(unreservedCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
-			Cache.Capacity = capacity;
+			Cache.SetCapacity(capacity);
 
 			sw.Stop();
 			Log.Debug(

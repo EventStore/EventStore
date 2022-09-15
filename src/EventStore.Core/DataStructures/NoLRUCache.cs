@@ -4,7 +4,11 @@ namespace EventStore.Core.DataStructures {
 	public class NoLRUCache<TKey, TValue> : ILRUCache<TKey, TValue> {
 		public string Name => "No Cache";
 		public long Size => 0;
-		public long Capacity { get; set; }
+		public long Capacity { get; private set; }
+
+		public void SetCapacity(long value) {
+			Capacity = value;
+		}
 
 		public void Clear() {
 		}
