@@ -44,7 +44,7 @@ namespace EventStore.Core.Caching {
 
 		public long ReservedCapacity => _capacity;
 
-		public void CalcCapacity(long totalCapacity, int totalWeight) {
+		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
 			Allotment.Capacity = _capacity;
 		}
 
@@ -69,10 +69,10 @@ namespace EventStore.Core.Caching {
 
 		public long ReservedCapacity => 0;
 
-		public void CalcCapacity(long totalCapacity, int totalWeight) {
+		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
 			var sw = Stopwatch.StartNew();
 
-			var capacity = Math.Max(totalCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
+			var capacity = Math.Max(unreservedCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
 			Allotment.Capacity = capacity;
 
 			sw.Stop();
@@ -100,8 +100,9 @@ namespace EventStore.Core.Caching {
 
 		public long ReservedCapacity { get; }
 
-		public void CalcCapacity(long totalCapacity, int totalWeight) {
-			Allotment.Capacity = totalCapacity.ScaleByWeight(Weight, totalWeight);
+		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
+			var totalCapactiy = unreservedCapacity + ReservedCapacity;
+			Allotment.Capacity = totalCapactiy.ScaleByWeight(Weight, totalWeight);
 		}
 
 		public IEnumerable<ICacheStats> GetStats(string parentKey) {
@@ -140,10 +141,9 @@ namespace EventStore.Core.Caching {
 				get => _capacity;
 				set {
 					_capacity = value;
-					var dynamicCapacity = _capacity - _reservedCapacity;
+					var unreservedCapacity = Math.Max(_capacity - _reservedCapacity, 0);
 					foreach (var child in _children) {
-						var capacityAvailableToChild = Math.Max(dynamicCapacity + child.ReservedCapacity, 0);
-						child.CalcCapacity(capacityAvailableToChild, _childrenWeight);
+						child.CalcCapacity(unreservedCapacity, _childrenWeight);
 					}
 				}
 			}

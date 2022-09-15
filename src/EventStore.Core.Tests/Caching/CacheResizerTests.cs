@@ -43,10 +43,10 @@ namespace EventStore.Core.Tests.Caching {
 
 			var sut = new StaticCacheResizer("bytes", 1000, allotment);
 
-			sut.CalcCapacity(2000, 100);
+			sut.CalcCapacityTopLevel(2000);
 			Assert.AreEqual(1000, allotment.Capacity);
 
-			sut.CalcCapacity(200, 100);
+			sut.CalcCapacityTopLevel(200);
 			Assert.AreEqual(1000, allotment.Capacity);
 		}
 
@@ -56,10 +56,10 @@ namespace EventStore.Core.Tests.Caching {
 
 			var sut = new DynamicCacheResizer("bytes", 1000, 50, allotment);
 
-			sut.CalcCapacity(4000, 100);
-			Assert.AreEqual(2000, allotment.Capacity);
+			sut.CalcCapacityTopLevel(4000);
+			Assert.AreEqual(4000, allotment.Capacity);
 
-			sut.CalcCapacity(200, 100);
+			sut.CalcCapacityTopLevel(200);
 			Assert.AreEqual(1000, allotment.Capacity);
 		}
 
@@ -72,11 +72,11 @@ namespace EventStore.Core.Tests.Caching {
 				new StaticCacheResizer("bytes", 1000, allotmentA),
 				new StaticCacheResizer("bytes", 2000, allotmentB));
 
-			sut.CalcCapacity(4000, 100);
+			sut.CalcCapacityTopLevel(4000);
 			Assert.AreEqual(1000, allotmentA.Capacity);
 			Assert.AreEqual(2000, allotmentB.Capacity);
 
-			sut.CalcCapacity(200, 100);
+			sut.CalcCapacityTopLevel(200);
 			Assert.AreEqual(1000, allotmentA.Capacity);
 			Assert.AreEqual(2000, allotmentB.Capacity);
 		}
@@ -90,16 +90,16 @@ namespace EventStore.Core.Tests.Caching {
 				new DynamicCacheResizer("bytes", 3000, 40, allotmentA),
 				new DynamicCacheResizer("bytes", 1000, 60, allotmentB));
 
-			sut.CalcCapacity(10_000, 100);
+			sut.CalcCapacityTopLevel(10_000);
 			Assert.AreEqual(4000, allotmentA.Capacity);
 			Assert.AreEqual(6000, allotmentB.Capacity);
 
 			// nb: we overflow the capacity available in order to meet the minimums
-			sut.CalcCapacity(5000, 100);
+			sut.CalcCapacityTopLevel(5000);
 			Assert.AreEqual(3000, allotmentA.Capacity); // <-- minimum
 			Assert.AreEqual(3000, allotmentB.Capacity); // <-- 60% of 5000
 
-			sut.CalcCapacity(200, 100);
+			sut.CalcCapacityTopLevel(200);
 			Assert.AreEqual(3000, allotmentA.Capacity);
 			Assert.AreEqual(1000, allotmentB.Capacity);
 
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.Caching {
 				new StaticCacheResizer("bytes", 1000, allotmentA),
 				new DynamicCacheResizer("bytes", 1000, 60, allotmentB));
 
-			sut.CalcCapacity(10_000, 100);
+			sut.CalcCapacityTopLevel(10_000);
 			Assert.AreEqual(1000, allotmentA.Capacity);
 			Assert.AreEqual(9000, allotmentB.Capacity);
 		}
@@ -161,9 +161,7 @@ namespace EventStore.Core.Tests.Caching {
 						allotment: allotmentD)));
 
 			// lots of space
-			sut.CalcCapacity(
-				totalCapacity: 12_000,
-				totalWeight: 100);
+			sut.CalcCapacityTopLevel(12_000);
 
 			Assert.AreEqual(1000, allotmentA.Capacity);
 			Assert.AreEqual(1000, allotmentB.Capacity);
@@ -171,9 +169,7 @@ namespace EventStore.Core.Tests.Caching {
 			Assert.AreEqual(4000, allotmentD.Capacity);
 
 			// low space
-			sut.CalcCapacity(
-				totalCapacity: 1_000,
-				totalWeight: 100);
+			sut.CalcCapacityTopLevel(1_000);
 
 			Assert.AreEqual(1000, allotmentA.Capacity);
 			Assert.AreEqual(1000, allotmentB.Capacity);

@@ -164,7 +164,7 @@ namespace EventStore.Core.Caching {
 		}
 
 		private void ResizeCaches(long availableMem) {
-			_rootCacheResizer.CalcCapacity(availableMem, _rootCacheResizer.Weight);
+			_rootCacheResizer.CalcCapacityTopLevel(availableMem);
 		}
 
 		// Memory available for dynamic caches
