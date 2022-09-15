@@ -6,39 +6,39 @@ namespace EventStore.Core.Tests.Caching {
 	[TestFixture]
 	public class AllotmentResizerTests {
 		[Test]
-		public void dynamic_cache_resizer_loopback() {
+		public void dynamic_resizer_loopback() {
 			var cacheResizer = new DynamicAllotmentResizer(ResizerUnit.Bytes, 10, 12, EmptyAllotment.Instance);
 			Assert.AreEqual(12, cacheResizer.Weight);
 		}
 
 		[Test]
-		public void static_cache_resizer_loopback() {
+		public void static_resizer_loopback() {
 			var cacheResizer = new StaticAllotmentResizer(ResizerUnit.Bytes, 10, EmptyAllotment.Instance);
 			Assert.AreEqual(0, cacheResizer.Weight);
 		}
 
 		[Test]
-		public void dynamic_cache_resizer_with_zero_weight_throws() =>
+		public void dynamic_resizer_with_zero_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
 					new DynamicAllotmentResizer(ResizerUnit.Bytes, 0, 0, EmptyAllotment.Instance));
 
 		[Test]
-		public void dynamic_cache_resizer_with_negative_weight_throws() =>
+		public void dynamic_resizer_with_negative_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
 				new DynamicAllotmentResizer(ResizerUnit.Bytes, 0, -1, EmptyAllotment.Instance));
 
 		[Test]
-		public void dynamic_cache_resizer_with_negative_mem_allotment_throws() =>
+		public void dynamic_resizer_with_negative_mem_allotment_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
 				new DynamicAllotmentResizer(ResizerUnit.Bytes, -1, 10, EmptyAllotment.Instance));
 
 		[Test]
-		public void static_cache_resizer_with_negative_mem_allotment_throws() =>
+		public void static_resizer_with_negative_mem_allotment_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
 				new StaticAllotmentResizer(ResizerUnit.Bytes, -1, EmptyAllotment.Instance));
 
 		[Test]
-		public void composite_cache_resizer_with_mixed_units_throws() =>
+		public void composite_resizer_with_mixed_units_throws() =>
 			Assert.Throws<ArgumentException>(() =>
 				new CompositeAllotmentResizer("root", 100,
 					new StaticAllotmentResizer(ResizerUnit.Bytes, 10, EmptyAllotment.Instance),
