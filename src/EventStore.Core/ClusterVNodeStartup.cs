@@ -172,7 +172,9 @@ namespace EventStore.Core {
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Monitoring(_monitoringQueue))
 						.AddSingleton<ServerFeatures>()
-						.AddGrpc()
+						.AddGrpc(options => {
+							options.Interceptors.Add<RetryInterceptor>();
+						})
 						.AddServiceOptions<Streams<TStreamId>>(options =>
 							options.MaxReceiveMessageSize = TFConsts.EffectiveMaxLogRecordSize)
 						.Services,
