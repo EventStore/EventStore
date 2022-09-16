@@ -132,8 +132,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						deleteResponseSource.TrySetException(RpcExceptions.Timeout(completed.Message));
 						return;
 					case OperationResult.WrongExpectedVersion:
-						deleteResponseSource.TrySetException(RpcExceptions.WrongExpectedVersion(streamName,
-							expectedVersion, completed.CurrentVersion));
+						deleteResponseSource.TrySetException(RpcExceptions.WrongExpectedVersion("Delete",
+							streamName, expectedVersion, completed.CurrentVersion));
 						return;
 					case OperationResult.StreamDeleted:
 						deleteResponseSource.TrySetException(RpcExceptions.StreamDeleted(streamName));
