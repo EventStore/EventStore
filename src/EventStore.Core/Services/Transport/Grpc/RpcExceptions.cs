@@ -70,13 +70,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 
 		public static RpcException WrongExpectedVersion(
+			string operation,
 			string streamName,
 			long expectedVersion,
 			long? actualVersion = default) =>
 			new(
 				new Status(
 					StatusCode.FailedPrecondition,
-					$"Append failed due to WrongExpectedVersion. Stream: {streamName}, Expected version: {expectedVersion}, Actual version: {actualVersion}"),
+					$"{operation} failed due to WrongExpectedVersion. Stream: {streamName}, Expected version: {expectedVersion}, Actual version: {actualVersion}"),
 				new Metadata {
 					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.WrongExpectedVersion},
 					{Constants.Exceptions.StreamName, streamName},
