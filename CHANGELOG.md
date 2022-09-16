@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - New scavenge algorithm [EventStore#3520](https://github.com/EventStore/EventStore/pull/3520)
 - Support for custom log templates [EventStore#3577](https://github.com/EventStore/EventStore/pull/3577)
+- Support for logical chunk numbers up to 400k [EventStore#3589](https://github.com/EventStore/EventStore/pull/3589)
 
 ### Fixed
 - Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
