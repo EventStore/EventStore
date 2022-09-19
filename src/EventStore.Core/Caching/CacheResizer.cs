@@ -4,6 +4,7 @@ namespace EventStore.Core.Caching {
 	public abstract class CacheResizer {
 		public string Name => Cache.Name;
 		public long Size => Cache.Size;
+		public long FreedSize => Cache.FreedSize;
 		protected IDynamicCache Cache { get; }
 		public ResizerUnit Unit { get; }
 

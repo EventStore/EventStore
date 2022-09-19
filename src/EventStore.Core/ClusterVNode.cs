@@ -668,7 +668,7 @@ namespace EventStore.Core {
 
 			var dynamicCacheManager = new DynamicCacheManager(
 				bus: _mainQueue,
-				getFreeMem: () => (long) statsHelper.GetFreeMem(),
+				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
 				totalMem: (long) statsHelper.GetTotalMem(),
 				keepFreeMemPercent: 20,
 				keepFreeMemBytes: 4L * 1024 * 1024 * 1024, // 4 GiB
@@ -1542,21 +1542,39 @@ namespace EventStore.Core {
 
 			const long minCapacity = 100_000_000; // 100 MB
 
+			int LastEventNumberCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.EventNumberCached eventNumberCached) =>
+				LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
+					sizer.GetSizeInBytes(streamId), 0);
+
 			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 				"LastEventNumber",
 				minCapacity,
-				(streamId, eventNumberCached) =>
-					LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
-						sizer.GetSizeInBytes(streamId),
-						0));
+				LastEventNumberCacheItemSize,
+				(streamId, eventNumberCached, keyFreed, valueFreed, nodeFreed) => {
+					if (nodeFreed)
+						return LastEventNumberCacheItemSize(streamId, eventNumberCached);
+
+					return keyFreed ? sizer.GetSizeInBytes(streamId) : 0;
+				});
+
+
+			int MetadataCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.MetadataCached metadataCached) =>
+				LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>.ApproximateItemSize(
+				sizer.GetSizeInBytes(streamId),
+				metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>());
 
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 				"StreamMetadata",
 				minCapacity,
-				(streamId, metadataCached) =>
-					LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>.ApproximateItemSize(
-						sizer.GetSizeInBytes(streamId),
-						metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>()));
+				MetadataCacheItemSize,
+				(streamId, metadataCached, keyFreed, valueFreed, nodeFreed) => {
+					if (nodeFreed)
+						return MetadataCacheItemSize(streamId, metadataCached);
+
+					return
+					(keyFreed ? sizer.GetSizeInBytes(streamId) : 0) +
+					(valueFreed ? metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>() : 0);
+				});
 
 			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",

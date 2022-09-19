@@ -23,7 +23,12 @@ namespace EventStore.Core.Caching {
 		// How much of the capacity is currently utilized
 		long Size { get; }
 
+		// Approximate amount freed but not yet garbage collected
+		long FreedSize { get; }
+
 		void CalcCapacity(long unreservedCapacity, int totalWeight);
+
+		void ResetFreedSize();
 
 		IEnumerable<CacheStats> GetStats(string parentKey);
 	}

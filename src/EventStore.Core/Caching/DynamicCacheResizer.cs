@@ -33,6 +33,10 @@ namespace EventStore.Core.Caching {
 				Name, Cache.Capacity, sw.Elapsed);
 		}
 
+		public void ResetFreedSize() {
+			Cache.ResetFreedSize();
+		}
+
 		public IEnumerable<CacheStats> GetStats(string parentKey) {
 			yield return new CacheStats(BuildStatsKey(parentKey), Name, Cache.Capacity, Size);
 		}

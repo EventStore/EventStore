@@ -26,25 +26,35 @@ namespace EventStore.Core.DataStructures {
 				).RoundUpToMultipleOf(IntPtr.Size);
 		}
 
+		public delegate int CalculateItemSize(TKey key, TValue value);
+		public delegate int CalculateFreedSize(TKey key, TValue value, bool keyFreed, bool valueFreed, bool nodeFreed);
+
 		private readonly LinkedList<LRUItem> _orderList = new();
 		private readonly Dictionary<TKey, LinkedListNode<LRUItem>> _items = new();
 		private readonly Queue<LinkedListNode<LRUItem>> _nodesPool = new();
 		private readonly object _lock = new();
 		private readonly Func<object, bool> _onPut, _onRemove; //_onPut is not called if a key-value pair already exists in the cache
+		private readonly string _unit;
+		private readonly CalculateItemSize _calculateItemSize;
+		private readonly CalculateFreedSize _calculateFreedSize;
+
 		private long _capacity;
 		private long _size;
-		private readonly Func<TKey, TValue, int> _calculateItemSize;
-		private string _unit;
-		private static readonly Func<TKey, TValue, int> _unitSize = (_, _) => 1;
+		private long _freedSize;
+
+		private static readonly CalculateItemSize _unitSize = delegate { return 1; };
+		private static readonly CalculateFreedSize _zeroSize = delegate { return 0; };
 
 		public string Name { get; }
 		public long Size => Interlocked.Read(ref _size);
+		public long FreedSize => Interlocked.Read(ref _freedSize);
 		public long Capacity => Interlocked.Read(ref _capacity);
 
 		public LRUCache(
 			string name,
 			long capacity,
-			Func<TKey, TValue, int> calculateItemSize = null,
+			CalculateItemSize calculateItemSize = null,
+			CalculateFreedSize calculateFreedSize = null,
 			string unit = null) {
 
 			Ensure.NotNull(name, nameof(name));
@@ -53,6 +63,7 @@ namespace EventStore.Core.DataStructures {
 			_capacity = capacity;
 			_size = 0L;
 			_calculateItemSize = calculateItemSize ?? _unitSize;
+			_calculateFreedSize = calculateFreedSize ?? _zeroSize;
 			_unit = unit ?? "items";
 		}
 
@@ -69,6 +80,7 @@ namespace EventStore.Core.DataStructures {
 			_onPut = onPut;
 			_onRemove = onRemove;
 			_calculateItemSize = _unitSize;
+			_calculateFreedSize = _zeroSize;
 			_unit = "items";
 		}
 
@@ -99,8 +111,11 @@ namespace EventStore.Core.DataStructures {
 
 		private void UpdateItem(LinkedListNode<LRUItem> node, TValue value) {
 			lock (_lock) {
+				const bool reuseNode = true;
 				_size -= _calculateItemSize(node.Value.Key, node.Value.Value);
 				_size += _calculateItemSize(node.Value.Key, value);
+				_freedSize += _calculateFreedSize(node.Value.Key, node.Value.Value, false, true, !reuseNode);
+
 				node.Value.Value = value;
 
 				if (!ReferenceEquals(node, _orderList.Last)) {
@@ -109,7 +124,7 @@ namespace EventStore.Core.DataStructures {
 				}
 
 				if (_size > _capacity)
-					EnsureCapacity(0, true, out _, out _);
+					EnsureCapacity(0, reuseNode, out _, out _);
 			}
 		}
 
@@ -120,6 +135,7 @@ namespace EventStore.Core.DataStructures {
 					_orderList.Remove(node);
 					_items.Remove(key);
 					_size -= _calculateItemSize(key, node.Value.Value);
+					_freedSize += _calculateFreedSize(node.Value.Key, node.Value.Value, true, true, false);
 
 					var value = node.Value.Value;
 					ReturnNode(node);
@@ -138,6 +154,7 @@ namespace EventStore.Core.DataStructures {
 				_orderList.Remove(node);
 				_items.Remove(node.Value.Key);
 				_size -= _calculateItemSize(node.Value.Key, node.Value.Value);
+				_freedSize += _calculateFreedSize(node.Value.Key, node.Value.Value, true, true, !reuseNode);
 
 				var value = node.Value.Value;
 				if (reuseNode)
@@ -245,6 +262,15 @@ namespace EventStore.Core.DataStructures {
 					Name, removedCount, removedSize);
 		}
 
+		public void ResetFreedSize() {
+			// note: if something's already holding the lock when this method is called,
+			// the calculation may become off by a few items, but it doesn't matter much
+			// since the freed size is only an approximation.
+			lock (_lock) {
+				_freedSize = 0;
+			}
+		}
+
 		private LinkedListNode<LRUItem> GetNode() {
 			if (_nodesPool.Count > 0)
 				return _nodesPool.Dequeue();
@@ -252,6 +278,8 @@ namespace EventStore.Core.DataStructures {
 		}
 
 		private void ReturnNode(LinkedListNode<LRUItem> node) {
+			node.Value.Key = default;
+			node.Value.Value = default;
 			_nodesPool.Enqueue(node);
 		}
 	}

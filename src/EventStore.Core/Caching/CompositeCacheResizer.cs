@@ -23,6 +23,10 @@ namespace EventStore.Core.Caching {
 			Cache.SetCapacity(totalCapacity.ScaleByWeight(Weight, totalWeight));
 		}
 
+		public void ResetFreedSize() {
+			Cache.ResetFreedSize();
+		}
+
 		public IEnumerable<CacheStats> GetStats(string parentKey) {
 			var key = BuildStatsKey(parentKey);
 			var size = 0L;
@@ -76,7 +80,13 @@ namespace EventStore.Core.Caching {
 				}
 			}
 
+			public void ResetFreedSize() {
+				foreach (var child in _children)
+					child.ResetFreedSize();
+			}
+
 			public long Size => _children.Sum(static x => x.Size);
+			public long FreedSize => _children.Sum(static x => x.FreedSize);
 		}
 	}
 }
