@@ -19,8 +19,8 @@ namespace EventStore.Core.Caching {
 		public long ReservedCapacity { get; }
 
 		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
-			var totalCapactiy = unreservedCapacity + ReservedCapacity;
-			Cache.SetCapacity(totalCapactiy.ScaleByWeight(Weight, totalWeight));
+			var totalCapacity = unreservedCapacity + ReservedCapacity;
+			Cache.SetCapacity(totalCapacity.ScaleByWeight(Weight, totalWeight));
 		}
 
 		public IEnumerable<CacheStats> GetStats(string parentKey) {
