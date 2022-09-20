@@ -672,8 +672,9 @@ namespace EventStore.Core {
 				totalMem: (long) statsHelper.GetTotalMem(),
 				keepFreeMemPercent: 20,
 				keepFreeMemBytes: 4L * 1024 * 1024 * 1024, // 4 GiB
-				monitoringInterval: TimeSpan.FromSeconds(15),
-				minResizeInterval: TimeSpan.FromMinutes(10),
+				monitoringInterval: TimeSpan.FromSeconds(5),
+				//qq setting this because if it reveals a problem that problem would still have occurred eventually
+				minResizeInterval: TimeSpan.FromSeconds(5),
 				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
 				rootCacheResizer: new CompositeCacheResizer("Root", "bytes", 100, streamInfoCacheResizer));
 
