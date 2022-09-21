@@ -13,6 +13,8 @@ namespace EventStore.Core.Caching {
 		IHandle<MonitoringMessage.DynamicCacheManagerTick>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
 
+		protected static readonly ILogger Log = Serilog.Log.ForContext<DynamicCacheManager>();
+
 		private readonly IPublisher _bus;
 		private readonly Func<long> _getFreeSystemMem;
 		private readonly long _totalMem;
