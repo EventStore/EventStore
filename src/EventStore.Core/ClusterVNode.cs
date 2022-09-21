@@ -1544,7 +1544,8 @@ namespace EventStore.Core {
 
 			int LastEventNumberCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.EventNumberCached eventNumberCached) =>
 				LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
-					sizer.GetSizeInBytes(streamId), 0);
+					keyRefsSize: sizer.GetSizeInBytes(streamId),
+					valueRefsSize: 0);
 
 			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 				"LastEventNumber",
@@ -1560,8 +1561,8 @@ namespace EventStore.Core {
 
 			int MetadataCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.MetadataCached metadataCached) =>
 				LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>.ApproximateItemSize(
-				sizer.GetSizeInBytes(streamId),
-				metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>());
+					keyRefsSize: sizer.GetSizeInBytes(streamId),
+					valueRefsSize: metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>());
 
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 				"StreamMetadata",
@@ -1572,8 +1573,8 @@ namespace EventStore.Core {
 						return MetadataCacheItemSize(streamId, metadataCached);
 
 					return
-					(keyFreed ? sizer.GetSizeInBytes(streamId) : 0) +
-					(valueFreed ? metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>() : 0);
+						(keyFreed ? sizer.GetSizeInBytes(streamId) : 0) +
+						(valueFreed ? metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>() : 0);
 				});
 
 			streamInfoCacheResizer = new CompositeCacheResizer(
