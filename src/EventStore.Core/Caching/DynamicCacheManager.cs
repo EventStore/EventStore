@@ -25,7 +25,6 @@ namespace EventStore.Core.Caching {
 		private readonly long _minResizeThreshold;
 		private readonly ICacheResizer _rootCacheResizer;
 		private readonly Message _scheduleTick;
-		private readonly object _lock = new();
 
 		private DateTime _lastResize = DateTime.UtcNow;
 		private long _lastAvailableMem;
@@ -96,9 +95,9 @@ namespace EventStore.Core.Caching {
 		public void Handle(MonitoringMessage.DynamicCacheManagerTick message) {
 			ThreadPool.QueueUserWorkItem(_ => {
 				try {
-					lock (_lock) { // only to add read/write barriers
-						ResizeCachesIfNeeded();
-					}
+					Thread.MemoryBarrier();
+					ResizeCachesIfNeeded();
+					Thread.MemoryBarrier();
 				} finally {
 					Tick();
 				}
