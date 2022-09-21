@@ -263,6 +263,7 @@ namespace EventStore.Core.DataStructures {
 		}
 
 		public void ResetFreedSize() {
+			//qq is this true?
 			// note: if something's already holding the lock when this method is called,
 			// the calculation may become off by a few items, but it doesn't matter much
 			// since the freed size is only an approximation.

@@ -173,6 +173,8 @@ namespace EventStore.Core.Caching {
 		}
 
 		private bool FullGcHasRun() {
+			//qq would be better to use a compareexchange here and deal with
+			// the memory barrier and funky assignment in one go?
 			Thread.MemoryBarrier();
 			return _lastGcCount < (_lastGcCount = GC.CollectionCount(GC.MaxGeneration));
 		}
