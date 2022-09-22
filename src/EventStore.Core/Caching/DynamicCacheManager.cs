@@ -98,6 +98,11 @@ namespace EventStore.Core.Caching {
 			Thread.MemoryBarrier();
 
 			Tick();
+
+			foreach (var stat in _rootCacheResizer.GetStats(string.Empty)) {
+				Log.Information("Cache {key} capacity initialized to {capacity:N0} {unit}",
+					stat.Key, stat.Capacity, _rootCacheResizer.Unit);
+			}
 		}
 
 		public void Handle(MonitoringMessage.DynamicCacheManagerTick message) {

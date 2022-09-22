@@ -24,13 +24,16 @@ namespace EventStore.Core.Caching {
 		public void CalcCapacity(long unreservedCapacity, int totalWeight) {
 			var sw = Stopwatch.StartNew();
 
+			var oldCapacity = Cache.Capacity;
 			var capacity = Math.Max(unreservedCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
 			Cache.SetCapacity(capacity);
 
 			sw.Stop();
+
+			var diff = capacity - oldCapacity;
 			Log.Debug(
-				"{name} dynamically allotted {capacity:N0} " + Unit + ". Took {elapsed}.",
-				Name, Cache.Capacity, sw.Elapsed);
+				"{name} dynamically allotted {capacity:N0} " + Unit + " ({diff:+#,#;-#,#;+0}). Took {elapsed:N0}ms.",
+				Name, Cache.Capacity, diff, sw.ElapsedMilliseconds);
 		}
 
 		public void ResetFreedSize() {
