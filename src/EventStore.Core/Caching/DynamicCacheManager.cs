@@ -18,6 +18,7 @@ namespace EventStore.Core.Caching {
 		private readonly IPublisher _bus;
 		private readonly Func<long> _getFreeSystemMem;
 		private readonly Func<long> _getFreeHeapMem;
+		private readonly Func<int> _getGcCollectionCount;
 		private readonly long _totalMem;
 		private readonly int _keepFreeMemPercent;
 		private readonly long _keepFreeMemBytes;
@@ -35,6 +36,7 @@ namespace EventStore.Core.Caching {
 			IPublisher bus,
 			Func<long> getFreeSystemMem,
 			Func<long> getFreeHeapMem,
+			Func<int> getGcCollectionCount,
 			long totalMem,
 			int keepFreeMemPercent,
 			long keepFreeMemBytes,
@@ -52,6 +54,7 @@ namespace EventStore.Core.Caching {
 			_bus = bus;
 			_getFreeSystemMem = getFreeSystemMem;
 			_getFreeHeapMem = getFreeHeapMem;
+			_getGcCollectionCount = getGcCollectionCount;
 			_totalMem = totalMem;
 			_keepFreeMemPercent = keepFreeMemPercent;
 			_keepFreeMemBytes = keepFreeMemBytes;
@@ -178,7 +181,7 @@ namespace EventStore.Core.Caching {
 		}
 
 		private bool FullGcHasRun() =>
-			_lastGcCount < (_lastGcCount = GC.CollectionCount(GC.MaxGeneration));
+			_lastGcCount < (_lastGcCount = _getGcCollectionCount());
 
 		private void ResizeCaches(long availableMem) {
 			_rootCacheResizer.CalcCapacityTopLevel(availableMem);

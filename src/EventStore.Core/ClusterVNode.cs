@@ -670,6 +670,7 @@ namespace EventStore.Core {
 				bus: _mainQueue,
 				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
 				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
+				getGcCollectionCount: () => GC.CollectionCount(GC.MaxGeneration),
 				totalMem: (long) statsHelper.GetTotalMem(),
 				keepFreeMemPercent: 25,
 				keepFreeMemBytes: 6L * 1024 * 1024 * 1024, // 6 GiB

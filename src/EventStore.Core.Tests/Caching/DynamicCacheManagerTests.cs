@@ -18,6 +18,7 @@ namespace EventStore.Core.Tests.Caching {
 		private DynamicCacheManager GenSut(
 			Func<long> getFreeSystemMem,
 			Func<long> getFreeHeapMem,
+			Func<int> getGcCollectionCount,
 			long totalMem,
 			int keepFreeMemPercent,
 			long keepFreeMemBytes,
@@ -29,6 +30,7 @@ namespace EventStore.Core.Tests.Caching {
 				_fakePublisher,
 				getFreeSystemMem,
 				getFreeHeapMem,
+				getGcCollectionCount,
 				totalMem,
 				keepFreeMemPercent,
 				keepFreeMemBytes,
@@ -54,6 +56,7 @@ namespace EventStore.Core.Tests.Caching {
 		public async Task ticks() {
 			var sut = GenSut(
 				() => 100,
+				() => 0,
 				() => 0,
 				100,
 				0,
@@ -83,6 +86,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			var sut = GenSut(
 				() => freeMem[request++],
+				() => 0,
 				() => 0,
 				100,
 				percent,
@@ -117,6 +121,7 @@ namespace EventStore.Core.Tests.Caching {
 			var sut = GenSut(
 				() => freeMem[request++],
 				() => 0,
+				() => 0,
 				100,
 				0,
 				0,
@@ -149,6 +154,7 @@ namespace EventStore.Core.Tests.Caching {
 			var sut = GenSut(
 				() => freeMem[request++],
 				() => 0,
+				() => 0,
 				100,
 				89,
 				89,
@@ -177,6 +183,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			var sut = GenSut(
 				() => 80,
+				() => 0,
 				() => 0,
 				100,
 				0,
