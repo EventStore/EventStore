@@ -670,8 +670,8 @@ namespace EventStore.Core {
 				bus: _mainQueue,
 				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
 				totalMem: (long) statsHelper.GetTotalMem(),
-				keepFreeMemPercent: 20,
-				keepFreeMemBytes: 4L * 1024 * 1024 * 1024, // 4 GiB
+				keepFreeMemPercent: 25,
+				keepFreeMemBytes: 6L * 1024 * 1024 * 1024, // 6 GiB
 				monitoringInterval: TimeSpan.FromSeconds(15),
 				minResizeInterval: TimeSpan.FromMinutes(10),
 				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
