@@ -89,6 +89,8 @@ namespace EventStore.Core.Caching {
 			_lastAvailableMem = availableMem;
 			ResizeCaches(availableMem);
 
+			Thread.MemoryBarrier();
+
 			Tick();
 		}
 
@@ -172,12 +174,8 @@ namespace EventStore.Core.Caching {
 			}
 		}
 
-		private bool FullGcHasRun() {
-			//qq would be better to use a compareexchange here and deal with
-			// the memory barrier and funky assignment in one go?
-			Thread.MemoryBarrier();
-			return _lastGcCount < (_lastGcCount = GC.CollectionCount(GC.MaxGeneration));
-		}
+		private bool FullGcHasRun() =>
+			_lastGcCount < (_lastGcCount = GC.CollectionCount(GC.MaxGeneration));
 
 		private void ResizeCaches(long availableMem) {
 			_rootCacheResizer.CalcCapacityTopLevel(availableMem);
