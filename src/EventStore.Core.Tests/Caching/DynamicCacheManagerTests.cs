@@ -182,7 +182,7 @@ namespace EventStore.Core.Tests.Caching {
 				"test2"));
 
 			var sut = GenSut(
-				() => 80,
+				() => 58,
 				() => 0,
 				() => 0,
 				100,
