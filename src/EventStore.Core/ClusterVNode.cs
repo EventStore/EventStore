@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -64,9 +65,6 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
-using System.Runtime.CompilerServices;
-using System.Diagnostics;
-using Serilog.Events;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
