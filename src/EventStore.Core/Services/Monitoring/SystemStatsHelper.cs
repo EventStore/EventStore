@@ -145,6 +145,7 @@ namespace EventStore.Core.Services.Monitoring {
 
 				var gcStats = _eventCountersHelper.GetGcStats();
 				stats["proc-gc-allocationSpeed"] = gcStats.AllocationSpeed;
+				stats["proc-gc-fragmentation"] = gcStats.Fragmentation;
 				stats["proc-gc-gen0ItemsCount"] = gcStats.Gen0ItemsCount;
 				stats["proc-gc-gen0Size"] = gcStats.Gen0Size;
 				stats["proc-gc-gen1ItemsCount"] = gcStats.Gen1ItemsCount;
