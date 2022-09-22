@@ -1525,7 +1525,7 @@ namespace EventStore.Core {
 				"LastEventNumber", streamInfoCacheCapacity);
 
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
-				"StreamMetadata", streamInfoCacheCapacity);
+				"Metadata", streamInfoCacheCapacity);
 
 			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
@@ -1563,7 +1563,7 @@ namespace EventStore.Core {
 					valueRefsSize: metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>());
 
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
-				"StreamMetadata",
+				"Metadata",
 				0,
 				MetadataCacheItemSize,
 				(streamId, metadataCached, keyFreed, valueFreed, nodeFreed) => {
