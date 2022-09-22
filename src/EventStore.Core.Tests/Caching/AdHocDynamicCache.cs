@@ -32,5 +32,6 @@ namespace EventStore.Core.Tests.Caching {
 		}
 
 		public long Size => _getSize();
+		public long Count => _getSize(); // one byte per item
 	}
 }

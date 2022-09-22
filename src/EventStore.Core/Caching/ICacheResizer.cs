@@ -23,6 +23,9 @@ namespace EventStore.Core.Caching {
 		// How much of the capacity is currently utilized
 		long Size { get; }
 
+		// Number of items in cache
+		long Count { get; }
+
 		// Approximate amount freed but not yet garbage collected
 		long FreedSize { get; }
 

@@ -121,6 +121,7 @@ namespace EventStore.Core.Caching {
 			foreach(var cacheStat in cachesStats) {
 				var statNamePrefix = $"es-{cacheStat.Key}-";
 				stats[statNamePrefix + "name"] = cacheStat.Name;
+				stats[statNamePrefix + "count"] = cacheStat.Count;
 				stats[statNamePrefix + "size" + _rootCacheResizer.Unit] = cacheStat.Size;
 				stats[statNamePrefix + "capacity" + _rootCacheResizer.Unit] = cacheStat.Capacity;
 				stats[statNamePrefix + "utilizationPercent"] = cacheStat.UtilizationPercent;

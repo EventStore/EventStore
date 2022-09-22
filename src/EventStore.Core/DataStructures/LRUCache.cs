@@ -49,6 +49,13 @@ namespace EventStore.Core.DataStructures {
 		public long Size => Interlocked.Read(ref _size);
 		public long FreedSize => Interlocked.Read(ref _freedSize);
 		public long Capacity => Interlocked.Read(ref _capacity);
+		public long Count {
+			get {
+				lock (_lock) {
+					return _items.Count;
+				}
+			}
+		}
 
 		public LRUCache(
 			string name,

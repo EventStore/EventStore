@@ -14,6 +14,7 @@ namespace EventStore.Core.Tests.Caching {
 		}
 
 		public long Size => 0;
+		public long Count => 0;
 		public long FreedSize => 0;
 	}
 }

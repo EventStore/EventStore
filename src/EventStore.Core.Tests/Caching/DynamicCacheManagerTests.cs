@@ -202,16 +202,19 @@ namespace EventStore.Core.Tests.Caching {
 			var expectedStats = new Dictionary<string, object> {
 				{"es-cache-name", "cache"},
 				{"es-cache-sizeBytes", 22L},
+				{"es-cache-count", 22L},
 				{"es-cache-capacityBytes", 80L},
 				{"es-cache-utilizationPercent", 100.0 * 22 / 80},
 
 				{"es-cache-test1-name", "test1"},
 				{"es-cache-test1-sizeBytes", 12L},
+				{"es-cache-test1-count", 12L},
 				{"es-cache-test1-capacityBytes", 65L},
 				{"es-cache-test1-utilizationPercent", 100.0 * 12 / 65},
 
 				{"es-cache-test2-name", "test2"},
 				{"es-cache-test2-sizeBytes", 10L},
+				{"es-cache-test2-count", 10L},
 				{"es-cache-test2-capacityBytes", 15L},
 				{"es-cache-test2-utilizationPercent", 100.0 * 10 / 15},
 			};

@@ -30,17 +30,20 @@ namespace EventStore.Core.Caching {
 		public IEnumerable<CacheStats> GetStats(string parentKey) {
 			var key = BuildStatsKey(parentKey);
 			var size = 0L;
+			var count = 0L;
 
 			foreach (var child in _children) {
 				foreach (var childStats in child.GetStats(key)) {
-					if (GetParentKey(childStats.Key) == key)
+					if (GetParentKey(childStats.Key) == key) {
 						size += childStats.Size;
+						count += childStats.Count;
+					}
 
 					yield return childStats;
 				}
 			}
 
-			yield return new CacheStats(key, Name, Cache.Capacity, size);
+			yield return new CacheStats(key, Name, Cache.Capacity, size, count);
 		}
 
 		private static ResizerUnit GetUniqueUnit(ICacheResizer[] children) {
@@ -86,6 +89,7 @@ namespace EventStore.Core.Caching {
 			}
 
 			public long Size => _children.Sum(static x => x.Size);
+			public long Count => _children.Sum(static x => x.Count);
 			public long FreedSize => _children.Sum(static x => x.FreedSize);
 		}
 	}
