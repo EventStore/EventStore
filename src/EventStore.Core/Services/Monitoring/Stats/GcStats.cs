@@ -33,6 +33,9 @@
 		/// </summary>
 		public readonly float AllocationSpeed;
 		/// <summary>
+		/// </summary>
+		public readonly float Fragmentation;
+		/// <summary>
 		/// % of Time in GC.
 		/// </summary>
 		public readonly float TimeInGc;
@@ -49,6 +52,7 @@
 			long gcGen2Size,
 			long gcLargeHeapSize,
 			float gcAllocationSpeed,
+			float gcFragmentation,
 			float gcTimeInGc,
 			long gcTotalBytesInHeaps) {
 			Gen0ItemsCount = gcGen0Items;
@@ -59,6 +63,7 @@
 			Gen2Size = gcGen2Size;
 			LargeHeapSize = gcLargeHeapSize;
 			AllocationSpeed = gcAllocationSpeed;
+			Fragmentation = gcFragmentation;
 			TimeInGc = gcTimeInGc;
 			TotalBytesInHeaps = gcTotalBytesInHeaps;
 		}
