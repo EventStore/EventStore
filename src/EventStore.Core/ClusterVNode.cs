@@ -669,6 +669,7 @@ namespace EventStore.Core {
 			var dynamicCacheManager = new DynamicCacheManager(
 				bus: _mainQueue,
 				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
+				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
 				totalMem: (long) statsHelper.GetTotalMem(),
 				keepFreeMemPercent: 25,
 				keepFreeMemBytes: 6L * 1024 * 1024 * 1024, // 6 GiB

@@ -17,6 +17,7 @@ namespace EventStore.Core.Caching {
 
 		private readonly IPublisher _bus;
 		private readonly Func<long> _getFreeSystemMem;
+		private readonly Func<long> _getFreeHeapMem;
 		private readonly long _totalMem;
 		private readonly int _keepFreeMemPercent;
 		private readonly long _keepFreeMemBytes;
@@ -33,6 +34,7 @@ namespace EventStore.Core.Caching {
 		public DynamicCacheManager(
 			IPublisher bus,
 			Func<long> getFreeSystemMem,
+			Func<long> getFreeHeapMem,
 			long totalMem,
 			int keepFreeMemPercent,
 			long keepFreeMemBytes,
@@ -49,6 +51,7 @@ namespace EventStore.Core.Caching {
 
 			_bus = bus;
 			_getFreeSystemMem = getFreeSystemMem;
+			_getFreeHeapMem = getFreeHeapMem;
 			_totalMem = totalMem;
 			_keepFreeMemPercent = keepFreeMemPercent;
 			_keepFreeMemBytes = keepFreeMemBytes;
@@ -184,7 +187,7 @@ namespace EventStore.Core.Caching {
 		private AvailableMemoryInfo GetAvailableMemoryInfo() {
 			do {
 				var freeSystemMem = _getFreeSystemMem();
-				var freeHeapMem = GC.GetGCMemoryInfo().FragmentedBytes;
+				var freeHeapMem = _getFreeHeapMem();
 				var cachedMem = _rootCacheResizer.Size;
 				var freedMem = _rootCacheResizer.FreedSize;
 
