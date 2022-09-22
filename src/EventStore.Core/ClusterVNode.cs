@@ -1557,7 +1557,7 @@ namespace EventStore.Core {
 						return LastEventNumberCacheItemSize(streamId, eventNumberCached);
 
 					return keyFreed ? sizer.GetSizeInBytes(streamId) : 0;
-				});
+				}, "bytes");
 
 
 			int MetadataCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.MetadataCached metadataCached) =>
@@ -1577,7 +1577,7 @@ namespace EventStore.Core {
 					return
 						(keyFreed ? sizer.GetSizeInBytes(streamId) : 0) +
 						(valueFreed ? metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>() : 0);
-				});
+				}, "bytes");
 
 			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
