@@ -228,6 +228,10 @@ namespace EventStore.Core {
 			IExpiryStrategy expiryStrategy = null,
 			Guid? instanceId = null, int debugIndex = 0) {
 
+			var shm = new SelfHeartbeatMonitor(
+				period: TimeSpan.FromMilliseconds(500),
+				threshold: TimeSpan.FromMilliseconds(800));
+
 			if (options == null) {
 				throw new ArgumentNullException(nameof(options));
 			}
