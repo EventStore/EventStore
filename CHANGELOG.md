@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
+- Deleting persistent subscriptions to $all over HTTP is not supported [EventStore#3593](https://github.com/EventStore/EventStore/pull/3593)
 
 ## [22.6.0] - 2022-07-21
 
