@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -9,6 +8,10 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using Serilog;
 
+//qq
+// - make sure allotments are smooth, not oscilating
+// - consider/test multiple nodes on one machine
+// - consider the names of the stats hierarchy, does it make sense esp with the keepFree
 namespace EventStore.Core.Caching {
 	public class DynamicCacheManager:
 		IHandle<MonitoringMessage.DynamicCacheManagerTick>,
@@ -16,18 +19,9 @@ namespace EventStore.Core.Caching {
 
 		private readonly IPublisher _bus;
 		private readonly Func<long> _getFreeMem;
-		private readonly long _totalMem;
-		private readonly int _keepFreeMemPercent;
-		private readonly long _keepFreeMemBytes;
-		private readonly long _keepFreeMem;
-		private readonly TimeSpan _minResizeInterval;
-		private readonly long _minResizeThreshold;
+		private readonly UnadjustedCapacityTracker _cacheResizer;
 		private readonly ICacheResizer _rootCacheResizer;
 		private readonly Message _scheduleTick;
-		private readonly object _lock = new();
-
-		private DateTime _lastResize = DateTime.UtcNow;
-		private long _lastAvailableMem = -1;
 
 		public DynamicCacheManager(
 			IPublisher bus,
@@ -36,9 +30,54 @@ namespace EventStore.Core.Caching {
 			int keepFreeMemPercent,
 			long keepFreeMemBytes,
 			TimeSpan monitoringInterval,
-			TimeSpan minResizeInterval,
-			long minResizeThreshold,
-			ICacheResizer rootCacheResizer) {
+			ICacheResizer cacheResizer) {
+
+			_bus = bus;
+			_getFreeMem = getFreeMem;
+			_scheduleTick = TimerMessage.Schedule.Create(
+				monitoringInterval,
+				new PublishEnvelope(_bus),
+				new MonitoringMessage.DynamicCacheManagerTick());
+
+			CreatePipeline(
+				totalMem, keepFreeMemPercent, keepFreeMemBytes, cacheResizer,
+				out _cacheResizer, out _rootCacheResizer);
+		}
+
+		//qq add tests
+		public static void CreatePipeline(
+			long totalMem,
+			int keepFreeMemPercent,
+			long keepFreeMemBytes,
+			ICacheResizer cacheResizer,
+			out UnadjustedCapacityTracker outCacheResizer,
+			out ICacheResizer rootCacheResizer) {
+
+			outCacheResizer = AddResizingLogic(cacheResizer);
+			rootCacheResizer = CreateRootResizer(totalMem, keepFreeMemPercent, keepFreeMemBytes, outCacheResizer);
+		}
+
+		private static UnadjustedCapacityTracker AddResizingLogic(ICacheResizer cacheResizer) {
+			cacheResizer = new ResizeDownOnlyAfterGC(cacheResizer);
+			cacheResizer = new DoNotResizeUp(cacheResizer);
+			return new UnadjustedCapacityTracker(cacheResizer);
+		}
+
+		// cacheResizer distributes among the caches what we want to use for the caches
+		// but we dont want to use _all_ the free memory for the caches. here we add logic to the
+		// resizing pipeline that
+		//   1. keeps a portion of memory free so there is always room to allocate
+		//   2. keeps a portion of memory aside for the OS disk cache so the OS can help us with chunk/ptable access
+		private static ICacheResizer CreateRootResizer(
+			long totalMem,
+			int keepFreeMemPercent,
+			long keepFreeMemBytes,
+			ICacheResizer cacheResizer) {
+
+			var rootName = "availableMemory";
+			if (cacheResizer.Unit == ResizerUnit.Entries) {
+				return new CompositeCacheResizer(name: rootName, weight: 100, cacheResizer);
+			}
 
 			if (keepFreeMemPercent is < 0 or > 100)
 				throw new ArgumentException($"{nameof(keepFreeMemPercent)} must be between 0 to 100 inclusive.");
@@ -46,39 +85,38 @@ namespace EventStore.Core.Caching {
 			if (keepFreeMemBytes < 0)
 				throw new ArgumentException($"{nameof(keepFreeMemBytes)} must be non-negative.");
 
-			_bus = bus;
-			_getFreeMem = getFreeMem;
-			_totalMem = totalMem;
-			_keepFreeMemPercent = keepFreeMemPercent;
-			_keepFreeMemBytes = keepFreeMemBytes;
-			_keepFreeMem = Math.Max(_keepFreeMemBytes, _totalMem.ScaleByPercent(_keepFreeMemPercent));
-			_minResizeInterval = minResizeInterval;
-			_minResizeThreshold = minResizeThreshold;
-			_rootCacheResizer = rootCacheResizer;
-			_scheduleTick = TimerMessage.Schedule.Create(
-				monitoringInterval,
-				new PublishEnvelope(_bus),
-				new MonitoringMessage.DynamicCacheManagerTick());
+			var keepFreeMem = Math.Max(keepFreeMemBytes, totalMem.ScaleByPercent(keepFreeMemPercent));
+
+			return new CompositeCacheResizer(
+				name: rootName,
+				weight: 100,
+				cacheResizer,
+				// later we might want to leave some amount of room for the disk cache specifically, but for now
+				// the 20%/4gb in the keepFree is sufficient
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity: 0, weight: 100, new EmptyDynamicCache("keepForOS")),
+				new StaticCacheResizer(ResizerUnit.Bytes, keepFreeMem, new EmptyDynamicCache("keepFree")));
 		}
 
 		public void Start() {
 			if (_rootCacheResizer.Unit == ResizerUnit.Entries) {
 				_rootCacheResizer.CalcCapacityTopLevel(_rootCacheResizer.ReservedCapacity);
-				return;
+			} else {
+				ResizeCaches();
+				Tick();
 			}
 
-			var availableMem = CalcAvailableMemory(_getFreeMem(), 0);
-			ResizeCaches(availableMem);
-			Tick();
+			foreach (var stat in _rootCacheResizer.GetStats(string.Empty)) {
+				Log.Information("Cache {key} capacity initialized to {capacity:N0} {unit}",
+					stat.Key, stat.Capacity, _rootCacheResizer.Unit);
+			}
 		}
 
 		public void Handle(MonitoringMessage.DynamicCacheManagerTick message) {
 			ThreadPool.QueueUserWorkItem(_ => {
 				try {
-					lock (_lock) { // only to add read/write barriers
-						ResizeCachesIfNeeded();
-					}
+					ResizeCaches();
 				} finally {
+					Thread.MemoryBarrier();
 					Tick();
 				}
 			});
@@ -88,104 +126,55 @@ namespace EventStore.Core.Caching {
 			Thread.MemoryBarrier(); // just to ensure we're seeing latest values
 
 			var stats = new Dictionary<string, object>();
-			var cachesStats = _rootCacheResizer.GetStats(string.Empty);
+			var cachesStats = _cacheResizer.GetStats(string.Empty);
 
-			foreach(var cacheStat in cachesStats) {
-				var statNamePrefix = $"es-cache-{cacheStat.Key}-";
+			foreach (var cacheStat in cachesStats) {
+				var statNamePrefix = $"es-{cacheStat.Key}-";
 				stats[statNamePrefix + "name"] = cacheStat.Name;
 				stats[statNamePrefix + "size" + _rootCacheResizer.Unit] = cacheStat.Size;
 				stats[statNamePrefix + "capacity" + _rootCacheResizer.Unit] = cacheStat.Capacity;
 				stats[statNamePrefix + "utilizationPercent"] = cacheStat.UtilizationPercent;
 			}
 
+			//qq maybe we dont want this
+			// record the capacity that was handed to the pipeline so that we can see how the pipeline
+			// has adjusted it (i.e. the pipeline is gradually letting the capacity grow up to here,
+			// or the pipeline is waiting for a GC to resize down to here)
+			if (_rootCacheResizer.Unit == ResizerUnit.Bytes)
+				stats[$"es-{_cacheResizer.Name}-unadjustedCapacityBytes"] = _cacheResizer.UnadjustedCapacity;
+
 			message.Envelope.ReplyWith(new MonitoringMessage.InternalStatsRequestResponse(stats));
 		}
 
-		private static void TriggerGc() {
-			var sw = new Stopwatch();
-			Log.Debug("Triggering gen {generation} garbage collection", GC.MaxGeneration);
-
-			sw.Restart();
-			GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-			sw.Stop();
-
-			Log.Debug("GC took {elapsed}", sw.Elapsed);
-
-			sw.Restart();
-			GC.WaitForPendingFinalizers();
-			sw.Stop();
-
-			Log.Debug("GC finalization took {elapsed}", sw.Elapsed);
-		}
-
-		private bool ResizeConditionsMet(out long freeMem, out long availableMem) {
-			availableMem = 0L;
-			freeMem = _getFreeMem();
-
-			if (freeMem >= _keepFreeMem && DateTime.UtcNow - _lastResize < _minResizeInterval)
-				return false;
-
-			var cachedMem = _rootCacheResizer.Size;
-			availableMem = CalcAvailableMemory(freeMem, cachedMem);
-
-			if (_lastAvailableMem != -1 && Math.Abs(availableMem - _lastAvailableMem) < _minResizeThreshold)
-				return false;
-
-			return true;
-		}
-
-		private void ResizeCachesIfNeeded() {
-			// We need to trigger the GC before resizing the caches, since things that have
-			// been deleted from the caches may not yet have been garbage collected and
-			// this will result in a lower calculation of "availableMem", which in turn
-			// will result in a smaller memory allotment to the caches.
-			// Triggering the GC is not cheap, so we want to do it as rarely as we can.
-			// We first check if the conditions for resizing the caches are met, then trigger the GC.
-			// But now, we may have enough free memory and resizing the caches may no longer be necessary,
-			// so we verify the conditions again before finally resizing the caches.
-
-			if (!ResizeConditionsMet(out _, out _))
-				return;
-
-			TriggerGc();
-
-			if (!ResizeConditionsMet(out var freeMem, out var availableMem))
-				return;
-
-			if (freeMem < _keepFreeMem)
-				Log.Debug("Available system memory is lower than "
-				          + "{thresholdPercent}% or {thresholdBytes:N0} bytes: {freeMem:N0} bytes. Resizing caches.",
-					_keepFreeMemPercent, _keepFreeMemBytes, freeMem);
-
+		private void ResizeCaches() {
 			try {
-				ResizeCaches(availableMem);
+				var availableMem = CalcAvailableMemory();
+				_rootCacheResizer.CalcCapacityTopLevel(availableMem);
 			} catch (Exception ex) {
 				Log.Error(ex, "Error while resizing caches");
-			} finally {
-				_lastResize = DateTime.UtcNow;
-				_lastAvailableMem = availableMem;
+				throw;
 			}
 		}
 
-		private void ResizeCaches(long availableMem) {
-			_rootCacheResizer.CalcCapacityTopLevel(availableMem);
-		}
-
 		// Memory available for static and dynamic caches
-		// freeMem is free memory in the system
-		// cachedMem is approximate amount of memory used by static and dynamic caches
-		private long CalcAvailableMemory(long freeMem, long cachedMem) {
-			var availableMem = Math.Max(0L, freeMem + cachedMem - _keepFreeMem);
+		private long CalcAvailableMemory() {
+			var gcInfo = GC.GetGCMemoryInfo();
 
-			Log.Verbose("Calculating memory available for caching based on:\n" +
-			          "Free memory: {freeMem:N0} bytes\n" +
-			          "Total memory: {totalMem:N0} bytes\n" +
-			          "Cached memory: ~{cachedMem:N0} bytes\n" +
-			          "Keep free memory: {keepFreeMem:N0} bytes (higher of {keepFreeMemPercent}% total mem & {keepFreeMemBytes:N0} bytes)\n\n" +
-			          "Memory available for caching: ~{availableMem:N0} bytes\n",
-				freeMem, _totalMem, cachedMem,
-				_keepFreeMem, _keepFreeMemPercent, _keepFreeMemBytes,
-				availableMem);
+			var fragmentedBytes = gcInfo.FragmentedBytes;
+			var freeBytes = _getFreeMem();
+			var cachedBytes = _rootCacheResizer.Size;
+
+			// fragmented bytes are essentially free bytes within the heap
+			// (at least, until they get too small to use)
+			var availableMem = fragmentedBytes + freeBytes + cachedBytes;
+
+			Log.Verbose(
+				"Calculating memory available for caching based on:\n" +
+				"Free memory: {freeMem:N0} bytes\n" +
+				"Fragmented memory: {fragmentedMem:N0} bytes\n" +
+				"Cached memory: ~{cachedMem:N0} bytes\n" +
+				"Memory available: ~{availableMem:N0} bytes\n",
+				freeBytes, fragmentedBytes, cachedBytes, availableMem);
 
 			return availableMem;
 		}

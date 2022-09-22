@@ -21,8 +21,6 @@ namespace EventStore.Core.Tests.Caching {
 			int keepFreeMemPercent,
 			long keepFreeMemBytes,
 			TimeSpan monitoringInterval,
-			TimeSpan minResizeInterval,
-			long minResizeThreshold,
 			ICacheResizer rootCacheResizer) {
 			var sut = new DynamicCacheManager(
 				_fakePublisher,
@@ -31,8 +29,6 @@ namespace EventStore.Core.Tests.Caching {
 				keepFreeMemPercent,
 				keepFreeMemBytes,
 				monitoringInterval,
-				minResizeInterval,
-				minResizeThreshold,
 				rootCacheResizer);
 			sut.Start();
 
@@ -56,8 +52,6 @@ namespace EventStore.Core.Tests.Caching {
 				0,
 				0,
 				TimeSpan.MaxValue,
-				TimeSpan.MaxValue,
-				0,
 				new StaticCacheResizer(ResizerUnit.Bytes, 0, EmptyDynamicCache.Instance));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
@@ -84,8 +78,6 @@ namespace EventStore.Core.Tests.Caching {
 				percent,
 				bytes,
 				TimeSpan.MaxValue,
-				TimeSpan.MaxValue,
-				0,
 				new CompositeCacheResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
@@ -95,38 +87,6 @@ namespace EventStore.Core.Tests.Caching {
 			// caches resized to minimum amount
 			Assert.AreEqual(1, Interlocked.Read(ref cache1Mem));
 			Assert.AreEqual(2, Interlocked.Read(ref cache2Mem));
-		}
-
-		[Test]
-		public async Task caches_resized_after_min_resize_interval() {
-			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, new AdHocDynamicCache(
-				() => 0,
-				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, new AdHocDynamicCache(
-				() => 0,
-				mem => Interlocked.Exchange(ref cache2Mem, mem)));
-
-			var request = 0;
-			var freeMem = new[] { 100, 90 /* before GC */ , 90 /* after GC */ };
-
-			var sut = GenSut(
-				() => freeMem[request++],
-				100,
-				0,
-				0,
-				TimeSpan.MaxValue,
-				TimeSpan.Zero,
-				0,
-				new CompositeCacheResizer("root", 100, cache1, cache2));
-
-			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
-
-			await TickPublished();
-
-			// caches resized according to 90% free memory
-			Assert.AreEqual(54, Interlocked.Read(ref cache1Mem));
-			Assert.AreEqual(36, Interlocked.Read(ref cache2Mem));
 		}
 
 		[Test]
@@ -147,8 +107,6 @@ namespace EventStore.Core.Tests.Caching {
 				89,
 				89,
 				TimeSpan.FromSeconds(1),
-				TimeSpan.FromMinutes(1),
-				0,
 				new CompositeCacheResizer("root", 100, cache1, cache2));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
@@ -175,8 +133,6 @@ namespace EventStore.Core.Tests.Caching {
 				0,
 				0,
 				TimeSpan.MaxValue,
-				TimeSpan.MaxValue,
-				0,
 				new CompositeCacheResizer("root", 123, cache1, cache2));
 
 			var envelope = new FakeEnvelope();

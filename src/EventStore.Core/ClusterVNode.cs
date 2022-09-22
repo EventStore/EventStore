@@ -670,16 +670,15 @@ namespace EventStore.Core {
 					out streamMetadataCache,
 					out streamInfoCacheResizer);
 
+
 			var dynamicCacheManager = new DynamicCacheManager(
 				bus: _mainQueue,
-				getFreeMem: () => (long) statsHelper.GetFreeMem(),
-				totalMem: (long) statsHelper.GetTotalMem(),
+				getFreeMem: () => (long)statsHelper.GetFreeMem(),
+				totalMem: (long)statsHelper.GetTotalMem(),
 				keepFreeMemPercent: 20,
 				keepFreeMemBytes: 4L * 1024 * 1024 * 1024, // 4 GiB
-				monitoringInterval: TimeSpan.FromSeconds(15),
-				minResizeInterval: TimeSpan.FromMinutes(10),
-				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
-				rootCacheResizer: new CompositeCacheResizer("Root", 100, streamInfoCacheResizer));
+				monitoringInterval: TimeSpan.FromSeconds(5), //qq put back to 15
+				cacheResizer: new CompositeCacheResizer(name: "cache", weight: 100, streamInfoCacheResizer));
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
@@ -1542,7 +1541,7 @@ namespace EventStore.Core {
 			ISizer<TStreamId> sizer,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
-			out ICacheResizer streamInfoCacheResizer) {
+			out ICacheResizer streamInfocacheResizer) {
 
 			const long minCapacity = 100_000_000; // 100 MB
 
@@ -1562,11 +1561,11 @@ namespace EventStore.Core {
 						sizer.GetSizeInBytes(streamId),
 						metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>()));
 
-			streamInfoCacheResizer = new CompositeCacheResizer(
+			streamInfocacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
 				weight: 100,
-				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, 60, streamLastEventNumberCache),
-				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, 40, streamMetadataCache));
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, weight: 60, streamLastEventNumberCache),
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, weight: 40, streamMetadataCache));
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {
