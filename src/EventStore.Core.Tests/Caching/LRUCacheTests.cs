@@ -7,7 +7,9 @@ namespace EventStore.Core.Tests.Caching {
 	public class LRUCacheTests {
 
 		private static LRUCache<TKey, TValue> GenSut<TKey, TValue>(int capacity,
-			Func<TKey, TValue, int> calculateSize = null) => new (string.Empty, capacity, calculateSize);
+			LRUCache<TKey, TValue>.CalculateItemSize calculateItemSize = null,
+			LRUCache<TKey, TValue>.CalculateFreedSize calculateFreedSize = null) =>
+			new (string.Empty, capacity, calculateItemSize, calculateFreedSize);
 
 		[Test]
 		public void can_add_and_read_item() {

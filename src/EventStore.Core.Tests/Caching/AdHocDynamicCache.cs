@@ -20,9 +20,15 @@ namespace EventStore.Core.Tests.Caching {
 
 		public long Capacity { get; private set; }
 
+		public long FreedSize { get; set; }
+
 		public void SetCapacity(long value) {
 			Capacity = value;
 			_setCapacity(value);
+		}
+
+		public void ResetFreedSize() {
+			FreedSize = 0;
 		}
 
 		public long Size => _getSize();
