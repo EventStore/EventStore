@@ -76,7 +76,7 @@ namespace EventStore.Core.Tests.Caching {
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
 			var request = 0;
-			var freeMem = new[] { 100, 19 /* before GC */, 19 /* after GC */};
+			var freeMem = new[] { 100, 19 };
 
 			var sut = GenSut(
 				() => freeMem[request++],
@@ -108,7 +108,7 @@ namespace EventStore.Core.Tests.Caching {
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
 			var request = 0;
-			var freeMem = new[] { 100, 90 /* before GC */ , 90 /* after GC */ };
+			var freeMem = new[] { 100, 90 };
 
 			var sut = GenSut(
 				() => freeMem[request++],
@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Caching {
 			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, cache);
 
 			var request = 0;
-			var freeMem = new[] { 100, 90 /* before GC */ };
+			var freeMem = new[] { 100, 90 };
 
 			var sut = GenSut(
 				() => freeMem[request++],
