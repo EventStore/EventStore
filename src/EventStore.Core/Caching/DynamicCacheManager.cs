@@ -88,7 +88,6 @@ namespace EventStore.Core.Caching {
 		public void Start() {
 			if (_rootCacheResizer.Unit == ResizerUnit.Entries) {
 				_rootCacheResizer.CalcCapacityTopLevel(_rootCacheResizer.ReservedCapacity);
-				return;
 			} else {
 				var availableMem = GetAvailableMemoryInfo().AvailableMem;
 				_lastAvailableMem = availableMem;
