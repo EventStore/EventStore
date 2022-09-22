@@ -1540,8 +1540,6 @@ namespace EventStore.Core {
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
 			out ICacheResizer streamInfoCacheResizer) {
 
-			const long minCapacity = 100_000_000; // 100 MB
-
 			int LastEventNumberCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.EventNumberCached eventNumberCached) =>
 				LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
 					keyRefsSize: sizer.GetSizeInBytes(streamId),
@@ -1549,7 +1547,7 @@ namespace EventStore.Core {
 
 			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 				"LastEventNumber",
-				minCapacity,
+				0,
 				LastEventNumberCacheItemSize,
 				(streamId, eventNumberCached, keyFreed, valueFreed, nodeFreed) => {
 					if (nodeFreed)
@@ -1566,7 +1564,7 @@ namespace EventStore.Core {
 
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 				"StreamMetadata",
-				minCapacity,
+				0,
 				MetadataCacheItemSize,
 				(streamId, metadataCached, keyFreed, valueFreed, nodeFreed) => {
 					if (nodeFreed)
@@ -1576,6 +1574,8 @@ namespace EventStore.Core {
 						(keyFreed ? sizer.GetSizeInBytes(streamId) : 0) +
 						(valueFreed ? metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>() : 0);
 				}, "bytes");
+
+			const long minCapacity = 100_000_000; // 100 MB
 
 			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
