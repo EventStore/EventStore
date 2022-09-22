@@ -1,9 +1,10 @@
-﻿using EventStore.Core.Caching;
-
-namespace EventStore.Core.Tests.Caching {
+﻿namespace EventStore.Core.Caching {
 	public class EmptyDynamicCache : IDynamicCache {
-		public static EmptyDynamicCache Instance { get; } = new();
-		public string Name => nameof(EmptyDynamicCache);
+		public EmptyDynamicCache(string name = nameof(EmptyDynamicCache)) {
+			Name = name;
+		}
+
+		public string Name { get; }
 		public long Capacity { get; private set; }
 
 		public void SetCapacity(long capacity) {

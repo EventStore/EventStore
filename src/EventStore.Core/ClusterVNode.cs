@@ -664,6 +664,8 @@ namespace EventStore.Core {
 					out streamMetadataCache,
 					out streamInfoCacheResizer);
 
+			var percentMemToUseForCaches = 50;
+			// ^ the rest is saved for os disk caches, fragmentation etc.
 			var dynamicCacheManager = new DynamicCacheManager(
 				bus: _mainQueue,
 				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
@@ -675,7 +677,7 @@ namespace EventStore.Core {
 				monitoringInterval: TimeSpan.FromSeconds(15),
 				minResizeInterval: TimeSpan.FromMinutes(10),
 				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
-				rootCacheResizer: new CompositeCacheResizer("cache", 100, streamInfoCacheResizer));
+				cacheResizer: new CompositeCacheResizer("cache", percentMemToUseForCaches, streamInfoCacheResizer));
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
