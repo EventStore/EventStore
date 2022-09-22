@@ -70,23 +70,33 @@ namespace EventStore.Core.Tests.Caching {
 			await TickPublished().WithTimeout(TimeSpan.FromSeconds(10));
 		}
 
-		[TestCase(20, 0)]
-		[TestCase(0, 20)]
-		public async Task caches_resized_when_memory_below_keep_free_mem(int percent, long bytes) {
+		[TestCase(20, 0, true)]
+		[TestCase(0, 20, true)]
+		[TestCase(20, 0, false)]
+		[TestCase(0, 20, false)]
+		public async Task caches_resized_depending_on_whether_total_free_memory_is_above_or_below_keep_free_mem(int percent, long bytes, bool aboveKeepFreeMem) {
 			long cache1Mem = -1, cache2Mem = -1;
 			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, new AdHocDynamicCache(
 				() => 0,
-				mem => Interlocked.Exchange(ref cache1Mem, mem)));
+				mem => Interlocked.Exchange(ref cache1Mem, mem),
+				() => 1, // included in total free mem
+				() => { }));
+
 			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, new AdHocDynamicCache(
 				() => 0,
-				mem => Interlocked.Exchange(ref cache2Mem, mem)));
+				mem => Interlocked.Exchange(ref cache2Mem, mem),
+				() => 1, // included in total free mem
+				() => { }));
 
-			var request = 0;
-			var freeMem = new[] { 100, 19 };
+			var freeSystemMemReq = 0;
+			var freeSystemMem = new[] { 100, 11 + (aboveKeepFreeMem ? 1 : 0)}; // included in total free mem
+
+			var freeHeapMemReq = 0;
+			var freeHeapMem = new[] { 0, 6 }; // included in total free mem
 
 			var sut = GenSut(
-				() => freeMem[request++],
-				() => 0,
+				() => freeSystemMem[freeSystemMemReq++],
+				() => freeHeapMem[freeHeapMemReq++],
 				() => 0,
 				100,
 				percent,
@@ -100,13 +110,20 @@ namespace EventStore.Core.Tests.Caching {
 
 			await TickPublished();
 
-			// caches resized to minimum amount
-			Assert.AreEqual(1, Interlocked.Read(ref cache1Mem));
-			Assert.AreEqual(2, Interlocked.Read(ref cache2Mem));
+			if (aboveKeepFreeMem) {
+				// caches not resized to minimum amount
+				Assert.AreNotEqual(1, Interlocked.Read(ref cache1Mem));
+				Assert.AreNotEqual(2, Interlocked.Read(ref cache2Mem));
+			} else {
+				// caches resized to minimum amount
+				Assert.AreEqual(1, Interlocked.Read(ref cache1Mem));
+				Assert.AreEqual(2, Interlocked.Read(ref cache2Mem));
+			}
 		}
 
-		[Test]
-		public async Task caches_resized_after_min_resize_interval() {
+		[TestCase(true)]
+		[TestCase(false)]
+		public async Task caches_resized_depending_on_whether_min_resize_interval_was_exceeded(bool minResizeIntervalExceeded) {
 			long cache1Mem = -1, cache2Mem = -1;
 			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, new AdHocDynamicCache(
 				() => 0,
@@ -126,7 +143,7 @@ namespace EventStore.Core.Tests.Caching {
 				0,
 				0,
 				TimeSpan.MaxValue,
-				TimeSpan.Zero,
+				minResizeIntervalExceeded ? TimeSpan.Zero : TimeSpan.MaxValue,
 				0,
 				new CompositeCacheResizer("root", 100, cache1, cache2));
 
@@ -134,40 +151,123 @@ namespace EventStore.Core.Tests.Caching {
 
 			await TickPublished();
 
-			// caches resized according to 90% free memory
-			Assert.AreEqual(54, Interlocked.Read(ref cache1Mem));
-			Assert.AreEqual(36, Interlocked.Read(ref cache2Mem));
+			if (minResizeIntervalExceeded) {
+				// caches resized according to 90% free memory
+				Assert.AreEqual(54, Interlocked.Read(ref cache1Mem));
+				Assert.AreEqual(36, Interlocked.Read(ref cache2Mem));
+			} else {
+				// caches not resized
+				Assert.AreNotEqual(54, Interlocked.Read(ref cache1Mem));
+				Assert.AreNotEqual(36, Interlocked.Read(ref cache2Mem));
+			}
 		}
 
-		[Test]
-		public async Task caches_not_resized_when_conditions_not_met() {
-			int numResize = 0;
-			var cache = new AdHocDynamicCache(
+		[TestCase(20, 0, true)]
+		[TestCase(0, 20, false)]
+		public async Task caches_resized_depending_on_whether_min_resize_threshold_was_exceeded(int percent, long bytes, bool minResizeThresholdExceeded) {
+			long cache1Mem = -1, cache2Mem = -1;
+			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, new AdHocDynamicCache(
 				() => 0,
-				_ => Interlocked.Increment(ref numResize));
-			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, cache);
-			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, cache);
+				mem => Interlocked.Exchange(ref cache1Mem, mem)));
 
-			var request = 0;
-			var freeMem = new[] { 100, 90 };
+			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, new AdHocDynamicCache(
+				() => 0,
+				mem => Interlocked.Exchange(ref cache2Mem, mem)));
+
+			var freeSystemMemReq = 0;
+			var freeSystemMem = new[] { 100, 19 };
 
 			var sut = GenSut(
-				() => freeMem[request++],
+				() => freeSystemMem[freeSystemMemReq++],
 				() => 0,
 				() => 0,
 				100,
-				89,
-				89,
-				TimeSpan.FromSeconds(1),
-				TimeSpan.FromMinutes(1),
-				0,
+				percent,
+				bytes,
+				TimeSpan.MaxValue,
+				TimeSpan.Zero,
+				minResizeThresholdExceeded ? 0 : 100,
 				new CompositeCacheResizer("root", 100, cache1, cache2));
+
+			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
+
+			await TickPublished();
+
+			if (minResizeThresholdExceeded) {
+				// caches resized to minimum amount
+				Assert.AreEqual(1, Interlocked.Read(ref cache1Mem));
+				Assert.AreEqual(2, Interlocked.Read(ref cache2Mem));
+			} else {
+				// memory below keep free mem and min resize interval is zero
+				// but caches not resized to minimum amount due to high min resize threshold (100)
+				Assert.AreNotEqual(1, Interlocked.Read(ref cache1Mem));
+				Assert.AreNotEqual(2, Interlocked.Read(ref cache2Mem));
+			}
+		}
+
+		[Test]
+		public async Task freed_size_is_reset_when_gc_occurs() {
+			var tcs = new TaskCompletionSource<bool>();
+
+			var cache = new AdHocDynamicCache(
+				() => 0,
+				_ => { },
+				() => 0,
+				() => tcs.TrySetResult(true));
+
+			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 0, 100, cache);
+
+			var sut = GenSut(
+				() => 100,
+				() => 0,
+				() => 1,
+				100,
+				0,
+				0,
+				TimeSpan.MaxValue,
+				TimeSpan.MaxValue,
+				0,
+				new CompositeCacheResizer("root", 100, cacheResizer));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished();
 
-			// sized once each to start with
-			Assert.AreEqual(2, Volatile.Read(ref numResize));
+			await tcs.Task.WithTimeout(1000);
+			Assert.True(tcs.Task.Result);
+		}
+
+		[Test]
+		public async Task available_memory_is_recalculated_when_gc_occurs() {
+			var cacheCapacity = -1L;
+
+			var cache = new AdHocDynamicCache(
+				() => 0,
+				x => Interlocked.Exchange(ref cacheCapacity, x));
+
+			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 0, 100, cache);
+
+			var freeMemReq = 0;
+			var freeMem = new [] { 100 /* init */, 99 /* first calculation */, 98 /* second calculation */};
+
+			var gcCountReq = 0;
+			var gcCount = new[] { 0 /* init */, 0 /* reset freed size check */, 1 /* first calculation */, 1 /* second calculation */};
+
+			var sut = GenSut(
+				() => freeMem[freeMemReq++],
+				() => 0,
+				() => gcCount[gcCountReq++],
+				100,
+				20,
+				20,
+				TimeSpan.MaxValue,
+				TimeSpan.Zero,
+				0,
+				new CompositeCacheResizer("root", 100, cacheResizer));
+
+			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
+			await TickPublished();
+
+			Assert.AreEqual(78, cacheCapacity);
 		}
 
 		[Test]
@@ -175,11 +275,11 @@ namespace EventStore.Core.Tests.Caching {
 			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 10, 100, new AdHocDynamicCache(
 				() => 12,
 				mem => { },
-				"test1"));
+				name: "test1"));
 			var cache2 = new StaticCacheResizer(ResizerUnit.Bytes, 15, new AdHocDynamicCache(
 				() => 10,
 				mem => { },
-				"test2"));
+				name: "test2"));
 
 			var sut = GenSut(
 				() => 58,
