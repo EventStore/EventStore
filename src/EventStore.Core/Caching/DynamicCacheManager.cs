@@ -89,15 +89,15 @@ namespace EventStore.Core.Caching {
 			if (_rootCacheResizer.Unit == ResizerUnit.Entries) {
 				_rootCacheResizer.CalcCapacityTopLevel(_rootCacheResizer.ReservedCapacity);
 				return;
+			} else {
+				var availableMem = GetAvailableMemoryInfo().AvailableMem;
+				_lastAvailableMem = availableMem;
+				ResizeCaches(availableMem);
+
+				Thread.MemoryBarrier();
+
+				Tick();
 			}
-
-			var availableMem = GetAvailableMemoryInfo().AvailableMem;
-			_lastAvailableMem = availableMem;
-			ResizeCaches(availableMem);
-
-			Thread.MemoryBarrier();
-
-			Tick();
 
 			foreach (var stat in _rootCacheResizer.GetStats(string.Empty)) {
 				Log.Information("Cache {key} capacity initialized to {capacity:N0} {unit}",

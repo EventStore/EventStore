@@ -32,7 +32,7 @@ namespace EventStore.Core.Caching {
 
 			var diff = capacity - oldCapacity;
 			Log.Debug(
-				"{name} dynamically allotted {capacity:N0} " + Unit + " ({diff:+#,#;-#,#;+0}). Took {elapsed:N0}ms.",
+				"{name} dynamically allotted {capacity:N0} " + Unit + " ({diff:+#,#;-#,#;+0}). Took {elapsed:N0} ms.",
 				Name, Cache.Capacity, diff, sw.ElapsedMilliseconds);
 		}
 
