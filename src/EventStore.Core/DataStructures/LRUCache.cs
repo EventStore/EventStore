@@ -285,6 +285,7 @@ namespace EventStore.Core.DataStructures {
 		}
 
 		private void ReturnNode(LinkedListNode<LRUItem> node) {
+			// set to default to allow memory to be gced
 			node.Value.Key = default;
 			node.Value.Value = default;
 			_nodesPool.Enqueue(node);
