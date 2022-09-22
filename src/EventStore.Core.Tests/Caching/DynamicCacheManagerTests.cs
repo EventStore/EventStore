@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Caching {
 		private readonly FakePublisher _fakePublisher = new();
 
 		private DynamicCacheManager GenSut(
-			Func<long> getFreeMem,
+			Func<long> getFreeSystemMem,
 			long totalMem,
 			int keepFreeMemPercent,
 			long keepFreeMemBytes,
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Caching {
 			ICacheResizer rootCacheResizer) {
 			var sut = new DynamicCacheManager(
 				_fakePublisher,
-				getFreeMem,
+				getFreeSystemMem,
 				totalMem,
 				keepFreeMemPercent,
 				keepFreeMemBytes,
