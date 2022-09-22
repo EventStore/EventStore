@@ -1547,6 +1547,7 @@ namespace EventStore.Core {
 					keyRefsSize: sizer.GetSizeInBytes(streamId),
 					valueRefsSize: 0);
 
+			//qq might want to pass units here for the logging in lrucache
 			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
 				"LastEventNumber",
 				minCapacity,
@@ -1564,6 +1565,7 @@ namespace EventStore.Core {
 					keyRefsSize: sizer.GetSizeInBytes(streamId),
 					valueRefsSize: metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>());
 
+			//qq might want to pass units here for the logging in lrucache
 			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
 				"StreamMetadata",
 				minCapacity,

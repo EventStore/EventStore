@@ -13,6 +13,7 @@ namespace EventStore.Core.Caching {
 		public const int LinkedListEntrySize = 0;
 
 		public static int SizeOf(string s) {
+			//qq empty string doesn't have 0 size
 			if (string.IsNullOrEmpty(s))
 				return 0;
 			return (StringSize + s.Length * 2 + 1).RoundUpToMultipleOf(IntPtr.Size);
