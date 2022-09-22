@@ -677,7 +677,7 @@ namespace EventStore.Core {
 				monitoringInterval: TimeSpan.FromSeconds(15),
 				minResizeInterval: TimeSpan.FromMinutes(10),
 				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
-				rootCacheResizer: new CompositeCacheResizer("Root", 100, streamInfoCacheResizer));
+				rootCacheResizer: new CompositeCacheResizer("cache", 100, streamInfoCacheResizer));
 
 			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);

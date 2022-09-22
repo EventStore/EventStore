@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new CompositeCacheResizer("root", 123, cache1, cache2));
+				new CompositeCacheResizer("cache", 123, cache1, cache2));
 
 			var envelope = new FakeEnvelope();
 			sut.Handle(new MonitoringMessage.InternalStatsRequest(envelope));
@@ -200,20 +200,20 @@ namespace EventStore.Core.Tests.Caching {
 
 			var msg = (MonitoringMessage.InternalStatsRequestResponse) envelope.Replies.First();
 			var expectedStats = new Dictionary<string, object> {
-				{"es-cache-root-name", "root"},
-				{"es-cache-root-sizeBytes", 22L},
-				{"es-cache-root-capacityBytes", 80L},
-				{"es-cache-root-utilizationPercent", 100.0 * 22 / 80},
+				{"es-cache-name", "cache"},
+				{"es-cache-sizeBytes", 22L},
+				{"es-cache-capacityBytes", 80L},
+				{"es-cache-utilizationPercent", 100.0 * 22 / 80},
 
-				{"es-cache-root-test1-name", "test1"},
-				{"es-cache-root-test1-sizeBytes", 12L},
-				{"es-cache-root-test1-capacityBytes", 65L},
-				{"es-cache-root-test1-utilizationPercent", 100.0 * 12 / 65},
+				{"es-cache-test1-name", "test1"},
+				{"es-cache-test1-sizeBytes", 12L},
+				{"es-cache-test1-capacityBytes", 65L},
+				{"es-cache-test1-utilizationPercent", 100.0 * 12 / 65},
 
-				{"es-cache-root-test2-name", "test2"},
-				{"es-cache-root-test2-sizeBytes", 10L},
-				{"es-cache-root-test2-capacityBytes", 15L},
-				{"es-cache-root-test2-utilizationPercent", 100.0 * 10 / 15},
+				{"es-cache-test2-name", "test2"},
+				{"es-cache-test2-sizeBytes", 10L},
+				{"es-cache-test2-capacityBytes", 15L},
+				{"es-cache-test2-utilizationPercent", 100.0 * 10 / 15},
 			};
 
 			AssertEx.AssertUsingDeepCompare(msg.Stats, expectedStats);

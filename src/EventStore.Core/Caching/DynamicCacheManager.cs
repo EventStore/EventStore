@@ -119,7 +119,7 @@ namespace EventStore.Core.Caching {
 			var cachesStats = _rootCacheResizer.GetStats(string.Empty);
 
 			foreach(var cacheStat in cachesStats) {
-				var statNamePrefix = $"es-cache-{cacheStat.Key}-";
+				var statNamePrefix = $"es-{cacheStat.Key}-";
 				stats[statNamePrefix + "name"] = cacheStat.Name;
 				stats[statNamePrefix + "size" + _rootCacheResizer.Unit] = cacheStat.Size;
 				stats[statNamePrefix + "capacity" + _rootCacheResizer.Unit] = cacheStat.Capacity;
