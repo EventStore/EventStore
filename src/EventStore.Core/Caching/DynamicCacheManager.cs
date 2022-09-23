@@ -26,7 +26,6 @@ namespace EventStore.Core.Caching {
 		private readonly TimeSpan _minResizeInterval;
 		private readonly long _minResizeThreshold;
 		private readonly ICacheResizer _rootCacheResizer;
-		private readonly ICacheResizer _cacheResizer;
 		private readonly Message _scheduleTick;
 
 		private DateTime _lastResize = DateTime.UtcNow;
@@ -44,7 +43,7 @@ namespace EventStore.Core.Caching {
 			TimeSpan monitoringInterval,
 			TimeSpan minResizeInterval,
 			long minResizeThreshold,
-			ICacheResizer cacheResizer) {
+			ICacheResizer rootCacheResizer) {
 
 			if (keepFreeMemPercent is < 0 or > 100)
 				throw new ArgumentException($"{nameof(keepFreeMemPercent)} must be between 0 to 100 inclusive.");
@@ -62,23 +61,11 @@ namespace EventStore.Core.Caching {
 			_keepFreeMem = Math.Max(_keepFreeMemBytes, _totalMem.ScaleByPercent(_keepFreeMemPercent));
 			_minResizeInterval = minResizeInterval;
 			_minResizeThreshold = minResizeThreshold;
+			_rootCacheResizer = rootCacheResizer;
 			_scheduleTick = TimerMessage.Schedule.Create(
 				monitoringInterval,
 				new PublishEnvelope(_bus),
 				new MonitoringMessage.DynamicCacheManagerTick());
-
-			_cacheResizer = cacheResizer;
-			_rootCacheResizer = cacheResizer.Unit == ResizerUnit.Entries
-				? cacheResizer
-				: new CompositeCacheResizer(
-					name: "availableMemory",
-					weight: 100,
-					cacheResizer,
-					new DynamicCacheResizer(
-						unit: ResizerUnit.Bytes,
-						minCapacity: 0,
-						weight: 100 - cacheResizer.Weight,
-						cache: new EmptyDynamicCache("Misc")));
 		}
 
 		private readonly struct AvailableMemoryInfo {
@@ -133,7 +120,7 @@ namespace EventStore.Core.Caching {
 			Thread.MemoryBarrier(); // just to ensure we're seeing latest values
 
 			var stats = new Dictionary<string, object>();
-			var cachesStats = _cacheResizer.GetStats(string.Empty);
+			var cachesStats = _rootCacheResizer.GetStats(string.Empty);
 
 			foreach(var cacheStat in cachesStats) {
 				var statNamePrefix = $"es-{cacheStat.Key}-";

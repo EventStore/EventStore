@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Caching {
 				TimeSpan.MaxValue,
 				TimeSpan.MaxValue,
 				0,
-				new StaticCacheResizer(ResizerUnit.Bytes, 0, new EmptyDynamicCache()));
+				new StaticCacheResizer(ResizerUnit.Bytes, 0, EmptyDynamicCache.Instance));
 
 			sut.Handle(new MonitoringMessage.DynamicCacheManagerTick());
 			await TickPublished().WithTimeout(TimeSpan.FromSeconds(10));

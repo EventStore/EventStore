@@ -1,10 +1,9 @@
-﻿namespace EventStore.Core.Caching {
-	public class EmptyDynamicCache : IDynamicCache {
-		public EmptyDynamicCache(string name = nameof(EmptyDynamicCache)) {
-			Name = name;
-		}
+﻿using EventStore.Core.Caching;
 
-		public string Name { get; }
+namespace EventStore.Core.Tests.Caching {
+	public class EmptyDynamicCache : IDynamicCache {
+		public static EmptyDynamicCache Instance { get; } = new();
+		public string Name => nameof(EmptyDynamicCache);
 		public long Capacity { get; private set; }
 
 		public void SetCapacity(long capacity) {

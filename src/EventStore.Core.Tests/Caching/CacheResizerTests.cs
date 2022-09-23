@@ -7,42 +7,42 @@ namespace EventStore.Core.Tests.Caching {
 	public class CacheResizerTests {
 		[Test]
 		public void dynamic_resizer_loopback() {
-			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 10, 12, new EmptyDynamicCache());
+			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 10, 12, EmptyDynamicCache.Instance);
 			Assert.AreEqual(12, cacheResizer.Weight);
 		}
 
 		[Test]
 		public void static_resizer_loopback() {
-			var cacheResizer = new StaticCacheResizer(ResizerUnit.Bytes, 10, new EmptyDynamicCache());
+			var cacheResizer = new StaticCacheResizer(ResizerUnit.Bytes, 10, EmptyDynamicCache.Instance);
 			Assert.AreEqual(0, cacheResizer.Weight);
 		}
 
 		[Test]
 		public void dynamic_resizer_with_zero_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-					new DynamicCacheResizer(ResizerUnit.Bytes, 0, 0, new EmptyDynamicCache()));
+					new DynamicCacheResizer(ResizerUnit.Bytes, 0, 0, EmptyDynamicCache.Instance));
 
 		[Test]
 		public void dynamic_resizer_with_negative_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new DynamicCacheResizer(ResizerUnit.Bytes, 0, -1, new EmptyDynamicCache()));
+				new DynamicCacheResizer(ResizerUnit.Bytes, 0, -1, EmptyDynamicCache.Instance));
 
 		[Test]
 		public void dynamic_resizer_with_negative_min_capacity_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new DynamicCacheResizer(ResizerUnit.Bytes, -1, 10, new EmptyDynamicCache()));
+				new DynamicCacheResizer(ResizerUnit.Bytes, -1, 10, EmptyDynamicCache.Instance));
 
 		[Test]
 		public void static_resizer_with_negative_capacity_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new StaticCacheResizer(ResizerUnit.Bytes, -1, new EmptyDynamicCache()));
+				new StaticCacheResizer(ResizerUnit.Bytes, -1, EmptyDynamicCache.Instance));
 
 		[Test]
 		public void composite_resizer_with_mixed_units_throws() =>
 			Assert.Throws<ArgumentException>(() =>
 				new CompositeCacheResizer("root", 100,
-					new StaticCacheResizer(ResizerUnit.Bytes, 10, new EmptyDynamicCache()),
-					new StaticCacheResizer(ResizerUnit.Entries, 10, new EmptyDynamicCache())));
+					new StaticCacheResizer(ResizerUnit.Bytes, 10, EmptyDynamicCache.Instance),
+					new StaticCacheResizer(ResizerUnit.Entries, 10, EmptyDynamicCache.Instance)));
 
 		[Test]
 		public void static_calculates_capacity_correctly() {
