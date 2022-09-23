@@ -1579,19 +1579,22 @@ namespace EventStore.Core {
 				}, "bytes");
 
 
-			const long minCapacity = 50_000_000; // 50 MB
+			const long minCapacity = 100_000_000; // 100 MB
 
 			// beyond a certain point the added heap size costs more in GC than the extra cache is worth
 			// higher values than this can still be set manually
-			var staticMaxCapacity = 8_000_000_000; // 8GB
-			var dynamicMaxCapacity = 0.2 * totalMem;
-			var maxCapacity = staticMaxCapacity;
+			var staticMaxCapacity = 16_000_000_000; // 16GB
+			var dynamicMaxCapacity = (long)(0.4 * totalMem);
+			var maxCapacity = Math.Min(staticMaxCapacity, dynamicMaxCapacity);
+
+			var minCapacityPerCache = minCapacity / 2;
+			var maxCapacityPerCache = maxCapacity / 2;
 
 			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
 				weight: 100,
-				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, maxCapacity, 60, streamLastEventNumberCache),
-				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, maxCapacity, 40, streamMetadataCache));
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacityPerCache, maxCapacityPerCache, 60, streamLastEventNumberCache),
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacityPerCache, maxCapacityPerCache, 40, streamMetadataCache));
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {
