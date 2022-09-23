@@ -7,14 +7,17 @@ using Serilog;
 namespace EventStore.Core.Caching {
 	public class DynamicCacheResizer : CacheResizer, ICacheResizer {
 		private readonly long _minCapacity;
+		private readonly long _maxCapacity;
 
-		public DynamicCacheResizer(ResizerUnit unit, long minCapacity, int weight, IDynamicCache cache)
+		public DynamicCacheResizer(ResizerUnit unit, long minCapacity, long maxCapacity, int weight, IDynamicCache cache)
 			: base(unit, cache) {
 			Ensure.Positive(weight, nameof(weight));
 			Ensure.Nonnegative(minCapacity, nameof(minCapacity));
+			Ensure.Nonnegative(maxCapacity, nameof(maxCapacity));
 
 			Weight = weight;
 			_minCapacity = minCapacity;
+			_maxCapacity = maxCapacity;
 		}
 
 		public int Weight { get; }
@@ -25,7 +28,10 @@ namespace EventStore.Core.Caching {
 			var sw = Stopwatch.StartNew();
 
 			var oldCapacity = Cache.Capacity;
-			var capacity = Math.Max(unreservedCapacity.ScaleByWeight(Weight, totalWeight), _minCapacity);
+			var capacity = Math.Clamp(
+				value: unreservedCapacity.ScaleByWeight(Weight, totalWeight),
+				min: _minCapacity,
+				max: _maxCapacity);
 			Cache.SetCapacity(capacity);
 
 			sw.Stop();

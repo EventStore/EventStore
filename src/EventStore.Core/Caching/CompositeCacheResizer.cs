@@ -76,6 +76,8 @@ namespace EventStore.Core.Caching {
 			public long Capacity { get; private set; }
 
 			public void SetCapacity(long value) {
+				// todo: could consider taking into account capacity not used by children because
+				// they took their maximum values
 				Capacity = value;
 				var unreservedCapacity = Math.Max(Capacity - _reservedCapacity, 0);
 				foreach (var child in _children) {

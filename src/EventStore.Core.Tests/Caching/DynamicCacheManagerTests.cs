@@ -76,13 +76,13 @@ namespace EventStore.Core.Tests.Caching {
 		[TestCase(0, 20, false)]
 		public async Task caches_resized_depending_on_whether_total_free_memory_is_above_or_below_keep_free_mem(int percent, long bytes, bool aboveKeepFreeMem) {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, new AdHocDynamicCache(
+			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 100_000, 60, new AdHocDynamicCache(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem),
 				() => 1, // included in total free mem
 				() => { }));
 
-			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, new AdHocDynamicCache(
+			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 100_000, 40, new AdHocDynamicCache(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem),
 				() => 1, // included in total free mem
@@ -125,10 +125,10 @@ namespace EventStore.Core.Tests.Caching {
 		[TestCase(false)]
 		public async Task caches_resized_depending_on_whether_min_resize_interval_was_exceeded(bool minResizeIntervalExceeded) {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, new AdHocDynamicCache(
+			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 100_000, 60, new AdHocDynamicCache(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
-			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, new AdHocDynamicCache(
+			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 100_000, 40, new AdHocDynamicCache(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
@@ -166,11 +166,11 @@ namespace EventStore.Core.Tests.Caching {
 		[TestCase(0, 20, false)]
 		public async Task caches_resized_depending_on_whether_min_resize_threshold_was_exceeded(int percent, long bytes, bool minResizeThresholdExceeded) {
 			long cache1Mem = -1, cache2Mem = -1;
-			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 60, new AdHocDynamicCache(
+			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 100_000, 60, new AdHocDynamicCache(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem)));
 
-			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 40, new AdHocDynamicCache(
+			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 100_000, 40, new AdHocDynamicCache(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem)));
 
@@ -215,7 +215,7 @@ namespace EventStore.Core.Tests.Caching {
 				() => 0,
 				() => tcs.TrySetResult(true));
 
-			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 0, 100, cache);
+			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 0, 100_000, 100, cache);
 
 			var sut = GenSut(
 				() => 100,
@@ -244,7 +244,7 @@ namespace EventStore.Core.Tests.Caching {
 				() => 0,
 				x => Interlocked.Exchange(ref cacheCapacity, x));
 
-			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 0, 100, cache);
+			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 0, 100_000, 100, cache);
 
 			var freeMemReq = 0;
 			var freeMem = new [] { 100 /* init */, 99 /* first calculation */, 98 /* second calculation */};
@@ -272,7 +272,7 @@ namespace EventStore.Core.Tests.Caching {
 
 		[Test]
 		public void correct_stats_are_produced() {
-			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 10, 100, new AdHocDynamicCache(
+			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 10, 100_000, 100, new AdHocDynamicCache(
 				() => 12,
 				mem => { },
 				name: "test1"));

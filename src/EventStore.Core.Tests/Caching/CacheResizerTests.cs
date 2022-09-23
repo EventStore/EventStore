@@ -7,7 +7,7 @@ namespace EventStore.Core.Tests.Caching {
 	public class CacheResizerTests {
 		[Test]
 		public void dynamic_resizer_loopback() {
-			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 10, 12, EmptyDynamicCache.Instance);
+			var cacheResizer = new DynamicCacheResizer(ResizerUnit.Bytes, 10, 100, 12, EmptyDynamicCache.Instance);
 			Assert.AreEqual(12, cacheResizer.Weight);
 		}
 
@@ -20,17 +20,22 @@ namespace EventStore.Core.Tests.Caching {
 		[Test]
 		public void dynamic_resizer_with_zero_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-					new DynamicCacheResizer(ResizerUnit.Bytes, 0, 0, EmptyDynamicCache.Instance));
+					new DynamicCacheResizer(ResizerUnit.Bytes, 0, 0, 0, EmptyDynamicCache.Instance));
 
 		[Test]
 		public void dynamic_resizer_with_negative_weight_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new DynamicCacheResizer(ResizerUnit.Bytes, 0, -1, EmptyDynamicCache.Instance));
+				new DynamicCacheResizer(ResizerUnit.Bytes, 0, 0, -1, EmptyDynamicCache.Instance));
 
 		[Test]
 		public void dynamic_resizer_with_negative_min_capacity_throws() =>
 			Assert.Throws<ArgumentOutOfRangeException>(() =>
-				new DynamicCacheResizer(ResizerUnit.Bytes, -1, 10, EmptyDynamicCache.Instance));
+				new DynamicCacheResizer(ResizerUnit.Bytes, -1, 0, 10, EmptyDynamicCache.Instance));
+
+		[Test]
+		public void dynamic_resizer_with_negative_max_capacity_throws() =>
+			Assert.Throws<ArgumentOutOfRangeException>(() =>
+				new DynamicCacheResizer(ResizerUnit.Bytes, 0, -1, 10, EmptyDynamicCache.Instance));
 
 		[Test]
 		public void static_resizer_with_negative_capacity_throws() =>
@@ -61,7 +66,7 @@ namespace EventStore.Core.Tests.Caching {
 		public void dynamic_calculates_capacity_correctly() {
 			var cache = new EmptyDynamicCache();
 
-			var sut = new DynamicCacheResizer(ResizerUnit.Bytes, 1000, 50, cache);
+			var sut = new DynamicCacheResizer(ResizerUnit.Bytes, 1000, 100_000, 50, cache);
 
 			sut.CalcCapacityTopLevel(4000);
 			Assert.AreEqual(4000, cache.Capacity);
@@ -94,8 +99,8 @@ namespace EventStore.Core.Tests.Caching {
 			var cacheB = new EmptyDynamicCache();
 
 			var sut = new CompositeCacheResizer("root", 100,
-				new DynamicCacheResizer(ResizerUnit.Bytes, 3000, 40, cacheA),
-				new DynamicCacheResizer(ResizerUnit.Bytes, 1000, 60, cacheB));
+				new DynamicCacheResizer(ResizerUnit.Bytes, 3000, 100_000, 40, cacheA),
+				new DynamicCacheResizer(ResizerUnit.Bytes, 1000, 100_000, 60, cacheB));
 
 			sut.CalcCapacityTopLevel(10_000);
 			Assert.AreEqual(4000, cacheA.Capacity);
@@ -119,7 +124,7 @@ namespace EventStore.Core.Tests.Caching {
 
 			var sut = new CompositeCacheResizer("root", 100,
 				new StaticCacheResizer(ResizerUnit.Bytes, 1000, cacheA),
-				new DynamicCacheResizer(ResizerUnit.Bytes, 1000, 60, cacheB));
+				new DynamicCacheResizer(ResizerUnit.Bytes, 1000, 100_000, 60, cacheB));
 
 			sut.CalcCapacityTopLevel(10_000);
 			Assert.AreEqual(1000, cacheA.Capacity);
@@ -157,11 +162,13 @@ namespace EventStore.Core.Tests.Caching {
 					new DynamicCacheResizer(
 						unit: ResizerUnit.Bytes,
 						minCapacity: 1000,
+						maxCapacity: 100_000,
 						weight: 60,
 						cache: cacheC),
 					new DynamicCacheResizer(
 						unit: ResizerUnit.Bytes,
 						minCapacity: 1000,
+						maxCapacity: 100_000,
 						weight: 40,
 						cache: cacheD)));
 

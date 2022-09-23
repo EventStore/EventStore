@@ -650,6 +650,7 @@ namespace EventStore.Core {
 			ICacheResizer streamInfoCacheResizer;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache;
 			ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache;
+			var totalMem = (long)statsHelper.GetTotalMem();
 
 			if (options.Cluster.StreamInfoCacheCapacity > 0)
 				CreateStaticStreamInfoCache(
@@ -660,6 +661,7 @@ namespace EventStore.Core {
 			else
 				CreateDynamicStreamInfoCache(
 					logFormat.StreamIdSizer,
+					totalMem,
 					out streamLastEventNumberCache,
 					out streamMetadataCache,
 					out streamInfoCacheResizer);
@@ -669,7 +671,7 @@ namespace EventStore.Core {
 				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
 				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
 				getGcCollectionCount: () => GC.CollectionCount(GC.MaxGeneration),
-				totalMem: (long) statsHelper.GetTotalMem(),
+				totalMem: totalMem,
 				keepFreeMemPercent: 25,
 				keepFreeMemBytes: 6L * 1024 * 1024 * 1024, // 6 GiB
 				monitoringInterval: TimeSpan.FromSeconds(15),
@@ -1536,6 +1538,7 @@ namespace EventStore.Core {
 
 		private static void CreateDynamicStreamInfoCache(
 			ISizer<TStreamId> sizer,
+			long totalMem,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
 			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
 			out ICacheResizer streamInfoCacheResizer) {
@@ -1575,13 +1578,20 @@ namespace EventStore.Core {
 						(valueFreed ? metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>() : 0);
 				}, "bytes");
 
-			const long minCapacity = 100_000_000; // 100 MB
+
+			const long minCapacity = 50_000_000; // 50 MB
+
+			// beyond a certain point the added heap size costs more in GC than the extra cache is worth
+			// higher values than this can still be set manually
+			var staticMaxCapacity = 8_000_000_000; // 8GB
+			var dynamicMaxCapacity = 0.2 * totalMem;
+			var maxCapacity = staticMaxCapacity;
 
 			streamInfoCacheResizer = new CompositeCacheResizer(
 				name: "StreamInfo",
 				weight: 100,
-				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, 60, streamLastEventNumberCache),
-				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, 40, streamMetadataCache));
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, maxCapacity, 60, streamLastEventNumberCache),
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacity, maxCapacity, 40, streamMetadataCache));
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {
