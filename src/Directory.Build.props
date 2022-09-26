@@ -30,4 +30,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 	</ItemGroup>
+	<ItemGroup>
+		<RuntimeHostConfigurationOption Include="System.IO.UseNet5CompatFileStream" Value="true" />
+	</ItemGroup>
 </Project>

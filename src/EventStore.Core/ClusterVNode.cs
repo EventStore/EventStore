@@ -367,6 +367,8 @@ namespace EventStore.Core {
 			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
 				httpEndPoint, options.Cluster.ReadOnlyReplica);
 
+			EnsureNet5CompatFileStream();
+
 			Db = new TFChunkDb(CreateDbConfig(
 				out var statsHelper,
 				out var readerThreadsCount,
@@ -1780,6 +1782,19 @@ namespace EventStore.Core {
 			}
 
 			return !error;
+		}
+
+		private static void EnsureNet5CompatFileStream() {
+			var assembly = System.Reflection.Assembly.GetAssembly(typeof(FileStream));
+			var type = assembly?.GetType("System.IO.Strategies.FileStreamHelpers");
+			var prop = type?.GetProperty("UseNet5CompatStrategy",
+				System.Reflection.BindingFlags.NonPublic |
+				System.Reflection.BindingFlags.Static);
+			var value = prop?.GetValue(null);
+			if (value is not bool useNet5)
+				throw new Exception("Could not establish whether UseNet5CompatFileStream is set.");
+			if (!useNet5)
+				throw new Exception("UseNet5CompatFileStream is disabled but must be enabled.");
 		}
 
 		public override string ToString() =>
