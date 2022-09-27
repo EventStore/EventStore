@@ -26,25 +26,19 @@ namespace EventStore.Core.Authorization {
 		public ValueTask<bool> CheckAccessAsync(ClaimsPrincipal cp, Operation operation, CancellationToken ct) {
 			if (cp == null) cp = SystemAccounts.Anonymous;
 
-			try {
-				var startedAt = sw.Elapsed;
-				var evaluationTask = _policyEvaluator.EvaluateAsync(cp, operation, ct);
-				if (evaluationTask.IsCompleted)
-					return new ValueTask<bool>(LogAndCheck(startedAt, cp, evaluationTask.Result));
+			var startedAt = sw.Elapsed;
+			var evaluationTask = _policyEvaluator.EvaluateAsync(cp, operation, ct);
+			if (evaluationTask.IsCompletedSuccessfully)
+				return new ValueTask<bool>(LogAndCheck(startedAt, cp, evaluationTask.Result));
 
-				return CheckAccessAsync(startedAt, cp, evaluationTask);
-			} catch (Exception ex) {
-				_logger.Error(ex, "Error performing permission check for {identity}",
-					cp.FindFirst(ClaimTypes.Name)?.Value ?? "unknown");
-				return new ValueTask<bool>(false);
-			}
+			return CheckAccessAsync(startedAt, cp, evaluationTask);
 		}
 
 		private async ValueTask<bool> CheckAccessAsync(TimeSpan startedAt, ClaimsPrincipal cp,
 			ValueTask<EvaluationResult> evaluationTask) {
 			try {
 				return LogAndCheck(startedAt, cp, await evaluationTask.ConfigureAwait(false));
-			} catch (Exception ex) {
+			} catch (Exception ex) when (ex is not OperationCanceledException) {
 				_logger.Error(ex, "Error performing permission check for {identity}",
 					cp.FindFirst(ClaimTypes.Name)?.Value ?? "unknown");
 				return false;
