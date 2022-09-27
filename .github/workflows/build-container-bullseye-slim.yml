@@ -19,7 +19,7 @@ on:
 
 jobs:
   build-container:
-    uses: EventStore/EventStore/.github/workflows/build-container-reusable.yml@1b5ad0078ebf1db5be0ea5253df4584f740099cb
+    uses: EventStore/EventStore/.github/workflows/build-container-reusable.yml@d274d7d528800d72cfac3d496dc747fba5208ff3
     with:
       container-runtime: bullseye-slim
 
