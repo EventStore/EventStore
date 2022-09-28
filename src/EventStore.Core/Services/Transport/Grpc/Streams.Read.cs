@@ -38,7 +38,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 
-			await using var enumerator =
+			var enumerator =
 				(streamOptionsCase, countOptionsCase, readDirection, filterOptionsCase) switch {
 					(StreamOptionOneofCase.Stream,
 						CountOptionOneofCase.Count,
@@ -190,7 +190,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						filterOptionsCase))
 				};
 
-			await using (context.CancellationToken.Register(() => enumerator.DisposeAsync())) {
+			await using (enumerator.ConfigureAwait(false))
+			await using (context.CancellationToken.Register(() => enumerator.DisposeAsync()).ConfigureAwait(false)) {
 				while (await enumerator.MoveNextAsync().ConfigureAwait(false)) {
 					await responseStream.WriteAsync(enumerator.Current).ConfigureAwait(false);
 				}

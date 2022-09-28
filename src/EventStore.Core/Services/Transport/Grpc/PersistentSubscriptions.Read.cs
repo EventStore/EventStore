@@ -58,8 +58,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			var correlationId = Guid.NewGuid();
 			var uuidOptionsCase = options.UuidOption.ContentCase;
 
-			await using var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
+			var enumerator = new PersistentStreamSubscriptionEnumerator(correlationId, connectionName,
 				_publisher, streamId, options.GroupName, options.BufferSize, user, context.CancellationToken);
+			await using var _ = enumerator.ConfigureAwait(false);
 
 			var subscriptionId = await enumerator.Started.ConfigureAwait(false);
 

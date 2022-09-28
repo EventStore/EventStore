@@ -1520,7 +1520,7 @@ namespace EventStore.Core {
 
 			var cts = new CancellationTokenSource();
 
-			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken));
+			await using var _ = cts.Token.Register(() => _shutdownSource.TrySetCanceled(cancellationToken)).ConfigureAwait(false);
 
 			cts.CancelAfter(timeout.Value);
 			await _shutdownSource.Task.ConfigureAwait(false);

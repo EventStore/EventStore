@@ -20,7 +20,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		}
 
 		private PerformanceCounter CreatePerfCounter(string category, string counter, string instance = null) {
-			if(!Runtime.IsWindows){
+			if(!OperatingSystem.IsWindows()){
 				return null;
 			}
 
@@ -40,6 +40,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		///Total CPU usage in percentage
 		///</summary>
 		public float GetTotalCpuUsage() {
+			Debug.Assert(OperatingSystem.IsWindows());
 			return _totalCpuCounter?.NextValue() ?? InvalidCounterResult;
 		}
 
@@ -47,6 +48,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		///Free memory in bytes
 		///</summary>
 		public long GetFreeMemory() {
+			Debug.Assert(OperatingSystem.IsWindows());
 			return _totalMemCounter?.NextSample().RawValue ?? InvalidCounterResult;
 		}
 

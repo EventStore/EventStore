@@ -104,7 +104,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			private async Task Send(ChannelReader<BatchAppendResp> reader, CancellationToken cancellationToken) {
 				var isClosing = false;
-				await foreach (var response in reader.ReadAllAsync(cancellationToken)) {
+				await foreach (var response in reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
 					if (!response.IsClosing) {
 						await _responseStream.WriteAsync(response).ConfigureAwait(false);
 						if (Interlocked.Decrement(ref _pending) >= 0 && isClosing) {
@@ -121,7 +121,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				var pendingWrites = new ConcurrentDictionary<Guid, ClientWriteRequest>();
 
 				try {
-					await foreach (var request in _requestStream.ReadAllAsync(cancellationToken)) {
+					await foreach (var request in _requestStream.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
 						try {
 							var correlationId = Uuid.FromDto(request.CorrelationId).ToGuid();
 
