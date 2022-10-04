@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Support for custom log templates [EventStore#3577](https://github.com/EventStore/EventStore/pull/3577)
 - Support for logical chunk numbers up to 400k [EventStore#3589](https://github.com/EventStore/EventStore/pull/3589)
 - Logging when server receives gRPC calls that are retries [EventStore#3588](https://github.com/EventStore/EventStore/pull/3588)
+- CI: run tests in target runtime container [EventStore#3597](https://github.com/EventStore/EventStore/pull/3597)
 
 ### Fixed
 - Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
