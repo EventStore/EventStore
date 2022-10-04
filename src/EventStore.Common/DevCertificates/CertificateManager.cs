@@ -677,11 +677,11 @@ namespace EventStore.Common.DevCertificates {
 		internal static string GetDescription(X509Certificate2 c) =>
 			$"{c.Thumbprint} - {c.Subject} - Valid from {c.NotBefore:u} to {c.NotAfter:u} - IsEventStoreDevelopmentCertificate: {IsHttpsDevelopmentCertificate(c).ToString().ToLowerInvariant()} - IsExportable: {Instance.IsExportable(c).ToString().ToLowerInvariant()}";
 
-		[EventSource(Name = "Dotnet-dev-certs")]
+		[EventSource(Name = "eventstore-dev-certs")]
 		public sealed class CertificateManagerEventSource : EventSource {
 			[Event(1, Level = EventLevel.Verbose, Message = "Listing certificates from {0}\\{1}")]
 			[UnconditionalSuppressMessage("Trimming", "IL2026",
-				Justification = "Parameters passed to WriteEvent are all primative values.")]
+				Justification = "Parameters passed to WriteEvent are all primitive values.")]
 			public void ListCertificatesStart(StoreLocation location, StoreName storeName) =>
 				WriteEvent(1, location, storeName);
 
@@ -729,7 +729,7 @@ namespace EventStore.Common.DevCertificates {
 
 			[Event(20, Level = EventLevel.Verbose, Message = "Saving certificate '{0}' to store {2}\\{1}.")]
 			[UnconditionalSuppressMessage("Trimming", "IL2026",
-				Justification = "Parameters passed to WriteEvent are all primative values.")]
+				Justification = "Parameters passed to WriteEvent are all primitive values.")]
 			public void SaveCertificateInStoreStart(string certificate, StoreName name, StoreLocation location) =>
 				WriteEvent(20, certificate, name, location);
 

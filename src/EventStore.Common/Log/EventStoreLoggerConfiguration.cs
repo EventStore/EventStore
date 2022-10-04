@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -28,6 +29,8 @@ namespace EventStore.Common.Log {
 
 		private static readonly Func<LogEvent, bool> RegularStats = Matching.FromSource("REGULAR-STATS-LOGGER");
 
+		private static readonly SerilogEventListener EventListener;
+
 		private static int Initialized;
 		private static LoggingLevelSwitch _defaultLogLevelSwitch;
 		private static object _defaultLogLevelSwitchLock = new object();
@@ -44,6 +47,7 @@ namespace EventStore.Common.Log {
 				else
 					Serilog.Log.Fatal("Global Unhandled Exception object: {e}.", e.ExceptionObject);
 			};
+			EventListener = new SerilogEventListener();
 		}
 
 		public static void Initialize(string logsDirectory, string componentName, LogConsoleFormat logConsoleFormat,
