@@ -3,9 +3,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Serilog;
 
 namespace EventStore.Core.Tests {
 	public class SpecificationWithDirectoryPerTestFixture {
+		private static readonly ILogger Log = Serilog.Log.ForContext<SpecificationWithDirectoryPerTestFixture>();
 		protected internal string PathName;
 
 		protected string GetTempFilePath() {
@@ -24,6 +26,8 @@ namespace EventStore.Core.Tests {
 			PathName = Path.Combine(Path.GetTempPath(), string.Format("ES-{0}-{1}", Guid.NewGuid(), typeName));
 			Directory.CreateDirectory(PathName);
 
+			Log.Debug("SpecificationWithDirectoryPerTestFixture SetUp done: {path}", PathName);
+
 			return Task.CompletedTask;
 		}
 
@@ -31,6 +35,8 @@ namespace EventStore.Core.Tests {
 		public virtual async Task TestFixtureTearDown() {
 			// kill whole tree
 			await DirectoryDeleter.TryForceDeleteDirectoryAsync(PathName, retries: 10);
+
+			Log.Debug("SpecificationWithDirectoryPerTestFixture TearDown done: {path}", PathName);
 		}
 	}
 }

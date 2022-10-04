@@ -114,13 +114,13 @@ namespace EventStore.Core.Tests.Integration {
 			// wait for cluster to be fully operational, tests depend on leader and followers
 			AssertEx.IsOrBecomesTrue(() => _nodes.Any(x => x.NodeState == Data.VNodeState.Leader),
 				timeout: TimeSpan.FromSeconds(30),
-				msg: "Waiting for leader timed out!");
+				genMsg: () => $"Waiting for leader timed out! States={string.Join(", ", _nodes.Select(n => n.NodeState))}");
 
 			//flaky: most tests only need 1 follower, waiting for 2 causes timeouts 
 			AssertEx.IsOrBecomesTrue(() =>
 					_nodes.Any(x => x.NodeState is VNodeState.Follower or VNodeState.ReadOnlyReplica),
 				timeout: TimeSpan.FromSeconds(90),
-				msg: $"Waiting for followers timed out! States={string.Join(", ", _nodes.Select(n => n.NodeState))}");
+				genMsg: () => $"Waiting for followers timed out! States={string.Join(", ", _nodes.Select(n => n.NodeState))}");
 
 			_conn = CreateConnection();
 			await _conn.ConnectAsync();

@@ -79,6 +79,18 @@ namespace EventStore.Core.Tests {
 			Assert.Fail($"{msg} in {memberName} {sourceFilePath}:{sourceLineNumber}");
 		}
 
+		public static void IsOrBecomesTrue(Func<bool> func, TimeSpan? timeout,
+			Func<string> genMsg, bool yieldThread = false,
+			[CallerMemberName] string memberName = "",
+			[CallerFilePath] string sourceFilePath = "",
+			[CallerLineNumber] int sourceLineNumber = 0) {
+
+			if (IsOrBecomesTrueImpl(func, timeout, yieldThread))
+				return;
+
+			Assert.Fail($"{genMsg()} in {memberName} {sourceFilePath}:{sourceLineNumber}");
+		}
+
 		// shared between xunit and nunit
 		public static bool IsOrBecomesTrueImpl(
 			Func<bool> func,

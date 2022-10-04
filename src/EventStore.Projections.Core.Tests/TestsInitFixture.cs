@@ -8,7 +8,7 @@ namespace EventStore.Projections.Core.Tests {
 
 		[OneTimeSetUp]
 		public void SetUp() {
-			_initFixture.SetUp();
+			_initFixture.SetUp(Serilog.Events.LogEventLevel.Fatal);
 		}
 
 		[OneTimeTearDown]

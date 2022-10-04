@@ -55,7 +55,7 @@ namespace EventStore.Core.Tests.Helpers {
 		public Task Started => _started.Task;
 		public Task AdminUserCreated => _adminUserCreated.Task;
 
-		public VNodeState NodeState = VNodeState.Unknown;
+		public VNodeState NodeState { get; private set; }
 		private readonly IWebHost _host;
 
 		private readonly TestServer _kestrelTestServer;
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			_isReadOnlyReplica = readOnlyReplica;
 
-			Log.Information(
+			Log.Verbose(
 				"\n{0,-25} {1} ({2}/{3}, {4})\n" + "{5,-25} {6} ({7})\n" + "{8,-25} {9} ({10}-bit)\n"
 				+ "{11,-25} {12}\n" + "{13,-25} {14}\n" + "{15,-25} {16}\n" + "{17,-25} {18}\n\n",
 				"ES VERSION:", VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp,
@@ -215,6 +215,8 @@ namespace EventStore.Core.Tests.Helpers {
 
 			Node.MainBus.Subscribe(
 				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
+					Log.Debug("MiniClusterNode {path} index {index} at port {port} changed state from {oldState} to {state}",
+						_dbPath, DebugIndex, HttpEndPoint.Port, NodeState, m.State);
 					NodeState = m.State;
 				}));
 			if (!_isReadOnlyReplica) {

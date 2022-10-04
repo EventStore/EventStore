@@ -24,6 +24,7 @@ using ILogger = Serilog.ILogger;
 using EventStore.Core.LogAbstraction;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
@@ -55,6 +56,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 		public Task Started => _started.Task;
 		public Task AdminUserCreated => _adminUserCreated.Task;
+		public VNodeState NodeState { get; private set; }
 
 		public MiniNode(string pathname,
 			int? tcpPort = null, int? httpPort = null,
@@ -136,7 +138,7 @@ namespace EventStore.Core.Tests.Helpers {
 				? options.RunInMemory()
 				: options.RunOnDisk(DbPath);
 
-			Log.Information("\n{0,-25} {1} ({2}/{3}, {4})\n"
+			Log.Verbose("\n{0,-25} {1} ({2}/{3}, {4})\n"
 					 + "{5,-25} {6} ({7})\n"
 					 + "{8,-25} {9} ({10}-bit)\n"
 					 + "{11,-25} {12}\n"
@@ -208,6 +210,13 @@ namespace EventStore.Core.Tests.Helpers {
 			Node.MainBus.Subscribe(
 				new AdHocHandler<SystemMessage.BecomeLeader>(m => {
 					_started.TrySetResult(true);
+				}));
+
+			Node.MainBus.Subscribe(
+				new AdHocHandler<SystemMessage.StateChangeMessage>(m => {
+					Log.Debug("MiniNode {path} at port {port} changed state from {oldState} to {state}",
+						DbPath, HttpEndPoint.Port, NodeState, m.State);
+					NodeState = m.State;
 				}));
 
 			AdHocHandler<StorageMessage.EventCommitted> waitForAdminUser = null;
