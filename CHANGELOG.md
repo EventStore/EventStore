@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
 - gRPC calls can no longer stall if received during server initialization. [EventStore#3584](https://github.com/EventStore/EventStore/pull/3584)
 - Incorrect error message when deleting a stream using gRPC. Fixes issue #3547 [EventStore#3583](https://github.com/EventStore/EventStore/pull/3583)
+- Node not going into ready state due to synchronization bug in UserManagementService [EventStore#3599](https://github.com/EventStore/EventStore/pull/3599)
 
 ### Changed
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
