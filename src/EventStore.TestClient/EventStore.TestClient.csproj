@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net5.0</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<OutputType>Exe</OutputType>
 		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
@@ -12,15 +12,15 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="EventStore.Client" Version="21.2.0" />
-		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="21.2.0" />
+		<PackageReference Include="EventStore.Client.Grpc.Streams" Version="22.0.0" />
 		<PackageReference Include="EventStore.Plugins" Version="21.2.0" />
-		<PackageReference Include="Google.Protobuf" Version="3.18.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.41.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.41.0">
+		<PackageReference Include="Google.Protobuf" Version="3.21.6" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.49.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.49.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
+		<PackageReference Include="Serilog.Extensions.Logging" Version="3.1.0" />
 		<PackageReference Include="System.CommandLine.DragonFruit" Version="0.3.0-alpha.20574.7" />
 	</ItemGroup>
 	<ItemGroup>

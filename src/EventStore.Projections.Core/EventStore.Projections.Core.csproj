@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Platforms>x64;ARM64</Platforms>
   </PropertyGroup>
@@ -26,11 +26,11 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0">
+		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Grpc.Tools" Version="2.41.0">
+		<PackageReference Include="Grpc.Tools" Version="2.49.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>

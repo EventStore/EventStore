@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests {
 			using var process = new Process {
 				StartInfo = new ProcessStartInfo {
 					FileName = "dotnet",
-					Arguments = $"publish --configuration {BuildConfiguration} --framework=net5.0 --output {outputFolder.FullName}",
+					Arguments = $"publish --configuration {BuildConfiguration} --framework=net6.0 --output {outputFolder.FullName}",
 					WorkingDirectory = PluginSourceDirectory,
 					UseShellExecute = false,
 					RedirectStandardError = true,

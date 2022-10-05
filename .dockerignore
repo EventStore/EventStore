@@ -8,6 +8,6 @@ testresults/
 **/.dockerignore*
 **/*.user
 **/.idea/
-.vs/
+**/*.vs/
 .vscode/
 certs/

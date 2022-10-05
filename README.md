@@ -16,7 +16,7 @@ Information on support and commercial tools such as LDAP authentication can be f
 
 ![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-alpine.yml/badge.svg)
 
-![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-buster-slim.yml/badge.svg)
+![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-bullseye-slim.yml/badge.svg)
 
 ![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-focal.yml/badge.svg)
 
@@ -39,7 +39,7 @@ EventStoreDB is written in a mixture of C#, C++ and JavaScript. It can run on Wi
 
 ### Windows / Linux
 **Prerequisites**
-- [.NET Core SDK 5.0] (https://dotnet.microsoft.com/download/dotnet/5.0)
+- [.NET Core SDK 6.0] (https://dotnet.microsoft.com/download/dotnet/6.0)
 
 ### Build EventStoreDB
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
@@ -50,7 +50,7 @@ The build scripts: `build.sh` and `build.ps1` are also available for Linux and W
 
 To start a single node, you can then run:
 ```
-dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net5.0/EventStore.ClusterNode.dll --insecure --db ./tmp/data --index ./tmp/index --log ./tmp/log -runprojections all --startstandardprojections --EnableAtomPubOverHttp
+dotnet ./src/EventStore.ClusterNode/bin/x64/Release/net6.0/EventStore.ClusterNode.dll --insecure --db ./tmp/data --index ./tmp/index --log ./tmp/log -runprojections all --startstandardprojections --EnableAtomPubOverHttp
 ```
 
 _Note: The build system has changed after version `5.0.5`, therefore the above instructions will not work for older releases._
@@ -67,7 +67,7 @@ dotnet test src/EventStore.sln
 You can also build a Docker image by running the command:
 
 ```
-docker build --tag eventstore/eventstore:{version}-{container-runtime} . \
+docker build --tag myeventstore . \
 --build-arg CONTAINER_RUNTIME={container-runtime}
 --build-arg RUNTIME={runtime}
 ```
@@ -75,22 +75,22 @@ docker build --tag eventstore/eventstore:{version}-{container-runtime} . \
 For instance:
 
 ```
-docker build --tag eventstore/eventstore:21.10.1-buster-slim . \
---build-arg CONTAINER_RUNTIME=buster-slim \
+docker build --tag myeventstore . \
+--build-arg CONTAINER_RUNTIME=bullseye-slim \
 --build-arg RUNTIME=linux-x64
 ```
 
 **_Note:_** Because of the [Docker issue](https://github.com/moby/buildkit/issues/1900), if you're building a Docker image on Windows, you may need to set the `DOCKER_BUILDKIT=0` environment variable. For instance, running in PowerShell:
 
 ```
-$env:DOCKER_BUILDKIT=0; docker build --tag eventstore/eventstore:21.10.1-buster-slim . `
---build-arg CONTAINER_RUNTIME=buster-slim `
+$env:DOCKER_BUILDKIT=0; docker build --tag myeventstore . `
+--build-arg CONTAINER_RUNTIME=bullseye-slim `
 --build-arg RUNTIME=linux-x64
 ```
 
 Currently we support following configurations:
-1. Buster slim:
-  - `CONTAINER_RUNTIME=buster-slim`
+1. Bullseye slim:
+  - `CONTAINER_RUNTIME=bullseye-slim`
   - `RUNTIME=linux-x64`
 2. Focal:
   - `CONTAINER_RUNTIME=focal`
@@ -102,7 +102,7 @@ Currently we support following configurations:
 You can verify the built image by running:
 
 ```
-docker run --rm eventstore/eventstore:21.10.1-buster-slim --insecure --what-if
+docker run --rm myeventstore --insecure --what-if
 ```
 
 

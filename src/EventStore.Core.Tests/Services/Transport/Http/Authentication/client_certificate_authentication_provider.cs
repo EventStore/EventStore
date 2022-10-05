@@ -51,7 +51,12 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 		public void SetUp() {
 			SetUpProvider();
 			_context = new DefaultHttpContext();
-			_context.Connection.ClientCertificate = new X509Certificate2();
+			using (var rsa = RSA.Create()) {
+				var certRequest = new CertificateRequest("CN=test", rsa, HashAlgorithmName.SHA256,
+					RSASignaturePadding.Pkcs1);
+				_context.Connection.ClientCertificate = certRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
+			}
+
 			_authenticateResult = _provider.Authenticate(_context, out _authenticateRequest);
 		}
 
