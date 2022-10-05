@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -188,7 +189,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		public void Handle(SystemMessage.BecomeLeader message) {
-			_numberOfStandardUsersToBeCreated = 2;
+			Interlocked.Exchange(ref _numberOfStandardUsersToBeCreated, 2);
 			if (!_skipInitializeStandardUsersCheck) {
 				BeginReadUserDetails(
 					"admin", completed => {
@@ -218,8 +219,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		}
 
 		private void NotifyInitialized() {
-			_numberOfStandardUsersToBeCreated -= 1;
-			if (_numberOfStandardUsersToBeCreated == 0) {
+			var remainingUsers = Interlocked.Decrement(ref _numberOfStandardUsersToBeCreated);
+			if (remainingUsers == 0) {
 				_tcs.TrySetResult(true);
 			}
 		}
