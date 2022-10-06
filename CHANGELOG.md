@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Support for logical chunk numbers up to 400k [EventStore#3589](https://github.com/EventStore/EventStore/pull/3589)
 - Logging when server receives gRPC calls that are retries [EventStore#3588](https://github.com/EventStore/EventStore/pull/3588)
 - CI: run tests in target runtime container [EventStore#3597](https://github.com/EventStore/EventStore/pull/3597)
+- support for .NET 6.0 [EventStore#3595](https://github.com/EventStore/EventStore/pull/3595)
 
 ### Fixed
 - Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
@@ -31,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
 - Deleting persistent subscriptions to $all over HTTP is not supported [EventStore#3593](https://github.com/EventStore/EventStore/pull/3593)
 - Don't catch and log `OperationCanceledException` in `PolicyAuthorizationProvider`. [EventStore#3594](https://github.com/EventStore/EventStore/pull/3594)
+- Extend unit test timings slightly for tests that sometimes timeout [EventStore#3596](https://github.com/EventStore/EventStore/pull/3596)
 
 ## [21.10.8] - 2022-09-16
 
