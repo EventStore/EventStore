@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Caching;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -46,13 +47,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameExistenceFilter streamExistenceFilter,
 			IExistenceFilterReader<TStreamId> streamExistenceFilterReader,
 			INameIndexConfirmer<TStreamId> eventTypeIndex,
-			int streamInfoCacheCapacity,
+			ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
+			ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
 			bool additionalCommitChecks,
 			long metastreamMaxCount,
 			int hashCollisionReadLimit,
 			bool skipIndexScanOnReads,
 			IReadOnlyCheckpoint replicationCheckpoint,
 			ICheckpoint indexCheckpoint) {
+
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(readerPool, "readerPool");
 			Ensure.NotNull(tableIndex, "tableIndex");
@@ -62,15 +65,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.NotNull(sizer, nameof(sizer));
 			Ensure.NotNull(streamExistenceFilter, nameof(streamExistenceFilter));
 			Ensure.NotNull(streamExistenceFilterReader, nameof(streamExistenceFilterReader));
-
-			Ensure.Nonnegative(streamInfoCacheCapacity, "streamInfoCacheCapacity");
+			Ensure.NotNull(streamLastEventNumberCache, nameof(streamLastEventNumberCache));
+			Ensure.NotNull(streamMetadataCache, nameof(streamMetadataCache));
 			Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 			Ensure.NotNull(indexCheckpoint, "indexCheckpoint");
 
 			var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
-			var indexBackend = new IndexBackend<TStreamId>(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
+			var indexBackend = new IndexBackend<TStreamId>(readerPool, streamLastEventNumberCache, streamMetadataCache);
 
 			_indexReader = new IndexReader<TStreamId>(indexBackend, tableIndex, streamNamesProvider, streamIdValidator,
 				streamExistenceFilterReader, metastreamMetadata, hashCollisionReadLimit, skipIndexScanOnReads);

@@ -254,5 +254,10 @@ namespace EventStore.Core.Messages {
 				Stats = stats;
 			}
 		}
+
+		public class DynamicCacheManagerTick : Message {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+			public override int MsgTypeId => TypeId;
+		}
 	}
 }

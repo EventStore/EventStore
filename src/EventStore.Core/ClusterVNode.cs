@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -47,6 +48,7 @@ using EventStore.Common.Options;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.Caching;
 using EventStore.Core.Cluster;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -372,14 +374,12 @@ namespace EventStore.Core {
 			Db = new TFChunkDb(CreateDbConfig(
 				out var statsHelper,
 				out var readerThreadsCount,
-				out var workerThreadsCount,
-				out var streamInfoCacheCapacity));
+				out var workerThreadsCount));
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
 				out int readerThreadsCount,
-				out int workerThreadsCount,
-				out int streamInfoCacheCapacity) {
+				out int workerThreadsCount) {
 
 				ICheckpoint writerChk;
 				ICheckpoint chaserChk;
@@ -469,7 +469,6 @@ namespace EventStore.Core {
 					? (long)options.Application.StatsPeriodSec * 1000
 					: Timeout.Infinite;
 				statsHelper = new SystemStatsHelper(Log, writerChk.AsReadOnly(), dbPath, statsCollectionPeriod);
-				var availableMem = statsHelper.GetFreeMem();
 
 				var processorCount = Environment.ProcessorCount;
 				readerThreadsCount = ThreadCountCalculator.CalculateReaderThreadCount(options.Database.ReaderThreadsCount, processorCount);
@@ -485,14 +484,6 @@ namespace EventStore.Core {
 					"Calculated based on a reader thread count of {readerThreadsCount:N0} and a configured value of {configuredCount:N0}",
 					workerThreadsCount,
 					readerThreadsCount, options.Application.WorkerThreads);
-
-				var configuredCapacity = options.Cluster.StreamInfoCacheCapacity;
-				streamInfoCacheCapacity = CacheSizeCalculator.CalculateStreamInfoCacheCapacity(configuredCapacity, availableMem);
-				Log.Information(
-					"StreamInfoCacheCapacity set to {streamInfoCacheCapacity:N0}. " +
-					"Calculated based on {availableMem:N0} bytes of free memory and configured value of {configuredCapacity:N0}",
-					streamInfoCacheCapacity,
-					availableMem, configuredCapacity);
 
 				return new TFChunkDbConfig(dbPath,
 					new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
@@ -546,8 +537,8 @@ namespace EventStore.Core {
 			_trustedRootCertsSelector = () => _trustedRootCerts;
 			_intermediateCertsSelector = () => _intermediateCerts == null ? null : new X509Certificate2Collection(_intermediateCerts);
 
-			_internalServerCertificateValidator = (cert, chain, errors, otherNames) =>  ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
-			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
+			_internalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
+			_internalClientCertificateValidator = (cert, chain, errors) => ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
 			_externalClientCertificateValidator = delegate { return (true, null); };
 			_externalServerCertificateValidator = (cert, chain, errors, otherNames) => ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 
@@ -638,7 +629,7 @@ namespace EventStore.Core {
 				truncator.TruncateDb(truncPos);
 			}
 
-			// STORAGE SUBSYSTEM
+			// DYNAMIC CACHE MANAGER
 			Db.Open(!options.Database.SkipDbVerify, threads: options.Database.InitializationThreads);
 			var indexPath = options.Database.Index ?? Path.Combine(Db.Config.Path, ESConsts.DefaultIndexDirectoryName);
 
@@ -662,6 +653,42 @@ namespace EventStore.Core {
 				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
 			});
 
+			ICacheResizer streamInfoCacheResizer;
+			ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache;
+			ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache;
+			var totalMem = (long)statsHelper.GetTotalMem();
+
+			if (options.Cluster.StreamInfoCacheCapacity > 0)
+				CreateStaticStreamInfoCache(
+					options.Cluster.StreamInfoCacheCapacity,
+					out streamLastEventNumberCache,
+					out streamMetadataCache,
+					out streamInfoCacheResizer);
+			else
+				CreateDynamicStreamInfoCache(
+					logFormat.StreamIdSizer,
+					totalMem,
+					out streamLastEventNumberCache,
+					out streamMetadataCache,
+					out streamInfoCacheResizer);
+
+			var dynamicCacheManager = new DynamicCacheManager(
+				bus: _mainQueue,
+				getFreeSystemMem: () => (long) statsHelper.GetFreeMem(),
+				getFreeHeapMem: () => GC.GetGCMemoryInfo().FragmentedBytes,
+				getGcCollectionCount: () => GC.CollectionCount(GC.MaxGeneration),
+				totalMem: totalMem,
+				keepFreeMemPercent: 25,
+				keepFreeMemBytes: 6L * 1024 * 1024 * 1024, // 6 GiB
+				monitoringInterval: TimeSpan.FromSeconds(15),
+				minResizeInterval: TimeSpan.FromMinutes(10),
+				minResizeThreshold: 200L * 1024 * 1024, // 200 MiB
+				rootCacheResizer: new CompositeCacheResizer("cache", 100, streamInfoCacheResizer));
+
+			_mainBus.Subscribe<MonitoringMessage.DynamicCacheManagerTick>(dynamicCacheManager);
+			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(dynamicCacheManager);
+
+			// STORAGE SUBSYSTEM
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
 				logFormat.LowHasher,
 				logFormat.HighHasher,
@@ -695,7 +722,8 @@ namespace EventStore.Core {
 				logFormat.StreamExistenceFilter,
 				logFormat.StreamExistenceFilterReader,
 				logFormat.EventTypeIndexConfirmer,
-				streamInfoCacheCapacity,
+				streamLastEventNumberCache,
+				streamMetadataCache,
 				ESConsts.PerformAdditionlCommitChecks,
 				ESConsts.MetaStreamMaxCount,
 				options.Database.HashCollisionReadLimit,
@@ -1491,6 +1519,88 @@ namespace EventStore.Core {
 				_httpService, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
+
+			dynamicCacheManager.Start();
+		}
+
+		private static void CreateStaticStreamInfoCache(
+			int streamInfoCacheCapacity,
+			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
+			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
+			out ICacheResizer streamInfoCacheResizer) {
+
+			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
+				"LastEventNumber", streamInfoCacheCapacity);
+
+			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
+				"Metadata", streamInfoCacheCapacity);
+
+			streamInfoCacheResizer = new CompositeCacheResizer(
+				name: "StreamInfo",
+				weight: 100,
+				new StaticCacheResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamLastEventNumberCache),
+				new StaticCacheResizer(ResizerUnit.Entries, streamInfoCacheCapacity, streamMetadataCache));
+		}
+
+		private static void CreateDynamicStreamInfoCache(
+			ISizer<TStreamId> sizer,
+			long totalMem,
+			out ILRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached> streamLastEventNumberCache,
+			out ILRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached> streamMetadataCache,
+			out ICacheResizer streamInfoCacheResizer) {
+
+			int LastEventNumberCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.EventNumberCached eventNumberCached) =>
+				LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>.ApproximateItemSize(
+					keyRefsSize: sizer.GetSizeInBytes(streamId),
+					valueRefsSize: 0);
+
+			streamLastEventNumberCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.EventNumberCached>(
+				"LastEventNumber",
+				0,
+				LastEventNumberCacheItemSize,
+				(streamId, eventNumberCached, keyFreed, valueFreed, nodeFreed) => {
+					if (nodeFreed)
+						return LastEventNumberCacheItemSize(streamId, eventNumberCached);
+
+					return keyFreed ? sizer.GetSizeInBytes(streamId) : 0;
+				}, "bytes");
+
+
+			int MetadataCacheItemSize(TStreamId streamId, IndexBackend<TStreamId>.MetadataCached metadataCached) =>
+				LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>.ApproximateItemSize(
+					keyRefsSize: sizer.GetSizeInBytes(streamId),
+					valueRefsSize: metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>());
+
+			streamMetadataCache = new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>(
+				"Metadata",
+				0,
+				MetadataCacheItemSize,
+				(streamId, metadataCached, keyFreed, valueFreed, nodeFreed) => {
+					if (nodeFreed)
+						return MetadataCacheItemSize(streamId, metadataCached);
+
+					return
+						(keyFreed ? sizer.GetSizeInBytes(streamId) : 0) +
+						(valueFreed ? metadataCached.ApproximateSize - Unsafe.SizeOf<IndexBackend<TStreamId>.MetadataCached>() : 0);
+				}, "bytes");
+
+
+			const long minCapacity = 100_000_000; // 100 MB
+
+			// beyond a certain point the added heap size costs more in GC than the extra cache is worth
+			// higher values than this can still be set manually
+			var staticMaxCapacity = 16_000_000_000; // 16GB
+			var dynamicMaxCapacity = (long)(0.4 * totalMem);
+			var maxCapacity = Math.Min(staticMaxCapacity, dynamicMaxCapacity);
+
+			var minCapacityPerCache = minCapacity / 2;
+			var maxCapacityPerCache = maxCapacity / 2;
+
+			streamInfoCacheResizer = new CompositeCacheResizer(
+				name: "StreamInfo",
+				weight: 100,
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacityPerCache, maxCapacityPerCache, 60, streamLastEventNumberCache),
+				new DynamicCacheResizer(ResizerUnit.Bytes, minCapacityPerCache, maxCapacityPerCache, 40, streamMetadataCache));
 		}
 
 		private void SubscribeWorkers(Action<InMemoryBus> setup) {

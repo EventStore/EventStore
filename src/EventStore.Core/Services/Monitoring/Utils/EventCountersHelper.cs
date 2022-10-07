@@ -122,6 +122,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 		public GcStats GetGcStats() {
 			return new GcStats(
 				gcAllocationSpeed: (float)GetCounterValue("alloc-rate"),
+				gcFragmentation: (float)GetCounterValue("gc-fragmentation"),
 				gcGen0Items: (long)GetCounterValue("gen-0-gc-count"),
 				gcGen0Size: (long)GetCounterValue("gen-0-size"),
 				gcGen1Items: (long)GetCounterValue("gen-1-gc-count"),
@@ -130,7 +131,7 @@ namespace EventStore.Core.Services.Monitoring.Utils {
 				gcGen2Size: (long)GetCounterValue("gen-2-size"),
 				gcLargeHeapSize: (long)GetCounterValue("loh-size"),
 				gcTimeInGc: (long)GetCounterValue("time-in-gc"),
-				gcTotalBytesInHeaps: (long)GetCounterValue("gc-heap-size") * 1024 * 1024);
+				gcTotalBytesInHeaps: (long)GetCounterValue("gc-heap-size") * 1_000_000);
 		}
 
 		public void Dispose() {

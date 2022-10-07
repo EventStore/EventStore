@@ -246,8 +246,8 @@ namespace EventStore.Core.Index {
 
 				if (lruCacheSize > 0) {
 					if (_bloomFilter is not null) {
-						_lruCache = new(lruCacheSize);
-						_lruConfirmedNotPresent = new(lruCacheSize);
+						_lruCache = new("ConfirmedPresent", lruCacheSize);
+						_lruConfirmedNotPresent = new("ConfirmedNotPresent", lruCacheSize);
 					} else {
 						Log.Information("Not enabling LRU cache for index {file} because it has no bloom filter", _filename);
 					}
