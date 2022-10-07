@@ -35,7 +35,7 @@ COPY --from=build ./build/src/EventStore.Core.Tests/Services/Transport/Tcp/test_
 RUN mkdir ./test-results
 RUN printf '#!/usr/bin/env sh\n\
 update-ca-certificates\n\
-find /build/published-tests -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c '"'"'proj=`basename $1` && dotnet test --blame --settings /build/ci/ci.runsettings --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory /build/test-results/$proj $1/$proj.dll'"'"' - '"'"'{}'"'"'\n\
+find /build/published-tests -maxdepth 1 -type d -name "*.Tests" -print0 | xargs -I{} -0 -n1 sh -c '"'"'proj=`basename $1` && dotnet test --blame --settings /build/ci/ci.runsettings --filter=FullyQualifiedName~when_invalid_data_is_sent_over_tcp --logger:"GitHubActions;report-warnings=false" --logger:html --logger:trx --logger:"console;verbosity=normal" --results-directory /build/test-results/$proj $1/$proj.dll'"'"' - '"'"'{}'"'"'\n\
 exit_code=$?\n\
 echo $(find /build/test-results -name "*.html" | xargs cat) > /build/test-results/test-results.html\n\
 exit $exit_code' \
