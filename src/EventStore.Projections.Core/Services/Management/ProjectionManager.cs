@@ -78,10 +78,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			<ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>
 			_readForwardDispatcher;
 
-		private readonly
-			RequestResponseDispatcher
-			<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-			_readDispatcher;
+		private readonly ReadDispatcher _readDispatcher;
 
 		private int _readEventsBatchSize = 100;
 
@@ -136,13 +133,12 @@ namespace EventStore.Projections.Core.Services.Management {
 					v => v.CorrelationId,
 					v => v.CorrelationId,
 					new PublishEnvelope(_inputQueue));
-			_readDispatcher =
-				new RequestResponseDispatcher
-					<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-						publisher,
-						v => v.CorrelationId,
-						v => v.CorrelationId,
-						new PublishEnvelope(_inputQueue));
+			_readDispatcher = new ReadDispatcher(
+				publisher,
+				v => v.CorrelationId,
+				v => v.CorrelationId,
+				v => v.CorrelationId,
+				new PublishEnvelope(_inputQueue));
 			_readForwardDispatcher =
 				new RequestResponseDispatcher
 					<ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted>(
@@ -1034,7 +1030,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					requireLeader: false,
 					validationStreamVersion: null,
 					user: SystemAccounts.System),
-				onComplete);
+				new ReadStreamEventsBackwardHandlers.Optimistic(onComplete));
 		}
 
 		private void ReadProjectionPossibleStreamCompleted(

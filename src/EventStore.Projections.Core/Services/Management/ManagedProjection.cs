@@ -82,10 +82,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		private readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
 			_writeDispatcher;
 
-		private readonly
-			RequestResponseDispatcher
-			<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-			_readDispatcher;
+		private readonly ReadDispatcher _readDispatcher;
 
 		private readonly
 			RequestResponseDispatcher
@@ -138,9 +135,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			ILogger logger,
 			RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted> streamDispatcher,
 			RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> writeDispatcher,
-			RequestResponseDispatcher
-				<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-				readDispatcher,
+			ReadDispatcher readDispatcher,
 			IPublisher output,
 			ITimeProvider timeProvider,
 			RequestResponseDispatcher<CoreProjectionManagementMessage.GetState, CoreProjectionStatusMessage.StateReport>
@@ -629,7 +624,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					1,
 					resolveLinkTos: false, requireLeader: false, validationStreamVersion: null,
 					user: SystemAccounts.System),
-				PersistedStateReadCompleted);
+				new ReadStreamEventsBackwardHandlers.Optimistic(PersistedStateReadCompleted));
 		}
 
 		private void PersistedStateReadCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed) {

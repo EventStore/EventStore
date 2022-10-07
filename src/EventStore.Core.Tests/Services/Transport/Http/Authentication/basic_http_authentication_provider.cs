@@ -91,6 +91,43 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 		[TestFixture(typeof(LogFormat.V2), typeof(string))]
 		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 		public class
+			when_handling_a_request_when_not_ready<TLogFormat, TStreamId> :
+				TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
+			private bool _authenticateResult;
+			private HttpAuthenticationRequest _request;
+			private HttpContext _context;
+
+			protected override void Given() {
+				base.Given();
+				ExistingEvent("$user-user", "$user", null, "{LoginName:'user', Salt:'drowssap',Hash:'password'}");
+			}
+
+			[SetUp]
+			public void SetUp() {
+				SetUpProvider();
+				NotReady();
+				_context = CreateTestEntityWithCredentials("user", "password");
+				_authenticateResult = _provider.Authenticate(_context, out _request);
+			}
+
+			[Test]
+			public void returns_true() {
+				Assert.IsTrue(_authenticateResult);
+				Assert.NotNull(_request);
+			}
+
+			[Test]
+			public async Task ShouldRespondNotReady() {
+				var (status, principal) = await _request.AuthenticateAsync();
+				Assert.AreEqual(HttpAuthenticationRequestStatus.NotReady, status);
+				Assert.Null(principal);
+				Assert.IsEmpty(_context.User.Claims);
+			}
+		}
+
+		[TestFixture(typeof(LogFormat.V2), typeof(string))]
+		[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+		public class
 			when_handling_a_request_with_incorrect_user_name_and_password<TLogFormat, TStreamId> :
 				TestFixtureWithBasicHttpAuthenticationProvider<TLogFormat, TStreamId> {
 			private bool _authenticateResult;
