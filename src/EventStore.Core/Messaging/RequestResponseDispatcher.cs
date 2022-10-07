@@ -4,18 +4,49 @@ using System.Linq;
 using EventStore.Core.Bus;
 
 namespace EventStore.Core.Messaging {
-	public sealed class RequestResponseDispatcher<TRequest, TResponse> : IHandle<TResponse>
-		where TRequest : Message where TResponse : Message {
-		//NOTE: this class is not intended to be used from multiple threads except from the QueuedHandlerThreadPool
-		//however it supports count requests from other threads for statistics purposes
-		private readonly Dictionary<Guid, Action<TResponse>> _map = new Dictionary<Guid, Action<TResponse>>();
+	// This derivation of RequestResponseDispatcher provides a simple THandler that handles the expected TResponse message.
+	// Alternate responses (such as NotHandled) are not processed. Timeouts, if any, are implemented elsewhere
+	// (i.e. in the IODispatcher).
+	// Allows IODispatcher to use RequestResponseDispatcher in the traditional way.
+	public sealed class RequestResponseDispatcher<TRequest, TResponse> :
+		RequestResponseDispatcher<TRequest, TResponse, AdHocHandlerStruct<TResponse>>
+		where TRequest : Message
+		where TResponse : Message {
+
+		public RequestResponseDispatcher(
+			IPublisher publisher,
+			Func<TRequest, Guid> getRequestCorrelationId,
+			Func<TResponse, Guid> getResponseCorrelationId,
+			IEnvelope defaultReplyEnvelope,
+			Func<Guid, Message> cancelMessageFactory = null) : base(
+				publisher,
+				getRequestCorrelationId,
+				getResponseCorrelationId,
+				defaultReplyEnvelope,
+				cancelMessageFactory) {
+		}
+
+		public Guid Publish(TRequest request, Action<TResponse> response, Action timeout = null) =>
+			Publish(request, new AdHocHandlerStruct<TResponse>(response, timeout));
+	}
+
+	// Sends requests on the _publisher, keeping hold of a THandler in the _map to handle the response.
+	// Handles responses via IHandle, correlating them to the THandler in the _map.
+	public class RequestResponseDispatcher<TRequest, TResponse, THandler> :
+		IHandle<TResponse>,
+		ICorrelatedTimeout
+		where TRequest : Message
+		where TResponse : Message
+		where THandler : IHandle<TResponse>, IHandleTimeout {
+
+		private readonly Dictionary<Guid, THandler> _map = new Dictionary<Guid, THandler>();
 		private readonly IPublisher _publisher;
 		private readonly Func<TRequest, Guid> _getRequestCorrelationId;
 		private readonly Func<TResponse, Guid> _getResponseCorrelationId;
 		private readonly IEnvelope _defaultReplyEnvelope;
 		private readonly Func<Guid, Message> _cancelMessageFactory;
 
-		public RequestResponseDispatcher(
+		protected RequestResponseDispatcher(
 			IPublisher publisher,
 			Func<TRequest, Guid> getRequestCorrelationId,
 			Func<TResponse, Guid> getResponseCorrelationId,
@@ -28,12 +59,12 @@ namespace EventStore.Core.Messaging {
 			_cancelMessageFactory = cancelMessageFactory;
 		}
 
-		public Guid Publish(TRequest request, Action<TResponse> action) {
+		public Guid Publish(TRequest request, THandler handler) {
 			//TODO: expiration?
 			Guid requestCorrelationId;
 			lock (_map) {
 				requestCorrelationId = _getRequestCorrelationId(request);
-				_map.Add(requestCorrelationId, action);
+				_map.Add(requestCorrelationId, handler);
 			}
 
 			_publisher.Publish(request);
@@ -49,24 +80,36 @@ namespace EventStore.Core.Messaging {
 
 		public bool Handle(TResponse message) {
 			var correlationId = _getResponseCorrelationId(message);
-			bool handlerExists;
-			Action<TResponse> action;
-
-			lock (_map) {
-				handlerExists = _map.TryGetValue(correlationId, out action);
-				if (handlerExists) {
-					_map.Remove(correlationId);
-				}
-			}
+			var handlerExists = TryRemoveHandler(correlationId, static _ => true, out var handler);
 
 			// We mustn't call the handler inside the lock as we have no
 			// knowledge of it's behaviour, which might result in dead locks.
 			if (handlerExists) {
-				action(message);
+				handler.Handle(message);
 				return true;
 			}
 
 			return false;
+		}
+
+		public void Timeout(Guid correlationId) {
+			// if we dont handle timeouts then don't remove the handler
+			// so that the regular handler can still be called if it comes through.
+			// long term i doubt any of the handlers should not deal with timeouts.
+			if (TryRemoveHandler(correlationId, static h => h.HandlesTimeout, out var handler)) {
+				handler.Timeout();
+			}
+		}
+
+		protected bool TryRemoveHandler(Guid correlationId, Func<THandler, bool> condition, out THandler handler) {
+			lock (_map) {
+				var handlerExists = _map.TryGetValue(correlationId, out handler);
+				if (handlerExists && condition(handler)) {
+					_map.Remove(correlationId);
+					return true;
+				}
+				return false;
+			}
 		}
 
 		public IEnvelope Envelope {

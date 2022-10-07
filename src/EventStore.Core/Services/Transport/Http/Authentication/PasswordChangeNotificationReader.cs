@@ -60,19 +60,19 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 							_log.Error("Failed to read: {stream} completed.Result={e}",
 								UserManagementService.UserPasswordNotificationsStreamId, completed.Result.ToString());
 							_ioDispatcher.Delay(
-								TimeSpan.FromSeconds(10), () => ReadNotificationsFrom(fromEventNumber));
+								TimeSpan.FromSeconds(10), _ => ReadNotificationsFrom(fromEventNumber));
 							break;
 						case ReadStreamResult.NoStream:
 						case ReadStreamResult.StreamDeleted:
 							_ioDispatcher.Delay(
-								TimeSpan.FromSeconds(1), () => ReadNotificationsFrom(0));
+								TimeSpan.FromSeconds(1), _ => ReadNotificationsFrom(0));
 							break;
 						case ReadStreamResult.Success:
 							foreach (var @event in completed.Events)
 								PublishPasswordChangeNotificationFrom(@event);
 							if (completed.IsEndOfStream)
 								_ioDispatcher.Delay(
-									TimeSpan.FromSeconds(1), () => ReadNotificationsFrom(completed.NextEventNumber));
+									TimeSpan.FromSeconds(1), _ => ReadNotificationsFrom(completed.NextEventNumber));
 							else
 								ReadNotificationsFrom(completed.NextEventNumber);
 							break;
@@ -82,7 +82,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				},
 				() => {
 					_log.Warning("Timeout reading stream: {stream}. Trying again in 10 seconds.", UserManagementService.UserPasswordNotificationsStreamId);
-					_ioDispatcher.Delay(TimeSpan.FromSeconds(10), () => ReadNotificationsFrom(fromEventNumber));
+					_ioDispatcher.Delay(TimeSpan.FromSeconds(10), _ => ReadNotificationsFrom(fromEventNumber));
 				},
 				Guid.NewGuid());
 		}

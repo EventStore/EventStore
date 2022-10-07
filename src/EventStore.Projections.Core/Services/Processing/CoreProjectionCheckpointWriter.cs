@@ -118,7 +118,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				}
 				_ioDispatcher.Delay(
 					TimeSpan.FromSeconds(delayInSeconds),
-					PublishWriteStreamMetadataAndCheckpointEvent);
+					_ => PublishWriteStreamMetadataAndCheckpointEvent());
 			}
 		}
 
