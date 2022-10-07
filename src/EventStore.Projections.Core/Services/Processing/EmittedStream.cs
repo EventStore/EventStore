@@ -442,7 +442,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					m => HandleMetadataWriteCompleted(m, retryCount));
 			} else {
 				_ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
-					() => _writerConfiguration.Writer.WriteEvents(
+					_ => _writerConfiguration.Writer.WriteEvents(
 						_metadataStreamId, ExpectedVersion.Any, new Event[] {_submittedWriteMetaStreamEvent}, _writeAs,
 						m => HandleMetadataWriteCompleted(m, retryCount)));
 			}
@@ -599,7 +599,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					m => HandleWriteEventsCompleted(m, retryCount));
 			} else {
 				_ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
-					() => _writerConfiguration.Writer.WriteEvents(
+					_ => _writerConfiguration.Writer.WriteEvents(
 						_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
 						m => HandleWriteEventsCompleted(m, retryCount)));
 			}

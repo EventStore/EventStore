@@ -21,7 +21,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 			foreach (var bus in components.WorkerBuses) {
 				bus.Subscribe(_dispatcher.ForwardReader);
-				bus.Subscribe(_dispatcher.BackwardReader);
+				bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_dispatcher.BackwardReader);
+				bus.Subscribe<ClientMessage.NotHandled>(_dispatcher.BackwardReader);
 				bus.Subscribe(_dispatcher.Writer);
 				bus.Subscribe(_dispatcher.StreamDeleter);
 				bus.Subscribe(_dispatcher.Awaker);
@@ -45,7 +46,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			_components.MainBus.Subscribe(provider);
 
 			var ioDispatcher = new IODispatcher(_components.MainQueue, new PublishEnvelope(_components.MainQueue));
-			_components.MainBus.Subscribe(ioDispatcher.BackwardReader);
+			_components.MainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+			_components.MainBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
 			_components.MainBus.Subscribe(ioDispatcher.ForwardReader);
 			_components.MainBus.Subscribe(ioDispatcher.Writer);
 			_components.MainBus.Subscribe(ioDispatcher.StreamDeleter);

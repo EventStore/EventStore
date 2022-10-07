@@ -15,7 +15,7 @@ using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 namespace EventStore.Core.Helpers {
 	
 	public sealed class IODispatcher : IHandle<IODispatcherDelayedMessage>, IHandle<ClientMessage.NotHandled> {
-		sealed class RequestTracking {
+		public sealed class RequestTracking {
 			public RequestTracking(bool trackPendingRequests) {
 				_trackPendingRequests = trackPendingRequests;
 			}
@@ -138,9 +138,7 @@ namespace EventStore.Core.Helpers {
 			RequestResponseDispatcher
 			<ClientMessage.ReadStreamEventsForward, ClientMessage.ReadStreamEventsForwardCompleted> ForwardReader;
 
-		public readonly
-			RequestResponseDispatcher
-			<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted> BackwardReader;
+		public ReadDispatcher BackwardReader { get; }
 
 		public readonly RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted> Writer;
 
@@ -180,13 +178,14 @@ namespace EventStore.Core.Helpers {
 						v => v.CorrelationId,
 						v => v.CorrelationId,
 						envelope);
-			BackwardReader =
-				new RequestResponseDispatcher
-					<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>(
-						publisher,
-						v => v.CorrelationId,
-						v => v.CorrelationId,
-						envelope);
+
+			BackwardReader = new ReadDispatcher(
+				publisher,
+				v => v.CorrelationId,
+				v => v.CorrelationId,
+				v => v.CorrelationId,
+				envelope);
+
 			Writer =
 				new RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>(
 					publisher,
@@ -271,9 +270,9 @@ namespace EventStore.Core.Helpers {
 			Guid? corrId = null) {
 			if (!corrId.HasValue)
 				corrId = Guid.NewGuid();
-			return
-				BackwardReader.Publish(
-					new ClientMessage.ReadStreamEventsBackward(
+
+			return BackwardReader.Publish(
+				new ClientMessage.ReadStreamEventsBackward(
 						corrId.Value,
 						corrId.Value,
 						BackwardReader.Envelope,
@@ -284,7 +283,7 @@ namespace EventStore.Core.Helpers {
 						false,
 						null,
 						principal),
-					action);
+				new ReadStreamEventsBackwardHandlers.Optimistic(action));
 		}
 
 		public Guid ReadBackward(
@@ -296,7 +295,15 @@ namespace EventStore.Core.Helpers {
 			Action<ClientMessage.ReadStreamEventsBackwardCompleted> action,
 			Action timeoutAction,
 			Guid corrId) {
-			_requestTracker.AddPendingRead(corrId);
+
+			var handler = new ReadStreamEventsBackwardHandlers.Tracking(
+				corrId,
+				_requestTracker,
+				new ReadStreamEventsBackwardHandlers.AdHoc(
+					handled: action,
+					notHandled: null,
+					timedout: timeoutAction));
+
 			BackwardReader.Publish(
 				new ClientMessage.ReadStreamEventsBackward(
 					corrId,
@@ -309,17 +316,39 @@ namespace EventStore.Core.Helpers {
 					false,
 					null,
 					principal),
-				res => {
-					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
-						action(res);
-					}
-				}
-			);
-			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
-				if (_requestTracker.RemovePendingRead(corrId)) {
-					timeoutAction();
-				}
-			}, corrId);
+				handler);
+
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), BackwardReader, corrId);
+			return corrId;
+		}
+
+		public Guid ReadBackward(
+			string streamId,
+			long fromEventNumber,
+			int maxCount,
+			bool resolveLinks,
+			ClaimsPrincipal principal,
+			IReadStreamEventsBackwardHandler handler,
+			Guid corrId) {
+
+			var trackingHandler = new ReadStreamEventsBackwardHandlers.Tracking(
+				corrId, _requestTracker, handler);
+
+			BackwardReader.Publish(
+				new ClientMessage.ReadStreamEventsBackward(
+					corrId,
+					corrId,
+					BackwardReader.Envelope,
+					streamId,
+					fromEventNumber,
+					maxCount,
+					resolveLinks,
+					false,
+					null,
+					principal),
+				trackingHandler);
+
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), BackwardReader, corrId);
 			return corrId;
 		}
 
@@ -378,12 +407,13 @@ namespace EventStore.Core.Helpers {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
 					}
+				},
+				() => {
+					if (_requestTracker.RemovePendingRead(corrId)) {
+						timeoutAction();
+					}
 				});
-			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
-				if (_requestTracker.RemovePendingRead(corrId)) {
-					timeoutAction();
-				}
-			}, corrId);
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), ForwardReader, corrId);
 			return corrId;
 		}
 		
@@ -410,12 +440,13 @@ namespace EventStore.Core.Helpers {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
 					}
+				},
+				() => {
+					if (_requestTracker.RemovePendingRead(corrId)) {
+						timeoutAction();
+					}
 				});
-			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
-				if (_requestTracker.RemovePendingRead(corrId)) {
-					timeoutAction();
-				}
-			}, corrId);
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), EventReader, corrId);
 			return corrId;
 		}
 
@@ -452,12 +483,13 @@ namespace EventStore.Core.Helpers {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
 					}
+				},
+				() => {
+					if (_requestTracker.RemovePendingRead(corrId)) {
+						timeoutAction();
+					}
 				});
-			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
-				if (_requestTracker.RemovePendingRead(corrId)) {
-					timeoutAction();
-				}
-			}, corrId);
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), AllForwardReader, corrId);
 			return corrId;
 		}
 
@@ -492,12 +524,13 @@ namespace EventStore.Core.Helpers {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
 					}
+				},
+				() => {
+					if (_requestTracker.RemovePendingRead(corrId)) {
+						timeoutAction();
+					}
 				});
-			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
-				if (_requestTracker.RemovePendingRead(corrId)) {
-					timeoutAction();
-				}
-			}, corrId);
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), AllBackwardReader, corrId);
 			return corrId;
 		}
 
@@ -538,12 +571,13 @@ namespace EventStore.Core.Helpers {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
 					}
+				},
+				() => {
+					if (_requestTracker.RemovePendingRead(corrId)) {
+						timeoutAction();
+					}
 				});
-			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
-				if (_requestTracker.RemovePendingRead(corrId)) {
-					timeoutAction();
-				}
-			}, corrId);
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), AllForwardFilteredReader, corrId);
 			return corrId;
 		}
 		
@@ -581,12 +615,13 @@ namespace EventStore.Core.Helpers {
 					if (_requestTracker.RemovePendingRead(res.CorrelationId)) {
 						action(res);
 					}
+				},
+				() => {
+					if (_requestTracker.RemovePendingRead(corrId)) {
+						timeoutAction();
+					}
 				});
-			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), () => {
-				if (_requestTracker.RemovePendingRead(corrId)) {
-					timeoutAction();
-				}
-			}, corrId);
+			Delay(TimeSpan.FromMilliseconds(ReadTimeoutMs), AllBackwardFilteredReader, corrId);
 			return corrId;
 		}
 
@@ -883,18 +918,26 @@ namespace EventStore.Core.Helpers {
 				completed);
 		}
 
-		public void Delay(TimeSpan delay, Action action, Guid? _messageCorrelationId = null) {
+		public void Delay(TimeSpan delay, Action<Guid> timeout) {
 			_publisher.Publish(
 				TimerMessage.Schedule.Create(
 					delay,
 					_inputQueueEnvelope,
-					new IODispatcherDelayedMessage(_selfId, action, _messageCorrelationId)));
+					new IODispatcherDelayedMessage(_selfId, new AdHocCorrelatedTimeout(timeout))));
+		}
+
+		private void Delay(TimeSpan delay, ICorrelatedTimeout timeout, Guid messageCorrelationId) {
+			_publisher.Publish(
+				TimerMessage.Schedule.Create(
+					delay,
+					_inputQueueEnvelope,
+					new IODispatcherDelayedMessage(_selfId, timeout, messageCorrelationId)));
 		}
 
 		public void Handle(IODispatcherDelayedMessage message) {
 			if (_selfId != message.CorrelationId)
 				return;
-			message.Action();
+			message.Timeout();
 		}
 
 		public void Handle(ClientMessage.NotHandled message) {
