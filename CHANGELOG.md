@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - Logging when server receives gRPC calls that are retries [EventStore#3588](https://github.com/EventStore/EventStore/pull/3588)
 - CI: run tests in target runtime container [EventStore#3597](https://github.com/EventStore/EventStore/pull/3597)
 - support for .NET 6.0 [EventStore#3595](https://github.com/EventStore/EventStore/pull/3595)
+- Dynamically resize stream info caches based on available memory [EventStore#3569](https://github.com/EventStore/EventStore/pull/3569)
 
 ### Fixed
 - Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
