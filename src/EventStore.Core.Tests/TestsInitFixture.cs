@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests {
 	public class TestsInitFixture {
 		[OneTimeSetUp]
 		public void SetUp() {
-			SetUp(Serilog.Events.LogEventLevel.Warning);
+			SetUp(Serilog.Events.LogEventLevel.Information);
 		}
 
 		public void SetUp(Serilog.Events.LogEventLevel minimumLevel) {
