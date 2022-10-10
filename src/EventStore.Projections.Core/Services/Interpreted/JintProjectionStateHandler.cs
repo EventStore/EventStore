@@ -384,6 +384,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private readonly TimeSpan _executionTimeout;
 			private TimeSpan _start;
 			private TimeSpan _timeout;
+			private bool _executing;
 
 			public TimeConstraint(TimeSpan compilationTimeout, TimeSpan executionTimeout) {
 				_compilationTimeout = compilationTimeout;
@@ -393,11 +394,12 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 
 			public void Compiling() {
 				_timeout = _compilationTimeout;
+				_executing = false;
 			}
 
 			public void Executing() {
-
 				_timeout = _executionTimeout;
+				_executing = true;
 
 			}
 			public void Reset() {
@@ -408,7 +410,8 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				if (_sw.Elapsed - _start >= _timeout) {
 					if (Debugger.IsAttached)
 						return;
-					throw new TimeoutException($"Projection script took too long to execute (took: {_sw.Elapsed - _start:c}, allowed: {_timeout:c}");
+					var action = _executing ? "execute" : "compile";
+					throw new TimeoutException($"Projection script took too long to {action} (took: {_sw.Elapsed - _start:c}, allowed: {_timeout:c}");
 				}
 			}
 		}

@@ -140,7 +140,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			ReadIndex = readIndex;
 
 			// wait for tables to be merged
-			TableIndex.WaitForBackgroundTasks();
+			TableIndex.WaitForBackgroundTasks(16_000);
 
 			// scavenge must run after readIndex is built
 			if (_scavenge) {

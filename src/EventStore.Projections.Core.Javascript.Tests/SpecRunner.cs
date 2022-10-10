@@ -177,7 +177,8 @@ namespace EventStore.Projections.Core.Javascript.Tests {
 				IQuerySources expectedDefinition = sdb.Build();
 				yield return WithOutput($"{projection} compiles", o => {
 					runner = new JintProjectionStateHandler(source, true,
-						TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100));
+						compilationTimeout: TimeSpan.FromMilliseconds(200),
+						executionTimeout: TimeSpan.FromMilliseconds(200));
 				});
 
 				yield return For($"{projection} getDefinition", () => {
