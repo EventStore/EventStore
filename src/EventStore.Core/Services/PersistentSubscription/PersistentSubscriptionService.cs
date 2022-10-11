@@ -218,13 +218,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				string user
 		) {
 			if (!_started) return;
-			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
+			var stream = eventSource.ToString();
+			var key = BuildSubscriptionGroupKey(stream, groupName);
 			Log.Debug("Creating persistent subscription {subscriptionKey}", key);
-
-			if (_subscriptionsById.ContainsKey(key)) {
-				onExists($"Group '{groupName}' already exists.");
-				return;
-			}
 
 			if (!_consumerStrategyRegistry.ValidateStrategy(namedConsumerStrategy)) {
 				onFail($"Consumer strategy {namedConsumerStrategy} does not exist.");
@@ -235,8 +231,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				onFail(startFromValidationError);
 				return;
 			}
-
-			CreateSubscriptionGroup(eventSource,
+			
+			var result = TryCreateSubscriptionGroup(eventSource,
 				groupName,
 				resolveLinkTos,
 				startFrom,
@@ -253,11 +249,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				ToMessageTimeout(messageTimeoutMilliseconds)
 			);
 
+			if (!result) {
+				onExists($"Group '{groupName}' already exists.");
+				return;
+			}
+
 			Log.Debug("New persistent subscription {subscriptionKey}", key);
-			_config.Updated = DateTime.Now;
-			_config.UpdatedBy = user;
-			_config.Entries.Add(new PersistentSubscriptionEntry {
-				Stream = eventSource.ToString(), //'Stream' name kept for backward compatibility
+			var createEntry = new PersistentSubscriptionEntry {
+				Stream = stream, //'Stream' name kept for backward compatibility
 				Filter = EventFilter.ParseToDto(eventSource.EventFilter),
 				Group = groupName,
 				ResolveLinkTos = resolveLinkTos,
@@ -276,7 +275,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				StartFrom = startFrom is PersistentSubscriptionSingleStreamPosition x ? x.StreamEventNumber : long.MinValue,
 				#pragma warning restore 612
 				StartPosition = startFrom.ToString()
-			});
+			};
+			UpdateSubscriptionConfig(user, stream, groupName, createEntry);
 			SaveConfiguration(() => onSuccess(""));
 		}
 
@@ -403,7 +403,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				string user
 		) {
 			if (!_started) return;
-			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
+			var stream = eventSource.ToString();
+			var key = BuildSubscriptionGroupKey(stream, groupName);
 			Log.Debug("Updating persistent subscription {subscriptionKey}", key);
 
 			if (!_subscriptionsById.ContainsKey(key)) {
@@ -420,31 +421,32 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				onFail(startFromValidationError);
 				return;
 			}
+			
+			var subscription = new PersistentSubscription(
+				new PersistentSubscriptionParams(
+					resolveLinkTos,
+					key,
+					eventSource,
+					groupName,
+					startFrom,
+					recordStatistics,
+					ToMessageTimeout(messageTimeoutMilliseconds),
+					maxRetryCount,
+					liveBufferSize,
+					bufferSize,
+					readBatchSize,
+					ToCheckPointAfterTimeout(checkPointAfterMilliseconds),
+					minCheckPointCount,
+					maxCheckPointCount,
+					maxSubscriberCount,
+					_consumerStrategyRegistry.GetInstance(namedConsumerStrategy, key),
+					_streamReader,
+					_checkpointReader,
+					new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
+					new PersistentSubscriptionMessageParker(key, _ioDispatcher)));
 
-			RemoveSubscription(eventSource.ToString(), groupName);
-			RemoveSubscriptionConfig(user, eventSource.ToString(), groupName);
-
-			CreateSubscriptionGroup(eventSource,
-				groupName,
-				resolveLinkTos,
-				startFrom,
-				recordStatistics,
-				maxRetryCount,
-				liveBufferSize,
-				bufferSize,
-				readBatchSize,
-				ToCheckPointAfterTimeout(checkPointAfterMilliseconds),
-				minCheckPointCount,
-				maxCheckPointCount,
-				maxSubscriberCount,
-				namedConsumerStrategy,
-				ToMessageTimeout(messageTimeoutMilliseconds)
-			);
-
-			_config.Updated = DateTime.Now;
-			_config.UpdatedBy = user;
-			_config.Entries.Add(new PersistentSubscriptionEntry {
-				Stream = eventSource.ToString(), //'Stream' name kept for backward compatibility
+			var updateEntry = new PersistentSubscriptionEntry {
+				Stream = stream, //'Stream' name kept for backward compatibility
 				Group = groupName,
 				Filter = EventFilter.ParseToDto(eventSource.EventFilter),
 				ResolveLinkTos = resolveLinkTos,
@@ -460,10 +462,15 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				MessageTimeout = messageTimeoutMilliseconds,
 				NamedConsumerStrategy = namedConsumerStrategy,
 				#pragma warning disable 612
-				StartFrom = startFrom is PersistentSubscriptionSingleStreamPosition x ? x.StreamEventNumber : long.MinValue,
+				StartFrom = startFrom is PersistentSubscriptionSingleStreamPosition x
+					? x.StreamEventNumber
+					: long.MinValue,
 				#pragma warning restore 612
 				StartPosition = startFrom.ToString()
-			});
+			};
+			
+			UpdateSubscription(stream, groupName, subscription);
+			UpdateSubscriptionConfig(user, stream, groupName, updateEntry);
 			SaveConfiguration(() => onSuccess(""));
 		}
 
@@ -566,9 +573,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				message.User?.Identity?.Name
 			);
 		}
-
-
-		private void CreateSubscriptionGroup(IPersistentSubscriptionEventSource eventSource,
+		
+		private bool TryCreateSubscriptionGroup(IPersistentSubscriptionEventSource eventSource,
 			string groupName,
 			bool resolveLinkTos,
 			IPersistentSubscriptionStreamPosition startFrom,
@@ -583,13 +589,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			int maxSubscriberCount,
 			string namedConsumerStrategy,
 			TimeSpan messageTimeout) {
-			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
-			List<PersistentSubscription> subscribers;
-			if (!_subscriptionTopics.TryGetValue(eventSource.ToString(), out subscribers)) {
-				subscribers = new List<PersistentSubscription>();
-				_subscriptionTopics.Add(eventSource.ToString(), subscribers);
-			}
+			var stream = eventSource.ToString();
+			var key = BuildSubscriptionGroupKey(stream, groupName);
 
+			if (_subscriptionsById.ContainsKey(key))
+				return false;
+			
 			var subscription = new PersistentSubscription(
 				new PersistentSubscriptionParams(
 					resolveLinkTos,
@@ -612,8 +617,10 @@ namespace EventStore.Core.Services.PersistentSubscription {
 					_checkpointReader,
 					new PersistentSubscriptionCheckpointWriter(key, _ioDispatcher),
 					new PersistentSubscriptionMessageParker(key, _ioDispatcher)));
-			_subscriptionsById[key] = subscription;
-			subscribers.Add(subscription);
+			
+			UpdateSubscription(stream, groupName, subscription);
+			return true;
+
 		}
 
 		private void DeletePersistentSubscription(
@@ -626,7 +633,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				string user
 		) {
 			if (!_started) return;
-			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
+			var stream = eventSource.ToString();
+			var key = BuildSubscriptionGroupKey(stream, groupName);
 			Log.Debug("Deleting persistent subscription {subscriptionKey}", key);
 
 			PersistentSubscription subscription;
@@ -635,13 +643,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			if (!_subscriptionTopics.ContainsKey(eventSource.ToString())) {
+			if (!_subscriptionTopics.ContainsKey(stream)) {
 				onFail($"Group '{groupName}' does not exist.");
 				return;
 			}
 
-			RemoveSubscription(eventSource.ToString(), groupName);
-			RemoveSubscriptionConfig(user, eventSource.ToString(), groupName);
+			UpdateSubscription(stream, groupName, null);
+			UpdateSubscriptionConfig(user, stream, groupName, null);
 			subscription.Delete();
 			SaveConfiguration(() => onSuccess(""));
 		}
@@ -718,27 +726,69 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				message.User?.Identity?.Name
 			);
 		}
-
-		private void RemoveSubscriptionConfig(string username, string eventSource, string groupName) {
+		
+		private void UpdateSubscriptionConfig(string username, string eventSource, string groupName, PersistentSubscriptionEntry replaceBy) {
 			_config.Updated = DateTime.Now;
 			_config.UpdatedBy = username;
 			var index = _config.Entries.FindLastIndex(x => x.Stream == eventSource && x.Group == groupName);
-			_config.Entries.RemoveAt(index);
+
+			if (index < 0) {
+				if (replaceBy == null) {
+					var key = BuildSubscriptionGroupKey(eventSource, groupName);
+					throw new ArgumentException($"Config for subscription: '{key}' does not exist");
+				}
+				// create
+				_config.Entries.Add(replaceBy);
+			} else {
+				if (replaceBy != null) // update
+					_config.Entries[index] = replaceBy;
+				else // delete
+					_config.Entries.RemoveAt(index);
+			}
 		}
 
-		private void RemoveSubscription(string eventSource, string groupName) {
-			List<PersistentSubscription> subscribers;
+		private void UpdateSubscription(string eventSource, string groupName, PersistentSubscription replaceBy) {
 			var key = BuildSubscriptionGroupKey(eventSource, groupName);
-			_subscriptionsById.Remove(key);
-			if (_subscriptionTopics.TryGetValue(eventSource, out subscribers)) {
-				for (int i = 0; i < subscribers.Count; i++) {
-					var sub = subscribers[i];
-					if (sub.SubscriptionId == key) {
-						sub.Shutdown();
-						subscribers.RemoveAt(i);
-						break;
-					}
+
+			if (!_subscriptionTopics.TryGetValue(eventSource, out var subscribers)) {
+				subscribers = new List<PersistentSubscription>();
+				_subscriptionTopics.Add(eventSource, subscribers);
+			}
+
+			// shut down any existing subscription
+			var subscriptionIndex = -1;
+			for (int i = 0; i < subscribers.Count; i++) {
+				if (subscribers[i].SubscriptionId != key) continue;
+
+				subscriptionIndex = i;
+				var sub = subscribers[i];
+				try {
+					sub.Shutdown();
+				} catch (Exception ex) {
+					Log.Error(ex, "Failed to shut down subscription with id: {subscriptionId}",
+						sub.SubscriptionId);
 				}
+				break;
+			}
+
+			if (_subscriptionsById.ContainsKey(key)) {
+				if (subscriptionIndex == -1)
+					throw new ArgumentException($"Subscription: '{key}' exists but it's not present in the list of subscribers");
+
+				if (replaceBy != null) { // update
+					_subscriptionsById[key] = replaceBy;
+					subscribers[subscriptionIndex] = replaceBy;
+				} else { // delete
+					_subscriptionsById.Remove(key);
+					subscribers.RemoveAt(subscriptionIndex);
+				}
+			} else {
+				if (subscriptionIndex != -1)
+					throw new ArgumentException($"Subscription: '{key}' does not exist but it's present in the list of subscribers");
+
+				// create
+				_subscriptionsById.Add(key, replaceBy);
+				subscribers.Add(replaceBy);
 			}
 		}
 
@@ -770,14 +820,15 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			string user) {
 			if (!_started) return;
 
+			var stream = eventSource.ToString();
 			List<PersistentSubscription> subscribers;
-			if (!_subscriptionTopics.TryGetValue(eventSource.ToString(), out subscribers)) {
+			if (!_subscriptionTopics.TryGetValue(stream, out subscribers)) {
 				envelope.ReplyWith(new ClientMessage.SubscriptionDropped(correlationId,
 					SubscriptionDropReason.NotFound));
 				return;
 			}
 
-			var key = BuildSubscriptionGroupKey(eventSource.ToString(), groupName);
+			var key = BuildSubscriptionGroupKey(stream, groupName);
 			PersistentSubscription subscription;
 			if (!_subscriptionsById.TryGetValue(key, out subscription)) {
 				envelope.ReplyWith(new ClientMessage.SubscriptionDropped(correlationId, SubscriptionDropReason.NotFound));
@@ -1025,7 +1076,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 								eventSource = new PersistentSubscriptionSingleStreamEventSource(entry.Stream);
 							}
 
-							CreateSubscriptionGroup(eventSource,
+							var result = TryCreateSubscriptionGroup(eventSource,
 								entry.Group,
 								entry.ResolveLinkTos,
 								#pragma warning disable 612
@@ -1042,6 +1093,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 								entry.MaxSubscriberCount,
 								entry.NamedConsumerStrategy,
 								ToMessageTimeout(entry.MessageTimeout));
+							
+							if (!result) {
+								var key = BuildSubscriptionGroupKey(eventSource.ToString(), entry.Group);
+								Log.Warning("A duplicate persistent subscription: {subscriptionKey} was found in the configuration. Ignoring it.", key);
+							}
+							
 						}
 
 						continueWith();
