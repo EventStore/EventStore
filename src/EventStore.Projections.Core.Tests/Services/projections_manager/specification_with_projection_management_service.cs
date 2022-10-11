@@ -91,6 +91,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+			_bus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
 			_bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 			_bus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
 			_bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher.Awaker);

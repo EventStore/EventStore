@@ -1164,6 +1164,7 @@ namespace EventStore.Core {
 			// IO DISPATCHER
 			var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
 			_mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+			_mainBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
 			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 			_mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
 			_mainBus.Subscribe<ClientMessage.ReadAllEventsForwardCompleted>(ioDispatcher.AllForwardReader);

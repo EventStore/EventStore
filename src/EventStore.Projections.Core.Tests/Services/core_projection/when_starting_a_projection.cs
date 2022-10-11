@@ -48,7 +48,8 @@ namespace EventStore.Projections.Core.Tests.Services.core_projection {
 			_bus.Subscribe(_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.NotAuthorized>());
 			_bus.Subscribe(
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
-			_bus.Subscribe(_ioDispatcher.BackwardReader);
+			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
+			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher.BackwardReader);
 			_bus.Subscribe(_ioDispatcher.ForwardReader);
 			_bus.Subscribe(_ioDispatcher.Writer);
 			_bus.Subscribe<IODispatcherDelayedMessage>(_ioDispatcher);
