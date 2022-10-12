@@ -29,6 +29,8 @@ All notable changes to this project will be documented in this file.
 - Incorrect error message when deleting a stream using gRPC. Fixes issue #3547 [EventStore#3583](https://github.com/EventStore/EventStore/pull/3583)
 - Node not going into ready state due to synchronization bug in UserManagementService [EventStore#3599](https://github.com/EventStore/EventStore/pull/3599)
 - Race condition when creating a persistent subscription to a stream at the same time as creating that stream. [EventStore#3601](https://github.com/EventStore/EventStore/pull/3601)
+- Quick responses for authentication requests when the node is not ready [EventStore#3609](https://github.com/EventStore/EventStore/pull/3609)
+- #3512  duplicate PS in the EventStoreDB UI [EventStore#3533](https://github.com/EventStore/EventStore/pull/3533)
 
 ### Changed
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
