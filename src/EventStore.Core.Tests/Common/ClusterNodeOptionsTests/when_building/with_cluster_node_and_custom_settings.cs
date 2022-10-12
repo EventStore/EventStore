@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using EventStore.Common.Utils;
+using EventStore.Core.Certificates;
 using EventStore.Core.LogAbstraction;
 using NUnit.Framework;
 
@@ -40,7 +41,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				}
 			}.RunInMemory();
 			try {
-				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory);
+				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory,
+					certificateProvider: new OptionsCertificateProvider(_options));
 			} catch (Exception e) {
 				_caughtException = e;
 			}
