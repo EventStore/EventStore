@@ -43,6 +43,7 @@ using EventStore.Common.Options;
 using EventStore.Core.Authentication.DelegatedAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -70,6 +71,7 @@ namespace EventStore.Core {
 			AuthenticationProviderFactory authenticationProviderFactory = null,
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> factories = null,
+			CertificateProvider certificateProvider = null,
 			Guid? instanceId = null,
 			int debugIndex = 0) {
 
@@ -79,6 +81,7 @@ namespace EventStore.Core {
 				authenticationProviderFactory,
 				authorizationProviderFactory,
 				factories,
+				certificateProvider,
 				instanceId: instanceId,
 				debugIndex: debugIndex);
 		}
@@ -173,9 +176,6 @@ namespace EventStore.Core {
 		public event EventHandler<VNodeStatusChangeArgs> NodeStatusChanged;
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
-		private X509Certificate2 _certificate;
-		private X509Certificate2Collection _intermediateCerts;
-		private X509Certificate2Collection _trustedRootCerts;
 		private readonly bool _disableHttps;
 		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate2Collection> _trustedRootCertsSelector;
@@ -184,6 +184,7 @@ namespace EventStore.Core {
 		private readonly CertificateDelegates.ClientCertificateValidator _internalClientCertificateValidator;
 		private readonly CertificateDelegates.ClientCertificateValidator _externalClientCertificateValidator;
 		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
+		private readonly CertificateProvider _certificateProvider;
 
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
@@ -217,9 +218,11 @@ namespace EventStore.Core {
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
 				additionalPersistentSubscriptionConsumerStrategyFactories = null,
+			CertificateProvider certificateProvider = null,
 			IExpiryStrategy expiryStrategy = null,
 			Guid? instanceId = null, int debugIndex = 0) {
 
+			_certificateProvider = certificateProvider;
 			if (options == null) {
 				throw new ArgumentNullException(nameof(options));
 			}
@@ -247,7 +250,7 @@ namespace EventStore.Core {
 			if (!options.Application.Insecure) {
 				ReloadCertificates(options);
 
-				if (_trustedRootCerts == null || _certificate == null) {
+				if (_certificateProvider?.TrustedRootCerts == null || _certificateProvider?.Certificate == null) {
 					throw new InvalidConfigurationException("A certificate is required unless insecure mode (--insecure) is set.");
 				}
 			}
@@ -532,9 +535,12 @@ namespace EventStore.Core {
 			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
 
-			_certificateSelector = () => _certificate;
-			_trustedRootCertsSelector = () => _trustedRootCerts;
-			_intermediateCertsSelector = () => _intermediateCerts == null ? null : new X509Certificate2Collection(_intermediateCerts);
+			_certificateSelector = () => _certificateProvider?.Certificate;
+			_trustedRootCertsSelector = () => _certificateProvider?.TrustedRootCerts;
+			_intermediateCertsSelector = () =>
+				_certificateProvider?.IntermediateCerts == null
+					? null
+					: new X509Certificate2Collection(_certificateProvider?.IntermediateCerts);
 
 			_internalServerCertificateValidator = (cert, chain, errors, otherNames) =>  ValidateServerCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector, otherNames);
 			_internalClientCertificateValidator = (cert, chain, errors) =>  ValidateClientCertificate(cert, chain, errors, _intermediateCertsSelector, _trustedRootCertsSelector);
@@ -1546,102 +1552,9 @@ namespace EventStore.Core {
 				return;
 			}
 
-			var (certificate, intermediates) = options.LoadNodeCertificate();
-
-			var previousThumbprint = _certificate?.Thumbprint;
-			var newThumbprint = certificate.Thumbprint;
-			Log.Information("Loading the node's certificate. Subject: {subject}, Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}",
-				certificate.SubjectName.Name, previousThumbprint, newThumbprint);
-
-			if (intermediates != null) {
-				foreach (var intermediateCert in intermediates) {
-					Log.Information("Loading intermediate certificate. Subject: {subject}, Thumbprint: {thumbprint}", intermediateCert.SubjectName.Name, intermediateCert.Thumbprint);
-				}
-			}
-
-			var trustedRootCerts = options.LoadTrustedRootCertificates();
-
-			foreach (var trustedRootCert in trustedRootCerts) {
-				Log.Information("Loading trusted root certificate. Subject: {subject}, Thumbprint: {thumbprint}", trustedRootCert.SubjectName.Name, trustedRootCert.Thumbprint);
-			}
-
-			if (!VerifyCertificates(certificate, intermediates, trustedRootCerts)) {
+			if (_certificateProvider?.LoadCertificates() == LoadCertificateResult.VerificationFailed){
 				throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
 			}
-
-			//no need for a lock here since reference assignment is atomic
-			_certificate = certificate;
-			_intermediateCerts = intermediates;
-			_trustedRootCerts = trustedRootCerts;
-
-			Log.Information("All certificates successfully loaded.");
-		}
-
-		private static bool VerifyCertificates(X509Certificate2 nodeCertificate, X509Certificate2Collection intermediates, X509Certificate2Collection trustedRoots) {
-			bool error = false;
-
-			if (!CertificateUtils.IsValidNodeCertificate(nodeCertificate, out var errorMsg)) {
-				Log.Error(errorMsg);
-				error = true;
-			}
-
-			if (intermediates != null) {
-				foreach (var cert in intermediates) {
-					if (!CertificateUtils.IsValidIntermediateCertificate(cert, out errorMsg)) {
-						Log.Error($"{errorMsg} Please bundle only intermediate certificates (if any) and not root certificates with the node's certificate.");
-						error = true;
-					}
-				}
-			}
-
-			if (trustedRoots != null && trustedRoots.Count > 0) {
-				foreach (var cert in trustedRoots) {
-					if (!CertificateUtils.IsValidRootCertificate(cert, out errorMsg)) {
-						Log.Error($"{errorMsg} If you have intermediate certificates, please bundle them with the node's certificate (in PEM or PKCS #12 format).");
-						error = true;
-					}
-				}
-			} else {
-				Log.Error("No trusted root certificates loaded");
-				error = true;
-			}
-
-			if (error) return false;
-
-			var chainStatus = CertificateUtils.BuildChain(nodeCertificate, intermediates, trustedRoots);
-
-			if (chainStatus != X509ChainStatusFlags.NoError) {
-				Log.Error("Failed to build the certificate chain with the node's own certificate up to the root with error: {chainStatus}. " +
-				             "If you have intermediate certificates, please bundle them with the node's certificate (in PEM or PKCS #12 format).", chainStatus);
-				error = true;
-			}
-
-			if (!error && intermediates != null) {
-				chainStatus = CertificateUtils.BuildChain(nodeCertificate, null, trustedRoots);
-
-				// Adding the intermediate certificates to the store is required so that
-				// i)  the full certificate chain (excluding the root) is sent from client to server (on both Windows/Linux)
-				//     and from server to client (on Windows only) during the TLS connection establishment
-				// ii) to prevent AIA certificate downloads
-				//
-				// see: https://github.com/dotnet/runtime/issues/47680#issuecomment-771093045
-				// and https://github.com/dotnet/runtime/issues/59979
-
-				if (chainStatus != X509ChainStatusFlags.NoError) {
-					Log.Warning(
-						"For correct functioning and optimal performance, please add your intermediate certificates to the current user's " +
-							(Runtime.IsWindows ?
-							"'Intermediate Certification Authorities' certificate store." :
-							"'CertificateAuthority' certificate store using the dotnet-certificate-tool.")
-					);
-				}
-			}
-
-			if (!error) {
-				Log.Information("Certificate chain verification successful.");
-			}
-
-			return !error;
 		}
 
 		public override string ToString() =>

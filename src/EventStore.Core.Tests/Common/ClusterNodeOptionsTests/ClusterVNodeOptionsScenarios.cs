@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.Certificates;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Tests.Services.Transport.Tcp;
 using NUnit.Framework;
@@ -24,7 +25,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 						ssl_connections.GetServerCertificate()));
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
+				certificateProvider: new OptionsCertificateProvider(_options));
 			_node.Start();
 		}
 
@@ -55,7 +57,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 					ssl_connections.GetServerCertificate()));
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(_ => new InternalAuthenticationProviderFactory(_)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)));
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
+				certificateProvider: new OptionsCertificateProvider(_options));
 			_node.Start();
 		}
 
