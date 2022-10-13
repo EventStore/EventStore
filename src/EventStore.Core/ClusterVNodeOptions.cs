@@ -84,7 +84,7 @@ namespace EventStore.Core {
 
 		[Description("Dev mode Options")]
 		public record DevModeOptions {
-			[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store.")]
+			[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
 			public bool Dev { get; init; } = false;
 
 			[Description("Removes any dev certificates installed on this computer without starting EventStoreDB.")]
