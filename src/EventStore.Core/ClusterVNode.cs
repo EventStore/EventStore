@@ -1036,10 +1036,10 @@ namespace EventStore.Core {
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 			var infoController = new InfoController(options, new Dictionary<string, bool> {
-				["projections"] = options.Projections.RunProjections != ProjectionType.None,
+				["projections"] = options.Projections.RunProjections != ProjectionType.None || options.DevMode.Dev,
 				["userManagement"] = options.Auth.AuthenticationType == Opts.AuthenticationTypeDefault &&
 				                     !options.Application.Insecure,
-				["atomPub"] = options.Interface.EnableAtomPubOverHttp
+				["atomPub"] = options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev
 
 			}, _authenticationProvider);
 
@@ -1052,7 +1052,7 @@ namespace EventStore.Core {
 			_httpService.SetupController(infoController);
 			if (!options.Interface.DisableStatsOnHttp)
 				_httpService.SetupController(statController);
-			if (options.Interface.EnableAtomPubOverHttp)
+			if (options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev)
 				_httpService.SetupController(atomController);
 			if (!options.Interface.DisableGossipOnHttp)
 				_httpService.SetupController(gossipController);
