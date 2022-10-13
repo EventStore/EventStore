@@ -36,12 +36,16 @@ namespace EventStore.ClusterNode {
 
 		public ClusterVNodeHostedService(ClusterVNodeOptions options, CertificateProvider certificateProvider) {
 			if (options == null) throw new ArgumentNullException(nameof(options));
-			_options = options.Projections.RunProjections >= ProjectionType.System
+			var projectionMode = options.DevMode.Dev && options.Projections.RunProjections == ProjectionType.None
+				? ProjectionType.System
+				: options.Projections.RunProjections;
+			var startStandardProjections = options.Projections.StartStandardProjections || options.DevMode.Dev;
+			_options = projectionMode >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
 						options.Projections.ProjectionThreads, 
-						options.Projections.RunProjections, 
-						options.Projections.StartStandardProjections, 
+						projectionMode,
+						startStandardProjections,
 						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
 						options.Projections.FaultOutOfOrderProjections,
 						options.Projections.ProjectionCompilationTimeout,
@@ -85,9 +89,8 @@ namespace EventStore.ClusterNode {
 			} else {
 				throw new ArgumentOutOfRangeException("Unexpected log format specified.");
 			}
-			
-			var runProjections = _options.Projections.RunProjections;
-			var enabledNodeSubsystems = runProjections >= ProjectionType.System
+
+			var enabledNodeSubsystems = projectionMode >= ProjectionType.System
 				? new[] {NodeSubsystems.Projections}
 				: Array.Empty<NodeSubsystems>();
 
