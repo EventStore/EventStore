@@ -38,6 +38,8 @@ All notable changes to this project will be documented in this file.
 - Deleting persistent subscriptions to $all over HTTP is not supported [EventStore#3593](https://github.com/EventStore/EventStore/pull/3593)
 - Don't catch and log `OperationCanceledException` in `PolicyAuthorizationProvider`. [EventStore#3594](https://github.com/EventStore/EventStore/pull/3594)
 - Extend unit test timings slightly for tests that sometimes timeout [EventStore#3596](https://github.com/EventStore/EventStore/pull/3596)
+- Start standard projections and atompub over http when running in dev mode [EventStore#3615](https://github.com/EventStore/EventStore/pull/3615)
+- Display node status as 'Unreachable' instead of 'Dead' in the cluster status page [EventStore#3612](https://github.com/EventStore/EventStore/pull/3612)
 
 ## [21.10.8] - 2022-09-16
 
