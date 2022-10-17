@@ -119,9 +119,14 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			public void FetchCompleted(ClientMessage.ReadStreamEventsForwardCompleted msg) {
 				switch (msg.Result) {
 					case ReadStreamResult.Success:
-					case ReadStreamResult.NoStream:
 						_onFetchCompleted(_skipFirstEvent ? msg.Events.Skip(1).ToArray() : msg.Events,
 							new PersistentSubscriptionSingleStreamPosition(msg.NextEventNumber), msg.IsEndOfStream);
+						break;
+					case ReadStreamResult.NoStream:
+						_onFetchCompleted(
+							Array.Empty<ResolvedEvent>(),
+							new PersistentSubscriptionSingleStreamPosition(0),
+							msg.IsEndOfStream);
 						break;
 					case ReadStreamResult.AccessDenied:
 						_onError($"Read access denied for stream: {msg.EventStreamId}");
