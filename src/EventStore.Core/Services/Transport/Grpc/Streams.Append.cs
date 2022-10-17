@@ -77,7 +77,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					metadata));
 			}
 
-			var appendResponseSource = new TaskCompletionSource<AppendResp>();
+			var appendResponseSource = new TaskCompletionSource<AppendResp>(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			var envelope = new CallbackEnvelope(HandleWriteEventsCompleted);
 

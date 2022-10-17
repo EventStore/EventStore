@@ -218,6 +218,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			bus.Subscribe<CoreProjectionProcessingMessage.Failed>(coreService);
 			bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
 			bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+			bus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
 			bus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
 			bus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
 			bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher.Awaker);

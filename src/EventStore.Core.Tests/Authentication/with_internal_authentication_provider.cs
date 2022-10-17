@@ -14,7 +14,8 @@ namespace EventStore.Core.Tests.Authentication {
 
 		protected void SetUpProvider() {
 			_ioDispatcher = new IODispatcher(_bus, new PublishEnvelope(_bus));
-			_bus.Subscribe(_ioDispatcher.BackwardReader);
+			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
+			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher.BackwardReader);
 			_bus.Subscribe(_ioDispatcher.ForwardReader);
 			_bus.Subscribe(_ioDispatcher.Writer);
 			_bus.Subscribe(_ioDispatcher.StreamDeleter);

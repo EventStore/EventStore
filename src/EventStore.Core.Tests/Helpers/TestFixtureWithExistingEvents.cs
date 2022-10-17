@@ -77,6 +77,7 @@ namespace EventStore.Core.Tests.Helpers {
 		private bool _readsBackwardsQueuesUp;
 		private bool _readAllEnabled;
 		private bool _noOtherStreams;
+		private bool _notReady;
 		private bool _readsTimeOut;
 
 		protected readonly HashSet<string> _readsToTimeOutOnce = new HashSet<string>();
@@ -112,6 +113,14 @@ namespace EventStore.Core.Tests.Helpers {
 			_all.Add(eventPosition, eventRecord);
 			_fakePosition += 100;
 			return eventPosition;
+		}
+
+		protected void NotReady() {
+			_notReady = true;
+		}
+
+		protected void Ready() {
+			_notReady = false;
 		}
 
 		protected void AllReadsTimeOut() {
@@ -204,7 +213,8 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Subscribe<ClientMessage.TransactionStart>(this);
 			_bus.Subscribe<ClientMessage.TransactionWrite>(this);
 			_bus.Subscribe<ClientMessage.TransactionCommit>(this);
-			_bus.Subscribe(_readDispatcher);
+			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_readDispatcher);
+			_bus.Subscribe<ClientMessage.NotHandled>(_readDispatcher);
 			_bus.Subscribe(_writeDispatcher);
 			_bus.Subscribe(_ioDispatcher.StreamDeleter);
 			_bus.Subscribe(_ioDispatcher.Awaker);
@@ -225,6 +235,13 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		public void Handle(ClientMessage.ReadStreamEventsBackward message) {
+			if (_notReady) {
+				message.Envelope.ReplyWith(new ClientMessage.NotHandled(
+					message.CorrelationId,
+					ClientMessage.NotHandled.Types.NotHandledReason.NotReady,
+					default(string)));
+			}
+
 			if (_readsBackwardsQueuesUp) {
 				_readEventsBackwardsQueue.Enqueue(message);
 				return;

@@ -189,7 +189,7 @@ namespace EventStore.Core.Helpers {
 			Action handler) {
 			return steps => ioDispatcher.Delay(
 				timeout,
-				() => {
+				_ => {
 					if (cancellationScope.Cancelled(Guid.Empty)) return;
 					handler();
 					Run(steps);
@@ -296,7 +296,7 @@ namespace EventStore.Core.Helpers {
 					if (ShouldRetry(result, retryExpectedVersion)) {
 						ioDispatcher.Delay(
 							timeout,
-							() => {
+							_ => {
 								if (timeout < TimeSpan.FromSeconds(10))
 									timeout += timeout;
 								PerformWithRetry(ioDispatcher, handler, steps, retryExpectedVersion, timeout, action);

@@ -10,22 +10,22 @@ namespace EventStore.Core.Helpers {
 		}
 
 		private readonly Guid _correlationId;
-		private readonly Action _action;
+		private readonly ICorrelatedTimeout _timeout;
 		private readonly Guid? _messageCorrelationId;
 
-		public IODispatcherDelayedMessage(Guid correlationId, Action action) {
-			_action = action;
+		public IODispatcherDelayedMessage(Guid correlationId, ICorrelatedTimeout timeout) {
+			_timeout = timeout;
 			_correlationId = correlationId;
 		}
 
-		public IODispatcherDelayedMessage(Guid correlationId, Action action, Guid? messageCorrelationId) {
-			_action = action;
+		public IODispatcherDelayedMessage(Guid correlationId, ICorrelatedTimeout timeout, Guid messageCorrelationId) {
+			_timeout = timeout;
 			_correlationId = correlationId;
 			_messageCorrelationId = messageCorrelationId;
 		}
 
-		public Action Action {
-			get { return _action; }
+		public void Timeout() {
+			_timeout.Timeout(_messageCorrelationId ?? Guid.Empty);
 		}
 
 		public Guid CorrelationId {

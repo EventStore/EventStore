@@ -26,7 +26,8 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests {
 			bus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
 			bus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 			bus.Subscribe(ioDispatcher.ForwardReader);
-			bus.Subscribe(ioDispatcher.BackwardReader);
+			bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+			bus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
 			bus.Subscribe(ioDispatcher.Writer);
 			bus.Subscribe(ioDispatcher.Awaker);
 			bus.Subscribe(ioDispatcher.StreamDeleter);
