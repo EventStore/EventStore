@@ -129,7 +129,7 @@ full path.
 
 #### HTTP requests logging
 
-EventStoreDB cal also log all the incoming HTTP requests, like many HTTP servers do. Requests are logged
+EventStoreDB can also log all the incoming HTTP requests, like many HTTP servers do. Requests are logged
 before being processed, so unsuccessful requests are logged too.
 
 Use one of the following ways to enable the HTTP requests logging:
@@ -739,9 +739,7 @@ read_from = "end"
 
 #### Example
 
-In this example, Vector runs on a machine as EventStoreDB, collecting metrics and logs, then sending them to
-Datadog. Notice that despite the EventStoreDB HTTP is, in theory, accessible via `localhost`, it won't work if
-the server SSL certificate doesn't have `localhost` in the certificate CN or SAN.
+In this example, Vector runs on the same machine as EventStoreDB, collects metrics and logs, and then sends them to Datadog. Notice that despite the EventStoreDB HTTP is, in theory, accessible via `localhost`, it won't work if the server SSL certificate doesn't have `localhost` in the certificate CN or SAN.
 
 ```toml
 [sources.eventstoredb_metrics]
@@ -868,7 +866,7 @@ You can play with such configuration through the [sample docker-compose](https:/
 
 ### Filebeat
 
-Logstash was the initial Elastic try to provide a log harvester tool. However, it appeared to have performance limitations. Elastic came up with the [Beats family](https://www.elastic.co/beats/), which allows gathering data from various specialized sources (files, metrics, network data, etc.). Elastic recommends Filebeat as the log collection and shipment tool off the host servers. Filebeat uses a backpressure-sensitive protocol when sending data to Logstash or Elasticsearch to account for higher volumes of data.
+Logstash was an initial attempt by Elastic to provide a log harvester tool. However, it appeared to have performance limitations. Elastic came up with the [Beats family](https://www.elastic.co/beats/), which allows gathering data from various specialized sources (files, metrics, network data, etc.). Elastic recommends Filebeat as the log collection and shipment tool off the host servers. Filebeat uses a backpressure-sensitive protocol when sending data to Logstash or Elasticsearch to account for higher volumes of data.
 
 Filebeat can pipe logs directly to Elasticsearch and set up a Kibana data view.
 
