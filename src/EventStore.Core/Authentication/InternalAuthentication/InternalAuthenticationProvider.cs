@@ -178,10 +178,9 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 			public void Handle(ClientMessage.NotHandled notHandled) {
 				if (_self._logFailedAuthenticationAttempts)
-					Log.Warning("Authentication Failed for {id}: {reason}. {description}",
+					Log.Warning("Authentication Failed for {id}: {reason}.",
 						_authenticationRequest.Id,
-						notHandled.Reason,
-						notHandled.Description);
+						notHandled.Reason);
 				_authenticationRequest.NotReady();
 			}
 

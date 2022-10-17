@@ -238,7 +238,7 @@ namespace EventStore.Core.Tests.Helpers {
 			if (_notReady) {
 				message.Envelope.ReplyWith(new ClientMessage.NotHandled(
 					message.CorrelationId,
-					ClientMessage.NotHandled.Types.NotHandledReason.NotReady,
+					TcpClientMessageDto.NotHandled.NotHandledReason.NotReady,
 					default(string)));
 			}
 
