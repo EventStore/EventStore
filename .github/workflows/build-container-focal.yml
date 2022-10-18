@@ -19,7 +19,7 @@ on:
 
 jobs:
   build-container:
-    uses: EventStore/EventStore/.github/workflows/build-container-reusable.yml@d274d7d528800d72cfac3d496dc747fba5208ff3
+    uses: ./.github/workflows/build-container-reusable.yml
     with:
       container-runtime: focal
 
