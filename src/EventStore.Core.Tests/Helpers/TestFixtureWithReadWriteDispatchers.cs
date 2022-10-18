@@ -21,10 +21,7 @@ namespace EventStore.Core.Tests.Helpers {
 		protected RequestResponseDispatcher<ClientMessage.WriteEvents, ClientMessage.WriteEventsCompleted>
 			_writeDispatcher;
 
-		protected
-			RequestResponseDispatcher
-			<ClientMessage.ReadStreamEventsBackward, ClientMessage.ReadStreamEventsBackwardCompleted>
-			_readDispatcher;
+		protected ReadDispatcher _readDispatcher;
 
 		protected TestHandler<Message> _consumer;
 		protected IODispatcher _ioDispatcher;
@@ -60,7 +57,8 @@ namespace EventStore.Core.Tests.Helpers {
 			_streamDispatcher = _ioDispatcher.StreamDeleter;
 
 			_bus.Subscribe(_ioDispatcher.ForwardReader);
-			_bus.Subscribe(_ioDispatcher.BackwardReader);
+			_bus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
+			_bus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher.BackwardReader);
 			_bus.Subscribe(_ioDispatcher.ForwardReader);
 			_bus.Subscribe(_ioDispatcher.Writer);
 			_bus.Subscribe(_ioDispatcher.StreamDeleter);

@@ -58,13 +58,8 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 					maxCount: 1,
 					resolveLinks: false,
 					principal: SystemAccounts.System,
-					action: m => {
-						ReadUserDataCompleted(m, authenticationRequest);
-					},
-					timeoutAction: () => {
-						ReadUserDataTimedOut(authenticationRequest);
-					},
-					Guid.NewGuid());
+					handler: new AuthReadResponseHandler(this, authenticationRequest),
+					corrId: Guid.NewGuid());
 			}
 		}
 		public string Name => "internal";
@@ -78,52 +73,6 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 			return new [] {
 				"Basic"
 			};
-		}
-
-		private void ReadUserDataCompleted(ClientMessage.ReadStreamEventsBackwardCompleted completed,
-			AuthenticationRequest authenticationRequest) {
-			try {
-				if (completed.Result == ReadStreamResult.StreamDeleted ||
-				    completed.Result == ReadStreamResult.NoStream ||
-				    completed.Result == ReadStreamResult.AccessDenied) {
-					if (_logFailedAuthenticationAttempts)
-						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id, "Invalid user.");
-					authenticationRequest.Unauthorized();
-					return;
-				}
-
-				if (completed.Result == ReadStreamResult.Error) {
-					if (_logFailedAuthenticationAttempts)
-						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
-							"Unexpected error.");
-					authenticationRequest.Error();
-					return;
-				}
-
-				var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
-				if (userData.LoginName != authenticationRequest.Name) {
-					authenticationRequest.Error();
-					return;
-				}
-
-				if (userData.Disabled) {
-					if (_logFailedAuthenticationAttempts)
-						Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
-							"The account is disabled.");
-					authenticationRequest.Unauthorized();
-				} else {
-					AuthenticateWithPasswordHash(authenticationRequest, userData);
-				}
-			} catch {
-				authenticationRequest.Unauthorized();
-			}
-		}
-
-		private void ReadUserDataTimedOut(AuthenticationRequest authenticationRequest) {
-			if (_logFailedAuthenticationAttempts)
-				Log.Warning("Authentication Failed for {id}: {reason}", authenticationRequest.Id,
-					"The system is not ready.");
-			authenticationRequest.NotReady();
 		}
 
 		private void AuthenticateWithPasswordHash(AuthenticationRequest authenticationRequest, UserData userData) {
@@ -175,6 +124,72 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 
 		public Task Initialize() {
 			return _tcs.Task;
+		}
+
+		class AuthReadResponseHandler : IReadStreamEventsBackwardHandler {
+			private readonly InternalAuthenticationProvider _self;
+			private readonly AuthenticationRequest _authenticationRequest;
+
+			public AuthReadResponseHandler(InternalAuthenticationProvider self, AuthenticationRequest request) {
+				_self = self;
+				_authenticationRequest = request;
+			}
+
+			public bool HandlesAlt => true;
+			public bool HandlesTimeout => true;
+
+			public void Handle(ClientMessage.ReadStreamEventsBackwardCompleted completed) {
+				try {
+					if (completed.Result == ReadStreamResult.StreamDeleted ||
+						completed.Result == ReadStreamResult.NoStream ||
+						completed.Result == ReadStreamResult.AccessDenied) {
+						if (_self._logFailedAuthenticationAttempts)
+							Log.Warning("Authentication Failed for {id}: {reason}", _authenticationRequest.Id, "Invalid user.");
+						_authenticationRequest.Unauthorized();
+						return;
+					}
+
+					if (completed.Result == ReadStreamResult.Error) {
+						if (_self._logFailedAuthenticationAttempts)
+							Log.Warning("Authentication Failed for {id}: {reason}", _authenticationRequest.Id,
+								"Unexpected error.");
+						_authenticationRequest.Error();
+						return;
+					}
+
+					var userData = completed.Events[0].Event.Data.ParseJson<UserData>();
+					if (userData.LoginName != _authenticationRequest.Name) {
+						_authenticationRequest.Error();
+						return;
+					}
+
+					if (userData.Disabled) {
+						if (_self._logFailedAuthenticationAttempts)
+							Log.Warning("Authentication Failed for {id}: {reason}", _authenticationRequest.Id,
+								"The account is disabled.");
+						_authenticationRequest.Unauthorized();
+					} else {
+						_self.AuthenticateWithPasswordHash(_authenticationRequest, userData);
+					}
+				} catch {
+					_authenticationRequest.Unauthorized();
+				}
+			}
+
+			public void Handle(ClientMessage.NotHandled notHandled) {
+				if (_self._logFailedAuthenticationAttempts)
+					Log.Warning("Authentication Failed for {id}: {reason}.",
+						_authenticationRequest.Id,
+						notHandled.Reason);
+				_authenticationRequest.NotReady();
+			}
+
+			public void Timeout() {
+				if (_self._logFailedAuthenticationAttempts)
+					Log.Warning("Authentication Failed for {id}: {reason}", _authenticationRequest.Id,
+						"Timeout.");
+				_authenticationRequest.NotReady();
+			}
 		}
 	}
 }

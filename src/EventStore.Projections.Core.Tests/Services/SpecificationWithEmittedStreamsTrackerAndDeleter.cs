@@ -18,7 +18,8 @@ namespace EventStore.Projections.Core.Tests.Services {
 
 		protected override Task Given() {
 			_ioDispatcher = new IODispatcher(_node.Node.MainQueue, new PublishEnvelope(_node.Node.MainQueue), true);
-			_node.Node.MainBus.Subscribe(_ioDispatcher.BackwardReader);
+			_node.Node.MainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
+			_node.Node.MainBus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher.BackwardReader);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.ForwardReader);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.Writer);
 			_node.Node.MainBus.Subscribe(_ioDispatcher.StreamDeleter);

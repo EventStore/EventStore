@@ -110,6 +110,7 @@ namespace EventStore.Projections.Core {
 				coreInputBus.Subscribe<CoreProjectionManagementMessage.GetResult>(_projectionCoreService);
 				coreInputBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_ioDispatcher.ForwardReader);
 				coreInputBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(_ioDispatcher.BackwardReader);
+				coreInputBus.Subscribe<ClientMessage.NotHandled>(_ioDispatcher.BackwardReader);
 				coreInputBus.Subscribe<ClientMessage.ReadEventCompleted>(_ioDispatcher.EventReader);
 				coreInputBus.Subscribe<ClientMessage.WriteEventsCompleted>(_ioDispatcher.Writer);
 				coreInputBus.Subscribe<ClientMessage.DeleteStreamCompleted>(_ioDispatcher.StreamDeleter);
