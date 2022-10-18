@@ -3,22 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/3532 [EventStore#3536](https://github.com/EventStore/EventStore/pull/3536)
-- //github.com/EventStore/EventStore/pull/3543 [EventStore#3545](https://github.com/EventStore/EventStore/pull/3545)
-- //github.com/EventStore/EventStore/pull/3549 [EventStore#3556](https://github.com/EventStore/EventStore/pull/3556)
-- //github.com/PaskeS/EventStore/pull/3564 [EventStore#3567](https://github.com/EventStore/EventStore/pull/3567)
-- //github.com/EventStore/EventStore/pull/3561 [EventStore#3566](https://github.com/EventStore/EventStore/pull/3566)
-- //github.com/PaskeS/EventStore/pull/3578 [EventStore#3579](https://github.com/EventStore/EventStore/pull/3579)
-- //github.com/EventStore/EventStore/pull/3619 [EventStore#3620](https://github.com/EventStore/EventStore/pull/3620)
-- //github.com/EventStore/EventStore/pull/3631 [EventStore#3636](https://github.com/EventStore/EventStore/pull/3636)
-- //github.com/EventStore/EventStore/pull/3632 [EventStore#3634](https://github.com/EventStore/EventStore/pull/3634)
-- //github.com/EventStore/EventStore/pull/3646 [EventStore#3648](https://github.com/EventStore/EventStore/pull/3648)
-- //github.com/EventStore/EventStore/pull/3645 [EventStore#3647](https://github.com/EventStore/EventStore/pull/3647)
-- //github.com/EventStore/EventStore/pull/3653 [EventStore#3654](https://github.com/EventStore/EventStore/pull/3654)
+### Fixed
+- Whitespace [EventStore#3649](https://github.com/EventStore/EventStore/pull/3649)
+
+## [22.10.0] - 2022-11-10
 
 ### Security
 - Updated Newtonsoft.Json from 11.0.2 to 13.0.1. [EventStore#3507](https://github.com/EventStore/EventStore/pull/3507)
+- Upgrade sqlite to v3.39.2 for [CVE-2022-35737](https://github.com/advisories/GHSA-jw36-hf63-69r9) [EventStore#3631](https://github.com/EventStore/EventStore/pull/3631)
 
 ### Added
 - New scavenge algorithm [EventStore#3520](https://github.com/EventStore/EventStore/pull/3520)
@@ -29,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - support for .NET 6.0 [EventStore#3595](https://github.com/EventStore/EventStore/pull/3595)
 - Dynamically resize stream info caches based on available memory [EventStore#3569](https://github.com/EventStore/EventStore/pull/3569)
 - Dev mode option to generate and trust dev certs for a secure single node on localhost. [EventStore#3606](https://github.com/EventStore/EventStore/pull/3606)
+- Tuning new scavenge based on cloud tests [EventStore#3645](https://github.com/EventStore/EventStore/pull/3645)
+- AllowUnknownOptions option that allows EventStoreDB to start when unknown options are present (default: false) [EventStore#3653](https://github.com/EventStore/EventStore/pull/3653)
 
 ### Fixed
 - Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
@@ -37,11 +31,12 @@ All notable changes to this project will be documented in this file.
 - Node not going into ready state due to synchronization bug in UserManagementService [EventStore#3599](https://github.com/EventStore/EventStore/pull/3599)
 - Race condition when creating a persistent subscription to a stream at the same time as creating that stream. [EventStore#3601](https://github.com/EventStore/EventStore/pull/3601)
 - Quick responses for authentication requests when the node is not ready [EventStore#3609](https://github.com/EventStore/EventStore/pull/3609)
-- #3512  duplicate PS in the EventStoreDB UI [EventStore#3533](https://github.com/EventStore/EventStore/pull/3533)
 - Exit application when hosted service shuts down [EventStore#3624](https://github.com/EventStore/EventStore/pull/3624)
 - Markdown syntax error [EventStore#3629](https://github.com/EventStore/EventStore/pull/3629)
 - Downgrade GitInfo due to breaking change [EventStore#3633](https://github.com/EventStore/EventStore/pull/3633)
-- whitespace [EventStore#3649](https://github.com/EventStore/EventStore/pull/3649)
+- Duplicate Persistent Subscriptions in the EventStoreDB UI [EventStore#3533](https://github.com/EventStore/EventStore/pull/3533)
+- Silenced warning `Tried to read actual position -1` when it does not represent a suspicious occurrence. [EventStore#3632](https://github.com/EventStore/EventStore/pull/3632)
+- Edge cases in maxage read fast path. [EventStore#3646](https://github.com/EventStore/EventStore/pull/3646)
 
 ### Changed
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
@@ -51,6 +46,7 @@ All notable changes to this project will be documented in this file.
 - Start standard projections and atompub over http when running in dev mode [EventStore#3615](https://github.com/EventStore/EventStore/pull/3615)
 - Display node status as 'Unreachable' instead of 'Dead' in the cluster status page [EventStore#3612](https://github.com/EventStore/EventStore/pull/3612)
 - Fix typos and improve grammar on the server documentations' diagnostics page [EventStore#3616](https://github.com/EventStore/EventStore/pull/3616)
+- Update EventStore.Plugins to latest version [EventStore#3619](https://github.com/EventStore/EventStore/pull/3619)
 
 ## [21.10.8] - 2022-09-16
 
