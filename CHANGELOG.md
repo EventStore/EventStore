@@ -40,6 +40,7 @@ All notable changes to this project will be documented in this file.
 - Extend unit test timings slightly for tests that sometimes timeout [EventStore#3596](https://github.com/EventStore/EventStore/pull/3596)
 - Start standard projections and atompub over http when running in dev mode [EventStore#3615](https://github.com/EventStore/EventStore/pull/3615)
 - Display node status as 'Unreachable' instead of 'Dead' in the cluster status page [EventStore#3612](https://github.com/EventStore/EventStore/pull/3612)
+- Fix typos and improve grammar on the server documentations' diagnostics page [EventStore#3616](https://github.com/EventStore/EventStore/pull/3616)
 
 ## [21.10.8] - 2022-09-16
 
