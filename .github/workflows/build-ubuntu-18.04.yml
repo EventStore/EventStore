@@ -19,7 +19,7 @@ on:
 
 jobs:
   build:
-    uses: EventStore/EventStore/.github/workflows/build-reusable.yml@d274d7d528800d72cfac3d496dc747fba5208ff3
+    uses: ./.github/workflows/build-reusable.yml
     with:
       os: ubuntu-18.04
       arch: x64
