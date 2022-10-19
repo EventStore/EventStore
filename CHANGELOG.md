@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/PaskeS/EventStore/pull/3564 [EventStore#3567](https://github.com/EventStore/EventStore/pull/3567)
 - //github.com/EventStore/EventStore/pull/3561 [EventStore#3566](https://github.com/EventStore/EventStore/pull/3566)
 - //github.com/PaskeS/EventStore/pull/3578 [EventStore#3579](https://github.com/EventStore/EventStore/pull/3579)
+- //github.com/EventStore/EventStore/pull/3619 [EventStore#3620](https://github.com/EventStore/EventStore/pull/3620)
 
 ### Security
 - Updated Newtonsoft.Json from 11.0.2 to 13.0.1. [EventStore#3507](https://github.com/EventStore/EventStore/pull/3507)
