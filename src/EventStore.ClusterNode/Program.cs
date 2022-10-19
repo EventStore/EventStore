@@ -198,6 +198,8 @@ namespace EventStore.ClusterNode {
 								.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 								.Configure(hostedService.Node.Startup.Configure))
 							.RunConsoleAsync(options => options.SuppressStatusMessages = true, cts.Token);
+
+						exitCodeSource.TrySetResult(0);
 					} catch (Exception ex) {
 						Log.Fatal("Error occurred during setup: {e}", ex);
 						exitCodeSource.TrySetResult(1);
