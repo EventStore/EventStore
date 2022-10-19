@@ -12,6 +12,7 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Core.Certificates;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.Monitoring;
@@ -177,6 +178,7 @@ namespace EventStore.Core.Tests.Helpers {
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
+				new OptionsCertificateProvider(options),
 				expiryStrategy,
 				Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

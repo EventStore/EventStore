@@ -17,6 +17,7 @@ using EventStore.Core.Authentication;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Bus;
+using EventStore.Core.Certificates;
 using EventStore.Core.Messages;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
@@ -159,7 +160,8 @@ namespace EventStore.Core.Tests.Helpers {
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
-				expiryStrategy: expiryStrategy);
+				expiryStrategy: expiryStrategy,
+				certificateProvider: new OptionsCertificateProvider(options));
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

@@ -23,6 +23,7 @@ namespace EventStore.Core {
 
 		internal IConfigurationRoot? ConfigurationRoot { get; init; }
 		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
+		[OptionGroup] public DevModeOptions DevMode { get; init; } = new();
 		[OptionGroup] public LoggingOptions Log { get; init; } = new();
 		[OptionGroup] public AuthOptions Auth { get; init; } = new();
 		[OptionGroup] public CertificateOptions Certificate { get; init; } = new();
@@ -64,6 +65,7 @@ namespace EventStore.Core {
 
 			return new ClusterVNodeOptions {
 				Application = ApplicationOptions.FromConfiguration(configurationRoot),
+				DevMode = DevModeOptions.FromConfiguration(configurationRoot),
 				Log = LoggingOptions.FromConfiguration(configurationRoot),
 				Auth = AuthOptions.FromConfiguration(configurationRoot),
 				Certificate = CertificateOptions.FromConfiguration(configurationRoot),
@@ -79,6 +81,20 @@ namespace EventStore.Core {
 		}
 
 		public ClusterVNodeOptions Reload() => ConfigurationRoot == null ? this : FromConfiguration(ConfigurationRoot);
+
+		[Description("Dev mode Options")]
+		public record DevModeOptions {
+			[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
+			public bool Dev { get; init; } = false;
+
+			[Description("Removes any dev certificates installed on this computer without starting EventStoreDB.")]
+			public bool RemoveDevCerts { get; init; } = false;
+
+			internal static DevModeOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				Dev = configurationRoot.GetValue<bool>(nameof(Dev)),
+				RemoveDevCerts = configurationRoot.GetValue<bool>(nameof(RemoveDevCerts))
+			};
+		}
 
 		[Description("Application Options")]
 		public record ApplicationOptions {

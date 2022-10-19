@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -11,6 +12,7 @@ using EventStore.Common.Exceptions;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Certificates;
 using EventStore.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -19,6 +21,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
+using EventStore.Common.DevCertificates;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
@@ -60,6 +63,13 @@ namespace EventStore.ClusterNode {
 					return 0;
 				}
 
+				if (options.DevMode.RemoveDevCerts) {
+					Log.Information("Removing EventStoreDB dev certs.");
+					Common.DevCertificates.CertificateManager.Instance.CleanupHttpsCertificates();
+					Log.Information("Dev certs removed. Exiting.");
+					return 0;
+				}
+
 				Log.Information("\n{description,-25} {version} ({branch}/{hashtag}, {timestamp})", "ES VERSION:",
 					VersionInfo.Version, VersionInfo.Branch, VersionInfo.Hashtag, VersionInfo.Timestamp);
 				Log.Information("{description,-25} {osArchitecture} ", "OS ARCHITECTURE:",
@@ -77,6 +87,43 @@ namespace EventStore.ClusterNode {
 					$"Latency Mode: {GCSettings.LatencyMode}");
 				Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 				Log.Information(options.DumpOptions());
+
+				CertificateProvider certificateProvider;
+				if (options.DevMode.Dev) {
+					Log.Information("Dev mode is enabled.");
+					Log.Warning(
+						"\n==============================================================================================================\n" +
+						"DEV MODE IS ON. THIS MODE IS *NOT* RECOMMENDED FOR PRODUCTION USE.\n" +
+						"DEV MODE WILL GENERATE AND TRUST DEV CERTIFICATES FOR RUNNING A SINGLE SECURE NODE ON LOCALHOST.\n" +
+						"==============================================================================================================\n");
+					var manager = CertificateManager.Instance;
+					var result = manager.EnsureDevelopmentCertificate(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddMonths(1));
+					if (result is not (EnsureCertificateResult.Succeeded or EnsureCertificateResult.ValidCertificatePresent)) {
+						Log.Fatal("Could not ensure dev certificate is available. Reason: {result}", result);
+						return 1;
+					}
+
+					var userCerts = manager.ListCertificates(StoreName.My, StoreLocation.CurrentUser, true);
+					var machineCerts = manager.ListCertificates(StoreName.My, StoreLocation.LocalMachine, true);
+					var certs = userCerts.Concat(machineCerts).ToList();
+
+					if (!certs.Any()) {
+						Log.Fatal("Could not create dev certificate.");
+						return 1;
+					}
+					if (!manager.IsTrusted(certs[0]) && OperatingSystem.IsWindows()) {
+						Log.Information("Dev certificate {cert} is not trusted. Adding it to the trusted store.", certs[0]);
+						manager.TrustCertificate(certs[0]);
+					} else {
+						Log.Warning("Automatically trusting dev certs is only supported on Windows.\n" +
+									"Please trust certificate {cert} if it's not trusted already.", certs[0]);
+					}
+
+					Log.Information("Running in dev mode using certificate '{cert}'", certs[0]);
+					certificateProvider = new DevCertificateProvider(certs[0]);
+				} else {
+					certificateProvider = new OptionsCertificateProvider(options);
+				}
 
 				var deprecationWarnings = options.GetDeprecationWarnings();
 				if (deprecationWarnings != null) {
@@ -111,7 +158,7 @@ namespace EventStore.ClusterNode {
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
-				using (var hostedService = new ClusterVNodeHostedService(options)) {
+				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider)) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
 					// ReSharper disable MethodSupportsCancellation

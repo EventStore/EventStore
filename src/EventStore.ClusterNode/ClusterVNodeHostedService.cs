@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
+using EventStore.Core.Certificates;
 using EventStore.Core.PluginModel;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Plugins.Authentication;
@@ -33,14 +34,18 @@ namespace EventStore.ClusterNode {
 
 		public ClusterVNode Node { get; }
 
-		public ClusterVNodeHostedService(ClusterVNodeOptions options) {
+		public ClusterVNodeHostedService(ClusterVNodeOptions options, CertificateProvider certificateProvider) {
 			if (options == null) throw new ArgumentNullException(nameof(options));
-			_options = options.Projections.RunProjections >= ProjectionType.System
+			var projectionMode = options.DevMode.Dev && options.Projections.RunProjections == ProjectionType.None
+				? ProjectionType.System
+				: options.Projections.RunProjections;
+			var startStandardProjections = options.Application.StartStandardProjections || options.DevMode.Dev;
+			_options = projectionMode >= ProjectionType.System
 				? options.WithSubsystem(new ProjectionsSubsystem(
 					new ProjectionSubsystemOptions(
 						options.Projections.ProjectionThreads, 
-						options.Projections.RunProjections, 
-						options.Application.StartStandardProjections, 
+						projectionMode,
+						startStandardProjections,
 						TimeSpan.FromMinutes(options.Projections.ProjectionsQueryExpiry), 
 						options.Projections.FaultOutOfOrderProjections,
 						options.Projections.ProjectionCompilationTimeout,
@@ -76,17 +81,16 @@ namespace EventStore.ClusterNode {
 			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories());	
+	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider);
 			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 				var logFormatFactory = new LogV3FormatAbstractorFactory();
 				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories());
+					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider);
 			} else {
 				throw new ArgumentOutOfRangeException("Unexpected log format specified.");
 			}
-			
-			var runProjections = _options.Projections.RunProjections;
-			var enabledNodeSubsystems = runProjections >= ProjectionType.System
+
+			var enabledNodeSubsystems = projectionMode >= ProjectionType.System
 				? new[] {NodeSubsystems.Projections}
 				: Array.Empty<NodeSubsystems>();
 
