@@ -33,6 +33,7 @@ All notable changes to this project will be documented in this file.
 - Race condition when creating a persistent subscription to a stream at the same time as creating that stream. [EventStore#3601](https://github.com/EventStore/EventStore/pull/3601)
 - Quick responses for authentication requests when the node is not ready [EventStore#3609](https://github.com/EventStore/EventStore/pull/3609)
 - #3512  duplicate PS in the EventStoreDB UI [EventStore#3533](https://github.com/EventStore/EventStore/pull/3533)
+- Exit application when hosted service shuts down [EventStore#3624](https://github.com/EventStore/EventStore/pull/3624)
 
 ### Changed
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
