@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
+using EventStore.Core.Diagnostics;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
@@ -25,7 +26,7 @@ namespace EventStore.Projections.Core {
 			var coreQueues = new Dictionary<Guid, IQueuedHandler>();
 			while (coreQueues.Count < projectionsStandardComponents.ProjectionWorkerThreadCount) {
 				var coreInputBus = new InMemoryBus("bus");
-				var coreQueue = QueuedHandler.CreateQueuedHandler(coreInputBus,
+				var coreQueue = QueuedHandler.CreateQueuedHandler(HandleExtender.Create(coreInputBus),
 					"Projection Core #" + coreQueues.Count,
 					standardComponents.QueueStatsManager,
 					groupName: "Projection Core");

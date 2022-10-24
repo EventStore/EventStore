@@ -5,26 +5,33 @@ using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
-	public static class ElectionMessage {
-		public class StartElections : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class ElectionMessage {
+		[StatsGroup("elections")]
+		public enum MessageType {
+			None = 0,
+			StartElections = 1,
+			ViewChange = 2,
+			ViewChangeProof = 3,
+			SendViewChangeProof = 4,
+			ElectionsTimedOut = 5,
+			Prepare = 6,
+			PrepareOk = 7,
+			Proposal = 8,
+			Accept = 9,
+			LeaderIsResigning = 10,
+			LeaderIsResigningOk = 11,
+			ElectionsDone = 12,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.StartElections)]
+		public partial class StartElections : Message {
 			public override string ToString() {
 				return "---- StartElections";
 			}
 		}
 
-		public class ViewChange : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ViewChange)]
+		public partial class ViewChange : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
 
@@ -52,13 +59,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ViewChangeProof : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ViewChangeProof)]
+		public partial class ViewChangeProof : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
 			public readonly int InstalledView;
@@ -82,25 +84,15 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class SendViewChangeProof : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.SendViewChangeProof)]
+		public partial class SendViewChangeProof : Message {
 			public override string ToString() {
 				return string.Format("---- SendViewChangeProof");
 			}
 		}
 
-		public class ElectionsTimedOut : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ElectionsTimedOut)]
+		public partial class ElectionsTimedOut : Message {
 			public readonly int View;
 
 			public ElectionsTimedOut(int view) {
@@ -112,13 +104,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class Prepare : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Prepare)]
+		public partial class Prepare : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
 			public readonly int View;
@@ -142,13 +129,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class PrepareOk : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.PrepareOk)]
+		public partial class PrepareOk : Message {
 			public readonly int View;
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
@@ -213,13 +195,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class Proposal : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Proposal)]
+		public partial class Proposal : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
 			public readonly Guid LeaderId;
@@ -281,13 +258,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class Accept : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Accept)]
+		public partial class Accept : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
 			public readonly Guid LeaderId;
@@ -321,13 +293,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class LeaderIsResigning : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.LeaderIsResigning)]
+		public partial class LeaderIsResigning : Message {
 			public readonly Guid LeaderId;
 			public readonly EndPoint LeaderHttpEndPoint;
 
@@ -347,13 +314,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class LeaderIsResigningOk : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.LeaderIsResigningOk)]
+		public partial class LeaderIsResigningOk : Message {
 			public readonly Guid LeaderId;
 			public readonly EndPoint LeaderHttpEndPoint;
 			public readonly Guid ServerId;
@@ -380,13 +342,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ElectionsDone : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ElectionsDone)]
+		public partial class ElectionsDone : Message {
 			public readonly int InstalledView;
 			public readonly int ProposalNumber;
 			public readonly MemberInfo Leader;

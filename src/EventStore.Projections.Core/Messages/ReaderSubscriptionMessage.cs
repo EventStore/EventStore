@@ -5,14 +5,23 @@ using EventStore.Projections.Core.Services.Processing;
 using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEvent;
 
 namespace EventStore.Projections.Core.Messages {
-	public static class ReaderSubscriptionMessage {
-		public class SubscriptionMessage : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class ReaderSubscriptionMessage {
+		[StatsGroup("projections-reader-subscription")]
+		public enum MessageType {
+			None = 0,
+			SubscriptionMessage = 1,
+			EventReaderIdle = 2,
+			EventReaderStarting = 3,
+			EventReaderEof = 4,
+			EventReaderPartitionEof = 5,
+			EventReaderPartitionDeleted = 6,
+			EventReaderNotAuthorized = 7,
+			CommittedEventDistributed = 8,
+			Faulted = 9,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.SubscriptionMessage)]
+		public partial class SubscriptionMessage : Message {
 			private readonly Guid _correlationId;
 			private readonly CheckpointTag _preTagged;
 			private readonly object _source;
@@ -36,13 +45,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class EventReaderIdle : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.EventReaderIdle)]
+		public partial class EventReaderIdle : SubscriptionMessage {
 			private readonly DateTime _idleTimestampUtc;
 
 			public EventReaderIdle(Guid correlationId, DateTime idleTimestampUtc, object source = null)
@@ -55,13 +59,9 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public sealed class EventReaderStarting : SubscriptionMessage {
+		[StatsMessage(MessageType.EventReaderStarting)]
+		public sealed partial class EventReaderStarting : SubscriptionMessage {
 			private readonly long _lastCommitPosition;
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
 
 			public EventReaderStarting(Guid correlationId, long lastCommitPosition, object source = null)
 				: base(correlationId, null, source) {
@@ -73,13 +73,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class EventReaderEof : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.EventReaderEof)]
+		public partial class EventReaderEof : SubscriptionMessage {
 			private readonly bool _maxEventsReached;
 
 			public EventReaderEof(Guid correlationId, bool maxEventsReached = false, object source = null)
@@ -92,13 +87,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class EventReaderPartitionEof : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.EventReaderPartitionEof)]
+		public partial class EventReaderPartitionEof : SubscriptionMessage {
 			private readonly string _partition;
 
 			public EventReaderPartitionEof(
@@ -112,13 +102,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class EventReaderPartitionDeleted : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.EventReaderPartitionDeleted)]
+		public partial class EventReaderPartitionDeleted : SubscriptionMessage {
 			private readonly string _partition;
 			private readonly long? _lastEventNumber;
 			private readonly TFPos? _deleteLinkOrEventPosition;
@@ -164,25 +149,15 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public sealed class EventReaderNotAuthorized : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.EventReaderNotAuthorized)]
+		public sealed partial class EventReaderNotAuthorized : SubscriptionMessage {
 			public EventReaderNotAuthorized(Guid correlationId, object source = null)
 				: base(correlationId, null, source) {
 			}
 		}
 
-		public class CommittedEventDistributed : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.CommittedEventDistributed)]
+		public partial class CommittedEventDistributed : SubscriptionMessage {
 			public static CommittedEventDistributed Sample(
 				Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId,
 				long positionSequenceNumber,
@@ -246,13 +221,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Faulted : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Faulted)]
+		public partial class Faulted : SubscriptionMessage {
 			private readonly string _reason;
 
 			public Faulted(

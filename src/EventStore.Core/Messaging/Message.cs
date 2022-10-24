@@ -3,17 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Messaging {
-	public abstract class Message {
-		protected static int NextMsgId = -1;
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-		public virtual int MsgTypeId {
-			get { return TypeId; }
-		}
+	[RootMessage()]
+	public abstract partial class Message {
 	}
 
 	public static class MessageHierarchy {
@@ -42,6 +36,7 @@ namespace EventStore.Core.Messaging {
 					from type in LoadAvailableTypes(assembly)
 					where rootMsgType.IsAssignableFrom(type)
 					select type)) {
+
 				msgTypeCount += 1;
 
 				var msgTypeId = GetMsgTypeId(msgType);
@@ -49,8 +44,6 @@ namespace EventStore.Core.Messaging {
 				parents.Add(msgTypeId, new List<int>());
 
 				MaxMsgTypeId = Math.Max(msgTypeId, MaxMsgTypeId);
-				//Log.WriteLine("Found {0} with MsgTypeId {1}", msgType.Name, msgTypeId);
-
 				var type = msgType;
 				while (true) {
 					var typeId = GetMsgTypeId(type);

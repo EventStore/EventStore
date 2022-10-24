@@ -1,17 +1,18 @@
-using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
-	public static class LeaderDiscoveryMessage {
-		public class LeaderFound : Message {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+	public static partial class LeaderDiscoveryMessage {
+		[StatsGroup("leader-discovery")]
+		public enum MessageType {
+			None = 0,
+			LeaderFound = 1,
+			DiscoveryTimeout = 2,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.LeaderFound)]
+		public partial class LeaderFound : Message {
 			public readonly MemberInfo Leader;
 
 			public LeaderFound(MemberInfo leader) {
@@ -20,12 +21,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class DiscoveryTimeout : Message {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[StatsMessage(MessageType.DiscoveryTimeout)]
+		public partial class DiscoveryTimeout : Message {
 		}
 	}
 }

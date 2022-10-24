@@ -6,7 +6,7 @@ namespace EventStore.Core.Bus {
 	public class QueuedHandler :
 		QueuedHandlerMRES,
 		IQueuedHandler {
-		public static IQueuedHandler CreateQueuedHandler(IHandle<Message> consumer, string name,
+		public static IQueuedHandler CreateQueuedHandler(IHandleEx<Message> consumer, string name,
 			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null, TimeSpan? threadStopWaitTimeout = null, string groupName = null) {
@@ -22,7 +22,7 @@ namespace EventStore.Core.Bus {
 		public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
 		public static readonly TimeSpan VerySlowMsgThreshold = TimeSpan.FromSeconds(7);
 
-		QueuedHandler(IHandle<Message> consumer,
+		QueuedHandler(IHandleEx<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,

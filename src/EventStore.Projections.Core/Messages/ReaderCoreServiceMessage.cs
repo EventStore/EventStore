@@ -2,14 +2,16 @@ using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages {
-	public static class ReaderCoreServiceMessage {
-		public class StartReader : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class ReaderCoreServiceMessage {
+		[StatsGroup("projections-reader-core-service")]
+		public enum MessageType {
+			None = 0,
+			StartReader = 1,
+			StopReader = 2,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-			
+		[StatsMessage(MessageType.StartReader)]
+		public partial class StartReader : Message {
 			public Guid InstanceCorrelationId { get; }
 
 			public StartReader(Guid instanceCorrelationId) {
@@ -17,13 +19,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class StopReader : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-			
+		[StatsMessage(MessageType.StopReader)]
+		public partial class StopReader : Message {
 			public Guid QueueId { get; }
 			
 			public StopReader(Guid queueId) {

@@ -1,16 +1,20 @@
 using System;
+using EventStore;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
-	public static class CoreProjectionCheckpointWriterMessage {
-		public sealed class CheckpointWritten : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class CoreProjectionCheckpointWriterMessage {
+		//qq this is small, might warrant combining with some other group
+		[StatsGroup("projections-checkpoint-writer")]
+		public enum MessageType {
+			None = 0,
+			CheckpointWritten = 1,
+			RestartRequested = 2,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.CheckpointWritten)]
+		public sealed partial class CheckpointWritten : Message {
 			private readonly CheckpointTag _position;
 
 			public CheckpointWritten(CheckpointTag position) {
@@ -22,13 +26,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public sealed class RestartRequested : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.RestartRequested)]
+		public sealed partial class RestartRequested : Message {
 			public string Reason {
 				get { return _reason; }
 			}
@@ -42,14 +41,23 @@ namespace EventStore.Projections.Core.Messages {
 	}
 }
 
-public static class CoreProjectionProcessingMessage {
-	public abstract class Message : EventStore.Core.Messaging.Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+public static partial class CoreProjectionProcessingMessage {
+	[StatsGroup("projections-processing")]
+	public enum MessageType {
+		None = 0,
+		Message = 1,
+		CheckpointLoaded = 2,
+		PrerecordedEventsLoaded = 3,
+		CheckpointCompleted = 4,
+		RestartRequested = 5,
+		Failed = 6,
+		ReadyForCheckpoint = 7,
+		EmittedStreamAwaiting = 8,
+		EmittedStreamWriteCompleted = 9,
+	}
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage]
+	public abstract partial class Message : EventStore.Core.Messaging.Message {
 		private readonly Guid _projectionId;
 
 		protected Message(Guid projectionId) {
@@ -61,13 +69,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class CheckpointLoaded : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.CheckpointLoaded)]
+	public partial class CheckpointLoaded : Message {
 		private readonly CheckpointTag _checkpointTag;
 		private readonly string _checkpointData;
 		private readonly long _checkpointEventNumber;
@@ -93,13 +96,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class PrerecordedEventsLoaded : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.PrerecordedEventsLoaded)]
+	public partial class PrerecordedEventsLoaded : Message {
 		private readonly CheckpointTag _checkpointTag;
 
 		public PrerecordedEventsLoaded(Guid projectionId, CheckpointTag checkpointTag)
@@ -112,13 +110,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class CheckpointCompleted : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.CheckpointCompleted)]
+	public partial class CheckpointCompleted : Message {
 		private readonly CheckpointTag _checkpointTag;
 
 		public CheckpointCompleted(Guid projectionId, CheckpointTag checkpointTag)
@@ -131,13 +124,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class RestartRequested : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.RestartRequested)]
+	public partial class RestartRequested : Message {
 		private readonly string _reason;
 
 		public RestartRequested(Guid projectionId, string reason)
@@ -150,13 +138,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class Failed : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.Failed)]
+	public partial class Failed : Message {
 		private readonly string _reason;
 
 		public Failed(Guid projectionId, string reason)
@@ -169,13 +152,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class ReadyForCheckpoint : EventStore.Core.Messaging.Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.ReadyForCheckpoint)]
+	public partial class ReadyForCheckpoint : EventStore.Core.Messaging.Message {
 		private readonly object _sender;
 
 		public ReadyForCheckpoint(object sender) {
@@ -187,13 +165,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class EmittedStreamAwaiting : EventStore.Core.Messaging.Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.EmittedStreamAwaiting)]
+	public partial class EmittedStreamAwaiting : EventStore.Core.Messaging.Message {
 		private readonly IEnvelope _envelope;
 		private readonly string _streamId;
 
@@ -211,13 +184,8 @@ public static class CoreProjectionProcessingMessage {
 		}
 	}
 
-	public class EmittedStreamWriteCompleted : EventStore.Core.Messaging.Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.EmittedStreamWriteCompleted)]
+	public partial class EmittedStreamWriteCompleted : EventStore.Core.Messaging.Message {
 		private readonly string _streamId;
 
 		public EmittedStreamWriteCompleted(string streamId) {

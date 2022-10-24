@@ -1,30 +1,33 @@
 using System;
-using System.Threading;
-using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
-	public static class CoreProjectionStatusMessage {
-		public class CoreProjectionStatusMessageBase : CoreProjectionManagementMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+	public static partial class CoreProjectionStatusMessage {
+		[StatsGroup("projections-status")]
+		public enum MessageType {
+			None = 0,
+			CoreProjectionStatusMessageBase = 1,
+			Started = 2,
+			Faulted = 3,
+			DataReportBase = 4,
+			StateReport = 5,
+			ResultReport = 6,
+			StatisticsReport = 7,
+			Prepared = 8,
+			Suspended = 9,
+			Stopped = 10,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.CoreProjectionStatusMessageBase)]
+		public partial class CoreProjectionStatusMessageBase : CoreProjectionManagementMessageBase {
 			protected CoreProjectionStatusMessageBase(Guid projectionId)
 				: base(projectionId) {
 			}
 		}
 
-		public class Started : CoreProjectionStatusMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Started)]
+		public partial class Started : CoreProjectionStatusMessageBase {
 			public string Name { get; }
 			public Started(Guid projectionId, string name)
 				: base(projectionId) {
@@ -32,13 +35,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Faulted : CoreProjectionStatusMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Faulted)]
+		public partial class Faulted : CoreProjectionStatusMessageBase {
 			private readonly string _faultedReason;
 
 			public Faulted(Guid projectionId, string faultedReason)
@@ -51,13 +49,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public abstract class DataReportBase : CoreProjectionStatusMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage]
+		public abstract partial class DataReportBase : CoreProjectionStatusMessageBase {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
 			private readonly CheckpointTag _position;
@@ -82,13 +75,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class StateReport : DataReportBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.StateReport)]
+		public partial class StateReport : DataReportBase {
 			private readonly string _state;
 
 			public StateReport(
@@ -106,13 +94,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ResultReport : DataReportBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ResultReport)]
+		public partial class ResultReport : DataReportBase {
 			private readonly string _result;
 
 			public ResultReport(
@@ -130,13 +113,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class StatisticsReport : CoreProjectionStatusMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.StatisticsReport)]
+		public partial class StatisticsReport : CoreProjectionStatusMessageBase {
 			private readonly ProjectionStatistics _statistics;
 			private readonly int _sequentialNumber;
 
@@ -155,13 +133,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Prepared : CoreProjectionStatusMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Prepared)]
+		public partial class Prepared : CoreProjectionStatusMessageBase {
 			private readonly ProjectionSourceDefinition _sourceDefinition;
 
 			public Prepared(Guid projectionId, ProjectionSourceDefinition sourceDefinition)
@@ -174,25 +147,15 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Suspended : CoreProjectionStatusMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Suspended)]
+		public partial class Suspended : CoreProjectionStatusMessageBase {
 			public Suspended(Guid projectionId)
 				: base(projectionId) {
 			}
 		}
 		
-		public class Stopped : CoreProjectionStatusMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Stopped)]
+		public partial class Stopped : CoreProjectionStatusMessageBase {
 			private readonly bool _completed;
 			private readonly string _name;
 

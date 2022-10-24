@@ -3,14 +3,19 @@ using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
-	public static class ReaderSubscriptionManagement {
-		public abstract class ReaderSubscriptionManagementMessage : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class ReaderSubscriptionManagement {
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[StatsGroup("projections-reader-subscription-management")]
+		public enum MessageType {
+			None = 0,
+			Subscribe = 1,
+			Pause = 2,
+			Resume = 3,
+			Unsubscribe = 4,
+		}
 
+		[StatsMessage]
+		public abstract partial class ReaderSubscriptionManagementMessage : Message {
 			private readonly Guid _subscriptionId;
 
 			protected ReaderSubscriptionManagementMessage(Guid subscriptionId) {
@@ -22,13 +27,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Subscribe : ReaderSubscriptionManagementMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Subscribe)]
+		public partial class Subscribe : ReaderSubscriptionManagementMessage {
 			private readonly CheckpointTag _fromPosition;
 			private readonly IReaderStrategy _readerStrategy;
 			private readonly ReaderSubscriptionOptions _options;
@@ -57,37 +57,22 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Pause : ReaderSubscriptionManagementMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Pause)]
+		public partial class Pause : ReaderSubscriptionManagementMessage {
 			public Pause(Guid subscriptionId)
 				: base(subscriptionId) {
 			}
 		}
 
-		public class Resume : ReaderSubscriptionManagementMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Resume)]
+		public partial class Resume : ReaderSubscriptionManagementMessage {
 			public Resume(Guid subscriptionId)
 				: base(subscriptionId) {
 			}
 		}
 
-		public class Unsubscribe : ReaderSubscriptionManagementMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.Unsubscribe)]
+		public partial class Unsubscribe : ReaderSubscriptionManagementMessage {
 			public Unsubscribe(Guid subscriptionId)
 				: base(subscriptionId) {
 			}

@@ -7,8 +7,20 @@ using EventStore.Core.Services.Monitoring.Stats;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
+using EventStore.Core.Diagnostics;
 
 namespace EventStore.Core.Bus {
+	//qq share this between QueuedHandlerMRES _and_ QueuedHandlerThreadPool?
+	public struct QueueItem {
+		public QueueItem(Instant enqueuedAt, Message message) {
+			EnqueuedAt = enqueuedAt;
+			Message = message;
+		}
+
+		public Instant EnqueuedAt { get; }
+		public Message Message { get; }
+	}
+
 	/// <summary>
 	/// Lightweight in-memory queue with a separate thread in which it passes messages
 	/// to the consumer. It also tracks statistics about the message processing to help
@@ -26,12 +38,12 @@ namespace EventStore.Core.Bus {
 			get { return _queueStats.Name; }
 		}
 
-		private readonly IHandle<Message> _consumer;
+		private readonly IHandleEx<Message> _consumer;
 
 		private readonly bool _watchSlowMsg;
 		private readonly TimeSpan _slowMsgThreshold;
 
-		private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
+		private readonly ConcurrentQueueWrapper<QueueItem> _queue = new ConcurrentQueueWrapper<QueueItem>();
 		private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false, 1);
 
 		private Thread _thread;
@@ -45,7 +57,7 @@ namespace EventStore.Core.Bus {
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
 
-		public QueuedHandlerMRES(IHandle<Message> consumer,
+		public QueuedHandlerMRES(IHandleEx<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
 			bool watchSlowMsg = true,
@@ -96,7 +108,7 @@ namespace EventStore.Core.Bus {
 				while (!_stop) {
 					Message msg = null;
 					try {
-						if (!_queue.TryDequeue(out msg)) {
+						if (!_queue.TryDequeue(out var item)) {
 							_starving = true;
 
 							_queueStats.EnterIdle();
@@ -105,6 +117,7 @@ namespace EventStore.Core.Bus {
 
 							_starving = false;
 						} else {
+							msg = item.Message;
 							_queueStats.EnterBusy();
 #if DEBUG
 							_queueStats.Dequeued(msg);
@@ -116,8 +129,9 @@ namespace EventStore.Core.Bus {
 							if (_watchSlowMsg) {
 								var start = DateTime.UtcNow;
 
-								_consumer.Handle(msg);
+								_consumer.Handle(new(item.EnqueuedAt), msg);
 
+								//qq todo: we can drive elapsed another way now
 								var elapsed = DateTime.UtcNow - start;
 								if (elapsed > _slowMsgThreshold) {
 									Log.Debug(
@@ -132,7 +146,11 @@ namespace EventStore.Core.Bus {
 											cnt, _queue.Count);
 								}
 							} else {
-								_consumer.Handle(msg);
+								//qq we are thinking to delegate the responsibility of emitting stats to the handler
+								// here we can log stats for the queued time and the processing time
+								// but we cant figure out envelope time.
+								//qq trouble is we may end up having to delegate this responsibility down a load of handlers
+								_consumer.Handle(new(item.EnqueuedAt), msg);
 							}
 
 							_queueStats.ProcessingEnded(1);
@@ -163,7 +181,7 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 			_queueStats.Enqueued();
 #endif
-			_queue.Enqueue(message);
+			_queue.Enqueue(new(Time.CurrentInstant, message));
 			if (_starving)
 				_msgAddEvent.Set();
 		}

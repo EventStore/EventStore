@@ -1,16 +1,21 @@
 using System;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ProjectionCoreServiceMessage {
-		public class StartCore : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		[StatsGroup("projections-service")]
+		public enum MessageType {
+			None = 0,
+			StartCore = 1,
+			StopCore = 2,
+			StopCoreTimeout = 3,
+			CoreTick = 4,
+			SubComponentStarted = 5,
+			SubComponentStopped = 6,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.StartCore)]
+		public partial class StartCore : Message {
 			public readonly Guid InstanceCorrelationId;
 
 			public StartCore(Guid instanceCorrelationId) {
@@ -18,13 +23,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class StopCore : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.StopCore)]
+		public partial class StopCore : Message {
 			public Guid QueueId { get; }
 
 			public StopCore(Guid queueId) {
@@ -32,13 +32,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class StopCoreTimeout : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-			
+		[StatsMessage(MessageType.StopCoreTimeout)]
+		public partial class StopCoreTimeout : Message {
 			public Guid QueueId { get; }
 
 			public StopCoreTimeout(Guid queueId) {
@@ -46,13 +41,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 		
-		public class CoreTick : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.CoreTick)]
+		public partial class CoreTick : Message {
 			private readonly Action _action;
 
 			public CoreTick(Action action) {
@@ -64,13 +54,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class SubComponentStarted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.SubComponentStarted)]
+		public partial class SubComponentStarted : Message {
 			public string SubComponent { get; }
 			public Guid InstanceCorrelationId { get; }
 		
@@ -80,13 +65,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class SubComponentStopped : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.SubComponentStopped)]
+		public partial class SubComponentStopped : Message {
 			public readonly string SubComponent;
 
 			public Guid QueueId { get; }

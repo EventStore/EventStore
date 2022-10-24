@@ -192,6 +192,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 					//we could skip based on 0L without checking each bit/byte
 					for (var bitOffset = 0; bitOffset < 8; bitOffset++) {
 						if (@byte.IsBitSet(bitOffset)) {
+							//qq we could have disposed the accessor
 							WritePage(pageNumber, fileStream);
 							flushedPages++;
 

@@ -6,6 +6,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
 using EventStore.Core.Bus;
+using EventStore.Core.Diagnostics;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
@@ -27,6 +28,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private readonly Channel<ReadResp> _channel;
 
 			private ReadResp _current;
+
+			private ReadStreamForwardsData _timingData;
 
 			public ReadResp Current => _current;
 
@@ -54,6 +57,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_semaphore = new SemaphoreSlim(1, 1);
 				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
 
+				//qq is this where we want to put the readstart?
+				//qq where should the corresponding stop go, need one for success and one for fail?
+				_timingData = MyEventSourceGrpc.ReadStreamForwards.Start(streamName);
+
 				ReadPage(startRevision);
 			}
 
@@ -64,6 +71,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public async ValueTask<bool> MoveNextAsync() {
 				if (!await _channel.Reader.WaitToReadAsync(_cancellationToken).ConfigureAwait(false)) {
+					//qq think about whether this is necessarily correct
+					MyEventSourceGrpc.ReadStreamForwards.Stop(_timingData);
 					return false;
 				}
 

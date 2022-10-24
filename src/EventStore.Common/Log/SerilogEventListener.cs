@@ -5,12 +5,20 @@ using Serilog.Events;
 
 namespace EventStore.Common.Log {
 	public class SerilogEventListener : EventListener {
+		//qq can we get hold of the manifests in here and do things like interpret integer values as their enums?
+		// we dont want to use the boxing overloads of Write in the EventSource ofc.
+
 		private readonly Dictionary<string, LogEventLevel> _eventSources = new() {
-			{ "eventstore-dev-certs", LogEventLevel.Verbose }
+			{ "eventstore-dev-certs", LogEventLevel.Verbose },
+			{ "eventstore-experiments-grpc", LogEventLevel.Verbose }, //qq
+			//{ "eventstore-experiments-core", LogEventLevel.Verbose }, //qq
+			//{ "eventstore-experiments-projections", LogEventLevel.Verbose }, //qq
+//			{ "eventstore-experiments-dynamic", LogEventLevel.Verbose }, //qq
 		};
 
 		protected override void OnEventSourceCreated(EventSource eventSource) {
 			if (_eventSources.TryGetValue(eventSource.Name, out var level)) {
+				var manifest = EventSource.GenerateManifest(eventSource.GetType(), default); //qq
 				EnableEvents(eventSource, ConvertToEventSourceLevel(level));
 			}
 		}

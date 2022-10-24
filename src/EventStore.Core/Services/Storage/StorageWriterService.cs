@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Diagnostics;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -132,7 +133,9 @@ namespace EventStore.Core.Services.Storage {
 			Writer.Open();
 
 			_writerBus = new InMemoryBus("StorageWriterBus", watchSlowMsg: false);
-			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
+			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(
+				//qq a bit on the nested side here
+				StatsFactory.Create(QueueId.Writer, HandleExtender.Create(new AdHocHandler<Message>(CommonHandle))),
 				"StorageWriterQueue",
 				queueStatsManager,
 				true,

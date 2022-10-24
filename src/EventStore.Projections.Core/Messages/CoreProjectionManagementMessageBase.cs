@@ -2,13 +2,8 @@ using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages {
-	public abstract class CoreProjectionManagementMessageBase : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage]
+	public abstract partial class CoreProjectionManagementMessageBase : Message {
 		private readonly Guid _projectionIdId;
 
 		protected CoreProjectionManagementMessageBase(Guid projectionId) {

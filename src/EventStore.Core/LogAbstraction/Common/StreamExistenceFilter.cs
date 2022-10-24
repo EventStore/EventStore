@@ -6,6 +6,7 @@ using EventStore.Core.DataStructures.ProbabilisticFilter;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.TransactionLog.Checkpoint;
 using Serilog;
+using static EventStore.Client.Streams.ReadResp.Types;
 
 namespace EventStore.Core.LogAbstraction.Common {
 	// This connects a bloom filter datastructure to the rest of the system by
@@ -126,8 +127,8 @@ namespace EventStore.Core.LogAbstraction.Common {
 		public void Verify(double corruptionThreshold) => _persistentBloomFilter.Verify(corruptionThreshold);
 
 		private async Task TakeCheckpointAsync() {
+			var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
 			try {
-				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
 				var prevCheckpoint = _checkpoint.Read();
 				var diff = checkpoint - prevCheckpoint;
 
@@ -146,9 +147,9 @@ namespace EventStore.Core.LogAbstraction.Common {
 				_checkpoint.Flush();
 				Log.Debug("{filterName} took checkpoint at position: {position:N0}.",
 					_filterName,
-					_checkpoint.Read());
+					checkpoint);
 			} catch (Exception ex) {
-				Log.Error(ex, "{filterName} could not take checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
+				Log.Error(ex, "{filterName} could not take checkpoint at position: {position:N0}", _filterName, checkpoint);
 			}
 		}
 

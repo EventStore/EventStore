@@ -1,16 +1,23 @@
 using System;
 using EventStore.Core.Messaging;
-using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.Core.Messages {
-	public static class SubscriptionMessage {
-		public class PollStream : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class SubscriptionMessage {
+		[StatsGroup("subscription")]
+		public enum MessageType {
+			None = 0,
+			PollStream = 1,
+			CheckPollTimeout = 2,
+			PersistentSubscriptionTimerTick = 3,
+			PersistentSubscriptionsRestart = 4,
+			PersistentSubscriptionsRestarting = 5,
+			InvalidPersistentSubscriptionsRestart = 6,
+			PersistentSubscriptionsStarted = 7,
+			PersistentSubscriptionsStopped = 8,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.PollStream)]
+		public partial class PollStream : Message {
 			public readonly string StreamId;
 			public readonly long LastIndexedPosition;
 			public readonly long? LastEventNumber;
@@ -28,21 +35,12 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CheckPollTimeout : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[StatsMessage(MessageType.CheckPollTimeout)]
+		public partial class CheckPollTimeout : Message {
 		}
 
-		public class PersistentSubscriptionTimerTick : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.PersistentSubscriptionTimerTick)]
+		public partial class PersistentSubscriptionTimerTick : Message {
 			public Guid CorrelationId { get; }
 
 			public PersistentSubscriptionTimerTick(Guid correlationId) {
@@ -50,13 +48,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		public class PersistentSubscriptionsRestart : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-			
+		[StatsMessage(MessageType.PersistentSubscriptionsRestart)]
+		public partial class PersistentSubscriptionsRestart : Message {
 			public IEnvelope ReplyEnvelope { get; }
 			
 			public PersistentSubscriptionsRestart(IEnvelope replyEnvelope) {
@@ -64,36 +57,20 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class PersistentSubscriptionsRestarting : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[StatsMessage(MessageType.PersistentSubscriptionsRestarting)]
+		public partial class PersistentSubscriptionsRestarting : Message {
 		}
 
-		public class InvalidPersistentSubscriptionsRestart : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[StatsMessage(MessageType.InvalidPersistentSubscriptionsRestart)]
+		public partial class InvalidPersistentSubscriptionsRestart : Message {
 		}
 	
-		public class PersistentSubscriptionsStarted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[StatsMessage(MessageType.PersistentSubscriptionsStarted)]
+		public partial class PersistentSubscriptionsStarted : Message {
 		}
 		
-		public class PersistentSubscriptionsStopped : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[StatsMessage(MessageType.PersistentSubscriptionsStopped)]
+		public partial class PersistentSubscriptionsStopped : Message {
 		}
 	}
 }

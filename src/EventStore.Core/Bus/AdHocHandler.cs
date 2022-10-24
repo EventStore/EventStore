@@ -1,5 +1,6 @@
 using System;
 using EventStore.Common.Utils;
+using EventStore.Core.Diagnostics;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messaging;
 
@@ -14,6 +15,20 @@ namespace EventStore.Core.Bus {
 
 		public void Handle(T message) {
 			_handle(message);
+		}
+	}
+
+	//qq hopefully we dont need both this class and the above
+	public class AdHocHandlerEx<T> : IHandleEx<T> where T : Message {
+		private readonly Action<StatInfo, T> _handle;
+
+		public AdHocHandlerEx(Action<StatInfo, T> handle) {
+			Ensure.NotNull(handle, "handle");
+			_handle = handle;
+		}
+
+		public void Handle(StatInfo info, T message) {
+			_handle(info, message);
 		}
 	}
 

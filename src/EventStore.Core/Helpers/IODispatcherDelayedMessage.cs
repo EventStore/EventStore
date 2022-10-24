@@ -2,13 +2,16 @@ using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Helpers {
-	public sealed class IODispatcherDelayedMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	//qq there might be other messages that ought to go in the misc group
+	// and this should go somewhere else
+	[StatsGroup("misc")]
+	public enum MessageType {
+		None = 0,
+		IODispatcherDelayedMessage = 1,
+	}
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.IODispatcherDelayedMessage)]
+	public sealed partial class IODispatcherDelayedMessage : Message {
 		private readonly Guid _correlationId;
 		private readonly ICorrelatedTimeout _timeout;
 		private readonly Guid? _messageCorrelationId;

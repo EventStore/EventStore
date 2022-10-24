@@ -9,6 +9,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Data;
+using EventStore.Core.Diagnostics;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
@@ -22,7 +23,7 @@ namespace EventStore.Core.Services.VNode {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNodeController>();
 	}
 
-	public class ClusterVNodeController<TStreamId> : ClusterVNodeController, IHandle<Message> {
+	public class ClusterVNodeController<TStreamId> : ClusterVNodeController, IHandleEx<Message> {
 		public static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
 		public static readonly TimeSpan LeaderReconnectionDelay = TimeSpan.FromMilliseconds(500);
 		private static readonly TimeSpan LeaderSubscriptionRetryDelay = TimeSpan.FromMilliseconds(500);
@@ -334,7 +335,19 @@ namespace EventStore.Core.Services.VNode {
 			return stm;
 		}
 
-		void IHandle<Message>.Handle(Message message) {
+		void IHandleEx<Message>.Handle(StatInfo info, Message message) {
+			//qqqq choice here between
+			// 1. timing this single call and then logging the trace event here, switching somehow on the Message (maybe even using the typeid)
+			//      - good if we dont want to time _part_ of the processing of any of the messages, like the envelope part
+			//      - good if we want to log exactly the same thing for all the message types
+			//      - good if we want to minimise the code change impacts.
+			// 2. passing the info down the calls with responsibility on the last one to log the times
+			//      - good if we want to do different things for different messages
+			// 3. hybrid approach, where we can 1 or 2 depending on the message type.
+			//    
+			//
+			//qqqq there are only three calls to ReplyWith in this file, which may be an indication that it wouldn't be worth plumbing
+			// the info all the way through everything in here just to get the envlope reply time of those three calls
 			_fsm.Handle(message);
 		}
 

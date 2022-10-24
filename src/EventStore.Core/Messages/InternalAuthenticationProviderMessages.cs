@@ -1,14 +1,15 @@
 ﻿using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
-	public abstract class InternalAuthenticationProviderMessages {
-		public sealed class ResetPasswordCache : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class InternalAuthenticationProviderMessages {
+		[StatsGroup("internal-authentication-provider")]
+		public enum MessageType {
+			None = 0,
+			ResetPasswordCache = 1,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ResetPasswordCache)]
+		public sealed partial class ResetPasswordCache : Message {
 			public readonly string LoginName;
 
 			public ResetPasswordCache(string loginName) {

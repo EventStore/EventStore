@@ -22,6 +22,12 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using Microsoft.Extensions.Logging;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
+using EventStore.Core.Diagnostics;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
@@ -170,13 +176,45 @@ namespace EventStore.ClusterNode {
 
 				async Task Run(ClusterVNodeHostedService hostedService, ManualResetEventSlim signal) {
 					try {
+						var resource = ResourceBuilder.CreateDefault().AddService("eventstore"); //qqqq
 						await new HostBuilder()
 							.ConfigureHostConfiguration(builder =>
 								builder.AddEnvironmentVariables("DOTNET_").AddCommandLine(args))
 							.ConfigureAppConfiguration(builder =>
 								builder.AddEnvironmentVariables().AddCommandLine(args))
-							.ConfigureServices(services => services.AddSingleton<IHostedService>(hostedService))
-							.ConfigureLogging(logging => logging.AddSerilog())
+							.ConfigureServices(services => services
+								.AddSingleton<IHostedService>(hostedService)
+								//qq just this whole thing. much of it wants to be configurable somehow
+								// and add a resource definition to each of these
+								//qqqqqqqq look into ActivitySource 
+//								.AddOpenTelemetryTracing(opt => opt
+//									.SetResourceBuilder(resource)
+//									.AddSource("eventstore-experiments-core-misc")
+//									.AddSource("eventstore-experiments-client-messages")
+////									.AddConsoleExporter()
+//									.AddOtlpExporter(x => {
+//										x.Endpoint = new Uri("http://localhost:4317");
+////										x.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+//									}))
+								//qq
+								.AddOpenTelemetryMetrics(opt => opt
+									.SetResourceBuilder(resource)
+									.AddMeter(MyEventSource.MyName)
+									.AddRuntimeInstrumentation()
+//									.AddConsoleExporter()
+									.AddOtlpExporter(x => {
+										x.Endpoint = new Uri("http://localhost:4317");
+//										x.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+									})))
+							.ConfigureLogging(logging => logging
+								.AddSerilog()
+								//.AddOpenTelemetry(opt => {
+								//	//qq
+								//	opt.IncludeFormattedMessage = true;
+								//	opt.IncludeScopes = true;
+								//	opt.AddConsoleExporter();
+								//})
+								)
 							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
 								EventStoreKestrelConfiguration.GetConfiguration()))
 							.ConfigureWebHostDefaults(builder => builder

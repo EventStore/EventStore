@@ -10,14 +10,31 @@ using EventStore.Core.TransactionLog.LogRecords;
 using EndPoint = System.Net.EndPoint;
 
 namespace EventStore.Core.Messages {
-	public static class ReplicationMessage {
-		public class SubscribeReplica : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class ReplicationMessage {
+		[StatsGroup("replication")]
+		public enum MessageType {
+			None = 0,
+			SubscribeReplica = 1,
+			AckLogPosition = 2,
+			ReplicaLogPositionAck = 3,
+			ReplicaSubscriptionRequest = 4,
+			ReconnectToLeader = 5,
+			LeaderConnectionFailed = 6,
+			SubscribeToLeader = 7,
+			ReplicaSubscriptionRetry = 8,
+			ReplicaSubscribed = 9,
+			FollowerAssignment = 10,
+			CloneAssignment = 11,
+			CreateChunk = 12,
+			RawChunkBulk = 13,
+			DataChunkBulk = 14,
+			DropSubscription = 15,
+			GetReplicationStats = 16,
+			GetReplicationStatsCompleted = 17,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.SubscribeReplica)]
+		public partial class SubscribeReplica : Message {
 			public readonly int Version;
 			public readonly long LogPosition;
 			public readonly Guid ChunkId;
@@ -51,13 +68,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class AckLogPosition : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.AckLogPosition)]
+		public partial class AckLogPosition : Message {
 			public readonly Guid SubscriptionId;
 
 			// where the replication subscription is up to.
@@ -81,13 +93,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReplicaLogPositionAck : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ReplicaLogPositionAck)]
+		public partial class ReplicaLogPositionAck : Message {
 			public readonly Guid SubscriptionId;
 			public readonly long ReplicationLogPosition;
 			public readonly long WriterLogPosition;
@@ -105,13 +112,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReplicaSubscriptionRequest : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ReplicaSubscriptionRequest)]
+		public partial class ReplicaSubscriptionRequest : Message {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly TcpConnectionManager Connection;
@@ -160,13 +162,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReconnectToLeader : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ReconnectToLeader)]
+		public partial class ReconnectToLeader : Message {
 			public readonly MemberInfo Leader;
 			public readonly Guid ConnectionCorrelationId;
 
@@ -178,13 +175,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class LeaderConnectionFailed : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.LeaderConnectionFailed)]
+		public partial class LeaderConnectionFailed : Message {
 			public readonly MemberInfo Leader;
 			public readonly Guid LeaderConnectionCorrelationId;
 
@@ -201,13 +193,8 @@ namespace EventStore.Core.Messages {
 			Guid SubscriptionId { get; }
 		}
 
-		public class SubscribeToLeader : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.SubscribeToLeader)]
+		public partial class SubscribeToLeader : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -231,13 +218,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReplicaSubscriptionRetry : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ReplicaSubscriptionRetry)]
+		public partial class ReplicaSubscriptionRetry : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -257,13 +239,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReplicaSubscribed : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ReplicaSubscribed)]
+		public partial class ReplicaSubscribed : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -302,13 +279,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class FollowerAssignment : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.FollowerAssignment)]
+		public partial class FollowerAssignment : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -328,13 +300,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CloneAssignment : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.CloneAssignment)]
+		public partial class CloneAssignment : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -354,13 +321,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CreateChunk : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.CreateChunk)]
+		public partial class CreateChunk : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -396,13 +358,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class RawChunkBulk : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.RawChunkBulk)]
+		public partial class RawChunkBulk : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -447,13 +404,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class DataChunkBulk : Message, IReplicationMessage, StorageMessage.IFlushableMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.DataChunkBulk)]
+		public partial class DataChunkBulk : Message, IReplicationMessage, StorageMessage.IFlushableMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -501,13 +453,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class DropSubscription : Message, IReplicationMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.DropSubscription)]
+		public partial class DropSubscription : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
 			}
@@ -527,13 +474,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetReplicationStats : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.GetReplicationStats)]
+		public partial class GetReplicationStats : Message {
 			public IEnvelope Envelope;
 
 			public GetReplicationStats(IEnvelope envelope) {
@@ -541,13 +483,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetReplicationStatsCompleted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.GetReplicationStatsCompleted)]
+		public partial class GetReplicationStatsCompleted : Message {
 			public List<ReplicationMessage.ReplicationStats> ReplicationStats;
 
 			public GetReplicationStatsCompleted(List<ReplicationMessage.ReplicationStats> replicationStats) {

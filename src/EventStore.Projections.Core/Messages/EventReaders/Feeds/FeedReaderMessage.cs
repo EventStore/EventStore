@@ -1,26 +1,24 @@
 ﻿using System;
 using System.Security.Claims;
-using System.Threading;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
-	public static class FeedReaderMessage {
-		public abstract class FeedReaderMessageBase : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+	public static partial class FeedReaderMessage {
+		//qq hmm name
+		[StatsGroup("projections-event-readers-feed-reader")]
+		public enum MessageType {
+			None = 0,
+			ReadPage = 1,
+			FeedPage = 2,
 		}
 
-		public sealed class ReadPage : FeedReaderMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+		[StatsMessage]
+		public abstract partial class FeedReaderMessageBase : Message {
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.ReadPage)]
+		public sealed partial class ReadPage : FeedReaderMessageBase {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly ClaimsPrincipal User;
@@ -42,13 +40,8 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
 			}
 		}
 
-		public sealed class FeedPage : FeedReaderMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.FeedPage)]
+		public sealed partial class FeedPage : FeedReaderMessageBase {
 			public enum ErrorStatus {
 				Success,
 				NotAuthorized

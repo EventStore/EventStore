@@ -2,13 +2,15 @@ using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messaging {
-	public class UnwrapEnvelopeMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	//qq any others to combine into this and relocate?
+	[StatsGroup("projections-misc")]
+	public enum MessageType {
+		None = 0,
+		UnwrapEnvelopeMessage = 1,
+	}
 
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[StatsMessage(MessageType.UnwrapEnvelopeMessage)]
+	public partial class UnwrapEnvelopeMessage : Message {
 		private readonly Action _action;
 
 		public UnwrapEnvelopeMessage(Action action) {

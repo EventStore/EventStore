@@ -9,6 +9,9 @@
 	<ItemGroup>
 			<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
+	<PropertyGroup>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
 			<PrivateAssets>all</PrivateAssets>
@@ -33,6 +36,12 @@
 		<PackageReference Include="HostStat.NET" Version="1.0.2" />
 		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="6.0.1" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.9" />
+	</ItemGroup>
+	<ItemGroup>
+		<!-- //qq temporary, later this will be by nuget
+			ReferenceOutputAssembly="true" rather than false is also especially temporary
+		-->
+		<ProjectReference Include="..\EventStore.Diagnostics.Generators\EventStore.Diagnostics.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.BufferManagement\EventStore.BufferManagement.csproj" />

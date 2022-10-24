@@ -66,6 +66,7 @@ using MidFunc = System.Func<
 	System.Func<System.Threading.Tasks.Task>,
 	System.Threading.Tasks.Task
 >;
+using EventStore.Core.Diagnostics;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -235,6 +236,8 @@ namespace EventStore.Core {
 
 			ReloadLogOptions(options);
 
+			MetricsConfigurator.Configure(new()); //qq todo: from config
+
 			instanceId ??= Guid.NewGuid();
 			if (instanceId == Guid.Empty) {
 				throw new ArgumentException("InstanceId may not be empty.", nameof(instanceId));
@@ -331,7 +334,6 @@ namespace EventStore.Core {
 				throw new InvalidConfigurationException(
 					"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
 			}
-
 
 
 			_options = options;
@@ -573,7 +575,10 @@ namespace EventStore.Core {
 
 			_controller =
 				new ClusterVNodeController<TStreamId>((IPublisher)_mainBus, NodeInfo, Db, options, this, forwardingProxy);
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
+			_mainQueue = QueuedHandler.CreateQueuedHandler(
+				StatsFactory.Create(QueueId.Main, _controller),
+				"MainQueue",
+				_queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
 

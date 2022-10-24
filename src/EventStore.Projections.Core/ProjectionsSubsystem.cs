@@ -7,6 +7,7 @@ using EventStore.Common.Options;
 using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
+using EventStore.Core.Diagnostics;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.AwakeReaderService;
@@ -110,7 +111,7 @@ namespace EventStore.Projections.Core {
 		}
 
 		public void Register(StandardComponents standardComponents) {
-			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(_leaderMainBus, "Projections Leader",
+			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(HandleExtender.Create(_leaderMainBus), "Projections Leader",
 				standardComponents.QueueStatsManager);
 			_leaderOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
 			

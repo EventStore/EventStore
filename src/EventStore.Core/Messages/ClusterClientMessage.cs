@@ -1,14 +1,15 @@
 ﻿using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
-	public static class ClusterClientMessage {
-		public class CleanCache : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+	public static partial class ClusterClientMessage {
+		[StatsGroup("cluster-client")]
+		public enum MessageType {
+			None = 0,
+			CleanCache = 1,
+		}
 
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[StatsMessage(MessageType.CleanCache)]
+		public partial class CleanCache : Message {
 			public CleanCache() { }
 		}
 	}
