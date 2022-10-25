@@ -39,7 +39,7 @@ EventStoreDB is written in a mixture of C#, C++ and JavaScript. It can run on Wi
 
 ### Windows / Linux
 **Prerequisites**
-- [.NET Core SDK 6.0] (https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET Core SDK 6.0](https://dotnet.microsoft.com/download/dotnet/6.0)
 
 ### Build EventStoreDB
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
