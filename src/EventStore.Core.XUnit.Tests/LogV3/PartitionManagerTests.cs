@@ -220,7 +220,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			throw new NotImplementedException();
 		}
 

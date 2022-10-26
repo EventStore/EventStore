@@ -202,7 +202,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		}
 
 		protected static IPrepareLogRecord<TStreamId> ReadPrepareInternal(TFReaderLease reader, long logPosition) {
-			RecordReadResult result = reader.TryReadAt(logPosition);
+			RecordReadResult result = reader.TryReadAt(logPosition, couldBeScavenged: true);
 			if (!result.Success)
 				return null;
 

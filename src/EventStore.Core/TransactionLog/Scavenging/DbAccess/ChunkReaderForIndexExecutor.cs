@@ -11,7 +11,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		public bool TryGetStreamId(long position, out TStreamId streamId) {
 			using (var reader = _tfReaderFactory()) {
-				var result = reader.TryReadAt(position);
+				var result = reader.TryReadAt(position, couldBeScavenged: true);
 				if (!result.Success) {
 					streamId = default;
 					return false;

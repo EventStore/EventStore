@@ -147,7 +147,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 		}
 		private EpochRecord ReadEpochAt(ITransactionFileReader reader, long epochPos) {
-			var result = reader.TryReadAt(epochPos);
+			var result = reader.TryReadAt(epochPos, couldBeScavenged: false);
 			if (!result.Success)
 				throw new Exception($"Could not find Epoch record at LogPosition {epochPos}.");
 			if (result.LogRecord.RecordType != LogRecordType.System)
@@ -201,7 +201,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 				try {
 					epoch = firstEpoch;
 					do {
-						var result = reader.TryReadAt(epoch.PrevEpochPosition);
+						var result = reader.TryReadAt(epoch.PrevEpochPosition, couldBeScavenged: false);
 						if (!result.Success)
 							throw new Exception(
 								$"Could not find Epoch record at LogPosition {epoch.PrevEpochPosition}.");
@@ -255,7 +255,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			// epochNumber < _minCachedEpochNumber
 			var reader = _readers.Get();
 			try {
-				var res = reader.TryReadAt(epochPosition);
+				var res = reader.TryReadAt(epochPosition, couldBeScavenged: false);
 				if (!res.Success || res.LogRecord.RecordType != LogRecordType.System)
 					return false;
 				var sysRec = (ISystemLogRecord)res.LogRecord;
