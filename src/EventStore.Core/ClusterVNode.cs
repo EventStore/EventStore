@@ -576,11 +576,14 @@ namespace EventStore.Core {
 						factory: () => {
 							var scavengeDirectory = Path.Combine(indexPath, "scavenging");
 							Directory.CreateDirectory(scavengeDirectory);
+							var dbPath = Path.Combine(scavengeDirectory, "scavenging.db");
 							var connectionStringBuilder = new SqliteConnectionStringBuilder {
-								DataSource = Path.Combine(scavengeDirectory, "scavenging.db")
+								DataSource = dbPath,
 							};
 							var connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
 							connection.Open();
+							Log.Info("Opened scavenging database {scavengeDatabase} with version {version}",
+								dbPath, connection.ServerVersion);
 							var sqlite = new SqliteScavengeBackend<string>(
 								cacheSizeInBytes: vNodeSettings.ScavengeBackendCacheSize);
 							sqlite.Initialize(connection);
