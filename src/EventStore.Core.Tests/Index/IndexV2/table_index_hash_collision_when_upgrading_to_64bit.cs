@@ -158,7 +158,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				position % 2 == 0 ? "account--696193173" : "LPN-FC002_LPK51001", -1, DateTime.UtcNow, PrepareFlags.None,
 				"type", new byte[0], null);

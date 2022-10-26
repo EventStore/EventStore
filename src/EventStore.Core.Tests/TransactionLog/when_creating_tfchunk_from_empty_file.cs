@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void there_is_no_record_at_pos_zero() {
-			var res = _chunk.TryReadAt(0);
+			var res = _chunk.TryReadAt(0, couldBeScavenged: true);
 			Assert.IsFalse(res.Success);
 		}
 

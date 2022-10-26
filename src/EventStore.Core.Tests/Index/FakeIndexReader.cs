@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Fakes {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				position.ToString(), -1, DateTime.UtcNow, PrepareFlags.None, "type", new byte[0], null);
 			return new RecordReadResult(true, position + 1, record, 1);

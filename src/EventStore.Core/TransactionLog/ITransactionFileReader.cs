@@ -8,7 +8,7 @@ namespace EventStore.Core.TransactionLog {
 		SeqReadResult TryReadNext();
 		SeqReadResult TryReadPrev();
 
-		RecordReadResult TryReadAt(long position);
+		RecordReadResult TryReadAt(long position, bool couldBeScavenged);
 		bool ExistsAt(long position);
 	}
 
@@ -47,8 +47,8 @@ namespace EventStore.Core.TransactionLog {
 			return Reader.ExistsAt(position);
 		}
 
-		public RecordReadResult TryReadAt(long position) {
-			return Reader.TryReadAt(position);
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+			return Reader.TryReadAt(position, couldBeScavenged);
 		}
 	}
 }

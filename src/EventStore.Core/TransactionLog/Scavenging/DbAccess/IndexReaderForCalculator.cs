@@ -67,7 +67,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		public bool IsTombstone(long logPosition) {
 			using (var reader = _tfReaderFactory()) {
-				var result = reader.TryReadAt(logPosition);
+				var result = reader.TryReadAt(logPosition, couldBeScavenged: true);
 
 				if (!result.Success)
 					return false;
