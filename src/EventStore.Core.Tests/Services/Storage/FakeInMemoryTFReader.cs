@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			NumReads++;
 			if (_records.ContainsKey(position)){
 				return new RecordReadResult(true, 0, _records[position], 0);

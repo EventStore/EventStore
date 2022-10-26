@@ -139,7 +139,7 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				position % 2 == 0 ? "testStream-2" : "testStream-1", -1, DateTime.UtcNow, PrepareFlags.None, "type",
 				new byte[0], null);

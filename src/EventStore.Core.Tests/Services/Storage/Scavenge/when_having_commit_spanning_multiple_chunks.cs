@@ -61,12 +61,12 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		public void all_chunks_are_merged_and_scavenged() {
 			foreach (var rec in _scavenged) {
 				var chunk = Db.Manager.GetChunkFor(rec.LogPosition);
-				Assert.IsFalse(chunk.TryReadAt(rec.LogPosition).Success);
+				Assert.IsFalse(chunk.TryReadAt(rec.LogPosition, couldBeScavenged: true).Success);
 			}
 
 			foreach (var rec in _survivors) {
 				var chunk = Db.Manager.GetChunkFor(rec.LogPosition);
-				var res = chunk.TryReadAt(rec.LogPosition);
+				var res = chunk.TryReadAt(rec.LogPosition, couldBeScavenged: false);
 				Assert.IsTrue(res.Success);
 				Assert.AreEqual(rec, res.LogRecord);
 			}

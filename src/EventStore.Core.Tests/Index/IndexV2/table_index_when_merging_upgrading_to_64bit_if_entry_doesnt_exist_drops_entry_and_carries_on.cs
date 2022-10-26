@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.Index.IndexV2 {
 				throw new NotImplementedException();
 			}
 
-			public RecordReadResult TryReadAt(long position) {
+			public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 				TStreamId streamId;
 				switch (position) {
 					case 1:

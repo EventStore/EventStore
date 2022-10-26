@@ -706,8 +706,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			((TFChunkReadSideScavenged)_readSide).DeOptimizeExistsAt();
 		}
 
-		public RecordReadResult TryReadAt(long logicalPosition) {
-			return _readSide.TryReadAt(logicalPosition);
+		public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
+			return _readSide.TryReadAt(logicalPosition, couldBeScavenged);
 		}
 
 		public RecordReadResult TryReadFirst() {
