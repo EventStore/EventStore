@@ -15,7 +15,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			void Uncache();
 
 			bool ExistsAt(long logicalPosition);
-			RecordReadResult TryReadAt(long logicalPosition);
+			RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged);
 			RecordReadResult TryReadFirst();
 			RecordReadResult TryReadClosestForward(long logicalPosition);
 			RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer);
@@ -41,7 +41,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				return logicalPosition >= 0 && logicalPosition < Chunk.LogicalDataSize;
 			}
 
-			public RecordReadResult TryReadAt(long logicalPosition) {
+			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
 				var workItem = Chunk.GetReaderWorkItem();
 				try {
 					if (logicalPosition >= Chunk.LogicalDataSize) {
@@ -278,15 +278,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				return _logPositionsBloomFilter.MightContain(logicalPosition);
 			}
 
-			public RecordReadResult TryReadAt(long logicalPosition) {
+			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
 				var workItem = Chunk.GetReaderWorkItem();
 				try {
 					var actualPosition = TranslateExactPosition(workItem, logicalPosition);
 					if (actualPosition == -1 || actualPosition >= Chunk.PhysicalDataSize) {
-						_log.Warning(
-							"Tried to read actual position {actualPosition}, translated from logPosition {logicalPosition}, " +
-							"which is greater than the chunk's physical size of {chunkPhysicalSize}",
-							actualPosition, logicalPosition, Chunk.PhysicalDataSize);
+						if (!couldBeScavenged) {
+							_log.Warning(
+								"Tried to read actual position {actualPosition}, translated from logPosition {logicalPosition}, " +
+								"which is greater than the chunk's physical size of {chunkPhysicalSize}",
+								actualPosition, logicalPosition, Chunk.PhysicalDataSize);
+						}
 						return RecordReadResult.Failure;
 					}
 

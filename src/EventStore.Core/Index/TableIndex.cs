@@ -513,7 +513,7 @@ namespace EventStore.Core.Index {
 		}
 
 		private Tuple<TStreamId, bool> ReadEntry(TFReaderLease reader, long position) {
-			RecordReadResult result = reader.TryReadAt(position);
+			RecordReadResult result = reader.TryReadAt(position, couldBeScavenged: true);
 			if (!result.Success)
 				return new Tuple<TStreamId, bool>(_emptyStreamId, false);
 			if (result.LogRecord.RecordType != LogRecordType.Prepare)

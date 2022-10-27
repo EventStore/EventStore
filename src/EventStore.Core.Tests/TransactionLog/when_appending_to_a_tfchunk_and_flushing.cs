@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void the_record_can_be_read_at_exact_position() {
-			var res = _chunk.TryReadAt(0);
+			var res = _chunk.TryReadAt(0, couldBeScavenged: false);
 			Assert.IsTrue(res.Success);
 			Assert.AreEqual(_record, res.LogRecord);
 			Assert.AreEqual(_result.OldPosition, res.LogRecord.LogPosition);

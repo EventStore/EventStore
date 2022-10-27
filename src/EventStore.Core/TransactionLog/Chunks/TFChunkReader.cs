@@ -137,11 +137,11 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		public RecordReadResult TryReadAt(long position) {
-			return TryReadAtInternal(position, 0);
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
+			return TryReadAtInternal(position, couldBeScavenged, 0);
 		}
 
-		private RecordReadResult TryReadAtInternal(long position, int retries) {
+		private RecordReadResult TryReadAtInternal(long position, bool couldBeScavenged, int retries) {
 			var writerChk = _writerCheckpoint.Read();
 			if (position >= writerChk) {
 				_log.Warning(
@@ -153,12 +153,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			var chunk = _db.Manager.GetChunkFor(position);
 			try {
 				CountRead(chunk.IsCached);
-				return chunk.TryReadAt(chunk.ChunkHeader.GetLocalLogPosition(position));
+				return chunk.TryReadAt(chunk.ChunkHeader.GetLocalLogPosition(position), couldBeScavenged);
 			} catch (FileBeingDeletedException) {
 				if (retries > MaxRetries)
 					throw new FileBeingDeletedException(
 						"Been told the file was deleted > MaxRetries times. Probably a problem in db.");
-				return TryReadAtInternal(position, retries + 1);
+				return TryReadAtInternal(position, couldBeScavenged, retries + 1);
 			}
 		}
 

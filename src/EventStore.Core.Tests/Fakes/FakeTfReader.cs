@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Fakes {
 			throw new NotImplementedException();
 		}
 
-		public RecordReadResult TryReadAt(long position) {
+		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			throw new NotImplementedException();
 		}
 
