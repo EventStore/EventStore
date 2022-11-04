@@ -24,5 +24,7 @@ namespace EventStore.Core.Index {
 		bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry);
 
 		IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null);
+
+		void WaitForBackgroundTasks(int millisecondsTimeout);
 	}
 }

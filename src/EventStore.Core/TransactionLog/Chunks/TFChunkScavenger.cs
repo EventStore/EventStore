@@ -80,6 +80,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public Task Scavenge(bool alwaysKeepScavenged, bool mergeChunks, int startFromChunk = 0,
+			bool scavengeIndex = true,
 			CancellationToken ct = default(CancellationToken)) {
 			Ensure.Nonnegative(startFromChunk, nameof(startFromChunk));
 
@@ -95,7 +96,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 					ScavengeInternal(alwaysKeepScavenged, mergeChunks, startFromChunk, ct);
 
-					_tableIndex.Scavenge(_scavengerLog, ct);
+					if (scavengeIndex) {
+						_tableIndex.Scavenge(_scavengerLog, ct);
+					}
 				} catch (OperationCanceledException) {
 					Log.Information("SCAVENGING: Scavenge cancelled.");
 					result = ScavengeResult.Stopped;

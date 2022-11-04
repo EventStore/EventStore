@@ -61,6 +61,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return Task.CompletedTask;
 		}
 
+		public void WaitForBackgroundTasks(int millisecondsTimeout) {
+			throw new NotImplementedException();
+		}
+
 		public bool IsBackgroundTaskRunning {
 			get { return false; }
 		}
