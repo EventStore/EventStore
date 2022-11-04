@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected IRecordFactory<TStreamId> _recordFactory;
 		protected INameIndex<TStreamId> _streamNameIndex;
 		protected INameIndex<TStreamId> _eventTypeIndex;
-		protected TableIndex<TStreamId> TableIndex;
+		protected ITableIndex<TStreamId> TableIndex;
 		protected IReadIndex<TStreamId> ReadIndex;
 
 		protected IHasher<TStreamId> LowHasher { get; private set; }
@@ -51,6 +51,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		private bool _scavenge;
 		private bool _completeLastChunkOnScavenge;
 		private bool _mergeChunks;
+		private bool _scavengeIndex;
 
 		protected ReadIndexTestScenario(
 			int maxEntriesInMemTable = 20,
@@ -83,6 +84,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 			_recordFactory = _logFormat.RecordFactory;
 			_streamNameIndex = _logFormat.StreamNameIndex;
 			_eventTypeIndex = _logFormat.EventTypeIndex;
+			LowHasher ??= _logFormat.LowHasher;
+			HighHasher ??= _logFormat.HighHasher;
+			Hasher = new CompositeHasher<TStreamId>(LowHasher, HighHasher);
 
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			ChaserCheckpoint = new InMemoryCheckpoint(0);
@@ -104,17 +108,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 			var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 5,
 				() => new TFChunkReader(Db, Db.Config.WriterCheckpoint));
-			LowHasher ??= _logFormat.LowHasher;
-			HighHasher ??= _logFormat.HighHasher;
-			Hasher = new CompositeHasher<TStreamId>(LowHasher, HighHasher);
 			var emptyStreamId = _logFormat.EmptyStreamId;
-			TableIndex = new TableIndex<TStreamId>(indexDirectory, LowHasher, HighHasher, emptyStreamId,
+			TableIndex = TransformTableIndex(new TableIndex<TStreamId>(indexDirectory, LowHasher, HighHasher, emptyStreamId,
 				() => new HashListMemTable(IndexBitnessVersion, MaxEntriesInMemTable * 2),
 				() => new TFReaderLease(readers),
 				IndexBitnessVersion,
 				int.MaxValue,
 				Constants.PTableMaxReaderCountDefault,
-				MaxEntriesInMemTable);
+				MaxEntriesInMemTable));
 			_logFormat.StreamNamesProvider.SetTableIndex(TableIndex);
 
 			var readIndex = new ReadIndex<TStreamId>(new NoopPublisher(),
@@ -149,7 +150,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				if (_completeLastChunkOnScavenge)
 					Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
 				_scavenger = new TFChunkScavenger<TStreamId>(Db, new FakeTFScavengerLog(), TableIndex, ReadIndex, _logFormat.Metastreams);
-				await _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks);
+				await _scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks,
+					scavengeIndex: _scavengeIndex);
 			}
 		}
 
@@ -164,6 +166,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Db?.Dispose();
 
 			return base.TestFixtureTearDown();
+		}
+
+		protected virtual ITableIndex<TStreamId> TransformTableIndex(ITableIndex<TStreamId> tableIndex) {
+			return tableIndex;
 		}
 
 		protected abstract void WriteTestScenario();
@@ -474,12 +480,13 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return pos;
 		}
 
-		protected void Scavenge(bool completeLast, bool mergeChunks) {
+		protected void Scavenge(bool completeLast, bool mergeChunks, bool scavengeIndex = true) {
 			if (_scavenge)
 				throw new InvalidOperationException("Scavenge can be executed only once in ReadIndexTestScenario");
 			_scavenge = true;
 			_completeLastChunkOnScavenge = completeLast;
 			_mergeChunks = mergeChunks;
+			_scavengeIndex = scavengeIndex;
 		}
 	}
 }

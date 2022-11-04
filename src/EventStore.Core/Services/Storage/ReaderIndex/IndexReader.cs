@@ -314,10 +314,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				//involve an additional set of reads for no good reason
 				while (indexEntries.Count == 0) {
 					// we didn't find any indexEntries, and we already early returned in the case that startEventNumber > lastEventNumber
-					// so we must be reading before the oldest entry for this stream hash.
+					// so we want to find the oldest entry that is after startEventNumber.
+					// startEventNumber may be before the start of the stream, or it may be in a gap caused by scavenging.
 					// this will generally only iterate once, unless a scavenge completes exactly now, in which case it might iterate twice
-					if (tableIndex.TryGetOldestEntry(streamId, out var oldest)) {
-						startEventNumber = oldest.Version;
+					if (tableIndex.TryGetNextEntry(streamId, startEventNumber, out var next)) {
+						startEventNumber = next.Version;
 						endEventNumber = startEventNumber + maxCount - 1;
 						indexEntries = tableIndex.GetRange(streamId, startEventNumber, endEventNumber);
 					} else {
@@ -366,9 +367,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						metadata, lastEventNumber + 1, lastEventNumber, isEndOfStream: true);
 				}
 
-				// intuition for loop termination here is that the two explicit continue cases are
+				// intuition for loop termination here is that the explicit continue cases are
 				// the only way to continue the iteration. apart from those it return;s or break;s.
-				// the two continue cases always narrow the gap between low and high
+				// the continue cases always narrow the gap between low and high
 				//
 				// low, mid, and high are event numbers (versions)
 				// attempt to initialize low to the latest (highest) entry that we found but in the unlikely event that
@@ -380,6 +381,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					indexEntries = tableIndex.GetRange(streamId, mid, mid + maxCount - 1);
 					if (indexEntries.Count > 0) {
 						nextEventNumber = indexEntries[0].Version + 1;
+					} else {
+						// midpoint is in a gap. everything before any gap is no longer part of the stream
+						// though the entries may not have been removed yet. skip to higher event numbers
+						if (!tableIndex.TryGetNextEntry(streamId, mid, out var next)) {
+							// there is nothing in this stream (maybe a scavenge just completed)
+							nextEventNumber = lastEventNumber;
+							break;
+						}
+						low = next.Version;
+						continue;
 					}
 
 					// be really careful if adjusting these, to make sure that the loop still terminates

@@ -124,5 +124,9 @@ namespace EventStore.Core.Tests.Services.Storage {
 		{
 			throw new NotImplementedException();
 		}
+
+		public void WaitForBackgroundTasks(int millisecondsTimeout) {
+			throw new NotImplementedException();
+		}
 	}
 }

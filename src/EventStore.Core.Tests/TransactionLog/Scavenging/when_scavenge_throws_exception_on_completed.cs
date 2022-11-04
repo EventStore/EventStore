@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 			var cancellationTokenSource = new CancellationTokenSource();
 
 			Log.CompletedCallback += (sender, args) => { throw new Exception("Expected exception."); };
-			return TfChunkScavenger.Scavenge(true, true, 0, cancellationTokenSource.Token);
+			return TfChunkScavenger.Scavenge(true, true, 0, ct: cancellationTokenSource.Token);
 		}
 
 		[Test]
