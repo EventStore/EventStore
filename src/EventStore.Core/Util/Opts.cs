@@ -27,6 +27,12 @@ namespace EventStore.Core.Util {
 
 		public const long StreamExistenceFilterSizeDefault = 256_000_000;
 
-		public static readonly int ScavengeBackendCacheSizeDefault = 32 * 1024 * 1024;
+		public const int ScavengeBackendPageSizeDefault = 16 * 1024;
+
+		public const int ScavengeBackendCacheSizeDefault = 64 * 1024 * 1024;
+
+		public const int ScavengeHashUsersCacheCapacityDefault = 100_000;
+
+
 	}
 }

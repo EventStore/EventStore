@@ -374,7 +374,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					index: calculatorIndexReader,
 					chunkSize: dbConfig.ChunkSize,
 					cancellationCheckPeriod: cancellationCheckPeriod,
-					checkpointPeriod: checkpointPeriod,
+					buffer: new(checkpointPeriod),
 					throttle: throttle);
 
 				IChunkExecutor<TStreamId> chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
