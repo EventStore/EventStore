@@ -5,6 +5,7 @@ using Microsoft.Data.Sqlite;
 namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 	
 	public class SqliteMetastreamScavengeMap<TKey> : IInitializeSqliteBackend, IMetastreamScavengeMap<TKey> {
+		private readonly string _keyTypeOverride;
 		private AddCommand _add;
 		private SetTombstoneCommand _setTombstone;
 		private SetDiscardPointCommand _setDiscardPoint;
@@ -16,9 +17,9 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 		private string TableName { get; }
 
-		public SqliteMetastreamScavengeMap(string name) {
+		public SqliteMetastreamScavengeMap(string name, string keyTypeOverride = null) {
 			TableName = name;
-			
+			_keyTypeOverride = keyTypeOverride;
 			_readMetastreamData = reader => {
 				var isTombstoned = reader.GetBoolean(0);
 				var discardPoint = DiscardPoint.KeepAll;
@@ -32,9 +33,10 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 
 		public void Initialize(SqliteBackend sqlite) {
+			var keyType = _keyTypeOverride ?? SqliteTypeMapping.GetTypeName<TKey>();
 			var sql = $@"
 				CREATE TABLE IF NOT EXISTS {TableName} (
-					key {SqliteTypeMapping.GetTypeName<TKey>()} PRIMARY KEY,
+					key {keyType} PRIMARY KEY,
 					isTombstoned INTEGER DEFAULT 0,
 					discardPoint INTEGER NULL)";
 		

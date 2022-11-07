@@ -1241,7 +1241,11 @@ namespace EventStore.Core {
 
 			var newScavenge = true;
 			if (newScavenge) {
+				// reuse the same buffer; it's quite big.
+				var calculatorBuffer = new Calculator<TStreamId>.Buffer(32_768);
+
 				scavengerFactory = new ScavengerFactory((message, logger) => {
+					// currently on the main queue
 					var throttle = new Throttle(
 						minimumRest: TimeSpan.FromMilliseconds(1000),
 						restLoggingThreshold: TimeSpan.FromMilliseconds(10_000),
@@ -1258,20 +1262,23 @@ namespace EventStore.Core {
 					// so that we don't keep hold of memory used for the page caches between scavenges
 					var backendPool = new ObjectPool<IScavengeStateBackend<TStreamId>>(
 						objectPoolName: "scavenge backend pool",
-						initialCount: 1,
+						initialCount: 0, // so that factory is not called on the main queue
 						maxCount: TFChunkScavenger.MaxThreadCount + 1,
 						factory: () => {
+							// not on the main queue
 							var scavengeDirectory = Path.Combine(indexPath, "scavenging");
 							Directory.CreateDirectory(scavengeDirectory);
 							var dbPath = Path.Combine(scavengeDirectory, "scavenging.db");
 							var connectionStringBuilder = new SqliteConnectionStringBuilder {
 								DataSource = dbPath,
+								Pooling = false,
 							};
 							var connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
 							connection.Open();
 							Log.Information("Opened scavenging database {scavengeDatabase} with version {version}",
 								dbPath, connection.ServerVersion);
 							var sqlite = new SqliteScavengeBackend<TStreamId>(
+								pageSizeInBytes: options.Database.ScavengeBackendPageSize,
 								cacheSizeInBytes: options.Database.ScavengeBackendCacheSize);
 							sqlite.Initialize(connection);
 							return sqlite;
@@ -1281,7 +1288,8 @@ namespace EventStore.Core {
 					var state = new ScavengeState<TStreamId>(
 						longHasher,
 						logFormat.Metastreams,
-						backendPool);
+						backendPool,
+						options.Database.ScavengeHashUsersCacheCapacity);
 
 					var accumulator = new Accumulator<TStreamId>(
 						chunkSize: TFConsts.ChunkSize,
@@ -1303,7 +1311,7 @@ namespace EventStore.Core {
 							state.LookupUniqueHashUser),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
-						checkpointPeriod: 32_768,
+						buffer: calculatorBuffer,
 						throttle: throttle);
 
 					var chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(

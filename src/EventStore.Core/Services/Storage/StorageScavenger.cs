@@ -9,6 +9,7 @@ using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
+using Serilog;
 
 namespace EventStore.Core.Services.Storage {
 	// This tracks the current scavenge and starts/stops/creates it according to the client instructions
@@ -17,6 +18,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ClientMessage.StopDatabaseScavenge>,
 		IHandle<SystemMessage.StateChangeMessage> {
 
+		protected static ILogger Log { get; } = Serilog.Log.ForContext<StorageScavenger>();
 		private readonly ITFChunkScavengerLogManager _logManager;
 		private readonly ScavengerFactory _scavengerFactory;
 		private readonly object _lock = new object();
@@ -88,8 +90,14 @@ namespace EventStore.Core.Services.Storage {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
 			try {
 				await newScavengeTask.ConfigureAwait(false);
+			} catch (Exception ex) {
+				Log.Error(ex, "SCAVENGING: Unexpected error when scavenging");
 			} finally {
-				newScavenge.Dispose();
+				try {
+					newScavenge.Dispose();
+				} catch (Exception ex) {
+					Log.Error(ex, "SCAVENGING: Unexpected error when disposing the scavenger");
+				}
 			}
 
 			lock (_lock) {

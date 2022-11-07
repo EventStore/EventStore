@@ -503,8 +503,14 @@ namespace EventStore.Core {
 			             "Use 0 to disable the filter. Resizing the filter will cause a full rebuild.")]
 			public long StreamExistenceFilterSize { get; init; } = Opts.StreamExistenceFilterSizeDefault;
 
+			[Description("The page size of the scavenge database.")]
+			public int ScavengeBackendPageSize { get; init; } = Opts.ScavengeBackendPageSizeDefault;
+
 			[Description("The amount of memory to use for backend caching in bytes.")]
 			public long ScavengeBackendCacheSize { get; init; } = Opts.ScavengeBackendCacheSizeDefault;
+
+			[Description("The number of stream hashes to remember when checking for collisions.")]
+			public int ScavengeHashUsersCacheCapacity { get; init; } = Opts.ScavengeHashUsersCacheCapacityDefault;
 
 			public static int GetPTableMaxReaderCount(int readerThreadsCount) {
 				var ptableMaxReaderCount = 1 /* StorageWriter */
@@ -562,7 +568,9 @@ namespace EventStore.Core {
 				MaxTruncation = configurationRoot.GetValue<long>(nameof(MaxTruncation)),
 				DbLogFormat = configurationRoot.GetValue<DbLogFormat>(nameof(DbLogFormat)),
 				StreamExistenceFilterSize = configurationRoot.GetValue<long>(nameof(StreamExistenceFilterSize)),
+				ScavengeBackendPageSize = configurationRoot.GetValue<int>(nameof(ScavengeBackendPageSize)),
 				ScavengeBackendCacheSize = configurationRoot.GetValue<long>(nameof(ScavengeBackendCacheSize)),
+				ScavengeHashUsersCacheCapacity = configurationRoot.GetValue<int>(nameof(ScavengeHashUsersCacheCapacity)),
 			};
 		}
 		
