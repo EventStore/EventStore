@@ -67,17 +67,21 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_state.Dispose();
 		}
 
+		// following old scavenging design the returned task must complete successfully
 		public async Task ScavengeAsync(CancellationToken cancellationToken) {
 			await Task.Yield(); // get off the main queue
-			Log.Debug("SCAVENGING: started scavenging DB.");
-			LogCollisions();
 
 			_recordedTimes.Clear();
 			var stopwatch = Stopwatch.StartNew();
-
 			var result = ScavengeResult.Success;
 			string error = null;
 			try {
+				Log.Debug("SCAVENGING: initializing scavenge state.");
+				_state.Init();
+				_state.LogStats();
+				Log.Debug("SCAVENGING: started scavenging DB.");
+				LogCollisions();
+
 				_scavengerLogger.ScavengeStarted();
 
 				await RunInternal(_scavengerLogger, stopwatch, cancellationToken).ConfigureAwait(false);
@@ -94,10 +98,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				Log.Error(exc, "SCAVENGING: error while scavenging DB.");
 				error = string.Format("Error while scavenging DB: {0}.", exc.Message);
 			} finally {
-				LogCollisions();
-				LogTimes();
 				try {
 					_scavengerLogger.ScavengeCompleted(result, error, stopwatch.Elapsed);
+					LogCollisions();
+					LogTimes();
 				} catch (Exception ex) {
 					Log.Error(
 						ex,
