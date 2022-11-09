@@ -1,50 +1,50 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Platforms>x64;ARM64</Platforms>
-  </PropertyGroup>
-  <ItemGroup>
-    <None Remove="Prelude\1Prelude.js" />
-    <None Remove="Prelude\Modules.js" />
-    <None Remove="Prelude\ModulesExecuted.js" />
-    <None Remove="Prelude\Projections.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Prelude\1Prelude.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Prelude\Modules.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Prelude\ModulesExecuted.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Prelude\Projections.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<Platforms>x64;ARM64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Remove="Prelude\1Prelude.js" />
+		<None Remove="Prelude\Modules.js" />
+		<None Remove="Prelude\ModulesExecuted.js" />
+		<None Remove="Prelude\Projections.js" />
+	</ItemGroup>
+	<ItemGroup>
+		<Content Include="Prelude\1Prelude.js">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<Content Include="Prelude\Modules.js">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<Content Include="Prelude\ModulesExecuted.js">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<Content Include="Prelude\Projections.js">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
 		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Grpc.Tools" Version="2.49.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
-  <ItemGroup>
-	  <PackageReference Include="Jint" Version="3.0.0-beta-2038" />		
-    <ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-    <ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-    <ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />   
-  </ItemGroup>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Jint" Version="3.0.0-beta-2038" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
+	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="../Protos/Grpc/projections.proto" GrpcServices="Server" LinkBase="Services/Grpc" Access="Internal">
-		  <Link>Services\Grpc\Protos\projections.proto</Link>
+			<Link>Services\Grpc\Protos\projections.proto</Link>
 		</Protobuf>
 	</ItemGroup>
 </Project>
