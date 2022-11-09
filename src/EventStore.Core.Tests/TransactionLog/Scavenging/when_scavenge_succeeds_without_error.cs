@@ -10,7 +10,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 	public class when_scavenge_succeeds_without_error<TLogFormat, TStreamId> : ScavengeLifeCycleScenario<TLogFormat, TStreamId> {
 		protected override Task When() {
 			var cancellationTokenSource = new CancellationTokenSource();
-			return TfChunkScavenger.Scavenge(true, true, 0, cancellationTokenSource.Token);
+			return TfChunkScavenger.Scavenge(true, true, 0, ct: cancellationTokenSource.Token);
 		}
 
 		[Test]

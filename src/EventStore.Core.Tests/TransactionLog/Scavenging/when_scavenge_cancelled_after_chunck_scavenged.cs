@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging {
 			var cancellationTokenSource = new CancellationTokenSource();
 
 			Log.ChunkScavenged += (sender, args) => cancellationTokenSource.Cancel();
-			await TfChunkScavenger.Scavenge(true, true, 0, cancellationTokenSource.Token);
+			await TfChunkScavenger.Scavenge(true, true, 0, ct: cancellationTokenSource.Token);
 		}
 
 		[Test]

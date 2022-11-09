@@ -36,5 +36,7 @@ namespace EventStore.Core.Index {
 
 		IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null);
 		IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null);
+
+		void WaitForBackgroundTasks(int millisecondsTimeout);
 	}
 }
