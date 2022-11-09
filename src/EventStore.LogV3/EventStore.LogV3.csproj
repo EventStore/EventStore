@@ -14,7 +14,7 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\EventStore.LogCommon\EventStore.LogCommon.csproj" />
+		<ProjectReference Include="..\EventStore.LogCommon\EventStore.LogCommon.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="**/*.proto" />
