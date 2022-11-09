@@ -1,40 +1,40 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-		<PropertyGroup>
-				<TargetFramework>net6.0</TargetFramework>
-				<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-				<OutputType>Exe</OutputType>
-				<ApplicationIcon>app2.ico</ApplicationIcon>
-				<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
-				<Platforms>x64;ARM64</Platforms>
-		</PropertyGroup>
-		<ItemGroup>
-				<PackageReference Include="System.ComponentModel.Composition" Version="6.0.0" />
-		</ItemGroup>
-		<ItemGroup>
-				<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
-				<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
-				<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
-				<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
-		</ItemGroup>
-		<ItemGroup>
-				<None Include="..\EventStore.Common\Log\logconfig.json">
-						<Link>logconfig.json</Link>
-						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-				</None>
-				<None Update="kestrelsettings.json">
-				  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-				</None>
-		</ItemGroup>
-		<ItemGroup>
-				<Content Include="app2.ico" />
-				<None Remove="certs\**\*" />
-				<Content Include="certs\**\*" CopyToOutputDirectory="PreserveNewest" />
-		</ItemGroup>
-		<!-- TODO(jen20): Investigate which of these are correct -->
-		<PropertyGroup>
-				<IsMac>false</IsMac>
-				<IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
-		</PropertyGroup>
-		
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<OutputType>Exe</OutputType>
+		<ApplicationIcon>app2.ico</ApplicationIcon>
+		<GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+		<Platforms>x64;ARM64</Platforms>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="System.ComponentModel.Composition" Version="6.0.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.ClusterNode.Web\EventStore.ClusterNode.Web.csproj" />
+		<ProjectReference Include="..\EventStore.Common\EventStore.Common.csproj" />
+		<ProjectReference Include="..\EventStore.Core\EventStore.Core.csproj" />
+		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\EventStore.Common\Log\logconfig.json">
+			<Link>logconfig.json</Link>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="kestrelsettings.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<Content Include="app2.ico" />
+		<None Remove="certs\**\*" />
+		<Content Include="certs\**\*" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+	<!-- TODO(jen20): Investigate which of these are correct -->
+	<PropertyGroup>
+		<IsMac>false</IsMac>
+		<IsMac Condition="('$(OS)' == 'Unix') And (Exists ('/Library/Frameworks'))">true</IsMac>
+	</PropertyGroup>
+
 </Project>
