@@ -409,9 +409,10 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		public void WaitForBackgroundTasks() {
-			if (!_backgroundRunningEvent.Wait(7000)) {
-				throw new TimeoutException("Waiting for background tasks took too long.");
+		public void WaitForBackgroundTasks(int millisecondsTimeout = 7_000) {
+			if (!_backgroundRunningEvent.Wait(millisecondsTimeout)) {
+				throw new TimeoutException(
+					$"Waiting for TableIndex background tasks took longer than {millisecondsTimeout:N0} ms.");
 			}
 		}
 
