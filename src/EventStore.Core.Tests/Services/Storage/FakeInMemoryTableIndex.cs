@@ -45,6 +45,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return entries;
 		}
 
+		public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			throw new NotImplementedException();
+		}
+
 		public void Initialize(long chaserCheckpoint)
 		{
 		}

@@ -61,6 +61,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return Array.Empty<IndexEntry>();
 		}
 
+		public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			throw new NotImplementedException();
+		}
+
 		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
 			ScavengeCount++;
 		}

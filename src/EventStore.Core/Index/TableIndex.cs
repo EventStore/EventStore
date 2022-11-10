@@ -693,13 +693,14 @@ namespace EventStore.Core.Index {
 		}
 
 		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
-			int? limit = null) {
-			ulong hash = CreateHash(streamId);
+			int? limit = null) => GetRange(CreateHash(streamId), startVersion, endVersion, limit);
+
+		public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
 			var counter = 0;
 			while (counter < 5) {
 				counter++;
 				try {
-					return GetRangeInternal(hash, startVersion, endVersion, limit);
+					return GetRangeInternal(stream, startVersion, endVersion, limit);
 				} catch (FileBeingDeletedException) {
 					Log.Debug("File being deleted.");
 				} catch (MaybeCorruptIndexException) {
