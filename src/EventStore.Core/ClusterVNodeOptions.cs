@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common;
 using EventStore.Common.Configuration;
@@ -34,6 +36,7 @@ namespace EventStore.Core {
 		[OptionGroup] public GrpcOptions Grpc { get; init; } = new();
 		[OptionGroup] public InterfaceOptions Interface { get; init; } = new();
 		[OptionGroup] public ProjectionOptions Projections { get; init; } = new();
+		public UnknownOptions Unknown { get; init; } = new(Array.Empty<string>());
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
@@ -61,8 +64,6 @@ namespace EventStore.Core {
 		}
 
 		public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
-			configurationRoot.Validate<ClusterVNodeOptions>();
-
 			return new ClusterVNodeOptions {
 				Application = ApplicationOptions.FromConfiguration(configurationRoot),
 				DevMode = DevModeOptions.FromConfiguration(configurationRoot),
@@ -76,6 +77,7 @@ namespace EventStore.Core {
 				Grpc = GrpcOptions.FromConfiguration(configurationRoot),
 				Interface = InterfaceOptions.FromConfiguration(configurationRoot),
 				Projections = ProjectionOptions.FromConfiguration(configurationRoot),
+				Unknown = UnknownOptions.FromConfiguration(configurationRoot),
 				ConfigurationRoot = configurationRoot,
 			};
 		}
@@ -108,6 +110,9 @@ namespace EventStore.Core {
 
 			[Description("Print effective configuration to console and then exit.")]
 			public bool WhatIf { get; init; } = false;
+
+			[Description("Allows EventStoreDB to run with unknown configuration options present.")]
+			public bool AllowUnknownOptions { get; init; } = false;
 
 			[Description("Start the built in system projections.")]
 			public bool StartStandardProjections { get; init; } = false;
@@ -146,6 +151,7 @@ namespace EventStore.Core {
 				Version = configurationRoot.GetValue<bool>(nameof(Version)),
 				EnableHistograms = configurationRoot.GetValue<bool>(nameof(EnableHistograms)),
 				WhatIf = configurationRoot.GetValue<bool>(nameof(WhatIf)),
+				AllowUnknownOptions = configurationRoot.GetValue<bool>(nameof(AllowUnknownOptions)),
 				WorkerThreads = configurationRoot.GetValue<int>(nameof(WorkerThreads)),
 				DisableHttpCaching = configurationRoot.GetValue<bool>(nameof(DisableHttpCaching)),
 				LogHttpRequests = configurationRoot.GetValue<bool>(nameof(LogHttpRequests)),
@@ -722,6 +728,31 @@ namespace EventStore.Core {
 				ProjectionCompilationTimeout = configurationRoot.GetValue<int>(nameof(ProjectionCompilationTimeout)),
 				ProjectionExecutionTimeout = configurationRoot.GetValue<int>(nameof(ProjectionExecutionTimeout))
 			};
+		}
+
+		public record UnknownOptions {
+			public IReadOnlyList<string> Keys { get; init; }
+
+			public UnknownOptions(IReadOnlyList<string> keys) {
+				Keys = keys;
+			}
+
+			internal static UnknownOptions FromConfiguration(IConfigurationRoot configurationRoot) {
+				var allKnownKeys = typeof(ClusterVNodeOptions).GetProperties()
+					.SelectMany(property => property
+						.PropertyType
+						.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+					.Select(x => x.Name)
+					.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+				var unknownKeys = configurationRoot
+					.AsEnumerable()
+					.Select(kvp => kvp.Key)
+					.Where(key => !allKnownKeys.Contains(key))
+					.ToList();
+
+				return new UnknownOptions(unknownKeys);
+			}
 		}
 	}
 }
