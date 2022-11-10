@@ -25,7 +25,6 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly Guid _subscriptionId;
 		private bool _eofReached;
 		protected string _tag;
-		private DateTime _lastProgressPublished;
 		private TimeSpan _checkpointAfter;
 		private DateTime _lastCheckpointTime = DateTime.MinValue;
 		private bool _enableContentTypeValidation;
@@ -83,7 +82,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (_eofReached)
 				return; // eof may be set by reach N events
 
-			// NOTE: we may receive here messages from heading event distribution point 
+			// NOTE: we may receive here messages from heading event distribution point
 			// and they may not pass out source filter.  Discard them first
 			var roundedProgress = (float)Math.Round(message.Progress, 1);
 			bool progressChanged = _progress != roundedProgress;
@@ -141,7 +140,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				    && _lastCheckpointTag != _positionTracker.LastTag)
 					SuggestCheckpoint(message);
 				else if (progressChanged)
-					PublishProgress(roundedProgress);
+					_progress = roundedProgress;
 			}
 
 			// initialize checkpointing based on first message 
@@ -153,18 +152,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ProcessEofAndEmitEof();
 		}
 
-		private void PublishProgress(float roundedProgress) {
-			var now = _timeProvider.UtcNow;
-			if (now - _lastProgressPublished > TimeSpan.FromMilliseconds(500)) {
-				_lastProgressPublished = now;
-				_progress = roundedProgress;
-				_publisher.Publish(
-					new EventReaderSubscriptionMessage.ProgressChanged(
-						_subscriptionId,
-						_positionTracker.LastTag,
-						_progress,
-						_subscriptionMessageSequenceNumber++));
-			}
+		protected void NotifyProgress() {
+			_publisher.Publish(new EventReaderSubscriptionMessage.ProgressChanged(
+				_subscriptionId,
+				_positionTracker.LastTag,
+				_progress,
+				_subscriptionMessageSequenceNumber++));
 		}
 
 		protected void PublishPartitionDeleted(string partition, CheckpointTag deletePosition) {

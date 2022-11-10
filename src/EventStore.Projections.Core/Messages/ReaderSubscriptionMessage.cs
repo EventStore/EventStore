@@ -216,7 +216,7 @@ namespace EventStore.Projections.Core.Messages {
 			private readonly long? _safeTransactionFileReaderJoinPosition;
 			private readonly float _progress;
 
-			//NOTE: committed event with null event _data means - end of the source reached.  
+			//NOTE: committed event with null event _data means - end of the source reached.
 			// Current last available TF commit position is in _position.CommitPosition
 			// TODO: separate message?
 
@@ -264,6 +264,16 @@ namespace EventStore.Projections.Core.Messages {
 			public string Reason {
 				get { return _reason; }
 			}
+		}
+
+		public class ReportProgress : SubscriptionMessage {
+			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public ReportProgress(Guid correlation, object source = null) : base(correlation, null, source) { }
 		}
 	}
 }
