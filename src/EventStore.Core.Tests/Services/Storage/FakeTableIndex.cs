@@ -46,6 +46,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return false;
 		}
 
+		public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public IEnumerable<ISearchTable> IterateAllInOrder() => throw new NotImplementedException();
 
 		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,

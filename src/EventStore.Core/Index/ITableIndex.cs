@@ -22,6 +22,8 @@ namespace EventStore.Core.Index {
 		bool TryGetOneValue(TStreamId streamId, long version, out long position);
 		bool TryGetLatestEntry(TStreamId streamId, out IndexEntry entry);
 		bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry);
+		bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry);
+		bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry);
 
 		IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion, int? limit = null);
 

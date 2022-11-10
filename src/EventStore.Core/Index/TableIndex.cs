@@ -653,6 +653,45 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 
+		public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
+			ulong stream = CreateHash(streamId);
+			return TryGetNextEntry(stream, afterVersion, out entry);
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			var counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					return TryGetNextEntryInternal(stream, afterVersion, out entry);
+				} catch (FileBeingDeletedException) {
+					Log.Debug("File being deleted.");
+				} catch (MaybeCorruptIndexException) {
+					ForceIndexVerifyOnNextStartup();
+					throw;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		private bool TryGetNextEntryInternal(ulong stream, long afterVersion, out IndexEntry entry) {
+			var map = _indexMap;
+			foreach (var table in map.InReverseOrder()) {
+				if (table.TryGetNextEntry(stream, afterVersion, out entry))
+					return true;
+			}
+
+			var awaiting = _awaitingMemTables;
+			for (var index = awaiting.Count - 1; index >= 0; index--) {
+				if (awaiting[index].Table.TryGetNextEntry(stream, afterVersion, out entry))
+					return true;
+			}
+
+			entry = InvalidIndexEntry;
+			return false;
+		}
+
 		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
 			int? limit = null) {
 			ulong hash = CreateHash(streamId);

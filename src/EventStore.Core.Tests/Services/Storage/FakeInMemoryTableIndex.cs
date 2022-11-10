@@ -73,6 +73,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 		}
 
+		public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry)
 		{
 			throw new NotImplementedException();
