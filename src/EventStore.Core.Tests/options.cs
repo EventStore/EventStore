@@ -66,6 +66,7 @@ namespace EventStore.Core.Tests {
 				nameof(ClusterVNodeOptions.Cluster.PrepareAckCount),
 				nameof(ClusterVNodeOptions.Database.ChunkSize),
 				nameof(ClusterVNodeOptions.Database.StatsStorage),
+				nameof(ClusterVNodeOptions.Unknown.Keys),
 			};
 			var actual = new List<string>();
 			ClusterVNodeOptions.FromConfiguration(new FakeConfigurationRoot(
