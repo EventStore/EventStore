@@ -5,6 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 	public class SqliteOriginalStreamScavengeMap<TKey> : IInitializeSqliteBackend, IOriginalStreamScavengeMap<TKey> {
+		private readonly string _keyTypeOverride;
 		private AddCommand _add;
 		private SetTombstoneCommand _setTombstone;
 		private SetMetadataCommand _setMetadata;
@@ -20,8 +21,9 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 		private string TableName { get; }
 		
-		public SqliteOriginalStreamScavengeMap(string name) {
+		public SqliteOriginalStreamScavengeMap(string name, string keyTypeOverride = null) {
 			TableName = name;
+			_keyTypeOverride = keyTypeOverride;
 
 			_readOriginalStreamData = reader => {
 				var d = new OriginalStreamData();
@@ -47,9 +49,10 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 
 		public void Initialize(SqliteBackend sqlite) {
+			var keyType = _keyTypeOverride ?? SqliteTypeMapping.GetTypeName<TKey>();
 			var sql = $@"
 				CREATE TABLE IF NOT EXISTS {TableName} (
-					key {SqliteTypeMapping.GetTypeName<TKey>()} PRIMARY KEY,
+					key {keyType} PRIMARY KEY,
 					isTombstoned      INTEGER DEFAULT 0,
 					maxAge            INTEGER NULL,
 					maxCount          INTEGER NULL,
@@ -409,6 +412,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		// may cause the row to reappear later in the select. we are ordering the select by key so in
 		// our case it seems doubtful that it will reappear because it would violate the orderby clause,
 		// but in the worse case we will just duplicate the effort but otherwise no harm is done.
+		// NB we no longer have a read open while writing
 		private class FromCheckpointCommand {
 			private readonly SqliteBackend _sqlite;
 			private readonly SqliteCommand _cmd;

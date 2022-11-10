@@ -60,6 +60,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 		public ScavengeState<TStreamId> Build() {
 			var state = BuildInternal();
+			state.Init();
 			_mutateState(state);
 			return state;
 		}
@@ -113,7 +114,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			var scavengeState = new ScavengeState<TStreamId>(
 				_hasher,
 				_metastreamLookup,
-				backendPool);
+				backendPool,
+				100_000);
 
 			return scavengeState;
 		}

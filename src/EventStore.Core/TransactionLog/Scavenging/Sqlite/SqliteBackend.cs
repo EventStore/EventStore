@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Data.Sqlite;
+using Serilog;
 using SQLitePCL;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 	public class SqliteBackend : IDisposable {
+		protected static readonly ILogger Log = Serilog.Log.ForContext<SqliteBackend>();
 		private readonly SqliteConnection _connection;
 		private SqliteTransaction _transaction;
 		private const int SqliteDuplicateKeyError = 19;
@@ -14,6 +17,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		public const string PageSize = "page_size";
 		public const string Synchronous = "synchronous";
 		public const string JournalMode = "journal_mode";
+		public const string WalAutocheckpoint = "wal_autocheckpoint";
 
 		public SqliteBackend(SqliteConnection connection) {
 			_connection = connection;
@@ -109,8 +113,45 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 		public void ClearTransaction() {
 			_transaction = null;
+
+#if MANUAL_SQLITE_CHECKPOINT
+			// This forces the WAL to checkpoint and restart (or throws), which means all the pages in
+			// the WAL are written into the database and the WAL continues to write from the beginning of
+			// the file. Its purpose is to
+			//    1. Demonstrate that this is possible - i.e. no readers or anything else preventing
+			//       the wal from being restarted, which could, if consistent, result in a very large WAL
+			//    2. Collect some data about how many pages needed to be moved
+			//
+			// We leave it off in production because
+			//    1. We don't necessarily want to do this after every commit (although our commits are
+			//       quite coarse-grained)
+			//    2. It can fail (legitimately?) on rollback when a scavenge is cancelled. We'd perhaps
+			//       only want to call this on successful commit.
+			//    3. it doesn't reuse the command or stopwatch.
+			try {
+				var sw = Stopwatch.StartNew();
+				using var cmd = _connection.CreateCommand();
+				cmd.CommandText = "PRAGMA wal_checkpoint(RESTART)";
+				using var reader = cmd.ExecuteReader();
+				if (reader.Read()) {
+					var blocked = reader.GetInt32(0);
+					var pagesModified = reader.GetInt32(1);
+					var pagesMoved = reader.GetInt32(2);
+					Log.Debug(
+						"Checkpointed and restarted the WAL in {elapsed}. blocked?: {blocked}. {pagesModified} pages modified. {pagesMoved} pages moved.",
+						sw.Elapsed, blocked, pagesModified, pagesMoved);
+				} else {
+					var msg = "Could not read result when checkpointing and restarting the WAL";
+					Log.Error(msg);
+					throw new Exception(msg);
+				}
+			} catch (Exception ex) {
+				Log.Error(ex, "Failed to checkpoint and restart the WAL");
+				throw;
+			}
+#endif
 		}
-		
+
 		public Stats GetStats() {
 			var databaseSize = long.Parse(GetPragmaValue(PageSize)) * long.Parse(GetPragmaValue(PageCount));
 			var cacheSize = SqliteCacheSize.FromPragmaValue(GetPragmaValue(CacheSize));
@@ -140,7 +181,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 			// cache size in kibi bytes is passed as a negative value, otherwise it's amount of pages
 			var cacheSize = new SqliteCacheSize(cacheSizeInBytes);
 			SetPragmaValue(CacheSize, cacheSize.NegativeKibibytes.ToString());
-			var currentCacheSize = int.Parse(GetPragmaValue(CacheSize));
+			var currentCacheSize = long.Parse(GetPragmaValue(CacheSize));
 			if (currentCacheSize != cacheSize.NegativeKibibytes) {
 				throw new Exception($"Failed to configure cache size, unexpected value: {currentCacheSize}");
 			}
@@ -174,7 +215,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 			}
 
 			public static SqliteCacheSize FromPragmaValue(string value) {
-				var cacheSizeInKibiBytes = int.Parse(value);
+				var cacheSizeInKibiBytes = long.Parse(value);
 				return new SqliteCacheSize(-1 * cacheSizeInKibiBytes * 1024);
 			}
 

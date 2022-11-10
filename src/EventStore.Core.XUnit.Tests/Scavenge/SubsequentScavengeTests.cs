@@ -360,9 +360,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Tracer.Line("    Begin"),
 					Tracer.Line("        Checkpoint: Calculating SP-1 done None"),
 					Tracer.Line("    Commit"),
-					Tracer.Line("    Begin"),
-					Tracer.Line("        Checkpoint: Calculating SP-1 done None"),
-					Tracer.Line("    Commit"),
 					Tracer.Line("Done"),
 
 					Tracer.Line("Executing chunks for SP-1"),
@@ -434,9 +431,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Tracer.Line("Done"),
 
 					Tracer.Line("Calculating SP-3"),
-					Tracer.Line("    Begin"),
-					Tracer.Line("        Checkpoint: Calculating SP-3 done None"),
-					Tracer.Line("    Commit"),
 					Tracer.Line("    Begin"),
 					Tracer.Line("        Checkpoint: Calculating SP-3 done None"),
 					Tracer.Line("    Commit"),

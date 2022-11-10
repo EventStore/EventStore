@@ -182,9 +182,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Tracer.Line("    Begin"),
 					Tracer.Line("        Checkpoint: Calculating SP-0 done None"),
 					Tracer.Line("    Commit"),
-					Tracer.Line("    Begin"),
-					Tracer.Line("        Checkpoint: Calculating SP-0 done None"),
-					Tracer.Line("    Commit"),
 					Tracer.Line("Done"),
 
 					Tracer.Line("Executing chunks for SP-0"),
@@ -243,9 +240,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Tracer.Line("Done"),
 
 					Tracer.Line("Calculating SP-0"),
-					Tracer.Line("    Begin"),
-					Tracer.Line("        Checkpoint: Calculating SP-0 done None"),
-					Tracer.Line("    Commit"),
 					Tracer.Line("    Begin"),
 					Tracer.Line("        Checkpoint: Calculating SP-0 done None"),
 					Tracer.Line("    Commit"),
@@ -357,9 +351,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Tracer.Line("    Begin"),
 					Tracer.Line("        SetDiscardPoints(98, Active, Discard before 1, Discard before 1)"),
 					Tracer.Line("        SetDiscardPoints(100, Spent, Keep all, Keep all)"),
-					Tracer.Line("        Checkpoint: Calculating SP-0 done Hash: 100"),
-					Tracer.Line("    Commit"),
-					Tracer.Line("    Begin"),
 					Tracer.Line("        Checkpoint: Calculating SP-0 done Hash: 100"),
 					Tracer.Line("    Commit"),
 					Tracer.Line("Done"),
@@ -489,9 +480,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Tracer.Line("        SetDiscardPoints(98, Active, Discard before 2, Discard before 2)"),
 					Tracer.Line("        Checkpoint: Calculating SP-0 done Hash: 100"),
 					Tracer.Line("    Commit"),
-					Tracer.Line("    Begin"),
-					Tracer.Line("        Checkpoint: Calculating SP-0 done Hash: 100"),
-					Tracer.Line("    Commit"),
 					Tracer.Line("Done"),
 
 					// the rest is fresh for SP-0
@@ -591,9 +579,6 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Tracer.Line("    Begin"),
 					Tracer.Line("        SetDiscardPoints(ab-1, Active, Discard before 1, Discard before 1)"),
 					// no discard points to set for ab-2
-					Tracer.Line("        Checkpoint: Calculating SP-0 done Id: ab-2"),
-					Tracer.Line("    Commit"),
-					Tracer.Line("    Begin"),
 					Tracer.Line("        Checkpoint: Calculating SP-0 done Id: ab-2"),
 					Tracer.Line("    Commit"),
 					Tracer.Line("Done"),
