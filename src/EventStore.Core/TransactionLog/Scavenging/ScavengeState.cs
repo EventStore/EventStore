@@ -20,21 +20,22 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	}
 
 	public class ScavengeState<TStreamId> : ScavengeState, IScavengeState<TStreamId> {
-		private readonly IScavengeStateBackend<TStreamId> _backend;
+		private bool _initialized;
+		private IScavengeStateBackend<TStreamId> _backend;
 		private readonly ObjectPool<IScavengeStateBackend<TStreamId>> _backendPool;
-
-		private readonly CollisionDetector<TStreamId> _collisionDetector;
+		private readonly int _hashUsersCacheCapacity;
+		private CollisionDetector<TStreamId> _collisionDetector;
 
 		// data stored keyed against metadata streams
-		private readonly MetastreamCollisionMap<TStreamId> _metastreamDatas;
+		private MetastreamCollisionMap<TStreamId> _metastreamDatas;
 
 		// data stored keyed against original (non-metadata) streams
-		private readonly OriginalStreamCollisionMap<TStreamId> _originalStreamDatas;
+		private OriginalStreamCollisionMap<TStreamId> _originalStreamDatas;
 
-		private readonly IScavengeMap<int, ChunkTimeStampRange> _chunkTimeStampRanges;
-		private readonly IChunkWeightScavengeMap _chunkWeights;
-		private readonly IScavengeMap<Unit, ScavengeCheckpoint> _checkpointStorage;
-		private readonly ITransactionManager _transactionManager;
+		private IScavengeMap<int, ChunkTimeStampRange> _chunkTimeStampRanges;
+		private IChunkWeightScavengeMap _chunkWeights;
+		private IScavengeMap<Unit, ScavengeCheckpoint> _checkpointStorage;
+		private ITransactionManager _transactionManager;
 
 		private readonly ILongHasher<TStreamId> _hasher;
 		private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
@@ -42,9 +43,20 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public ScavengeState(
 			ILongHasher<TStreamId> hasher,
 			IMetastreamLookup<TStreamId> metastreamLookup,
-			ObjectPool<IScavengeStateBackend<TStreamId>> backendPool) {
+			ObjectPool<IScavengeStateBackend<TStreamId>> backendPool,
+			int hashUsersCacheCapacity) {
 
+			_hasher = hasher;
+			_metastreamLookup = metastreamLookup;
 			_backendPool = backendPool;
+			_hashUsersCacheCapacity = hashUsersCacheCapacity;
+		}
+
+		public void Init() {
+			if (_initialized)
+				return;
+
+			_initialized = true;
 			_backend = _backendPool.Get();
 
 			// todo: in log v3 inject an implementation that doesn't store hash users
@@ -52,12 +64,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_collisionDetector = new CollisionDetector<TStreamId>(
 				hashUsers: new LruCachingScavengeMap<ulong, TStreamId>(
 					_backend.Hashes,
-					cacheMaxCount: 100_000),
+					cacheMaxCount: _hashUsersCacheCapacity),
 				collisionStorage: _backend.CollisionStorage,
-				hasher: hasher);
+				hasher: _hasher);
 
-			_hasher = hasher;
-			_metastreamLookup = metastreamLookup;
 			_checkpointStorage = _backend.CheckpointStorage;
 
 			_metastreamDatas = new MetastreamCollisionMap<TStreamId>(
@@ -80,8 +90,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		public void Dispose() {
-			_transactionManager.UnregisterOnRollback();
-			_backendPool.Return(_backend);
+			_transactionManager?.UnregisterOnRollback();
+			if (_backend != null)
+				_backendPool.Return(_backend);
 			_backendPool.Dispose();
 		}
 
@@ -162,6 +173,11 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_collisionDetector.IsCollision(streamId) ?
 				StreamHandle.ForStreamId(streamId) :
 				StreamHandle.ForHash<TStreamId>(_hasher.Hash(streamId));
+
+		public void LogAccumulationStats() {
+			LogStats();
+			_collisionDetector.LogStats();
+		}
 
 		//
 		// FOR CALCULATOR

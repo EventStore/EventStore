@@ -2,6 +2,7 @@ using System;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -17,6 +18,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<ClientMessage.StopDatabaseScavenge>,
 		IHandle<SystemMessage.StateChangeMessage> {
 
+		protected static ILogger Log { get; } = LogManager.GetLoggerFor<StorageScavenger>();
 		private readonly ITFChunkScavengerLogManager _logManager;
 		private readonly ScavengerFactory _scavengerFactory;
 		private readonly object _lock = new object();
@@ -88,8 +90,14 @@ namespace EventStore.Core.Services.Storage {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
 			try {
 				await newScavengeTask;
+			} catch (Exception ex) {
+				Log.ErrorException(ex, "SCAVENGING: Unexpected error when scavenging");
 			} finally {
-				newScavenge.Dispose();
+				try {
+					newScavenge.Dispose();
+				} catch (Exception ex) {
+					Log.ErrorException(ex, "SCAVENGING: Unexpected error when disposing the scavenger");
+				}
 			}
 
 			lock (_lock) {

@@ -12,6 +12,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		IScavengeStateForCleaner,
 		IDisposable {
 
+		void Init();
+
 		bool TryGetCheckpoint(out ScavengeCheckpoint checkpoint);
 
 		IEnumerable<TStreamId> AllCollisions();
@@ -67,6 +69,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		void SetChunkTimeStampRange(int logicalChunkNumber, ChunkTimeStampRange range);
 
 		StreamHandle<TStreamId> GetStreamHandle(TStreamId streamId);
+
+		void LogAccumulationStats();
 	}
 
 	public interface IScavengeStateForCalculatorReadOnly<TStreamId> {

@@ -7,6 +7,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	public class LruCachingScavengeMap<TKey, TValue> : IScavengeMap<TKey, TValue> {
 		private readonly LRUCache<TKey, TValue> _cache;
 		private readonly IScavengeMap<TKey, TValue> _wrapped;
+		private long _hits;
+		private long _misses;
 
 		public LruCachingScavengeMap(IScavengeMap<TKey, TValue> wrapped, int cacheMaxCount) {
 			_wrapped = wrapped;
@@ -24,8 +26,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_wrapped.AllRecords();
 
 		public bool TryGetValue(TKey key, out TValue value) {
-			if (_cache.TryGet(key, out value))
+			if (_cache.TryGet(key, out value)) {
+				_hits++;
 				return true;
+			}
+
+			_misses++;
 
 			if (_wrapped.TryGetValue(key, out value)) {
 				_cache.Put(key, value);
@@ -41,6 +47,13 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public bool TryRemove(TKey key, out TValue value) {
 			_cache.Remove(key);
 			return _wrapped.TryRemove(key, out value);
+		}
+
+		public void GetStats(out long hits, out long misses) {
+			hits = _hits;
+			misses = _misses;
+			_hits = 0;
+			_misses = 0;
 		}
 	}
 }

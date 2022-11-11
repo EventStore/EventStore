@@ -316,11 +316,14 @@ namespace EventStore.ClusterNode {
 		[ArgDescription(Opts.MaxAutoMergeIndexLevelDescr, Opts.DbGroup)]
 		public int MaxAutoMergeIndexLevel { get; set; }
 
-		[ArgDescription(Opts.ScavengeBackendCacheSizeDescr, Opts.DbGroup)]
-		public int ScavengeBackendCacheSize { get; set; }
+		[ArgDescription(Opts.ScavengeBackendPageSizeDescr, Opts.DbGroup)]
+		public int ScavengeBackendPageSize { get; set; }
 
-		[ArgDescription(Opts.ScavengeThrottlePercentDescr, Opts.DbGroup)]
-		public int ScavengeThrottlePercent { get; set; }
+		[ArgDescription(Opts.ScavengeBackendCacheSizeDescr, Opts.DbGroup)]
+		public long ScavengeBackendCacheSize { get; set; }
+
+		[ArgDescription(Opts.ScavengeHashUsersCacheCapacityDescr, Opts.DbGroup)]
+		public int ScavengeHashUsersCacheCapacity { get; set; }
 
 		[ArgDescription(Opts.WriteStatsToDbDescr, Opts.DbGroup)]
 		public bool WriteStatsToDb { get; set; }
@@ -451,8 +454,9 @@ namespace EventStore.ClusterNode {
 			StreamInfoCacheCapacity = Opts.StreamInfoCacheCapacityDefault;
 
 			MaxAutoMergeIndexLevel = Opts.MaxAutoMergeIndexLevelDefault;
+			ScavengeBackendPageSize = Opts.ScavengeBackendPageSizeDefault;
 			ScavengeBackendCacheSize = Opts.ScavengeBackendCacheSizeDefault;
-			ScavengeThrottlePercent = Opts.ScavengeThrottlePercentDefault;
+			ScavengeHashUsersCacheCapacity = Opts.ScavengeHashUsersCacheCapacityDefault;
 
 			WriteStatsToDb = Opts.WriteStatsToDbDefault;
 		}

@@ -135,8 +135,9 @@ namespace EventStore.Core {
 		private bool _reduceFileCachePressure;
 		private int _initializationThreads;
 		private int _maxAutoMergeIndexLevel;
-		private int _scavengeBackendCacheSize;
-		private int _scavengeThrottlePercent;
+		private int _scavengeBackendPageSize;
+		private long _scavengeBackendCacheSize;
+		private int _scavengeHashUsersCacheCapacity;
 
 		private bool _gossipOnSingleNode;
 
@@ -195,8 +196,9 @@ namespace EventStore.Core {
 			_disableFirstLevelHttpAuthorization = Opts.DisableFirstLevelHttpAuthorizationDefault;
 			_disableScavengeMerging = Opts.DisableScavengeMergeDefault;
 			_scavengeHistoryMaxAge = Opts.ScavengeHistoryMaxAgeDefault;
+			_scavengeBackendPageSize = Opts.ScavengeBackendPageSizeDefault;
 			_scavengeBackendCacheSize = Opts.ScavengeBackendCacheSizeDefault;
-			_scavengeThrottlePercent = Opts.ScavengeThrottlePercentDefault;
+			_scavengeHashUsersCacheCapacity = Opts.ScavengeHashUsersCacheCapacityDefault;
 			_adminOnPublic = Opts.AdminOnExtDefault;
 			_statsOnPublic = Opts.StatsOnExtDefault;
 			_gossipOnPublic = Opts.GossipOnExtDefault;
@@ -904,23 +906,31 @@ namespace EventStore.Core {
 			_scavengeHistoryMaxAge = scavengeHistoryMaxAge;
 			return this;
 		}
-		
+
+		/// <summary>
+		/// The page size of the scavenge database.
+		/// </summary>
+		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
+		public VNodeBuilder WithScavengeBackendPageSize(int size) {
+			_scavengeBackendPageSize = size;
+			return this;
+		}
+
 		/// <summary>
 		/// The amount of memory to use for backend caching in bytes.
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithScavengeBackendCacheSize(int size) {
+		public VNodeBuilder WithScavengeBackendCacheSize(long size) {
 			_scavengeBackendCacheSize = size;
 			return this;
 		}
 
 		/// <summary>
-		/// The average percentage (1-100) of time that scavenge will actively run for. When less than
-		/// 100, scavenge will take rests to reduce load on the node.
+		/// The number of stream hashes to remember when checking for collisions.
 		/// </summary>
 		/// <returns>A <see cref="VNodeBuilder"/> with the options set</returns>
-		public VNodeBuilder WithScavengeThrottlePercent(int scavengeThrottlePercent) {
-			_scavengeThrottlePercent = scavengeThrottlePercent;
+		public VNodeBuilder WithScavengeHashUsersCacheCapacity(int capacity) {
+			_scavengeHashUsersCacheCapacity = capacity;
 			return this;
 		}
 
@@ -1415,8 +1425,9 @@ namespace EventStore.Core {
 				_authenticationProviderFactory,
 				_disableScavengeMerging,
 				_scavengeHistoryMaxAge,
+				_scavengeBackendPageSize,
 				_scavengeBackendCacheSize,
-				_scavengeThrottlePercent,
+				_scavengeHashUsersCacheCapacity,
 				_adminOnPublic,
 				_statsOnPublic,
 				_gossipOnPublic,
