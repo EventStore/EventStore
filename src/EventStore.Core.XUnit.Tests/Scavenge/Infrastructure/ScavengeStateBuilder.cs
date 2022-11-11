@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
@@ -11,6 +12,7 @@ using Microsoft.Data.Sqlite;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge {
 	public class ScavengeStateBuilder {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<ScavengeStateBuilder>();
 		private readonly ILongHasher<string> _hasher;
 		private readonly IMetastreamLookup<string> _metastreamLookup;
 
@@ -75,7 +77,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				maxCount: TFChunkScavenger.MaxThreadCount + 1,
 				factory: () => {
 					var connection = _connectionPool.Get();
-					var sqlite = new SqliteScavengeBackend<string>();
+					var sqlite = new SqliteScavengeBackend<string>(Log);
 					sqlite.Initialize(connection);
 
 					var backend = new AdHocScavengeBackendInterceptor<string>(sqlite);
@@ -111,6 +113,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				dispose: backend => _connectionPool.Return(map[backend]));
 
 			var scavengeState = new ScavengeState<string>(
+				Log,
 				_hasher,
 				_metastreamLookup,
 				backendPool,

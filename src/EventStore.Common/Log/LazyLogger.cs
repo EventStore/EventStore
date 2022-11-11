@@ -10,6 +10,10 @@ namespace EventStore.Common.Log {
 			_logger = new Lazy<ILogger>(factory);
 		}
 
+		public ILogger WithProperty(string name, string value) {
+			return _logger.Value.WithProperty(name, value);
+		}
+
 		public void Flush(TimeSpan? maxTimeToWait = null) {
 			_logger.Value.Flush(maxTimeToWait);
 		}

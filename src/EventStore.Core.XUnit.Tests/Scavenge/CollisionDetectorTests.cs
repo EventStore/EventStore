@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Common.Log;
 using EventStore.Core.Tests.Index.Hashers;
+using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.TransactionLog.Scavenging.Sqlite;
 using EventStore.Core.XUnit.Tests.Scavenge.Sqlite;
@@ -9,6 +11,7 @@ using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge {
 	public class CollisionDetectorTests : SqliteDbPerTest<CollisionDetectorTests> {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<CollisionDetectorTests>();
 		public static IEnumerable<object[]> TheCases() {
 			var none = Array.Empty<string>();
 			
@@ -104,6 +107,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			collisions.Initialize(new SqliteBackend(Fixture.DbConnection));
 
 			var sut = new CollisionDetector<string>(
+				Log,
 				new LruCachingScavengeMap<ulong, string>(
 					hashes,
 					cacheMaxCount: 1000),

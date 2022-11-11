@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
@@ -15,11 +15,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	// different data for each so we have two maps. we have one collision detector since
 	// we need to detect collisions between all of the streams.
 	// we don't need to store data for every original stream, only ones that need scavenging.
-	public class ScavengeState {
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<ScavengeState>();
-	}
-
-	public class ScavengeState<TStreamId> : ScavengeState, IScavengeState<TStreamId> {
+	public class ScavengeState<TStreamId> : IScavengeState<TStreamId> {
 		private bool _initialized;
 		private IScavengeStateBackend<TStreamId> _backend;
 		private readonly ObjectPool<IScavengeStateBackend<TStreamId>> _backendPool;
@@ -37,15 +33,18 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private IScavengeMap<Unit, ScavengeCheckpoint> _checkpointStorage;
 		private ITransactionManager _transactionManager;
 
+		private readonly ILogger _logger;
 		private readonly ILongHasher<TStreamId> _hasher;
 		private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
 
 		public ScavengeState(
+			ILogger logger,
 			ILongHasher<TStreamId> hasher,
 			IMetastreamLookup<TStreamId> metastreamLookup,
 			ObjectPool<IScavengeStateBackend<TStreamId>> backendPool,
 			int hashUsersCacheCapacity) {
 
+			_logger = logger;
 			_hasher = hasher;
 			_metastreamLookup = metastreamLookup;
 			_backendPool = backendPool;
@@ -62,6 +61,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// todo: in log v3 inject an implementation that doesn't store hash users
 			// since there are no collisions.
 			_collisionDetector = new CollisionDetector<TStreamId>(
+				logger: _logger,
 				hashUsers: new LruCachingScavengeMap<ulong, TStreamId>(
 					_backend.Hashes,
 					cacheMaxCount: _hashUsersCacheCapacity),
@@ -140,7 +140,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				out var collision);
 
 			if (collisionResult == CollisionResult.NewCollision) {
-				Log.Info(
+				_logger.Info(
 					"SCAVENGING: Detected collision between streams \"{streamId}\" and \"{previous}\"",
 					streamId, collision);
 

@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using EventStore.Common.Log;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -8,6 +9,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class ChunkWriterForExecutor : IChunkWriterForExecutor<string, LogRecord> {
 		const int BatchLength = 2000;
+		private readonly ILogger _logger;
 		private readonly ChunkManagerForExecutor _manager;
 		private readonly TFChunk _outputChunk;
 		private readonly List<List<PosMap>> _posMapss;
@@ -15,10 +17,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private long _fileSize = 0;
 
 		public ChunkWriterForExecutor(
+			ILogger logger,
 			ChunkManagerForExecutor manager,
 			TFChunkDbConfig dbConfig,
 			IChunkReaderForExecutor<string, LogRecord> sourceChunk) {
 
+			_logger = logger;
 			_manager = manager;
 
 			// list of lists to avoid having an enormous list which could make it to the LoH
@@ -90,7 +94,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public void Abort(bool deleteImmediately) {
 			if (deleteImmediately) {
 				_outputChunk.Dispose();
-				TFChunkScavenger.DeleteTempChunk(FileName, TFChunkScavenger.MaxRetryCount);
+				TFChunkScavenger.DeleteTempChunk(_logger, FileName, TFChunkScavenger.MaxRetryCount);
 			} else {
 				_outputChunk.MarkForDeletion();
 			}

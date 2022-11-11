@@ -55,13 +55,13 @@ namespace EventStore.Core.Services.Storage {
 							_currentScavenge.ScavengeId));
 					} else {
 						var tfChunkScavengerLog = _logManager.CreateLog();
-
+						var logger = Log.WithProperty("ScavengeId", tfChunkScavengerLog.ScavengeId);
 						_cancellationTokenSource = new CancellationTokenSource();
 
-						_currentScavenge = _scavengerFactory.Create(message, tfChunkScavengerLog);
+						_currentScavenge = _scavengerFactory.Create(message, tfChunkScavengerLog, logger);
 						_currentScavengeTask = _currentScavenge.ScavengeAsync(_cancellationTokenSource.Token);
 
-						HandleCleanupWhenFinished(_currentScavengeTask, _currentScavenge);
+						HandleCleanupWhenFinished(_currentScavengeTask, _currentScavenge, logger);
 
 						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
 							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started,
@@ -110,17 +110,17 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge) {
+		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge, ILogger logger) {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
 			try {
 				await newScavengeTask;
 			} catch (Exception ex) {
-				Log.ErrorException(ex, "SCAVENGING: Unexpected error when scavenging");
+				logger.ErrorException(ex, "SCAVENGING: Unexpected error when scavenging");
 			} finally {
 				try {
 					newScavenge.Dispose();
 				} catch (Exception ex) {
-					Log.ErrorException(ex, "SCAVENGING: Unexpected error when disposing the scavenger");
+					logger.ErrorException(ex, "SCAVENGING: Unexpected error when disposing the scavenger");
 				}
 			}
 

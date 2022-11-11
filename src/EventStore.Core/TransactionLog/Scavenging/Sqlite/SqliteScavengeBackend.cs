@@ -1,15 +1,11 @@
-﻿using System;
+using System;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using Microsoft.Data.Sqlite;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
-	public class SqliteScavengeBackend {
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<SqliteScavengeBackend>();
-	}
-
 	// Encapsulates a connection to sqlite, complete with prepared statements and an API to access it
-	public class SqliteScavengeBackend<TStreamId> : SqliteScavengeBackend, IScavengeStateBackend<TStreamId> {
+	public class SqliteScavengeBackend<TStreamId> : IScavengeStateBackend<TStreamId> {
 		// WAL with SYNCHRONOUS NORMAL means that
 		//  - commiting a transaction does not wait to it to flush to disk
 		//  - which is nice and quick, but means in powerloss the last x transactions
@@ -22,6 +18,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 
 		private const int DefaultSqliteCacheSize = 2 * 1024 * 1024;
 		private const int DefaultSqlitePageSize = 16 * 1024;
+		private readonly ILogger _logger;
 		private readonly int _pageSizeInBytes;
 		private readonly long _cacheSizeInBytes;
 		private SqliteBackend _sqliteBackend;
@@ -41,10 +38,12 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		public ITransactionManager TransactionManager { get; private set; }
 
 		public SqliteScavengeBackend(
+			ILogger logger,
 			int pageSizeInBytes = DefaultSqlitePageSize,
 			long cacheSizeInBytes = DefaultSqliteCacheSize) {
 			Ensure.Positive(pageSizeInBytes, nameof(pageSizeInBytes));
 			Ensure.Positive(cacheSizeInBytes, nameof(cacheSizeInBytes));
+			_logger = logger;
 			_pageSizeInBytes = pageSizeInBytes;
 			_cacheSizeInBytes = cacheSizeInBytes;
 		}
@@ -104,7 +103,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 
 		private void ConfigureFeatures() {
-			Log.Debug("SCAVENGING: Setting page size to {pageSize:N0} bytes.", _pageSizeInBytes);
+			_logger.Trace("SCAVENGING: Setting page size to {pageSize:N0} bytes.", _pageSizeInBytes);
 			_sqliteBackend.SetPragmaValue(SqliteBackend.PageSize, _pageSizeInBytes.ToString());
 			var pageSize = int.Parse(_sqliteBackend.GetPragmaValue(SqliteBackend.PageSize));
 			if (pageSize != _pageSizeInBytes) {
@@ -162,7 +161,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 
 		public void LogStats() {
-			Log.Trace($"SCAVENGING: {GetStats().PrettyPrint()}");
+			_logger.Trace($"SCAVENGING: {GetStats().PrettyPrint()}");
 		}
 	}
 }

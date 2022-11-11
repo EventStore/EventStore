@@ -8,6 +8,10 @@ namespace EventStore.Common.Log {
 		public void Flush(TimeSpan? maxTimeToWait = null) {
 		}
 
+		public ILogger WithProperty(string name, string value) {
+			return this;
+		}
+
 		public void Fatal(string format, params object[] args) {
 			Console.WriteLine(Log("FATAL", format, args));
 		}

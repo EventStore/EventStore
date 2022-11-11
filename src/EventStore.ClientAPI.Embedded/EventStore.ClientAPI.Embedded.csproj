@@ -23,7 +23,7 @@
   <ItemGroup>
     <PackageReference Include="HdrHistogram" Version="2.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="NLog" Version="4.5.10" />
+    <PackageReference Include="NLog" Version="4.7.15" />
     <PackageReference Include="protobuf-net" Version="2.4.0" />
     <PackageReference Include="YamlDotNet" Version="5.2.1" />
     <!-- This has intentionally not been included since Mono.Posix never required at runtime on Windows. On Linux/Mac, Mono.Posix.dll exists as part of the mono runtime -->

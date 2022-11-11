@@ -5,11 +5,8 @@ using EventStore.Common.Log;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public class Accumulator {
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<Accumulator>();
-	}
-
-	public class Accumulator<TStreamId> : Accumulator, IAccumulator<TStreamId> {
+	public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
+		private readonly ILogger _logger;
 		private readonly int _chunkSize;
 		private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
 		private readonly IChunkReaderForAccumulator<TStreamId> _chunkReader;
@@ -18,6 +15,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly Throttle _throttle;
 
 		public Accumulator(
+			ILogger logger,
 			int chunkSize,
 			IMetastreamLookup<TStreamId> metastreamLookup,
 			IChunkReaderForAccumulator<TStreamId> chunkReader,
@@ -25,6 +23,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			int cancellationCheckPeriod,
 			Throttle throttle) {
 
+			_logger = logger;
 			_chunkSize = chunkSize;
 			_metastreamLookup = metastreamLookup;
 			_chunkReader = chunkReader;
@@ -40,7 +39,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForAccumulator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Starting new scavenge accumulation phase: {prevScavengePoint} to {scavengePoint}",
+			_logger.Trace("SCAVENGING: Started new scavenge accumulation phase: {prevScavengePoint} to {scavengePoint}",
 				prevScavengePoint?.GetName() ?? "beginning of log",
 				scavengePoint.GetName());
 
@@ -65,7 +64,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForAccumulator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Accumulating from checkpoint: {checkpoint}", checkpoint);
+			_logger.Trace("SCAVENGING: Accumulating from checkpoint: {checkpoint}", checkpoint);
 			var stopwatch = new Stopwatch();
 
 			// bounds are ok because we wont try to read past the scavenge point
@@ -146,8 +145,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					doneLogicalChunkNumber: logicalChunkNumber));
 
 				var commitElapsed = stopwatch.Elapsed;
-				Log.Trace(
 
+				_logger.Trace(
 					"SCAVENGING: Accumulated {countAccumulatedRecords:N0} records " +
 					"({originals:N0} originals, {metadatas:N0} metadatas, {tombstones:N0} tombstones) " +
 					"in chunk {chunk} in {elapsed}. " +
@@ -166,7 +165,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				return ret;
 			} catch (Exception ex) {
 				if (!(ex is OperationCanceledException)) {
-					Log.ErrorException(ex, "SCAVENGING: Rolling back");
+					_logger.ErrorException(ex, "SCAVENGING: Rolling back");
 				}
 				// invariant: there is always an open transaction whenever an exception can be thrown
 				transaction.Rollback();
@@ -311,7 +310,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			if (!isInOrder) {
-				Log.Warn("SCAVENGING: Accumulator found out of order metadata: {stream}:{eventNumber}",
+				_logger.Info("SCAVENGING: Accumulator found out of order metadata: {stream}:{eventNumber}",
 					record.StreamId,
 					record.EventNumber);
 				return;

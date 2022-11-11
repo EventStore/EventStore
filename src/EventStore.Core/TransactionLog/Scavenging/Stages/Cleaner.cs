@@ -1,15 +1,16 @@
-﻿using System;
+using System;
 using System.Threading;
 using EventStore.Common.Log;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class Cleaner : ICleaner {
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<Cleaner>();
-
+		private readonly ILogger _logger;
 		private readonly bool _unsafeIgnoreHardDeletes;
 
 		public Cleaner(
+			ILogger logger,
 			bool unsafeIgnoreHardDeletes) {
+			_logger = logger;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 		}
 
@@ -18,7 +19,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCleaner state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Starting new scavenge clean up phase for {scavengePoint}",
+			_logger.Trace("SCAVENGING: Started new scavenge clean up phase for {scavengePoint}",
 				scavengePoint.GetName());
 
 			var checkpoint = new ScavengeCheckpoint.Cleaning(scavengePoint);
@@ -31,7 +32,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCleaner state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Cleaning checkpoint: {checkpoint}", checkpoint);
+			_logger.Trace("SCAVENGING: Cleaning checkpoint: {checkpoint}", checkpoint);
 
 			cancellationToken.ThrowIfCancellationRequested();
 
@@ -55,12 +56,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (state.AllChunksExecuted()) {
 				// Now we know we have successfully executed every chunk with weight.
 
-				Log.Trace("SCAVENGING: Deleting metastream data");
+				_logger.Trace("SCAVENGING: Deleting metastream data");
 				state.DeleteMetastreamData();
 
 				cancellationToken.ThrowIfCancellationRequested();
 
-				Log.Trace("SCAVENGING: Deleting originalstream data. Deleting archived: {deleteArchived}",
+				_logger.Trace("SCAVENGING: Deleting originalstream data. Deleting archived: {deleteArchived}",
 					_unsafeIgnoreHardDeletes);
 				state.DeleteOriginalStreamData(deleteArchived: _unsafeIgnoreHardDeletes);
 
@@ -74,7 +75,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					throw new Exception(
 						"UnsafeIgnoreHardDeletes is true but not all chunks have been executed");
 				} else {
-					Log.Trace("SCAVENGING: Skipping cleanup because some chunks have not been executed");
+					_logger.Trace("SCAVENGING: Skipping cleanup because some chunks have not been executed");
 				}
 			}
 		}

@@ -1,10 +1,12 @@
-﻿using EventStore.Core.Tests.Services.Storage;
+using EventStore.Common.Log;
+using EventStore.Core.Tests.Services.Storage;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 	[TestFixture]
 	abstract class ScavengeLifeCycleScenario : SpecificationWithDirectoryPerTestFixture {
+		private static readonly ILogger Logger = LogManager.GetLoggerFor<ScavengeLifeCycleScenario>();
 		protected TFChunkDb Db {
 			get { return _dbResult.Db; }
 		}
@@ -32,7 +34,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			Log = new FakeTFScavengerLog();
 			FakeTableIndex = new FakeTableIndex();
-			TfChunkScavenger = new TFChunkScavenger(_dbResult.Db, Log, FakeTableIndex, new FakeReadIndex(_ => false));
+			TfChunkScavenger = new TFChunkScavenger(Logger, _dbResult.Db, Log, FakeTableIndex, new FakeReadIndex(_ => false));
 
 			When();
 		}
