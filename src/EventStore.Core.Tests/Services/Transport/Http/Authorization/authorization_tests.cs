@@ -148,6 +148,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 				"/admin/shutdown;POST;Ops", /* this test is not executed for Ops and Admin to prevent the node from shutting down */
 				"/admin/scavenge?startFromChunk={startFromChunk}&threads={threads};POST;Ops",
 				"/admin/scavenge/{scavengeId};DELETE;Ops",
+				"/admin/scavenge/current;GET;Ops",
 				"/admin/mergeindexes;POST;Ops",
 				"/ping;GET;None",
 				"/info;GET;None",
