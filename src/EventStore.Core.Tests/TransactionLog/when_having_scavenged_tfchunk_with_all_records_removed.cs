@@ -81,7 +81,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Config.ChaserCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
 			_db.Config.ChaserCheckpoint.Flush();
 
-			var scavenger = new TFChunkScavenger<TStreamId>(_db, new FakeTFScavengerLog(), new FakeTableIndex<TStreamId>(),
+			var scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _db, new FakeTFScavengerLog(), new FakeTableIndex<TStreamId>(),
 				new FakeReadIndex<TLogFormat, TStreamId>(x => EqualityComparer<TStreamId>.Default.Equals(x, streamId), _logFormat.Metastreams),
 				_logFormat.Metastreams);
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);

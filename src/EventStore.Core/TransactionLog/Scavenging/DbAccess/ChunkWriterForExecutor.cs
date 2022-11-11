@@ -4,10 +4,12 @@ using System.IO;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
+using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class ChunkWriterForExecutor<TStreamId> : IChunkWriterForExecutor<TStreamId, ILogRecord> {
 		const int BatchLength = 2000;
+		private readonly ILogger _logger;
 		private readonly ChunkManagerForExecutor<TStreamId> _manager;
 		private readonly TFChunk _outputChunk;
 		private readonly List<List<PosMap>> _posMapss;
@@ -15,10 +17,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private long _fileSize = 0;
 
 		public ChunkWriterForExecutor(
+			ILogger logger,
 			ChunkManagerForExecutor<TStreamId> manager,
 			TFChunkDbConfig dbConfig,
 			IChunkReaderForExecutor<TStreamId, ILogRecord> sourceChunk) {
 
+			_logger = logger;
 			_manager = manager;
 
 			// list of lists to avoid having an enormous list which could make it to the LoH
@@ -91,7 +95,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public void Abort(bool deleteImmediately) {
 			if (deleteImmediately) {
 				_outputChunk.Dispose();
-				TFChunkScavenger<TStreamId>.DeleteTempChunk(FileName, TFChunkScavenger.MaxRetryCount);
+				TFChunkScavenger<TStreamId>.DeleteTempChunk(_logger, FileName, TFChunkScavenger.MaxRetryCount);
 			} else {
 				_outputChunk.MarkForDeletion();
 			}

@@ -104,6 +104,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			collisions.Initialize(new SqliteBackend(Fixture.DbConnection));
 
 			var sut = new CollisionDetector<string>(
+				Serilog.Log.Logger,
 				new LruCachingScavengeMap<ulong, string>(
 					"HashUsers",
 					hashes,
