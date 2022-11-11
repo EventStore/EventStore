@@ -2041,6 +2041,26 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
+		public class GetDatabaseScavenge : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public readonly IEnvelope Envelope;
+			public readonly Guid CorrelationId;
+			public readonly ClaimsPrincipal User;
+			public readonly string ScavengeId;
+
+			public GetDatabaseScavenge(IEnvelope envelope, Guid correlationId, ClaimsPrincipal user) {
+				Ensure.NotNull(envelope, "envelope");
+				Envelope = envelope;
+				CorrelationId = correlationId;
+				User = user;
+			}
+		}
+
 		public class ScavengeDatabaseResponse : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
