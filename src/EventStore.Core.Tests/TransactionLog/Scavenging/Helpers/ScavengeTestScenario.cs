@@ -88,7 +88,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 			ReadIndex = readIndex;
 
-			var scavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
+			var scavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 				_logFormat.Metastreams,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
 			await scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);

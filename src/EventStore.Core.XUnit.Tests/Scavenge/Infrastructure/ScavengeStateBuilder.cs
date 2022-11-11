@@ -76,7 +76,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				maxCount: TFChunkScavenger.MaxThreadCount + 1,
 				factory: () => {
 					var connection = _connectionPool.Get();
-					var sqlite = new SqliteScavengeBackend<TStreamId>();
+					var sqlite = new SqliteScavengeBackend<TStreamId>(Serilog.Log.Logger);
 					sqlite.Initialize(connection);
 
 					var backend = new AdHocScavengeBackendInterceptor<TStreamId>(sqlite);
@@ -112,6 +112,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				dispose: backend => _connectionPool.Return(map[backend]));
 
 			var scavengeState = new ScavengeState<TStreamId>(
+				Serilog.Log.Logger,
 				_hasher,
 				_metastreamLookup,
 				backendPool,

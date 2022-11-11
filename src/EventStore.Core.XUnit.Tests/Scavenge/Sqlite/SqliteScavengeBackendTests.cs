@@ -16,14 +16,14 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
 
 		[Fact]
 		public void should_successfully_enable_features_on_initialization() {
-			var sut = new SqliteScavengeBackend<string>();
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger);
 			var result = Record.Exception(() => sut.Initialize(Fixture.DbConnection));
 			Assert.Null(result);
 		}
 		
 		[Fact]
 		public void should_initialize_multiple_times_without_error() {
-			var sut = new SqliteScavengeBackend<string>();
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger);
 			var result = Record.Exception(() => sut.Initialize(Fixture.DbConnection));
 			Assert.Null(result);
 			
@@ -33,7 +33,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
 
 		[Fact]
 		public void should_commit_and_read_in_a_transaction_successfully() {
-			var sut = new SqliteScavengeBackend<string>();
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger);
 			sut.Initialize(Fixture.DbConnection);
 			
 			var add = sut.TransactionFactory.Begin();
@@ -70,7 +70,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
 
 		[Fact]
 		public void should_commit_and_read_all_in_a_transaction_successfully() {
-			var sut = new SqliteScavengeBackend<string>();
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger);
 			sut.Initialize(Fixture.DbConnection);
 			
 			var add = sut.TransactionFactory.Begin();
@@ -104,7 +104,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
 		
 		[Fact]
 		public void should_commit_and_delete_in_a_transaction_successfully() {
-			var sut = new SqliteScavengeBackend<string>();
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger);
 			sut.Initialize(Fixture.DbConnection);
 			
 			var checkpoint = new ScavengeCheckpoint.ExecutingIndex(new ScavengePoint(1,1, DateTime.UtcNow, 1));
@@ -142,7 +142,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
 		
 		[Fact]
 		public void should_restore_previous_state_on_rollback() {
-			var sut = new SqliteScavengeBackend<string>();
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger);
 			sut.Initialize(Fixture.DbConnection);
 
 			// Setup
@@ -180,7 +180,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
 			const int collisionStorageCount = 5;
 			const int cacheSizeInBytes = 4 * 1024 * 1024;
 
-			var sut = new SqliteScavengeBackend<string>(cacheSizeInBytes);
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger, cacheSizeInBytes);
 			sut.Initialize(Fixture.DbConnection);
 
 			var stopwatch = new Stopwatch();
@@ -239,7 +239,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge.Sqlite {
 			const int collisionStorageCount = 5;
 			const int cacheSizeInBytes = 4 * 1024 * 1024;
 
-			var sut = new SqliteScavengeBackend<string>(cacheSizeInBytes);
+			var sut = new SqliteScavengeBackend<string>(Serilog.Log.Logger, cacheSizeInBytes);
 			sut.Initialize(Fixture.DbConnection);
 
 			var insert = new Stopwatch();

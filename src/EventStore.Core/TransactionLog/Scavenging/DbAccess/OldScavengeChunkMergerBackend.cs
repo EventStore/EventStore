@@ -1,11 +1,14 @@
 ﻿using System.Threading;
 using EventStore.Core.TransactionLog.Chunks;
+using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class OldScavengeChunkMergerBackend : IChunkMergerBackend {
+		private readonly ILogger _logger;
 		private readonly TFChunkDb _db;
 
-		public OldScavengeChunkMergerBackend(TFChunkDb db) {
+		public OldScavengeChunkMergerBackend(ILogger logger, TFChunkDb db) {
+			_logger = logger;
 			_db = db;
 		}
 
@@ -21,6 +24,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// todo: if time permits we could add some way of checkpointing during the merges
 			// todo: move MergePhase to non-generic TFChunkScavenger
 			TFChunkScavenger<string>.MergePhase(
+				logger: _logger,
 				db: _db,
 				maxChunkDataSize: _db.Config.ChunkSize,
 				scavengerLog: scavengerLogger,
