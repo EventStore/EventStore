@@ -22,26 +22,18 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
+using Serilog.Events;
 
 namespace EventStore.ClusterNode {
 	internal static class Program {
 		public static async Task<int> Main(string[] args) {
 			ThreadPool.SetMaxThreads(1000, 1000);
-			ClusterVNodeOptions options;
 			var exitCodeSource = new TaskCompletionSource<int>();
 			var cts = new CancellationTokenSource();
 
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
-				try {
-					options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
-				} catch (Exception ex) {
-					Log.Fatal($"Error while parsing options: {ex.Message}");
-					Log.Information($"Options:{Environment.NewLine}{ClusterVNodeOptions.HelpText}");
-
-					return 1;
-				}
-
+				var options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
 				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
 					? Locations.DefaultLogDirectory
 					: options.Log.Log;
@@ -87,6 +79,22 @@ namespace EventStore.ClusterNode {
 					$"Latency Mode: {GCSettings.LatencyMode}");
 				Log.Information("{description,-25} {logsDirectory}", "LOGS:", logsDirectory);
 				Log.Information(options.DumpOptions());
+
+				var level = options.Application.AllowUnknownOptions
+					? LogEventLevel.Information
+					: LogEventLevel.Fatal;
+
+				foreach (var key in options.Unknown.Keys) {
+					Log.Write(level, "The option {key} is not a known option.", key);
+				}
+
+				if (options.Unknown.Keys.Any() && !options.Application.AllowUnknownOptions) {
+					Log.Fatal(
+						$"Found unknown options. To continue anyway, set {nameof(ClusterVNodeOptions.ApplicationOptions.AllowUnknownOptions)} to true.");
+					Log.Information($"Options:{Environment.NewLine}{ClusterVNodeOptions.HelpText}");
+
+					return 1;
+				}
 
 				CertificateProvider certificateProvider;
 				if (options.DevMode.Dev) {
