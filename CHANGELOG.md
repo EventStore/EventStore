@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3632 [EventStore#3634](https://github.com/EventStore/EventStore/pull/3634)
 - //github.com/EventStore/EventStore/pull/3646 [EventStore#3648](https://github.com/EventStore/EventStore/pull/3648)
 - //github.com/EventStore/EventStore/pull/3645 [EventStore#3647](https://github.com/EventStore/EventStore/pull/3647)
+- //github.com/EventStore/EventStore/pull/3653 [EventStore#3654](https://github.com/EventStore/EventStore/pull/3654)
 
 ### Security
 - Updated Newtonsoft.Json from 11.0.2 to 13.0.1. [EventStore#3507](https://github.com/EventStore/EventStore/pull/3507)
