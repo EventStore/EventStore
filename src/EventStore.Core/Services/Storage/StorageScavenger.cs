@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.Storage {
 						var newScavenge = _currentScavenge = new TFChunkScavenger<TStreamId>(_db, tfChunkScavengerLog, _tableIndex,
 							_readIndex, _metastreams, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes, threads: message.Threads);
 						var newScavengeTask = _currentScavenge.Scavenge(_alwaysKeepScavenged, _mergeChunks,
-							message.StartFromChunk, _cancellationTokenSource.Token);
+							message.StartFromChunk, true, _cancellationTokenSource.Token);
 
 						HandleCleanupWhenFinished(newScavengeTask, newScavenge);
 

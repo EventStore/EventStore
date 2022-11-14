@@ -600,6 +600,15 @@ namespace EventStore.Core.Index {
 			return TrySearchForOldestEntry(stream, 0, long.MaxValue, out entry, out _);
 		}
 
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			var hash = GetHash(stream);
+			if (afterVersion >= long.MaxValue || !MightContainStream(hash)) {
+				entry = TableIndex.InvalidIndexEntry;
+				return false;
+			}
+			return TrySearchForOldestEntry(hash, afterVersion + 1, long.MaxValue, out entry, out _);
+		}
+
 		private bool TrySearchForOldestEntry(StreamHash stream, long startNumber, long endNumber,
 			out IndexEntry entry, out long offset) {
 

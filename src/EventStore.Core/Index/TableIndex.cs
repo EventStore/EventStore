@@ -409,9 +409,10 @@ namespace EventStore.Core.Index {
 			}
 		}
 
-		public void WaitForBackgroundTasks() {
-			if (!_backgroundRunningEvent.Wait(7000)) {
-				throw new TimeoutException("Waiting for background tasks took too long.");
+		public void WaitForBackgroundTasks(int millisecondsTimeout = 7_000) {
+			if (!_backgroundRunningEvent.Wait(millisecondsTimeout)) {
+				throw new TimeoutException(
+					$"Waiting for TableIndex background tasks took longer than {millisecondsTimeout:N0} ms.");
 			}
 		}
 
@@ -652,14 +653,54 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 
-		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
-			int? limit = null) {
-			ulong hash = CreateHash(streamId);
+		public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
+			ulong stream = CreateHash(streamId);
+			return TryGetNextEntry(stream, afterVersion, out entry);
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
 			var counter = 0;
 			while (counter < 5) {
 				counter++;
 				try {
-					return GetRangeInternal(hash, startVersion, endVersion, limit);
+					return TryGetNextEntryInternal(stream, afterVersion, out entry);
+				} catch (FileBeingDeletedException) {
+					Log.Debug("File being deleted.");
+				} catch (MaybeCorruptIndexException) {
+					ForceIndexVerifyOnNextStartup();
+					throw;
+				}
+			}
+
+			throw new InvalidOperationException("Files are locked.");
+		}
+
+		private bool TryGetNextEntryInternal(ulong stream, long afterVersion, out IndexEntry entry) {
+			var map = _indexMap;
+			foreach (var table in map.InReverseOrder()) {
+				if (table.TryGetNextEntry(stream, afterVersion, out entry))
+					return true;
+			}
+
+			var awaiting = _awaitingMemTables;
+			for (var index = awaiting.Count - 1; index >= 0; index--) {
+				if (awaiting[index].Table.TryGetNextEntry(stream, afterVersion, out entry))
+					return true;
+			}
+
+			entry = InvalidIndexEntry;
+			return false;
+		}
+
+		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
+			int? limit = null) => GetRange(CreateHash(streamId), startVersion, endVersion, limit);
+
+		public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			var counter = 0;
+			while (counter < 5) {
+				counter++;
+				try {
+					return GetRangeInternal(stream, startVersion, endVersion, limit);
 				} catch (FileBeingDeletedException) {
 					Log.Debug("File being deleted.");
 				} catch (MaybeCorruptIndexException) {

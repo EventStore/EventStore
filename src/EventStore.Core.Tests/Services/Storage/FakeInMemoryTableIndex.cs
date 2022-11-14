@@ -45,6 +45,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return entries;
 		}
 
+		public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			throw new NotImplementedException();
+		}
+
 		public void Initialize(long chaserCheckpoint)
 		{
 		}
@@ -73,6 +77,14 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 		}
 
+		public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public bool TryGetOldestEntry(TStreamId streamId, out IndexEntry entry)
 		{
 			throw new NotImplementedException();
@@ -80,6 +92,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		public bool TryGetOneValue(TStreamId streamId, long version, out long position)
 		{
+			throw new NotImplementedException();
+		}
+
+		public void WaitForBackgroundTasks(int millisecondsTimeout) {
 			throw new NotImplementedException();
 		}
 	}

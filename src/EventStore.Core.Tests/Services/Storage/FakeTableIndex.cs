@@ -46,11 +46,23 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return false;
 		}
 
+		public bool TryGetNextEntry(TStreamId streamId, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
+		public bool TryGetNextEntry(ulong stream, long afterVersion, out IndexEntry entry) {
+			throw new NotImplementedException();
+		}
+
 		public IEnumerable<ISearchTable> IterateAllInOrder() => throw new NotImplementedException();
 
 		public IReadOnlyList<IndexEntry> GetRange(TStreamId streamId, long startVersion, long endVersion,
 			int? limit = null) {
 			return Array.Empty<IndexEntry>();
+		}
+
+		public IReadOnlyList<IndexEntry> GetRange(ulong stream, long startVersion, long endVersion, int? limit = null) {
+			throw new NotImplementedException();
 		}
 
 		public void Scavenge(IIndexScavengerLog log, CancellationToken ct) {
@@ -59,6 +71,10 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		public Task MergeIndexes() {
 			return Task.CompletedTask;
+		}
+
+		public void WaitForBackgroundTasks(int millisecondsTimeout) {
+			throw new NotImplementedException();
 		}
 
 		public bool IsBackgroundTaskRunning {
