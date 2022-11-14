@@ -6,9 +6,9 @@
 		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
-	  <Compile Remove="Services\checkpoint_strategy\**" />
-	  <EmbeddedResource Remove="Services\checkpoint_strategy\**" />
-	  <None Remove="Services\checkpoint_strategy\**" />
+		<Compile Remove="Services\checkpoint_strategy\**" />
+		<EmbeddedResource Remove="Services\checkpoint_strategy\**" />
+		<None Remove="Services\checkpoint_strategy\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Remove="Playground\Launchpad.cs" />
@@ -17,7 +17,7 @@
 		<Compile Remove="Playground\LaunchpadBase.cs" />
 	</ItemGroup>
 	<ItemGroup>
-	  <None Remove="Services\Jint\Serialization\big_state.json" />
+		<None Remove="Services\Jint\Serialization\big_state.json" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="GitHubActionsTestLogger" Version="2.0.1" />
@@ -48,7 +48,7 @@
 		</Content>
 	</ItemGroup>
 	<ItemGroup>
-	  <EmbeddedResource Include="Services\Jint\Serialization\big_state.json" />
+		<EmbeddedResource Include="Services\Jint\Serialization\big_state.json" />
 	</ItemGroup>
 	<!-- TODO(jen20): Decide what is correct here -->
 	<PropertyGroup>
