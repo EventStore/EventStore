@@ -24,6 +24,6 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\EventStore.LogV3\EventStore.LogV3.csproj" />
+		<ProjectReference Include="..\EventStore.LogV3\EventStore.LogV3.csproj" />
 	</ItemGroup>
 </Project>
