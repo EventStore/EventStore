@@ -31,11 +31,11 @@
 		<ProjectReference Include="..\EventStore.Transport.Http\EventStore.Transport.Http.csproj" />
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 	</ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.pem" />
-    <EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.p12" />
-    <EmbeddedResource Remove="FakePlugin\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.pem" />
+		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.p12" />
+		<EmbeddedResource Remove="FakePlugin\**" />
+	</ItemGroup>
 	<ItemGroup>
 		<None Include="TestConfigs\*.yaml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -61,9 +61,9 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-			<None Remove="FakePlugin\**" />
-			<Compile Remove="FakePlugin\**" />
-			<Content Include="FakePlugin\**" CopyToOutputDirectory="Always" />
+		<None Remove="FakePlugin\**" />
+		<Compile Remove="FakePlugin\**" />
+		<Content Include="FakePlugin\**" CopyToOutputDirectory="Always" />
 	</ItemGroup>
 
 </Project>

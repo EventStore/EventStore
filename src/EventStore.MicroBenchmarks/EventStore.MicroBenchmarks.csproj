@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
@@ -6,13 +6,13 @@
 		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\EventStore.Projections.Core.Tests\EventStore.Projections.Core.Tests.csproj" />
-    <ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\EventStore.Projections.Core.Tests\EventStore.Projections.Core.Tests.csproj" />
+		<ProjectReference Include="..\EventStore.Projections.Core\EventStore.Projections.Core.csproj" />
+	</ItemGroup>
 
 </Project>
