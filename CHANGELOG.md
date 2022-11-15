@@ -41,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - Exit application when hosted service shuts down [EventStore#3624](https://github.com/EventStore/EventStore/pull/3624)
 - Markdown syntax error [EventStore#3629](https://github.com/EventStore/EventStore/pull/3629)
 - Downgrade GitInfo due to breaking change [EventStore#3633](https://github.com/EventStore/EventStore/pull/3633)
+- whitespace [EventStore#3649](https://github.com/EventStore/EventStore/pull/3649)
 
 ### Changed
 - Update support for Keep Alive as per RFC. Fixes issue #3259  [EventStore#3574](https://github.com/EventStore/EventStore/pull/3574)
