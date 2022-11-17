@@ -45,6 +45,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				new ControllerAction("/admin/scavenge/{scavengeId}", HttpMethod.Delete, Codec.NoCodecs,
 					SupportedCodecs, new Operation(Operations.Node.Scavenge.Stop)), OnStopScavenge);
 			service.RegisterAction(
+				new ControllerAction("/admin/scavenge/current", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.Scavenge.Read)),
+				OnGetScavenge);
+			service.RegisterAction(
 				new ControllerAction("/admin/mergeindexes", HttpMethod.Post, Codec.NoCodecs, SupportedCodecs, new Operation(Operations.Node.MergeIndexes)),
 				OnPostMergeIndexes);
 			service.RegisterAction(
@@ -258,6 +261,43 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			);
 
 			Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
+		}
+
+		private void OnGetScavenge(HttpEntityManager entity, UriTemplateMatch match) {
+			Log.Information("/admin/scavenge/ GET request has been received.");
+
+			var envelope = new SendToHttpEnvelope(
+				_networkSendQueue,
+				entity,
+				(e, message) => {
+					var completed = message as ClientMessage.ScavengeDatabaseResponse;
+					var result = new ScavengeGetResultDto();
+
+					if (completed is not null &&
+						completed.Result == ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress &&
+						completed.ScavengeId is not null) {
+
+						result.ScavengeId = completed.ScavengeId;
+						result.ScavengeLink = $"/admin/scavenge/{completed.ScavengeId}";
+					}
+
+					return e.ResponseCodec.To(result);
+				},
+				(e, message) => {
+					var completed = message as ClientMessage.ScavengeDatabaseResponse;
+					switch (completed?.Result) {
+						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped:
+						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
+							return Configure.Ok(e.ResponseCodec.ContentType);
+						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
+							return Configure.Unauthorized();
+						default:
+							return Configure.InternalServerError();
+					}
+				}
+			);
+
+			Publish(new ClientMessage.GetDatabaseScavenge(envelope, Guid.Empty, entity.User));
 		}
 
 		private void OnSetNodePriority(HttpEntityManager entity, UriTemplateMatch match) {

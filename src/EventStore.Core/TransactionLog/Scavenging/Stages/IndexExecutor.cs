@@ -4,11 +4,8 @@ using EventStore.Core.Index;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public class IndexExecutor {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<IndexExecutor>();
-	}
-
-	public class IndexExecutor<TStreamId> : IndexExecutor, IIndexExecutor<TStreamId> {
+	public class IndexExecutor<TStreamId> : IIndexExecutor<TStreamId> {
+		private readonly ILogger _logger;
 		private readonly IIndexScavenger _indexScavenger;
 		private readonly IChunkReaderForIndexExecutor<TStreamId> _streamLookup;
 		private readonly bool _unsafeIgnoreHardDeletes;
@@ -16,12 +13,14 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly Throttle _throttle;
 
 		public IndexExecutor(
+			ILogger logger,
 			IIndexScavenger indexScavenger,
 			IChunkReaderForIndexExecutor<TStreamId> streamLookup,
 			bool unsafeIgnoreHardDeletes,
 			int restPeriod,
 			Throttle throttle) {
 
+			_logger = logger;
 			_indexScavenger = indexScavenger;
 			_streamLookup = streamLookup;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
@@ -35,7 +34,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IIndexScavengerLog scavengerLogger,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Starting new scavenge index execution phase for {scavengePoint}",
+			_logger.Debug("SCAVENGING: Started new scavenge index execution phase for {scavengePoint}",
 				scavengePoint.GetName());
 
 			var checkpoint = new ScavengeCheckpoint.ExecutingIndex(scavengePoint);
@@ -49,7 +48,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IIndexScavengerLog scavengerLogger,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Executing indexes from checkpoint: {checkpoint}", checkpoint);
+			_logger.Debug("SCAVENGING: Executing indexes from checkpoint: {checkpoint}", checkpoint);
 
 			_indexScavenger.ScavengeIndex(
 				scavengePoint: checkpoint.ScavengePoint.Position,
@@ -148,7 +147,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 							// probably this isn't possible
 						}
 
-						Log.Debug(
+						_logger.Debug(
 							"SCAVENGING: Found out of order index entry. " +
 							"Stream \"{stream}\" has index entry {indexEntry} but " +
 							"previously saw index entry with position {previousPosition}.",

@@ -16,6 +16,7 @@ namespace EventStore.Core.Services.Storage {
 	public class StorageScavenger :
 		IHandle<ClientMessage.ScavengeDatabase>,
 		IHandle<ClientMessage.StopDatabaseScavenge>,
+		IHandle<ClientMessage.GetDatabaseScavenge>,
 		IHandle<SystemMessage.StateChangeMessage> {
 
 		protected static ILogger Log { get; } = Serilog.Log.ForContext<StorageScavenger>();
@@ -24,6 +25,8 @@ namespace EventStore.Core.Services.Storage {
 		private readonly object _lock = new object();
 
 		private IScavenger _currentScavenge;
+		// invariant: _currentScavenge is not null => _currentScavengeTask is the task of the current scavenge
+		private Task _currentScavengeTask;
 		private CancellationTokenSource _cancellationTokenSource;
 
 		public StorageScavenger(
@@ -52,13 +55,14 @@ namespace EventStore.Core.Services.Storage {
 							_currentScavenge.ScavengeId));
 					} else {
 						var tfChunkScavengerLog = _logManager.CreateLog();
+						var logger = Log.ForContext("ScavengeId", tfChunkScavengerLog.ScavengeId);
 
 						_cancellationTokenSource = new CancellationTokenSource();
 
-						var newScavenge = _currentScavenge = _scavengerFactory.Create(message, tfChunkScavengerLog);
-						var newScavengeTask = _currentScavenge.ScavengeAsync(_cancellationTokenSource.Token);
+						_currentScavenge = _scavengerFactory.Create(message, tfChunkScavengerLog, logger);
+						_currentScavengeTask = _currentScavenge.ScavengeAsync(_cancellationTokenSource.Token);
 
-						HandleCleanupWhenFinished(newScavengeTask, newScavenge);
+						HandleCleanupWhenFinished(_currentScavengeTask, _currentScavenge, logger);
 
 						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
 							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started,
@@ -71,12 +75,15 @@ namespace EventStore.Core.Services.Storage {
 		public void Handle(ClientMessage.StopDatabaseScavenge message) {
 			if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
 				lock (_lock) {
-					if (_currentScavenge != null && _currentScavenge.ScavengeId == message.ScavengeId) {
+					if (_currentScavenge != null &&
+						(_currentScavenge.ScavengeId == message.ScavengeId || message.ScavengeId == "current")) {
 						_cancellationTokenSource.Cancel();
 
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped,
-							message.ScavengeId));
+						_currentScavengeTask.ContinueWith(_ => {
+							message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
+								ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped,
+								_currentScavenge.ScavengeId));
+						});
 					} else {
 						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
 							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InvalidScavengeId,
@@ -86,17 +93,35 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge) {
+		public void Handle(ClientMessage.GetDatabaseScavenge message) {
+			if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
+				lock (_lock) {
+					if (_currentScavenge != null) {
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(
+							message.CorrelationId,
+							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress,
+							_currentScavenge.ScavengeId));
+					} else {
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(
+							message.CorrelationId,
+							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped,
+							scavengeId: null));
+					}
+				}
+			}
+		}
+
+		private async void HandleCleanupWhenFinished(Task newScavengeTask, IScavenger newScavenge, ILogger logger) {
 			// Clean up the reference to the TfChunkScavenger once it's finished.
 			try {
 				await newScavengeTask.ConfigureAwait(false);
 			} catch (Exception ex) {
-				Log.Error(ex, "SCAVENGING: Unexpected error when scavenging");
+				logger.Error(ex, "SCAVENGING: Unexpected error when scavenging");
 			} finally {
 				try {
 					newScavenge.Dispose();
 				} catch (Exception ex) {
-					Log.Error(ex, "SCAVENGING: Unexpected error when disposing the scavenger");
+					logger.Error(ex, "SCAVENGING: Unexpected error when disposing the scavenger");
 				}
 			}
 

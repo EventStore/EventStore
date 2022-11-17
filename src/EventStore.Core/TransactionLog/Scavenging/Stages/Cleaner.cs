@@ -4,12 +4,13 @@ using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class Cleaner : ICleaner {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<Cleaner>();
-
+		private readonly ILogger _logger;
 		private readonly bool _unsafeIgnoreHardDeletes;
 
 		public Cleaner(
+			ILogger logger,
 			bool unsafeIgnoreHardDeletes) {
+			_logger = logger;
 			_unsafeIgnoreHardDeletes = unsafeIgnoreHardDeletes;
 		}
 
@@ -18,7 +19,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCleaner state,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Starting new scavenge clean up phase for {scavengePoint}",
+			_logger.Debug("SCAVENGING: Started new scavenge clean up phase for {scavengePoint}",
 				scavengePoint.GetName());
 
 			var checkpoint = new ScavengeCheckpoint.Cleaning(scavengePoint);
@@ -31,7 +32,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCleaner state,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Cleaning checkpoint: {checkpoint}", checkpoint);
+			_logger.Debug("SCAVENGING: Cleaning checkpoint: {checkpoint}", checkpoint);
 
 			cancellationToken.ThrowIfCancellationRequested();
 
@@ -55,12 +56,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (state.AllChunksExecuted()) {
 				// Now we know we have successfully executed every chunk with weight.
 
-				Log.Debug("SCAVENGING: Deleting metastream data");
+				_logger.Debug("SCAVENGING: Deleting metastream data");
 				state.DeleteMetastreamData();
 
 				cancellationToken.ThrowIfCancellationRequested();
 
-				Log.Debug("SCAVENGING: Deleting originalstream data. Deleting archived: {deleteArchived}",
+				_logger.Debug("SCAVENGING: Deleting originalstream data. Deleting archived: {deleteArchived}",
 					_unsafeIgnoreHardDeletes);
 				state.DeleteOriginalStreamData(deleteArchived: _unsafeIgnoreHardDeletes);
 
@@ -74,7 +75,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					throw new Exception(
 						"UnsafeIgnoreHardDeletes is true but not all chunks have been executed");
 				} else {
-					Log.Debug("SCAVENGING: Skipping cleanup because some chunks have not been executed");
+					_logger.Debug("SCAVENGING: Skipping cleanup because some chunks have not been executed");
 				}
 			}
 		}

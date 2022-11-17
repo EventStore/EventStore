@@ -307,6 +307,7 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.ReloadConfiguration);
 				yield return CreateOperation(Operations.Node.Scavenge.Start);
 				yield return CreateOperation(Operations.Node.Scavenge.Stop);
+				yield return CreateOperation(Operations.Node.Scavenge.Read);
 				yield return CreateOperation(Operations.Node.MergeIndexes);
 				yield return CreateOperation(Operations.Node.SetPriority);
 				yield return CreateOperation(Operations.Node.Resign);

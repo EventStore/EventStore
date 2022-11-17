@@ -357,12 +357,16 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				// add tracing
 				chunkReader = new TracingChunkReaderForAccumulator<TStreamId>(chunkReader, Tracer.Trace);
 
+				var logger = Serilog.Log.Logger;
+
 				var throttle = new Throttle(
+					logger,
 					TimeSpan.FromMilliseconds(1000),
 					TimeSpan.FromMilliseconds(1000),
 					activePercent: 100);
 
 				IAccumulator<TStreamId> accumulator = new Accumulator<TStreamId>(
+					logger: logger,
 					chunkSize: dbConfig.ChunkSize,
 					metastreamLookup: accumulatorMetastreamLookup,
 					chunkReader: chunkReader,
@@ -371,6 +375,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					throttle: throttle);
 
 				ICalculator<TStreamId> calculator = new Calculator<TStreamId>(
+					logger: logger,
 					index: calculatorIndexReader,
 					chunkSize: dbConfig.ChunkSize,
 					cancellationCheckPeriod: cancellationCheckPeriod,
@@ -378,9 +383,11 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					throttle: throttle);
 
 				IChunkExecutor<TStreamId> chunkExecutor = new ChunkExecutor<TStreamId, ILogRecord>(
+					logger: logger,
 					metastreamLookup: chunkExecutorMetastreamLookup,
 					chunkManager: new TracingChunkManagerForChunkExecutor<TStreamId, ILogRecord>(
 						new ChunkManagerForExecutor<TStreamId>(
+							logger,
 							dbResult.Db.Manager,
 							dbConfig),
 						Tracer),
@@ -391,18 +398,20 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					throttle: throttle);
 
 				IChunkMerger chunkMerger = new ChunkMerger(
+					logger: logger,
 					mergeChunks: _mergeChunks,
-					new OldScavengeChunkMergerBackend(dbResult.Db),
+					new OldScavengeChunkMergerBackend(logger, dbResult.Db),
 					throttle: throttle);
 
 				IIndexExecutor<TStreamId> indexExecutor = new IndexExecutor<TStreamId>(
+					logger: logger,
 					indexScavenger: cancellationWrappedIndexScavenger,
 					streamLookup: new ChunkReaderForIndexExecutor<TStreamId>(() => new TFReaderLease(readerPool)),
 					unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
 					restPeriod: restPeriod,
 					throttle: throttle);
 
-				ICleaner cleaner = new Cleaner(unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
+				ICleaner cleaner = new Cleaner(logger, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
 
 				accumulator = new TracingAccumulator<TStreamId>(accumulator, Tracer);
 				calculator = new TracingCalculator<TStreamId>(calculator, Tracer);
@@ -416,6 +425,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var successLogger = expectSuccess ? new FakeTFScavengerLog() : null;
 
 				sut = new Scavenger<TStreamId>(
+					logger: logger,
 					checkPreconditions: () => { },
 					scavengeState,
 					accumulator,

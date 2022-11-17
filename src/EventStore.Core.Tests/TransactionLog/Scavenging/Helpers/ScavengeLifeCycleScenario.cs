@@ -41,7 +41,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 
 			Log = new FakeTFScavengerLog();
 			FakeTableIndex = new FakeTableIndex<TStreamId>();
-			TfChunkScavenger = new TFChunkScavenger<TStreamId>(_dbResult.Db, Log, FakeTableIndex, new FakeReadIndex<TLogFormat, TStreamId>(_ => false, _logFormat.Metastreams),
+			TfChunkScavenger = new TFChunkScavenger<TStreamId>(Serilog.Log.Logger, _dbResult.Db, Log, FakeTableIndex, new FakeReadIndex<TLogFormat, TStreamId>(_ => false, _logFormat.Metastreams),
 				_logFormat.Metastreams);
 
 			try {

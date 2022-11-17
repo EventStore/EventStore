@@ -4,11 +4,8 @@ using System.Threading;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public class Calculator {
-		protected static ILogger Log { get; } = Serilog.Log.ForContext<Calculator>();
-	}
-
-	public class Calculator<TStreamId> : Calculator, ICalculator<TStreamId> {
+	public class Calculator<TStreamId> : ICalculator<TStreamId> {
+		private readonly ILogger _logger;
 		private readonly IIndexReaderForCalculator<TStreamId> _index;
 		private readonly int _chunkSize;
 		private readonly int _cancellationCheckPeriod;
@@ -24,12 +21,14 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		public Calculator(
+			ILogger logger,
 			IIndexReaderForCalculator<TStreamId> index,
 			int chunkSize,
 			int cancellationCheckPeriod,
 			Buffer buffer,
 			Throttle throttle) {
 
+			_logger = logger;
 			_index = index;
 			_chunkSize = chunkSize;
 			_cancellationCheckPeriod = cancellationCheckPeriod;
@@ -42,7 +41,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCalculator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Starting new scavenge calculation phase for {scavengePoint}",
+			_logger.Debug("SCAVENGING: Started new scavenge calculation phase for {scavengePoint}",
 				scavengePoint.GetName());
 
 			var checkpoint = new ScavengeCheckpoint.Calculating<TStreamId>(
@@ -57,7 +56,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCalculator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Calculating from checkpoint: {checkpoint}", checkpoint);
+			_logger.Debug("SCAVENGING: Calculating from checkpoint: {checkpoint}", checkpoint);
 			var stopwatch = Stopwatch.StartNew();
 
 			var weights = new WeightAccumulator(state);
@@ -163,7 +162,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					periodStart = stopwatch.Elapsed;
 				} catch (Exception ex) {
 					if (ex is not OperationCanceledException) {
-						Log.Error(ex, "SCAVENGING: Rolling back");
+						_logger.Error(ex, "SCAVENGING: Rolling back");
 					}
 					// invariant: there is always an open transaction whenever an exception can be thrown
 					transaction.Rollback();
@@ -177,7 +176,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 		private void LogRate(string name, int count, TimeSpan elapsed) {
 			var rate = count / elapsed.TotalSeconds;
-			Log.Debug(
+			_logger.Debug(
 				"SCAVENGING: Calculated in " + name + ": {count:N0} streams in {elapsed}. {rate:N2} streams per second",
 				count, elapsed, rate);
 		}
