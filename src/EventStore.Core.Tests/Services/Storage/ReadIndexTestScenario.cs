@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
@@ -15,9 +15,11 @@ using NUnit.Framework;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
+using EventStore.Common.Log;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	public abstract class ReadIndexTestScenario : SpecificationWithDirectoryPerTestFixture {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<ReadIndexTestScenario>();
 		protected readonly int MaxEntriesInMemTable;
 		protected readonly long MetastreamMaxCount;
 		protected readonly bool PerformAdditionalCommitChecks;
@@ -111,7 +113,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			if (_scavenge) {
 				if (_completeLastChunkOnScavenge)
 					Db.Manager.GetChunk(Db.Manager.ChunksCount - 1).Complete();
-				_scavenger = new TFChunkScavenger(Db, new FakeTFScavengerLog(), TableIndex, ReadIndex);
+				_scavenger = new TFChunkScavenger(Log, Db, new FakeTFScavengerLog(), TableIndex, ReadIndex);
 				_scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: _mergeChunks).Wait();
 			}
 		}

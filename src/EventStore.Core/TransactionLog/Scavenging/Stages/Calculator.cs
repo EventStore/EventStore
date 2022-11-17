@@ -1,31 +1,38 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Threading;
 using EventStore.Common.Log;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public class Calculator {
-		protected static ILogger Log { get; } = LogManager.GetLoggerFor<Accumulator>();
-	}
-
-	public class Calculator<TStreamId> : Calculator, ICalculator<TStreamId> {
+	public class Calculator<TStreamId> : ICalculator<TStreamId> {
+		private readonly ILogger _logger;
 		private readonly IIndexReaderForCalculator<TStreamId> _index;
 		private readonly int _chunkSize;
 		private readonly int _cancellationCheckPeriod;
-		private readonly int _checkpointPeriod;
+		private readonly Buffer _buffer;
 		private readonly Throttle _throttle;
 
+		public class Buffer {
+			public Buffer(int size) {
+				Array = new(StreamHandle<TStreamId>, OriginalStreamData)[size];
+			}
+
+			public (StreamHandle<TStreamId>, OriginalStreamData)[] Array { get; }
+		}
+
 		public Calculator(
+			ILogger logger,
 			IIndexReaderForCalculator<TStreamId> index,
 			int chunkSize,
 			int cancellationCheckPeriod,
-			int checkpointPeriod,
+			Buffer buffer,
 			Throttle throttle) {
 
+			_logger = logger;
 			_index = index;
 			_chunkSize = chunkSize;
 			_cancellationCheckPeriod = cancellationCheckPeriod;
-			_checkpointPeriod = checkpointPeriod;
+			_buffer = buffer;
 			_throttle = throttle;
 		}
 
@@ -34,7 +41,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCalculator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Starting new scavenge calculation phase for {scavengePoint}",
+			_logger.Trace("SCAVENGING: Started new scavenge calculation phase for {scavengePoint}",
 				scavengePoint.GetName());
 
 			var checkpoint = new ScavengeCheckpoint.Calculating<TStreamId>(
@@ -49,7 +56,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForCalculator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Calculating from checkpoint: {checkpoint}", checkpoint);
+			_logger.Trace("SCAVENGING: Calculating from checkpoint: {checkpoint}", checkpoint);
 			var stopwatch = Stopwatch.StartNew();
 
 			var weights = new WeightAccumulator(state);
@@ -57,7 +64,6 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			var streamCalc = new StreamCalculator<TStreamId>(_index, scavengePoint);
 			var eventCalc = new EventCalculator<TStreamId>(_chunkSize, _index, state, scavengePoint, streamCalc);
 
-			var checkpointCounter = 0;
 			var cancellationCheckCounter = 0;
 			var periodStart = stopwatch.Elapsed;
 			var totalCounter = 0;
@@ -70,95 +76,107 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// there are limited scenarios when we do want to do this, (metadata streams when the main
 			// stream is tombstoned, and when UnsafeIgnoreHardDeletes is true) and they are governed by
 			// the IsTombstoned flags.
-			var originalStreamsToCalculate = state.OriginalStreamsToCalculate(
-				checkpoint: checkpoint?.DoneStreamHandle ?? default);
 
-			// for determinism it is important that IncreaseChunkWeight is called in a transaction with
-			// its calculation and checkpoint, otherwise the weight could be increased again on recovery
-			var transaction = state.BeginTransaction();
-			try {
-				foreach (var (originalStreamHandle, originalStreamData) in originalStreamsToCalculate) {
-					if (originalStreamData.Status != CalculationStatus.Active)
-						throw new InvalidOperationException(
-							$"Attempted to calculate a {originalStreamData.Status} record: {originalStreamData}");
+			// we read a batch of streams at a time so that each time we commit there is no active read
+			// prevents any risk of the WAL not being able to reset.
+			bool TryPopulateBuffer(
+				IScavengeStateForCalculator<TStreamId> state2,
+				StreamHandle<TStreamId> checkpoint2,
+				(StreamHandle<TStreamId>, OriginalStreamData)[] buffer2,
+				out int count) {
 
-					// todo: if sqlite lets us update the 'current' row before continuing on to the next
-					// then this could take advantage of that.
-
-					streamCalc.SetStream(originalStreamHandle, originalStreamData);
-					var newStatus = streamCalc.CalculateStatus();
-
-					CalculateDiscardPointsForOriginalStream(
-						eventCalc,
-						weights,
-						originalStreamHandle,
-						scavengePoint,
-						cancellationToken,
-						ref cancellationCheckCounter,
-						out var newDiscardPoint,
-						out var newMaybeDiscardPoint);
-
-					// don't allow the discard point to move backwards
-					if (newDiscardPoint < originalStreamData.DiscardPoint) {
-						newDiscardPoint = originalStreamData.DiscardPoint;
-					}
-
-					// don't allow the maybe discard point to move backwards
-					if (newMaybeDiscardPoint < originalStreamData.MaybeDiscardPoint) {
-						newMaybeDiscardPoint = originalStreamData.MaybeDiscardPoint;
-					}
-
-					if (newStatus == originalStreamData.Status &&
-						newDiscardPoint == originalStreamData.DiscardPoint &&
-						newMaybeDiscardPoint == originalStreamData.MaybeDiscardPoint) {
-
-						// nothing to update for this stream
-					} else {
-						state.SetOriginalStreamDiscardPoints(
-							streamHandle: originalStreamHandle,
-							status: newStatus,
-							discardPoint: newDiscardPoint,
-							maybeDiscardPoint: newMaybeDiscardPoint);
-					}
-
-					totalCounter++;
-
-					// Checkpoint occasionally
-					if (++checkpointCounter == _checkpointPeriod) {
-						checkpointCounter = 0;
-						weights.Flush();
-						transaction.Commit(new ScavengeCheckpoint.Calculating<TStreamId>(
-							scavengePoint,
-							originalStreamHandle));
-						transaction = state.BeginTransaction();
-
-						var elapsed = stopwatch.Elapsed;
-						LogRate("period", _checkpointPeriod, elapsed - periodStart);
-						LogRate("total", totalCounter, elapsed);
-
-						periodStart = stopwatch.Elapsed;
-					}
+				count = 0;
+				var streams = state2.OriginalStreamsToCalculate(checkpoint2);
+				foreach (var stream in streams) {
+					buffer2[count++] = stream;
+					if (count == buffer2.Length)
+						break;
 				}
 
-				// if we processed some streams, the last one is in the calculator
-				// if we didn't process any streams, the calculator contains the default
-				// none handle, which is probably appropriate to commit in that case
-				weights.Flush();
-				transaction.Commit(new ScavengeCheckpoint.Calculating<TStreamId>(
-					scavengePoint,
-					streamCalc.OriginalStreamHandle));
-				LogRate("grand total (including rests)", totalCounter, stopwatch.Elapsed);
-			} catch {
-				// invariant: there is always an open transaction whenever an exception can be thrown
-				transaction.Rollback();
-				throw;
+				return count > 0;
 			}
+
+			var buffer = _buffer.Array;
+			var cp = checkpoint?.DoneStreamHandle ?? default;
+			while (TryPopulateBuffer(state, cp, buffer, out var countInBatch)) {
+				// for determinism it is important that IncreaseChunkWeight is called in a transaction with
+				// its calculation and checkpoint, otherwise the weight could be increased again on recovery
+				var transaction = state.BeginTransaction();
+				try {
+					for (int i = 0; i < countInBatch; i++) {
+						var (originalStreamHandle, originalStreamData) = buffer[i];
+						if (originalStreamData.Status != CalculationStatus.Active)
+							throw new InvalidOperationException(
+								$"Attempted to calculate a {originalStreamData.Status} record: {originalStreamData}");
+
+						streamCalc.SetStream(originalStreamHandle, originalStreamData);
+						var newStatus = streamCalc.CalculateStatus();
+
+						CalculateDiscardPointsForOriginalStream(
+							eventCalc,
+							weights,
+							originalStreamHandle,
+							scavengePoint,
+							cancellationToken,
+							ref cancellationCheckCounter,
+							out var newDiscardPoint,
+							out var newMaybeDiscardPoint);
+
+						// don't allow the discard point to move backwards
+						if (newDiscardPoint < originalStreamData.DiscardPoint) {
+							newDiscardPoint = originalStreamData.DiscardPoint;
+						}
+
+						// don't allow the maybe discard point to move backwards
+						if (newMaybeDiscardPoint < originalStreamData.MaybeDiscardPoint) {
+							newMaybeDiscardPoint = originalStreamData.MaybeDiscardPoint;
+						}
+
+						if (newStatus == originalStreamData.Status &&
+							newDiscardPoint == originalStreamData.DiscardPoint &&
+							newMaybeDiscardPoint == originalStreamData.MaybeDiscardPoint) {
+
+							// nothing to update for this stream
+						} else {
+							state.SetOriginalStreamDiscardPoints(
+								streamHandle: originalStreamHandle,
+								status: newStatus,
+								discardPoint: newDiscardPoint,
+								maybeDiscardPoint: newMaybeDiscardPoint);
+						}
+
+						totalCounter++;
+					}
+
+					// the last stream we processed is in the calculator
+					cp = streamCalc.OriginalStreamHandle;
+					weights.Flush();
+					transaction.Commit(new ScavengeCheckpoint.Calculating<TStreamId>(
+						scavengePoint,
+						cp));
+
+					var elapsed = stopwatch.Elapsed;
+					LogRate($"period", countInBatch, elapsed - periodStart);
+					LogRate("total", totalCounter, elapsed);
+
+					periodStart = stopwatch.Elapsed;
+				} catch (Exception ex) {
+					if (!(ex is OperationCanceledException)) {
+						_logger.ErrorException(ex, "SCAVENGING: Rolling back");
+					}
+					// invariant: there is always an open transaction whenever an exception can be thrown
+					transaction.Rollback();
+					throw;
+				}
+			}
+
+			LogRate("grand total (including rests)", totalCounter, stopwatch.Elapsed);
 			_throttle.Rest(cancellationToken);
 		}
 
 		private void LogRate(string name, int count, TimeSpan elapsed) {
 			var rate = count / elapsed.TotalSeconds;
-			Log.Trace(
+			_logger.Trace(
 				"SCAVENGING: Calculated in " + name + ": {count:N0} streams in {elapsed}. {rate:N2} streams per second",
 				count, elapsed, rate);
 		}

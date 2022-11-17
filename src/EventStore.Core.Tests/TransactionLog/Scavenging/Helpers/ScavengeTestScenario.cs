@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using EventStore.Core.DataStructures;
@@ -12,10 +12,12 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
+using EventStore.Common.Log;
 
 namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 	[TestFixture]
 	public abstract class ScavengeTestScenario : SpecificationWithDirectoryPerTestFixture {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<ScavengeTestScenario>();
 		protected IReadIndex ReadIndex;
 
 		protected TFChunkDb Db {
@@ -65,7 +67,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				_dbResult.Db.Config.ReplicationCheckpoint);
 			ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
-			var scavenger = new TFChunkScavenger(_dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
+			var scavenger = new TFChunkScavenger(Log, _dbResult.Db, new FakeTFScavengerLog(), tableIndex, ReadIndex,
 				unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
 			scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false).Wait();
 		}

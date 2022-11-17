@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Core.Messages;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -10,14 +11,14 @@ namespace EventStore.Core.Services.Storage {
 	// completed then starting scavenge again will instantiate another scavenger
 	// with a different id.
 	public class ScavengerFactory {
-		private readonly Func<ClientMessage.ScavengeDatabase, ITFChunkScavengerLog, IScavenger> _create;
+		private readonly Func<ClientMessage.ScavengeDatabase, ITFChunkScavengerLog, ILogger, IScavenger> _create;
 
-		public ScavengerFactory(Func<ClientMessage.ScavengeDatabase, ITFChunkScavengerLog, IScavenger> create) {
+		public ScavengerFactory(Func<ClientMessage.ScavengeDatabase, ITFChunkScavengerLog, ILogger, IScavenger> create) {
 			_create = create;
 		}
 
-		public IScavenger Create(ClientMessage.ScavengeDatabase message, ITFChunkScavengerLog logger) =>
-			_create(message, logger);
+		public IScavenger Create(ClientMessage.ScavengeDatabase message, ITFChunkScavengerLog scavengerLogger, ILogger logger) =>
+			_create(message, scavengerLogger, logger);
 	}
 
 	public class OldScavenger : IScavenger {

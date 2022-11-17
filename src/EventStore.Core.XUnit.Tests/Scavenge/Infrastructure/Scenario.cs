@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
@@ -26,6 +27,7 @@ using static EventStore.Core.XUnit.Tests.Scavenge.StreamMetadatas;
 namespace EventStore.Core.XUnit.Tests.Scavenge {
 	// sort of similar to ScavengeTestScenario
 	public class Scenario {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<Scenario>();
 		private const int Threads = 1;
 		public const bool CollideEverything = false;
 
@@ -316,12 +318,16 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				// add tracing
 				chunkReader = new TracingChunkReaderForAccumulator<string>(chunkReader, Tracer.Trace);
 
+				var logger = Log;
+
 				var throttle = new Throttle(
+					logger,
 					TimeSpan.FromMilliseconds(1000),
 					TimeSpan.FromMilliseconds(1000),
 					activePercent: 100);
 
 				IAccumulator<string> accumulator = new Accumulator<string>(
+					logger: logger,
 					chunkSize: dbConfig.ChunkSize,
 					metastreamLookup: accumulatorMetastreamLookup,
 					chunkReader: chunkReader,
@@ -330,16 +336,19 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					throttle: throttle);
 
 				ICalculator<string> calculator = new Calculator<string>(
+					logger: logger,
 					index: calculatorIndexReader,
 					chunkSize: dbConfig.ChunkSize,
 					cancellationCheckPeriod: cancellationCheckPeriod,
-					checkpointPeriod: checkpointPeriod,
+					buffer: new Calculator<string>.Buffer(checkpointPeriod),
 					throttle: throttle);
 
 				IChunkExecutor<string> chunkExecutor = new ChunkExecutor<string, LogRecord>(
+					logger: logger,
 					metastreamLookup: chunkExecutorMetastreamLookup,
 					chunkManager: new TracingChunkManagerForChunkExecutor<string, LogRecord>(
 						new ChunkManagerForExecutor(
+							logger,
 							dbResult.Db.Manager,
 							dbConfig),
 						Tracer),
@@ -350,18 +359,20 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					throttle: throttle);
 
 				IChunkMerger chunkMerger = new ChunkMerger(
+					logger: logger,
 					mergeChunks: _mergeChunks,
-					new OldScavengeChunkMergerBackend(dbResult.Db),
+					new OldScavengeChunkMergerBackend(logger, dbResult.Db),
 					throttle: throttle);
 
 				IIndexExecutor<string> indexExecutor = new IndexExecutor<string>(
+					logger: logger,
 					indexScavenger: cancellationWrappedIndexScavenger,
 					streamLookup: new ChunkReaderForIndexExecutor(() => new TFReaderLease(readerPool)),
 					unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes,
 					restPeriod: restPeriod,
 					throttle: throttle);
 
-				ICleaner cleaner = new Cleaner(unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
+				ICleaner cleaner = new Cleaner(logger, unsafeIgnoreHardDeletes: _unsafeIgnoreHardDeletes);
 
 				accumulator = new TracingAccumulator<string>(accumulator, Tracer);
 				calculator = new TracingCalculator<string>(calculator, Tracer);
@@ -375,6 +386,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				var successLogger = expectSuccess ? new FakeTFScavengerLog() : null;
 
 				sut = new Scavenger<string>(
+					logger: logger,
 					checkPreconditions: () => { },
 					scavengeState,
 					accumulator,

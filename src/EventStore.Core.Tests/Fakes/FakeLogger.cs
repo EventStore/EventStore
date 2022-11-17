@@ -6,6 +6,10 @@ namespace EventStore.Core.Tests.Fakes {
 		public void Flush(TimeSpan? maxTimeToWait = null) {
 		}
 
+		public ILogger WithProperty(string name, string value) {
+			return this;
+		}
+
 		public void Fatal(string text) {
 		}
 

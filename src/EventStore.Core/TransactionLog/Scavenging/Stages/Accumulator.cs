@@ -5,11 +5,8 @@ using EventStore.Common.Log;
 using EventStore.Core.LogAbstraction;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public class Accumulator {
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<Accumulator>();
-	}
-
-	public class Accumulator<TStreamId> : Accumulator, IAccumulator<TStreamId> {
+	public class Accumulator<TStreamId> : IAccumulator<TStreamId> {
+		private readonly ILogger _logger;
 		private readonly int _chunkSize;
 		private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
 		private readonly IChunkReaderForAccumulator<TStreamId> _chunkReader;
@@ -18,6 +15,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly Throttle _throttle;
 
 		public Accumulator(
+			ILogger logger,
 			int chunkSize,
 			IMetastreamLookup<TStreamId> metastreamLookup,
 			IChunkReaderForAccumulator<TStreamId> chunkReader,
@@ -25,6 +23,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			int cancellationCheckPeriod,
 			Throttle throttle) {
 
+			_logger = logger;
 			_chunkSize = chunkSize;
 			_metastreamLookup = metastreamLookup;
 			_chunkReader = chunkReader;
@@ -40,7 +39,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForAccumulator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Starting new scavenge accumulation phase: {prevScavengePoint} to {scavengePoint}",
+			_logger.Trace("SCAVENGING: Started new scavenge accumulation phase: {prevScavengePoint} to {scavengePoint}",
 				prevScavengePoint?.GetName() ?? "beginning of log",
 				scavengePoint.GetName());
 
@@ -65,7 +64,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IScavengeStateForAccumulator<TStreamId> state,
 			CancellationToken cancellationToken) {
 
-			Log.Trace("SCAVENGING: Accumulating from checkpoint: {checkpoint}", checkpoint);
+			_logger.Trace("SCAVENGING: Accumulating from checkpoint: {checkpoint}", checkpoint);
 			var stopwatch = new Stopwatch();
 
 			// bounds are ok because we wont try to read past the scavenge point
@@ -119,6 +118,9 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					tombStoneRecord,
 					cancellationToken,
 					out var countAccumulatedRecords,
+					out var countOriginalStreamRecords,
+					out var countMetaStreamRecords,
+					out var countTombstoneRecords,
 					out var chunkMinTimeStamp,
 					out var chunkMaxTimeStamp);
 
@@ -136,20 +138,35 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				var rate = countAccumulatedRecords / accumulationElapsed.TotalSeconds;
 
 				weights.Flush();
+				var weightsElapsed = stopwatch.Elapsed;
+
 				transaction.Commit(new ScavengeCheckpoint.Accumulating(
 					scavengePoint,
 					doneLogicalChunkNumber: logicalChunkNumber));
 
-				Log.Trace(
-					"SCAVENGING: Accumulated {countAccumulatedRecords:N0} records in chunk {chunk} in {elapsed}. " +
+				var commitElapsed = stopwatch.Elapsed;
+
+				_logger.Trace(
+					"SCAVENGING: Accumulated {countAccumulatedRecords:N0} records " +
+					"({originals:N0} originals, {metadatas:N0} metadatas, {tombstones:N0} tombstones) " +
+					"in chunk {chunk} in {elapsed}. " +
 					"{rate:N2} records per second. " +
+					"Commit: {commitElapsed}. " +
 					"Chunk total: {chunkTotalElapsed}",
-					countAccumulatedRecords, logicalChunkNumber, accumulationElapsed,
+					countAccumulatedRecords,
+					countOriginalStreamRecords, countMetaStreamRecords, countTombstoneRecords,
+					logicalChunkNumber, accumulationElapsed,
 					rate,
+					commitElapsed - weightsElapsed,
 					stopwatch.Elapsed);
 
+				state.LogAccumulationStats();
+
 				return ret;
-			} catch {
+			} catch (Exception ex) {
+				if (!(ex is OperationCanceledException)) {
+					_logger.ErrorException(ex, "SCAVENGING: Rolling back");
+				}
 				// invariant: there is always an open transaction whenever an exception can be thrown
 				transaction.Rollback();
 				throw;
@@ -168,10 +185,16 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			RecordForAccumulator<TStreamId>.TombStoneRecord tombStoneRecord,
 			CancellationToken cancellationToken,
 			out int countAccumulatedRecords,
+			out int countOriginalStreamRecords,
+			out int countMetaStreamRecords,
+			out int countTombstoneRecords,
 			out DateTime chunkMinTimeStamp,
 			out DateTime chunkMaxTimeStamp) {
 
 			countAccumulatedRecords = 0;
+			countOriginalStreamRecords = 0;
+			countMetaStreamRecords = 0;
+			countTombstoneRecords = 0;
 			// start with empty range and expand it as we discover records.
 			chunkMinTimeStamp = DateTime.MaxValue;
 			chunkMaxTimeStamp = DateTime.MinValue;
@@ -196,14 +219,17 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					case AccumulatorRecordType.OriginalStreamRecord:
 						ProcessOriginalStreamRecord(originalStreamRecord, state);
 						record = originalStreamRecord;
+						countOriginalStreamRecords++;
 						break;
 					case AccumulatorRecordType.MetadataStreamRecord:
 						ProcessMetastreamRecord(metadataStreamRecord, scavengePoint, state, weights);
 						record = metadataStreamRecord;
+						countMetaStreamRecords++;
 						break;
 					case AccumulatorRecordType.TombstoneRecord:
 						ProcessTombstone(tombStoneRecord, scavengePoint, state, weights);
 						record = tombStoneRecord;
+						countTombstoneRecords++;
 						break;
 					default:
 						throw new InvalidOperationException($"Unexpected recordType: {recordType}");
@@ -284,7 +310,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			if (!isInOrder) {
-				Log.Warn("SCAVENGING: Accumulator found out of order metadata: {stream}:{eventNumber}",
+				_logger.Info("SCAVENGING: Accumulator found out of order metadata: {stream}:{eventNumber}",
 					record.StreamId,
 					record.EventNumber);
 				return;

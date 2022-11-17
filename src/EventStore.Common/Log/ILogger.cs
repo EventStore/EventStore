@@ -4,6 +4,8 @@ namespace EventStore.Common.Log {
 	public interface ILogger {
 		void Flush(TimeSpan? maxTimeToWait = null);
 
+		ILogger WithProperty(string name, string value);
+
 		[StringFormatMethod("format")]
 		void Fatal(string format, params object[] args);
 

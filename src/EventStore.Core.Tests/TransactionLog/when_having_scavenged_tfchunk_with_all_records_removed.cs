@@ -15,10 +15,12 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
+using EventStore.Common.Log;
 
 namespace EventStore.Core.Tests.TransactionLog {
 	[TestFixture]
 	public class when_having_scavenged_tfchunk_with_all_records_removed : SpecificationWithDirectoryPerTestFixture {
+		private static readonly ILogger Log = LogManager.GetLoggerFor<when_having_scavenged_tfchunk_with_all_records_removed>();
 		private TFChunkDb _db;
 		private TFChunk _scavengedChunk;
 		private int _originalFileSize;
@@ -66,7 +68,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_db.Config.ChaserCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
 			_db.Config.ChaserCheckpoint.Flush();
 
-			var scavenger = new TFChunkScavenger(_db, new FakeTFScavengerLog(), new FakeTableIndex(),
+			var scavenger = new TFChunkScavenger(Log, _db, new FakeTFScavengerLog(), new FakeTableIndex(),
 				new FakeReadIndex(x => x == "es-to-scavenge"));
 			scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false).Wait();
 

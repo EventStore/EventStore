@@ -1,11 +1,14 @@
-﻿using System.Threading;
+using System.Threading;
+using EventStore.Common.Log;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class OldScavengeChunkMergerBackend : IChunkMergerBackend {
+		private readonly ILogger _logger;
 		private readonly TFChunkDb _db;
 
-		public OldScavengeChunkMergerBackend(TFChunkDb db) {
+		public OldScavengeChunkMergerBackend(ILogger logger, TFChunkDb db) {
+			_logger = logger;
 			_db = db;
 		}
 
@@ -20,6 +23,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			// todo: if time permits we could start with the minimum executed chunk this scavenge
 			// todo: if time permits we could add some way of checkpointing during the merges
 			TFChunkScavenger.MergePhase(
+				logger: _logger,
 				db: _db,
 				maxChunkDataSize: _db.Config.ChunkSize,
 				scavengerLog: scavengerLogger,

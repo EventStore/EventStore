@@ -30,6 +30,14 @@ namespace EventStore.Common.Log {
 			_logger = NLog.LogManager.GetLogger(name);
 		}
 
+		private NLogger(Logger logger) {
+			_logger = logger;
+		}
+
+		public ILogger WithProperty(string name, string value) {
+			return new NLogger(_logger.WithProperty(name, value));
+		}
+
 		public void Flush(TimeSpan? maxTimeToWait = null) {
 			FlushLog(maxTimeToWait);
 		}

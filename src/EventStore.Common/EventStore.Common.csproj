@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
       <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-      <PackageReference Include="NLog" Version="4.5.10" />
+      <PackageReference Include="NLog" Version="4.7.15" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EventStore.Common.Utils\EventStore.Common.Utils.csproj" />

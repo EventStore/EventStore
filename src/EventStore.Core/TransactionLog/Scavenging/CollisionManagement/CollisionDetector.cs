@@ -1,12 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using EventStore.Common.Log;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	// add things to the collision detector and it keeps a list of things that collided.
 	public class CollisionDetector<T> {
 		private static EqualityComparer<T> TComparer { get; } = EqualityComparer<T>.Default;
+
+		private readonly ILogger _logger;
 
 		// maps from hash to (any) user of that hash
 		private readonly IScavengeMap<ulong, T> _hashUsers;
@@ -20,14 +23,38 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private Dictionary<T, Unit> _collisionsCache;
 		private Dictionary<ulong, Unit> _collisionsHashCache;
 
+		private long _newStreams;
+		private long _newCollisions;
+		private long _oldCollisions;
+
 		public CollisionDetector(
+			ILogger logger,
 			IScavengeMap<ulong, T> hashUsers,
 			IScavengeMap<T, Unit> collisionStorage,
 			ILongHasher<T> hasher) {
-
+			_logger = logger;
 			_hashUsers = hashUsers;
 			_collisions = collisionStorage;
 			_hasher = hasher;
+		}
+
+		public void LogStats() {
+			long hits = 0;
+			long misses = 0;
+
+			if (_hashUsers is LruCachingScavengeMap<ulong, T> lru)
+				lru.GetStats(out hits, out misses);
+
+			_logger.Trace(
+				"SCAVENGING: CollisionDetector stats: " +
+				"{newStreams:N0} new streams. {newCollisions:N0} new collisions. {oldCollisions:N0} old collisions. " +
+				"{hits:N0} hits. {misses:N0} misses.",
+				_newStreams, _newCollisions, _oldCollisions,
+				hits, misses);
+
+			_newStreams = 0;
+			_newCollisions = 0;
+			_oldCollisions = 0;
 		}
 
 		public void ClearCaches() {
@@ -108,6 +135,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public CollisionResult DetectCollisions(T item, out T collision) {
 			if (IsCollision(item)) {
 				collision = default;
+				_oldCollisions++;
 				return CollisionResult.OldCollision; // previously known collision. 1a or 1b.
 				// _hashes must already have this hash, otherwise it wouldn't be a collision.
 				// so no need to add it it.
@@ -118,6 +146,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (!_hashUsers.TryGetValue(itemHash, out collision)) {
 				// hash wasn't even in use. it is now.
 				_hashUsers[itemHash] = item;
+				_newStreams++;
 				return CollisionResult.NoCollision; // hash not in use, can be no collision. 2b
 			}
 
@@ -131,6 +160,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_collisions[collision] = Unit.Instance;
 			ClearCaches();
 
+			_newCollisions++;
 			return CollisionResult.NewCollision;
 		}
 

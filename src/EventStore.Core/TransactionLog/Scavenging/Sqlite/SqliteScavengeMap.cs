@@ -18,11 +18,13 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 			{typeof(ulong), nameof(SqliteType.Integer)},
 			{typeof(string), nameof(SqliteType.Text)},
 		};
+		private readonly string _keyTypeOverride;
 
 		protected string TableName { get; }
 		
-		public SqliteScavengeMap(string name) {
+		public SqliteScavengeMap(string name, string keyTypeOverride = null) {
 			TableName = name;
+			_keyTypeOverride = keyTypeOverride;
 			AssertTypesAreSupported();
 		}
 
@@ -43,7 +45,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 
 		public virtual void Initialize(SqliteBackend sqlite) {
-			var keyType = SqliteTypeMapping.GetTypeName<TKey>();
+			var keyType = _keyTypeOverride ?? SqliteTypeMapping.GetTypeName<TKey>();
 			var valueType = SqliteTypeMapping.GetTypeName<TValue>();
 			var createSql = $@"
 				CREATE TABLE IF NOT EXISTS {TableName} (

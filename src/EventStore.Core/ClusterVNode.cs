@@ -555,11 +555,16 @@ namespace EventStore.Core {
 
 			var newScavenge = true;
 			if (newScavenge) {
-				scavengerFactory = new ScavengerFactory((message, logger) => {
+				// reuse the same buffer; it's quite big.
+				var calculatorBuffer = new Calculator<string>.Buffer(32_768);
+
+				scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) => {
+					// currently on the main queue
 					var throttle = new Throttle(
+						logger: logger,
 						minimumRest: TimeSpan.FromMilliseconds(1000),
 						restLoggingThreshold: TimeSpan.FromMilliseconds(10_000),
-						activePercent: message.ThrottlePercent ?? vNodeSettings.ScavengeThrottlePercent);
+						activePercent: message.ThrottlePercent ?? 100);
 
 					var metastreamLookup = new LogV2SystemStreams();
 					var streamIdConverter = new LogV2StreamIdConverter();
@@ -571,17 +576,24 @@ namespace EventStore.Core {
 					// so that we don't keep hold of memory used for the page caches between scavenges
 					var backendPool = new ObjectPool<IScavengeStateBackend<string>>(
 						objectPoolName: "scavenge backend pool",
-						initialCount: 1,
+						initialCount: 0, // so that factory is not called on the main queue
 						maxCount: TFChunkScavenger.MaxThreadCount + 1,
 						factory: () => {
+							// not on the main queue
 							var scavengeDirectory = Path.Combine(indexPath, "scavenging");
 							Directory.CreateDirectory(scavengeDirectory);
+							var dbPath = Path.Combine(scavengeDirectory, "scavenging.db");
 							var connectionStringBuilder = new SqliteConnectionStringBuilder {
-								DataSource = Path.Combine(scavengeDirectory, "scavenging.db")
+								DataSource = dbPath,
+								Pooling = false,
 							};
 							var connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
 							connection.Open();
+							Log.Info("Opened scavenging database {scavengeDatabase} with version {version}",
+								dbPath, connection.ServerVersion);
 							var sqlite = new SqliteScavengeBackend<string>(
+								logger: logger,
+								pageSizeInBytes: vNodeSettings.ScavengeBackendPageSize,
 								cacheSizeInBytes: vNodeSettings.ScavengeBackendCacheSize);
 							sqlite.Initialize(connection);
 							return sqlite;
@@ -589,11 +601,14 @@ namespace EventStore.Core {
 						dispose: backend => backend.Dispose());
 
 					var state = new ScavengeState<string>(
+						logger,
 						longHasher,
 						metastreamLookup,
-						backendPool);
+						backendPool,
+						vNodeSettings.ScavengeHashUsersCacheCapacity);
 
 					var accumulator = new Accumulator<string>(
+						logger: logger,
 						chunkSize: TFConsts.ChunkSize,
 						metastreamLookup: metastreamLookup,
 						chunkReader: new ChunkReaderForAccumulator<string>(
@@ -607,18 +622,20 @@ namespace EventStore.Core {
 						throttle: throttle);
 
 					var calculator = new Calculator<string>(
+						logger: logger,
 						new IndexReaderForCalculator(
 							readIndex,
 							() => new TFReaderLease(readerPool),
 							state.LookupUniqueHashUser),
 						chunkSize: TFConsts.ChunkSize,
 						cancellationCheckPeriod: cancellationCheckPeriod,
-						checkpointPeriod: 32_768,
+						buffer: calculatorBuffer,
 						throttle: throttle);
 
 					var chunkExecutor = new ChunkExecutor<string, LogRecord>(
+						logger,
 						metastreamLookup,
-						new ChunkManagerForExecutor(db.Manager, db.Config),
+						new ChunkManagerForExecutor(logger, db.Manager, db.Config),
 						chunkSize: db.Config.ChunkSize,
 						unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes,
 						cancellationCheckPeriod: cancellationCheckPeriod,
@@ -626,11 +643,13 @@ namespace EventStore.Core {
 						throttle: throttle);
 
 					var chunkMerger = new ChunkMerger(
+						logger: logger,
 						mergeChunks: !vNodeSettings.DisableScavengeMerging,
-						backend: new OldScavengeChunkMergerBackend(db: db),
+						backend: new OldScavengeChunkMergerBackend(logger, db: db),
 						throttle: throttle);
 
 					var indexExecutor = new IndexExecutor<string>(
+						logger,
 						new IndexScavenger(tableIndex),
 						new ChunkReaderForIndexExecutor(() => new TFReaderLease(readerPool)),
 						unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes,
@@ -638,11 +657,13 @@ namespace EventStore.Core {
 						throttle: throttle);
 
 					var cleaner = new Cleaner(
+						logger: logger,
 						unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes);
 
-					var scavengePointSource = new ScavengePointSource(ioDispatcher);
+					var scavengePointSource = new ScavengePointSource(logger, ioDispatcher);
 
 					return new Scavenger<string>(
+						logger: logger,
 						checkPreconditions: () => {
 							tableIndex.Visit(table => {
 								if (table.Version <= PTableVersions.IndexV1)
@@ -658,7 +679,7 @@ namespace EventStore.Core {
 						indexExecutor: indexExecutor,
 						cleaner: cleaner,
 						scavengePointSource: scavengePointSource,
-						scavengerLogger: logger,
+						scavengerLogger: scavengerLogger,
 						// threshold < 0: execute all chunks, even those with no weight
 						// threshold = 0: execute all chunks with weight greater than 0
 						// threshold > 0: execute all chunks above a certain weight
@@ -668,14 +689,15 @@ namespace EventStore.Core {
 				});
 
 			} else {
-				scavengerFactory = new ScavengerFactory((message, logger) =>
+				scavengerFactory = new ScavengerFactory((message, scavengerLogger, logger) =>
 					new OldScavenger(
 						alwaysKeepScaveged: vNodeSettings.AlwaysKeepScavenged,
 						mergeChunks: !vNodeSettings.DisableScavengeMerging,
 						startFromChunk: message.StartFromChunk,
 						tfChunkScavenger: new TFChunkScavenger(
+							logger: logger,
 							db: db,
-							scavengerLog: logger,
+							scavengerLog: scavengerLogger,
 							tableIndex: tableIndex,
 							readIndex: readIndex,
 							unsafeIgnoreHardDeletes: vNodeSettings.UnsafeIgnoreHardDeletes,
@@ -695,6 +717,7 @@ namespace EventStore.Core {
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
 			_mainBus.Subscribe<ClientMessage.StopDatabaseScavenge>(storageScavenger);
+			_mainBus.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 

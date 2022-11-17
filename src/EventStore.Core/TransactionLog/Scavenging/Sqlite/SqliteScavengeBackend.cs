@@ -1,15 +1,11 @@
-﻿using System;
+using System;
 using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using Microsoft.Data.Sqlite;
 
 namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
-	public class SqliteScavengeBackend {
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<SqliteScavengeBackend>();
-	}
-
 	// Encapsulates a connection to sqlite, complete with prepared statements and an API to access it
-	public class SqliteScavengeBackend<TStreamId> : SqliteScavengeBackend, IScavengeStateBackend<TStreamId> {
+	public class SqliteScavengeBackend<TStreamId> : IScavengeStateBackend<TStreamId> {
 		// WAL with SYNCHRONOUS NORMAL means that
 		//  - commiting a transaction does not wait to it to flush to disk
 		//  - which is nice and quick, but means in powerloss the last x transactions
@@ -18,9 +14,13 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		//    persisted checkpoint.
 		private const string SqliteWalJournalMode = "wal";
 		private const int SqliteNormalSynchronousValue = 1;
+		private const int WalAutocheckpointDisabled = 0;
+
 		private const int DefaultSqliteCacheSize = 2 * 1024 * 1024;
-		private const int SqlitePageSize = 16 * 1024;
-		private readonly int _cacheSizeInBytes;
+		private const int DefaultSqlitePageSize = 16 * 1024;
+		private readonly ILogger _logger;
+		private readonly int _pageSizeInBytes;
+		private readonly long _cacheSizeInBytes;
 		private SqliteBackend _sqliteBackend;
 
 		private const int SchemaVersion = 1;
@@ -37,8 +37,14 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		public ITransactionFactory<SqliteTransaction> TransactionFactory { get; private set; }
 		public ITransactionManager TransactionManager { get; private set; }
 
-		public SqliteScavengeBackend(int cacheSizeInBytes = DefaultSqliteCacheSize) {
+		public SqliteScavengeBackend(
+			ILogger logger,
+			int pageSizeInBytes = DefaultSqlitePageSize,
+			long cacheSizeInBytes = DefaultSqliteCacheSize) {
+			Ensure.Positive(pageSizeInBytes, nameof(pageSizeInBytes));
 			Ensure.Positive(cacheSizeInBytes, nameof(cacheSizeInBytes));
+			_logger = logger;
+			_pageSizeInBytes = pageSizeInBytes;
 			_cacheSizeInBytes = cacheSizeInBytes;
 		}
 
@@ -55,16 +61,19 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 			var collisionStorage = new SqliteCollisionScavengeMap<TStreamId>();
 			CollisionStorage = collisionStorage;
 
-			var hashes = new SqliteScavengeMap<ulong, TStreamId>("HashUsers");
+			var hashes = new SqliteScavengeMap<ulong, TStreamId>("HashUsers", "INT");
 			Hashes = hashes;
 
-			var metaStorage = new SqliteMetastreamScavengeMap<ulong>("MetastreamDatas");
+			// passing "INT" could increase the speed of the accumulation when the database becomes large
+			var metaStorage = new SqliteMetastreamScavengeMap<ulong>("MetastreamDatas"/*, "INT"*/);
 			MetaStorage = metaStorage;
 			
 			var metaCollisionStorage = new SqliteMetastreamScavengeMap<TStreamId>("MetastreamDataCollisions");
 			MetaCollisionStorage = metaCollisionStorage;
-			
-			var originalStorage = new SqliteOriginalStreamScavengeMap<ulong>("OriginalStreamDatas");
+
+			// passing "INT" could increase the speed of the accumulation when the database becomes large
+			// but may slow down calculation and require adjustments to the iteration queries / indexes
+			var originalStorage = new SqliteOriginalStreamScavengeMap<ulong>("OriginalStreamDatas"/*, "INT"*/);
 			OriginalStorage = originalStorage;
 			
 			var originalCollisionStorage = new SqliteOriginalStreamScavengeMap<TStreamId>("OriginalStreamDataCollisions");
@@ -94,11 +103,15 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 
 		private void ConfigureFeatures() {
-			_sqliteBackend.SetPragmaValue(SqliteBackend.PageSize, SqlitePageSize.ToString());
+			_logger.Trace("SCAVENGING: Setting page size to {pageSize:N0} bytes.", _pageSizeInBytes);
+			_sqliteBackend.SetPragmaValue(SqliteBackend.PageSize, _pageSizeInBytes.ToString());
 			var pageSize = int.Parse(_sqliteBackend.GetPragmaValue(SqliteBackend.PageSize));
-			if (pageSize != SqlitePageSize) {
+			if (pageSize != _pageSizeInBytes) {
 				// note we will fail to set it if the database already exists with a different page size
-				throw new Exception($"Failed to configure page size to {SqlitePageSize}. Actually {pageSize}");
+				// the page size could be changed if the vacuumed the database
+				throw new Exception(
+					$"Failed to configure page size to {_pageSizeInBytes}. Actually {pageSize}. " +
+					$"This is probably a pre-existing database with a different page size.");
 			}
 			
 			_sqliteBackend.SetPragmaValue(SqliteBackend.JournalMode, SqliteWalJournalMode);
@@ -106,7 +119,15 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 			if (journalMode.ToLower() != SqliteWalJournalMode) {
 				throw new Exception($"Failed to configure journal mode, unexpected value: {journalMode}");
 			}
-			
+
+#if MANUAL_SQLITE_CHECKPOINT
+			_sqliteBackend.SetPragmaValue(SqliteBackend.WalAutocheckpoint, WalAutocheckpointDisabled.ToString());
+			var autocheckpoint = int.Parse(_sqliteBackend.GetPragmaValue(SqliteBackend.WalAutocheckpoint));
+			if (autocheckpoint != WalAutocheckpointDisabled) {
+				throw new Exception($"Failed to configure wal autocheckpoint, unexpected value: {autocheckpoint}");
+			}
+#endif
+
 			_sqliteBackend.SetPragmaValue(SqliteBackend.Synchronous, SqliteNormalSynchronousValue.ToString());
 			var synchronousMode = int.Parse(_sqliteBackend.GetPragmaValue(SqliteBackend.Synchronous));
 			if (synchronousMode != SqliteNormalSynchronousValue) {
@@ -140,7 +161,7 @@ namespace EventStore.Core.TransactionLog.Scavenging.Sqlite {
 		}
 
 		public void LogStats() {
-			Log.Trace($"SCAVENGING: {GetStats().PrettyPrint()}");
+			_logger.Trace($"SCAVENGING: {GetStats().PrettyPrint()}");
 		}
 	}
 }

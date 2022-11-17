@@ -40,7 +40,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		public override string ToString() {
 			switch (Kind) {
 				case StreamHandle.Kind.Hash:
-					return $"Hash: {StreamHash}";
+					return $"Hash: {StreamHash:N0}";
 				case StreamHandle.Kind.Id:
 					return $"Id: {StreamId}";
 				case StreamHandle.Kind.None:

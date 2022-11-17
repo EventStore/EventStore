@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Log;
@@ -10,18 +10,18 @@ using EventStore.Core.Services.UserManagement;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
 	public class ScavengePointSource : IScavengePointSource {
-		protected static readonly ILogger Log = LogManager.GetLoggerFor<ScavengePointSource>();
-
+		private readonly ILogger _logger;
 		private readonly IODispatcher _ioDispatcher;
 
-		public ScavengePointSource(IODispatcher ioDispatcher) {
+		public ScavengePointSource(ILogger logger, IODispatcher ioDispatcher) {
+			_logger = logger;
 			_ioDispatcher = ioDispatcher;
 		}
 
 		public async Task<ScavengePoint> GetLatestScavengePointOrDefaultAsync(
 			CancellationToken cancellationToken) {
 
-			Log.Info("SCAVENGING: Getting latest scavenge point...");
+			_logger.Info("SCAVENGING: Getting latest scavenge point...");
 
 			var readTcs = new TaskCompletionSource<ResolvedEvent[]>(
 				TaskCreationOptions.RunContinuationsAsynchronously);
@@ -55,7 +55,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			}
 
 			if (events.Length == 0) {
-				Log.Info("SCAVENGING: No scavenge points exist");
+				_logger.Info("SCAVENGING: No scavenge points exist");
 				return default;
 			} else if (events.Length != 1) {
 				throw new Exception($"Expected 1 event but got {events.Length}");
@@ -74,7 +74,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				effectiveNow: scavengePointEvent.TimeStamp,
 				threshold: scavengePointPayload.Threshold);
 
-			Log.Info("SCAVENGING: Latest scavenge point found is {scavengePoint}", scavengePoint);
+			_logger.Info("SCAVENGING: Latest scavenge point found is {scavengePoint}", scavengePoint);
 			return scavengePoint;
 		}
 
@@ -83,7 +83,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			int threshold,
 			CancellationToken cancellationToken) {
 
-			Log.Info("SCAVENGING: Adding new scavenge point #{eventNumber} with threshold {threshold}...",
+			_logger.Info("SCAVENGING: Adding new scavenge point #{eventNumber} with threshold {threshold}...",
 				expectedVersion + 1, threshold);
 
 			var payload = new ScavengePointPayload {
@@ -116,7 +116,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				await writeTcs.Task;
 			}
 
-			Log.Info("SCAVENGING: Added new scavenge point.");
+			_logger.Info("SCAVENGING: Added new scavenge point.");
 
 			// initial chance to replicate (handy if we are follower)
 			await Task.Delay(500, cancellationToken);
@@ -138,7 +138,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						$"Allow it to catch up and then try again. ");
 
 				// retry
-				Log.Info(
+				_logger.Info(
 					"SCAVENGING: Did not read new scavenge point. " +
 					"Found {actual} but expected {expected}. Retrying {attempt}/{maxAttempts}...",
 					scavengePoint.EventNumber, expectedVersion + 1, attempt, MaxAttempts);
