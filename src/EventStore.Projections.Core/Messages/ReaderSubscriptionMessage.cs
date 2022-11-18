@@ -273,7 +273,7 @@ namespace EventStore.Projections.Core.Messages {
 				get { return TypeId; }
 			}
 
-			public ReportProgress(Guid correlationId, object source = null) : base(correlation, null, source) { }
+			public ReportProgress(Guid correlationId, object source = null) : base(correlationId, null, source) { }
 		}
 	}
 }
