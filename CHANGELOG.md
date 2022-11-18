@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Whitespace [EventStore#3649](https://github.com/EventStore/EventStore/pull/3649)
 
+### Added
+- Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
+- ScavengeId to log context [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
+
 ## [22.10.0] - 2022-11-10
 
 ### Security
