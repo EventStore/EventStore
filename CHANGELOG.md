@@ -10,6 +10,27 @@ All notable changes to this project will be documented in this file.
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
 - ScavengeId to log context [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
 
+## [21.10.9] - 2022-11-21
+
+### Added
+
+- Dev mode option to generate and trust dev certs for a secure single node on localhost. [EventStore#3606](https://github.com/EventStore/EventStore/pull/3606)
+- AllowUnknownOptions option that allows EventStoreDB to start when unknown options are present (default: false) [EventStore#3653](https://github.com/EventStore/EventStore/pull/3653)
+
+### Fixed
+- Node not going into ready state due to synchronization bug in UserManagementService [EventStore#3599](https://github.com/EventStore/EventStore/pull/3599)
+- Race condition when creating a persistent subscription to a stream at the same time as creating that stream. [EventStore#3601](https://github.com/EventStore/EventStore/pull/3601)
+- Quick responses for authentication requests when the node is not ready [EventStore#3609](https://github.com/EventStore/EventStore/pull/3609)
+- Edge cases in maxage read fast path. [EventStore#3646](https://github.com/EventStore/EventStore/pull/3646)
+- Make MergeIndexes endpoint return proper result. Fixes issue #3573  [EventStore#3573](https://github.com/EventStore/EventStore/pull/3573)
+- Incorrect error message when deleting a stream using gRPC. Fixes issue #3547 [EventStore#3583](https://github.com/EventStore/EventStore/pull/3583)
+- Duplicate Persistent Subscriptions in the EventStoreDB UI [EventStore#3533](https://github.com/EventStore/EventStore/pull/3533)
+
+### Changed
+
+- Start standard projections and atompub over http when running in dev mode [EventStore#3615](https://github.com/EventStore/EventStore/pull/3615)
+- Display node status as 'Unreachable' instead of 'Dead' in the cluster status page [EventStore#3612](https://github.com/EventStore/EventStore/pull/3612)
+
 ## [22.10.0] - 2022-11-10
 
 ### Security
