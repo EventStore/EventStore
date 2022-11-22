@@ -5,13 +5,11 @@ using EventStore.Core.Index.Hashes;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public class CollisionDetector {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<CollisionDetector>();
-	}
-
 	// add things to the collision detector and it keeps a list of things that collided.
-	public class CollisionDetector<T> : CollisionDetector {
+	public class CollisionDetector<T> {
 		private static EqualityComparer<T> TComparer { get; } = EqualityComparer<T>.Default;
+
+		private readonly ILogger _logger;
 
 		// maps from hash to (any) user of that hash
 		private readonly IScavengeMap<ulong, T> _hashUsers;
@@ -30,10 +28,11 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private long _oldCollisions;
 
 		public CollisionDetector(
+			ILogger logger,
 			IScavengeMap<ulong, T> hashUsers,
 			IScavengeMap<T, Unit> collisionStorage,
 			ILongHasher<T> hasher) {
-
+			_logger = logger;
 			_hashUsers = hashUsers;
 			_collisions = collisionStorage;
 			_hasher = hasher;
@@ -46,7 +45,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (_hashUsers is LruCachingScavengeMap<ulong, T> lru)
 				lru.GetStats(out hits, out misses);
 
-			Log.Debug(
+			_logger.Debug(
 				"SCAVENGING: CollisionDetector stats: " +
 				"{newStreams:N0} new streams. {newCollisions:N0} new collisions. {oldCollisions:N0} old collisions. " +
 				"{hits:N0} hits. {misses:N0} misses.",

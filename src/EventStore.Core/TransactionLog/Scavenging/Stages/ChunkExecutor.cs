@@ -9,12 +9,8 @@ using EventStore.Core.TransactionLog.Chunks;
 using Serilog;
 
 namespace EventStore.Core.TransactionLog.Scavenging {
-	public class ChunkExecutor {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<ChunkExecutor>();
-	}
-
-	public class ChunkExecutor<TStreamId, TRecord> : ChunkExecutor, IChunkExecutor<TStreamId> {
-
+	public class ChunkExecutor<TStreamId, TRecord> : IChunkExecutor<TStreamId> {
+		private readonly ILogger _logger;
 		private readonly IMetastreamLookup<TStreamId> _metastreamLookup;
 		private readonly IChunkManagerForChunkExecutor<TStreamId, TRecord> _chunkManager;
 		private readonly long _chunkSize;
@@ -24,6 +20,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly Throttle _throttle;
 
 		public ChunkExecutor(
+			ILogger logger,
 			IMetastreamLookup<TStreamId> metastreamLookup,
 			IChunkManagerForChunkExecutor<TStreamId, TRecord> chunkManager,
 			long chunkSize,
@@ -32,6 +29,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			int threads,
 			Throttle throttle) {
 
+			_logger = logger;
 			_metastreamLookup = metastreamLookup;
 			_chunkManager = chunkManager;
 			_chunkSize = chunkSize;
@@ -47,7 +45,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			ITFChunkScavengerLog scavengerLogger,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Starting new scavenge chunk execution phase for {scavengePoint}",
+			_logger.Debug("SCAVENGING: Started new scavenge chunk execution phase for {scavengePoint}",
 				scavengePoint.GetName());
 
 			var checkpoint = new ScavengeCheckpoint.ExecutingChunks(
@@ -63,7 +61,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			ITFChunkScavengerLog scavengerLogger,
 			CancellationToken cancellationToken) {
 
-			Log.Debug("SCAVENGING: Executing chunks from checkpoint: {checkpoint}", checkpoint);
+			_logger.Debug("SCAVENGING: Executing chunks from checkpoint: {checkpoint}", checkpoint);
 
 			var startFromChunk = checkpoint?.DoneLogicalChunkNumber + 1 ?? 0;
 			var scavengePoint = checkpoint.ScavengePoint;
@@ -116,8 +114,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 								physicalChunk.ChunkStartNumber,
 								physicalChunk.ChunkEndNumber);
 						} else {
-							Log.Debug(
-								"SCAVENGING: skipped physical chunk: {oldChunkName} " +
+							_logger.Debug(
+								"SCAVENGING: Skipped physical chunk: {oldChunkName} " +
 								"with weight {physicalWeight:N0}. ",
 								physicalChunk.Name,
 								physicalWeight);
@@ -186,8 +184,8 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			long chunkEndPos = sourceChunk.ChunkEndPosition;
 			var oldChunkName = sourceChunk.Name;
 
-			Log.Debug(
-				"SCAVENGING: started to scavenge physical chunk: {oldChunkName} " +
+			_logger.Debug(
+				"SCAVENGING: Started to scavenge physical chunk: {oldChunkName} " +
 				"with weight {physicalWeight:N0}. " +
 				"{chunkStartNumber} => {chunkEndNumber} ({chunkStartPosition} => {chunkEndPosition})",
 				oldChunkName,
@@ -197,12 +195,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			IChunkWriterForExecutor<TStreamId, TRecord> outputChunk;
 			try {
 				outputChunk = _chunkManager.CreateChunkWriter(sourceChunk);
-				Log.Debug(
+				_logger.Debug(
 					"SCAVENGING: Resulting temp chunk file: {tmpChunkPath}.", 
 					Path.GetFileName(outputChunk.FileName));
 
 			} catch (IOException ex) {
-				Log.Error(ex,
+				_logger.Error(ex,
 					"IOException during creating new chunk for scavenging purposes. " +
 					"Stopping scavenging process...");
 				throw;
@@ -236,7 +234,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 					}
 				}
 
-				Log.Debug(
+				_logger.Debug(
 					"SCAVENGING: Scavenging {oldChunkName} traversed {recordsCount:N0}. " +
 					" Kept {keptCount:N0}. Discarded {discardedCount:N0}",
 					oldChunkName, discardedCount + keptCount,
@@ -245,7 +243,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				outputChunk.Complete(out var newFileName, out var newFileSize);
 
 				var elapsed = sw.Elapsed;
-				Log.Debug(
+				_logger.Debug(
 					"SCAVENGING: Scavenging of chunks:"
 					+ "\n{oldChunkName}"
 					+ "\ncompleted in {elapsed}."
@@ -261,7 +259,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				scavengerLogger.ChunksScavenged(chunkStartNumber, chunkEndNumber, elapsed, spaceSaved);
 
 			} catch (FileBeingDeletedException exc) {
-				Log.Information(
+				_logger.Information(
 					"SCAVENGING: Got FileBeingDeletedException exception during scavenging, that probably means some chunks were re-replicated."
 					+ "\nStopping scavenging and removing temp chunk '{tmpChunkPath}'..."
 					+ "\nException message: {e}.",
@@ -272,12 +270,12 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 				throw;
 
 			} catch (OperationCanceledException) {
-				Log.Information("SCAVENGING: Cancelled at: {oldChunkName}", oldChunkName);
+				_logger.Information("SCAVENGING: Cancelled at: {oldChunkName}", oldChunkName);
 				outputChunk.Abort(deleteImmediately: false);
 				throw;
 
 			} catch (Exception ex) {
-				Log.Information(
+				_logger.Information(
 					ex,
 					"SCAVENGING: Got exception while scavenging chunk: #{chunkStartNumber}-{chunkEndNumber}.",
 					chunkStartNumber, chunkEndNumber);
@@ -334,7 +332,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (details.IsTombstoned) {
 				if (_unsafeIgnoreHardDeletes) {
 					// remove _everything_ for metadata and original streams
-					Log.Information(
+					_logger.Information(
 						"SCAVENGING: Removing hard deleted stream tombstone for stream {stream} at position {transactionPosition}",
 						record.StreamId, record.LogPosition);
 					return true;

@@ -7,16 +7,16 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 	// Call Rest from time to time and this will rest a suitable amount of time
 	// to achieve an overall % time spent working approximately equal to activePercent.
 	public class Throttle {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<Throttle>();
 		private readonly Stopwatch _stopwatch;
 		private readonly double _minimumRestMs;
 		private readonly double _logThresholdMs;
 		private readonly double _restFactor;
 		private readonly ManualResetEventSlim _mres;
-
+		private readonly ILogger _logger;
 		private double _totalRestingTimeMs;
 
 		public Throttle(
+			ILogger logger,
 			TimeSpan minimumRest,
 			TimeSpan restLoggingThreshold,
 			double activePercent) {
@@ -24,6 +24,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			if (activePercent <= 0 || 100 < activePercent)
 				throw new ArgumentOutOfRangeException(nameof(activePercent), activePercent, null);
 
+			_logger = logger;
 			_stopwatch = new Stopwatch();
 			_minimumRestMs = minimumRest.TotalMilliseconds;
 			_logThresholdMs = restLoggingThreshold.TotalMilliseconds;
@@ -52,7 +53,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 
 			var isLongRest = timeToRestMs >= _logThresholdMs;
 			if (isLongRest)
-				Log.Debug("SCAVENGING: Resting {timeToRestMs:N0}ms", timeToRestMs);
+				_logger.Debug("SCAVENGING: Resting {timeToRestMs:N0}ms", timeToRestMs);
 
 			_totalRestingTimeMs += timeToRestMs;
 
@@ -60,7 +61,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_mres.Wait((int)timeToRestMs, cancellationToken);
 
 			if (isLongRest)
-				Log.Debug(PrettyPrint());
+				_logger.Debug(PrettyPrint());
 		}
 
 		public string PrettyPrint() {

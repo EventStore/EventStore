@@ -64,6 +64,7 @@ namespace EventStore.Core.Authorization {
 			policy.RequireAuthenticated(Operations.Node.Login);
 			policy.AddMatchAnyAssertion(Operations.Node.Scavenge.Start, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Scavenge.Stop, Grant.Allow, OperationsOrAdmins);
+			policy.AddMatchAnyAssertion(Operations.Node.Scavenge.Read, Grant.Allow, OperationsOrAdmins);
 
 			var subscriptionAccess =
 				new AndAssertion(
