@@ -83,6 +83,8 @@ _Same parameters as "Creating a Persistent Subscription"_
 
 By default, reading a stream via a persistent subscription returns a single event per request and does not embed the event properties as part of the response.
 
+::: warning Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to read events via a persistent subscriptions to `$all`, the gRPC client should be used instead. :::
+
 | URI                                                                                                                                                                  | Supported Content Types                                                                      | Method |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name} /subscriptions/{stream}/{subscription_name}?embed={embed} /subscriptions/{stream}/{subscription}/{count}?embed={embed}` | `application/vnd.eventstore.competingatom+xml application/vnd.eventstore.competingatom+json` | GET    |
