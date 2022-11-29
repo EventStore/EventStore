@@ -10,6 +10,8 @@ The Administration UI includes a _Competing Consumers_ section where you are abl
 
 Before interacting with a subscription group, you need to create one. You receive an error if you try to create a subscription group more than once. This requires [admin permissions](security.md).
 
+::: warning Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to create persistent subscriptions to `$all`, the gRPC client should be used instead. :::
+
 <!-- TODO: File inclusion for the below? -->
 
 | URI                                           | Supported Content Types | Method |
@@ -49,6 +51,8 @@ You can edit the settings of an existing subscription while it is running. This 
 |-----------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | POST   |
 
+::: warning Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to update persistent subscriptions to `$all`, the gRPC client should be used instead. :::
+
 ### Query parameters
 
 | Parameter           | Description                                      |
@@ -66,6 +70,8 @@ _Same parameters as "Creating a Persistent Subscription"_
 |-----------------------------------------------|-------------------------|--------|
 | `/subscriptions/{stream}/{subscription_name}` | `application/json`      | DELETE |
 
+::: warning Deleting persistent subscriptions to `$all` is not supported over the HTTP API. If you want to delete persistent subscriptions to `$all`, the gRPC client should be used instead. :::
+
 ### Query parameters
 
 | Parameter           | Description                                      |
@@ -76,6 +82,8 @@ _Same parameters as "Creating a Persistent Subscription"_
 ## Reading a stream via a persistent subscription
 
 By default, reading a stream via a persistent subscription returns a single event per request and does not embed the event properties as part of the response.
+
+::: warning Persistent subscriptions to `$all` are not supported over the HTTP API. If you want to read events via a persistent subscriptions to `$all`, the gRPC client should be used instead. :::
 
 | URI                                                                                                                                                                  | Supported Content Types                                                                      | Method |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|--------|
