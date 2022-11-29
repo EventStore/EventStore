@@ -13,6 +13,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public readonly TFChunkManager Manager;
 
 		private readonly ILogger _log;
+		private int _closed;
 
 		public TFChunkDb(TFChunkDbConfig config, ILogger log = null) {
 			Ensure.NotNull(config, "config");
@@ -292,6 +293,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public void Close() {
+			if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
+				return;
+
 			Manager?.Dispose();
 			Config.WriterCheckpoint.Close();
 			Config.ChaserCheckpoint.Close();
