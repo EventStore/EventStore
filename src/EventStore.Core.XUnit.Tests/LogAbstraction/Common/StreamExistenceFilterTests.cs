@@ -4,6 +4,7 @@ using System.Threading;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.LogAbstraction.Common;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.XUnit.Tests.Helpers;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
@@ -37,7 +38,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 				checkpointInterval: checkpointInterval.Value,
 				checkpointDelay: TimeSpan.Zero,
 				hasher: useHasher ? Hasher : null);
-			DisposeLater(checkpoint);
+			DisposeLater(new FakeDisposable(() => checkpoint.Close(flush: true)));
 			DisposeLater(filter);
 			return filter;
 		}
