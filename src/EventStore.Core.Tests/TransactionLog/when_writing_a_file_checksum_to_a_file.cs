@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void name_is_set() {
 			var checksum = new FileCheckpoint(HelperExtensions.GetFilePathFromAssembly("filename"), "test");
 			Assert.AreEqual("test", checksum.Name);
-			checksum.Close();
+			checksum.Close(flush: true);
 		}
 
 		[Test]
@@ -25,7 +25,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			checkSum.Write(0xDEAD);
 			checkSum.Flush();
 			var read = checkSum.Read();
-			checkSum.Close();
+			checkSum.Close(flush: true);
 			Assert.AreEqual(0xDEAD, read);
 		}
 
@@ -33,10 +33,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void can_read_existing_checksum() {
 			var checksum = new FileCheckpoint(Filename);
 			checksum.Write(0xDEAD);
-			checksum.Close();
+			checksum.Close(flush: true);
 			checksum = new FileCheckpoint(Filename);
 			var val = checksum.Read();
-			checksum.Close();
+			checksum.Close(flush: true);
 			Assert.AreEqual(0xDEAD, val);
 		}
 
@@ -47,8 +47,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 			checkSum.Write(1011);
 			await Task.Delay(200);
 			Assert.AreEqual(0, readChecksum.Read());
-			checkSum.Close();
-			readChecksum.Close();
+			checkSum.Close(flush: true);
+			readChecksum.Close(flush: true);
 		}
 
 		[Test]
@@ -58,8 +58,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 			checkSum.Write(1011);
 			checkSum.Flush();
 			Assert.AreEqual(1011, readChecksum.Read());
-			checkSum.Close();
-			readChecksum.Close();
+			checkSum.Close(flush: true);
+			readChecksum.Close(flush: true);
 		}
 	}
 }

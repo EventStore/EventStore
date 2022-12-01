@@ -9,12 +9,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void mem_mapped_file_checkpoint_can_be_read_as_file_checkpoint() {
 			var memoryMapped = new MemoryMappedFileCheckpoint(Filename);
 			memoryMapped.Write(0xDEAD);
-			memoryMapped.Flush();
-			memoryMapped.Dispose();
+			memoryMapped.Close(flush: true);
 
 			var fileCheckpoint = new FileCheckpoint(Filename);
 			var read = fileCheckpoint.Read();
-			fileCheckpoint.Dispose();
+			fileCheckpoint.Close(flush: true);
 			Assert.AreEqual(0xDEAD, read);
 		}
 
@@ -22,12 +21,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void file_checkpoint_can_be_read_as_mem_mapped_file_checkpoint() {
 			var fileCheckpoint = new FileCheckpoint(Filename);
 			fileCheckpoint.Write(0xDEAD);
-			fileCheckpoint.Flush();
-			fileCheckpoint.Dispose();
+			fileCheckpoint.Close(flush: true);
 
 			var memoryMapped = new MemoryMappedFileCheckpoint(Filename);
 			var read = memoryMapped.Read();
-			memoryMapped.Dispose();
+			memoryMapped.Close(flush: true);
 			Assert.AreEqual(0xDEAD, read);
 		}
 	}
