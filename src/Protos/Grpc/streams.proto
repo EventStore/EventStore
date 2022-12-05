@@ -3,7 +3,6 @@ package event_store.client.streams;
 option java_package = "com.eventstore.dbclient.proto.streams";
 
 import "shared.proto";
-import "status.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
@@ -232,7 +231,7 @@ message BatchAppendReq {
 message BatchAppendResp {
 	event_store.client.UUID correlation_id = 1;
 	oneof result {
-		google.rpc.Status error = 2;
+		event_store.client.Status error = 2;
 		Success success = 3;
 	}
 
