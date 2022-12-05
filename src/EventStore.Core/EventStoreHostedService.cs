@@ -67,7 +67,8 @@ namespace EventStore.Core {
 
 		public TOptions LoadConfig() => EventStoreOptions.Parse<TOptions>(_args, Opts.EnvPrefix,
 			Path.Combine(Locations.DefaultConfigurationDirectory, DefaultFiles.DefaultConfigFile),
-			MutateEffectiveOptions);
+			MutateEffectiveOptions,
+			nameof(ClusterNodeOptions.AllowUnknownOptions));
 
 		protected abstract Task StartInternalAsync(CancellationToken cancellationToken);
 		protected abstract Task StopInternalAsync(CancellationToken cancellationToken);

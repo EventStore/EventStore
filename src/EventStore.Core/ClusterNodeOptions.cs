@@ -42,6 +42,9 @@ namespace EventStore.Core {
 		[ArgDescription(Opts.WhatIfDescr, Opts.AppGroup)]
 		public bool WhatIf { get; set; }
 
+		[ArgDescription(Opts.AllowUnknownOptionsDescr, Opts.AppGroup)]
+		public bool AllowUnknownOptions { get; set; }
+
 		[ArgDescription(Opts.StartStandardProjectionsDescr, Opts.AppGroup)]
 		public bool StartStandardProjections { get; set; }
 
@@ -362,6 +365,7 @@ namespace EventStore.Core {
 			DisableLogFile = Opts.DisableLogFileDefault;
 			LogConfig = Opts.LogConfigDefault;
 			WhatIf = Opts.WhatIfDefault;
+			AllowUnknownOptions = Opts.AllowUnknownOptionsDefault;
 
 			IntIp = Opts.InternalIpDefault;
 			ExtIp = Opts.ExternalIpDefault;

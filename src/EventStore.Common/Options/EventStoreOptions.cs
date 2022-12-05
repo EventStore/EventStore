@@ -1,4 +1,5 @@
 ﻿using EventStore.Rags;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,14 +11,17 @@ namespace EventStore.Common.Options {
 		private static IEnumerable<OptionSource> _effectiveOptions;
 
 		public static TOptions Parse<TOptions>(string[] args, string environmentPrefix,
-			string defaultConfigLocation = null, Func<IEnumerable<OptionSource>, IEnumerable<OptionSource>> mutateEffectiveOptions = null) where TOptions : class, IOptions, new() {
+			string defaultConfigLocation = null,
+			Func<IEnumerable<OptionSource>, IEnumerable<OptionSource>> mutateEffectiveOptions = null,
+			string allowUnknownOptionsName = null) where TOptions : class, IOptions, new() {
+
 			_effectiveOptions = GetConfig<TOptions>(args, environmentPrefix, defaultConfigLocation)
 				.Flatten()
 				.Cleanup()
 				.UseAliases<TOptions>()
 				.ToLookup(x => x.Name.ToLower())
 				.Select(ResolvePrecedence)
-				.EnsureExistence<TOptions>()
+				.EnsureExistence<TOptions>(allowUnknownOptionsName)
 				.EnsureCorrectType<TOptions>()
 				.FixNames<TOptions>()
 				.ApplyMask<TOptions>()
@@ -118,6 +122,8 @@ namespace EventStore.Common.Options {
 	}
 
 	public static class RagsExtensions {
+		private static readonly ILogger Log = Serilog.Log.ForContext<EventStoreOptions>();
+
 		public static IEnumerable<OptionSource> Cleanup(this IEnumerable<OptionSource> optionSources) {
 			return optionSources.Select(x => new OptionSource(x.Source, x.Name.Replace("-", ""), x.IsTyped, x.Value));
 		}
@@ -131,7 +137,9 @@ namespace EventStore.Common.Options {
 			var newOptionSources = new List<OptionSource>();
 			foreach (var optionSource in optionSources) {
 				var property =
-					properties.First(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
+					properties.FirstOrDefault(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase));
+				if (property == null)
+					continue;
 				newOptionSources.Add(new OptionSource(optionSource.Source, property.Name, optionSource.IsTyped,
 					optionSource.Value));
 			}
@@ -139,11 +147,25 @@ namespace EventStore.Common.Options {
 			return newOptionSources;
 		}
 
-		public static IEnumerable<OptionSource> EnsureExistence<TOptions>(this IEnumerable<OptionSource> optionSources)
+		public static IEnumerable<OptionSource> EnsureExistence<TOptions>(this IEnumerable<OptionSource> optionSources, string allowUnknownOptionsName)
 			where TOptions : class {
 			var properties = typeof(TOptions).GetProperties();
+
+			var allowUnknownOptions =
+				!string.IsNullOrEmpty(allowUnknownOptionsName) &&
+				optionSources.Any(x =>
+					x.Name.Equals(allowUnknownOptionsName, StringComparison.OrdinalIgnoreCase) &&
+					(
+						(x.Value is bool b && b) ||
+						(x.Value is string s && bool.TryParse(s, out bool b2) && b2)
+					));
+
 			foreach (var optionSource in optionSources) {
 				if (!properties.Any(x => x.Name.Equals(optionSource.Name, StringComparison.OrdinalIgnoreCase))) {
+					if (allowUnknownOptions) {
+						Log.Information($"The option \"{optionSource.Name}\" is not a known option and will have no effect.");
+						continue;
+					}
 					throw new OptionException(String.Format("The option {0} is not a known option", optionSource.Name),
 						optionSource.Name);
 				}
