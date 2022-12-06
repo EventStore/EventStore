@@ -2372,110 +2372,6 @@
       }
     },
     {
-      "protopath": "Grpc:/:code.proto",
-      "def": {
-        "enums": [
-          {
-            "name": "Code",
-            "enum_fields": [
-              {
-                "name": "OK"
-              },
-              {
-                "name": "CANCELLED",
-                "integer": 1
-              },
-              {
-                "name": "UNKNOWN",
-                "integer": 2
-              },
-              {
-                "name": "INVALID_ARGUMENT",
-                "integer": 3
-              },
-              {
-                "name": "DEADLINE_EXCEEDED",
-                "integer": 4
-              },
-              {
-                "name": "NOT_FOUND",
-                "integer": 5
-              },
-              {
-                "name": "ALREADY_EXISTS",
-                "integer": 6
-              },
-              {
-                "name": "PERMISSION_DENIED",
-                "integer": 7
-              },
-              {
-                "name": "UNAUTHENTICATED",
-                "integer": 16
-              },
-              {
-                "name": "RESOURCE_EXHAUSTED",
-                "integer": 8
-              },
-              {
-                "name": "FAILED_PRECONDITION",
-                "integer": 9
-              },
-              {
-                "name": "ABORTED",
-                "integer": 10
-              },
-              {
-                "name": "OUT_OF_RANGE",
-                "integer": 11
-              },
-              {
-                "name": "UNIMPLEMENTED",
-                "integer": 12
-              },
-              {
-                "name": "INTERNAL",
-                "integer": 13
-              },
-              {
-                "name": "UNAVAILABLE",
-                "integer": 14
-              },
-              {
-                "name": "DATA_LOSS",
-                "integer": 15
-              }
-            ]
-          }
-        ],
-        "package": {
-          "name": "google.rpc"
-        },
-        "options": [
-          {
-            "name": "go_package",
-            "value": "google.golang.org/genproto/googleapis/rpc/code;code"
-          },
-          {
-            "name": "java_multiple_files",
-            "value": "true"
-          },
-          {
-            "name": "java_outer_classname",
-            "value": "CodeProto"
-          },
-          {
-            "name": "java_package",
-            "value": "com.google.rpc"
-          },
-          {
-            "name": "objc_class_prefix",
-            "value": "RPC"
-          }
-        ]
-      }
-    },
-    {
       "protopath": "Grpc:/:gossip.proto",
       "def": {
         "enums": [
@@ -4673,6 +4569,80 @@
     {
       "protopath": "Grpc:/:shared.proto",
       "def": {
+        "enums": [
+          {
+            "name": "Code",
+            "enum_fields": [
+              {
+                "name": "OK"
+              },
+              {
+                "name": "CANCELLED",
+                "integer": 1
+              },
+              {
+                "name": "UNKNOWN",
+                "integer": 2
+              },
+              {
+                "name": "INVALID_ARGUMENT",
+                "integer": 3
+              },
+              {
+                "name": "DEADLINE_EXCEEDED",
+                "integer": 4
+              },
+              {
+                "name": "NOT_FOUND",
+                "integer": 5
+              },
+              {
+                "name": "ALREADY_EXISTS",
+                "integer": 6
+              },
+              {
+                "name": "PERMISSION_DENIED",
+                "integer": 7
+              },
+              {
+                "name": "UNAUTHENTICATED",
+                "integer": 16
+              },
+              {
+                "name": "RESOURCE_EXHAUSTED",
+                "integer": 8
+              },
+              {
+                "name": "FAILED_PRECONDITION",
+                "integer": 9
+              },
+              {
+                "name": "ABORTED",
+                "integer": 10
+              },
+              {
+                "name": "OUT_OF_RANGE",
+                "integer": 11
+              },
+              {
+                "name": "UNIMPLEMENTED",
+                "integer": 12
+              },
+              {
+                "name": "INTERNAL",
+                "integer": 13
+              },
+              {
+                "name": "UNAVAILABLE",
+                "integer": 14
+              },
+              {
+                "name": "DATA_LOSS",
+                "integer": 15
+              }
+            ]
+          }
+        ],
         "messages": [
           {
             "name": "UUID",
@@ -4814,35 +4784,14 @@
                 "type": "string"
               }
             ]
-          }
-        ],
-        "imports": [
-          {
-            "path": "google/protobuf/empty.proto"
-          }
-        ],
-        "package": {
-          "name": "event_store.client"
-        },
-        "options": [
-          {
-            "name": "java_package",
-            "value": "com.eventstore.dbclient.proto.shared"
-          }
-        ]
-      }
-    },
-    {
-      "protopath": "Grpc:/:status.proto",
-      "def": {
-        "messages": [
+          },
           {
             "name": "Status",
             "fields": [
               {
                 "id": 1,
                 "name": "code",
-                "type": "google.rpc.Code"
+                "type": "Code"
               },
               {
                 "id": 2,
@@ -4859,39 +4808,19 @@
         ],
         "imports": [
           {
-            "path": "google/protobuf/any.proto"
+            "path": "google/protobuf/empty.proto"
           },
           {
-            "path": "code.proto"
+            "path": "google/protobuf/any.proto"
           }
         ],
         "package": {
-          "name": "google.rpc"
+          "name": "event_store.client"
         },
         "options": [
           {
-            "name": "cc_enable_arenas",
-            "value": "true"
-          },
-          {
-            "name": "go_package",
-            "value": "google.golang.org/genproto/googleapis/rpc/status;status"
-          },
-          {
-            "name": "java_multiple_files",
-            "value": "true"
-          },
-          {
-            "name": "java_outer_classname",
-            "value": "StatusProto"
-          },
-          {
             "name": "java_package",
-            "value": "com.google.rpc"
-          },
-          {
-            "name": "objc_class_prefix",
-            "value": "RPC"
+            "value": "com.eventstore.dbclient.proto.shared"
           }
         ]
       }
@@ -5576,7 +5505,7 @@
               {
                 "id": 2,
                 "name": "error",
-                "type": "google.rpc.Status"
+                "type": "event_store.client.Status"
               },
               {
                 "id": 3,
@@ -5825,9 +5754,6 @@
         "imports": [
           {
             "path": "shared.proto"
-          },
-          {
-            "path": "status.proto"
           },
           {
             "path": "google/protobuf/duration.proto"
