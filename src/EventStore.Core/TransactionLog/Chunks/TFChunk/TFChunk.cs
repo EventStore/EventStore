@@ -934,6 +934,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		public bool TryClose() {
 			_selfdestructin54321 = true;
+
+			Thread.MemoryBarrier();
+
 			bool closed = true;
 			closed &= TryDestructFileStreams();
 			closed &= TryDestructMemStreams();
@@ -943,6 +946,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		public void MarkForDeletion() {
 			_selfdestructin54321 = true;
 			_deleteFile = true;
+
+			Thread.MemoryBarrier();
+
 			TryDestructFileStreams();
 			TryDestructMemStreams();
 		}
