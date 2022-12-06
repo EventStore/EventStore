@@ -47,8 +47,10 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			return _reader.ReadInt64();
 		}
 
-		public void Close() {
-			Flush();
+		public void Close(bool flush) {
+			if (flush)
+				Flush();
+
 			_reader.Close();
 			_writer.Close();
 			_fileStream.Close();
@@ -86,10 +88,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 		}
 
 		public event Action<long> Flushed;
-
-		public void Dispose() {
-			Close();
-		}
 
 		protected virtual void OnFlushed(long obj) {
 			var onFlushed = Flushed;

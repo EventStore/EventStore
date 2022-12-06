@@ -296,13 +296,23 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			if (Interlocked.CompareExchange(ref _closed, 1, 0) != 0)
 				return;
 
-			Manager?.Dispose();
-			Config.WriterCheckpoint.Close();
-			Config.ChaserCheckpoint.Close();
-			Config.EpochCheckpoint.Close();
-			Config.TruncateCheckpoint.Close();
-			Config.ProposalCheckpoint.Close();
-			Config.StreamExistenceFilterCheckpoint.Close();
+			bool chunksClosed = false;
+
+			try {
+				chunksClosed = Manager.TryClose();
+			} catch (Exception ex) {
+				_log.Error(ex, "An error has occurred while closing the chunks.");
+			}
+
+			if (!chunksClosed)
+				_log.Error("Failed to properly close all chunk files - checkpoints will not be flushed.");
+
+			Config.WriterCheckpoint.Close(flush: chunksClosed);
+			Config.ChaserCheckpoint.Close(flush: chunksClosed);
+			Config.EpochCheckpoint.Close(flush: chunksClosed);
+			Config.TruncateCheckpoint.Close(flush: chunksClosed);
+			Config.ProposalCheckpoint.Close(flush: chunksClosed);
+			Config.StreamExistenceFilterCheckpoint.Close(flush: chunksClosed);
 		}
 	}
 }
