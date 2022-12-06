@@ -354,6 +354,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private void CreateReaderStreams() {
 			Interlocked.Add(ref _fileStreamCount, _internalStreamsCount);
+
+			// should never happen in practice because this function is called from the static TFChunk constructors
+			Debug.Assert(!_selfdestructin54321);
+
 			for (int i = 0; i < _internalStreamsCount; i++) {
 				_fileStreams.Enqueue(CreateInternalReaderWorkItem());
 			}
@@ -403,6 +407,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			// READER STREAMS
 			Interlocked.Add(ref _memStreamCount, _maxReaderCount);
+
+			// should never happen in practice because this function is called from the static TFChunk constructors
+			Debug.Assert(!_selfdestructin54321);
+
 			for (int i = 0; i < _maxReaderCount; i++) {
 				var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
 				var reader = new BinaryReader(stream);
