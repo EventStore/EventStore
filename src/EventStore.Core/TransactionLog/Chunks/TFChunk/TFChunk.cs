@@ -602,9 +602,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				return;
 			}
 
-			Interlocked.Add(ref _memStreamCount, _maxReaderCount);
+			bool wasZero = Interlocked.Add(ref _memStreamCount, _maxReaderCount) - _maxReaderCount == 0;
 			if (_selfdestructin54321) {
-				if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0)
+				if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0 && !wasZero)
 					FreeCachedData();
 				Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
 				return;
@@ -955,6 +955,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private bool TryDestructFileStreams() {
 			int fileStreamCount = Interlocked.CompareExchange(ref _fileStreamCount, 0, 0);
+			bool wasZero = fileStreamCount == 0;
 
 			ReaderWorkItem workItem;
 			while (_fileStreams.TryDequeue(out workItem)) {
@@ -965,8 +966,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (fileStreamCount < 0)
 				throw new Exception("Count of file streams reduced below zero.");
 
-			if (fileStreamCount == 0) { // we are the last who should "turn the light off" for file streams
-				CleanUpFileStreamDestruction();
+			if (fileStreamCount == 0) {
+				if (!wasZero) {
+					// we are the last who should "turn the light off" for file streams
+					CleanUpFileStreamDestruction();
+				}
 				return true;
 			}
 
@@ -1000,6 +1004,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				writerWorkItem.DisposeMemStream();
 
 			int memStreamCount = Interlocked.CompareExchange(ref _memStreamCount, 0, 0);
+			var wasZero = memStreamCount == 0;
 
 			ReaderWorkItem workItem;
 			while (_memStreams.TryDequeue(out workItem)) {
@@ -1008,9 +1013,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			if (memStreamCount < 0)
 				throw new Exception("Count of memory streams reduced below zero.");
-			if (memStreamCount == 0) // we are the last who should "turn the light off" for memory streams
+			if (memStreamCount == 0)
 			{
-				FreeCachedData();
+				if (!wasZero) {
+					// we are the last who should "turn the light off" for memory streams
+					FreeCachedData();
+				}
+
 				return true;
 			}
 
@@ -1052,9 +1061,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (internalStreamCount > _maxReaderCount)
 				throw new Exception("Unable to acquire reader work item. Max internal streams limit reached.");
 
-			Interlocked.Increment(ref _fileStreamCount);
+			bool wasZero = Interlocked.Increment(ref _fileStreamCount) - 1 == 0;
 			if (_selfdestructin54321) {
-				if (Interlocked.Decrement(ref _fileStreamCount) == 0)
+				if (Interlocked.Decrement(ref _fileStreamCount) == 0 && !wasZero)
 					CleanUpFileStreamDestruction(); // now we should "turn light off"
 				throw new FileBeingDeletedException();
 			}
@@ -1077,9 +1086,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public TFChunkBulkReader AcquireReader() {
-			Interlocked.Increment(ref _fileStreamCount);
+			bool wasZero = Interlocked.Increment(ref _fileStreamCount) - 1 == 0;
 			if (_selfdestructin54321) {
-				if (Interlocked.Decrement(ref _fileStreamCount) == 0) {
+				if (Interlocked.Decrement(ref _fileStreamCount) == 0 && !wasZero) {
 					// now we should "turn light off"
 					CleanUpFileStreamDestruction();
 				}
