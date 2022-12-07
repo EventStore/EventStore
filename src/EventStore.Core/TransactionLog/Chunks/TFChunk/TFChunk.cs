@@ -924,10 +924,24 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 				// READER STREAMS
 				Interlocked.Add(ref _memStreamCount, _maxReaderCount);
+
+				if (_selfdestructin54321) {
+					Interlocked.Add(ref _memStreamCount, -_maxReaderCount);
+					TryDestructMemStreams();
+					throw new FileBeingDeletedException();
+				}
+
 				for (int i = 0; i < _maxReaderCount; i++) {
 					var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
 					var reader = new BinaryReader(stream);
 					_memStreams.Enqueue(new ReaderWorkItem(stream, reader, isMemory: true));
+				}
+
+				Thread.MemoryBarrier();
+
+				if (_selfdestructin54321) {
+					TryDestructMemStreams();
+					throw new FileBeingDeletedException();
 				}
 			}
 		}
