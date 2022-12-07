@@ -2,6 +2,8 @@
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
+using Serilog;
+using Serilog.Events;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkWriter : ITransactionFileWriter {
@@ -17,6 +19,12 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly ICheckpoint _writerCheckpoint;
 
 		private TFChunk.TFChunk _currentChunk;
+
+		private const int MaxChunkNumber = TFChunkManager.MaxChunksCount;
+		private const int MaxChunkNumberError = MaxChunkNumber - 25_000;
+		private const int MaxChunkNumberWarning = MaxChunkNumber - 50_000;
+
+		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkWriter>();
 
 		public TFChunkWriter(TFChunkDb db) {
 			Ensure.NotNull(db, "db");
@@ -51,6 +59,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_writerCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
 			_writerCheckpoint.Flush();
 
+			var nextChunkNumber = chunk.ChunkHeader.ChunkEndNumber + 1;
+			VerifyChunkNumberLimits(nextChunkNumber);
 			_currentChunk = _db.Manager.AddNewChunk();
 		}
 
@@ -63,7 +73,26 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_writerCheckpoint.Write(rawChunk.ChunkHeader.ChunkEndPosition);
 			_writerCheckpoint.Flush();
 
+			var nextChunkNumber = rawChunk.ChunkHeader.ChunkEndNumber + 1;
+			VerifyChunkNumberLimits(nextChunkNumber);
 			_currentChunk = _db.Manager.AddNewChunk();
+		}
+
+		private static void VerifyChunkNumberLimits(int chunkNumber) {
+			switch (chunkNumber)
+			{
+				case >= MaxChunkNumber:
+					throw new Exception($"Max chunk number limit reached: {MaxChunkNumber:N0}. Shutting down.");
+				case < MaxChunkNumberWarning:
+					break;
+				default:
+				{
+					var level = chunkNumber >= MaxChunkNumberError ? LogEventLevel.Error : LogEventLevel.Warning;
+					Log.Write(level, "You are approaching the max chunk number limit: {chunkNumber:N0} / {maxChunkNumber:N0}. " +
+					                 "The server will shut down when the limit is reached!", chunkNumber, MaxChunkNumber);
+					break;
+				}
+			}
 		}
 
 		public void Dispose() {
