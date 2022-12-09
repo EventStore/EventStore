@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Whitespace [EventStore#3649](https://github.com/EventStore/EventStore/pull/3649)
+- Patch Newtonsoft from `13.0.1` to `13.0.2` [EventStore#3677](https://github.com/EventStore/EventStore/pull/3677)
 
 ### Added
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
