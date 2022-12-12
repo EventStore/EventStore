@@ -137,7 +137,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			[Test]
 			public void is_error() {
 				Assert.AreEqual(_response.ResultCase, BatchAppendResp.ResultOneofCase.Error);
-				Assert.AreEqual(_response.Error.Code, Google.Rpc.Code.DeadlineExceeded);
+				Assert.AreEqual(_response.Error.Code, EventStore.Client.Code.DeadlineExceeded);
 			}
 
 			[Test]
@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			[Test]
 			public void is_error() {
 				Assert.AreEqual(_response.ResultCase, BatchAppendResp.ResultOneofCase.Error);
-				Assert.AreEqual(_response.Error.Code, Google.Rpc.Code.DeadlineExceeded);
+				Assert.AreEqual(_response.Error.Code, EventStore.Client.Code.DeadlineExceeded);
 			}
 			
 			[Test]

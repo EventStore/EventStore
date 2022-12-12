@@ -51,9 +51,6 @@
 		<Protobuf Include="..\Protos\ClientAPI\ClientMessageDtos.proto">
 			<Link>Services\Transport\Tcp\protos\ClientMessageDtos.proto</Link>
 		</Protobuf>
-		<Protobuf Include="..\Protos\Grpc\code.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
-			<Link>Services\Transport\Grpc\Protos\code.proto</Link>
-		</Protobuf>
 		<Protobuf Include="../Protos/Grpc/cluster.proto" GrpcServices="Both" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
 			<Link>Services\Transport\Grpc\Protos\cluster.proto</Link>
 		</Protobuf>
@@ -68,9 +65,6 @@
 		</Protobuf>
 		<Protobuf Include="..\Protos\Grpc\shared.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc">
 			<Link>Services\Transport\Grpc\Protos\shared.proto</Link>
-		</Protobuf>
-		<Protobuf Include="..\Protos\Grpc\status.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
-			<Link>Services\Transport\Grpc\Protos\status.proto</Link>
 		</Protobuf>
 		<Protobuf Include="..\Protos\Grpc\streams.proto" GrpcServices="Server" LinkBase="Services/Transport/Grpc" ProtoRoot="../Protos/Grpc" Access="Internal">
 			<Link>Services\Transport\Grpc\Protos\streams.proto</Link>

@@ -232,12 +232,12 @@ enum Code {
 // You can find out more about this error model and how to work with it in the
 // [API Design Guide](https://cloud.google.com/apis/design/errors).
 message Status {
-	// The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+	// The status code, which should be an enum value of [event_store.client.Code][event_store.client.Code].
 	Code code = 1;
 
 	// A developer-facing error message, which should be in English. Any
 	// user-facing error message should be localized and sent in the
-	// [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+	// [event_store.client.Status.details][event_store.client.Status.details] field, or localized by the client.
 	string message = 2;
 
 	// A list of messages that carry the error details.  There is a common set of

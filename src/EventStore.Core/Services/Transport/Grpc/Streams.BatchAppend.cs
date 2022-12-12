@@ -20,7 +20,7 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Serilog;
 using Empty = Google.Protobuf.WellKnownTypes.Empty;
-using Status = Google.Rpc.Status;
+using Status = EventStore.Client.Status;
 using static EventStore.Client.Streams.BatchAppendReq.Types;
 using static EventStore.Client.Streams.BatchAppendReq.Types.Options;
 using OperationResult = EventStore.Core.Messages.OperationResult;

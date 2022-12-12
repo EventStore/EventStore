@@ -15,6 +15,7 @@ using Grpc.Core;
 using Grpc.Net.Client;
 using NUnit.Framework;
 using StatusCode = Grpc.Core.StatusCode;
+using Status = Grpc.Core.Status;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class authenticated_requests_made_from_a_follower<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {

@@ -7,6 +7,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Grpc;
 using EventStore.Client;
 using Grpc.Core;
+using Status = Grpc.Core.Status;
 
 namespace EventStore.Cluster {
 	partial class Gossip {
