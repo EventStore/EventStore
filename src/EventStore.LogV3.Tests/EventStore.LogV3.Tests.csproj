@@ -8,7 +8,7 @@
 	<ItemGroup>
 		<PackageReference Include="GitHubActionsTestLogger" Version="2.0.1" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
 		<PackageReference Include="ObjectLayoutInspector" Version="0.1.4" />
 		<PackageReference Include="System.Linq.Async" Version="6.0.1" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
