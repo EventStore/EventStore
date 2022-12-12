@@ -6,7 +6,7 @@ using System.Linq;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.TransactionLog.Chunks {
-	public class TFChunkManager : IDisposable {
+	public class TFChunkManager {
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkManager>();
 
 		// MaxChunksCount is currently capped at 400,000 since:
@@ -320,13 +320,16 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			return _chunks != null ? _chunks.FirstOrDefault(c => c != null && c.FileName == path) : null;
 		}
 
-		public void Dispose() {
+		public bool TryClose() {
+			var allChunksClosed = true;
 			lock (_chunksLocker) {
 				for (int i = 0; i < _chunksCount; ++i) {
 					if (_chunks[i] != null)
-						_chunks[i].Dispose();
+						allChunksClosed &= _chunks[i].TryClose();
 				}
 			}
+
+			return allChunksClosed;
 		}
 	}
 }
