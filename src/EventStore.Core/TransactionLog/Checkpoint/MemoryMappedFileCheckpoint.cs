@@ -49,8 +49,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			}
 		}
 
-		public void Close() {
-			Flush();
+		public void Close(bool flush) {
+			if (flush)
+				Flush();
 			_accessor.Dispose();
 			_file.Dispose();
 		}
@@ -92,10 +93,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			var onFlushed = Flushed;
 			if (onFlushed != null)
 				onFlushed.Invoke(obj);
-		}
-
-		public void Dispose() {
-			Close();
 		}
 	}
 }

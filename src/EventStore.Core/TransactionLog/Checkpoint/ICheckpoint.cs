@@ -1,10 +1,10 @@
 using System;
 
 namespace EventStore.Core.TransactionLog.Checkpoint {
-	public interface ICheckpoint : IReadOnlyCheckpoint, IDisposable {
+	public interface ICheckpoint : IReadOnlyCheckpoint {
 		void Write(long checkpoint);
 		void Flush();
-		void Close();
+		void Close(bool flush);
 		IReadOnlyCheckpoint AsReadOnly() => this;
 	}
 
