@@ -205,7 +205,7 @@ namespace EventStore.Core {
 		public override Func<X509Certificate2> CertificateSelector => _certificateSelector;
 		public override Func<X509Certificate2Collection> IntermediateCertificatesSelector => _intermediateCertsSelector;
 		public override bool DisableHttps => _disableHttps;
-		public override bool EnableUnixSockets => OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(17063);
+		public sealed override bool EnableUnixSockets => OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(17063);
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
@@ -1067,6 +1067,9 @@ namespace EventStore.Core {
 
 				if (options.Interface.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
+
+				if (EnableUnixSockets)
+					httpAuthenticationProviders.Add(new UnixSocketAuthenticationProvider());
 			}
 
 			//default authentication provider
