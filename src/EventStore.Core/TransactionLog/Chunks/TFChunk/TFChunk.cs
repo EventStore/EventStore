@@ -917,10 +917,14 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			writerWorkItem.Dispose();
 		}
 
-		public void Dispose() {
+		public void Dispose() => TryClose();
+
+		public bool TryClose() {
 			_selfdestructin54321 = true;
-			TryDestructFileStreams();
-			TryDestructMemStreams();
+			bool closed = true;
+			closed &= TryDestructFileStreams();
+			closed &= TryDestructMemStreams();
+			return closed;
 		}
 
 		public void MarkForDeletion() {
@@ -930,8 +934,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			TryDestructMemStreams();
 		}
 
-		private void TryDestructFileStreams() {
-			int fileStreamCount = int.MaxValue;
+		private bool TryDestructFileStreams() {
+			int fileStreamCount = Interlocked.CompareExchange(ref _fileStreamCount, 0, 0);
 
 			ReaderWorkItem workItem;
 			while (_fileStreams.TryDequeue(out workItem)) {
@@ -941,8 +945,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			if (fileStreamCount < 0)
 				throw new Exception("Count of file streams reduced below zero.");
-			if (fileStreamCount == 0) // we are the last who should "turn the light off" for file streams
+
+			if (fileStreamCount == 0) { // we are the last who should "turn the light off" for file streams
 				CleanUpFileStreamDestruction();
+				return true;
+			}
+
+			return false;
 		}
 
 		private void CleanUpFileStreamDestruction() {
@@ -971,7 +980,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			if (writerWorkItem != null)
 				writerWorkItem.DisposeMemStream();
 
-			int memStreamCount = int.MaxValue;
+			int memStreamCount = Interlocked.CompareExchange(ref _memStreamCount, 0, 0);
 
 			ReaderWorkItem workItem;
 			while (_memStreams.TryDequeue(out workItem)) {

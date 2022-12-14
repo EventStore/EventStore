@@ -53,12 +53,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 				onFlushed.Invoke(obj);
 		}
 
-		public void Close() {
-			//NOOP
-		}
-
-		public void Dispose() {
-			//NOOP
+		public void Close(bool flush) {
+			if (flush)
+				Flush();
 		}
 	}
 }
