@@ -133,11 +133,11 @@ Function Start-Build{
             if(-Not (Test-Path (Join-Path $uiSrcDirectory "package.json"))) {
                 Exec { git submodule update --init ./ }
             }
-            Exec { npm install bower@~1.8.4 -g }
+            Exec { npm install bower@~1.8.14 -g }
             Exec { bower install --allow-root }
-            Exec { npm install gulp@~3.8.8 -g --force}
+            Exec { npm install gulp-cli -g }
             Exec { npm install }
-            Exec { gulp dist }        
+            Exec { gulp dist }
             Exec { mv es-dist $uiDistDirectory }
         Pop-Location
     }
