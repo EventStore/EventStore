@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -197,14 +198,10 @@ namespace EventStore.ClusterNode {
 									server.Limits.Http2.KeepAlivePingTimeout =
 										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
 									server.Listen(options.Interface.ExtIp, options.Interface.HttpPort,
-										listenOptions => {
-											if (hostedService.Node.DisableHttps) {
-												listenOptions.Use(next =>
-													new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
-											} else {
-												listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
-											}
-										});
+										listenOptions => ConfigureListenOptions(hostedService, listenOptions));
+
+									if (hostedService.Node.EnableUnixSockets)
+										TryListenOnUnixSocket(hostedService, server);
 								})
 								.ConfigureServices(services => hostedService.Node.Startup.ConfigureServices(services))
 								.Configure(hostedService.Node.Startup.Configure))
@@ -228,6 +225,43 @@ namespace EventStore.ClusterNode {
 				return 1;
 			} finally {
 				Log.CloseAndFlush();
+			}
+		}
+
+		private static void ConfigureListenOptions(ClusterVNodeHostedService hostedService, ListenOptions listenOptions) {
+			if (hostedService.Node.DisableHttps) {
+				listenOptions.Use(next =>
+					new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
+			} else {
+				listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
+			}
+		}
+
+		private static void TryListenOnUnixSocket(ClusterVNodeHostedService hostedService, KestrelServerOptions server) {
+
+			if (hostedService.Node.Db.Config.InMemDb) {
+				Log.Information("Not listening on a UNIX domain socket since the database is running in memory.");
+				return;
+			}
+
+			try {
+				var unixSocket = Path.GetFullPath(Path.Combine(hostedService.Node.Db.Config.Path, "eventstore.sock"));
+
+				if (File.Exists(unixSocket)) {
+					try {
+						File.Delete(unixSocket);
+						Log.Information("Cleaned up stale UNIX domain socket: {unixSocket}", unixSocket);
+					} catch (Exception ex) {
+						Log.Error(ex, "Failed to clean up stale UNIX domain socket: {unixSocket}. Please delete the file manually.", unixSocket);
+						throw;
+					}
+				}
+
+				server.ListenUnixSocket(unixSocket, listenOptions => ConfigureListenOptions(hostedService, listenOptions));
+				Log.Information("Listening on UNIX domain socket: {unixSocket}", unixSocket);
+			} catch (Exception ex) {
+				Log.Error(ex, "Failed to listen on UNIX domain socket.");
+				throw;
 			}
 		}
 

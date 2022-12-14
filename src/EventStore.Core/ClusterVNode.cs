@@ -105,6 +105,7 @@ namespace EventStore.Core {
 		abstract public Func<X509Certificate2> CertificateSelector { get; }
 		abstract public Func<X509Certificate2Collection> IntermediateCertificatesSelector { get; }
 		abstract public bool DisableHttps { get; }
+		abstract public bool EnableUnixSockets { get; }
 		abstract public void Start();
 		abstract public Task<ClusterVNode> StartAsync(bool waitUntilRead);
 		abstract public Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -204,6 +205,7 @@ namespace EventStore.Core {
 		public override Func<X509Certificate2> CertificateSelector => _certificateSelector;
 		public override Func<X509Certificate2Collection> IntermediateCertificatesSelector => _intermediateCertsSelector;
 		public override bool DisableHttps => _disableHttps;
+		public override bool EnableUnixSockets => OperatingSystem.IsLinux() || OperatingSystem.IsWindowsVersionAtLeast(17063);
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
