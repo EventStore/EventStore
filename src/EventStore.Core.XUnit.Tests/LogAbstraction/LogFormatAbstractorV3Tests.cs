@@ -331,6 +331,10 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction {
 			public StorageMessage.EffectiveAcl GetEffectiveAcl(StreamId streamId) =>
 				throw new NotImplementedException();
 
+			public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(uint streamId, long eventNumber) {
+				throw new NotImplementedException();
+			}
+
 			public StreamId GetEventStreamIdByTransactionId(long transactionId) =>
 				throw new NotImplementedException();
 

@@ -589,6 +589,25 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return workItem.StreamPosition - ChunkHeader.Size;
 		}
 
+		// There are four kinds of event position
+		// (a) global logical (logical position in the log)
+		// (b) local logical (logical position in the chunk, which is global logical - chunk logical start)
+		// (c) actual (local logical but with posmap taken into account)
+		// (d) raw (byte offset in file, which is actual - header size)
+		//
+		// this method takes (b) and returns (d)
+		public long GetActualRawPosition(long logicalPosition) {
+			if (logicalPosition < 0)
+				throw new ArgumentOutOfRangeException(nameof(logicalPosition));
+
+			var actualPosition = _readSide.GetActualPosition(logicalPosition);
+
+			if (actualPosition < 0)
+				return -1;
+
+			return GetRawPosition(actualPosition);
+		}
+
 		// WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
 		public void CacheInMemory() {
 			if (_inMem || Interlocked.CompareExchange(ref _isCached, 1, 0) != 0)

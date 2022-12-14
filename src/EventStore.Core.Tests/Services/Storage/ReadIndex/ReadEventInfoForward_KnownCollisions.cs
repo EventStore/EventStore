@@ -5,7 +5,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Index.Hashers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
+namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 	[TestFixture]
 	public abstract class ReadEventInfoForward_KnownCollisions : ReadIndexTestScenario<LogFormat.V2, string> {
 		private const string Stream = "ab-1";

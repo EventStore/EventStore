@@ -523,6 +523,7 @@ namespace EventStore.Core {
 				                           + 1 /* StorageChaser */
 				                           + 1 /* Projections */
 				                           + TFChunkScavenger.MaxThreadCount /* Scavenging (1 per thread) */
+				                           + 1 /* Redaction */
 				                           + 1 /* Subscription LinkTos resolving */
 				                           + readerThreadsCount
 				                           + 5 /* just in case reserve :) */;
@@ -651,6 +652,9 @@ namespace EventStore.Core {
 			[Description("Heartbeat interval for external TCP sockets.")]
 			public int ExtTcpHeartbeatInterval { get; init; } = 2_000;
 
+			[Description("Whether to allow local connections via a UNIX domain socket.")]
+			public bool EnableUnixSocket { get; init; } = false;
+
 			[Description("When enabled, tells a single node to run gossip as if it is a cluster."),
 			 Deprecated("The '" + nameof(GossipOnSingleNode) + "' option has been deprecated as of version 21.2.")]
 			public bool? GossipOnSingleNode { get; init; } = null;
@@ -710,6 +714,7 @@ namespace EventStore.Core {
 				IntTcpHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatTimeout)),
 				ExtTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(ExtTcpHeartbeatInterval)),
 				IntTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatInterval)),
+				EnableUnixSocket = configurationRoot.GetValue<bool>(nameof(EnableUnixSocket)),
 				ConnectionPendingSendBytesThreshold =
 					configurationRoot.GetValue<int>(nameof(ConnectionPendingSendBytesThreshold)),
 				ConnectionQueueSizeThreshold = configurationRoot.GetValue<int>(nameof(ConnectionQueueSizeThreshold)),

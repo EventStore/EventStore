@@ -40,6 +40,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.ServerFeaturesTests {
 				_expectedEndPoints.AddRange(GetEndPoints(Client.Users.Users.Descriptor));
 				_expectedEndPoints.AddRange(GetEndPoints(Client.Gossip.Gossip.Descriptor));
 				_expectedEndPoints.AddRange(GetEndPoints(Client.Monitoring.Monitoring.Descriptor));
+				_expectedEndPoints.AddRange(GetEndPoints(Client.Redaction.Redaction.Descriptor));
 				_expectedEndPoints.AddRange(GetEndPoints(ServerFeatures.Descriptor));
 
 				var versionParts = EventStore.Common.Utils.VersionInfo.Version.Split('.');
