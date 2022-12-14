@@ -47,7 +47,7 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-		<Protobuf Include="..\Protos\Grpc\code.proto" Link="Protos\gossip.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\code.proto" Link="Protos\code.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\gossip.proto" Link="Protos\gossip.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\operations.proto" Link="Protos\operations.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\persistent.proto" Link="Protos\persistent.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
@@ -56,6 +56,7 @@
 		<Protobuf Include="..\Protos\Grpc\users.proto" Link="Protos\users.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\monitoring.proto" Link="Protos\monitoring.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<Protobuf Include="..\Protos\Grpc\serverfeatures.proto" Link="Protos\serverfeatures.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
+		<Protobuf Include="..\Protos\Grpc\redaction.proto" Link="Protos\redaction.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 		<None Include="Resources\es-tile.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

@@ -43,11 +43,25 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IReadIndex<TStreamId> : IReadIndex {
 		IIndexWriter<TStreamId> IndexWriter { get; }
 
-		// streamId drives the read, streamName is only for populating on the result.
-		// this was less messy than safely adding the streamName to the EventRecord at some point after construction
+		// ReadEvent() / ReadStreamEvents*() :
+		// - deleted events are filtered out
+		// - duplicates are removed, keeping only the earliest event in the log
+		// - streamId drives the read, streamName is only for populating on the result.
+		//   this was less messy than safely adding the streamName to the EventRecord at some point after construction.
 		IndexReadEventResult ReadEvent(string streamName, TStreamId streamId, long eventNumber);
 		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
 		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
+
+		// ReadEventInfo_KeepDuplicates() :
+		// - deleted events are not filtered out
+		// - duplicates are kept, in ascending order of log position
+		// - next event number is always -1
+		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber);
+
+		// ReadEventInfo*Collisions() :
+		// - deleted events are not filtered out
+		// - duplicates are removed, keeping only the earliest event in the log
+		// - only events that are before "beforePosition" in the transaction log are returned
 		IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
 		IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition);
 		IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);

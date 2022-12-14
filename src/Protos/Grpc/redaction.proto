@@ -1,0 +1,47 @@
+syntax = "proto3";
+package event_store.client.redaction;
+option java_package = "com.eventstore.dbclient.proto.redaction";
+
+import "shared.proto";
+
+// The intended usage is as follows:
+// 1. Initiate the SwitchChunks() call in order to lock the database for chunk switching.
+//    This ensures that chunks / event positions will not change while the lock is acquired.
+// 2. The GetEventPositions() call is then initiated to obtain the required event positions.
+// 3. The relevant chunks are copied to files with a .tmp extension and modified as necessary.
+// 4. SwitchChunk requests are then sent to replace the relevant chunks with the modified chunks.
+// 5. Finally, the lock is released by ending the SwitchChunks() call.
+
+service Redaction {
+	rpc GetEventPositions (stream GetEventPositionReq) returns (stream GetEventPositionResp);
+	rpc SwitchChunks (stream SwitchChunkReq) returns (stream SwitchChunkResp);
+}
+
+message GetEventPositionReq {
+	event_store.client.StreamIdentifier stream_identifier = 1;
+	uint64 stream_revision = 2;
+}
+
+message GetEventPositionResp {
+	repeated EventPosition event_positions = 1;
+}
+
+message EventPosition {
+	uint64 log_position = 1;
+	ChunkInfo chunk_info = 2;
+}
+
+message ChunkInfo {
+	string file_name = 1;
+	uint32 version = 2;
+	bool is_complete = 3;
+	uint32 event_offset = 4;
+}
+
+message SwitchChunkReq {
+	string target_chunk_file = 1;
+	string new_chunk_file = 2;
+}
+
+message SwitchChunkResp {
+}
