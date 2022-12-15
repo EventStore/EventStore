@@ -1,0 +1,15 @@
+syntax = "proto3";
+package event_store.client.redaction;
+option java_package = "com.eventstore.dbclient.proto.redaction";
+
+service Redaction {
+	rpc SwitchChunk (SwitchChunkReq) returns (SwitchChunkResp);
+}
+
+message SwitchChunkReq {
+	string target_chunk_file = 1;
+	string new_chunk_file = 2;
+}
+
+message SwitchChunkResp {
+}
