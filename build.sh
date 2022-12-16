@@ -148,9 +148,9 @@ function buildUI {
         git submodule update --init ./
     fi
 
-    npm install bower@~1.8.4 -g
+    npm install bower@~1.8.14 -g
     bower install --allow-root
-    npm install gulp@~3.8.8 -g
+    npm install gulp-cli -g
     npm install
     gulp dist
     mv es-dist ../EventStore.ClusterNode.Web/clusternode-web/
