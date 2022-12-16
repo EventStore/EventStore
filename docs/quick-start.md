@@ -11,7 +11,10 @@ For older versions, please check the Installation docs.
 
 ## Installing and running the server
 
-### Windows Chocolatey
+:::: code-group
+::: code-group-item Windows
+
+<br />
 
 You can install EventStoreDB using [Chocolatey]():
 
@@ -25,9 +28,7 @@ And run it with the command:
 EventStore.ClusterNode.exe --dev
 ```
 
-:::note
 If you don't want to use chocolatey, you can also download the binaries from the [Downloads page](https://www.eventstore.com/downloads) and run EventStore directly from them.
-:::
 
 This command will do two things:
 
@@ -95,7 +96,8 @@ Please trust certificate "[Subject]\r\n  CN=localhost\r\n\r\n[Issuer]\r\n  CN=lo
 
 Your EventStoreDB node is now running.
 
-### Ubuntu
+:::
+::: code-group-item Ubuntu
 
 You can install EventStoreDB using [PackageCloud]():
 
@@ -195,6 +197,11 @@ Please trust certificate "[Subject]\n  CN=localhost\n\n[Issuer]\n  CN=localhost\
 [ 2148,14,17:02:35.063,INF] "InaugurationManager" in state (Leader, Initial): IGNORING "CheckInaugurationConditions". Not waiting for conditions.
 ```
 
+Your EventStoreDB node is now running.
+
+:::
+::::
+
 ## Checking the admin UI
 
 EventStoreDB hosts an admin UI that you can use to manage your node, view streams, and access certain features.
@@ -254,16 +261,22 @@ The UI is fairly limited and is best to use only when testing things out.
 
 The recommended way of writing events into EventStoreDB is through one of our supported gRPC clients, so let's give that a try.
 
-### Dotnet
+:::: code-group
+::: code-group-item Dotnet
 
-1. Create a new console application called `Writer`.
+1. Create a new console application called `Writer`:
+
+```powershell
+dotnet new console -n Writer -o Writer
+```
+
 2. Install the `EventStore.Client.Grpc.Streams` nuget package:
 
 ```powershell
-dotnet add package EventStore.Client.Grpc.Streams --version 22.0.0
+dotnet add ./Writer/Writer.csproj package EventStore.Client.Grpc.Streams --version 22.0.0
 ```
 
-3. Copy and paste the following code into `Program.cs`
+3. Replace the code in `Program.cs` with the following:
 
 ```csharp
 using System.Text;
@@ -279,9 +292,37 @@ await client.AppendToStreamAsync("chat-1", StreamState.Any, new[]
 Console.WriteLine("Complete");
 ```
 
-4. Run the code sample and wait for it to complete.
+4. Build and run the code sample:
 
-If you go back to the stream browser in the UI, you'll see that a few new streams have appeared:
+```powershell
+dotnet run --project ./Writer/Writer.csproj
+```
+
+:::
+::: code-group-item NodeJs
+
+**TODO**
+
+:::
+::: code-group-item Go
+
+**TODO**
+
+:::
+::: code-group-item Java
+
+**TODO**
+
+:::
+::: code-group-item Rust
+
+**TODO**
+
+:::
+::::
+
+Wait for the code sample to complete, and then go back to the stream browser in the UI.
+You'll see that a few new streams have appeared:
 
 :::card
 ![First stream added through gRPC](./images/quick-start/admin-ui-first-grpc-event.png)
@@ -303,11 +344,22 @@ Looking at events in the UI is all well and good, but we'll eventually want to d
 
 We can do this using the gRPC client as well.
 
-### Dotnet
+:::: code-group
+::: code-group-item Dotnet
 
-1. Create a new console app called `Reader`.
-2. Install the `EventStore.Client.Grpc.Streams` nuget package.
-2. Copy and paste the following code into `Program.cs`:
+1. Create a new console app called `Reader`:
+
+```powershell
+dotnet new console -n Reader -o Reader
+```
+
+2. Install the `EventStore.Client.Grpc.Streams` nuget package:
+
+```powershell
+dotnet add ./Reader/Reader.csproj package EventStore.Client.Grpc.Streams --version 22.0.0
+```
+
+3. Replace the code in `Program.cs` with the following:
 
 ```csharp
 using System.Text;
@@ -324,7 +376,36 @@ await foreach (var resolvedEvent in readStreamResult)
 }
 ```
 
-If you run the code, it will print out the data of our event:
+4. Build and run the code sample:
+
+```powershell
+dotnet run --project ./Reader/Reader.csproj
+```
+
+:::
+::: code-group-item NodeJs
+
+**TODO**
+
+:::
+::: code-group-item Go
+
+**TODO**
+
+:::
+::: code-group-item Java
+
+**TODO**
+
+:::
+::: code-group-item Rust
+
+**TODO**
+
+:::
+::::
+
+This will print out the data of our event:
 
 ```text
 Received event 0@chat-1: { "sender": "Ouro", "message": "Hello, world!" }
@@ -336,7 +417,8 @@ We've now written and read events in EventStoreDB, but we need to be able to rea
 
 To do this, we can change the `Reader` app to subscribe to a stream. We can then receive all of the events that were already written, as well as receive any new ones that come along while we're subscribed.
 
-### Dotnet
+:::: code-group
+::: code-group-item Dotnet
 
 1. Replace the code in the `Reader` console app with the following:
 
@@ -360,6 +442,35 @@ await client.SubscribeToStreamAsync("chat-1", FromStream.Start,
 
 Console.ReadLine();
 ```
+
+2. Build and run the code sample:
+
+```powershell
+dotnet run --project ./Reader/Reader.csproj
+```
+
+:::
+::: code-group-item NodeJs
+
+**TODO**
+
+:::
+::: code-group-item Go
+
+**TODO**
+
+:::
+::: code-group-item Java
+
+**TODO**
+
+:::
+::: code-group-item Rust
+
+**TODO**
+
+:::
+::::
 
 Running the `Reader` app now doesn't seem to behave any differently. You still see the same events printed out:
 
@@ -386,4 +497,4 @@ From here, we recommend that you look into the following topics:
 2. [Event Streams]()
 3. [Projections]()
 4. [EventStore Cloud]()
-5. [Configuring a cluster locally](./cluster.md#highly-available-cluster)
+5. [Configuring a cluster locally](./cluster.md#highly-available-cluster) -->
