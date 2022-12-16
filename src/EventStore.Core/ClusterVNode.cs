@@ -1424,6 +1424,10 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 
+			// REDACTION
+			var redactionService = new RedactionService(Db);
+			_mainBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);
+
 			// TIMER
 			_timeProvider = new RealTimeProvider();
 			var threadBasedScheduler = new ThreadBasedScheduler(_timeProvider, _queueStatsManager);
