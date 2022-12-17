@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
+- Update UI build after latest changes. [EventStore#3683](https://github.com/EventStore/EventStore/pull/3683)
 
 ## [21.10.9] - 2022-11-21
 
