@@ -4,14 +4,9 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.Core.Messages {
-	public static class TcpMessage {
-		public class TcpSend : Message, IQueueAffineMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+	public static partial class TcpMessage {
+		[DerivedMessage]
+		public partial class TcpSend : Message, IQueueAffineMessage {
 			public int QueueId {
 				get { return ConnectionManager.GetHashCode(); }
 			}
@@ -25,13 +20,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class Heartbeat : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Heartbeat : Message {
 			public readonly long ReceiveProgressIndicator;
 			public readonly long SendProgressIndicator;
 
@@ -41,13 +31,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class HeartbeatTimeout : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class HeartbeatTimeout : Message {
 			public readonly long ReceiveProgressIndicator;
 
 			public HeartbeatTimeout(long receiveProgressIndicator) {
@@ -55,13 +40,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class PongMessage : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class PongMessage : Message {
 			public readonly Guid CorrelationId;
 			public readonly byte[] Payload;
 
@@ -71,13 +51,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ConnectionEstablished : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class ConnectionEstablished : Message {
 			public readonly TcpConnectionManager Connection;
 
 			public ConnectionEstablished(TcpConnectionManager connection) {
@@ -85,13 +60,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ConnectionClosed : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class ConnectionClosed : Message {
 			public readonly TcpConnectionManager Connection;
 			public readonly SocketError SocketError;
 
@@ -101,13 +71,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class NotReady : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class NotReady : Message {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 
@@ -118,13 +83,8 @@ namespace EventStore.Core.Messages {
 		}
 
 
-		public class NotAuthenticated : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class NotAuthenticated : Message {
 			public readonly Guid CorrelationId;
 			public readonly string Reason;
 
@@ -134,13 +94,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class Authenticated : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Authenticated : Message {
 			public readonly Guid CorrelationId;
 
 			public Authenticated(Guid correlationId) {

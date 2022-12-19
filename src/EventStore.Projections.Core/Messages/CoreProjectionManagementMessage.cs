@@ -1,65 +1,40 @@
 using System;
-using System.Threading;
+using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
-	public static class CoreProjectionManagementMessage {
-		public class Start : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+	public static partial class CoreProjectionManagementMessage {
+		[DerivedMessage]
+		public partial class Start : CoreProjectionManagementControlMessage {
 			public Start(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
-		public class LoadStopped : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class LoadStopped : CoreProjectionManagementControlMessage {
 			public LoadStopped(Guid correlationId, Guid workerId)
 				: base(correlationId, workerId) {
 			}
 		}
 
-		public class Stop : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Stop : CoreProjectionManagementControlMessage {
 			public Stop(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
-		public class Kill : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Kill : CoreProjectionManagementControlMessage {
 			public Kill(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
-		public class GetState : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetState : CoreProjectionManagementControlMessage {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
 
@@ -79,13 +54,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class GetResult : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetResult : CoreProjectionManagementControlMessage {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
 
@@ -105,13 +75,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class CreateAndPrepare : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class CreateAndPrepare : CoreProjectionManagementControlMessage {
 			private readonly ProjectionConfig _config;
 			private readonly string _handlerType;
 			private readonly string _query;
@@ -162,13 +127,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class CreatePrepared : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class CreatePrepared : CoreProjectionManagementControlMessage {
 			private readonly ProjectionConfig _config;
 			private readonly QuerySourcesDefinition _sourceDefinition;
 			private readonly string _handlerType;
@@ -231,13 +191,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Dispose : CoreProjectionManagementControlMessage {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Dispose : CoreProjectionManagementControlMessage {
 			public Dispose(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}

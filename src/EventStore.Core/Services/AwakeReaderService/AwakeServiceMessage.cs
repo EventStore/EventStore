@@ -3,14 +3,9 @@ using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.AwakeReaderService {
-	public class AwakeServiceMessage {
-		public sealed class SubscribeAwake : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+	public partial class AwakeServiceMessage {
+		[DerivedMessage]
+		public sealed partial class SubscribeAwake : Message {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
 			public readonly string StreamId;
@@ -27,13 +22,8 @@ namespace EventStore.Core.Services.AwakeReaderService {
 			}
 		}
 
-		public sealed class UnsubscribeAwake : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public sealed partial class UnsubscribeAwake : Message {
 			public readonly Guid CorrelationId;
 
 			public UnsubscribeAwake(Guid correlationId) {

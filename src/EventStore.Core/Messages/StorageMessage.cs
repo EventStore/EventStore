@@ -8,7 +8,7 @@ using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Messages {
-	public static class StorageMessage {
+	public static partial class StorageMessage {
 		public interface IPreconditionedWriteMessage {
 			Guid CorrelationId { get; }
 			IEnvelope Envelope { get; }
@@ -22,13 +22,8 @@ namespace EventStore.Core.Messages {
 		public interface ILeaderWriteMessage {
 		}
 
-		public class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			public Guid CorrelationId { get; private set; }
 			public IEnvelope Envelope { get; private set; }
 
@@ -54,13 +49,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			public Guid CorrelationId { get; private set; }
 			public IEnvelope Envelope { get; private set; }
 			public string EventStreamId { get; private set; }
@@ -83,13 +73,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteCommit : Message, IFlushableMessage, ILeaderWriteMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class WriteCommit : Message, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly long TransactionPosition;
@@ -101,13 +86,9 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage,
+		[DerivedMessage]
+		public partial class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage,
 			ILeaderWriteMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
 
 			public Guid CorrelationId { get; private set; }
 			public IEnvelope Envelope { get; private set; }
@@ -131,13 +112,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionData : Message, IFlushableMessage, ILeaderWriteMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class WriteTransactionData : Message, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly long TransactionId;
@@ -151,13 +127,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WriteTransactionEnd : Message, IFlushableMessage, ILeaderWriteMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class WriteTransactionEnd : Message, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly long TransactionId;
@@ -174,13 +145,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class PrepareAck : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class PrepareAck : Message {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
 			public readonly PrepareFlags Flags;
@@ -195,13 +161,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CommitAck : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class CommitAck : Message {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
 			public readonly long TransactionPosition;
@@ -228,13 +189,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class CommitIndexed : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class CommitIndexed : Message {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
 			public readonly long TransactionPosition;
@@ -260,13 +216,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class EventCommitted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class EventCommitted : Message {
 			public readonly long CommitPosition;
 			public readonly EventRecord Event;
 			public readonly bool TfEof;
@@ -278,24 +229,14 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class TfEofAtNonCommitRecord : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class TfEofAtNonCommitRecord : Message {
 			public TfEofAtNonCommitRecord() {
 			}
 		}
 
-		public class AlreadyCommitted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class AlreadyCommitted : Message {
 			public readonly Guid CorrelationId;
 
 			public readonly string EventStreamId;
@@ -323,13 +264,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class InvalidTransaction : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class InvalidTransaction : Message {
 			public readonly Guid CorrelationId;
 
 			public InvalidTransaction(Guid correlationId) {
@@ -337,13 +273,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class WrongExpectedVersion : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class WrongExpectedVersion : Message {
 			public readonly Guid CorrelationId;
 			public readonly long CurrentVersion;
 
@@ -354,13 +285,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class StreamDeleted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class StreamDeleted : Message {
 			public readonly Guid CorrelationId;
 
 			public StreamDeleted(Guid correlationId) {
@@ -369,13 +295,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class RequestCompleted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class RequestCompleted : Message {
 			public readonly Guid CorrelationId;
 			public readonly bool Success;
 			public readonly long CurrentVersion;
@@ -388,13 +309,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class RequestManagerTimerTick : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class RequestManagerTimerTick : Message {
 			public DateTime UtcNow {
 				get { return _now ?? DateTime.UtcNow; }
 			}
@@ -409,13 +325,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class BatchLogExpiredMessages : Message, IQueueAffineMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class BatchLogExpiredMessages : Message, IQueueAffineMessage {
 			public readonly Guid CorrelationId;
 			public int QueueId { get; }
 
@@ -427,33 +338,25 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class EffectiveStreamAclRequest : Message {
+		[DerivedMessage]
+		public partial class EffectiveStreamAclRequest : Message {
 			public readonly string StreamId;
 			public readonly IEnvelope Envelope;
 			public readonly CancellationToken CancellationToken;
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public EffectiveStreamAclRequest(string streamId, IEnvelope envelope, CancellationToken cancellationToken) {
 				StreamId = streamId;
 				Envelope = envelope;
 				CancellationToken = cancellationToken;
 			}
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
 		}
 
-		public class EffectiveStreamAclResponse : Message {
+		[DerivedMessage]
+		public partial class EffectiveStreamAclResponse : Message {
 			public readonly EffectiveAcl Acl;
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
 
 			public EffectiveStreamAclResponse(EffectiveAcl acl) {
 				Acl = acl;
-			}
-
-			public override int MsgTypeId {
-				get { return TypeId; }
 			}
 		}
 
@@ -497,25 +400,17 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class OperationCancelledMessage : Message {
-
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
+		[DerivedMessage]
+		public partial class OperationCancelledMessage : Message {
 			public CancellationToken CancellationToken { get; }
 
 			public OperationCancelledMessage(CancellationToken cancellationToken) {
 				CancellationToken = cancellationToken;
 			}
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
 		}
 
-		public class StreamIdFromTransactionIdRequest : Message {
-
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
+		[DerivedMessage]
+		public partial class StreamIdFromTransactionIdRequest : Message {
 			public readonly long TransactionId;
 			public readonly IEnvelope Envelope;
 			public readonly CancellationToken CancellationToken;
@@ -525,22 +420,14 @@ namespace EventStore.Core.Messages {
 				TransactionId = transactionId;
 				Envelope = envelope;
 			}
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
 		}
 
-		public class StreamIdFromTransactionIdResponse : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
+		[DerivedMessage]
+		public partial class StreamIdFromTransactionIdResponse : Message {
 			public readonly string StreamId;
 
 			public StreamIdFromTransactionIdResponse(string streamId){
 				StreamId = streamId;
-			}
-
-			public override int MsgTypeId {
-				get { return TypeId; }
 			}
 		}
 	}

@@ -1,14 +1,10 @@
 using System;
-using System.Threading;
+using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages {
-	public class CoreProjectionManagementControlMessage : CoreProjectionManagementMessageBase {
+	[DerivedMessage]
+	public abstract partial class CoreProjectionManagementControlMessage : CoreProjectionManagementMessageBase {
 		private readonly Guid _workerId;
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
 
 		public Guid WorkerId {
 			get { return _workerId; }

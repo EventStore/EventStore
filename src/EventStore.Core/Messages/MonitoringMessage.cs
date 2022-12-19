@@ -5,14 +5,9 @@ using EventStore.Core.Messaging;
 using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.Core.Messages {
-	public static class MonitoringMessage {
-		public class GetAllPersistentSubscriptionStats : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+	public static partial class MonitoringMessage {
+		[DerivedMessage]
+		public partial class GetAllPersistentSubscriptionStats : Message {
 			public readonly IEnvelope Envelope;
 
 			public GetAllPersistentSubscriptionStats(IEnvelope envelope) {
@@ -21,13 +16,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetPersistentSubscriptionStats : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetPersistentSubscriptionStats : Message {
 			public string EventStreamId {
 				get { return _eventStreamId; }
 			}
@@ -48,13 +38,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetStreamPersistentSubscriptionStats : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetStreamPersistentSubscriptionStats : Message {
 			public string EventStreamId {
 				get { return _eventStreamId; }
 			}
@@ -69,13 +54,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetPersistentSubscriptionStatsCompleted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetPersistentSubscriptionStatsCompleted : Message {
 			public readonly OperationStatus Result;
 			public readonly List<PersistentSubscriptionInfo> SubscriptionStats;
 			public string ErrorString;
@@ -138,13 +118,8 @@ namespace EventStore.Core.Messages {
 			public string ConnectionName { get; set; }
 		}
 
-		public class GetFreshStats : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetFreshStats : Message {
 			public readonly IEnvelope Envelope;
 			public readonly Func<Dictionary<string, object>, Dictionary<string, object>> StatsSelector;
 			public readonly bool UseMetadata;
@@ -164,13 +139,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetFreshStatsCompleted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetFreshStatsCompleted : Message {
 			public readonly bool Success;
 			public readonly Dictionary<string, object> Stats;
 
@@ -180,13 +150,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetFreshTcpConnectionStats : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetFreshTcpConnectionStats : Message {
 			public readonly IEnvelope Envelope;
 
 			public GetFreshTcpConnectionStats(IEnvelope envelope) {
@@ -196,13 +161,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class GetFreshTcpConnectionStatsCompleted : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class GetFreshTcpConnectionStatsCompleted : Message {
 			public readonly List<TcpConnectionStats> ConnectionStats;
 
 			public GetFreshTcpConnectionStatsCompleted(List<TcpConnectionStats> connectionStats) {
@@ -223,13 +183,8 @@ namespace EventStore.Core.Messages {
 			public bool IsSslConnection { get; set; }
 		}
 
-		public class InternalStatsRequest : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class InternalStatsRequest : Message {
 			public readonly IEnvelope Envelope;
 
 			public InternalStatsRequest(IEnvelope envelope) {
@@ -239,13 +194,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class InternalStatsRequestResponse : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class InternalStatsRequestResponse : Message {
 			public readonly Dictionary<string, object> Stats;
 
 			public InternalStatsRequestResponse(Dictionary<string, object> stats) {
@@ -255,9 +205,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class DynamicCacheManagerTick : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-			public override int MsgTypeId => TypeId;
+		[DerivedMessage]
+		public partial class DynamicCacheManagerTick : Message {
 		}
 	}
 }
