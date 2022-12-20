@@ -3,17 +3,23 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Messaging {
-	public abstract class Message {
-		protected static int NextMsgId = -1;
-		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-		public virtual int MsgTypeId {
-			get { return TypeId; }
+	[AttributeUsage(AttributeTargets.Class)]
+	public class BaseMessageAttribute : Attribute {
+		public BaseMessageAttribute() {
 		}
+	}
+
+	[AttributeUsage(AttributeTargets.Class)]
+	public class DerivedMessageAttribute : Attribute {
+		public DerivedMessageAttribute() {
+		}
+	}
+
+	[BaseMessage]
+	public abstract partial class Message {
 	}
 
 	public static class MessageHierarchy {
@@ -145,8 +151,8 @@ namespace EventStore.Core.Messaging {
 			var msgTypeField = msgType.GetFields(BindingFlags.Static | BindingFlags.NonPublic)
 				.FirstOrDefault(x => x.Name == "TypeId");
 			if (msgTypeField == null) {
-				Console.WriteLine("Message {0} doesn't have TypeId field!", msgType.Name);
-				throw new Exception(string.Format("Message {0} doesn't have TypeId field!", msgType.Name));
+				Console.WriteLine("Message {0} does not have {1} applied", msgType.Name, nameof(DerivedMessageAttribute));
+				throw new Exception(string.Format("Message {0} does not have {1} applied", msgType.Name, nameof(DerivedMessageAttribute)));
 			}
 
 			var msgTypeId = (int)msgTypeField.GetValue(null);

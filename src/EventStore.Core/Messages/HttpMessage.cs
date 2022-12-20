@@ -8,14 +8,9 @@ namespace EventStore.Core.Messages {
 		ServerTooBusy
 	}
 
-	public static class HttpMessage {
-		public abstract class HttpSendMessage : Message, IQueueAffineMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+	public static partial class HttpMessage {
+		[DerivedMessage]
+		public abstract partial class HttpSendMessage : Message, IQueueAffineMessage {
 			public int QueueId {
 				get { return HttpEntityManager.GetHashCode(); }
 			}
@@ -34,13 +29,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class HttpSend : HttpSendMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class HttpSend : HttpSendMessage {
 			public readonly object Data;
 			public readonly ResponseConfiguration Configuration;
 			public readonly Message Message;
@@ -54,13 +44,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class DeniedToHandle : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class DeniedToHandle : Message {
 			public readonly DenialReason Reason;
 			public readonly string Details;
 
@@ -70,21 +55,12 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class PurgeTimedOutRequests : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+		[DerivedMessage]
+		public partial class PurgeTimedOutRequests : Message {
 		}
 
-		public class TextMessage : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class TextMessage : Message {
 			public string Text { get; set; }
 
 			public TextMessage() {

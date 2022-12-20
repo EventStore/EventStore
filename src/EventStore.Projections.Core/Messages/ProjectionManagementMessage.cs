@@ -1,6 +1,5 @@
 using System;
 using System.Security.Claims;
-using System.Threading;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
 using EventStore.Core.Services.UserManagement;
@@ -10,15 +9,10 @@ using System.Collections.Generic;
 using EventStore.Common.Utils;
 
 namespace EventStore.Projections.Core.Messages {
-	public static class ProjectionManagementMessage {
-		public static class Command {
-			public abstract class ControlMessage : Message {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+	public static partial class ProjectionManagementMessage {
+		public static partial class Command {
+			[DerivedMessage]
+			public abstract partial class ControlMessage : Message {
 				private readonly IEnvelope _envelope;
 				public readonly RunAs RunAs;
 
@@ -32,13 +26,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class PostBatch : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class PostBatch : ControlMessage {
 				public ProjectionPost[] Projections { get; }
 
 				public PostBatch(
@@ -79,13 +68,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class Post : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class Post : ControlMessage {
 				private readonly ProjectionMode _mode;
 				private readonly string _name;
 				private readonly string _handlerType;
@@ -178,13 +162,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class Disable : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class Disable : ControlMessage {
 				private readonly string _name;
 
 				public Disable(IEnvelope envelope, string name, RunAs runAs)
@@ -197,13 +176,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class Enable : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class Enable : ControlMessage {
 				private readonly string _name;
 
 				public Enable(IEnvelope envelope, string name, RunAs runAs)
@@ -216,13 +190,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class Abort : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class Abort : ControlMessage {
 				private readonly string _name;
 
 				public Abort(IEnvelope envelope, string name, RunAs runAs)
@@ -235,13 +204,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class SetRunAs : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class SetRunAs : ControlMessage {
 				public enum SetRemove {
 					Set,
 					Remove
@@ -265,13 +229,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class UpdateQuery : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class UpdateQuery : ControlMessage {
 				private readonly string _name;
 				private readonly string _handlerType;
 				private readonly string _query;
@@ -303,13 +262,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class Reset : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class Reset : ControlMessage {
 				private readonly string _name;
 
 				public Reset(IEnvelope envelope, string name, RunAs runAs)
@@ -322,13 +276,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class Delete : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class Delete : ControlMessage {
 				private readonly string _name;
 				private readonly bool _deleteCheckpointStream;
 				private readonly bool _deleteStateStream;
@@ -361,13 +310,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class GetQuery : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class GetQuery : ControlMessage {
 				private readonly string _name;
 
 				public GetQuery(IEnvelope envelope, string name, RunAs runAs) :
@@ -380,13 +324,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class GetConfig : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class GetConfig : ControlMessage {
 				private readonly string _name;
 
 				public GetConfig(IEnvelope envelope, string name, RunAs runAs) :
@@ -399,13 +338,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class UpdateConfig : ControlMessage {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class UpdateConfig : ControlMessage {
 				private readonly string _name;
 				private readonly bool _emitEnabled;
 				private readonly bool _trackEmittedStreams;
@@ -469,13 +403,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class GetStatistics : Message {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class GetStatistics : Message {
 				private readonly IEnvelope _envelope;
 				private readonly ProjectionMode? _mode;
 				private readonly string _name;
@@ -505,13 +434,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class GetState : Message {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class GetState : Message {
 				private readonly IEnvelope _envelope;
 				private readonly string _name;
 				private readonly string _partition;
@@ -538,13 +462,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class GetResult : Message {
-				private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class GetResult : Message {
 				private readonly IEnvelope _envelope;
 				private readonly string _name;
 				private readonly string _partition;
@@ -572,13 +491,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class OperationFailed : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class OperationFailed : Message {
 			private readonly string _reason;
 
 			public OperationFailed(string reason) {
@@ -590,37 +504,22 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class NotFound : OperationFailed {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class NotFound : OperationFailed {
 			public NotFound()
 				: base("Not Found") {
 			}
 		}
 
-		public class NotAuthorized : OperationFailed {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class NotAuthorized : OperationFailed {
 			public NotAuthorized()
 				: base("Not authorized") {
 			}
 		}
 
-		public class Conflict : OperationFailed {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Conflict : OperationFailed {
 			public Conflict(string reason)
 				: base(reason) {
 			}
@@ -684,13 +583,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Updated : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Updated : Message {
 			private readonly string _name;
 
 			public Updated(string name) {
@@ -702,13 +596,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class Statistics : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class Statistics : Message {
 			private readonly ProjectionStatistics[] _projections;
 
 			public Statistics(ProjectionStatistics[] projections) {
@@ -720,13 +609,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public abstract class ProjectionDataBase : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public abstract partial class ProjectionDataBase : Message {
 			private readonly string _name;
 			private readonly string _partition;
 			private readonly CheckpointTag _position;
@@ -757,13 +641,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ProjectionState : ProjectionDataBase {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class ProjectionState : ProjectionDataBase {
 			private readonly string _state;
 
 			public ProjectionState(
@@ -777,13 +656,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ProjectionResult : ProjectionDataBase {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class ProjectionResult : ProjectionDataBase {
 			private readonly string _result;
 
 			public ProjectionResult(
@@ -797,13 +671,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ProjectionQuery : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class ProjectionQuery : Message {
 			private readonly string _name;
 			private readonly string _query;
 			private readonly bool _emitEnabled;
@@ -865,30 +734,17 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public static class Internal {
-			public class CleanupExpired : Message {
-				private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
+		public static partial class Internal {
+			[DerivedMessage]
+			public partial class CleanupExpired : Message {
 			}
 
-			public class RegularTimeout : Message {
-				private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
+			[DerivedMessage]
+			public partial class RegularTimeout : Message {
 			}
 
-			public class ReadTimeout : Message {
-				private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class ReadTimeout : Message {
 				private readonly Guid _correlationId;
 				private readonly string _streamId;
 				private readonly Dictionary<string, object> _parameters;
@@ -916,13 +772,8 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			public class Deleted : Message {
-				private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-				public override int MsgTypeId {
-					get { return TypeId; }
-				}
-
+			[DerivedMessage]
+			public partial class Deleted : Message {
 				private readonly string _name;
 				private readonly Guid _id;
 
@@ -941,13 +792,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ProjectionConfig : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class ProjectionConfig : Message {
 			private readonly bool _emitEnabled;
 			private readonly bool _trackEmittedStreams;
 			private readonly int _checkpointAfterMs;

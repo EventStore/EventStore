@@ -3,21 +3,13 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
-	public static class ReplicationTrackingMessage {
-		public class WriterCheckpointFlushed : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+	public static partial class ReplicationTrackingMessage {
+		[DerivedMessage]
+		public partial class WriterCheckpointFlushed : Message {
 		}
 
-		public class IndexedTo : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-			
+		[DerivedMessage]
+		public partial class IndexedTo : Message {
 			public readonly long LogPosition;
 			
 			public IndexedTo(long logPosition ) {
@@ -26,13 +18,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReplicatedTo : Message { 
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-			
+		[DerivedMessage]
+		public partial class ReplicatedTo : Message {
 			public readonly long LogPosition;
 			
 			public ReplicatedTo(long logPosition ) {
@@ -41,13 +28,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class LeaderReplicatedTo : Message { 
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-			
+		[DerivedMessage]
+		public partial class LeaderReplicatedTo : Message {
 			public readonly long LogPosition;
 			
 			public LeaderReplicatedTo(long logPosition ) {
@@ -56,13 +38,8 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class ReplicaWriteAck : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public partial class ReplicaWriteAck : Message {
 			public readonly Guid SubscriptionId;
 			public readonly long ReplicationLogPosition;
 

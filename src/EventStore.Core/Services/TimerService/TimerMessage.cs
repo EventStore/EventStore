@@ -2,14 +2,9 @@
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.TimerService {
-	public static class TimerMessage {
-		public class Schedule : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+	public static partial class TimerMessage {
+		[DerivedMessage]
+		public partial class Schedule : Message {
 			public readonly TimeSpan TriggerAfter;
 
 			public readonly IEnvelope Envelope;

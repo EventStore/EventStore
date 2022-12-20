@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31911.196
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.BufferManagement", "EventStore.BufferManagement\EventStore.BufferManagement.csproj", "{C7B79854-21DB-48A9-89E3-136404F13DF5}"
 EndProject
@@ -54,6 +54,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Projections.Core.Javascript.Tests", "EventStore.Projections.Core.Javascript.Tests\EventStore.Projections.Core.Javascript.Tests.csproj", "{1826D544-16E6-460F-A8F2-1D56B5041AE7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.MicroBenchmarks", "EventStore.MicroBenchmarks\EventStore.MicroBenchmarks.csproj", "{87F81751-192B-4263-A658-6DFC51EA557C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.SourceGenerators", "EventStore.SourceGenerators\EventStore.SourceGenerators.csproj", "{24BA3208-F690-4DD4-AECB-E339DEE0C69E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.SourceGenerators.Tests", "EventStore.SourceGenerators.Tests\EventStore.SourceGenerators.Tests.csproj", "{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -317,6 +321,30 @@ Global
 		{87F81751-192B-4263-A658-6DFC51EA557C}.Release|ARM64.Build.0 = Release|Any CPU
 		{87F81751-192B-4263-A658-6DFC51EA557C}.Release|x64.ActiveCfg = Release|x64
 		{87F81751-192B-4263-A658-6DFC51EA557C}.Release|x64.Build.0 = Release|x64
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Debug|x64.Build.0 = Debug|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Release|ARM64.Build.0 = Release|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Release|x64.ActiveCfg = Release|Any CPU
+		{24BA3208-F690-4DD4-AECB-E339DEE0C69E}.Release|x64.Build.0 = Release|Any CPU
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Debug|Any CPU.Build.0 = Debug|x64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Debug|ARM64.Build.0 = Debug|ARM64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Debug|x64.ActiveCfg = Debug|x64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Debug|x64.Build.0 = Debug|x64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|Any CPU.ActiveCfg = Release|x64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|Any CPU.Build.0 = Release|x64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|ARM64.ActiveCfg = Release|ARM64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|ARM64.Build.0 = Release|ARM64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|x64.ActiveCfg = Release|x64
+		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

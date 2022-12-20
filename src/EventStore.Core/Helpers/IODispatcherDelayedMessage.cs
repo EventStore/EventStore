@@ -2,13 +2,8 @@ using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Helpers {
-	public sealed class IODispatcherDelayedMessage : Message {
-		private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-		public override int MsgTypeId {
-			get { return TypeId; }
-		}
-
+	[DerivedMessage]
+	public sealed partial class IODispatcherDelayedMessage : Message {
 		private readonly Guid _correlationId;
 		private readonly ICorrelatedTimeout _timeout;
 		private readonly Guid? _messageCorrelationId;

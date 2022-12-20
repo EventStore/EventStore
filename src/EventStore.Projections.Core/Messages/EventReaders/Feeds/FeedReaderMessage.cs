@@ -1,26 +1,16 @@
 ﻿using System;
 using System.Security.Claims;
-using System.Threading;
 using EventStore.Core.Messaging;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
-	public static class FeedReaderMessage {
-		public abstract class FeedReaderMessageBase : Message {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
+	public static partial class FeedReaderMessage {
+		[DerivedMessage]
+		public abstract partial class FeedReaderMessageBase : Message {
 		}
 
-		public sealed class ReadPage : FeedReaderMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public sealed partial class ReadPage : FeedReaderMessageBase {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
 			public readonly ClaimsPrincipal User;
@@ -42,13 +32,8 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
 			}
 		}
 
-		public sealed class FeedPage : FeedReaderMessageBase {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage]
+		public sealed partial class FeedPage : FeedReaderMessageBase {
 			public enum ErrorStatus {
 				Success,
 				NotAuthorized
