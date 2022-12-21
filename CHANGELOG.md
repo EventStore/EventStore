@@ -6,10 +6,12 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Whitespace [EventStore#3649](https://github.com/EventStore/EventStore/pull/3649)
 - Patch Newtonsoft from `13.0.1` to `13.0.2` [EventStore#3677](https://github.com/EventStore/EventStore/pull/3677)
+- Improved synchronization during TFChunk disposal [EventStore#3674](https://github.com/EventStore/EventStore/pull/3674)
 
 ### Added
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
 - ScavengeId to log context [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
+- Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
