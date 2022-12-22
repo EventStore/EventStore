@@ -166,7 +166,9 @@ namespace EventStore.ClusterNode {
 				Console.CancelKeyPress += delegate {
 					Application.Exit(0, "Cancelled.");
 				};
-				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider)) {
+
+				var telemetryConfiguration = TelemetryConfiguration.FromFile();
+				using (var hostedService = new ClusterVNodeHostedService(options, certificateProvider, telemetryConfiguration.Get<TelemetryConfiguration>())) {
 					using var signal = new ManualResetEventSlim(false);
 					_ = Run(hostedService, signal);
 					// ReSharper disable MethodSupportsCancellation
@@ -187,6 +189,7 @@ namespace EventStore.ClusterNode {
 							.ConfigureLogging(logging => logging.AddSerilog())
 							.ConfigureServices(services => services.Configure<KestrelServerOptions>(
 								EventStoreKestrelConfiguration.GetConfiguration()))
+							.ConfigureServices(services => services.Configure<TelemetryConfiguration>(telemetryConfiguration))
 							.ConfigureWebHostDefaults(builder => builder
 								.UseKestrel(server => {
 									server.Limits.Http2.KeepAlivePingDelay =

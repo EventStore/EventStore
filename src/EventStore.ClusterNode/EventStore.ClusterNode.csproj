@@ -22,6 +22,9 @@
 			<Link>logconfig.json</Link>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Update="telemetryconfig.json">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="kestrelsettings.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

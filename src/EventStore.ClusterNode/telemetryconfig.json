@@ -1,0 +1,11 @@
+{
+	"Meters": [
+		"EventStore.Core"
+	],
+
+	"Checkpoints": [
+		"Writer",
+		"Index",
+		"Replication"
+	]
+}

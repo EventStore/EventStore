@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
@@ -18,7 +19,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -133,6 +138,7 @@ namespace EventStore.Core {
 					b => b
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
 						.UseMiddleware<AuthorizationMiddleware>()
+						.UseOpenTelemetryPrometheusScrapingEndpoint()
 						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
 				)
 				.UseEndpoints(ep => ep.MapGrpcService<PersistentSubscriptions>())
@@ -172,6 +178,22 @@ namespace EventStore.Core {
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Monitoring(_monitoringQueue))
 						.AddSingleton<ServerFeatures>()
+
+						// OpenTelemetry
+						.ConfigureOpenTelemetryMeterProvider((serviceProvider, builder) => {
+							var config = serviceProvider
+								.GetRequiredService<IOptionsMonitor<TelemetryConfiguration>>()
+								.CurrentValue;
+							builder.AddMeter(config.Meters);
+						})
+						.AddOpenTelemetry()
+						.WithMetrics(meterOptions => meterOptions
+							.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
+							.AddPrometheusExporter())
+						.StartWithHost()
+						.Services
+
+						// gRPC
 						.AddGrpc(options => {
 							options.Interceptors.Add<RetryInterceptor>();
 						})

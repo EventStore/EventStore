@@ -163,6 +163,7 @@ namespace EventStore.Core.Tests.Helpers {
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
+				telemetryConfiguration: null,
 				expiryStrategy: expiryStrategy,
 				certificateProvider: new OptionsCertificateProvider(options));
 			Db = Node.Db;
