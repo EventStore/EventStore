@@ -4,6 +4,37 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static class RedactionMessage {
+
+		public class SwitchChunkLock : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public IEnvelope Envelope { get; }
+
+			public SwitchChunkLock(IEnvelope envelope) {
+				Envelope = envelope;
+			}
+		}
+
+		public class SwitchChunkLockSucceeded : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class SwitchChunkLockFailed : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
 		public class SwitchChunk : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
@@ -47,6 +78,36 @@ namespace EventStore.Core.Messages {
 				Ensure.NotNullOrEmpty(reason, nameof(reason));
 
 				Reason = reason;
+			}
+		}
+
+		public class SwitchChunkUnlock : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public IEnvelope Envelope { get; }
+
+			public SwitchChunkUnlock(IEnvelope envelope) {
+				Envelope = envelope;
+			}
+		}
+
+		public class SwitchChunkUnlockSucceeded : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+		}
+
+		public class SwitchChunkUnlockFailed : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
 			}
 		}
 	}

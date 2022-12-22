@@ -3,7 +3,7 @@ package event_store.client.redaction;
 option java_package = "com.eventstore.dbclient.proto.redaction";
 
 service Redaction {
-	rpc SwitchChunk (SwitchChunkReq) returns (SwitchChunkResp);
+	rpc SwitchChunk (stream SwitchChunkReq) returns (stream SwitchChunkResp);
 }
 
 message SwitchChunkReq {

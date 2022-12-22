@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
@@ -10,12 +11,43 @@ using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
 namespace EventStore.Core.Services {
-	public class RedactionService : IHandle<RedactionMessage.SwitchChunk> {
-		private readonly TFChunkDb _db;
+	public class RedactionService :
+		IHandle<RedactionMessage.SwitchChunkLock>,
+		IHandle<RedactionMessage.SwitchChunk>,
+		IHandle<RedactionMessage.SwitchChunkUnlock> {
 
-		public RedactionService(TFChunkDb db) {
+		private readonly TFChunkDb _db;
+		private readonly SemaphoreSlim _switchChunksSemaphore;
+
+		public RedactionService(TFChunkDb db, SemaphoreSlim switchChunksSemaphore) {
+			Ensure.NotNull(db, nameof(db));
+			Ensure.NotNull(switchChunksSemaphore, nameof(switchChunksSemaphore));
+
 			_db = db;
+			_switchChunksSemaphore = switchChunksSemaphore;
+
 			Thread.MemoryBarrier();
+		}
+
+		public void Handle(RedactionMessage.SwitchChunkLock message) {
+			Thread.MemoryBarrier();
+
+			if (_switchChunksSemaphore.Wait(TimeSpan.Zero))
+				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkLockSucceeded());
+			else
+				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkLockFailed());
+		}
+
+		public void Handle(RedactionMessage.SwitchChunkUnlock message) {
+			Thread.MemoryBarrier();
+
+			try {
+				_switchChunksSemaphore.Release();
+				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkUnlockSucceeded());
+			} catch (SemaphoreFullException) {
+				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkUnlockFailed());
+				throw;
+			}
 		}
 
 		public void Handle(RedactionMessage.SwitchChunk message) {

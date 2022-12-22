@@ -10,23 +10,55 @@ namespace EventStore.Core.Services.Transport.Grpc {
 	internal partial class Redaction {
 		private static readonly Operation SwitchChunkOperation = new(EventStore.Plugins.Authorization.Operations.Node.Redaction.SwitchChunk);
 
-		public override async Task<SwitchChunkResp> SwitchChunk(SwitchChunkReq request, ServerCallContext context) {
+		public override async Task SwitchChunk(
+			IAsyncStreamReader<SwitchChunkReq> requestStream,
+			IServerStreamWriter<SwitchChunkResp> responseStream,
+			ServerCallContext context) {
+
 			var user = context.GetHttpContext().User;
 			if (!await _authorizationProvider.CheckAccessAsync(user, SwitchChunkOperation, context.CancellationToken).ConfigureAwait(false)) {
 				throw RpcExceptions.AccessDenied();
 			}
 
-			var tcs = new TaskCompletionSource<SwitchChunkResp>();
-			_bus.Publish(new RedactionMessage.SwitchChunk(
-				new CallbackEnvelope(msg => SetResult(msg, tcs)),
-				request.TargetChunkFile,
-				request.NewChunkFile
-			));
-
-			return await tcs.Task.ConfigureAwait(false);
+			await SwitchChunksLock().ConfigureAwait(false);
+			await SwitchChunks(requestStream, responseStream).ConfigureAwait(false);
+			await SwitchChunksUnlock().ConfigureAwait(false);
 		}
 
-		private static void SetResult(Message msg, TaskCompletionSource<SwitchChunkResp> tcs) {
+		private async Task SwitchChunksLock() {
+			var lockTcs = new TaskCompletionSource<Message>();
+			_bus.Publish(new RedactionMessage.SwitchChunkLock(
+				new CallbackEnvelope(msg => lockTcs.SetResult(msg))
+			));
+
+			var lockResult = await lockTcs.Task.ConfigureAwait(false);
+			switch (lockResult) {
+				case RedactionMessage.SwitchChunkLockSucceeded:
+					break;
+				case RedactionMessage.SwitchChunkLockFailed:
+					throw RpcExceptions.RedactionSwitchChunkFailed("Failed to acquire lock.");
+				default:
+					throw new Exception($"Unexpected message type: {lockResult.GetType()}");
+			}
+		}
+
+		private async Task SwitchChunks(
+			IAsyncStreamReader<SwitchChunkReq> requestStream,
+			IServerStreamWriter<SwitchChunkResp> responseStream) {
+
+			await foreach(var request in requestStream.ReadAllAsync().ConfigureAwait(false)) {
+				var tcs = new TaskCompletionSource<SwitchChunkResp>();
+				_bus.Publish(new RedactionMessage.SwitchChunk(
+					new CallbackEnvelope(msg => SetSwitchChunkResult(msg, tcs)),
+					request.TargetChunkFile,
+					request.NewChunkFile
+				));
+				var response = await tcs.Task.ConfigureAwait(false);
+				await responseStream.WriteAsync(response).ConfigureAwait(false);
+			}
+		}
+
+		private static void SetSwitchChunkResult(Message msg, TaskCompletionSource<SwitchChunkResp> tcs) {
 			switch (msg)
 			{
 				case RedactionMessage.SwitchChunkSucceeded:
@@ -38,6 +70,23 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				default:
 					tcs.SetException(new Exception($"Unexpected message type: {msg.GetType()}"));
 					break;
+			}
+		}
+
+		private async Task SwitchChunksUnlock() {
+			var unlockTcs = new TaskCompletionSource<Message>();
+			_bus.Publish(new RedactionMessage.SwitchChunkUnlock(
+				new CallbackEnvelope(msg => unlockTcs.SetResult(msg))
+			));
+
+			var unlockResult = await unlockTcs.Task.ConfigureAwait(false);
+			switch (unlockResult) {
+				case RedactionMessage.SwitchChunkUnlockSucceeded:
+					break;
+				case RedactionMessage.SwitchChunkUnlockFailed:
+					throw RpcExceptions.RedactionSwitchChunkFailed("Failed to release lock.");
+				default:
+					throw new Exception($"Unexpected message type: {unlockResult.GetType()}");
 			}
 		}
 	}

@@ -1413,9 +1413,13 @@ namespace EventStore.Core {
 				scavengeHistoryMaxAge: TimeSpan.FromDays(options.Database.ScavengeHistoryMaxAge),
 				ioDispatcher: ioDispatcher);
 
+			// used to prevent scavenging and redaction from happening simultaneously
+			var switchChunksSemaphore = new SemaphoreSlim(1, 1);
+
 			var storageScavenger = new StorageScavenger(
 				logManager: scavengerLogManager,
-				scavengerFactory: scavengerFactory);
+				scavengerFactory: scavengerFactory,
+				switchChunksSemaphore: switchChunksSemaphore);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
@@ -1425,8 +1429,10 @@ namespace EventStore.Core {
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 
 			// REDACTION
-			var redactionService = new RedactionService(Db);
+			var redactionService = new RedactionService(Db, switchChunksSemaphore);
+			_mainBus.Subscribe<RedactionMessage.SwitchChunkLock>(redactionService);
 			_mainBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);
+			_mainBus.Subscribe<RedactionMessage.SwitchChunkUnlock>(redactionService);
 
 			// TIMER
 			_timeProvider = new RealTimeProvider();
