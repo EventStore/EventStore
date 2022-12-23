@@ -3,6 +3,12 @@
 		"EventStore.Core"
 	],
 
+	"StatusTrackers": [
+		"Index",
+		"Node",
+		"Scavenge"
+	],
+
 	"Checkpoints": [
 		"Writer",
 		"Index",

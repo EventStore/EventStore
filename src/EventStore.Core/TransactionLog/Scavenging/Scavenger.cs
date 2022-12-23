@@ -21,6 +21,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private readonly ICleaner _cleaner;
 		private readonly IScavengePointSource _scavengePointSource;
 		private readonly ITFChunkScavengerLog _scavengerLogger;
+		private readonly IScavengeStatusTracker _statusTracker;
 		private readonly int _thresholdForNewScavenge;
 		private readonly bool _syncOnly;
 		private readonly Func<string> _getThrottleStats;
@@ -40,6 +41,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			ICleaner cleaner,
 			IScavengePointSource scavengePointSource,
 			ITFChunkScavengerLog scavengerLogger,
+			IScavengeStatusTracker statusTracker,
 			int thresholdForNewScavenge,
 			bool syncOnly,
 			Func<string> getThrottleStats) {
@@ -55,6 +57,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			_cleaner = cleaner;
 			_scavengePointSource = scavengePointSource;
 			_scavengerLogger = scavengerLogger;
+			_statusTracker = statusTracker;
 			_thresholdForNewScavenge = thresholdForNewScavenge;
 			_syncOnly = syncOnly;
 			_getThrottleStats = getThrottleStats;
@@ -204,6 +207,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		}
 
 		private void Time(Stopwatch stopwatch, string name, Action f) {
+			using var _ = _statusTracker.StartActivity(name);
 			_logger.Debug("SCAVENGING: Scavenge " + name + " Phase Started.");
 			var start = stopwatch.Elapsed;
 			f();

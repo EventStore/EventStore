@@ -439,6 +439,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 						EffectiveNow,
 						_newScavengePoint ?? new List<ScavengePoint>()),
 					_logger ?? successLogger,
+					statusTracker: new ScavengeStatusTracker.NoOp(),
 					thresholdForNewScavenge: 0,
 					syncOnly: _syncOnly,
 					throttle.PrettyPrint);
