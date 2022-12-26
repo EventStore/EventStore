@@ -18,6 +18,7 @@ namespace EventStore.Core.Services {
 
 		private readonly TFChunkDb _db;
 		private readonly SemaphoreSlim _switchChunksSemaphore;
+		private const string NewChunkFileExtension = ".tmp";
 
 		public RedactionService(TFChunkDb db, SemaphoreSlim switchChunksSemaphore) {
 			Ensure.NotNull(db, nameof(db));
@@ -77,14 +78,40 @@ namespace EventStore.Core.Services {
 			envelope.ReplyWith(new RedactionMessage.SwitchChunkSucceeded());
 		}
 
+		private static bool IsUnsafeFileName(string fileName) {
+			// protect against directory traversal attacks
+			return fileName.Contains('/') || fileName.Contains('\\') || fileName.Contains("..");
+		}
+
 		private bool IsValidSwitchChunkRequest(string targetChunkFile, string newChunkFile, out TFChunk newChunk, out string failReason) {
 			newChunk = null;
+
+			if (IsUnsafeFileName(targetChunkFile) || IsUnsafeFileName(newChunkFile)) {
+				failReason = "Invalid file name.";
+				return false;
+			}
 
 			int targetChunkNumber;
 			try {
 				targetChunkNumber = _db.Config.FileNamingStrategy.GetIndexFor(targetChunkFile);
 			} catch {
 				failReason = "The target chunk's file name is not valid.";
+				return false;
+			}
+
+			if (Path.GetExtension(newChunkFile) != NewChunkFileExtension) {
+				failReason = $"The new chunk's file extension is not: {NewChunkFileExtension}";
+				return false;
+			}
+
+			if (!File.Exists(Path.Combine(_db.Config.Path, targetChunkFile))) {
+				failReason = "The target chunk file does not exist in the database directory.";
+				return false;
+			}
+
+			var newChunkPath = Path.Combine(_db.Config.Path, newChunkFile);
+			if (!File.Exists(newChunkPath)) {
+				failReason = "The new chunk file does not exist in the database directory.";
 				return false;
 			}
 
@@ -96,19 +123,13 @@ namespace EventStore.Core.Services {
 				return false;
 			}
 
-			if (targetChunk.FileName != targetChunkFile) {
+			if (Path.GetFileName(targetChunk.FileName) != targetChunkFile) {
 				failReason = "The target chunk file is no longer actively used by the database.";
 				return false;
 			}
 
-			if (!targetChunk.ChunkFooter.IsCompleted) {
+			if (targetChunk.ChunkFooter is not { IsCompleted: true }) {
 				failReason = "The target chunk is not a completed chunk.";
-				return false;
-			}
-
-			var newChunkPath = Path.Combine(_db.Config.Path, newChunkFile);
-			if (!File.Exists(newChunkPath)) {
-				failReason = "The new chunk file does not exist in the database directory.";
 				return false;
 			}
 
@@ -117,7 +138,7 @@ namespace EventStore.Core.Services {
 			try {
 				using var fs = new FileStream(newChunkPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 				newChunkHeader = ChunkHeader.FromStream(fs);
-				fs.Seek(ChunkFooter.Size, SeekOrigin.End);
+				fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
 				newChunkFooter = ChunkFooter.FromStream(fs);
 			} catch (Exception ex) {
 				failReason = $"Failed to read the new chunk's header or footer: {ex.Message}";
@@ -141,8 +162,8 @@ namespace EventStore.Core.Services {
 					filename: newChunkPath,
 					verifyHash: true,
 					unbufferedRead: true,
-					initialReaderCount: 0,
-					maxReaderCount: 0,
+					initialReaderCount: 1,
+					maxReaderCount: 1,
 					optimizeReadSideCache: false,
 					reduceFileCachePressure: true);
 			} catch (HashValidationException) {
@@ -151,9 +172,9 @@ namespace EventStore.Core.Services {
 			} catch (Exception ex) {
 				failReason = $"Failed to open the new chunk: {ex.Message}";
 				return false;
+			} finally {
+				newChunk?.Dispose();
 			}
-
-			newChunk?.Dispose();
 
 			failReason = null;
 			return true;
