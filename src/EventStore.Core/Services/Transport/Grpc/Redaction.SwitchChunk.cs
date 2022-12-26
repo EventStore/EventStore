@@ -21,8 +21,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 
 			await SwitchChunksLock().ConfigureAwait(false);
-			await SwitchChunks(requestStream, responseStream).ConfigureAwait(false);
-			await SwitchChunksUnlock().ConfigureAwait(false);
+			try {
+				await SwitchChunks(requestStream, responseStream).ConfigureAwait(false);
+			} finally {
+				await SwitchChunksUnlock().ConfigureAwait(false);
+			}
 		}
 
 		private async Task SwitchChunksLock() {
