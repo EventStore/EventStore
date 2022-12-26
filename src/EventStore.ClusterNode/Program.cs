@@ -198,7 +198,7 @@ namespace EventStore.ClusterNode {
 									server.Limits.Http2.KeepAlivePingTimeout =
 										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
 									server.Listen(options.Interface.ExtIp, options.Interface.HttpPort,
-										listenOptions => ConfigureListenOptions(hostedService, listenOptions));
+										listenOptions => ConfigureListenOptions(listenOptions, hostedService, !hostedService.Node.DisableHttps));
 
 									if (hostedService.Node.EnableUnixSockets)
 										TryListenOnUnixSocket(hostedService, server);
@@ -228,12 +228,12 @@ namespace EventStore.ClusterNode {
 			}
 		}
 
-		private static void ConfigureListenOptions(ClusterVNodeHostedService hostedService, ListenOptions listenOptions) {
-			if (hostedService.Node.DisableHttps) {
+		private static void ConfigureListenOptions(ListenOptions listenOptions, ClusterVNodeHostedService hostedService, bool useHttps) {
+			if (useHttps) {
+				listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
+			} else {
 				listenOptions.Use(next =>
 					new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
-			} else {
-				listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
 			}
 		}
 
@@ -257,7 +257,7 @@ namespace EventStore.ClusterNode {
 					}
 				}
 
-				server.ListenUnixSocket(unixSocket, listenOptions => ConfigureListenOptions(hostedService, listenOptions));
+				server.ListenUnixSocket(unixSocket, listenOptions => ConfigureListenOptions(listenOptions, hostedService, useHttps: false));
 				Log.Information("Listening on UNIX domain socket: {unixSocket}", unixSocket);
 			} catch (Exception ex) {
 				Log.Error(ex, "Failed to listen on UNIX domain socket.");
