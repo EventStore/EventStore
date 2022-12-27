@@ -56,7 +56,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		// - deleted events are not filtered out
 		// - duplicates are kept, in ascending order of log position
 		// - next event number is always -1
-		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(string streamName, TStreamId streamId, long eventNumber);
+		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber);
 
 		// ReadEventInfo*Collisions() :
 		// - deleted events are not filtered out

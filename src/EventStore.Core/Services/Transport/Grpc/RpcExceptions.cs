@@ -68,6 +68,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					{Constants.Exceptions.ScavengeId, scavengeId ?? string.Empty}
 				});
 
+		public static RpcException RedactionReadEventInfoFailed(string reason) =>
+			new(
+				new Status(
+					StatusCode.Unknown,
+					$"Failed to read event info: '{reason}'"
+				),
+				new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.RedactionReadEventInfoFailed},
+					{Constants.Exceptions.Reason, reason}
+				});
+
 		public static RpcException RedactionSwitchChunkFailed(string reason) =>
 			new(
 				new Status(

@@ -1,10 +1,50 @@
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static class RedactionMessage {
+		public class ReadEventInfo : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public IEnvelope Envelope { get; }
+			public string EventStreamId { get; }
+			public long EventNumber { get; }
+
+			public ReadEventInfo(IEnvelope envelope, string eventStreamId, long eventNumber) {
+				Ensure.NotNull(envelope, nameof(envelope));
+				Ensure.NotNullOrEmpty(eventStreamId, nameof(eventStreamId));
+				Ensure.Nonnegative(eventNumber, nameof(eventNumber));
+
+				Envelope = envelope;
+				EventStreamId = eventStreamId;
+				EventNumber = eventNumber;
+			}
+		}
+
+		public class ReadEventInfoCompleted : Message {
+			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+
+			public override int MsgTypeId {
+				get { return TypeId; }
+			}
+
+			public ReadEventInfoResult Result { get; }
+			public EventInfo[] EventInfos { get; }
+
+			public ReadEventInfoCompleted(ReadEventInfoResult result, EventInfo[] eventInfos) {
+				Ensure.NotNull(eventInfos, nameof(eventInfos));
+
+				Result = result;
+				EventInfos = eventInfos;
+			}
+		}
 
 		public class SwitchChunkLock : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);

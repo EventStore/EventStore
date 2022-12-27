@@ -22,7 +22,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public const string UserConflict = "user-conflict";
 
 			public const string ScavengeNotFound = "scavenge-not-found";
+
 			public const string RedactionSwitchChunkFailed = "redaction-switch-chunk-failed";
+			public const string RedactionReadEventInfoFailed = "redaction-read-event-info-failed";
 
 			public const string ExpectedVersion = "expected-version";
 			public const string ActualVersion = "actual-version";

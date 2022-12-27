@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		IndexReadStreamResult ReadStreamEventsForward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
 		IndexReadStreamResult ReadStreamEventsBackward(string streamName, TStreamId streamId, long fromEventNumber, int maxCount);
 		StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId);
-		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(string streamName, TStreamId streamId, long eventNumber);
+		IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber);
 		IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
 		IndexReadEventInfoResult ReadEventInfoForward_NoCollisions(ulong stream, long fromEventNumber, int maxCount, long beforePosition);
 		IndexReadEventInfoResult ReadEventInfoBackward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition);
@@ -505,7 +505,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			indexReader._tableIndex.GetRange(streamHandle, startEventNumber, endEventNumber);
 
-		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(string streamName, TStreamId streamId, long eventNumber) {
+		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber) {
 			using (var reader = _backend.BorrowReader()) {
 				return ReadEventInfoForwardInternal(
 					streamId,

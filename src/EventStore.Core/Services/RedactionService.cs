@@ -3,30 +3,61 @@ using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Data;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
 namespace EventStore.Core.Services {
-	public class RedactionService :
+	public class RedactionService<TStreamId> :
+		IHandle<RedactionMessage.ReadEventInfo>,
 		IHandle<RedactionMessage.SwitchChunkLock>,
 		IHandle<RedactionMessage.SwitchChunk>,
 		IHandle<RedactionMessage.SwitchChunkUnlock> {
 
 		private readonly TFChunkDb _db;
+		private readonly IReadIndex<TStreamId> _readIndex;
 		private readonly SemaphoreSlim _switchChunksSemaphore;
+
 		private const string NewChunkFileExtension = ".tmp";
 
-		public RedactionService(TFChunkDb db, SemaphoreSlim switchChunksSemaphore) {
+		public RedactionService(
+			TFChunkDb db,
+			IReadIndex<TStreamId> readIndex,
+			SemaphoreSlim switchChunksSemaphore) {
 			Ensure.NotNull(db, nameof(db));
+			Ensure.NotNull(readIndex, nameof(readIndex));
 			Ensure.NotNull(switchChunksSemaphore, nameof(switchChunksSemaphore));
 
 			_db = db;
+			_readIndex = readIndex;
 			_switchChunksSemaphore = switchChunksSemaphore;
+		}
+
+		public void Handle(RedactionMessage.ReadEventInfo message) {
+			ThreadPool.QueueUserWorkItem(_ => {
+				try {
+					ReadEventInfo(message.EventStreamId, message.EventNumber, message.Envelope);
+				} catch (Exception ex) {
+					Log.Error(ex, "An error has occurred when reading event info for stream: {stream}, event number: {eventNumber}.",
+						message.EventStreamId, message.EventNumber);
+					message.Envelope.ReplyWith(
+						new RedactionMessage.ReadEventInfoCompleted(ReadEventInfoResult.UnexpectedError, Array.Empty<EventInfo>()));
+				}
+			});
+		}
+
+		private void ReadEventInfo(string streamName, long eventNumber, IEnvelope envelope) {
+			var streamId = _readIndex.GetStreamId(streamName);
+			var result = _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber);
+
+			envelope.ReplyWith(
+				new RedactionMessage.ReadEventInfoCompleted(ReadEventInfoResult.Success, result.EventInfos));
 		}
 
 		public void Handle(RedactionMessage.SwitchChunkLock message) {

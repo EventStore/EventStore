@@ -107,8 +107,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return _streamIds.LookupValue(streamName);
 		}
 
-		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(string streamName, TStreamId streamId, long eventNumber) {
-			return _indexReader.ReadEventInfo_KeepDuplicates(streamName, streamId, eventNumber);
+		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber) {
+			return _indexReader.ReadEventInfo_KeepDuplicates(streamId, eventNumber);
 		}
 
 		public IndexReadEventInfoResult ReadEventInfoForward_KnownCollisions(TStreamId streamId, long fromEventNumber, int maxCount, long beforePosition) {
