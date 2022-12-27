@@ -2,8 +2,24 @@ syntax = "proto3";
 package event_store.client.redaction;
 option java_package = "com.eventstore.dbclient.proto.redaction";
 
+import "shared.proto";
+
 service Redaction {
+	rpc ReadEventInfo (stream ReadEventInfoReq) returns (stream ReadEventInfoResp);
 	rpc SwitchChunk (stream SwitchChunkReq) returns (stream SwitchChunkResp);
+}
+
+message ReadEventInfoReq {
+	event_store.client.StreamIdentifier stream_identifier = 1;
+	uint64 stream_revision = 2;
+}
+
+message ReadEventInfoResp {
+	repeated EventInfo event_infos = 1;
+}
+
+message EventInfo {
+	uint64 log_position = 1;
 }
 
 message SwitchChunkReq {
