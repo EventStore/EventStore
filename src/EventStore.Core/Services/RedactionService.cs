@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Data.Redaction;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
@@ -26,27 +27,25 @@ namespace EventStore.Core.Services {
 
 			_db = db;
 			_switchChunksSemaphore = switchChunksSemaphore;
-
-			Thread.MemoryBarrier();
 		}
 
 		public void Handle(RedactionMessage.SwitchChunkLock message) {
-			Thread.MemoryBarrier();
-
 			if (_switchChunksSemaphore.Wait(TimeSpan.Zero))
-				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkLockSucceeded());
+				message.Envelope.ReplyWith(
+					new RedactionMessage.SwitchChunkLockCompleted(SwitchChunkLockResult.Success));
 			else
-				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkLockFailed());
+				message.Envelope.ReplyWith(
+					new RedactionMessage.SwitchChunkLockCompleted(SwitchChunkLockResult.Failed));
 		}
 
 		public void Handle(RedactionMessage.SwitchChunkUnlock message) {
-			Thread.MemoryBarrier();
-
 			try {
 				_switchChunksSemaphore.Release();
-				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkUnlockSucceeded());
+				message.Envelope.ReplyWith(
+					new RedactionMessage.SwitchChunkUnlockCompleted(SwitchChunkUnlockResult.Success));
 			} catch (SemaphoreFullException) {
-				message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkUnlockFailed());
+				message.Envelope.ReplyWith(
+					new RedactionMessage.SwitchChunkUnlockCompleted(SwitchChunkUnlockResult.Failed));
 				throw;
 			}
 		}
@@ -54,19 +53,19 @@ namespace EventStore.Core.Services {
 		public void Handle(RedactionMessage.SwitchChunk message) {
 			ThreadPool.QueueUserWorkItem(_ => {
 				try {
-					Thread.MemoryBarrier();
 					SwitchChunk(message.TargetChunkFile, message.NewChunkFile, message.Envelope);
 				} catch (Exception ex) {
 					Log.Error(ex, "An error has occurred when trying to switch chunk: {targetChunk} with chunk: {newChunk}.",
 						message.TargetChunkFile, message.NewChunkFile);
-					message.Envelope.ReplyWith(new RedactionMessage.SwitchChunkFailed("An unexpected error has occurred."));
+					message.Envelope.ReplyWith(
+						new RedactionMessage.SwitchChunkCompleted(SwitchChunkResult.UnexpectedError));
 				}
 			});
 		}
 
 		private void SwitchChunk(string targetChunkFile, string newChunkFile, IEnvelope envelope) {
 			if (!IsValidSwitchChunkRequest(targetChunkFile, newChunkFile, out var newChunk, out var failReason)) {
-				envelope.ReplyWith(new RedactionMessage.SwitchChunkFailed(failReason));
+				envelope.ReplyWith(new RedactionMessage.SwitchChunkCompleted(failReason));
 				return;
 			}
 
@@ -75,7 +74,7 @@ namespace EventStore.Core.Services {
 				verifyHash: false,
 				removeChunksWithGreaterNumbers: false);
 
-			envelope.ReplyWith(new RedactionMessage.SwitchChunkSucceeded());
+			envelope.ReplyWith(new RedactionMessage.SwitchChunkCompleted(SwitchChunkResult.Success));
 		}
 
 		private static bool IsUnsafeFileName(string fileName) {
@@ -83,11 +82,16 @@ namespace EventStore.Core.Services {
 			return fileName.Contains('/') || fileName.Contains('\\') || fileName.Contains("..");
 		}
 
-		private bool IsValidSwitchChunkRequest(string targetChunkFile, string newChunkFile, out TFChunk newChunk, out string failReason) {
+		private bool IsValidSwitchChunkRequest(string targetChunkFile, string newChunkFile, out TFChunk newChunk, out SwitchChunkResult failReason) {
 			newChunk = null;
 
-			if (IsUnsafeFileName(targetChunkFile) || IsUnsafeFileName(newChunkFile)) {
-				failReason = "Invalid file name.";
+			if (IsUnsafeFileName(targetChunkFile)) {
+				failReason = SwitchChunkResult.TargetChunkFileNameInvalid;
+				return false;
+			}
+
+			if (IsUnsafeFileName(newChunkFile)) {
+				failReason = SwitchChunkResult.NewChunkFileNameInvalid;
 				return false;
 			}
 
@@ -95,23 +99,23 @@ namespace EventStore.Core.Services {
 			try {
 				targetChunkNumber = _db.Config.FileNamingStrategy.GetIndexFor(targetChunkFile);
 			} catch {
-				failReason = "The target chunk's file name is not valid.";
+				failReason = SwitchChunkResult.TargetChunkFileNameInvalid;
 				return false;
 			}
 
 			if (Path.GetExtension(newChunkFile) != NewChunkFileExtension) {
-				failReason = $"The new chunk's file extension is not: {NewChunkFileExtension}";
+				failReason = SwitchChunkResult.NewChunkFileNameInvalid;
 				return false;
 			}
 
 			if (!File.Exists(Path.Combine(_db.Config.Path, targetChunkFile))) {
-				failReason = "The target chunk file does not exist in the database directory.";
+				failReason = SwitchChunkResult.TargetChunkFileNotFound;
 				return false;
 			}
 
 			var newChunkPath = Path.Combine(_db.Config.Path, newChunkFile);
 			if (!File.Exists(newChunkPath)) {
-				failReason = "The new chunk file does not exist in the database directory.";
+				failReason = SwitchChunkResult.NewChunkFileNotFound;
 				return false;
 			}
 
@@ -119,17 +123,17 @@ namespace EventStore.Core.Services {
 			try {
 				targetChunk = _db.Manager.GetChunk(targetChunkNumber);
 			} catch {
-				failReason = $"Failed to retrieve the chunk with number: {targetChunkNumber}.";
+				failReason = SwitchChunkResult.TargetChunkNumberNotFound;
 				return false;
 			}
 
 			if (Path.GetFileName(targetChunk.FileName) != targetChunkFile) {
-				failReason = "The target chunk file is no longer actively used by the database.";
+				failReason = SwitchChunkResult.TargetChunkInactive;
 				return false;
 			}
 
 			if (targetChunk.ChunkFooter is not { IsCompleted: true }) {
-				failReason = "The target chunk is not a completed chunk.";
+				failReason = SwitchChunkResult.TargetChunkNotCompleted;
 				return false;
 			}
 
@@ -140,20 +144,19 @@ namespace EventStore.Core.Services {
 				newChunkHeader = ChunkHeader.FromStream(fs);
 				fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
 				newChunkFooter = ChunkFooter.FromStream(fs);
-			} catch (Exception ex) {
-				failReason = $"Failed to read the new chunk's header or footer: {ex.Message}";
+			} catch {
+				failReason = SwitchChunkResult.NewChunkHeaderOrFooterInvalid;
 				return false;
 			}
 
 			if (newChunkHeader.ChunkStartNumber != targetChunk.ChunkHeader.ChunkStartNumber ||
 			    newChunkHeader.ChunkEndNumber != targetChunk.ChunkHeader.ChunkEndNumber) {
-				failReason = $"The target chunk's range: {targetChunk.ChunkHeader.ChunkStartNumber} - {targetChunk.ChunkHeader.ChunkEndNumber} does not match "
-				         + $"the new chunk's range: {newChunkHeader.ChunkStartNumber} - {newChunkHeader.ChunkEndNumber}.";
+				failReason = SwitchChunkResult.ChunkRangeDoesNotMatch;
 				return false;
 			}
 
 			if (!newChunkFooter.IsCompleted) {
-				failReason = "The new chunk is not a completed chunk.";
+				failReason = SwitchChunkResult.NewChunkNotCompleted;
 				return false;
 			}
 
@@ -167,16 +170,16 @@ namespace EventStore.Core.Services {
 					optimizeReadSideCache: false,
 					reduceFileCachePressure: true);
 			} catch (HashValidationException) {
-				failReason = "The new chunk has failed hash verification.";
+				failReason = SwitchChunkResult.NewChunkHashInvalid;
 				return false;
-			} catch (Exception ex) {
-				failReason = $"Failed to open the new chunk: {ex.Message}";
+			} catch {
+				failReason = SwitchChunkResult.NewChunkOpenFailed;
 				return false;
 			} finally {
 				newChunk?.Dispose();
 			}
 
-			failReason = null;
+			failReason = SwitchChunkResult.None;
 			return true;
 		}
 	}

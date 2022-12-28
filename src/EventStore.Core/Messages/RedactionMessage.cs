@@ -1,5 +1,6 @@
 using System.Threading;
 using EventStore.Common.Utils;
+using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
@@ -19,19 +20,17 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class SwitchChunkLockSucceeded : Message {
+		public class SwitchChunkLockCompleted : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-		}
 
-		public class SwitchChunkLockFailed : Message {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+			public SwitchChunkLockResult Result { get; }
 
-			public override int MsgTypeId {
-				get { return TypeId; }
+			public SwitchChunkLockCompleted(SwitchChunkLockResult result) {
+				Result = result;
 			}
 		}
 
@@ -57,27 +56,17 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class SwitchChunkSucceeded : Message {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-		}
-
-		public class SwitchChunkFailed : Message {
+		public class SwitchChunkCompleted : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
 
-			public string Reason { get; }
+			public SwitchChunkResult Result { get; }
 
-			public SwitchChunkFailed(string reason) {
-				Ensure.NotNullOrEmpty(reason, nameof(reason));
-
-				Reason = reason;
+			public SwitchChunkCompleted(SwitchChunkResult result) {
+				Result = result;
 			}
 		}
 
@@ -95,19 +84,17 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		public class SwitchChunkUnlockSucceeded : Message {
+		public class SwitchChunkUnlockCompleted : Message {
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 
 			public override int MsgTypeId {
 				get { return TypeId; }
 			}
-		}
 
-		public class SwitchChunkUnlockFailed : Message {
-			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
+			public SwitchChunkUnlockResult Result { get; }
 
-			public override int MsgTypeId {
-				get { return TypeId; }
+			public SwitchChunkUnlockCompleted(SwitchChunkUnlockResult result) {
+				Result = result;
 			}
 		}
 	}

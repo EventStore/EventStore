@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using EventStore.Client.Redaction;
+using EventStore.Core.Data.Redaction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
@@ -29,20 +30,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		}
 
 		private async Task SwitchChunksLock() {
-			var lockTcs = new TaskCompletionSource<Message>();
+			var lockTcs = new TaskCompletionSource<RedactionMessage.SwitchChunkLockCompleted>();
 			_bus.Publish(new RedactionMessage.SwitchChunkLock(
-				new CallbackEnvelope(msg => lockTcs.SetResult(msg))
+				new CallbackEnvelope(msg => lockTcs.SetResult(msg as RedactionMessage.SwitchChunkLockCompleted))
 			));
 
-			var lockResult = await lockTcs.Task.ConfigureAwait(false);
-			switch (lockResult) {
-				case RedactionMessage.SwitchChunkLockSucceeded:
-					break;
-				case RedactionMessage.SwitchChunkLockFailed:
-					throw RpcExceptions.RedactionSwitchChunkFailed("Failed to acquire lock.");
-				default:
-					throw new Exception($"Unexpected message type: {lockResult.GetType()}");
-			}
+			var completionMsg = await lockTcs.Task.ConfigureAwait(false);
+			if (completionMsg is null)
+				throw new Exception($"Unexpected message type.");
+
+			var result = completionMsg.Result;
+			if (result != SwitchChunkLockResult.Success)
+				throw RpcExceptions.RedactionSwitchChunkFailed(result.GetErrorMessage());
 		}
 
 		private async Task SwitchChunks(
@@ -50,47 +49,38 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			IServerStreamWriter<SwitchChunkResp> responseStream) {
 
 			await foreach(var request in requestStream.ReadAllAsync().ConfigureAwait(false)) {
-				var tcs = new TaskCompletionSource<SwitchChunkResp>();
+				var tcs = new TaskCompletionSource<RedactionMessage.SwitchChunkCompleted>();
 				_bus.Publish(new RedactionMessage.SwitchChunk(
-					new CallbackEnvelope(msg => SetSwitchChunkResult(msg, tcs)),
+					new CallbackEnvelope(msg => tcs.SetResult(msg as RedactionMessage.SwitchChunkCompleted)),
 					request.TargetChunkFile,
 					request.NewChunkFile
 				));
-				var response = await tcs.Task.ConfigureAwait(false);
-				await responseStream.WriteAsync(response).ConfigureAwait(false);
-			}
-		}
 
-		private static void SetSwitchChunkResult(Message msg, TaskCompletionSource<SwitchChunkResp> tcs) {
-			switch (msg)
-			{
-				case RedactionMessage.SwitchChunkSucceeded:
-					tcs.SetResult(new SwitchChunkResp());
-					break;
-				case RedactionMessage.SwitchChunkFailed failMsg:
-					tcs.SetException(RpcExceptions.RedactionSwitchChunkFailed(failMsg.Reason));
-					break;
-				default:
-					tcs.SetException(new Exception($"Unexpected message type: {msg.GetType()}"));
-					break;
+				var completionMsg = await tcs.Task.ConfigureAwait(false);
+				if (completionMsg is null)
+					throw new Exception($"Unexpected message type.");
+
+				var result = completionMsg.Result;
+				if (result != SwitchChunkResult.Success)
+					throw RpcExceptions.RedactionSwitchChunkFailed(result.GetErrorMessage());
+
+				await responseStream.WriteAsync(new SwitchChunkResp()).ConfigureAwait(false);
 			}
 		}
 
 		private async Task SwitchChunksUnlock() {
-			var unlockTcs = new TaskCompletionSource<Message>();
+			var unlockTcs = new TaskCompletionSource<RedactionMessage.SwitchChunkUnlockCompleted>();
 			_bus.Publish(new RedactionMessage.SwitchChunkUnlock(
-				new CallbackEnvelope(msg => unlockTcs.SetResult(msg))
+				new CallbackEnvelope(msg => unlockTcs.SetResult(msg as RedactionMessage.SwitchChunkUnlockCompleted))
 			));
 
-			var unlockResult = await unlockTcs.Task.ConfigureAwait(false);
-			switch (unlockResult) {
-				case RedactionMessage.SwitchChunkUnlockSucceeded:
-					break;
-				case RedactionMessage.SwitchChunkUnlockFailed:
-					throw RpcExceptions.RedactionSwitchChunkFailed("Failed to release lock.");
-				default:
-					throw new Exception($"Unexpected message type: {unlockResult.GetType()}");
-			}
+			var completionMsg = await unlockTcs.Task.ConfigureAwait(false);
+			if (completionMsg is null)
+				throw new Exception($"Unexpected message type.");
+
+			var result = completionMsg.Result;
+			if (result != SwitchChunkUnlockResult.Success)
+				throw RpcExceptions.RedactionSwitchChunkFailed(result.GetErrorMessage());
 		}
 	}
 }
