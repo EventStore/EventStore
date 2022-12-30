@@ -57,12 +57,15 @@ namespace EventStore.Core.Services {
 			var streamId = _readIndex.GetStreamId(streamName);
 			var result = _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber);
 
-			var eventPositions =
-				result.EventInfos.Select(x => new EventPosition(x.LogPosition)).ToArray();
+			var eventPositions = result.EventInfos.Select(x =>
+					new EventPosition(x.LogPosition, GetChunkFileName(x.LogPosition))).ToArray();
 
 			envelope.ReplyWith(
 				new RedactionMessage.GetEventPositionCompleted(GetEventPositionResult.Success, eventPositions));
 		}
+
+		private string GetChunkFileName(long logPosition) =>
+			Path.GetFileName(_db.Manager.GetChunkFor(logPosition).FileName);
 
 		public void Handle(RedactionMessage.SwitchChunkLock message) {
 			if (_switchChunksSemaphore.Wait(TimeSpan.Zero))

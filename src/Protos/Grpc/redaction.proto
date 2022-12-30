@@ -20,6 +20,7 @@ message GetEventPositionResp {
 
 message EventPosition {
 	uint64 log_position = 1;
+	string chunk_file = 2;
 }
 
 message SwitchChunkReq {

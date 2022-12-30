@@ -52,7 +52,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				foreach (var eventPosition in eventPositions) {
 					var pos = Position.FromInt64(eventPosition.LogPosition, eventPosition.LogPosition);
 					response.EventPositions.Add(new EventStore.Client.Redaction.EventPosition {
-						LogPosition = pos.PreparePosition
+						LogPosition = pos.PreparePosition,
+						ChunkFile = eventPosition.ChunkFile
 					});
 				}
 
