@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -15,7 +16,7 @@ using Serilog;
 
 namespace EventStore.Core.Services {
 	public class RedactionService<TStreamId> :
-		IHandle<RedactionMessage.ReadEventInfo>,
+		IHandle<RedactionMessage.GetEventPosition>,
 		IHandle<RedactionMessage.SwitchChunkLock>,
 		IHandle<RedactionMessage.SwitchChunk>,
 		IHandle<RedactionMessage.SwitchChunkUnlock> {
@@ -39,25 +40,28 @@ namespace EventStore.Core.Services {
 			_switchChunksSemaphore = switchChunksSemaphore;
 		}
 
-		public void Handle(RedactionMessage.ReadEventInfo message) {
+		public void Handle(RedactionMessage.GetEventPosition message) {
 			ThreadPool.QueueUserWorkItem(_ => {
 				try {
-					ReadEventInfo(message.EventStreamId, message.EventNumber, message.Envelope);
+					GetEventPosition(message.EventStreamId, message.EventNumber, message.Envelope);
 				} catch (Exception ex) {
-					Log.Error(ex, "An error has occurred when reading event info for stream: {stream}, event number: {eventNumber}.",
+					Log.Error(ex, "An error has occurred when getting position for stream: {stream}, event number: {eventNumber}.",
 						message.EventStreamId, message.EventNumber);
 					message.Envelope.ReplyWith(
-						new RedactionMessage.ReadEventInfoCompleted(ReadEventInfoResult.UnexpectedError, Array.Empty<EventInfo>()));
+						new RedactionMessage.GetEventPositionCompleted(GetEventPositionResult.UnexpectedError, Array.Empty<EventPosition>()));
 				}
 			});
 		}
 
-		private void ReadEventInfo(string streamName, long eventNumber, IEnvelope envelope) {
+		private void GetEventPosition(string streamName, long eventNumber, IEnvelope envelope) {
 			var streamId = _readIndex.GetStreamId(streamName);
 			var result = _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber);
 
+			var eventPositions =
+				result.EventInfos.Select(x => new EventPosition(x.LogPosition)).ToArray();
+
 			envelope.ReplyWith(
-				new RedactionMessage.ReadEventInfoCompleted(ReadEventInfoResult.Success, result.EventInfos));
+				new RedactionMessage.GetEventPositionCompleted(GetEventPositionResult.Success, eventPositions));
 		}
 
 		public void Handle(RedactionMessage.SwitchChunkLock message) {

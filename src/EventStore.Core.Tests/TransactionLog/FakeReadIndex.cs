@@ -59,6 +59,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
+		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber) {
+			throw new NotImplementedException();
+		}
+
 		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(string streamName, TStreamId streamId, long eventNumber) {
 			throw new NotImplementedException();
 		}

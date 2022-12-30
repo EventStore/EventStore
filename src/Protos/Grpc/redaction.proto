@@ -5,20 +5,20 @@ option java_package = "com.eventstore.dbclient.proto.redaction";
 import "shared.proto";
 
 service Redaction {
-	rpc ReadEventInfo (stream ReadEventInfoReq) returns (stream ReadEventInfoResp);
+	rpc GetEventPosition (stream GetEventPositionReq) returns (stream GetEventPositionResp);
 	rpc SwitchChunk (stream SwitchChunkReq) returns (stream SwitchChunkResp);
 }
 
-message ReadEventInfoReq {
+message GetEventPositionReq {
 	event_store.client.StreamIdentifier stream_identifier = 1;
 	uint64 stream_revision = 2;
 }
 
-message ReadEventInfoResp {
-	repeated EventInfo event_infos = 1;
+message GetEventPositionResp {
+	repeated EventPosition event_positions = 1;
 }
 
-message EventInfo {
+message EventPosition {
 	uint64 log_position = 1;
 }
 

@@ -1430,7 +1430,7 @@ namespace EventStore.Core {
 
 			// REDACTION
 			var redactionService = new RedactionService<TStreamId>(Db, _readIndex, switchChunksSemaphore);
-			_mainBus.Subscribe<RedactionMessage.ReadEventInfo>(redactionService);
+			_mainBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);
 			_mainBus.Subscribe<RedactionMessage.SwitchChunkLock>(redactionService);
 			_mainBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);
 			_mainBus.Subscribe<RedactionMessage.SwitchChunkUnlock>(redactionService);

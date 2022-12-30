@@ -11,9 +11,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 	internal partial class Redaction {
 		private static readonly Operation ReadOperation = new(Plugins.Authorization.Operations.Streams.Read);
 
-		public override async Task ReadEventInfo(
-			IAsyncStreamReader<ReadEventInfoReq> requestStream,
-			IServerStreamWriter<ReadEventInfoResp> responseStream,
+		public override async Task GetEventPosition(
+			IAsyncStreamReader<GetEventPositionReq> requestStream,
+			IServerStreamWriter<GetEventPositionResp> responseStream,
 			ServerCallContext context) {
 
 			var user = context.GetHttpContext().User;
@@ -30,10 +30,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw RpcExceptions.AccessDenied();
 				}
 
-				var tcs = new TaskCompletionSource<RedactionMessage.ReadEventInfoCompleted>();
+				var tcs = new TaskCompletionSource<RedactionMessage.GetEventPositionCompleted>();
 
-				_bus.Publish(new RedactionMessage.ReadEventInfo(
-					new CallbackEnvelope(msg => tcs.SetResult(msg as RedactionMessage.ReadEventInfoCompleted)),
+				_bus.Publish(new RedactionMessage.GetEventPosition(
+					new CallbackEnvelope(msg => tcs.SetResult(msg as RedactionMessage.GetEventPositionCompleted)),
 					streamId,
 					streamRevision.ToInt64()
 				));
@@ -43,15 +43,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					throw new Exception($"Unexpected message type.");
 
 				var result = completionMsg.Result;
-				if (result != ReadEventInfoResult.Success)
-					throw RpcExceptions.RedactionReadEventInfoFailed(result.GetErrorMessage());
+				if (result != GetEventPositionResult.Success)
+					throw RpcExceptions.RedactionGetEventPositionFailed(result.GetErrorMessage());
 
-				var eventInfos = completionMsg.EventInfos;
+				var eventPositions = completionMsg.EventPositions;
 
-				var response = new ReadEventInfoResp();
-				foreach (var eventInfo in eventInfos) {
-					var pos = Position.FromInt64(eventInfo.LogPosition, eventInfo.LogPosition);
-					response.EventInfos.Add(new EventInfo {
+				var response = new GetEventPositionResp();
+				foreach (var eventPosition in eventPositions) {
+					var pos = Position.FromInt64(eventPosition.LogPosition, eventPosition.LogPosition);
+					response.EventPositions.Add(new EventStore.Client.Redaction.EventPosition {
 						LogPosition = pos.PreparePosition
 					});
 				}
