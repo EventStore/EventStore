@@ -72,6 +72,8 @@ namespace EventStore.TestClient.GrpcCommands {
 
 			long last = 0;
 			long currentInterval = 0;
+			byte[] data = UTF8NoBom.GetBytes("{ \"DATA\" : \"" + new string('*', size) + "\"}");
+			byte[] metadata = UTF8NoBom.GetBytes("{ \"METADATA\" : \"" + new string('$', 100) + "\"}");
 
 			string[] streams = Enumerable.Range(0, streamsCnt).Select(x =>
 				string.IsNullOrWhiteSpace(streamNamePrefix)
@@ -99,49 +101,55 @@ namespace EventStore.TestClient.GrpcCommands {
 				var rnd = new Random();
 				List<Task> pending = new List<Task>(capacity);
 				await start.Task;
+				var events = new EventData[batchSize];
 				for (int j = 0; j < count; ++j) {
 
-					var events = new EventData[batchSize];
 					for (int q = 0; q < batchSize; q++) {
-						events[q] = new EventData(Uuid.FromGuid(Guid.NewGuid()),
-							"TakeSomeSpaceEvent",
-							UTF8NoBom.GetBytes(
-								"{ \"DATA\" : \"" + new string('*', size) + "\"}"),
-							UTF8NoBom.GetBytes(
-								"{ \"METADATA\" : \"" + new string('$', 100) + "\"}"));
+						events[q] = new EventData(Uuid.FromGuid(Guid.NewGuid()), "TakeSomeSpaceEvent", data, metadata);
 					}
 
 					var corrid = Guid.NewGuid();
 					monitor.StartOperation(corrid);
 
-					pending.Add(client.AppendToStreamAsync(streams[rnd.Next(streamsCnt)], StreamState.Any, events)
-						.ContinueWith(t => {
-							if (t.IsCompletedSuccessfully) Interlocked.Increment(ref stats.Succ);
-							else {
-								if (Interlocked.Increment(ref stats.Fail) % 1000 == 0)
-									Console.Write('#');
+					pending.Add(client.AppendToStreamAsync(streams[rnd.Next(streamsCnt)], StreamState.Any, events).ContinueWith(t => {
+						if (t.IsCompletedSuccessfully) Interlocked.Increment(ref stats.Succ);
+						else {
+							if (Interlocked.Increment(ref stats.Fail) % 1000 == 0) {
+								Console.Write("#");
+								if (t.Exception != null) {
+									var msg = string.Join("\n", t.Exception.ToString().Split("\n").Take(5)); 
+									context.Log.Error(msg);
+								}
 							}
-							var localAll = Interlocked.Add(ref stats.All, batchSize);
-							if (localAll - currentInterval > interval) {
-								var localInterval = Interlocked.Exchange(ref currentInterval, localAll);
-								stats.Elapsed = sw2.Elapsed;
-								stats.Rate = 1000.0 * (localAll - localInterval) / stats.Elapsed.TotalMilliseconds;
-								sw2.Restart();
-								context.Log.Information(
-									"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, " +
-									"P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
-									localAll, stats.Elapsed, stats.Rate, stats.Succ, stats.Fail,
-									stats.WrongExpVersion, stats.PrepTimeout, stats.CommitTimeout, stats.ForwardTimeout, stats.StreamDeleted);
-								stats.WriteStatsToFile(context.StatsLogger);
-							}
+						}
+						var localAll = Interlocked.Add(ref stats.All, batchSize);
+						if (localAll - currentInterval > interval) {
+							var localInterval = Interlocked.Exchange(ref currentInterval, localAll);
+							stats.Elapsed = sw2.Elapsed;
+							stats.Rate = 1000.0 * (localAll - localInterval) / stats.Elapsed.TotalMilliseconds;
+							sw2.Restart();
+							context.Log.Information(
+								"\nDONE TOTAL {writes} WRITES IN {elapsed} ({rate:0.0}/s) [S:{success}, F:{failures} (WEV:{wrongExpectedVersion}, " +
+								"P:{prepareTimeout}, C:{commitTimeout}, F:{forwardTimeout}, D:{streamDeleted})].",
+								localAll, stats.Elapsed, stats.Rate, stats.Succ, stats.Fail,
+								stats.WrongExpVersion, stats.PrepTimeout, stats.CommitTimeout, stats.ForwardTimeout, stats.StreamDeleted);
+							stats.WriteStatsToFile(context.StatsLogger);
+						}
 
-							monitor.EndOperation(corrid);
-						}));
-					if (pending.Count == capacity) {
+						monitor.EndOperation(corrid);
+					}));
+					
+					if (pending.Count >= capacity) {
 						await Task.WhenAny(pending).ConfigureAwait(false);
-
+						
 						while (pending.Count > 0 && Task.WhenAny(pending).IsCompleted) {
-							pending.RemoveAll(x => x.IsCompleted);
+							pending
+								.Where(x => x.IsCompleted).ToList()
+								.ForEach(p => {
+									p.Dispose();
+									pending.Remove(p);
+								});
+							
 							if (stats.Succ - last > 1000) {
 								Console.Write(".");
 								last = stats.Succ;
