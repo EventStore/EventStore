@@ -7,6 +7,7 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -61,11 +62,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Mono.Unix.Native;
 using ILogger = Serilog.ILogger;
-using MidFunc = System.Func<
-	Microsoft.AspNetCore.Http.HttpContext,
-	System.Func<System.Threading.Tasks.Task>,
-	System.Threading.Tasks.Task
->;
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
@@ -78,6 +74,7 @@ namespace EventStore.Core {
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> factories = null,
 			CertificateProvider certificateProvider = null,
+			TelemetryConfiguration telemetryConfiguration = null,
 			Guid? instanceId = null,
 			int debugIndex = 0) {
 
@@ -88,6 +85,7 @@ namespace EventStore.Core {
 				authorizationProviderFactory,
 				factories,
 				certificateProvider,
+				telemetryConfiguration,
 				instanceId: instanceId,
 				debugIndex: debugIndex);
 		}
@@ -225,6 +223,7 @@ namespace EventStore.Core {
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
 				additionalPersistentSubscriptionConsumerStrategyFactories = null,
 			CertificateProvider certificateProvider = null,
+			TelemetryConfiguration telemetryConfiguration = null,
 			IExpiryStrategy expiryStrategy = null,
 			Guid? instanceId = null, int debugIndex = 0) {
 
@@ -379,6 +378,10 @@ namespace EventStore.Core {
 				out var readerThreadsCount,
 				out var workerThreadsCount));
 
+			if (telemetryConfiguration is not null) {
+				MetricsBootstrapper.Bootstrap(telemetryConfiguration, Db.Config);
+			}
+
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
 				out int readerThreadsCount,
@@ -392,7 +395,7 @@ namespace EventStore.Core {
 				ICheckpoint streamExistenceFilterChk;
 				//todo(clc) : promote these to file backed checkpoints re:project-io
 				ICheckpoint replicationChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
-				ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Replication, initValue: -1);
+				ICheckpoint indexChk = new InMemoryCheckpoint(Checkpoint.Index, initValue: -1);
 				var dbPath = options.Database.Db;
 
 				if (options.Database.MemDb) {
@@ -1068,6 +1071,7 @@ namespace EventStore.Core {
 			var pingController = new PingController();
 			var histogramController = new HistogramController();
 			var statController = new StatController(monitoringQueue, _workersHandler);
+			var metricsController = new MetricsController();
 			var atomController = new AtomController(_mainQueue, _workersHandler,
 				options.Application.DisableHttpCaching, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 			var gossipController = new GossipController(_mainQueue, _workersHandler);
@@ -1088,8 +1092,10 @@ namespace EventStore.Core {
 				_httpService.SetupController(adminController);
 			_httpService.SetupController(pingController);
 			_httpService.SetupController(infoController);
-			if (!options.Interface.DisableStatsOnHttp)
+			if (!options.Interface.DisableStatsOnHttp) {
 				_httpService.SetupController(statController);
+				_httpService.SetupController(metricsController);
+			}
 			if (options.Interface.EnableAtomPubOverHttp || options.DevMode.Dev)
 				_httpService.SetupController(atomController);
 			if (!options.Interface.DisableGossipOnHttp)

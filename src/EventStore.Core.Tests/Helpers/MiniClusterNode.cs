@@ -179,6 +179,7 @@ namespace EventStore.Core.Tests.Helpers {
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(options),
+				telemetryConfiguration: null,
 				expiryStrategy,
 				Guid.NewGuid(), debugIndex);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

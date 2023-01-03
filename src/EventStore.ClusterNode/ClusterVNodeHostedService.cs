@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Threading;
+using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
@@ -34,7 +35,11 @@ namespace EventStore.ClusterNode {
 
 		public ClusterVNode Node { get; }
 
-		public ClusterVNodeHostedService(ClusterVNodeOptions options, CertificateProvider certificateProvider) {
+		public ClusterVNodeHostedService(
+			ClusterVNodeOptions options,
+			CertificateProvider certificateProvider,
+			TelemetryConfiguration telemetryConfiguration) {
+
 			if (options == null) throw new ArgumentNullException(nameof(options));
 			var projectionMode = options.DevMode.Dev && options.Projections.RunProjections == ProjectionType.None
 				? ProjectionType.System
@@ -81,11 +86,13 @@ namespace EventStore.ClusterNode {
 			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider);
+	                GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+					telemetryConfiguration);
 			} else if (_options.Database.DbLogFormat == DbLogFormat.ExperimentalV3) {
 				var logFormatFactory = new LogV3FormatAbstractorFactory();
 				Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
-					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider);
+					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
+					telemetryConfiguration);
 			} else {
 				throw new ArgumentOutOfRangeException("Unexpected log format specified.");
 			}
