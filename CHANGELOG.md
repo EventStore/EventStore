@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
 - ScavengeId to log context [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
+- checkpoints metric [EventStore#3685](https://github.com/EventStore/EventStore/pull/3685)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
