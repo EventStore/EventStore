@@ -21,6 +21,8 @@ message GetEventPositionResp {
 message EventPosition {
 	uint64 log_position = 1;
 	string chunk_file = 2;
+	uint32 chunk_version = 3;
+	uint32 chunk_position = 4;
 }
 
 message SwitchChunkReq {

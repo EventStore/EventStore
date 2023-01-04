@@ -53,7 +53,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var pos = Position.FromInt64(eventPosition.LogPosition, eventPosition.LogPosition);
 					response.EventPositions.Add(new EventStore.Client.Redaction.EventPosition {
 						LogPosition = pos.PreparePosition,
-						ChunkFile = eventPosition.ChunkFile
+						ChunkFile = eventPosition.ChunkFile,
+						ChunkVersion = eventPosition.ChunkVersion,
+						ChunkPosition = eventPosition.ChunkPosition
 					});
 				}
 

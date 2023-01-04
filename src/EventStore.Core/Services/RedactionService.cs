@@ -57,15 +57,33 @@ namespace EventStore.Core.Services {
 			var streamId = _readIndex.GetStreamId(streamName);
 			var result = _readIndex.ReadEventInfo_KeepDuplicates(streamId, eventNumber);
 
-			var eventPositions = result.EventInfos.Select(x =>
-					new EventPosition(x.LogPosition, GetChunkFileName(x.LogPosition))).ToArray();
+			var eventPositions = new EventPosition[result.EventInfos.Length];
+
+			for (int i = 0; i < result.EventInfos.Length; i++) {
+				var eventInfo = result.EventInfos[i];
+				var logPos = eventInfo.LogPosition;
+				var chunk = _db.Manager.GetChunkFor(logPos);
+				var localPosition = chunk.ChunkHeader.GetLocalLogPosition(logPos);
+				var chunkPosition = chunk.GetActualRawPosition(localPosition);
+
+				// all the events returned by ReadEventInfo_KeepDuplicates() must exist in the log
+				// since the log record was read from the chunk to check for hash collisions.
+				if (chunkPosition < 0)
+					throw new Exception($"Failed to fetch actual raw position for event at log position: {logPos}");
+
+				if (chunkPosition > uint.MaxValue)
+					throw new Exception($"Actual raw position for event at log position: {logPos} is larger than uint.MaxValue: {chunkPosition}");
+
+				eventPositions[i] = new EventPosition(
+					logPosition: logPos,
+					chunkFile: Path.GetFileName(chunk.FileName),
+					chunkVersion: chunk.ChunkHeader.Version,
+					chunkPosition: (uint) chunkPosition);
+			}
 
 			envelope.ReplyWith(
 				new RedactionMessage.GetEventPositionCompleted(GetEventPositionResult.Success, eventPositions));
 		}
-
-		private string GetChunkFileName(long logPosition) =>
-			Path.GetFileName(_db.Manager.GetChunkFor(logPosition).FileName);
 
 		public void Handle(RedactionMessage.SwitchChunkLock message) {
 			if (_switchChunksSemaphore.Wait(TimeSpan.Zero))

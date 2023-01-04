@@ -589,6 +589,10 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return workItem.StreamPosition - ChunkHeader.Size;
 		}
 
+		public long GetActualRawPosition(long logicalPosition) {
+			return GetRawPosition(_readSide.GetActualPosition(logicalPosition));
+		}
+
 		// WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
 		public void CacheInMemory() {
 			if (_inMem || Interlocked.CompareExchange(ref _isCached, 1, 0) != 0)

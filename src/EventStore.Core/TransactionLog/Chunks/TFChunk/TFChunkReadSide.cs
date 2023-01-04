@@ -21,6 +21,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer);
 			RecordReadResult TryReadLast();
 			RecordReadResult TryReadClosestBackward(long logicalPosition);
+			long GetActualPosition(long logicalPosition);
 		}
 
 		private class TFChunkReadSideUnscavenged : TFChunkReadSide, IChunkReadSide {
@@ -93,7 +94,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return new RawReadResult(true, nextLogicalPos, record, length);
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
-				};
+				}
 			}
 
 			public RecordReadResult TryReadLast() {
@@ -118,6 +119,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					Chunk.ReturnReaderWorkItem(workItem);
 				}
 			}
+
+			public long GetActualPosition(long logicalPosition) => logicalPosition;
 		}
 
 		private class TFChunkReadSideScavenged : TFChunkReadSide, IChunkReadSide {
@@ -413,6 +416,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 					long nextLogicalPos = Chunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
 					return new RecordReadResult(true, nextLogicalPos, record, length);
+				} finally {
+					Chunk.ReturnReaderWorkItem(workItem);
+				}
+			}
+
+			public long GetActualPosition(long logicalPosition) {
+				var workItem = Chunk.GetReaderWorkItem();
+				try {
+					return TranslateExactPosition(workItem, logicalPosition);
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
 				}
