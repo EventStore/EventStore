@@ -78,7 +78,8 @@ namespace EventStore.Core.Services {
 					logPosition: logPos,
 					chunkFile: Path.GetFileName(chunk.FileName),
 					chunkVersion: chunk.ChunkHeader.Version,
-					chunkPosition: (uint) chunkPosition);
+					chunkPosition: (uint) chunkPosition,
+					chunkComplete: chunk.ChunkFooter is { IsCompleted: true });
 			}
 
 			envelope.ReplyWith(

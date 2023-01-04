@@ -23,6 +23,7 @@ message EventPosition {
 	string chunk_file = 2;
 	uint32 chunk_version = 3;
 	uint32 chunk_position = 4;
+	bool chunk_complete = 5;
 }
 
 message SwitchChunkReq {

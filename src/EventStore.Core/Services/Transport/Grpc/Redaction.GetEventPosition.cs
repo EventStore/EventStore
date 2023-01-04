@@ -55,7 +55,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						LogPosition = pos.PreparePosition,
 						ChunkFile = eventPosition.ChunkFile,
 						ChunkVersion = eventPosition.ChunkVersion,
-						ChunkPosition = eventPosition.ChunkPosition
+						ChunkPosition = eventPosition.ChunkPosition,
+						ChunkComplete = eventPosition.ChunkComplete
 					});
 				}
 
