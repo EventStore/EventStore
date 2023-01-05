@@ -50,6 +50,11 @@ namespace EventStore.Core.Messages {
 
 		[DerivedMessage]
 		public partial class InvalidPersistentSubscriptionsRestart : Message {
+			public readonly string Reason;
+
+			public InvalidPersistentSubscriptionsRestart(string reason) {
+				Reason = reason;
+			}
 		}
 	
 		[DerivedMessage]

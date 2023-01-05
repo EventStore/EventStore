@@ -692,20 +692,18 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
 
-			var envelope = new SendToHttpEnvelope(_networkSendQueue, http,
-				(e, message) => e.ResponseCodec.To("Restarting"),
+			var envelope = new SendToHttpEnvelope<SubscriptionMessage.PersistentSubscriptionsRestarting>(_networkSendQueue, http,
+				(e, message) => e.To("Restarting"),
 				(e, message) => {
 					switch (message) {
 						case SubscriptionMessage.PersistentSubscriptionsRestarting _:
-							return Configure.Ok(e.ResponseCodec.ContentType);
-						case SubscriptionMessage.InvalidPersistentSubscriptionsRestart fail:
-							return Configure.BadRequest
-								($"Persistent Subscriptions cannot be restarted as it is in the wrong state.");
+							return Configure.Ok(e.ContentType);
 						default:
 							return Configure.InternalServerError();
 					}
-				}
+				}, CreateErrorEnvelope(http)
 			);
+
 			Publish(new SubscriptionMessage.PersistentSubscriptionsRestart(envelope));
 		}
 
@@ -751,6 +749,25 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			var cmd = new MonitoringMessage.GetPersistentSubscriptionStats(envelope, stream, groupName);
 			Publish(cmd);
 		}
+		
+		private IEnvelope CreateErrorEnvelope(HttpEntityManager http) {
+			return new SendToHttpEnvelope<SubscriptionMessage.InvalidPersistentSubscriptionsRestart>(
+				_networkSendQueue,
+				http,
+				ErrorFormatter,
+				ErrorConfigurator,
+				null);
+		}
+
+		private ResponseConfiguration ErrorConfigurator(ICodec codec, SubscriptionMessage.InvalidPersistentSubscriptionsRestart message) {
+			return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain",
+				Helper.UTF8NoBom);
+		}
+
+		private string ErrorFormatter(ICodec codec, SubscriptionMessage.InvalidPersistentSubscriptionsRestart message) {
+			return message.Reason;
+		}
+
 
 		private static ResponseConfiguration StatsConfiguration(HttpEntityManager http, Message message) {
 			int code;

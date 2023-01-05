@@ -101,7 +101,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		
 		public void Handle(SubscriptionMessage.PersistentSubscriptionsRestart message) {
 			if (!_started) {
-				message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.InvalidPersistentSubscriptionsRestart());
+				message.ReplyEnvelope.ReplyWith(new SubscriptionMessage.InvalidPersistentSubscriptionsRestart("The Persistent Subscriptions subsystem cannot be restarted because it is not started."));
 				return;
 			}
 			

@@ -46,37 +46,35 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				ScavengeId = scavengeId,
 				ScavengeResult = scavengeResult
 			};
-
+			
 			void OnMessage(Message message) => HandleScavengeDatabaseResponse(message, scavengeResultSource);
 		}
 
 		private static void HandleScavengeDatabaseResponse(
 			Message message,
 			TaskCompletionSource<(string, ScavengeResp.Types.ScavengeResult)> scavengeResultSource) {
-			if (!(message is ClientMessage.ScavengeDatabaseResponse response)) {
-				scavengeResultSource.TrySetException(
-					RpcExceptions.UnknownMessage<ClientMessage.ScavengeDatabaseResponse>(message));
-				return;
-			}
-
-			switch (response.Result) {
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
+			
+			switch (message) {
+				case ClientMessage.ScavengeDatabaseUnauthorizedResponse:
 					scavengeResultSource.TrySetException(RpcExceptions.AccessDenied());
 					return;
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InvalidScavengeId:
-					scavengeResultSource.TrySetException(RpcExceptions.ScavengeNotFound(response.ScavengeId));
+				case ClientMessage.ScavengeDatabaseNotFoundResponse notFoundResponse:
+					scavengeResultSource.TrySetException(RpcExceptions.ScavengeNotFound(notFoundResponse.ScavengeId));
 					return;
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started:
-					scavengeResultSource.TrySetResult((response.ScavengeId,
+				case ClientMessage.ScavengeDatabaseStartedResponse startedResponse:
+					scavengeResultSource.TrySetResult((startedResponse.ScavengeId,
 						ScavengeResp.Types.ScavengeResult.Started));
 					return;
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped:
-					scavengeResultSource.TrySetResult((response.ScavengeId,
+				case ClientMessage.ScavengeDatabaseStoppedResponse stoppedResponse:
+					scavengeResultSource.TrySetResult((stoppedResponse.ScavengeId,
 						ScavengeResp.Types.ScavengeResult.Stopped));
 					return;
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
-					scavengeResultSource.TrySetResult((response.ScavengeId,
+				case ClientMessage.ScavengeDatabaseInProgressResponse inProgressResponse:
+					scavengeResultSource.TrySetResult((inProgressResponse.ScavengeId,
 						ScavengeResp.Types.ScavengeResult.InProgress));
+					return;
+				default:
+					scavengeResultSource.TrySetException(RpcExceptions.UnknownMessage<Message>(message));
 					return;
 			}
 		}

@@ -214,16 +214,17 @@ namespace EventStore.Projections.Core {
 		
 		public void Handle(ProjectionSubsystemMessage.RestartSubsystem message) {
 			if (_restarting) {
-				_logger.Information("PROJECTIONS SUBSYSTEM: Not restarting because the subsystem is already being restarted.");
-				message.ReplyEnvelope.ReplyWith(new ProjectionSubsystemMessage.InvalidSubsystemRestart("Restarting"));
+				var info = "PROJECTIONS SUBSYSTEM: Not restarting because the subsystem is already being restarted.";
+				_logger.Information(info);
+				message.ReplyEnvelope.ReplyWith(new ProjectionSubsystemMessage.InvalidSubsystemRestart("Restarting", info));
 				return;
 			}
 
 			if (_subsystemState != SubsystemState.Started) {
-				_logger.Information(
-					"PROJECTIONS SUBSYSTEM: Not restarting because the subsystem is not started. Current subsystem state: {state}",
-					_subsystemState);
-				message.ReplyEnvelope.ReplyWith(new ProjectionSubsystemMessage.InvalidSubsystemRestart(_subsystemState.ToString()));
+				var info =
+					$"PROJECTIONS SUBSYSTEM: Not restarting because the subsystem is not started. Current subsystem state: {_subsystemState}";
+				_logger.Information(info);
+				message.ReplyEnvelope.ReplyWith(new ProjectionSubsystemMessage.InvalidSubsystemRestart(_subsystemState.ToString(), info));
 				return;
 			}
 

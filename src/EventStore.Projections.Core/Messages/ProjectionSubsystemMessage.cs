@@ -15,9 +15,11 @@ namespace EventStore.Projections.Core.Messages {
 		[DerivedMessage]
 		public partial class InvalidSubsystemRestart : Message {
 			public string SubsystemState { get; }
+			public string Reason { get; }
 
-			public InvalidSubsystemRestart(string subsystemState) {
+			public InvalidSubsystemRestart(string subsystemState, string reason) {
 				SubsystemState = subsystemState;
+				Reason = reason;
 			}
 		}
 

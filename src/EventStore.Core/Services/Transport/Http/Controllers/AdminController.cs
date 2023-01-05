@@ -7,6 +7,7 @@ using System.Security.Claims;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
+using EventStore.Core.Messaging;
 using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Atom;
@@ -205,25 +206,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			sb.Append(" request has been received.");
 			Log.Information(sb.ToString(), args.ToArray());
 
-			var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) => {
-					var completed = message as ClientMessage.ScavengeDatabaseResponse;
-					return e.ResponseCodec.To(new ScavengeResultDto(completed?.ScavengeId));
+			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseStartedResponse>(_networkSendQueue, entity,(e, message) => {
+					return e.To(new ScavengeResultDto(message?.ScavengeId));
 				},
 				(e, message) => {
-					var completed = message as ClientMessage.ScavengeDatabaseResponse;
-					switch (completed?.Result) {
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started:
-							return Configure.Ok(e.ResponseCodec.ContentType);
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
-							return Configure.BadRequest();
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
-							return Configure.Unauthorized();
-						default:
-							return Configure.InternalServerError();
-					}
-				}
+					return Configure.Ok(e.ContentType);
+				}, CreateErrorEnvelope(entity)
 			);
-
+			
 			Publish(new ClientMessage.ScavengeDatabase(
 				envelope: envelope,
 				correlationId: Guid.Empty,
@@ -240,24 +230,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 			Log.Information("Stopping scavenge because /admin/scavenge/{scavengeId} DELETE request has been received.",
 				scavengeId);
-
-			var envelope = new SendToHttpEnvelope(_networkSendQueue, entity, (e, message) => {
-					var completed = message as ClientMessage.ScavengeDatabaseResponse;
-					return e.ResponseCodec.To(completed?.ScavengeId);
+			
+			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseStoppedResponse>(_networkSendQueue, entity, (e, message) => {
+					return e.To(message?.ScavengeId);
 				},
 				(e, message) => {
-					var completed = message as ClientMessage.ScavengeDatabaseResponse;
-					switch (completed?.Result) {
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped:
-							return Configure.Ok(e.ResponseCodec.ContentType);
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
-							return Configure.Unauthorized();
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InvalidScavengeId:
-							return Configure.NotFound();
-						default:
-							return Configure.InternalServerError();
-					}
-				}
+					return Configure.Ok(e.ContentType);
+				}, CreateErrorEnvelope(entity)
 			);
 
 			Publish(new ClientMessage.StopDatabaseScavenge(envelope, Guid.Empty, entity.User, scavengeId));
@@ -265,36 +244,26 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnGetScavenge(HttpEntityManager entity, UriTemplateMatch match) {
 			Log.Information("/admin/scavenge/ GET request has been received.");
-
-			var envelope = new SendToHttpEnvelope(
+			
+			var envelope = new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseGetResponse>(
 				_networkSendQueue,
 				entity,
 				(e, message) => {
-					var completed = message as ClientMessage.ScavengeDatabaseResponse;
 					var result = new ScavengeGetResultDto();
 
-					if (completed is not null &&
-						completed.Result == ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress &&
-						completed.ScavengeId is not null) {
+					if (message is not null &&
+					    message.Result == ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.InProgress &&
+					    message.ScavengeId is not null) {
 
-						result.ScavengeId = completed.ScavengeId;
-						result.ScavengeLink = $"/admin/scavenge/{completed.ScavengeId}";
+						result.ScavengeId = message.ScavengeId;
+						result.ScavengeLink = $"/admin/scavenge/{message.ScavengeId}";
 					}
 
-					return e.ResponseCodec.To(result);
+					return e.To(result);
 				},
 				(e, message) => {
-					var completed = message as ClientMessage.ScavengeDatabaseResponse;
-					switch (completed?.Result) {
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped:
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
-							return Configure.Ok(e.ResponseCodec.ContentType);
-						case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
-							return Configure.Unauthorized();
-						default:
-							return Configure.InternalServerError();
-					}
-				}
+					return Configure.Ok(e.ContentType);
+				}, CreateErrorEnvelope(entity)
 			);
 
 			Publish(new ClientMessage.GetDatabaseScavenge(envelope, Guid.Empty, entity.User));
@@ -353,6 +322,49 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				e => Log.Error(e, "Error while writing HTTP response"));
 		}
 		
+		private IEnvelope CreateErrorEnvelope(HttpEntityManager http) {
+			return new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseInProgressResponse>(
+				_networkSendQueue,
+				http,
+				ScavengeInProgressFormatter,
+				ScavengeInProgressConfigurator,
+				new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseNotFoundResponse>(
+						_networkSendQueue,
+						http,
+						ScavengeNotFoundFormatter,
+						ScavengeNotFoundConfigurator,
+						new SendToHttpEnvelope<ClientMessage.ScavengeDatabaseUnauthorizedResponse>(
+							_networkSendQueue,
+							http,
+							ScavengeUnauthorizedFormatter,
+							ScavengeUnauthorizedConfigurator,
+							null)));
+		}
+
+		private ResponseConfiguration ScavengeInProgressConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseInProgressResponse message) {
+			return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain", Helper.UTF8NoBom);
+		}
+
+		private string ScavengeInProgressFormatter(ICodec codec, ClientMessage.ScavengeDatabaseInProgressResponse message) {
+			return message.Reason;
+		}
+
+		private ResponseConfiguration ScavengeNotFoundConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseNotFoundResponse message) {
+			return new ResponseConfiguration(HttpStatusCode.NotFound, "Not Found", "text/plain", Helper.UTF8NoBom);
+		}
+
+		private string ScavengeNotFoundFormatter(ICodec codec, ClientMessage.ScavengeDatabaseNotFoundResponse message) {
+			return message.Reason;
+		}
+		
+		private ResponseConfiguration ScavengeUnauthorizedConfigurator(ICodec codec, ClientMessage.ScavengeDatabaseUnauthorizedResponse message) {
+			return new ResponseConfiguration(HttpStatusCode.Unauthorized, "Unauthorized", "text/plain", Helper.UTF8NoBom);
+		}
+
+		private string ScavengeUnauthorizedFormatter(ICodec codec, ClientMessage.ScavengeDatabaseUnauthorizedResponse message) {
+			return message.Reason;
+		}
+
 		private void LogReplyError(Exception exc) {
 			Log.Debug("Error while closing HTTP connection (admin controller): {e}.", exc.Message);
 		}
