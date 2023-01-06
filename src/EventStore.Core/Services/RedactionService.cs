@@ -64,22 +64,22 @@ namespace EventStore.Core.Services {
 				var logPos = eventInfo.LogPosition;
 				var chunk = _db.Manager.GetChunkFor(logPos);
 				var localPosition = chunk.ChunkHeader.GetLocalLogPosition(logPos);
-				var chunkPosition = chunk.GetActualRawPosition(localPosition);
+				var chunkEventOffset = chunk.GetActualRawPosition(localPosition);
 
 				// all the events returned by ReadEventInfo_KeepDuplicates() must exist in the log
 				// since the log record was read from the chunk to check for hash collisions.
-				if (chunkPosition < 0)
+				if (chunkEventOffset < 0)
 					throw new Exception($"Failed to fetch actual raw position for event at log position: {logPos}");
 
-				if (chunkPosition > uint.MaxValue)
-					throw new Exception($"Actual raw position for event at log position: {logPos} is larger than uint.MaxValue: {chunkPosition}");
+				if (chunkEventOffset > uint.MaxValue)
+					throw new Exception($"Actual raw position for event at log position: {logPos} is larger than uint.MaxValue: {chunkEventOffset}");
 
 				eventPositions[i] = new EventPosition(
 					logPosition: logPos,
 					chunkFile: Path.GetFileName(chunk.FileName),
 					chunkVersion: chunk.ChunkHeader.Version,
-					chunkPosition: (uint) chunkPosition,
-					chunkComplete: chunk.ChunkFooter is { IsCompleted: true });
+					chunkComplete: chunk.ChunkFooter is { IsCompleted: true },
+					chunkEventOffset: (uint) chunkEventOffset);
 			}
 
 			envelope.ReplyWith(
