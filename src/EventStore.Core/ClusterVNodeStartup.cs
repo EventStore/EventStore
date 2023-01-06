@@ -194,6 +194,7 @@ namespace EventStore.Core {
 						.Services
 
 						// gRPC
+						.AddSingleton<RetryInterceptor>()
 						.AddGrpc(options => {
 							options.Interceptors.Add<RetryInterceptor>();
 						})
