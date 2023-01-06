@@ -378,11 +378,9 @@ namespace EventStore.Core {
 				out var readerThreadsCount,
 				out var workerThreadsCount));
 
+			telemetryConfiguration ??= new();
 			var trackers = new Trackers();
-
-			if (telemetryConfiguration is not null) {
-				MetricsBootstrapper.Bootstrap(telemetryConfiguration, Db.Config, trackers);
-			}
+			MetricsBootstrapper.Bootstrap(telemetryConfiguration, Db.Config, trackers);
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
@@ -1559,7 +1557,10 @@ namespace EventStore.Core {
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
-				_httpService, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
+				_httpService,
+				telemetryConfiguration,
+				trackers,
+				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 

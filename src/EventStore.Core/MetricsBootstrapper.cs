@@ -15,21 +15,37 @@ public class Trackers {
 	public IIndexStatusTracker IndexStatusTracker { get; set; } = new IndexStatusTracker.NoOp();
 	public INodeStatusTracker NodeStatusTracker { get; set; } = new NodeStatusTracker.NoOp();
 	public IScavengeStatusTracker ScavengeStatusTracker { get; set; } = new ScavengeStatusTracker.NoOp();
+	public GrpcTrackers GrpcTrackers { get; } = new();
+}
+
+public class GrpcTrackers {
+	private readonly IDurationTracker[] _trackers;
+
+	public GrpcTrackers() {
+		_trackers = new IDurationTracker[Enum.GetValues<Conf.GrpcMethod>().Cast<int>().Max() + 1];
+		for (var i = 0; i < _trackers.Length; i++)
+			_trackers[i] = new DurationTracker.NoOp();
+	}
+
+	public IDurationTracker this[Conf.GrpcMethod index] {
+		get => _trackers[(int)index];
+		set => _trackers[(int)index] = value;
+	}
 }
 
 public static class MetricsBootstrapper {
 	public static void Bootstrap(
-		Conf telemetryConfiguration,
+		Conf conf,
 		TFChunkDbConfig dbConfig,
 		Trackers trackers) {
 
-		var coreMeter = new Meter("EventStore.Core");
+		var coreMeter = new Meter("EventStore.Core", version: "0.0.1");
 
 		// checkpoints
 		_ = new CheckpointMetric(
 			coreMeter,
 			"eventstore-checkpoints",
-			telemetryConfiguration.Checkpoints.Select(x => x switch {
+			conf.Checkpoints.Select(x => x switch {
 				Conf.Checkpoint.Chaser => dbConfig.ChaserCheckpoint,
 				Conf.Checkpoint.Epoch => dbConfig.EpochCheckpoint,
 				Conf.Checkpoint.Index => dbConfig.IndexCheckpoint,
@@ -44,14 +60,22 @@ public static class MetricsBootstrapper {
 			}).ToArray());
 
 		// status metrics
-		if (telemetryConfiguration.StatusTrackers.Length > 0) {
+		if (conf.StatusTrackers.Length > 0) {
 			var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
-			if (telemetryConfiguration.StatusTrackers.Contains(Conf.StatusTracker.Index))
+			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Index))
 				trackers.IndexStatusTracker = new IndexStatusTracker(statusMetric);
-			if (telemetryConfiguration.StatusTrackers.Contains(Conf.StatusTracker.Node))
+			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Node))
 				trackers.NodeStatusTracker = new NodeStatusTracker(statusMetric);
-			if (telemetryConfiguration.StatusTrackers.Contains(Conf.StatusTracker.Scavenge))
+			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Scavenge))
 				trackers.ScavengeStatusTracker = new ScavengeStatusTracker(statusMetric);
+		}
+
+		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
+
+		// grpc historgrams
+		foreach (var method in Enum.GetValues<Conf.GrpcMethod>()) {
+			if (conf.GrpcMethods.TryGetValue(method, out var label) && !string.IsNullOrEmpty(label))
+				trackers.GrpcTrackers[method] = new DurationTracker(durationMetric, label);
 		}
 	}
 }

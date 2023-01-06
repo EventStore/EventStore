@@ -27,7 +27,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			meter.CreateObservableUpDownCounter(name, Observe);
 		}
 
-		public IEnumerable<Measurement<long>> Observe() {
+		private IEnumerable<Measurement<long>> Observe() {
 			for (var i = 0; i < _checkpoints.Length; i++) {
 				// looks like the Measurement constructor will allocate an array for the tags but the
 				// other constructor overloads appear to allocate two

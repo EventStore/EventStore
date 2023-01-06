@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using EventStore.Core.Index;
@@ -7,53 +7,59 @@ using EventStore.Core.XUnit.Tests.Telemetry;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Index {
-	public class IndexStatusTrackerTests {
+	public class IndexStatusTrackerTests : IDisposable {
+		private readonly TestMeterListener<long> _listener;
 		private readonly FakeClock _clock = new();
 		private readonly StatusMetric _metric;
 		private readonly IndexStatusTracker _sut;
 
 		public IndexStatusTrackerTests() {
+			var meter = new Meter($"{typeof(IndexStatusTrackerTests)}");
+			_listener = new TestMeterListener<long>(meter);
 			_metric = new StatusMetric(
-				new Meter($"Eventstore.Core.XUnit.Tests.{nameof(IndexStatusTrackerTests)}"),
+				meter,
 				"eventstore-statuses",
 				_clock);
 			_sut = new IndexStatusTracker(_metric);
 		}
 
+		public void Dispose() {
+			_listener.Dispose();
+		}
+
 		[Fact]
 		public void can_observe_merging() {
 			_clock.SecondsSinceEpoch = 500;
-			AssertMeasurements("Idle", 500, _metric.Observe());
+			AssertMeasurements("Idle", 500);
 
 			using (_sut.StartMerging()) {
 				_clock.SecondsSinceEpoch = 501;
-				AssertMeasurements("Merging", 501, _metric.Observe());
+				AssertMeasurements("Merging", 501);
 			}
 
 			_clock.SecondsSinceEpoch = 502;
-			AssertMeasurements("Idle", 502, _metric.Observe());
+			AssertMeasurements("Idle", 502);
 		}
 
 		[Fact]
 		public void can_observe_scavenging() {
 			_clock.SecondsSinceEpoch = 500;
-			AssertMeasurements("Idle", 500, _metric.Observe());
+			AssertMeasurements("Idle", 500);
 
 			using (_sut.StartScavenging()) {
 				_clock.SecondsSinceEpoch = 501;
-				AssertMeasurements("Scavenging", 501, _metric.Observe());
+				AssertMeasurements("Scavenging", 501);
 			}
 
 			_clock.SecondsSinceEpoch = 502;
-			AssertMeasurements("Idle", 502, _metric.Observe());
+			AssertMeasurements("Idle", 502);
 		}
 
-		static void AssertMeasurements(
-			string expectedStatus,
-			int expectedValue,
-			IEnumerable<Measurement<long>> measurements) {
+		void AssertMeasurements(string expectedStatus, int expectedValue) {
+			_listener.Observe();
 
-			Assert.Collection(measurements.ToArray(),
+			Assert.Collection(
+				_listener.RetrieveMeasurements("eventstore-statuses"),
 				m => {
 					Assert.Equal(expectedValue, m.Value);
 					Assert.Collection(

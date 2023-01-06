@@ -13,5 +13,14 @@
 		"Writer",
 		"Index",
 		"Replication"
-	]
+	],
+
+	// maps grpc methods to labels that they are to be recorded under
+	"GrpcMethods": {
+		"StreamRead": "read",
+		"StreamAppend": "append",
+		"StreamBatchAppend": "append",
+		"StreamDelete": "",
+		"StreamTombstone": ""
+	}
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using EventStore.Core.Telemetry;
@@ -7,39 +7,45 @@ using EventStore.Core.XUnit.Tests.Telemetry;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Scavenge {
-	public class ScavengeStatusTrackerTests {
+	public class ScavengeStatusTrackerTests : IDisposable {
+		private readonly TestMeterListener<long> _listener;
 		private readonly FakeClock _clock = new();
 		private readonly StatusMetric _metric;
 		private readonly ScavengeStatusTracker _sut;
 
 		public ScavengeStatusTrackerTests() {
+			var meter = new Meter($"{typeof(ScavengeStatusTrackerTests)}");
+			_listener = new TestMeterListener<long>(meter);
 			_metric = new StatusMetric(
-				new Meter($"Eventstore.Core.XUnit.Tests.{nameof(ScavengeStatusTrackerTests)}"),
+				meter,
 				"eventstore-statuses",
 				_clock);
 			_sut = new ScavengeStatusTracker(_metric);
 		}
 
+		public void Dispose() {
+			_listener?.Dispose();
+		}
+
 		[Fact]
 		public void can_observe_activity() {
 			_clock.SecondsSinceEpoch = 500;
-			AssertMeasurements("Idle", 500, _metric.Observe());
+			AssertMeasurements("Idle", 500);
 
 			using (_sut.StartActivity("Accumulation")) {
 				_clock.SecondsSinceEpoch = 501;
-				AssertMeasurements("Accumulation Phase", 501, _metric.Observe());
+				AssertMeasurements("Accumulation Phase", 501);
 			}
 
 			_clock.SecondsSinceEpoch = 502;
-			AssertMeasurements("Idle", 502, _metric.Observe());
+			AssertMeasurements("Idle", 502);
 		}
 
-		static void AssertMeasurements(
-			string expectedStatus,
-			int expectedValue,
-			IEnumerable<Measurement<long>> measurements) {
+		void AssertMeasurements(string expectedStatus, int expectedValue) {
+			_listener.Observe();
 
-			Assert.Collection(measurements.ToArray(),
+			Assert.Collection(
+				_listener.RetrieveMeasurements("eventstore-statuses"),
 				m => {
 					Assert.Equal(expectedValue, m.Value);
 					Assert.Collection(

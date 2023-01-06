@@ -19,7 +19,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
@@ -50,6 +49,8 @@ namespace EventStore.Core {
 		private readonly TimeSpan _writeTimeout;
 		private readonly IExpiryStrategy _expiryStrategy;
 		private readonly KestrelHttpService _httpService;
+		private readonly TelemetryConfiguration _telemetryConfiguration;
+		private readonly Trackers _trackers;
 		private readonly StatusCheck _statusCheck;
 
 		private bool _ready;
@@ -70,6 +71,8 @@ namespace EventStore.Core {
 			TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
 			KestrelHttpService httpService,
+			TelemetryConfiguration telemetryConfiguration,
+			Trackers trackers,
 			string clusterDns) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
@@ -116,6 +119,8 @@ namespace EventStore.Core {
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
 			_httpService = httpService;
+			_telemetryConfiguration = telemetryConfiguration;
+			_trackers = trackers;
 			_clusterDns = clusterDns;
 
 			_statusCheck = new StatusCheck(this);
@@ -169,7 +174,9 @@ namespace EventStore.Core {
 						.AddSingleton(new KestrelToInternalBridgeMiddleware(_httpService.UriRouter, _httpService.LogHttpRequests, _httpService.AdvertiseAsHost, _httpService.AdvertiseAsPort))
 						.AddSingleton(_readIndex)
 						.AddSingleton(new Streams<TStreamId>(_mainQueue, _readIndex, _maxAppendSize,
-							_writeTimeout, _expiryStrategy, _authorizationProvider))
+							_writeTimeout, _expiryStrategy,
+							_trackers.GrpcTrackers,
+							_authorizationProvider))
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
@@ -180,15 +187,26 @@ namespace EventStore.Core {
 						.AddSingleton<ServerFeatures>()
 
 						// OpenTelemetry
-						.ConfigureOpenTelemetryMeterProvider((serviceProvider, builder) => {
-							var config = serviceProvider
-								.GetRequiredService<IOptionsMonitor<TelemetryConfiguration>>()
-								.CurrentValue;
-							builder.AddMeter(config.Meters);
-						})
 						.AddOpenTelemetry()
 						.WithMetrics(meterOptions => meterOptions
 							.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
+							.AddMeter(_telemetryConfiguration.Meters)
+							.AddView(i => {
+								if (i.Name.StartsWith("eventstore-") && i.Unit == "seconds")
+									return new ExplicitBucketHistogramConfiguration {
+										Boundaries = new double[] {
+											0.000_001, // 1 microsecond
+											0.000_01,
+											0.000_1,
+											0.001, // 1 millisecond
+											0.01,
+											0.1,
+											1, // 1 second
+											10,
+										}
+									};
+								return default;
+							})
 							.AddPrometheusExporter())
 						.StartWithHost()
 						.Services
