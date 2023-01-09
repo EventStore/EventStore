@@ -51,6 +51,7 @@ namespace EventStore.Core.Index {
 		private readonly Func<IMemTable> _memTableFactory;
 		private readonly Func<TFReaderLease> _tfReaderFactory;
 		private readonly IIndexFilenameProvider _fileNameProvider;
+		private readonly IIndexStatusTracker _statusTracker;
 
 		private readonly object _awaitingTablesLock = new object();
 
@@ -90,7 +91,8 @@ namespace EventStore.Core.Index {
 			int indexCacheDepth = 16,
 			int initializationThreads = 1,
 			bool useBloomFilter = true,
-			int lruCacheSize = 1_000_000) {
+			int lruCacheSize = 1_000_000,
+			IIndexStatusTracker statusTracker = null) {
 
 			Ensure.NotNullOrEmpty(directory, "directory");
 			Ensure.NotNull(memTableFactory, "memTableFactory");
@@ -109,6 +111,7 @@ namespace EventStore.Core.Index {
 			_memTableFactory = memTableFactory;
 			_tfReaderFactory = tfReaderFactory;
 			_fileNameProvider = new GuidFilenameProvider(directory);
+			_statusTracker = statusTracker ?? new IndexStatusTracker.NoOp();
 			_maxSizeForMemory = maxSizeForMemory;
 			_maxTablesPerLevel = maxTablesPerLevel;
 			_additionalReclaim = additionalReclaim;
@@ -299,6 +302,7 @@ namespace EventStore.Core.Index {
 
 		private void ReadOffQueue() {
 			try {
+				using var _ = _statusTracker.StartMerging();
 				while (true) {
 					var indexmapFile = Path.Combine(_directory, IndexMapFilename);
 
@@ -429,6 +433,7 @@ namespace EventStore.Core.Index {
 			var sw = Stopwatch.StartNew();
 
 			try {
+				using var _ = _statusTracker.StartScavenging();
 				Log.Information("Starting scavenge of TableIndex.");
 				ScavengeInternal(shouldKeep, log, ct);
 			} finally {

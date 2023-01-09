@@ -33,8 +33,17 @@ namespace EventStore.Core.Services.VNode {
 		private readonly VNodeInfo _nodeInfo;
 		private readonly TFChunkDb _db;
 		private readonly ClusterVNode<TStreamId> _node;
+		private readonly INodeStatusTracker _statusTracker;
 
 		private VNodeState _state = VNodeState.Initializing;
+		private VNodeState State {
+			get => _state;
+			set {
+				_state = value;
+				_statusTracker.OnStateChange(value);
+			}
+		}
+
 		private MemberInfo _leader;
 		private Guid _stateCorrelationId = Guid.NewGuid();
 		private Guid _leaderConnectionCorrelationId = Guid.NewGuid();
@@ -65,6 +74,7 @@ namespace EventStore.Core.Services.VNode {
 		private bool _exitProcessOnShutdown;
 
 		public ClusterVNodeController(IPublisher outputBus, VNodeInfo nodeInfo, TFChunkDb db,
+			INodeStatusTracker statusTracker,
 			ClusterVNodeOptions options, ClusterVNode<TStreamId> node, MessageForwardingProxy forwardingProxy) {
 			Ensure.NotNull(outputBus, "outputBus");
 			Ensure.NotNull(nodeInfo, "nodeInfo");
@@ -76,6 +86,7 @@ namespace EventStore.Core.Services.VNode {
 			_nodeInfo = nodeInfo;
 			_db = db;
 			_node = node;
+			_statusTracker = statusTracker;
 			_subSystems = options.Subsystems;
 			_clusterSize = options.Cluster.ClusterSize;
 			if (_clusterSize == 1) {
@@ -103,11 +114,11 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private VNodeFSM CreateFSM() {
-			var stm = new VNodeFSMBuilder(() => _state)
+			var stm = new VNodeFSMBuilder(() => State)
 				.InAnyState()
 				.When<SystemMessage.StateChangeMessage>()
 					.Do(m => Application.Exit(ExitCode.Error,
-						string.Format("{0} message was unhandled in {1}. State: {2}", m.GetType().Name, GetType().Name, _state)))
+						string.Format("{0} message was unhandled in {1}. State: {2}", m.GetType().Name, GetType().Name, State)))
 				.When<AuthenticationMessage.AuthenticationProviderInitialized>().Do(Handle)
 				.When<AuthenticationMessage.AuthenticationProviderInitializationFailed>().Do(Handle)
 				.When<SystemMessage.SubSystemInitialized>().Do(Handle)
@@ -360,7 +371,7 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(SystemMessage.BecomeUnknown message) {
 			Log.Information("========== [{httpEndPoint}] IS UNKNOWN...", _nodeInfo.HttpEndPoint);
 
-			_state = VNodeState.Unknown;
+			State = VNodeState.Unknown;
 			_leader = null;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new ElectionMessage.StartElections());
@@ -369,7 +380,7 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(SystemMessage.BecomeDiscoverLeader message) {
 			Log.Information("========== [{httpEndPoint}] IS ATTEMPTING TO DISCOVER EXISTING LEADER...", _nodeInfo.HttpEndPoint);
 
-			_state = VNodeState.DiscoverLeader;
+			State = VNodeState.DiscoverLeader;
 			_outputBus.Publish(message);
 
 			var msg = new LeaderDiscoveryMessage.DiscoveryTimeout();
@@ -387,7 +398,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
-			_state = VNodeState.ResigningLeader;
+			State = VNodeState.ResigningLeader;
 			_outputBus.Publish(message);
 		}
 
@@ -404,7 +415,7 @@ namespace EventStore.Core.Services.VNode {
 			Log.Information(
 				"========== [{httpEndPoint}] PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{masterHttp},{masterId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
-			_state = VNodeState.PreReplica;
+			State = VNodeState.PreReplica;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
@@ -417,7 +428,7 @@ namespace EventStore.Core.Services.VNode {
 			Log.Information(
 				"========== [{httpEndPoint}] READ ONLY PRE-REPLICA STATE, WAITING FOR CHASER TO CATCH UP... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
-			_state = VNodeState.PreReadOnlyReplica;
+			State = VNodeState.PreReadOnlyReplica;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
@@ -429,7 +440,7 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information("========== [{httpEndPoint}] IS CATCHING UP... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
-			_state = VNodeState.CatchingUp;
+			State = VNodeState.CatchingUp;
 			_outputBus.Publish(message);
 		}
 
@@ -440,7 +451,7 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information("========== [{httpEndPoint}] IS CLONE... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
-			_state = VNodeState.Clone;
+			State = VNodeState.Clone;
 			_outputBus.Publish(message);
 		}
 
@@ -451,13 +462,13 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information("========== [{httpEndPoint}] IS FOLLOWER... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
-			_state = VNodeState.Follower;
+			State = VNodeState.Follower;
 			_outputBus.Publish(message);
 		}
 
 		private void Handle(SystemMessage.BecomeReadOnlyLeaderless message) {
 			Log.Information("========== [{httpEndPoint}] IS READ ONLY REPLICA WITH UNKNOWN LEADER...", _nodeInfo.HttpEndPoint);
-			_state = VNodeState.ReadOnlyLeaderless;
+			State = VNodeState.ReadOnlyLeaderless;
 			_leader = null;
 			_outputBus.Publish(message);
 		}
@@ -469,7 +480,7 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information("========== [{httpEndPoint}] IS READ ONLY REPLICA... LEADER IS [{leaderHttp},{leaderId:B}]",
 				_nodeInfo.HttpEndPoint, _leader.HttpEndPoint, _leader.InstanceId);
-			_state = VNodeState.ReadOnlyReplica;
+			State = VNodeState.ReadOnlyReplica;
 			_outputBus.Publish(message);
 		}
 
@@ -480,31 +491,31 @@ namespace EventStore.Core.Services.VNode {
 
 			Log.Information("========== [{httpEndPoint}] PRE-LEADER STATE, WAITING FOR CHASER TO CATCH UP...",
 				_nodeInfo.HttpEndPoint);
-			_state = VNodeState.PreLeader;
+			State = VNodeState.PreLeader;
 			_outputBus.Publish(message);
 			_mainQueue.Publish(new SystemMessage.WaitForChaserToCatchUp(_stateCorrelationId, TimeSpan.Zero));
 		}
 
 		private void Handle(SystemMessage.BecomeLeader message) {
-			if (_state == VNodeState.Leader) throw new Exception("We should not BecomeLeader twice in a row.");
+			if (State == VNodeState.Leader) throw new Exception("We should not BecomeLeader twice in a row.");
 			if (_leader == null) throw new Exception("_leader == null");
 			if (_stateCorrelationId != message.CorrelationId)
 				return;
 
 			Log.Information("========== [{httpEndPoint}] IS LEADER... SPARTA!", _nodeInfo.HttpEndPoint);
-			_state = VNodeState.Leader;
+			State = VNodeState.Leader;
 			_outputBus.Publish(message);
 		}
 
 		private void Handle(SystemMessage.BecomeShuttingDown message) {
-			if (_state == VNodeState.ShuttingDown || _state == VNodeState.Shutdown)
+			if (State == VNodeState.ShuttingDown || State == VNodeState.Shutdown)
 				return;
 
 			Log.Information("========== [{httpEndPoint}] IS SHUTTING DOWN...", _nodeInfo.HttpEndPoint);
 			_leader = null;
 			_stateCorrelationId = message.CorrelationId;
 			_exitProcessOnShutdown = message.ExitProcess;
-			_state = VNodeState.ShuttingDown;
+			State = VNodeState.ShuttingDown;
 			_mainQueue.Publish(TimerMessage.Schedule.Create(ShutdownTimeout, _publishEnvelope,
 				new SystemMessage.ShutdownTimeout()));
 			_outputBus.Publish(message);
@@ -512,7 +523,7 @@ namespace EventStore.Core.Services.VNode {
 
 		private void Handle(SystemMessage.BecomeShutdown message) {
 			Log.Information("========== [{httpEndPoint}] IS SHUT DOWN.", _nodeInfo.HttpEndPoint);
-			_state = VNodeState.Shutdown;
+			State = VNodeState.Shutdown;
 			try {
 				_outputBus.Publish(message);
 			} catch (Exception exc) {
@@ -534,7 +545,7 @@ namespace EventStore.Core.Services.VNode {
 		private void Handle(ElectionMessage.ElectionsDone message) {
 			if (_leader != null && _leader.InstanceId == message.Leader.InstanceId) {
 				//if the leader hasn't changed, we skip state changes through PreLeader or PreReplica
-				if (_leader.InstanceId == _nodeInfo.InstanceId && _state == VNodeState.Leader) {
+				if (_leader.InstanceId == _nodeInfo.InstanceId && State == VNodeState.Leader) {
 					//transitioning from leader to leader, we just write a new epoch
 					_fsm.Handle(new SystemMessage.WriteEpoch(message.ProposalNumber));
 				}
@@ -964,7 +975,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_leader != null && _leader.Is(message.VNodeEndPoint)) // leader connection failed
 			{
 				_leaderConnectionCorrelationId = Guid.NewGuid();
-				var msg = _state == VNodeState.PreReplica
+				var msg = State == VNodeState.PreReplica
 					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
 					: new SystemMessage.BecomePreReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
@@ -977,7 +988,7 @@ namespace EventStore.Core.Services.VNode {
 			if (_leader != null && _leader.Is(message.VNodeEndPoint)) // leader connection failed
 			{
 				_leaderConnectionCorrelationId = Guid.NewGuid();
-				var msg = _state == VNodeState.PreReadOnlyReplica
+				var msg = State == VNodeState.PreReadOnlyReplica
 					? (Message)new ReplicationMessage.ReconnectToLeader(_leaderConnectionCorrelationId, _leader)
 					: new SystemMessage.BecomePreReadOnlyReplica(_stateCorrelationId, _leaderConnectionCorrelationId, _leader);
 				_mainQueue.Publish(TimerMessage.Schedule.Create(LeaderReconnectionDelay, _publishEnvelope, msg));
@@ -1245,7 +1256,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Handle(SystemMessage.ShutdownTimeout message) {
-			Debug.Assert(_state == VNodeState.ShuttingDown);
+			Debug.Assert(State == VNodeState.ShuttingDown);
 
 			Log.Error("========== [{httpEndPoint}] Shutdown Timeout.", _nodeInfo.HttpEndPoint);
 			Shutdown();
@@ -1253,7 +1264,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void Shutdown() {
-			Debug.Assert(_state == VNodeState.ShuttingDown);
+			Debug.Assert(State == VNodeState.ShuttingDown);
 
 			_db.Close();
 			_fsm.Handle(new SystemMessage.BecomeShutdown(_stateCorrelationId));

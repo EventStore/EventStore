@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Utils;
@@ -31,6 +31,12 @@ namespace EventStore.Common.Configuration {
 			return configurationRoot;
 		}
 
+		public enum StatusTracker {
+			Index = 1,
+			Node,
+			Scavenge
+		}
+
 		public enum Checkpoint {
 			Chaser = 1,
 			Epoch,
@@ -43,6 +49,8 @@ namespace EventStore.Common.Configuration {
 		}
 
 		public string[] Meters { get; set; } = Array.Empty<string>();
+
+		public StatusTracker[] StatusTrackers { get; set; } = Array.Empty<StatusTracker>();
 
 		public Checkpoint[] Checkpoints { get; set; } = Array.Empty<Checkpoint>();
 	}

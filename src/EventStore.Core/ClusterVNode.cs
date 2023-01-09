@@ -378,8 +378,10 @@ namespace EventStore.Core {
 				out var readerThreadsCount,
 				out var workerThreadsCount));
 
+			var trackers = new Trackers();
+
 			if (telemetryConfiguration is not null) {
-				MetricsBootstrapper.Bootstrap(telemetryConfiguration, Db.Config);
+				MetricsBootstrapper.Bootstrap(telemetryConfiguration, Db.Config, trackers);
 			}
 
 			TFChunkDbConfig CreateDbConfig(
@@ -575,7 +577,10 @@ namespace EventStore.Core {
 			_subsystems = options.Subsystems.ToArray();
 
 			_controller =
-				new ClusterVNodeController<TStreamId>((IPublisher)_mainBus, NodeInfo, Db, options, this, forwardingProxy);
+				new ClusterVNodeController<TStreamId>(
+					(IPublisher)_mainBus, NodeInfo, Db,
+					trackers.NodeStatusTracker,
+					options, this, forwardingProxy);
 			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
 
 			_controller.SetMainQueue(_mainQueue);
@@ -716,7 +721,8 @@ namespace EventStore.Core {
 				initializationThreads: options.Database.InitializationThreads,
 				additionalReclaim: false,
 				maxAutoMergeIndexLevel: options.Database.MaxAutoMergeIndexLevel,
-				pTableMaxReaderCount: pTableMaxReaderCount);
+				pTableMaxReaderCount: pTableMaxReaderCount,
+				statusTracker: trackers.IndexStatusTracker);
 			logFormat.StreamNamesProvider.SetTableIndex(tableIndex);
 
 			var readIndex = new ReadIndex<TStreamId>(_mainQueue,
@@ -1373,6 +1379,7 @@ namespace EventStore.Core {
 						cleaner: cleaner,
 						scavengePointSource: scavengePointSource,
 						scavengerLogger: scavengerLogger,
+						statusTracker: trackers.ScavengeStatusTracker,
 						// threshold < 0: execute all chunks, even those with no weight
 						// threshold = 0: execute all chunks with weight greater than 0
 						// threshold > 0: execute all chunks above a certain weight
