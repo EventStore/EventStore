@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 - ScavengeId to log context [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
 - checkpoints metric [EventStore#3685](https://github.com/EventStore/EventStore/pull/3685)
+- metric for tracking the current state of the Node [EventStore#3686](https://github.com/EventStore/EventStore/pull/3686)
+- metric for tracking the current state of the Scavenge [EventStore#3686](https://github.com/EventStore/EventStore/pull/3686)
+- metric for tracking the current state of the Index operations (merge/scavenge) [EventStore#3686](https://github.com/EventStore/EventStore/pull/3686)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
