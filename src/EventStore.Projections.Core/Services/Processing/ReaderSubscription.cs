@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderIdle message) {
-			// ignore
+			ForceProgressValue(100);
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {

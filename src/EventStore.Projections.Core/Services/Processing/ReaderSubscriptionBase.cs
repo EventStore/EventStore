@@ -160,6 +160,14 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_subscriptionMessageSequenceNumber++));
 		}
 
+		/// <summary>
+		/// Forces a progression value.
+		/// </summary>
+		/// <param name="value">a percentage rate. For example if the progress is 42%, value parameter must be 42</param>
+		protected void ForceProgressValue(float value) {
+			_progress = value;
+		}
+
 		protected void PublishPartitionDeleted(string partition, CheckpointTag deletePosition) {
 			_publisher.Publish(
 				new EventReaderSubscriptionMessage.PartitionDeleted(
