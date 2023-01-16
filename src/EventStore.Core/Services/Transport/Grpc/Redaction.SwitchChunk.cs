@@ -21,7 +21,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 
-			await SwitchChunksLock().ConfigureAwait(false);
+			await SwitchChunksLock(context).ConfigureAwait(false);
 			try {
 				await SwitchChunks(requestStream, responseStream).ConfigureAwait(false);
 			} finally {
@@ -29,7 +29,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			}
 		}
 
-		private async Task SwitchChunksLock() {
+		private async Task SwitchChunksLock(ServerCallContext context) {
 			var lockTcs = new TaskCompletionSource<RedactionMessage.SwitchChunkLockCompleted>();
 			_bus.Publish(new RedactionMessage.SwitchChunkLock(
 				new CallbackEnvelope(msg => lockTcs.SetResult(msg as RedactionMessage.SwitchChunkLockCompleted))
@@ -41,7 +41,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var result = completionMsg.Result;
 			if (result != SwitchChunkLockResult.Success)
-				throw RpcExceptions.RedactionSwitchChunkFailed(result.GetErrorMessage());
+				throw RpcExceptions.RedactionLockFailed();
+
+			await context.WriteResponseHeadersAsync(new Metadata()).ConfigureAwait(false);
 		}
 
 		private async Task SwitchChunks(

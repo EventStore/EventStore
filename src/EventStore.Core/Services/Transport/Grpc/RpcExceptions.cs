@@ -68,6 +68,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					{Constants.Exceptions.ScavengeId, scavengeId ?? string.Empty}
 				});
 
+		public static RpcException RedactionLockFailed() =>
+			new(
+				new Status(
+					StatusCode.FailedPrecondition,
+					$"Failed to acquire lock for redaction."
+				),
+				new Metadata {
+					{Constants.Exceptions.ExceptionKey, Constants.Exceptions.RedactionLockFailed}
+				});
+
 		public static RpcException RedactionGetEventPositionFailed(string reason) =>
 			new(
 				new Status(
