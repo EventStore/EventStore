@@ -4,8 +4,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
-using EventStore.Core.Services.TimerService;
-using System.Collections.Concurrent;
+using EventStore.Core.Telemetry;
 using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 
@@ -31,7 +30,7 @@ namespace EventStore.Core.Bus {
 		private readonly bool _watchSlowMsg;
 		private readonly TimeSpan _slowMsgThreshold;
 
-		private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
+		private readonly ConcurrentQueueWrapper<QueueItem> _queue = new ConcurrentQueueWrapper<QueueItem>();
 
 		private volatile bool _stop;
 		private readonly ManualResetEventSlim _stopped = new ManualResetEventSlim(true);
@@ -40,6 +39,7 @@ namespace EventStore.Core.Bus {
 		// monitoring
 		private readonly QueueMonitor _queueMonitor;
 		private readonly QueueStatsCollector _queueStats;
+		private readonly QueueTracker _tracker;
 
 		private int _isRunning;
 		private int _queueStatsState; //0 - never started, 1 - started, 2 - stopped
@@ -50,6 +50,7 @@ namespace EventStore.Core.Bus {
 		public QueuedHandlerThreadPool(IHandle<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null,
 			TimeSpan? threadStopWaitTimeout = null,
@@ -65,6 +66,7 @@ namespace EventStore.Core.Bus {
 
 			_queueMonitor = QueueMonitor.Default;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector(name, groupName);
+			_tracker = trackers.GetTrackerForQueue(name);
 		}
 
 		public Task Start() {
@@ -105,7 +107,9 @@ namespace EventStore.Core.Bus {
 					_queueStats.EnterBusy();
 
 					Message msg;
-					while (!_stop && _queue.TryDequeue(out msg)) {
+					while (!_stop && _queue.TryDequeue(out var item)) {
+						_tracker.RecordMessageDequeued(item.EnqueuedAt);
+						msg = item.Message;
 #if DEBUG
 						_queueStats.Dequeued(msg);
 #endif
@@ -168,7 +172,7 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 			_queueStats.Enqueued();
 #endif
-			_queue.Enqueue(message);
+			_queue.Enqueue(new(_tracker.Now, message));
 			if (!_stop && Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
 				ThreadPool.QueueUserWorkItem(ReadFromQueue);
 		}

@@ -16,6 +16,7 @@ using EventStore.Core.Services.Histograms;
 using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
@@ -98,7 +99,9 @@ namespace EventStore.Core.Services.Storage {
 			TStreamId emptyEventTypeId,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
-			QueueStatsManager queueStatsManager) {
+			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers) {
+
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -135,6 +138,7 @@ namespace EventStore.Core.Services.Storage {
 			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
 				queueStatsManager,
+				trackers,
 				true,
 				TimeSpan.FromMilliseconds(500));
 			_tasks.Add(StorageWriterQueue.Start());

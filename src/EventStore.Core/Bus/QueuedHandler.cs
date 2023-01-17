@@ -1,5 +1,6 @@
 ﻿using System;
 using EventStore.Core.Messaging;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Bus {
 	// on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower
@@ -8,6 +9,7 @@ namespace EventStore.Core.Bus {
 		IQueuedHandler {
 		public static IQueuedHandler CreateQueuedHandler(IHandle<Message> consumer, string name,
 			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null, TimeSpan? threadStopWaitTimeout = null, string groupName = null) {
 			//if (IntPtr.Size == 8)
@@ -16,7 +18,7 @@ namespace EventStore.Core.Bus {
 			//    return new QueueHandlerUsingMpsc(consumer, name, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout,
 			//        groupName);
 			//}
-			return new QueuedHandler(consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
+			return new QueuedHandler(consumer, name, queueStatsManager, trackers, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout, groupName);
 		}
 
 		public static readonly TimeSpan DefaultStopWaitTimeout = TimeSpan.FromSeconds(10);
@@ -25,12 +27,13 @@ namespace EventStore.Core.Bus {
 		QueuedHandler(IHandle<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null,
 			TimeSpan? threadStopWaitTimeout = null,
 			string groupName = null)
 			: base(
-				consumer, name, queueStatsManager, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
+				consumer, name, queueStatsManager, trackers, watchSlowMsg, slowMsgThreshold, threadStopWaitTimeout ?? DefaultStopWaitTimeout,
 				groupName) {
 		}
 

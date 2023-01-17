@@ -31,14 +31,15 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 			var mainQueue = QueuedHandler.CreateQueuedHandler
 			(new AdHocHandler<Message>(msg => {
 				/* Ignore messages */
-			}), "MainQueue", new QueueStatsManager());
+			}), "MainQueue", new QueueStatsManager(), new());
 			var mainBus = new InMemoryBus("mainBus");
 			var threadBasedScheduler = new ThreadBasedScheduler(new RealTimeProvider(), new QueueStatsManager());
 			var timerService = new TimerService(threadBasedScheduler);
 
 			return new StandardComponents(db, mainQueue, mainBus,
 				timerService, timeProvider: null, httpForwarder: null, httpServices: new IHttpService[] { },
-				networkSendService: null, queueStatsManager: new QueueStatsManager());
+				networkSendService: null, queueStatsManager: new QueueStatsManager(),
+				trackers: new());
 		}
 
 		[OneTimeSetUp]

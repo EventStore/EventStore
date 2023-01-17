@@ -29,7 +29,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 			var ts = new TimerService(new TimerBasedScheduler(new RealTimer(),
 				timeProvider));
 			
-			var sc = new StandardComponents(db, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs);
+			var sc = new StandardComponents(db, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs, new());
 			runtime.Register(sc);
 			runtime.Start();
 			return (runtime.Stop, runtime.LeaderQueue);

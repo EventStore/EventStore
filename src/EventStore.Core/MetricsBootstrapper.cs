@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
-using System.Diagnostics.Metrics;
 using EventStore.Core.Index;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.Telemetry;
@@ -16,6 +16,7 @@ public class Trackers {
 	public INodeStatusTracker NodeStatusTracker { get; set; } = new NodeStatusTracker.NoOp();
 	public IScavengeStatusTracker ScavengeStatusTracker { get; set; } = new ScavengeStatusTracker.NoOp();
 	public GrpcTrackers GrpcTrackers { get; } = new();
+	public QueueTrackers QueueTrackers { get; set; } = new();
 }
 
 public class GrpcTrackers {
@@ -23,8 +24,9 @@ public class GrpcTrackers {
 
 	public GrpcTrackers() {
 		_trackers = new IDurationTracker[Enum.GetValues<Conf.GrpcMethod>().Cast<int>().Max() + 1];
+		var noOp = new DurationTracker.NoOp();
 		for (var i = 0; i < _trackers.Length; i++)
-			_trackers[i] = new DurationTracker.NoOp();
+			_trackers[i] = noOp;
 	}
 
 	public IDurationTracker this[Conf.GrpcMethod index] {
@@ -38,6 +40,9 @@ public static class MetricsBootstrapper {
 		Conf conf,
 		TFChunkDbConfig dbConfig,
 		Trackers trackers) {
+
+		if (conf.ExpectedScrapeIntervalSeconds <= 0)
+			return;
 
 		var coreMeter = new Meter("EventStore.Core", version: "0.0.1");
 
@@ -74,8 +79,20 @@ public static class MetricsBootstrapper {
 
 		// grpc historgrams
 		foreach (var method in Enum.GetValues<Conf.GrpcMethod>()) {
-			if (conf.GrpcMethods.TryGetValue(method, out var label) && !string.IsNullOrEmpty(label))
+			if (conf.GrpcMethods.TryGetValue(method, out var label) && !string.IsNullOrWhiteSpace(label))
 				trackers.GrpcTrackers[method] = new DurationTracker(durationMetric, label);
 		}
+
+		// queue length trackers
+		var durationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-duration-max");
+
+		trackers.QueueTrackers = new QueueTrackers(
+			conf.Queues,
+			name => new QueueTracker(
+				name: name,
+				new DurationMaxTracker(
+					name: name,
+					metric: durationMaxMetric,
+					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds)));
 	}
 }

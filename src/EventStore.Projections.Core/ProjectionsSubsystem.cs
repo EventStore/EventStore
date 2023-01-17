@@ -111,7 +111,7 @@ namespace EventStore.Projections.Core {
 
 		public void Register(StandardComponents standardComponents) {
 			_leaderInputQueue = QueuedHandler.CreateQueuedHandler(_leaderMainBus, "Projections Leader",
-				standardComponents.QueueStatsManager);
+				standardComponents.QueueStatsManager, standardComponents.QueueTrackers);
 			_leaderOutputBus = new InMemoryBus("ProjectionManagerAndCoreCoordinatorOutput");
 			
 			_leaderMainBus.Subscribe<ProjectionSubsystemMessage.RestartSubsystem>(this);

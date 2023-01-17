@@ -59,7 +59,7 @@ namespace EventStore.Core.Tests.Bus {
 		[Test]
 		public void while_queue_is_busy_should_crash_with_timeout() {
 			var consumer = new WaitingConsumer(1);
-			var busyQueue = QueuedHandler.CreateQueuedHandler(consumer, "busy_test_queue", new QueueStatsManager(), watchSlowMsg: false,
+			var busyQueue = QueuedHandler.CreateQueuedHandler(consumer, "busy_test_queue", new QueueStatsManager(), new(), watchSlowMsg: false,
 				threadStopWaitTimeout: TimeSpan.FromMilliseconds(100));
 			var waitHandle = new ManualResetEvent(false);
 			var handledEvent = new ManualResetEvent(false);
@@ -116,7 +116,7 @@ namespace EventStore.Core.Tests.Bus {
 	[TestFixture]
 	public class when_stopping_queued_handler_threadpool : when_stopping_queued_handler {
 		public when_stopping_queued_handler_threadpool()
-			: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(), new(), false, null, timeout)) {
 		}
 	}
 }

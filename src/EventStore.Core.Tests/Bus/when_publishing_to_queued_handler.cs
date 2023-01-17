@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.Bus {
 	[TestFixture, Category("LongRunning")]
 	public class when_publishing_to_queued_handler_threadpool : when_publishing_to_queued_handler {
 		public when_publishing_to_queued_handler_threadpool()
-			: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(), new(), false, null, timeout)) {
 		}
 	}
 }

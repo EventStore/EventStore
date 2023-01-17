@@ -1,4 +1,7 @@
 {
+	// must be 0, 1, 5, 10 or a multiple of 15
+	"ExpectedScrapeIntervalSeconds": 15,
+
 	"Meters": [
 		"EventStore.Core"
 	],
@@ -22,5 +25,50 @@
 		"StreamBatchAppend": "append",
 		"StreamDelete": "",
 		"StreamTombstone": ""
-	}
+	},
+
+	// this specifies what name to track each queue under, according to regular expressions to
+	// match the queue names against
+	"Queues": [
+		{
+			"Regex": "MainQueue",
+			"Label": "Main Queue"
+		},
+		{
+			"Regex": "MonitoringQueue",
+			"Label": "Monitoring Queue"
+		},
+		{
+			"Regex": "StorageReaderQueue #.*",
+			"Label": "Reader Queue"
+		},
+		{
+			"Regex": "StorageWriterQueue",
+			"Label": "Writer Queue"
+		},
+		{
+			"Regex": "Subscriptions",
+			"Label": "Subscriptions Queue"
+		},
+		{
+			"Regex": "PersistentSubscriptions",
+			"Label": "Persistent Subscriptions Queue"
+		},
+		{
+			"Regex": "Projections Leader",
+			"Label": "Projections Leader Queue"
+		},
+		{
+			"Regex": "Projection Core #.*",
+			"Label": "Projections Core Queue"
+		},
+		{
+			"Regex": "Worker #.*",
+			"Label": "Worker Queue"
+		},
+		{
+			"Regex": ".*",
+			"Label": "Other Queue"
+		}
+	]
 }

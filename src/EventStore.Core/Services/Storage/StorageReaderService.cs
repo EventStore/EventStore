@@ -6,6 +6,7 @@ using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using ILogger = Serilog.ILogger;
 
@@ -31,7 +32,9 @@ namespace EventStore.Core.Services.Storage {
 			ISystemStreamLookup<TStreamId> systemStreams,
 			int threadCount,
 			IReadOnlyCheckpoint writerCheckpoint, 
-			QueueStatsManager queueStatsManager) {
+			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers) {
+
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscriber, "subscriber");
 			Ensure.NotNull(readIndex, "readIndex");
@@ -64,6 +67,7 @@ namespace EventStore.Core.Services.Storage {
 				queueNum => new QueuedHandlerThreadPool(storageReaderBuses[queueNum],
 					string.Format("StorageReaderQueue #{0}", queueNum + 1),
 					queueStatsManager,
+					trackers,
 					groupName: "StorageReaderQueue",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));

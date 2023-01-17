@@ -568,6 +568,7 @@ namespace EventStore.Core {
 				queueNum => new QueuedHandlerThreadPool(_workerBuses[queueNum],
 					$"Worker #{queueNum + 1}",
 					_queueStatsManager,
+					trackers.QueueTrackers,
 					groupName: "Workers",
 					watchSlowMsg: true,
 					slowMsgThreshold: TimeSpan.FromMilliseconds(200)));
@@ -579,7 +580,8 @@ namespace EventStore.Core {
 					(IPublisher)_mainBus, NodeInfo, Db,
 					trackers.NodeStatusTracker,
 					options, this, forwardingProxy);
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager);
+			_mainQueue = QueuedHandler.CreateQueuedHandler(_controller, "MainQueue", _queueStatsManager,
+				trackers.QueueTrackers);
 
 			_controller.SetMainQueue(_mainQueue);
 
@@ -603,7 +605,9 @@ namespace EventStore.Core {
 			// MONITORING
 			var monitoringInnerBus = new InMemoryBus("MonitoringInnerBus", watchSlowMsg: false);
 			var monitoringRequestBus = new InMemoryBus("MonitoringRequestBus", watchSlowMsg: false);
-			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager, true,
+			var monitoringQueue = new QueuedHandlerThreadPool(monitoringInnerBus, "MonitoringQueue", _queueStatsManager,
+				trackers.QueueTrackers,
+				true,
 				TimeSpan.FromMilliseconds(800));
 
 			var monitoring = new MonitoringService(monitoringQueue,
@@ -776,7 +780,9 @@ namespace EventStore.Core {
 				logFormat.EventTypeIndex,
 				logFormat.EmptyEventTypeId,
 				logFormat.SystemStreams,
-				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition);
+				epochManager, _queueStatsManager,
+				trackers.QueueTrackers,
+				() => readIndex.LastIndexedPosition);
 			// subscribes internally
 			AddTasks(storageWriter.Tasks);
 
@@ -784,7 +790,8 @@ namespace EventStore.Core {
 
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
-				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager);
+				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager,
+				trackers.QueueTrackers);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(storageReader);
@@ -1154,7 +1161,8 @@ namespace EventStore.Core {
 
 			// SUBSCRIPTIONS
 			var subscrBus = new InMemoryBus("SubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager, false);
+			var subscrQueue = new QueuedHandlerThreadPool(subscrBus, "Subscriptions", _queueStatsManager,
+				trackers.QueueTrackers, false);
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.SystemStart, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
@@ -1179,7 +1187,8 @@ namespace EventStore.Core {
 			// PERSISTENT SUBSCRIPTIONS
 			// IO DISPATCHER
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
-			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
+			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager,
+				trackers.QueueTrackers, false);
 			var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(perSubscrQueue));
 			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
 			perSubscrBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
@@ -1549,7 +1558,7 @@ namespace EventStore.Core {
 				foreach (var subsystem in _subsystems) {
 					var http = new[] { _httpService };
 					subsystem.Register(new StandardComponents(Db, _mainQueue, _mainBus, _timerService, _timeProvider,
-						httpSendService, http, _workersHandler, _queueStatsManager));
+						httpSendService, http, _workersHandler, _queueStatsManager, trackers.QueueTrackers));
 				}
 			}
 

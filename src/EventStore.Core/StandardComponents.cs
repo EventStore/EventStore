@@ -1,6 +1,7 @@
 using EventStore.Core.Bus;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.Transport.Http;
+using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Chunks;
 
 namespace EventStore.Core {
@@ -24,7 +25,8 @@ namespace EventStore.Core {
 			IHttpForwarder httpForwarder,
 			IHttpService[] httpServices,
 			IPublisher networkSendService,
-			QueueStatsManager queueStatsManager) {
+			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers) {
 			_db = db;
 			_mainQueue = mainQueue;
 			_mainBus = mainBus;
@@ -34,6 +36,7 @@ namespace EventStore.Core {
 			_httpServices = httpServices;
 			_networkSendService = networkSendService;
 			_queueStatsManager = queueStatsManager;
+			QueueTrackers = trackers;
 		}
 
 		public TFChunkDb Db {
@@ -71,5 +74,7 @@ namespace EventStore.Core {
 		public QueueStatsManager QueueStatsManager {
 			get { return _queueStatsManager; }
 		}
+
+		public QueueTrackers QueueTrackers { get; private set; }
 	}
 }

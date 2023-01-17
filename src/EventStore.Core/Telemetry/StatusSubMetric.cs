@@ -12,6 +12,8 @@ namespace EventStore.Core.Telemetry {
 	//
 	// The component name and status are stored in tags
 	// The value contains time in seconds since epoch so we can tell which status is active
+	//
+	// Multiple threads can SetStatus and Observe concurrently
 	public class StatusSubMetric {
 		private readonly KeyValuePair<string, object>[] _tags;
 		private string _status;
