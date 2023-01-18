@@ -23,6 +23,7 @@ namespace EventStore.Core.Services.VNode {
 		private readonly IReadOnlyCheckpoint _replicationCheckpoint;
 		private readonly IReadOnlyCheckpoint _indexCheckpoint;
 		private readonly Message _scheduleCheckInaugurationConditions;
+		private readonly IInaugurationStatusTracker _statusTracker;
 
 		private VNodeState _nodeState;
 		private ManagerState _managerState;
@@ -31,8 +32,16 @@ namespace EventStore.Core.Services.VNode {
 		private long _replicationCheckpointTarget;
 		private long _indexCheckpointTarget;
 
-		private enum ManagerState {
-			Initial,
+		private ManagerState State {
+			get => _managerState;
+			set {
+				_managerState = value;
+				_statusTracker.OnStateChange(value);
+			}
+		}
+
+		public enum ManagerState {
+			Idle,
 			WaitingForChaser,
 			WritingEpoch,
 			WaitingForConditions,
@@ -42,12 +51,14 @@ namespace EventStore.Core.Services.VNode {
 		public InaugurationManager(
 			IPublisher publisher,
 			IReadOnlyCheckpoint replicationCheckpoint,
-			IReadOnlyCheckpoint indexCheckpoint) {
+			IReadOnlyCheckpoint indexCheckpoint,
+			IInaugurationStatusTracker statusTracker) {
 
 			_log.Information("Using {name}", nameof(InaugurationManager));
 			_publisher = publisher;
 			_replicationCheckpoint = replicationCheckpoint;
 			_indexCheckpoint = indexCheckpoint;
+			_statusTracker = statusTracker;
 
 			_scheduleCheckInaugurationConditions = TimerMessage.Schedule.Create(
 				triggerAfter: TimeSpan.FromSeconds(1),
@@ -74,21 +85,21 @@ namespace EventStore.Core.Services.VNode {
 				"Starting inauguration process with correlation id {currentCorrelationId}. Waiting for chaser.",
 				received.CorrelationId);
 			_nodeState = received.State;
-			_managerState = ManagerState.WaitingForChaser;
+			State = ManagerState.WaitingForChaser;
 			_stateCorrelationId = received.CorrelationId;
 		}
 
 		private void HandleBecomeOtherNodeState(SystemMessage.StateChangeMessage received) {
-			if (_managerState != ManagerState.Initial) {
+			if (State != ManagerState.Idle) {
 				Received(received, "Inauguration process is now stopped.");
-				_managerState = ManagerState.Initial;
+				State = ManagerState.Idle;
 			}
 
 			_nodeState = received.State;
 		}
 
 		public void Handle(SystemMessage.ChaserCaughtUp received) {
-			if (_managerState != ManagerState.WaitingForChaser) {
+			if (State != ManagerState.WaitingForChaser) {
 				// will get this in prereplica and prereadonly replica
 				Ignore(received, "Not waiting for chaser.");
 			} else if (received.CorrelationId != _stateCorrelationId) {
@@ -103,12 +114,12 @@ namespace EventStore.Core.Services.VNode {
 					new SystemMessage.WriteEpoch(_currentEpochNumber),
 					"currentEpochNumber {currentEpochNumber}.",
 					_currentEpochNumber);
-				_managerState = ManagerState.WritingEpoch;
+				State = ManagerState.WritingEpoch;
 			}
 		}
 
 		public void Handle(SystemMessage.EpochWritten received) {
-			if (_managerState != ManagerState.WritingEpoch) {
+			if (State != ManagerState.WritingEpoch) {
 				Ignore(received, "Not writing epoch.");
 			} else if (received.Epoch.EpochNumber != _currentEpochNumber) {
 				Ignore(
@@ -118,7 +129,7 @@ namespace EventStore.Core.Services.VNode {
 					received.Epoch.EpochNumber);
 			} else {
 				Respond(received, new SystemMessage.EnablePreLeaderReplication());
-				_managerState = ManagerState.WaitingForConditions;
+				State = ManagerState.WaitingForConditions;
 
 				// want to replicate past the start of the epoch we just wrote.
 				_replicationCheckpointTarget = received.Epoch.EpochPosition + 1;
@@ -132,7 +143,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		public void Handle(ReplicationTrackingMessage.ReplicatedTo received) {
-			if (_managerState != ManagerState.WaitingForConditions) {
+			if (State != ManagerState.WaitingForConditions) {
 				// silently ignore. we'll get these all the time
 			} else {
 				ConsiderBecomingLeader(received, log: false);
@@ -140,7 +151,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		public void Handle(ReplicationTrackingMessage.IndexedTo received) {
-			if (_managerState != ManagerState.WaitingForConditions) {
+			if (State != ManagerState.WaitingForConditions) {
 				// silently ignore. we'll get these all the time
 			} else {
 				ConsiderBecomingLeader(received, log: false);
@@ -148,7 +159,7 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		public void Handle(SystemMessage.CheckInaugurationConditions received) {
-			if (_managerState != ManagerState.WaitingForConditions) {
+			if (State != ManagerState.WaitingForConditions) {
 				Ignore(received, "Not waiting for conditions.");
 			} else {
 				Respond(received, _scheduleCheckInaugurationConditions);
@@ -185,7 +196,7 @@ namespace EventStore.Core.Services.VNode {
 					new SystemMessage.BecomeLeader(_stateCorrelationId),
 					"Correlation id {currentCorrelationId}",
 					_stateCorrelationId);
-				_managerState = ManagerState.Initial;
+				State = ManagerState.Idle;
 			}
 		}
 
@@ -211,7 +222,7 @@ namespace EventStore.Core.Services.VNode {
 		private void LogExtraInformation(string template = null, params object[] templateArgs) {
 			_log.Information(
 				Combine(template, "{name} in state ({nodeState}, {managerState}):"),
-				Combine(templateArgs, nameof(InaugurationManager), _nodeState, _managerState));
+				Combine(templateArgs, nameof(InaugurationManager), _nodeState, State));
 		}
 
 		private static string Combine(string template2, string template1) {
