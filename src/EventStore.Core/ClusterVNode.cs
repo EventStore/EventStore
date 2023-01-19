@@ -1180,18 +1180,18 @@ namespace EventStore.Core {
 
 			// PERSISTENT SUBSCRIPTIONS
 			// IO DISPATCHER
-			var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(_mainQueue));
-			_mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
-			_mainBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
-			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
-			_mainBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
-			_mainBus.Subscribe<ClientMessage.ReadAllEventsForwardCompleted>(ioDispatcher.AllForwardReader);
-			_mainBus.Subscribe<ClientMessage.FilteredReadAllEventsForwardCompleted>(ioDispatcher.AllForwardFilteredReader);
-			_mainBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
-			_mainBus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
-			_mainBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager, false);
+			var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(perSubscrQueue));
+			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
+			perSubscrBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
+			perSubscrBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
+			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
+			perSubscrBus.Subscribe<ClientMessage.ReadAllEventsForwardCompleted>(ioDispatcher.AllForwardReader);
+			perSubscrBus.Subscribe<ClientMessage.FilteredReadAllEventsForwardCompleted>(ioDispatcher.AllForwardFilteredReader);
+			perSubscrBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
+			perSubscrBus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
+			perSubscrBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToStream, Message>());
