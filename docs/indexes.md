@@ -10,7 +10,7 @@ EventStoreDB stores indexes separately from the main data files, accessing recor
 
 EventStoreDB creates index entries as it processes commit events. It holds these in memory (called 
 _memtables_) until it reaches the `MaxMemTableSize` and then persisted on disk in the _index_ folder along
-with `.bloomfilter` files and an index map file. The index files are uniquely named, and the index map file
+with an index map file. The index files are uniquely named, and the index map file
 called _indexmap_. The index map describes the order and the level of the index file as well as containing the
 data checkpoint for the last written file, the version of the index map file and a checksum for the index map
 file. The logs refer to the index files as a _PTable_.
@@ -21,8 +21,7 @@ in the file.
 
 As EventStoreDB saves more files, they are automatically merged together whenever there are more than 2 files
 at the same level into a single file at the next level. Each index entry is 24 bytes and the index file size
-is approximately 24Mb per 1M events. The Bloom filter files are approximately 1% of the size of the rest of
-the index.
+is approximately 24Mb per 1M events.
 
 Level 0 is the level of the _memtable_ that is kept in memory. Generally there is only 1 level 0 table unless
 an ongoing merge operation produces multiple level 0 tables.
@@ -95,24 +94,6 @@ Triggering a manual merge causes EventStoreDB to merge all tables that have a le
 level or above into a single table. If there is only 1 table at the maximum level or above, no merge is
 performed.
 
-### Stream existence filter
-
-The _Stream Existence Filter_ is a pair of files in the index directory.
-
-- `/index/stream-existence/streamExistenceFilter.chk`
-- `/index/stream-existence/streamExistenceFilter.dat`
-
-It is made up of a persisted Bloom filter (the `.dat` file), and a checkpoint (the `.chk` file) that records
-where in the log the filter has processed up to. As per the documented backup procedure, the checkpoint needs
-to be backed up before the dat file.
-
-The Stream Existence Filter is used when reading and writing to quickly determine whether a stream _might
-exist_ or _definitely does not exist_. If a stream definitely does not exist then EventStoreDB can skip
-looking through the index to find information about it. This is particularly useful when creating new
-streams (i.e. appending to stream that did not previously exist).
-
-Additional information can be found in this [`blog post`](https://www.eventstore.com/blog/bloom-filters).
-
 ## Configuration options
 
 The configuration options that effect indexing are:
@@ -125,9 +106,6 @@ The configuration options that effect indexing are:
 | [`SkipIndexVerify`](#skip-index-verification)                | Tells the server to not verify indexes on startup                                                                                                     |
 | [`MaxAutoMergeIndexLevel`](#auto-merge-index-level)          | The maximum level of index file to merge automatically before manual merge                                                                            |
 | [`OptimizeIndexMerge`](#optimize-index-merge)                | Bypasses the checking of file hashes of indexes during startup and after index merges (allows for faster startup and less disk pressure after merges) |
-| [`StreamExistenceFilterSize`](#stream-existence-filter-size) | Size in bytes of the stream existence filter                                                                                                          |
-| [`IndexCacheSize`](#index-cache-size)                        | Maximum number of entries in each index LRU cache                                                                                                     |
-| [`UseIndexBloomFilters`](#use-index-bloom-filters)           | Feature flag which can be used to disable the index Bloom filters                                                                                     |
 
 Read more below to understand these options better.
 
@@ -245,65 +223,6 @@ For example:
 no effect on non-scavenged chunks. When EventStoreDB has scavenged a chunk, and this option is set to `true`, it
 uses a bloom filter before reading the chunk to see if the value exists before reading the chunk to make sure
 that it still exists.
-
-### Stream existence filter size
-
-| Format               | Syntax                                    |
-|:---------------------|:------------------------------------------|
-| Command line         | `--stream-existence-filter-size`          |
-| YAML                 | `StreamExistenceFilterSize`               |
-| Environment variable | `EVENTSTORE_STREAM_EXISTENCE_FILTER_SIZE` | 
-
-**Default**: `256000000`
-
-`StreamExistenceFilterSize` is the amount of memory & disk space, in bytes, to use for the stream existence
-filter. This should be set to roughly the maximum number of streams you expect to have in your database, i.e
-if you expect to have a max of 500 million streams, use a value of 500000000. The value you select should also
-fit entirely in memory to avoid any performance degradation. Use 0 to disable the filter.
-
-Upgrading to a version of EventStoreDB that supports the Stream Existence Filter requires the filter to be
-built - unless it is disabled. This will take approximately as long as it takes to read through the whole
-index.
-
-Resizing the filter will also cause a full rebuild of the filter.
-
-### Index cache size
-
-| Format               | Syntax                        |
-|:---------------------|:------------------------------|
-| Command line         | `--index-cache-size`          |
-| YAML                 | `IndexCacheSize`              |
-| Environment variable | `EVENTSTORE_INDEX_CACHE_SIZE` | 
-
-**Default**: `0`
-
-`IndexCacheSize` is the maximum number of entries in each index LRU cache. The cache size is set to 0 (off) by
-default because it has an associated memory overhead and can be detrimental to workloads that produce a lot of
-cache misses. The cache is, however, well suited to read-heavy workloads of long-lived streams.
-
-The index LRU cache is only created for index files that have Bloom filters.
-
-### Use index Bloom filters
-
-| Format               | Syntax                               |
-|:---------------------|:-------------------------------------|
-| Command line         | `--use-index-bloom-filters`          |
-| YAML                 | `UseIndexBloomFilters`               |
-| Environment variable | `EVENTSTORE_USE_INDEX_BLOOM_FILTERS` | 
-
-**Default**: `true`
-
-`UseIndexBloomFilters` is a feature flag which can be used to disable the index Bloom filters. This should not
-be necessary and this flag will be removed in a future release, but is provided for safety since the index
-Bloom filters are a new feature. Please contact EventStore if you discover some need to disable this feature.
-
-Unless this flag is set to false, EventStoreDB creates a `.bloomfilter` file for each new PTable. The Bloom
-filter describes which streams are present in the PTable. This speeds up stream reads since EventStoreDB can
-avoid searching in index files do not contain the stream.
-
-Note that immediately after upgrading to a version of EventStoreDB that produces index Bloom filters, no Bloom
-filters will yet exist. Either wait for new PTables to be produced with Bloom filters in the natural course of
-writing/merging/scavenging PTables, or rebuild the index for immediate generation.
 
 ## Tuning indexes
 
