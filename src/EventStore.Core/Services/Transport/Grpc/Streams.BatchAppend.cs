@@ -24,12 +24,15 @@ using Status = Google.Rpc.Status;
 using static EventStore.Client.Streams.BatchAppendReq.Types;
 using static EventStore.Client.Streams.BatchAppendReq.Types.Options;
 using OperationResult = EventStore.Core.Messages.OperationResult;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams<TStreamId> {
 		public override async Task BatchAppend(IAsyncStreamReader<BatchAppendReq> requestStream,
 			IServerStreamWriter<BatchAppendResp> responseStream, ServerCallContext context) {
-			var worker = new BatchAppendWorker(_publisher, _provider, requestStream, responseStream,
+			var worker = new BatchAppendWorker(_publisher, _provider,
+				_batchAppendTracker,
+				requestStream, responseStream,
 				context.GetHttpContext().User, _maxAppendSize, _writeTimeout,
 				GetRequiresLeader(context.RequestHeaders));
 			
@@ -39,6 +42,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private class BatchAppendWorker {
 			private readonly IPublisher _publisher;
 			private readonly IAuthorizationProvider _authorizationProvider;
+			private readonly IDurationTracker _tracker;
 			private readonly IAsyncStreamReader<BatchAppendReq> _requestStream;
 			private readonly IServerStreamWriter<BatchAppendResp> _responseStream;
 			private readonly ClaimsPrincipal _user;
@@ -50,10 +54,12 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			private long _pending;
 
 			public BatchAppendWorker(IPublisher publisher, IAuthorizationProvider authorizationProvider,
+				IDurationTracker tracker,
 				IAsyncStreamReader<BatchAppendReq> requestStream, IServerStreamWriter<BatchAppendResp> responseStream,
 				ClaimsPrincipal user, int maxAppendSize, TimeSpan writeTimeout, bool requiresLeader) {
 				_publisher = publisher;
 				_authorizationProvider = authorizationProvider;
+				_tracker = tracker;
 				_requestStream = requestStream;
 				_responseStream = responseStream;
 				_user = user;
@@ -122,6 +128,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				try {
 					await foreach (var request in _requestStream.ReadAllAsync(cancellationToken).ConfigureAwait(false)) {
+						using var duration = _tracker.Start();
 						try {
 							var correlationId = Uuid.FromDto(request.CorrelationId).ToGuid();
 
@@ -247,6 +254,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 								return batchAppendResp;
 							}
 						} catch (Exception ex) {
+							duration.SetException(ex);
 							await writer.WriteAsync(new BatchAppendResp {
 								CorrelationId = request.CorrelationId,
 								StreamIdentifier = request.Options.StreamIdentifier,

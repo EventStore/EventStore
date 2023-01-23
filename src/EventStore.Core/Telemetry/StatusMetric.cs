@@ -22,7 +22,7 @@ namespace EventStore.Core.Telemetry {
 			}
 		}
 
-		public IEnumerable<Measurement<long>> Observe() {
+		private IEnumerable<Measurement<long>> Observe() {
 			var secondsSinceEpoch = _clock.SecondsSinceEpoch;
 			lock (_subMetrics) {
 				foreach (var instance in _subMetrics) {

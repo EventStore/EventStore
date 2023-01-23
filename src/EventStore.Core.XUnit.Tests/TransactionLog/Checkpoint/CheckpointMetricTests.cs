@@ -1,19 +1,23 @@
 ﻿using System.Diagnostics.Metrics;
 using System.Linq;
 using EventStore.Core.TransactionLog.Checkpoint;
+using EventStore.Core.XUnit.Tests.Telemetry;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.TransactionLog.Checkpoint {
 	public class CheckpointMetricTests {
 		[Fact]
 		public void can_collect() {
+			var meter = new Meter($"{typeof(CheckpointMetricTests)}");
+			using var listener = new TestMeterListener<long>(meter);
 			var metric = new CheckpointMetric(
-				new Meter("Eventstore.Core.XUnit.Tests"),
+				meter,
 				"eventstore-checkpoints",
 				new InMemoryCheckpoint("checkpoint", 5));
 
+			listener.Observe();
 			Assert.Collection(
-				metric.Observe().ToArray(),
+				listener.RetrieveMeasurements("eventstore-checkpoints"),
 				measurement => {
 					Assert.Equal(5, measurement.Value);
 					Assert.Collection(

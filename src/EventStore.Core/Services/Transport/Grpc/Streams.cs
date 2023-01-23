@@ -1,6 +1,8 @@
 using System;
+using EventStore.Common.Configuration;
 using EventStore.Core.Bus;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Telemetry;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -10,6 +12,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private readonly int _maxAppendSize;
 		private readonly TimeSpan _writeTimeout;
 		private readonly IExpiryStrategy _expiryStrategy;
+		private readonly IDurationTracker _readTracker;
+		private readonly IDurationTracker _appendTracker;
+		private readonly IDurationTracker _batchAppendTracker;
+		private readonly IDurationTracker _deleteTracker;
+		private readonly IDurationTracker _tombstoneTracker;
 		private readonly IAuthorizationProvider _provider;
 		private static readonly Operation ReadOperation = new Operation(Plugins.Authorization.Operations.Streams.Read);
 		private static readonly Operation WriteOperation = new Operation(Plugins.Authorization.Operations.Streams.Write);
@@ -17,13 +24,20 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public Streams(IPublisher publisher, IReadIndex<TStreamId> readIndex, int maxAppendSize, TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
+			GrpcTrackers trackers,
 			IAuthorizationProvider provider) {
+	
 			if (publisher == null) throw new ArgumentNullException(nameof(publisher));
 			_publisher = publisher;
 			_readIndex = readIndex;
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
+			_readTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamRead];
+			_appendTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamAppend];
+			_batchAppendTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamBatchAppend];
+			_deleteTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamDelete];
+			_tombstoneTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamTombstone];
 			_provider = provider;
 		}
 	}

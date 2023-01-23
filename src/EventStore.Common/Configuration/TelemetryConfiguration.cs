@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using EventStore.Common.Utils;
@@ -48,10 +49,20 @@ namespace EventStore.Common.Configuration {
 			Writer,
 		}
 
+		public enum GrpcMethod {
+			StreamRead = 1,
+			StreamAppend,
+			StreamBatchAppend,
+			StreamDelete,
+			StreamTombstone,
+		}
+
 		public string[] Meters { get; set; } = Array.Empty<string>();
 
 		public StatusTracker[] StatusTrackers { get; set; } = Array.Empty<StatusTracker>();
 
 		public Checkpoint[] Checkpoints { get; set; } = Array.Empty<Checkpoint>();
+
+		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
 	}
 }

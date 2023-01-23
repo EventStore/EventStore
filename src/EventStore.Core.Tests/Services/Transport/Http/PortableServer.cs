@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading;
+using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.LogV2;
@@ -68,7 +69,10 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 							new AnonymousHttpAuthenticationProvider(),
 						}, new TestAuthorizationProvider(),
 						new FakeReadIndex<LogFormat.V2, string>(_ => false, new LogV2SystemStreams()),
-						1024 * 1024, _timeout, expiryStrategy: null, _service, null)));
+						1024 * 1024, _timeout, expiryStrategy: null, _service,
+						new TelemetryConfiguration(),
+						new Trackers(),
+						null)));
 			_httpMessageHandler = _server.CreateHandler();
 			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);
 			
