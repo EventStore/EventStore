@@ -103,7 +103,6 @@ namespace EventStore.Core.Services {
 			} catch (SemaphoreFullException) {
 				message.Envelope.ReplyWith(
 					new RedactionMessage.SwitchChunkUnlockCompleted(SwitchChunkUnlockResult.Failed));
-				throw;
 			}
 		}
 
