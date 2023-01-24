@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		private SemaphoreSlim _switchChunkSemaphore;
 		public RedactionService<TStreamId> RedactionService { get; private set; }
 
-		public RedactionServiceTestFixture() : base(chunkSize: 512) { }
+		public RedactionServiceTestFixture() : base(chunkSize: 1024) { }
 
 		[SetUp]
 		public void SetUp() {
