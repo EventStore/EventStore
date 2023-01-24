@@ -195,11 +195,16 @@ namespace EventStore.Core.Services {
 			ChunkFooter newChunkFooter;
 			try {
 				using var fs = new FileStream(newChunkPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-				newChunkHeader = ChunkHeader.FromStream(fs);
-				fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
-				newChunkFooter = ChunkFooter.FromStream(fs);
+				try {
+					newChunkHeader = ChunkHeader.FromStream(fs);
+					fs.Seek(-ChunkFooter.Size, SeekOrigin.End);
+					newChunkFooter = ChunkFooter.FromStream(fs);
+				} catch {
+					failReason = SwitchChunkResult.NewChunkHeaderOrFooterInvalid;
+					return false;
+				}
 			} catch {
-				failReason = SwitchChunkResult.NewChunkHeaderOrFooterInvalid;
+				failReason = SwitchChunkResult.NewChunkOpenFailed;
 				return false;
 			}
 
