@@ -507,7 +507,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		public IndexReadEventInfoResult ReadEventInfo_KeepDuplicates(TStreamId streamId, long eventNumber) {
 			using (var reader = _backend.BorrowReader()) {
-				return ReadEventInfoForwardInternal(
+				var result = ReadEventInfoForwardInternal(
 					streamId,
 					reader,
 					ReadIndexEntries_RemoveCollisions,
@@ -517,6 +517,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 					1,
 					long.MaxValue,
 					false);
+
+				// ensure that the next event number is set to -1
+				return new IndexReadEventInfoResult(result.EventInfos, -1);
 			}
 		}
 
