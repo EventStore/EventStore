@@ -6,7 +6,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Tests.Index.Hashers;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Services.Storage.HashCollisions {
+namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 	[TestFixture(3)]
 	[TestFixture(33)]
 	[TestFixture(123)]
