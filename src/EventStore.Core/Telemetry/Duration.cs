@@ -5,10 +5,10 @@ namespace EventStore.Core.Telemetry {
 	public struct Duration : IDisposable {
 		private readonly DurationMetric _metric;
 		private readonly string _name;
-		private readonly DateTime _start;
+		private readonly Instant _start;
 		private bool _failed;
 
-		public Duration(DurationMetric metric, string name, DateTime start) {
+		public Duration(DurationMetric metric, string name, Instant start) {
 			_metric = metric;
 			_name = name;
 			_start = start;

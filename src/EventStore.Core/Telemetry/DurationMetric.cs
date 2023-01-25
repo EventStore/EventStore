@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 
 namespace EventStore.Core.Telemetry {
@@ -13,15 +12,15 @@ namespace EventStore.Core.Telemetry {
 		}
 
 		public Duration Start(string durationName) =>
-			new(this, durationName, _clock.UtcNow);
+			new(this, durationName, _clock.Now);
 
 		public void Record(
-			DateTime start,
+			Instant start,
 			KeyValuePair<string, object> tag1,
 			KeyValuePair<string, object> tag2) {
 
-			var elapsed = _clock.UtcNow - start;
-			_histogram.Record(elapsed.TotalSeconds, tag1, tag2);
+			var elapsedSeconds = _clock.Now.ElapsedSecondsSince(start);
+			_histogram.Record(elapsedSeconds, tag1, tag2);
 		}
 	}
 }
