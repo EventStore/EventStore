@@ -54,7 +54,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			int hashCollisionReadLimit,
 			bool skipIndexScanOnReads,
 			IReadOnlyCheckpoint replicationCheckpoint,
-			ICheckpoint indexCheckpoint) {
+			ICheckpoint indexCheckpoint,
+			IIndexStatusTracker indexStatusTracker) {
 
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(readerPool, "readerPool");
@@ -87,7 +88,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex,
 				_streamNames, eventTypeIndex, eventTypeNames, systemStreams, streamExistenceFilter,
-				streamExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks);
+				streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames, eventTypeNames);
 		}
 

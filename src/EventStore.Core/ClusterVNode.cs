@@ -742,7 +742,8 @@ namespace EventStore.Core {
 				options.Database.HashCollisionReadLimit,
 				options.Application.SkipIndexScanOnReads,
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
-				Db.Config.IndexCheckpoint);
+				Db.Config.IndexCheckpoint,
+				trackers.IndexStatusTracker);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);
 

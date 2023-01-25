@@ -46,6 +46,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly INameLookup<TStreamId> _eventTypes;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly INameExistenceFilter _streamExistenceFilter;
+		private readonly IIndexStatusTracker _statusTracker;
 		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
@@ -66,6 +67,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameExistenceFilter streamExistenceFilter,
 			INameExistenceFilterInitializer streamExistenceFilterInitializer,
 			ICheckpoint indexChk,
+			IIndexStatusTracker statusTracker,
 			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
@@ -80,12 +82,16 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_streamExistenceFilterInitializer = streamExistenceFilterInitializer;
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
+			_statusTracker = statusTracker;
 		}
 
 		public void Init(long buildToPosition) {
 			Log.Information("TableIndex initialization...");
 
-			_tableIndex.Initialize(buildToPosition);
+			using (_statusTracker.StartOpening()) {
+			    _tableIndex.Initialize(buildToPosition);
+			}
+
 			_persistedPreparePos = _tableIndex.PrepareCheckpoint;
 			_persistedCommitPos = _tableIndex.CommitCheckpoint;
 			//todo(clc) determin if this needs to move into the TableIndex re:project-io
@@ -121,6 +127,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_eventTypeIndex.InitializeWithConfirmed(_eventTypes);
 
 			_indexRebuild = true;
+			using (_statusTracker.StartRebuilding())
 			using (var reader = _backend.BorrowReader()) {
 				var startPosition = Math.Max(0, _persistedCommitPos);
 				var fullRebuild = startPosition == 0;
@@ -201,6 +208,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				// V2/V3 note: it's possible that we add extra uncommitted entries to the filter if the index or log later gets truncated when joining
 				// the cluster but false positives are not a problem since it's a probabilistic filter
 				Log.Debug("Initializing the StreamExistenceFilter. The filter can be disabled by setting the configuration option \"StreamExistenceFilterSize\" to 0");
+				_statusTracker.StartInitializing();
 				_streamExistenceFilter.Initialize(_streamExistenceFilterInitializer, truncateToPosition: buildToPosition);
 				Log.Debug("StreamExistenceFilter initialized. Time elapsed: {elapsed}.",
 					DateTime.UtcNow - startTime);

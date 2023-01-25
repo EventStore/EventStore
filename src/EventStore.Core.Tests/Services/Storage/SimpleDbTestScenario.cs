@@ -87,7 +87,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				hashCollisionReadLimit: Opts.HashCollisionReadLimitDefault,
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint,
-				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint);
+				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint,
+				indexStatusTracker: new IndexStatusTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
 			ReadIndex = readIndex;
