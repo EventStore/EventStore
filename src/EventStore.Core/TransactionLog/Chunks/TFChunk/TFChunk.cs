@@ -590,7 +590,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public long GetActualRawPosition(long logicalPosition) {
-			return GetRawPosition(_readSide.GetActualPosition(logicalPosition));
+			if (logicalPosition < 0)
+				throw new ArgumentOutOfRangeException(nameof(logicalPosition));
+
+			var actualPosition = _readSide.GetActualPosition(logicalPosition);
+
+			if (actualPosition < 0)
+				return -1;
+
+			return GetRawPosition(actualPosition);
 		}
 
 		// WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!

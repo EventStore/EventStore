@@ -120,7 +120,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				}
 			}
 
-			public long GetActualPosition(long logicalPosition) => logicalPosition;
+			public long GetActualPosition(long logicalPosition) {
+				if (logicalPosition >= Chunk.LogicalDataSize)
+					return -1;
+
+				return logicalPosition;
+			}
 		}
 
 		private class TFChunkReadSideScavenged : TFChunkReadSide, IChunkReadSide {
