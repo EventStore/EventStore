@@ -1,6 +1,6 @@
 # Introduction
 
-Welcome to the EventStoreDB 21.10 documentation.
+Welcome to the EventStoreDB 22.10 documentation.
 
 EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration and operational concerns.
 
