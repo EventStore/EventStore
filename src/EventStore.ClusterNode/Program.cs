@@ -197,8 +197,8 @@ namespace EventStore.ClusterNode {
 										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveInterval);
 									server.Limits.Http2.KeepAlivePingTimeout =
 										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
-									server.Listen(options.Interface.ExtIp, options.Interface.HttpPort,
-										listenOptions => ConfigureListenOptions(listenOptions, hostedService, !hostedService.Node.DisableHttps));
+									server.Listen(options.Interface.ExtIp, options.Interface.HttpPort, listenOptions =>
+										ConfigureListenOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps));
 
 									if (hostedService.Node.EnableUnixSockets)
 										TryListenOnUnixSocket(hostedService, server);
@@ -229,16 +229,14 @@ namespace EventStore.ClusterNode {
 		}
 
 		private static void ConfigureListenOptions(ListenOptions listenOptions, ClusterVNodeHostedService hostedService, bool useHttps) {
-			if (useHttps) {
+			if (useHttps)
 				listenOptions.UseHttps(CreateServerOptionsSelectionCallback(hostedService), null);
-			} else {
+			else
 				listenOptions.Use(next =>
 					new ClearTextHttpMultiplexingMiddleware(next).OnConnectAsync);
-			}
 		}
 
 		private static void TryListenOnUnixSocket(ClusterVNodeHostedService hostedService, KestrelServerOptions server) {
-
 			if (hostedService.Node.Db.Config.InMemDb) {
 				Log.Information("Not listening on a UNIX domain socket since the database is running in memory.");
 				return;

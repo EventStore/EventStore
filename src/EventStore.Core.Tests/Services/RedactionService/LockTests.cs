@@ -30,15 +30,19 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 
 		[Test]
 		public async Task can_unlock() {
-			await TryLock();
-			var msg = await TryUnlock();
-			Assert.AreEqual(SwitchChunkUnlockResult.Success, msg.Result);
+			var lockMsg = await TryLock();
+			Assert.AreEqual(SwitchChunkLockResult.Success, lockMsg.Result);
+
+			var unlockMsg = await TryUnlock();
+			Assert.AreEqual(SwitchChunkUnlockResult.Success, unlockMsg.Result);
 		}
 
 		[Test]
 		public async Task cannot_lock_when_locked() {
-			await TryLock();
 			var msg = await TryLock();
+			Assert.AreEqual(SwitchChunkLockResult.Success, msg.Result);
+
+			msg = await TryLock();
 			Assert.AreEqual(SwitchChunkLockResult.Failed, msg.Result);
 		}
 

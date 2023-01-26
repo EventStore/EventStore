@@ -176,8 +176,8 @@ namespace EventStore.Core.Services {
 			TFChunk targetChunk;
 			try {
 				targetChunk = _db.Manager.GetChunk(targetChunkNumber);
-			} catch {
-				failReason = SwitchChunkResult.TargetChunkNumberNotFound;
+			} catch(ArgumentOutOfRangeException) {
+				failReason = SwitchChunkResult.TargetChunkExcessive;
 				return false;
 			}
 

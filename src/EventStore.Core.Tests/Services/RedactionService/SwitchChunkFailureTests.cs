@@ -15,13 +15,13 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 			var msg = await SwitchChunk("chunk", FakeChunk);
 			Assert.AreEqual(SwitchChunkResult.TargetChunkFileNameInvalid, msg.Result);
 
-			msg = await SwitchChunk("../chunk", FakeChunk);
+			msg = await SwitchChunk("../chunk-000000.000000", FakeChunk);
 			Assert.AreEqual(SwitchChunkResult.TargetChunkFileNameInvalid, msg.Result);
 
-			msg = await SwitchChunk("..chunk", FakeChunk);
+			msg = await SwitchChunk("..chunk-000000.000000", FakeChunk);
 			Assert.AreEqual(SwitchChunkResult.TargetChunkFileNameInvalid, msg.Result);
 
-			msg = await SwitchChunk("/chunk", FakeChunk);
+			msg = await SwitchChunk("/chunk-000000.000000", FakeChunk);
 			Assert.AreEqual(SwitchChunkResult.TargetChunkFileNameInvalid, msg.Result);
 		}
 
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		public async Task cannot_switch_chunk_not_used_by_db() {
 			File.Copy(GetChunk(0, 0, true), GetChunk(10, 0, true));
 			var msg = await SwitchChunk(GetChunk(10, 0), FakeChunk);
-			Assert.AreEqual(SwitchChunkResult.TargetChunkNumberNotFound, msg.Result);
+			Assert.AreEqual(SwitchChunkResult.TargetChunkExcessive, msg.Result);
 		}
 
 		[Test]

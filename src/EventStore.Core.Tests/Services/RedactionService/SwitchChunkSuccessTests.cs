@@ -5,7 +5,7 @@ using EventStore.Core.Data.Redaction;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
 
-// successful chunk switching tests have their own classes since the test fixture cannot be reused
+// successful chunk switching tests have individual classes as they modify the database and thus the test fixture cannot be reused
 
 namespace EventStore.Core.Tests.Services.RedactionService {
 	public class SwitchChunkSuccess<TLogFormat, TStreamId> : SwitchChunkTests<TLogFormat, TStreamId> {
@@ -14,24 +14,27 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		public class CanSwitchWithExactCopy : SwitchChunkSuccess<TLogFormat, TStreamId> {
 			[Test]
 			public async Task can_switch_with_exact_copy() {
-				var newChunk = $"{nameof(can_switch_with_exact_copy)}.tmp";
+				var newChunk = Path.Combine(PathName, $"{nameof(can_switch_with_exact_copy)}.tmp");
 
-				File.Copy(GetChunk(1, 0, true), Path.Combine(PathName, newChunk));
-				var msg = await SwitchChunk(GetChunk(1, 0), newChunk);
+				File.Copy(GetChunk(1, 0, true), newChunk);
+				var msg = await SwitchChunk(GetChunk(1, 0), Path.GetFileName(newChunk));
 				Assert.AreEqual(SwitchChunkResult.Success, msg.Result);
-				Assert.True(!File.Exists(Path.Combine(PathName, newChunk)));
+				Assert.True(!File.Exists(newChunk));
 				Assert.True(!File.Exists(GetChunk(1, 0, true)));
-				Assert.True(File.Exists(GetChunk(0, 0, true)));
 				Assert.True(File.Exists(GetChunk(1, 1, true)));
 				Assert.AreEqual(1, Db.Config.FileNamingStrategy.GetVersionFor(Path.GetFileName(Db.Manager.GetChunk(1).FileName)));
+				Assert.True(File.Exists(GetChunk(0, 0, true)));
 
 				// can switch again
-				File.Copy(GetChunk(1, 1, true), Path.Combine(PathName, newChunk));
-				msg = await SwitchChunk(GetChunk(1, 1), newChunk);
+				File.Copy(GetChunk(1, 1, true), newChunk);
+				msg = await SwitchChunk(GetChunk(1, 1), Path.GetFileName(newChunk));
 				Assert.AreEqual(SwitchChunkResult.Success, msg.Result);
+				Assert.True(!File.Exists(newChunk));
 				Assert.True(!File.Exists(GetChunk(1, 0, true)));
 				Assert.True(!File.Exists(GetChunk(1, 1, true)));
 				Assert.True(File.Exists(GetChunk(1, 2, true)));
+				Assert.AreEqual(2, Db.Config.FileNamingStrategy.GetVersionFor(Path.GetFileName(Db.Manager.GetChunk(1).FileName)));
+				Assert.True(File.Exists(GetChunk(0, 0, true)));
 			}
 		}
 
@@ -70,9 +73,9 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 				Assert.AreEqual(SwitchChunkResult.Success, msg.Result);
 				Assert.True(!File.Exists(newChunk));
 				Assert.True(!File.Exists(GetChunk(1, 0, true)));
-				Assert.True(File.Exists(GetChunk(0, 0, true)));
 				Assert.True(File.Exists(GetChunk(1, 1, true)));
 				Assert.AreEqual(1, Db.Config.FileNamingStrategy.GetVersionFor(Path.GetFileName(Db.Manager.GetChunk(1).FileName)));
+				Assert.True(File.Exists(GetChunk(0, 0, true)));
 			}
 		}
 	}

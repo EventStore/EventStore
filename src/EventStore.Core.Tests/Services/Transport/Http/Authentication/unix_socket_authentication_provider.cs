@@ -15,9 +15,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	}
 
 	[TestFixture]
-	public class
-		when_handling_a_request_having_a_remote_ip_address :
-			TestFixtureWithUnixSocketAuthenticationProvider {
+	public class when_handling_a_request_having_a_remote_ip_address : TestFixtureWithUnixSocketAuthenticationProvider {
 		private bool _authenticateResult;
 
 		[SetUp]
@@ -37,9 +35,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	}
 
 	[TestFixture]
-	public class
-		when_handling_a_request_not_having_a_remote_ip_address :
-			TestFixtureWithUnixSocketAuthenticationProvider {
+	public class when_handling_a_request_not_having_a_remote_ip_address : TestFixtureWithUnixSocketAuthenticationProvider {
 		private bool _authenticateResult;
 		private HttpAuthenticationRequest _authenticateRequest;
 
