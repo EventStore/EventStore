@@ -24,9 +24,13 @@ All notable changes to this project will be documented in this file.
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
 - Update UI build after latest changes. [EventStore#3683](https://github.com/EventStore/EventStore/pull/3683)
 - Publish messages from the persistent subscriptions IODispatcher to the Persistent Subscriptions queue rather than the main queue [EventStore#3702](https://github.com/EventStore/EventStore/pull/3702)
+- CI Unit test settings [EventStore#3712](https://github.com/EventStore/EventStore/pull/3712)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
+
+### changed
+- Use version 22.10 in the docs [EventStore#3714](https://github.com/EventStore/EventStore/pull/3714)
 
 ## [21.10.9] - 2022-11-21
 
