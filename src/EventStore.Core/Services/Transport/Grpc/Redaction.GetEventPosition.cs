@@ -18,17 +18,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			var user = context.GetHttpContext().User;
 
-			while (await requestStream.MoveNext().ConfigureAwait(false)) {
-				var request = requestStream.Current;
+			await foreach (var request in requestStream.ReadAllAsync().ConfigureAwait(false)) {
 				var streamId = request.StreamIdentifier.StreamName.ToStringUtf8();
 				var streamRevision = new StreamRevision(request.StreamRevision);
 
 				var op = ReadOperation.WithParameter(
 					Plugins.Authorization.Operations.Streams.Parameters.StreamId(streamId));
 
-				if (!await _authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false)) {
+				if (!await _authorizationProvider.CheckAccessAsync(user, op, context.CancellationToken).ConfigureAwait(false))
 					throw RpcExceptions.AccessDenied();
-				}
 
 				var tcs = new TaskCompletionSource<RedactionMessage.GetEventPositionCompleted>();
 

@@ -17,9 +17,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			ServerCallContext context) {
 
 			var user = context.GetHttpContext().User;
-			if (!await _authorizationProvider.CheckAccessAsync(user, SwitchChunkOperation, context.CancellationToken).ConfigureAwait(false)) {
+			if (!await _authorizationProvider.CheckAccessAsync(user, SwitchChunkOperation, context.CancellationToken).ConfigureAwait(false))
 				throw RpcExceptions.AccessDenied();
-			}
 
 			await SwitchChunksLock().ConfigureAwait(false);
 			try {
