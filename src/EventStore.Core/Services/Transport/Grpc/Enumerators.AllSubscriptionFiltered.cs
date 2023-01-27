@@ -276,12 +276,21 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						.ConfigureAwait(false)) {
 
 						if (message is ClientMessage.CheckpointReached checkpoint) {
+							if (checkpoint.Position == null) {
+								_channel.Writer.Complete(
+									new Exception("Unexpected error, checkpoint position is Null"));
+								break;
+							}
+
+							var checkpointPosition = Position.FromInt64(
+								checkpoint.Position.Value.CommitPosition,
+								checkpoint.Position.Value.PreparePosition);
 							await _channel.Writer
 								.WriteAsync(
 									new ReadResp {
 										Checkpoint = new ReadResp.Types.Checkpoint {
-											CommitPosition = position.CommitPosition,
-											PreparePosition = position.PreparePosition
+											CommitPosition = checkpointPosition.CommitPosition,
+											PreparePosition = checkpointPosition.PreparePosition
 										}
 									},
 									_cancellationToken)
@@ -439,8 +448,6 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							return;
 						}
 						case ClientMessage.CheckpointReached checkpointReached:
-							var position = Position.FromInt64(checkpointReached.Position.Value.CommitPosition,
-								checkpointReached.Position.Value.PreparePosition);
 							if (!liveEvents.Writer.TryWrite(checkpointReached)) {
 								ConsumerTooSlow(null);
 							}

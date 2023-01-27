@@ -210,16 +210,19 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 				Assert.AreEqual(ReadResp.ContentOneofCase.Confirmation, call.ResponseStream.Current.ContentCase);
 
-				var success = (await AppendToStreamBatch(new BatchAppendReq {
-					Options = new() {
-						Any = new(),
-						StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8(StreamName)}
-					},
-					IsFinal = true,
-					ProposedMessages = {CreateEvents(1)},
-					CorrelationId = Uuid.NewUuid().ToDto()
-				})).Success;
-
+				var success = new BatchAppendResp.Types.Success();
+				for (int i = 0; i <= _checkpointInterval ; i++) {
+					success = (await AppendToStreamBatch(new BatchAppendReq {
+						Options = new() {
+							Any = new(),
+							StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8(StreamName)}
+						},
+						IsFinal = true,
+						ProposedMessages = {CreateEvents(1)},
+						CorrelationId = Uuid.NewUuid().ToDto()
+					})).Success;
+				}
+				
 				_position = new Position(success.Position.CommitPosition, success.Position.PreparePosition);
 
 				while (await call.ResponseStream.MoveNext()) {
@@ -231,15 +234,18 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					}
 
 					if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
-						Assert.AreEqual(StreamName, response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
-						return;
+						Assert.AreEqual(StreamName,
+							response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
+						if (!(response.Event.CommitPosition < _position.CommitPosition)) {
+							return;
+						}
 					}
 				}
 			}
 
 			[Test]
 			public void receives_the_correct_number_of_checkpoints() {
-				Assert.AreEqual(1, CheckpointCount);
+				Assert.AreEqual(2, CheckpointCount);
 			}
 
 			[Test]
