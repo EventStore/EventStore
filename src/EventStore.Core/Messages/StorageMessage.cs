@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
@@ -42,11 +43,15 @@ namespace EventStore.Core.Messages {
 				Events = events;
 			}
 
-			public override string ToString() {
-				return string.Format(
-					"WRITE_PREPARES: CorrelationId: {0}, EventStreamId: {1}, ExpectedVersion: {2}",
-					CorrelationId, EventStreamId, ExpectedVersion);
-			}
+			public override string ToString() =>
+				$"{GetType().Name} " +
+				$"CorrelationId: {CorrelationId}, " +
+				$"EventStreamId: {EventStreamId}, " +
+				$"ExpectedVersion: {ExpectedVersion}, " +
+				$"Envelope: {{ {Envelope} }}, " +
+				$"NumEvents: {Events?.Length}, " +
+				$"DataBytes: {Events?.Sum(static e => e.Data.Length)}, " +
+				$"MetadataBytes: {Events?.Sum(static e => e.Metadata.Length)}";
 		}
 
 		[DerivedMessage]
