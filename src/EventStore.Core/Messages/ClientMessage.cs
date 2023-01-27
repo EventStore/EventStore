@@ -98,9 +98,11 @@ namespace EventStore.Core.Messages {
 			public readonly ClaimsPrincipal User;
 
 			public readonly DateTime Expires;
+			public readonly CancellationToken CancellationToken;
 
 			protected ReadRequestMessage(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
-				ClaimsPrincipal user, DateTime? expires) {
+				ClaimsPrincipal user, DateTime? expires,
+				CancellationToken cancellationToken = default) {
 				Ensure.NotEmptyGuid(internalCorrId, "internalCorrId");
 				Ensure.NotEmptyGuid(correlationId, "correlationId");
 				Ensure.NotNull(envelope, "envelope");
@@ -111,6 +113,7 @@ namespace EventStore.Core.Messages {
 
 				User = user;
 				Expires = expires ?? DateTime.UtcNow.AddMilliseconds(ESConsts.ReadRequestTimeout);
+				CancellationToken = cancellationToken;
 			}
 		}
 
@@ -553,8 +556,9 @@ namespace EventStore.Core.Messages {
 
 			public ReadEvent(Guid internalCorrId, Guid correlationId, IEnvelope envelope, string eventStreamId,
 				long eventNumber,
-				bool resolveLinkTos, bool requireLeader, ClaimsPrincipal user, DateTime? expires = null)
-				: base(internalCorrId, correlationId, envelope, user, expires) {
+				bool resolveLinkTos, bool requireLeader, ClaimsPrincipal user, DateTime? expires = null,
+				CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (eventNumber < -1) throw new ArgumentOutOfRangeException(nameof(eventNumber));
 
@@ -617,8 +621,9 @@ namespace EventStore.Core.Messages {
 				string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
 				bool requireLeader, long? validationStreamVersion, ClaimsPrincipal user,
 				bool replyOnExpired,
-				TimeSpan? longPollTimeout = null, DateTime? expires = null)
-				: base(internalCorrId, correlationId, envelope, user, expires) {
+				TimeSpan? longPollTimeout = null, DateTime? expires = null,
+				CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
 
@@ -709,8 +714,9 @@ namespace EventStore.Core.Messages {
 
 			public ReadStreamEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				string eventStreamId, long fromEventNumber, int maxCount, bool resolveLinkTos,
-				bool requireLeader, long? validationStreamVersion, ClaimsPrincipal user, DateTime? expires = null)
-				: base(internalCorrId, correlationId, envelope, user, expires) {
+				bool requireLeader, long? validationStreamVersion, ClaimsPrincipal user, DateTime? expires = null,
+				CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
 				if (fromEventNumber < -1) throw new ArgumentOutOfRangeException(nameof(fromEventNumber));
 
@@ -810,8 +816,9 @@ namespace EventStore.Core.Messages {
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
 				bool requireLeader, long? validationTfLastCommitPosition, ClaimsPrincipal user,
 				bool replyOnExpired,
-				TimeSpan? longPollTimeout = null, DateTime? expires = null)
-				: base(internalCorrId, correlationId, envelope, user, expires) {
+				TimeSpan? longPollTimeout = null, DateTime? expires = null,
+				CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
 				MaxCount = maxCount;
@@ -886,8 +893,9 @@ namespace EventStore.Core.Messages {
 			public ReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos,
 				bool requireLeader, long? validationTfLastCommitPosition, ClaimsPrincipal user,
-				DateTime? expires = null)
-				: base(internalCorrId, correlationId, envelope, user, expires) {
+				DateTime? expires = null,
+				CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
 				MaxCount = maxCount;
@@ -964,8 +972,9 @@ namespace EventStore.Core.Messages {
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireLeader,
 				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, ClaimsPrincipal user,
 				bool replyOnExpired,
-				TimeSpan? longPollTimeout = null, DateTime? expires = null)
-				: base(internalCorrId, correlationId, envelope, user, expires) {
+				TimeSpan? longPollTimeout = null, DateTime? expires = null,
+				CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
 				MaxCount = maxCount;
@@ -1045,8 +1054,9 @@ namespace EventStore.Core.Messages {
 			public FilteredReadAllEventsBackward(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				long commitPosition, long preparePosition, int maxCount, bool resolveLinkTos, bool requireLeader,
 				int maxSearchWindow, long? validationTfLastCommitPosition, IEventFilter eventFilter, ClaimsPrincipal user,
-				TimeSpan? longPollTimeout = null, DateTime? expires = null)
-				: base(internalCorrId, correlationId, envelope, user, expires) {
+				TimeSpan? longPollTimeout = null, DateTime? expires = null,
+				CancellationToken cancellationToken = default)
+				: base(internalCorrId, correlationId, envelope, user, expires, cancellationToken) {
 				CommitPosition = commitPosition;
 				PreparePosition = preparePosition;
 				MaxCount = maxCount;

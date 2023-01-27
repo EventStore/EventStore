@@ -102,7 +102,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					commitPosition, preparePosition, (int)Math.Min(ReadBatchSize, _maxCount), _resolveLinks,
 					_requiresLeader, (int)_maxSearchWindow, null, _eventFilter, _user,
 					replyOnExpired: false,
-					expires: _deadline));
+					expires: _deadline,
+					cancellationToken: _cancellationToken));
 
 				async Task OnMessage(Message message, CancellationToken ct) {
 					if (message is ClientMessage.NotHandled notHandled &&

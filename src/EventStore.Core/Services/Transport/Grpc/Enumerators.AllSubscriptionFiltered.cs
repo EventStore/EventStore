@@ -500,7 +500,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					commitPosition, preparePosition, ReadBatchSize, _resolveLinks, _requiresLeader,
 					(int)_maxSearchWindow, null, _eventFilter, _user,
 					replyOnExpired: true,
-					expires: _expiryStrategy.GetExpiry()));
+					expires: _expiryStrategy.GetExpiry(),
+					cancellationToken: _cancellationToken));
 			}
 
 			private void Unsubscribe() => _bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(),

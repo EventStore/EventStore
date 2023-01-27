@@ -19,15 +19,18 @@ namespace EventStore.Core.Services.Storage {
 		protected static readonly ILogger Log = Serilog.Log.ForContext<StorageReaderWorker>();
 	}
 
-	public class StorageReaderWorker<TStreamId> : StorageReaderWorker, IHandle<ClientMessage.ReadEvent>,
+	public class StorageReaderWorker<TStreamId> :
+		StorageReaderWorker,
+		IHandle<ClientMessage.ReadEvent>,
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsBackward>,
 		IHandle<ClientMessage.FilteredReadAllEventsForward>,
+		IHandle<ClientMessage.FilteredReadAllEventsBackward>,
 		IHandle<StorageMessage.EffectiveStreamAclRequest>,
 		IHandle<StorageMessage.StreamIdFromTransactionIdRequest>,
-		IHandle<StorageMessage.BatchLogExpiredMessages>, IHandle<ClientMessage.FilteredReadAllEventsBackward> {
+		IHandle<StorageMessage.BatchLogExpiredMessages> {
 		private static readonly ResolvedEvent[] EmptyRecords = new ResolvedEvent[0];
 
 		private readonly IPublisher _publisher;
@@ -63,6 +66,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<ClientMessage.ReadEvent>.Handle(ClientMessage.ReadEvent msg) {
+			if (msg.CancellationToken.IsCancellationRequested)
+				return;
+
 			if (msg.Expires < DateTime.UtcNow) {
 				if (LogExpiredMessage(msg.Expires))
 					Log.Debug(
@@ -75,6 +81,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<ClientMessage.ReadStreamEventsForward>.Handle(ClientMessage.ReadStreamEventsForward msg) {
+			if (msg.CancellationToken.IsCancellationRequested)
+				return;
+
 			if (msg.Expires < DateTime.UtcNow) {
 				if (msg.ReplyOnExpired) {
 					msg.Envelope.ReplyWith(new ClientMessage.ReadStreamEventsForwardCompleted(
@@ -116,6 +125,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<ClientMessage.ReadStreamEventsBackward>.Handle(ClientMessage.ReadStreamEventsBackward msg) {
+			if (msg.CancellationToken.IsCancellationRequested)
+				return;
+
 			if (msg.Expires < DateTime.UtcNow) {
 				if (LogExpiredMessage(msg.Expires))
 					Log.Debug(
@@ -128,6 +140,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<ClientMessage.ReadAllEventsForward>.Handle(ClientMessage.ReadAllEventsForward msg) {
+			if (msg.CancellationToken.IsCancellationRequested)
+				return;
+
 			if (msg.Expires < DateTime.UtcNow) {
 				if (msg.ReplyOnExpired) {
 					msg.Envelope.ReplyWith(new ClientMessage.ReadAllEventsForwardCompleted(
@@ -176,6 +191,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<ClientMessage.ReadAllEventsBackward>.Handle(ClientMessage.ReadAllEventsBackward msg) {
+			if (msg.CancellationToken.IsCancellationRequested)
+				return;
+
 			if (msg.Expires < DateTime.UtcNow) {
 				if (LogExpiredMessage(msg.Expires))
 					Log.Debug(
@@ -188,6 +206,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<ClientMessage.FilteredReadAllEventsForward>.Handle(ClientMessage.FilteredReadAllEventsForward msg) {
+			if (msg.CancellationToken.IsCancellationRequested)
+				return;
+
 			if (msg.Expires < DateTime.UtcNow) {
 				if (msg.ReplyOnExpired) {
 					msg.Envelope.ReplyWith(new ClientMessage.FilteredReadAllEventsForwardCompleted(
@@ -235,6 +256,9 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		void IHandle<ClientMessage.FilteredReadAllEventsBackward>.Handle(ClientMessage.FilteredReadAllEventsBackward msg) {
+			if (msg.CancellationToken.IsCancellationRequested)
+				return;
+
 			if (msg.Expires < DateTime.UtcNow) {
 				Log.Debug(
 					"Read All Stream Events Backward Filtered operation has expired for C:{0}/P:{1}. Operation Expired at {2}",
@@ -273,6 +297,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 			}
 		}
+
 		void IHandle<StorageMessage.EffectiveStreamAclRequest>.Handle(StorageMessage.EffectiveStreamAclRequest msg) {
 			if (msg.CancellationToken.IsCancellationRequested) {
 				msg.Envelope.ReplyWith(new StorageMessage.OperationCancelledMessage(msg.CancellationToken));
