@@ -223,7 +223,7 @@ namespace EventStore.Core.Services {
 				newChunk = TFChunk.FromCompletedFile(
 					filename: newChunkPath,
 					verifyHash: true,
-					unbufferedRead: true,
+					unbufferedRead: _db.Config.Unbuffered,
 					initialReaderCount: 1,
 					maxReaderCount: 1,
 					optimizeReadSideCache: false,

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
@@ -22,8 +21,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 				PrepareFlags.None, _eventTypeId, new byte[dataSize], Array.Empty<byte>(), new DateTime(2000, 1, 1, 12, 0, 0));
 		}
 
-		private void CreateChunk(int numEvents, bool complete, bool scavenged,
+		private void CreateChunk(int numEvents, bool completed, bool scavenged,
 			out TFChunk chunk, out List<long> logicalPositions, out List<PosMap> posMap) {
+			if (scavenged && !completed)
+				throw new ArgumentException("scavenged chunk must be completed");
+
 			chunk = TFChunkHelper.CreateNewChunk(Path.Combine(PathName, $"{Guid.NewGuid()}.chunk"), 4096, scavenged);
 
 			logicalPositions = new();
@@ -49,7 +51,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			if (scavenged)
 				chunk.CompleteScavenge(posMap);
-			else if (complete)
+			else if (completed)
 				chunk.Complete();
 		}
 
@@ -59,7 +61,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var numEvents = _random.Next(10, 20);
 			CreateChunk(
 				numEvents: numEvents,
-				complete: false,
+				completed: false,
 				scavenged: false,
 				out var chunk,
 				out var logPositions,
@@ -77,7 +79,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var numEvents = _random.Next(10, 20);
 			CreateChunk(
 				numEvents: numEvents,
-				complete: true,
+				completed: true,
 				scavenged: false,
 				out var chunk,
 				out var logPositions,
@@ -91,11 +93,11 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		[Repeat(10)]
-		public void return_correct_positions_for_an_scavenged_chunk() {
+		public void return_correct_positions_for_a_scavenged_chunk() {
 			var numEvents = _random.Next(10, 20);
 			CreateChunk(
 				numEvents: numEvents,
-				complete: true,
+				completed: true,
 				scavenged: true,
 				out var chunk,
 				out var logPositions,
@@ -113,7 +115,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void return_minus_one_for_positions_that_are_outside_the_range_of_an_unscavenged_chunk() {
 			CreateChunk(
 				numEvents: 1,
-				complete: true,
+				completed: true,
 				scavenged: false,
 				out var chunk,
 				out var logPositions,
@@ -129,10 +131,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void return_minus_one_for_positions_that_do_not_exist_in_an_scavenged_chunk() {
+		public void return_minus_one_for_positions_that_do_not_exist_in_a_scavenged_chunk() {
 			CreateChunk(
 				numEvents: 1,
-				complete: true,
+				completed: true,
 				scavenged: true,
 				out var chunk,
 				out var logPositions,
@@ -149,7 +151,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		public void throw_argument_out_of_range_exception_for_negative_positions() {
 			CreateChunk(
 				numEvents: 1,
-				complete: false,
+				completed: false,
 				scavenged: false,
 				out var chunk,
 				out _,

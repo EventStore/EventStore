@@ -15,13 +15,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			void Uncache();
 
 			bool ExistsAt(long logicalPosition);
+			long GetActualPosition(long logicalPosition);
 			RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged);
 			RecordReadResult TryReadFirst();
 			RecordReadResult TryReadClosestForward(long logicalPosition);
 			RawReadResult TryReadClosestForwardRaw(long logicalPosition, Func<int, byte[]> getBuffer);
 			RecordReadResult TryReadLast();
 			RecordReadResult TryReadClosestBackward(long logicalPosition);
-			long GetActualPosition(long logicalPosition);
 		}
 
 		private class TFChunkReadSideUnscavenged : TFChunkReadSide, IChunkReadSide {
@@ -40,6 +40,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			public bool ExistsAt(long logicalPosition) {
 				return logicalPosition >= 0 && logicalPosition < Chunk.LogicalDataSize;
+			}
+
+			public long GetActualPosition(long logicalPosition) {
+				Ensure.Nonnegative(logicalPosition, nameof(logicalPosition));
+
+				if (logicalPosition >= Chunk.LogicalDataSize)
+					return -1;
+
+				return logicalPosition;
 			}
 
 			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
@@ -118,13 +127,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
 				}
-			}
-
-			public long GetActualPosition(long logicalPosition) {
-				if (logicalPosition >= Chunk.LogicalDataSize)
-					return -1;
-
-				return logicalPosition;
 			}
 		}
 
@@ -286,6 +288,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				return _logPositionsBloomFilter.MightContain(logicalPosition);
 			}
 
+			public long GetActualPosition(long logicalPosition) {
+				Ensure.Nonnegative(logicalPosition, nameof(logicalPosition));
+
+				var workItem = Chunk.GetReaderWorkItem();
+				try {
+					return TranslateExactPosition(workItem, logicalPosition);
+				} finally {
+					Chunk.ReturnReaderWorkItem(workItem);
+				}
+			}
+
 			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
 				var workItem = Chunk.GetReaderWorkItem();
 				try {
@@ -421,15 +434,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 					long nextLogicalPos = Chunk.ChunkHeader.GetLocalLogPosition(record.LogPosition);
 					return new RecordReadResult(true, nextLogicalPos, record, length);
-				} finally {
-					Chunk.ReturnReaderWorkItem(workItem);
-				}
-			}
-
-			public long GetActualPosition(long logicalPosition) {
-				var workItem = Chunk.GetReaderWorkItem();
-				try {
-					return TranslateExactPosition(workItem, logicalPosition);
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
 				}

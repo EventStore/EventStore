@@ -1,5 +1,4 @@
 using EventStore.Core.Bus;
-using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {

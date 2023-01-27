@@ -4,7 +4,7 @@ namespace EventStore.Core.Data.Redaction {
 		UnexpectedError = 1
 	}
 
-	public static class GetEventPositionResultResultExtensions {
+	public static class GetEventPositionResultExtensions {
 		public static string GetErrorMessage(this GetEventPositionResult result) {
 			return result switch {
 				GetEventPositionResult.UnexpectedError => "An unexpected error has occurred.",

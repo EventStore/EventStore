@@ -10,6 +10,9 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 	public class ReadEventInfo_KeepDuplicates : ReadIndexTestScenario<LogFormat.V2, string> {
 		private const string Stream = "ab-1";
 		private const string CollidingStream = "cb-1";
+		private const string SoftDeletedStream = "de-1";
+		private const string HardDeletedStream = "fg-1";
+
 		private readonly List<EventRecord> _events = new();
 
 		public ReadEventInfo_KeepDuplicates() : base(
@@ -33,12 +36,17 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 
 			// PTable 2
 			_events.Add(WriteSingleEvent(Stream, 3, string.Empty));
-			_events.Add(WriteSingleEvent(Stream, 4, string.Empty));
-			_events.Add(WriteSingleEvent(Stream, 2, string.Empty)); // duplicate
-
-			// MemTable
 			_events.Add(WriteSingleEvent(Stream, 2, string.Empty)); // duplicate
 			_events.Add(WriteSingleEvent(CollidingStream, 3, string.Empty)); // colliding stream
+
+			// PTable 3
+			_events.Add(WriteSingleEvent(Stream, 2, string.Empty)); // duplicate
+			_events.Add(WriteSingleEvent(SoftDeletedStream, 10, string.Empty)); // soft deleted stream
+			_events.Add(WriteSingleEvent(HardDeletedStream, 20, string.Empty)); // hard deleted stream
+
+			// MemTable
+			WriteStreamMetadata(SoftDeletedStream, 0, @"{""$tb"":11}");
+			WriteDelete(HardDeletedStream);
 		}
 
 		[Test]
@@ -55,7 +63,7 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 		}
 
 		[Test]
-		public void returns_correct_info_for_duplicate_event() {
+		public void returns_correct_info_for_duplicate_events() {
 			var result = ReadIndex.ReadEventInfo_KeepDuplicates(Stream, 2);
 			var events = _events
 				.Where(x => x.EventStreamId == Stream && x.EventNumber == 2)
@@ -82,6 +90,32 @@ namespace EventStore.Core.Tests.Services.Storage.ReadIndex {
 			result = ReadIndex.ReadEventInfo_KeepDuplicates(CollidingStream, 3);
 			events = _events
 				.Where(x => x.EventStreamId == CollidingStream && x.EventNumber == 3)
+				.ToArray();
+
+			Assert.AreEqual(1, events.Length);
+			Assert.AreEqual(-1, result.NextEventNumber);
+			Assert.AreEqual(true, result.IsEndOfStream);
+			CheckResult(events, result);
+		}
+
+		[Test]
+		public void returns_correct_info_for_soft_deleted_stream() {
+			var result = ReadIndex.ReadEventInfo_KeepDuplicates(SoftDeletedStream, 10);
+			var events = _events
+				.Where(x => x.EventStreamId == SoftDeletedStream && x.EventNumber == 10)
+				.ToArray();
+
+			Assert.AreEqual(1, events.Length);
+			Assert.AreEqual(-1, result.NextEventNumber);
+			Assert.AreEqual(true, result.IsEndOfStream);
+			CheckResult(events, result);
+		}
+
+		[Test]
+		public void returns_correct_info_for_hard_deleted_stream() {
+			var result = ReadIndex.ReadEventInfo_KeepDuplicates(HardDeletedStream, 20);
+			var events = _events
+				.Where(x => x.EventStreamId == HardDeletedStream && x.EventNumber == 20)
 				.ToArray();
 
 			Assert.AreEqual(1, events.Length);
