@@ -93,6 +93,10 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader.heading_event_
 			//ignore
 		}
 
+		public void Handle(ReaderSubscriptionMessage.ReportProgress message) {
+			//ignore
+		}
+
 		public string Tag {
 			get { return "FakeReaderSubscription"; }
 		}

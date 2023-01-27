@@ -38,7 +38,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderIdle message) {
-			// ignore
+			ForceProgressValue(100);
 		}
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
@@ -46,6 +46,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return;
 			var deletePosition = _positionTagger.MakeCheckpointTag(_positionTracker.LastTag, message);
 			PublishPartitionDeleted(message.Partition, deletePosition);
+		}
+
+		public void Handle(ReaderSubscriptionMessage.ReportProgress message) {
+			NotifyProgress();
 		}
 	}
 }

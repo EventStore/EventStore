@@ -4,6 +4,7 @@ using System.Diagnostics;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Helpers;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Core.TransactionLog.Checkpoint;
@@ -25,9 +26,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 		IHandle<ReaderSubscriptionMessage.EventReaderEof>,
 		IHandle<ReaderSubscriptionMessage.EventReaderPartitionEof>,
 		IHandle<ReaderSubscriptionMessage.EventReaderPartitionDeleted>,
-		IHandle<ReaderSubscriptionMessage.Faulted> {
+		IHandle<ReaderSubscriptionMessage.Faulted>,
+		IHandle<ReaderSubscriptionMessage.ReportProgress> {
 		public const string SubComponentName = "EventReaderCoreService";
-		
+
 		private readonly IPublisher _publisher;
 		private readonly IODispatcher _ioDispatcher;
 		private readonly ILogger _logger = Serilog.Log.ForContext<ProjectionCoreService>();
@@ -45,7 +47,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly bool _runHeadingReader;
 		private readonly bool _faultOutOfOrderProjections;
+		private readonly IEnvelope _sendToThisEnvelope;
 		private Guid _defaultEventReaderId;
+		private Guid _reportProgressId;
 
 		public EventReaderCoreService(
 			IPublisher publisher, IODispatcher ioDispatcher, int eventCacheSize,
@@ -57,6 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_writerCheckpoint = writerCheckpoint;
 			_runHeadingReader = runHeadingReader;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
+			_sendToThisEnvelope = new SendToThisEnvelope(this);
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Pause message) {
@@ -243,7 +248,18 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_publisher.Publish(new EventReaderSubscriptionMessage.Failed(subscription.SubscriptionId, message.Reason));
 		}
 
-		
+		public void Handle(ReaderSubscriptionMessage.ReportProgress message) {
+			if (_stopped || message.CorrelationId != _reportProgressId)
+				return;
+
+			foreach (var subscription in _subscriptions.Values) {
+				subscription.Handle(message);
+			}
+
+			_reportProgressId = Guid.NewGuid();
+			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(500), _sendToThisEnvelope, new ReaderSubscriptionMessage.ReportProgress(_reportProgressId)));
+		}
+
 		private void StartReaders() {
 			//TODO: do we need to clear subscribed projections here?
 			//TODO: do we need to clear subscribed distribution points here?
@@ -269,7 +285,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				_eventReaderSubscriptions.Remove(_defaultEventReaderId);
 			}
 			_defaultEventReaderId = Guid.Empty;
-			
+
 			if (_subscriptions.Count > 0) {
 				_logger.Information("_subscriptions is not empty after all the projections have been killed");
 				_subscriptions.Clear();
@@ -297,7 +313,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_publisher.Publish(
 				new ProjectionCoreServiceMessage.SubComponentStopped(SubComponentName, message.QueueId));
 		}
-	
+
 		private bool TrySubscribeHeadingEventReader(
 			ReaderSubscriptionMessage.CommittedEventDistributed message, Guid projectionId) {
 			if (message.SafeTransactionFileReaderJoinPosition == null)
@@ -330,6 +346,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			StartReaders();
 			_publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted(
 				SubComponentName, message.InstanceCorrelationId));
+			_reportProgressId = Guid.NewGuid();
+			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(500), _sendToThisEnvelope, new ReaderSubscriptionMessage.ReportProgress(_reportProgressId)));
 		}
 
 		public void Handle(ReaderCoreServiceMessage.StopReader message) {

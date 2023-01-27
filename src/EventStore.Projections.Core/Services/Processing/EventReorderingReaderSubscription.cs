@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		}
 
 		private void ProcessAllFor(DateTime maxTimestamp) {
-			//NOTE: this is the most straightforward implementation 
+			//NOTE: this is the most straightforward implementation
 			//TODO: build proper data structure when the approach is finalized
 			bool processed;
 			do {
@@ -90,6 +90,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		public void Handle(ReaderSubscriptionMessage.EventReaderPartitionDeleted message) {
 			throw new NotSupportedException();
+		}
+
+		public void Handle(ReaderSubscriptionMessage.ReportProgress message) {
+			NotifyProgress();
 		}
 	}
 }

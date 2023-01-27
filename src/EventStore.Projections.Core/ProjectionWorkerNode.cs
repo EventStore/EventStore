@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core {
 
 			_coreOutput = new InMemoryBus("Core Output");
 			_leaderOutputBus = leaderOutputBus;
-			
+
 			IPublisher publisher = CoreOutput;
 			_subscriptionDispatcher = new ReaderSubscriptionDispatcher(publisher);
 
@@ -62,7 +62,7 @@ namespace EventStore.Projections.Core {
 					_subscriptionDispatcher,
 					timeProvider,
 					_ioDispatcher,
-					timeoutScheduler, 
+					timeoutScheduler,
 					configuration);
 			}
 		}
@@ -148,6 +148,7 @@ namespace EventStore.Projections.Core {
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionDeleted>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.EventReaderNotAuthorized>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionMessage.Faulted>(_eventReaderCoreService);
+			coreInputBus.Subscribe<ReaderSubscriptionMessage.ReportProgress>(_eventReaderCoreService);
 			//NOTE: message forwarding is set up outside (for Read/Write events)
 		}
 	}
