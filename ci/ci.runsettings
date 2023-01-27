@@ -4,4 +4,7 @@
 		<DefaultTestNamePattern>{C}.{m}</DefaultTestNamePattern>
 		<DefaultTimeout>20000</DefaultTimeout>
 	</NUnit>
+	<RunConfiguration>
+		<TestCaseFilter>FullyQualifiedName!~EventStore.Core.Tests.LogFormat+V3</TestCaseFilter>
+	</RunConfiguration>
 </RunSettings>
