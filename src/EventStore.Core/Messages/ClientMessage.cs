@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading;
@@ -115,6 +116,14 @@ namespace EventStore.Core.Messages {
 				Expires = expires ?? DateTime.UtcNow.AddMilliseconds(ESConsts.ReadRequestTimeout);
 				CancellationToken = cancellationToken;
 			}
+
+			public override string ToString() =>
+				$"{GetType().Name} " +
+				$"InternalCorrId: {InternalCorrId}, " +
+				$"CorrelationId: {CorrelationId}, " +
+				$"User: {User?.FindFirst(ClaimTypes.Name)?.Value ?? "(anonymous)"}, " +
+				$"Envelope: {{ {Envelope} }}, " +
+				$"Expires: {Expires}";
 		}
 
 		public abstract class ReadResponseMessage : Message {
@@ -567,6 +576,13 @@ namespace EventStore.Core.Messages {
 				ResolveLinkTos = resolveLinkTos;
 				RequireLeader = requireLeader;
 			}
+
+			public override string ToString() =>
+				$"{base.ToString()}, " +
+				$"EventStreamId: {EventStreamId}, " +
+				$"EventNumber: {EventNumber}, " +
+				$"ResolveLinkTos: {ResolveLinkTos}, " +
+				$"RequireLeader: {RequireLeader}";
 		}
 
 		public class ReadEventCompleted : ReadResponseMessage {
@@ -637,12 +653,16 @@ namespace EventStore.Core.Messages {
 				ReplyOnExpired = replyOnExpired;
 			}
 
-			public override string ToString() {
-				return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
-				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
-					InternalCorrId, CorrelationId, EventStreamId,
-					FromEventNumber, MaxCount, ResolveLinkTos, RequireLeader, ValidationStreamVersion);
-			}
+			public override string ToString() =>
+				$"{base.ToString()}, " +
+				$"EventStreamId: {EventStreamId}, " +
+				$"FromEventNumber: {FromEventNumber}, " +
+				$"MaxCount: {MaxCount}, " +
+				$"ResolveLinkTos: {ResolveLinkTos}, " +
+				$"RequireLeader: {RequireLeader}, " +
+				$"ValidationStreamVersion: {ValidationStreamVersion}, " +
+				$"LongPollTimeout: {LongPollTimeout}, " +
+				$"ReplyOnExpired: {ReplyOnExpired}";
 		}
 
 		public class ReadStreamEventsForwardCompleted : ReadResponseMessage {
@@ -728,12 +748,14 @@ namespace EventStore.Core.Messages {
 				ValidationStreamVersion = validationStreamVersion;
 			}
 
-			public override string ToString() {
-				return String.Format(GetType().Name + " InternalCorrId: {0}, CorrelationId: {1}, EventStreamId: {2}, "
-				                                    + "FromEventNumber: {3}, MaxCount: {4}, ResolveLinkTos: {5}, RequireLeader: {6}, ValidationStreamVersion: {7}",
-					InternalCorrId, CorrelationId, EventStreamId, FromEventNumber, MaxCount,
-					ResolveLinkTos, RequireLeader, ValidationStreamVersion);
-			}
+			public override string ToString() =>
+				$"{base.ToString()}, " +
+				$"EventStreamId: {EventStreamId}, " +
+				$"FromEventNumber: {FromEventNumber}, " +
+				$"MaxCount: {MaxCount}, " +
+				$"ResolveLinkTos: {ResolveLinkTos}, " +
+				$"RequireLeader: {RequireLeader}, " +
+				$"ValidationStreamVersion: {ValidationStreamVersion}";
 		}
 
 		public class ReadStreamEventsBackwardCompleted : ReadResponseMessage {
@@ -828,6 +850,17 @@ namespace EventStore.Core.Messages {
 				LongPollTimeout = longPollTimeout;
 				ReplyOnExpired = replyOnExpired;
 			}
+
+			public override string ToString() =>
+				$"{base.ToString()}, " +
+				$"PreparePosition: {PreparePosition}, " +
+				$"CommitPosition: {CommitPosition}, " +
+				$"MaxCount: {MaxCount}, " +
+				$"ResolveLinkTos: {ResolveLinkTos}, " +
+				$"RequireLeader: {RequireLeader}, " +
+				$"ValidationTfLastCommitPosition: {ValidationTfLastCommitPosition}, " +
+				$"LongPollTimeout: {LongPollTimeout}, " +
+				$"ReplyOnExpired: {ReplyOnExpired}";
 		}
 
 		public class ReadAllEventsForwardCompleted : ReadResponseMessage {
@@ -903,6 +936,15 @@ namespace EventStore.Core.Messages {
 				RequireLeader = requireLeader;
 				ValidationTfLastCommitPosition = validationTfLastCommitPosition;
 			}
+
+			public override string ToString() =>
+				$"{base.ToString()}, " +
+				$"PreparePosition: {PreparePosition}, " +
+				$"CommitPosition: {CommitPosition}, " +
+				$"MaxCount: {MaxCount}, " +
+				$"ResolveLinkTos: {ResolveLinkTos}, " +
+				$"RequireLeader: {RequireLeader}, " +
+				$"ValidationTfLastCommitPosition: {ValidationTfLastCommitPosition}";
 		}
 
 		public class ReadAllEventsBackwardCompleted : ReadResponseMessage {
@@ -986,6 +1028,19 @@ namespace EventStore.Core.Messages {
 				EventFilter = eventFilter;
 				ReplyOnExpired = replyOnExpired;
 			}
+
+			public override string ToString() =>
+				$"{base.ToString()}, " +
+				$"PreparePosition: {PreparePosition}, " +
+				$"CommitPosition: {CommitPosition}, " +
+				$"MaxCount: {MaxCount}, " +
+				$"ResolveLinkTos: {ResolveLinkTos}, " +
+				$"RequireLeader: {RequireLeader}, " +
+				$"ValidationTfLastCommitPosition: {ValidationTfLastCommitPosition}, " +
+				$"LongPollTimeout: {LongPollTimeout}, " +
+				$"MaxSearchWindow: {MaxSearchWindow}, " +
+				$"EventFilter: {{ {EventFilter} }}, " +
+				$"ReplyOnExpired: {ReplyOnExpired}";
 		}
 
 		public class FilteredReadAllEventsForwardCompleted : ReadResponseMessage {
@@ -1067,6 +1122,18 @@ namespace EventStore.Core.Messages {
 				MaxSearchWindow = maxSearchWindow;
 				EventFilter = eventFilter;
 			}
+
+			public override string ToString() =>
+				$"{base.ToString()}, " +
+				$"PreparePosition: {PreparePosition}, " +
+				$"CommitPosition: {CommitPosition}, " +
+				$"MaxCount: {MaxCount}, " +
+				$"ResolveLinkTos: {ResolveLinkTos}, " +
+				$"RequireLeader: {RequireLeader}, " +
+				$"MaxSearchWindow: {MaxSearchWindow}, " +
+				$"EventFilter: {{ {EventFilter} }}, " +
+				$"LongPollTimeout: {LongPollTimeout}, " +
+				$"ValidationTfLastCommitPosition: {ValidationTfLastCommitPosition}";
 		}
 
 		public class FilteredReadAllEventsBackwardCompleted : ReadResponseMessage {
