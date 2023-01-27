@@ -217,7 +217,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_channel = Channel.CreateBounded<(ResolvedEvent, int)>(new BoundedChannelOptions(bufferSize) {
 					SingleReader = true,
 					SingleWriter = false,
-					FullMode = BoundedChannelFullMode.Wait
+					FullMode = BoundedChannelFullMode.DropWrite
 				});
 
 				var semaphore = new SemaphoreSlim(1, 1);
