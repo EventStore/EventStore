@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Patch Newtonsoft from `13.0.1` to `13.0.2` [EventStore#3677](https://github.com/EventStore/EventStore/pull/3677)
 - Improved synchronization during TFChunk disposal [EventStore#3674](https://github.com/EventStore/EventStore/pull/3674)
 - Slow persistent subscription consumer no longer slows down other subscribers [EventStore#3701](https://github.com/EventStore/EventStore/pull/3701)
+- Fix projection progress report. [EventStore#3655](https://github.com/EventStore/EventStore/pull/3655)
 
 ### Added
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
@@ -19,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - metric for tracking the current state of the Index operations (merge/scavenge) [EventStore#3686](https://github.com/EventStore/EventStore/pull/3686)
 - Histograms for gRPC reads and appends [EventStore#3695](https://github.com/EventStore/EventStore/pull/3695)
 - a process-wide stopwatch for measuring durations [EventStore#3703](https://github.com/EventStore/EventStore/pull/3703)
+- more information to SLOW QUEUE MSG logs for reads and writes [EventStore#3706](https://github.com/EventStore/EventStore/pull/3706)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
