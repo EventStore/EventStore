@@ -90,12 +90,12 @@ namespace EventStore.TestClient {
 			return sb.ToString();
 		}
 
-		public int Run() {
+		public int Run(CancellationToken cancellationToken) {
 			if (!InteractiveMode) {
 				var args = ParseCommandLine(Options.Command[0]);
-				return Execute(args);
+				return Execute(args, cancellationToken);
 			}
-
+			
 			new Thread(() => {
 				Thread.Sleep(100);
 				Console.WriteLine(GetCommandList());
@@ -109,7 +109,7 @@ namespace EventStore.TestClient {
 
 						try {
 							var args = ParseCommandLine(line);
-							Execute(args);
+							Execute(args, cancellationToken);
 						} catch (Exception exc) {
 							Log.Error(exc, "Error during executing command.");
 						}
@@ -126,11 +126,11 @@ namespace EventStore.TestClient {
 			return line.Split(new[] {' ', '\t'}, StringSplitOptions.RemoveEmptyEntries);
 		}
 
-		private int Execute(string[] args) {
+		private int Execute(string[] args, CancellationToken cancellationToken) {
 			Log.Information("Processing command: {command}.", string.Join(" ", args));
 
 			var context = new CommandProcessorContext(_tcpTestClient, _grpcTestClient, _clientApiTestClient, Options.Timeout,
-				Log, Options.StatsLog, Options.OutputCsv, new ManualResetEventSlim(true));
+				Log, Options.StatsLog, Options.OutputCsv, new ManualResetEventSlim(true), cancellationToken);
 
 			int exitCode;
 			if (_commands.TryProcess(context, args, out exitCode)) {

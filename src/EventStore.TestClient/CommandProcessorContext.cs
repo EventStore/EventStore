@@ -34,28 +34,33 @@ namespace EventStore.TestClient {
 		public readonly ClientApiTcpTestClient _clientApiTestClient;
 
 		private readonly ManualResetEventSlim _doneEvent;
+		private readonly CancellationToken _cancellationToken;
 		private int _completed;
 		private int _timeout;
 
-		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient, ClientApiTcpTestClient clientApiTestClient,
-			int timeout, ILogger log, ILogger statsLogger, bool outputCsv, ManualResetEventSlim doneEvent) {
+		public CommandProcessorContext(TcpTestClient tcpTestClient, GrpcTestClient grpcTestClient,
+			ClientApiTcpTestClient clientApiTestClient, int timeout, ILogger log, ILogger statsLogger, bool outputCsv,
+			ManualResetEventSlim doneEvent, CancellationToken cancellationToken) {
+			
 			_tcpTestClient = tcpTestClient;
 			_grpcTestClient = grpcTestClient;
 			_clientApiTestClient = clientApiTestClient;
 			Log = log;
 			StatsLogger = statsLogger;
 			_doneEvent = doneEvent;
+			_cancellationToken = cancellationToken;
 			_timeout = timeout;
 			OutputCsv = outputCsv;
 		}
 
 		public void Completed(int exitCode = (int)Common.Utils.ExitCode.Success, Exception error = null,
 			string reason = null) {
+			
 			if (Interlocked.CompareExchange(ref _completed, 1, 0) == 0) {
 				ExitCode = exitCode;
 
-				Error = error;
-				Reason = reason;
+				Error = error ?? Error;
+				Reason = reason ?? Reason;
 
 				_doneEvent.Set();
 			}
@@ -75,9 +80,9 @@ namespace EventStore.TestClient {
 
 		public void WaitForCompletion() {
 			if (_timeout < 0)
-				_doneEvent.Wait();
+				_doneEvent.Wait(_cancellationToken);
 			else {
-				if (!_doneEvent.Wait(_timeout * 1000))
+				if (!_doneEvent.Wait(_timeout * 1000, _cancellationToken))
 					throw new TimeoutException("Command didn't finished within timeout.");
 			}
 		}

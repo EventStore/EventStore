@@ -31,11 +31,7 @@ namespace EventStore.TestClient {
 			if (usageProcessor)
 				_regCommandsProcessor = processor;
 		}
-
-		private static string[] ParseCommandLine(string line) {
-			return line.Split(new[] {' ', '\t'}, StringSplitOptions.RemoveEmptyEntries);
-		}
-
+		
 		public bool TryProcess(CommandProcessorContext context, string[] args, out int exitCode) {
 			var commandName = args[0].ToUpper();
 			var commandArgs = args.Skip(1).ToArray();

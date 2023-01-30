@@ -17,8 +17,13 @@ namespace EventStore.TestClient.Commands {
 		}
 
 		public bool Execute(CommandProcessorContext context, string[] args) {
-			var allCommands = string.Join("\n\n", _commands.RegisteredProcessors.Select(x => x.Usage.ToUpper()));
-			context.Log.Information("Available commands:\n{allCommands}", allCommands);
+			var allCommands = _commands.RegisteredProcessors.Select(x => x.Usage.ToUpper());
+			context.Log.Information("Available commands:");
+
+			foreach (var command in allCommands) {
+				context.Log.Information("    {command}", command);
+			}
+
 			return true;
 		}
 	}
