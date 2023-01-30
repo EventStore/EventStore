@@ -9,9 +9,6 @@
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
-	<PropertyGroup>
-		<RestoreSources>$(RestoreSources);/home/shaan/Documents/Work/EventStore/EventStore.Plugins/src/EventStore.Plugins/bin/Release/</RestoreSources>
-	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="5.0.0.1">
 			<PrivateAssets>all</PrivateAssets>
