@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		}
 
 		protected async Task<RedactionMessage.SwitchChunkCompleted> SwitchChunk(string targetChunk, string newChunk) {
-			return await Handle(e =>
+			return await CallbackResult(e =>
 					RedactionService.Handle(new RedactionMessage.SwitchChunk(e, targetChunk, newChunk)))
 				as RedactionMessage.SwitchChunkCompleted;
 		}

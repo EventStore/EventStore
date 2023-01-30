@@ -11,13 +11,13 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		protected override void WriteTestScenario() {}
 
 		private async Task<RedactionMessage.SwitchChunkLockCompleted> TryLock() {
-			return await Handle(e =>
+			return await CallbackResult(e =>
 					RedactionService.Handle(new RedactionMessage.SwitchChunkLock(e)))
 				as RedactionMessage.SwitchChunkLockCompleted;
 		}
 
 		private async Task<RedactionMessage.SwitchChunkUnlockCompleted> TryUnlock() {
-			return await Handle(e =>
+			return await CallbackResult(e =>
 					RedactionService.Handle(new RedactionMessage.SwitchChunkUnlock(e)))
 				as RedactionMessage.SwitchChunkUnlockCompleted;
 		}

@@ -8,6 +8,7 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
@@ -21,21 +22,21 @@ namespace EventStore.Core.Services {
 
 		private readonly TFChunkDb _db;
 		private readonly IReadIndex<TStreamId> _readIndex;
-		private readonly SemaphoreSlim _switchChunksSemaphore;
+		private readonly IExclusiveLock _switchChunksLock;
 
 		private const string NewChunkFileExtension = ".tmp";
 
 		public RedactionService(
 			TFChunkDb db,
 			IReadIndex<TStreamId> readIndex,
-			SemaphoreSlim switchChunksSemaphore) {
+			IExclusiveLock switchChunksLock) {
 			Ensure.NotNull(db, nameof(db));
 			Ensure.NotNull(readIndex, nameof(readIndex));
-			Ensure.NotNull(switchChunksSemaphore, nameof(switchChunksSemaphore));
+			Ensure.NotNull(switchChunksLock, nameof(switchChunksLock));
 
 			_db = db;
 			_readIndex = readIndex;
-			_switchChunksSemaphore = switchChunksSemaphore;
+			_switchChunksLock = switchChunksLock;
 		}
 
 		public void Handle(RedactionMessage.GetEventPosition message) {
@@ -85,7 +86,7 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(RedactionMessage.SwitchChunkLock message) {
-			if (_switchChunksSemaphore.Wait(TimeSpan.Zero))
+			if (_switchChunksLock.TryAcquire())
 				message.Envelope.ReplyWith(
 					new RedactionMessage.SwitchChunkLockCompleted(SwitchChunkLockResult.Success));
 			else
@@ -94,14 +95,12 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(RedactionMessage.SwitchChunkUnlock message) {
-			try {
-				_switchChunksSemaphore.Release();
+			if (_switchChunksLock.TryRelease())
 				message.Envelope.ReplyWith(
 					new RedactionMessage.SwitchChunkUnlockCompleted(SwitchChunkUnlockResult.Success));
-			} catch (SemaphoreFullException) {
+			else
 				message.Envelope.ReplyWith(
 					new RedactionMessage.SwitchChunkUnlockCompleted(SwitchChunkUnlockResult.Failed));
-			}
 		}
 
 		public void Handle(RedactionMessage.SwitchChunk message) {

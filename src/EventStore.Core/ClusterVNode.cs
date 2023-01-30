@@ -52,6 +52,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
@@ -175,6 +176,7 @@ namespace EventStore.Core {
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly SemaphoreSlimLock _switchChunksLock = new();
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
@@ -1413,13 +1415,10 @@ namespace EventStore.Core {
 				scavengeHistoryMaxAge: TimeSpan.FromDays(options.Database.ScavengeHistoryMaxAge),
 				ioDispatcher: ioDispatcher);
 
-			// used to prevent scavenging and redaction from happening simultaneously
-			var switchChunksSemaphore = new SemaphoreSlim(1, 1);
-
 			var storageScavenger = new StorageScavenger(
 				logManager: scavengerLogManager,
 				scavengerFactory: scavengerFactory,
-				switchChunksSemaphore: switchChunksSemaphore);
+				switchChunksLock: _switchChunksLock);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
@@ -1429,7 +1428,7 @@ namespace EventStore.Core {
 			// ReSharper restore RedundantTypeArgumentsOfMethod
 
 			// REDACTION
-			var redactionService = new RedactionService<TStreamId>(Db, _readIndex, switchChunksSemaphore);
+			var redactionService = new RedactionService<TStreamId>(Db, _readIndex, _switchChunksLock);
 			_mainBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);
 			_mainBus.Subscribe<RedactionMessage.SwitchChunkLock>(redactionService);
 			_mainBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);
@@ -1696,6 +1695,7 @@ namespace EventStore.Core {
 
 			cts.CancelAfter(timeout.Value);
 			await _shutdownSource.Task.ConfigureAwait(false);
+			_switchChunksLock?.Dispose();
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {

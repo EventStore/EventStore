@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 		}
 
 		private async Task<RedactionMessage.GetEventPositionCompleted> GetEventPosition(long eventNumber) {
-			return await Handle(e =>
+			return await CallbackResult(e =>
 					RedactionService.Handle(new RedactionMessage.GetEventPosition(e, StreamId, eventNumber)))
 				as RedactionMessage.GetEventPositionCompleted;
 		}
