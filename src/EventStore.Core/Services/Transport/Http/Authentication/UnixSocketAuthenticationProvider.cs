@@ -1,10 +1,11 @@
-﻿using EventStore.Core.Services.UserManagement;
+﻿using EventStore.Common.Utils;
+using EventStore.Core.Services.UserManagement;
 using Microsoft.AspNetCore.Http;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class UnixSocketAuthenticationProvider : IHttpAuthenticationProvider {
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
-			if (context.Connection.RemoteIpAddress == null) { // non-ip transport
+			if (context.IsUnixSocket()) {
 				request = new HttpAuthenticationRequest(context, "system", "");
 				request.Authenticated(SystemAccounts.System);
 				return true;

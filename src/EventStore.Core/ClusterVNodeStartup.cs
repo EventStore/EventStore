@@ -147,7 +147,7 @@ namespace EventStore.Core {
 						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
 				)
 				// enable redaction service on unix sockets only
-				.UseWhen(ctx => ctx.Connection.RemoteIpAddress is null,
+				.UseWhen(ctx => ctx.IsUnixSocket(),
 					b => b
 						.UseRouting()
 						.UseEndpoints(ep => ep.MapGrpcService<Redaction>()))
