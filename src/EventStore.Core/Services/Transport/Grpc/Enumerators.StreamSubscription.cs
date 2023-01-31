@@ -432,7 +432,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					_streamName, startRevision.ToInt64(), ReadBatchSize, _resolveLinks, _requiresLeader, null,
 					_user,
 					replyOnExpired: true,
-					expires: _expiryStrategy.GetExpiry()));
+					expires: _expiryStrategy.GetExpiry(),
+					cancellationToken: _cancellationToken));
 			}
 
 			private void Unsubscribe() => _bus.Publish(new ClientMessage.UnsubscribeFromStream(Guid.NewGuid(),
