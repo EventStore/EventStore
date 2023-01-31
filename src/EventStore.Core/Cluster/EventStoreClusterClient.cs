@@ -7,6 +7,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Settings;
+using EventStore.Core.Telemetry;
 using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
 
@@ -19,9 +20,17 @@ namespace EventStore.Core.Cluster {
 		private readonly GrpcChannel _channel;
 		private readonly IPublisher _bus;
 		private readonly string _clusterDns;
+		private readonly IDurationTracker _gossipSendTracker;
+		private readonly IDurationTracker _gossipGetTracker;
+
 		public bool Disposed { get; private set; }
 
-		public EventStoreClusterClient(string uriScheme, EndPoint endpoint, string clusterDns, IPublisher bus, CertificateDelegates.ServerCertificateValidator serverCertValidator, Func<X509Certificate> clientCertificateSelector) {
+		public EventStoreClusterClient(string uriScheme, EndPoint endpoint, string clusterDns,
+			IPublisher bus, CertificateDelegates.ServerCertificateValidator serverCertValidator,
+			Func<X509Certificate> clientCertificateSelector,
+			IDurationTracker gossipSendTracker,
+			IDurationTracker gossipGetTracker) {
+
 			HttpMessageHandler httpMessageHandler = null;
 			_clusterDns = clusterDns;
 			if (uriScheme == Uri.UriSchemeHttps){
@@ -60,6 +69,8 @@ namespace EventStore.Core.Cluster {
 			_gossipClient = new EventStore.Cluster.Gossip.GossipClient(callInvoker);
 			_electionsClient = new EventStore.Cluster.Elections.ElectionsClient(callInvoker);
 			_bus = bus;
+			_gossipSendTracker = gossipSendTracker;
+			_gossipGetTracker = gossipGetTracker;
 		}
 
 		public void Dispose() {

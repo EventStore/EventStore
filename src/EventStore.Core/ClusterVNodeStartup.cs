@@ -180,9 +180,11 @@ namespace EventStore.Core {
 						.AddSingleton(new PersistentSubscriptions(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Users(_mainQueue, _authorizationProvider))
 						.AddSingleton(new Operations(_mainQueue, _authorizationProvider))
-						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider, _clusterDns))
+						.AddSingleton(new ClusterGossip(_mainQueue, _authorizationProvider, _clusterDns,
+							updateTracker: _trackers.GossipTrackers.ProcessingPushFromPeer,
+							readTracker: _trackers.GossipTrackers.ProcessingRequestFromPeer))
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider, _clusterDns))
-						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider))
+						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
 						.AddSingleton(new Monitoring(_monitoringQueue))
 						.AddSingleton<ServerFeatures>()
 
@@ -192,7 +194,20 @@ namespace EventStore.Core {
 							.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
 							.AddMeter(_telemetryConfiguration.Meters)
 							.AddView(i => {
-								if (i.Name.StartsWith("eventstore-") && i.Unit == "seconds")
+								if (i.Name.StartsWith("eventstore-latency") && i.Unit == "seconds")
+									return new ExplicitBucketHistogramConfiguration {
+										Boundaries = new double[] {
+											0.001, //    1 ms
+											0.005, //    5 ms
+											0.01,  //   10 ms
+											0.05,  //   50 ms
+											0.1,   //  100 ms
+											0.5,   //  500 ms
+											1,     // 1000 ms
+											5,     // 5000 ms
+										}
+									};
+								else if (i.Name.StartsWith("eventstore-") && i.Unit == "seconds")
 									return new ExplicitBucketHistogramConfiguration {
 										Boundaries = new double[] {
 											0.000_001, // 1 microsecond

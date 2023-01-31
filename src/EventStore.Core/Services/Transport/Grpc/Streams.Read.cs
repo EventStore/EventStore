@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Telemetry;
 using Grpc.Core;
 using CountOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.CountOptionOneofCase;
 using FilterOptionOneofCase = EventStore.Client.Streams.ReadReq.Types.Options.FilterOptionOneofCase;
@@ -18,7 +19,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			ServerCallContext context) {
 
 			var trackDuration = request.Options.CountOptionCase != CountOptionOneofCase.Subscription;
-			using var duration = trackDuration ? _readTracker.Start() : new();
+			using var duration = trackDuration ? _readTracker.Start() : Duration.Nil;
 			try {
 				var options = request.Options;
 				var countOptionsCase = options.CountOptionCase;

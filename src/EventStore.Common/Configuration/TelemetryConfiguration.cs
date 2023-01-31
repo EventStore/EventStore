@@ -58,6 +58,15 @@ namespace EventStore.Common.Configuration {
 			StreamTombstone,
 		}
 
+		public enum Gossip {
+			PullFromPeer = 1,
+			PushToPeer,
+			ProcessingPushFromPeer,
+			ProcessingRequestFromPeer,
+			ProcessingRequestFromGrpcClient,
+			ProcessingRequestFromHttpClient,
+		}
+
 		public class LabelMappingCase {
 			public string Regex { get; set; }
 			public string Label { get; set; }
@@ -70,6 +79,8 @@ namespace EventStore.Common.Configuration {
 		public Checkpoint[] Checkpoints { get; set; } = Array.Empty<Checkpoint>();
 
 		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
+
+		public Gossip[] GossipTrackers { get; set; } = Array.Empty<Gossip>();
 
 		// must be 0, 1, 5, 10 or a multiple of 15
 		public int ExpectedScrapeIntervalSeconds { get; set; }

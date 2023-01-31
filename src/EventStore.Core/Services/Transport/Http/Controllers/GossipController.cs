@@ -7,6 +7,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
+using EventStore.Core.Telemetry;
 using EventStore.Plugins.Authorization;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Client;
@@ -24,10 +25,12 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			{Codec.Json, Codec.ApplicationXml, Codec.Xml, Codec.Text};
 
 		private readonly IPublisher _networkSendQueue;
+		private readonly IDurationTracker _tracker;
 
-		public GossipController(IPublisher publisher, IPublisher networkSendQueue)
+		public GossipController(IPublisher publisher, IPublisher networkSendQueue, IDurationTracker tracker)
 			: base(publisher) {
 			_networkSendQueue = networkSendQueue;
+			_tracker = tracker;
 		}
 
 		protected override void SubscribeCore(IHttpService service) {
@@ -36,9 +39,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private void OnGetGossip(HttpEntityManager entity, UriTemplateMatch match) {
+			var duration = _tracker.Start();
 			var sendToHttpEnvelope = new SendToHttpEnvelope(
 				_networkSendQueue, entity, Format.SendPublicGossip,
-				(e, m) => Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false));
+				(e, m) => {
+					duration.Dispose();
+					return Configure.Ok(e.ResponseCodec.ContentType, Helper.UTF8NoBom, null, null, false);
+				});
 			Publish(new GossipMessage.ClientGossip(sendToHttpEnvelope));
 		}
 	}

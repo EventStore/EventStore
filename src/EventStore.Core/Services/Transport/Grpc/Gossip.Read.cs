@@ -5,6 +5,7 @@ using EventStore.Client.Gossip;
 using EventStore.Client;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Telemetry;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 using ClusterInfo = EventStore.Client.Gossip.ClusterInfo;
@@ -19,13 +20,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				throw RpcExceptions.AccessDenied();
 			}
 			var tcs = new TaskCompletionSource<ClusterInfo>();
-			_bus.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs))));;
+			var duration = _tracker.Start();
+			_bus.Publish(new GossipMessage.ClientGossip(new CallbackEnvelope(msg => GossipResponse(msg, tcs, duration))));;
 			return await tcs.Task.ConfigureAwait(false);
 		}
 
-		private void GossipResponse(Message msg, TaskCompletionSource<ClusterInfo> tcs) {
+		private void GossipResponse(Message msg, TaskCompletionSource<ClusterInfo> tcs, Duration duration) {
 			if (msg is GossipMessage.SendClientGossip received) {
 				tcs.TrySetResult(ToGrpcClusterInfo(received.ClusterInfo));
+				duration.Dispose();
 			}
 		}
 
