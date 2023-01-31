@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - Improved synchronization during TFChunk disposal [EventStore#3674](https://github.com/EventStore/EventStore/pull/3674)
 - Slow persistent subscription consumer no longer slows down other subscribers [EventStore#3701](https://github.com/EventStore/EventStore/pull/3701)
 - Fix projection progress report. [EventStore#3655](https://github.com/EventStore/EventStore/pull/3655)
+- Cancel reads already in the reader queues when the gRPC call is cancelled [EventStore#3718](https://github.com/EventStore/EventStore/pull/3718)
+- too strict cleanup condition causing a memory leak in rare cases when server becomes unresponsive. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
+- cancelation of current command. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 
 ### Added
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
@@ -21,12 +24,14 @@ All notable changes to this project will be documented in this file.
 - Histograms for gRPC reads and appends [EventStore#3695](https://github.com/EventStore/EventStore/pull/3695)
 - a process-wide stopwatch for measuring durations [EventStore#3703](https://github.com/EventStore/EventStore/pull/3703)
 - more information to SLOW QUEUE MSG logs for reads and writes [EventStore#3706](https://github.com/EventStore/EventStore/pull/3706)
+- log errors for gRPC write flood. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
 - Update UI build after latest changes. [EventStore#3683](https://github.com/EventStore/EventStore/pull/3683)
 - Publish messages from the persistent subscriptions IODispatcher to the Persistent Subscriptions queue rather than the main queue [EventStore#3702](https://github.com/EventStore/EventStore/pull/3702)
 - CI Unit test settings [EventStore#3712](https://github.com/EventStore/EventStore/pull/3712)
+- log available commands separately. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
