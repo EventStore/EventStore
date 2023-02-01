@@ -305,7 +305,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 
 			if (!chunksClosed)
-				_log.Error("Failed to properly close all chunk files - checkpoints will not be flushed.");
+				_log.Debug("One or more chunks are still open; skipping checkpoint flush.");
 
 			Config.WriterCheckpoint.Close(flush: chunksClosed);
 			Config.ChaserCheckpoint.Close(flush: chunksClosed);
