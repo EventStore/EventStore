@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
+- some redundant code [EventStore#3709](https://github.com/EventStore/EventStore/pull/3709)
 
 ### changed
 - Use version 22.10 in the docs [EventStore#3714](https://github.com/EventStore/EventStore/pull/3714)
