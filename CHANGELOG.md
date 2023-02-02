@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Cancel reads already in the reader queues when the gRPC call is cancelled [EventStore#3718](https://github.com/EventStore/EventStore/pull/3718)
 - too strict cleanup condition causing a memory leak in rare cases when server becomes unresponsive. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - cancelation of current command. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
+- downgraded an error log message that is not really and error to debug level [EventStore#3727](https://github.com/EventStore/EventStore/pull/3727)
 
 ### Added
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
