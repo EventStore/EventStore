@@ -6,7 +6,7 @@ using ResolvedEvent = EventStore.Projections.Core.Services.Processing.ResolvedEv
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ReaderSubscriptionMessage {
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public partial class SubscriptionMessage : Message {
 			private readonly Guid _correlationId;
 			private readonly CheckpointTag _preTagged;
@@ -31,7 +31,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public partial class EventReaderIdle : SubscriptionMessage {
 			private readonly DateTime _idleTimestampUtc;
 
@@ -45,7 +45,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public sealed partial class EventReaderStarting : SubscriptionMessage {
 			private readonly long _lastCommitPosition;
 
@@ -59,7 +59,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public partial class EventReaderEof : SubscriptionMessage {
 			private readonly bool _maxEventsReached;
 
@@ -73,7 +73,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public partial class EventReaderPartitionEof : SubscriptionMessage {
 			private readonly string _partition;
 
@@ -88,7 +88,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public partial class EventReaderPartitionDeleted : SubscriptionMessage {
 			private readonly string _partition;
 			private readonly long? _lastEventNumber;
@@ -135,14 +135,14 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public sealed partial class EventReaderNotAuthorized : SubscriptionMessage {
 			public EventReaderNotAuthorized(Guid correlationId, object source = null)
 				: base(correlationId, null, source) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public partial class CommittedEventDistributed : SubscriptionMessage {
 			public static CommittedEventDistributed Sample(
 				Guid correlationId, TFPos position, TFPos originalPosition, string positionStreamId,
@@ -207,7 +207,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
 		public partial class Faulted : SubscriptionMessage {
 			private readonly string _reason;
 
@@ -222,13 +222,8 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		public class ReportProgress : SubscriptionMessage {
-			private static readonly int TypeId = System.Threading.Interlocked.Increment(ref NextMsgId);
-
-			public override int MsgTypeId {
-				get { return TypeId; }
-			}
-
+		[DerivedMessage(ProjectionMessage.ReaderSubscription)]
+		public partial class ReportProgress : SubscriptionMessage {
 			public ReportProgress(Guid correlationId, object source = null) : base(correlationId, null, source) { }
 		}
 	}

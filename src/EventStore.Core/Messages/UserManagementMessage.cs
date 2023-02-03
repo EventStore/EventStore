@@ -7,7 +7,7 @@ using EventStore.Core.Services.Transport.Http.Controllers;
 
 namespace EventStore.Core.Messages {
 	public static partial class UserManagementMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public partial class RequestMessage : Message {
 			public readonly IEnvelope Envelope;
 			public readonly ClaimsPrincipal Principal;
@@ -18,7 +18,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public partial class ResponseMessage : Message {
 			public readonly bool Success;
 			public readonly Error Error;
@@ -29,7 +29,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public partial class UserManagementRequestMessage : RequestMessage {
 			public readonly string LoginName;
 
@@ -39,7 +39,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class Create : UserManagementRequestMessage {
 			public readonly string FullName;
 			public readonly string[] Groups;
@@ -55,7 +55,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class Update : UserManagementRequestMessage {
 			public readonly string FullName;
 			public readonly string[] Groups;
@@ -67,28 +67,28 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class Disable : UserManagementRequestMessage {
 			public Disable(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class Enable : UserManagementRequestMessage {
 			public Enable(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class Delete : UserManagementRequestMessage {
 			public Delete(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class ResetPassword : UserManagementRequestMessage {
 			public readonly string NewPassword;
 
@@ -98,7 +98,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class ChangePassword : UserManagementRequestMessage {
 			public readonly string CurrentPassword;
 			public readonly string NewPassword;
@@ -111,14 +111,14 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class GetAll : RequestMessage {
 			public GetAll(IEnvelope envelope, ClaimsPrincipal principal)
 				: base(envelope, principal) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class Get : UserManagementRequestMessage {
 			public Get(IEnvelope envelope, ClaimsPrincipal principal, string loginName)
 				: base(envelope, principal, loginName) {
@@ -154,7 +154,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class UpdateResult : ResponseMessage {
 			public readonly string LoginName;
 
@@ -197,7 +197,7 @@ namespace EventStore.Core.Messages {
 		}
 
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public partial class UserDetailsResultHttpFormatted : ResponseMessage {
 			public readonly UserDataHttpFormated Data;
 
@@ -208,7 +208,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public partial class AllUserDetailsResultHttpFormatted : ResponseMessage {
 			public readonly UserDataHttpFormated[] Data;
 
@@ -219,7 +219,7 @@ namespace EventStore.Core.Messages {
 		}
 
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class UserDetailsResult : ResponseMessage {
 			public readonly UserData Data;
 
@@ -234,7 +234,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.UserManagement)]
 		public sealed partial class AllUserDetailsResult : ResponseMessage {
 			public readonly UserData[] Data;
 

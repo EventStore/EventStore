@@ -2,7 +2,7 @@ using System;
 using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Helpers {
-	[DerivedMessage]
+	[DerivedMessage(CoreMessage.IODispatcher)]
 	public sealed partial class IODispatcherDelayedMessage : Message {
 		private readonly Guid _correlationId;
 		private readonly ICorrelatedTimeout _timeout;

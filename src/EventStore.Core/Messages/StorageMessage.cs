@@ -23,7 +23,7 @@ namespace EventStore.Core.Messages {
 		public interface ILeaderWriteMessage {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class WritePrepares : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			public Guid CorrelationId { get; private set; }
 			public IEnvelope Envelope { get; private set; }
@@ -54,7 +54,7 @@ namespace EventStore.Core.Messages {
 				$"MetadataBytes: {Events?.Sum(static e => e.Metadata.Length)}";
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class WriteDelete : Message, IPreconditionedWriteMessage, IFlushableMessage, ILeaderWriteMessage {
 			public Guid CorrelationId { get; private set; }
 			public IEnvelope Envelope { get; private set; }
@@ -78,7 +78,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class WriteCommit : Message, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
@@ -91,7 +91,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class WriteTransactionStart : Message, IPreconditionedWriteMessage, IFlushableMessage,
 			ILeaderWriteMessage {
 
@@ -117,7 +117,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class WriteTransactionData : Message, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
@@ -132,7 +132,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class WriteTransactionEnd : Message, IFlushableMessage, ILeaderWriteMessage {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
@@ -150,7 +150,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class PrepareAck : Message {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
@@ -166,7 +166,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class CommitAck : Message {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
@@ -194,7 +194,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class CommitIndexed : Message {
 			public readonly Guid CorrelationId;
 			public readonly long LogPosition;
@@ -221,7 +221,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class EventCommitted : Message {
 			public readonly long CommitPosition;
 			public readonly EventRecord Event;
@@ -234,13 +234,13 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class TfEofAtNonCommitRecord : Message {
 			public TfEofAtNonCommitRecord() {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class AlreadyCommitted : Message {
 			public readonly Guid CorrelationId;
 
@@ -269,7 +269,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class InvalidTransaction : Message {
 			public readonly Guid CorrelationId;
 
@@ -278,7 +278,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class WrongExpectedVersion : Message {
 			public readonly Guid CorrelationId;
 			public readonly long CurrentVersion;
@@ -290,7 +290,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class StreamDeleted : Message {
 			public readonly Guid CorrelationId;
 
@@ -300,7 +300,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class RequestCompleted : Message {
 			public readonly Guid CorrelationId;
 			public readonly bool Success;
@@ -314,7 +314,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class RequestManagerTimerTick : Message {
 			public DateTime UtcNow {
 				get { return _now ?? DateTime.UtcNow; }
@@ -330,7 +330,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class BatchLogExpiredMessages : Message, IQueueAffineMessage {
 			public readonly Guid CorrelationId;
 			public int QueueId { get; }
@@ -343,7 +343,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class EffectiveStreamAclRequest : Message {
 			public readonly string StreamId;
 			public readonly IEnvelope Envelope;
@@ -356,7 +356,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class EffectiveStreamAclResponse : Message {
 			public readonly EffectiveAcl Acl;
 
@@ -405,7 +405,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class OperationCancelledMessage : Message {
 			public CancellationToken CancellationToken { get; }
 
@@ -414,7 +414,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class StreamIdFromTransactionIdRequest : Message {
 			public readonly long TransactionId;
 			public readonly IEnvelope Envelope;
@@ -427,7 +427,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class StreamIdFromTransactionIdResponse : Message {
 			public readonly string StreamId;
 

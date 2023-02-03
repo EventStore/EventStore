@@ -4,7 +4,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.AwakeReaderService {
 	public partial class AwakeServiceMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Awake)]
 		public sealed partial class SubscribeAwake : Message {
 			public readonly IEnvelope Envelope;
 			public readonly Guid CorrelationId;
@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.AwakeReaderService {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Awake)]
 		public sealed partial class UnsubscribeAwake : Message {
 			public readonly Guid CorrelationId;
 

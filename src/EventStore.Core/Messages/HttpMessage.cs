@@ -29,7 +29,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Http)]
 		public partial class HttpSend : HttpSendMessage {
 			public readonly object Data;
 			public readonly ResponseConfiguration Configuration;
@@ -44,7 +44,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Http)]
 		public partial class DeniedToHandle : Message {
 			public readonly DenialReason Reason;
 			public readonly string Details;
@@ -55,11 +55,11 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Http)]
 		public partial class PurgeTimedOutRequests : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Http)]
 		public partial class TextMessage : Message {
 			public string Text { get; set; }
 

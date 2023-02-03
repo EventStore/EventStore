@@ -17,7 +17,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
 		public partial class Subscribe : ReaderSubscriptionManagementMessage {
 			private readonly CheckpointTag _fromPosition;
 			private readonly IReaderStrategy _readerStrategy;
@@ -47,21 +47,21 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
 		public partial class Pause : ReaderSubscriptionManagementMessage {
 			public Pause(Guid subscriptionId)
 				: base(subscriptionId) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
 		public partial class Resume : ReaderSubscriptionManagementMessage {
 			public Resume(Guid subscriptionId)
 				: base(subscriptionId) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderSubscriptionManagement)]
 		public partial class Unsubscribe : ReaderSubscriptionManagementMessage {
 			public Unsubscribe(Guid subscriptionId)
 				: base(subscriptionId) {

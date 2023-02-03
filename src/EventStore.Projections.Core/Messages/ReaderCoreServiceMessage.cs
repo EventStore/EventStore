@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ReaderCoreServiceMessage {
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderCoreService)]
 		public partial class StartReader : Message {
 			public Guid InstanceCorrelationId { get; }
 
@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ReaderCoreService)]
 		public partial class StopReader : Message {
 			public Guid QueueId { get; }
 			

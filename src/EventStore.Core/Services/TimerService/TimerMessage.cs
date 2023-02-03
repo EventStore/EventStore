@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Services.TimerService {
 	public static partial class TimerMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Timer)]
 		public partial class Schedule : Message {
 			public readonly TimeSpan TriggerAfter;
 

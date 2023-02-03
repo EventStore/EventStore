@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static partial class SubscriptionMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class PollStream : Message {
 			public readonly string StreamId;
 			public readonly long LastIndexedPosition;
@@ -22,11 +22,11 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class CheckPollTimeout : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class PersistentSubscriptionTimerTick : Message {
 			public Guid CorrelationId { get; }
 
@@ -35,7 +35,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class PersistentSubscriptionsRestart : Message {
 			public IEnvelope ReplyEnvelope { get; }
 			
@@ -44,11 +44,11 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class PersistentSubscriptionsRestarting : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class InvalidPersistentSubscriptionsRestart : Message {
 			public readonly string Reason;
 
@@ -57,11 +57,11 @@ namespace EventStore.Core.Messages {
 			}
 		}
 	
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class PersistentSubscriptionsStarted : Message {
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Subscription)]
 		public partial class PersistentSubscriptionsStopped : Message {
 		}
 	}

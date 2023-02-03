@@ -4,7 +4,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static partial class LeaderDiscoveryMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.LeaderDiscovery)]
 		public partial class LeaderFound : Message {
 			public readonly MemberInfo Leader;
 
@@ -14,7 +14,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.LeaderDiscovery)]
 		public partial class DiscoveryTimeout : Message {
 		}
 	}

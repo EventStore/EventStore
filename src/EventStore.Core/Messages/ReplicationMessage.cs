@@ -11,7 +11,7 @@ using EndPoint = System.Net.EndPoint;
 
 namespace EventStore.Core.Messages {
 	public static partial class ReplicationMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class SubscribeReplica : Message {
 			public readonly int Version;
 			public readonly long LogPosition;
@@ -46,7 +46,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class AckLogPosition : Message {
 			public readonly Guid SubscriptionId;
 
@@ -71,7 +71,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class ReplicaLogPositionAck : Message {
 			public readonly Guid SubscriptionId;
 			public readonly long ReplicationLogPosition;
@@ -90,7 +90,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class ReplicaSubscriptionRequest : Message {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
@@ -140,7 +140,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class ReconnectToLeader : Message {
 			public readonly MemberInfo Leader;
 			public readonly Guid ConnectionCorrelationId;
@@ -153,7 +153,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class LeaderConnectionFailed : Message {
 			public readonly MemberInfo Leader;
 			public readonly Guid LeaderConnectionCorrelationId;
@@ -171,7 +171,7 @@ namespace EventStore.Core.Messages {
 			Guid SubscriptionId { get; }
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class SubscribeToLeader : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -196,7 +196,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class ReplicaSubscriptionRetry : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -217,7 +217,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class ReplicaSubscribed : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -257,7 +257,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class FollowerAssignment : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -278,7 +278,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class CloneAssignment : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -299,7 +299,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class CreateChunk : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -336,7 +336,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class RawChunkBulk : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -382,7 +382,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class DataChunkBulk : Message, IReplicationMessage, StorageMessage.IFlushableMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -431,7 +431,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class DropSubscription : Message, IReplicationMessage {
 			Guid IReplicationMessage.LeaderId {
 				get { return LeaderId; }
@@ -452,7 +452,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class GetReplicationStats : Message {
 			public IEnvelope Envelope;
 
@@ -461,7 +461,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Replication)]
 		public partial class GetReplicationStatsCompleted : Message {
 			public List<ReplicationMessage.ReplicationStats> ReplicationStats;
 

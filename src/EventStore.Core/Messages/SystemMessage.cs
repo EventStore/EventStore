@@ -8,23 +8,23 @@ using EndPoint = System.Net.EndPoint;
 
 namespace EventStore.Core.Messages {
 	public static partial class SystemMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class SystemInit : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class SystemStart : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class SystemCoreReady : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class SystemReady : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class ServiceInitialized : Message {
 			public readonly string ServiceName;
 
@@ -34,7 +34,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class SubSystemInitialized : Message {
 			public readonly string SubSystemName;
 
@@ -44,7 +44,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class WriteEpoch : Message {
 			public readonly int EpochNumber;
 			public WriteEpoch(int epochNumber) {
@@ -52,11 +52,11 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class InitiateLeaderResignation : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class RequestQueueDrained : Message {
 		}
 
@@ -72,19 +72,19 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomePreLeader : StateChangeMessage {
 			public BecomePreLeader(Guid correlationId) : base(correlationId, VNodeState.PreLeader) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeLeader : StateChangeMessage {
 			public BecomeLeader(Guid correlationId) : base(correlationId, VNodeState.Leader) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeShuttingDown : StateChangeMessage {
 			public readonly bool ShutdownHttp;
 			public readonly bool ExitProcess;
@@ -97,27 +97,27 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeShutdown : StateChangeMessage {
 			public BecomeShutdown(Guid correlationId) : base(correlationId, VNodeState.Shutdown) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeUnknown : StateChangeMessage {
 			public BecomeUnknown(Guid correlationId)
 				: base(correlationId, VNodeState.Unknown) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeDiscoverLeader : StateChangeMessage {
 			public BecomeDiscoverLeader(Guid correlationId)
 				: base(correlationId, VNodeState.DiscoverLeader) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeResigningLeader : StateChangeMessage {
 			public BecomeResigningLeader(Guid correlationId)
 				: base(correlationId, VNodeState.ResigningLeader) {
@@ -135,7 +135,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomePreReplica : ReplicaStateMessage {
 			public readonly Guid LeaderConnectionCorrelationId;
 
@@ -145,34 +145,34 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeCatchingUp : ReplicaStateMessage {
 			public BecomeCatchingUp(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.CatchingUp,
 				leader) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeClone : ReplicaStateMessage {
 			public BecomeClone(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.Clone, leader) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeFollower : ReplicaStateMessage {
 			public BecomeFollower(Guid correlationId, MemberInfo leader) : base(correlationId, VNodeState.Follower,
 				leader) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeReadOnlyLeaderless : StateChangeMessage {
 			public BecomeReadOnlyLeaderless(Guid correlationId)
 				: base(correlationId, VNodeState.ReadOnlyLeaderless) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomePreReadOnlyReplica : ReplicaStateMessage {
 			public readonly Guid LeaderConnectionCorrelationId;
 
@@ -182,7 +182,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class BecomeReadOnlyReplica : ReplicaStateMessage {
 			public BecomeReadOnlyReplica(Guid correlationId, MemberInfo leader)
 				: base(correlationId, VNodeState.ReadOnlyReplica, leader) {
@@ -190,7 +190,7 @@ namespace EventStore.Core.Messages {
 		}
 
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class ServiceShutdown : Message {
 			public readonly string ServiceName;
 
@@ -201,11 +201,11 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class ShutdownTimeout : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class VNodeConnectionLost : Message {
 			public readonly EndPoint VNodeEndPoint;
 			public readonly Guid ConnectionId;
@@ -221,7 +221,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class VNodeConnectionEstablished : Message {
 			public readonly EndPoint VNodeEndPoint;
 			public readonly Guid ConnectionId;
@@ -235,7 +235,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class WaitForChaserToCatchUp : Message {
 			public readonly Guid CorrelationId;
 			public readonly TimeSpan TotalTimeWasted;
@@ -248,7 +248,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class ChaserCaughtUp : Message {
 			public readonly Guid CorrelationId;
 
@@ -258,27 +258,27 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class EnablePreLeaderReplication : Message {
 			public EnablePreLeaderReplication() {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class CheckInaugurationConditions : Message {
 			public CheckInaugurationConditions() {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class RequestForwardingTimerTick : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class NoQuorumMessage : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.System)]
 		public partial class EpochWritten : Message {
 			public readonly EpochRecord Epoch;
 

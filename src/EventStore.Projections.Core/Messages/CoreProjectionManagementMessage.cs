@@ -5,35 +5,35 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionManagementMessage {
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class Start : CoreProjectionManagementControlMessage {
 			public Start(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class LoadStopped : CoreProjectionManagementControlMessage {
 			public LoadStopped(Guid correlationId, Guid workerId)
 				: base(correlationId, workerId) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class Stop : CoreProjectionManagementControlMessage {
 			public Stop(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class Kill : CoreProjectionManagementControlMessage {
 			public Kill(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class GetState : CoreProjectionManagementControlMessage {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class GetResult : CoreProjectionManagementControlMessage {
 			private readonly Guid _correlationId;
 			private readonly string _partition;
@@ -75,7 +75,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class CreateAndPrepare : CoreProjectionManagementControlMessage {
 			private readonly ProjectionConfig _config;
 			private readonly string _handlerType;
@@ -127,7 +127,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class CreatePrepared : CoreProjectionManagementControlMessage {
 			private readonly ProjectionConfig _config;
 			private readonly QuerySourcesDefinition _sourceDefinition;
@@ -191,7 +191,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreManagement)]
 		public partial class Dispose : CoreProjectionManagementControlMessage {
 			public Dispose(Guid projectionId, Guid workerId)
 				: base(projectionId, workerId) {

@@ -5,11 +5,11 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static partial class GossipMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class RetrieveGossipSeedSources : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class GotGossipSeedSources : Message {
 			public readonly EndPoint[] GossipSeeds;
 
@@ -18,7 +18,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class Gossip : Message {
 			public readonly int GossipRound;
 
@@ -27,7 +27,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class GossipReceived : Message {
 			public readonly IEnvelope Envelope;
 			public readonly ClusterInfo ClusterInfo;
@@ -40,7 +40,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class ReadGossip : Message {
 			public readonly IEnvelope Envelope;
 
@@ -49,7 +49,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class SendGossip : Message {
 			public readonly ClusterInfo ClusterInfo;
 			public readonly EndPoint ServerEndPoint;
@@ -60,7 +60,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class ClientGossip : Message {
 			public readonly IEnvelope Envelope;
 
@@ -69,7 +69,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class SendClientGossip : Message {
 			public readonly ClientClusterInfo ClusterInfo;
 
@@ -78,7 +78,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class GossipUpdated : Message {
 			public readonly ClusterInfo ClusterInfo;
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class GossipSendFailed : Message {
 			public readonly string Reason;
 			public readonly EndPoint Recipient;
@@ -102,12 +102,12 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class GetGossip : Message {
 			public GetGossip() { }
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class GetGossipFailed : Message {
 			public readonly string Reason;
 			public readonly EndPoint Recipient;
@@ -122,7 +122,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class GetGossipReceived : Message {
 			public readonly ClusterInfo ClusterInfo;
 			public readonly EndPoint Server;
@@ -133,7 +133,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Gossip)]
 		public partial class UpdateNodePriority : Message {
 			public readonly int NodePriority;
 

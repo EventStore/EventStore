@@ -16,6 +16,9 @@ namespace EventStore.Core.Messaging {
 	public class DerivedMessageAttribute : Attribute {
 		public DerivedMessageAttribute() {
 		}
+
+		public DerivedMessageAttribute(object messageGroup) {
+		}
 	}
 
 	[BaseMessage]

@@ -10,7 +10,7 @@ namespace EventStore.Projections.Core.Messages {
 		/// restore the projection processing (typically
 		/// an event at this position does not satisfy projection filter)
 		/// </summary>
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class CheckpointSuggested : EventReaderSubscriptionMessageBase {
 			public CheckpointSuggested(
 				Guid subscriptionId, CheckpointTag checkpointTag, float progress,
@@ -19,7 +19,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class ProgressChanged : EventReaderSubscriptionMessageBase {
 			public ProgressChanged(
 				Guid subscriptionId, CheckpointTag checkpointTag, float progress,
@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class SubscriptionStarted : EventReaderSubscriptionMessageBase {
 			private readonly long _startingLastCommitPosition;
 
@@ -44,7 +44,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public sealed partial class NotAuthorized : EventReaderSubscriptionMessageBase {
 			public NotAuthorized(
 				Guid subscriptionId, CheckpointTag checkpointTag, float progress,
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public sealed partial class Failed : EventReaderSubscriptionMessageBase {
 			private readonly string _reason;
 
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class EofReached : EventReaderSubscriptionMessageBase {
 			public EofReached(
 				Guid subscriptionId, CheckpointTag checkpointTag,
@@ -77,7 +77,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class PartitionEofReached : EventReaderSubscriptionMessageBase {
 			private readonly string _partition;
 
@@ -97,7 +97,7 @@ namespace EventStore.Projections.Core.Messages {
 		/// NOTEL the PartitionDeleted may appear out-of-order and is not guaranteed
 		/// to appear at the same sequence position in a recovery 
 		/// </summary>
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class PartitionDeleted : EventReaderSubscriptionMessageBase {
 			private readonly string _partition;
 
@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class CommittedEventReceived : EventReaderSubscriptionMessageBase {
 			public static CommittedEventReceived Sample(
 				ResolvedEvent data, Guid subscriptionId, long subscriptionMessageSequenceNumber) {
@@ -172,7 +172,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.EventReaderSubscription)]
 		public partial class ReaderAssignedReader : EventReaderSubscriptionMessageBase {
 			private readonly Guid _readerId;
 
