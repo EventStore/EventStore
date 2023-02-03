@@ -10,12 +10,18 @@ namespace EventStore.SourceGenerators.Tests.Messaging.Nested
 		{
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 			public override int MsgTypeId => TypeId;
+			public static string OriginalLabelStatic { get; } = "TestMessageGroup-Nested-A";
+			public static string LabelStatic { get; set; } = "TestMessageGroup-Nested-A";
+			public override string Label => LabelStatic;
 		}
 
 		public partial class B
 		{
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 			public override int MsgTypeId => TypeId;
+			public static string OriginalLabelStatic { get; } = "TestMessageGroup-Nested-B";
+			public static string LabelStatic { get; set; } = "TestMessageGroup-Nested-B";
+			public override string Label => LabelStatic;
 		}
 	}
 }

@@ -1,9 +1,9 @@
 ﻿namespace EventStore.SourceGenerators.Tests.Messaging.FileScopedNamespace;
 
-[DerivedMessage]
+[DerivedMessage(TestMessageGroup.FileScopedNamespace)]
 public partial class A : Message {
 }
 
-[DerivedMessage]
+[DerivedMessage(TestMessageGroup.FileScopedNamespace)]
 public partial class B : Message {
 }

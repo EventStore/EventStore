@@ -8,5 +8,8 @@ namespace EventStore.SourceGenerators.Tests.Messaging.Impartial
 	{
 		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 		public override int MsgTypeId => TypeId;
+		public static string OriginalLabelStatic { get; } = "TestMessageGroup-Impartial-A";
+		public static string LabelStatic { get; set; } = "TestMessageGroup-Impartial-A";
+		public override string Label => LabelStatic;
 	}
 }

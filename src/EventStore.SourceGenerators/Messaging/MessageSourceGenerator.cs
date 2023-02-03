@@ -138,7 +138,7 @@ using System.Threading;
 					constraintClauses: default,
 					members: default)
 				.AddMembers(TransformChildren(node, members))
-				.AddGeneratedMembers(node)
+				.AddGeneratedMembers(_context, node)
 				.WithoutTrivia();
 		}
 

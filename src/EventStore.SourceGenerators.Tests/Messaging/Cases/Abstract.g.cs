@@ -10,6 +10,9 @@ namespace EventStore.SourceGenerators.Tests.Messaging.Abstract
 		{
 			private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 			public override int MsgTypeId => TypeId;
+			public static string OriginalLabelStatic { get; } = "TestMessageGroup-Abstract-A";
+			public static string LabelStatic { get; set; } = "TestMessageGroup-Abstract-A";
+			public override string Label => LabelStatic;
 		}
 
 		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
