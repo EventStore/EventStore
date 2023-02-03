@@ -6,7 +6,8 @@ using System.Linq;
 namespace EventStore.Core.Telemetry;
 
 public interface IDurationMaxTracker {
-	void RecordNow(Instant start);
+	// Returns the current instant
+	Instant RecordNow(Instant start);
 }
 
 // When observed, this returns the max duration that it has been asked to record over the last x
@@ -65,7 +66,7 @@ public class DurationMaxTracker : IDurationMaxTracker {
 		metric.Add(this);
 	}
 
-	public void RecordNow(Instant start) {
+	public Instant RecordNow(Instant start) {
 		var now = _clock.Now;
 		var currentSubPeriod = now.Ticks / _ticksPerBucket;
 
@@ -74,6 +75,7 @@ public class DurationMaxTracker : IDurationMaxTracker {
 		var elapsedSeconds = now.ElapsedSecondsSince(start);
 		var currentIndex = (int)(currentSubPeriod % _numBuckets);
 		_maxBuckets[currentIndex] = Math.Max(_maxBuckets[currentIndex], elapsedSeconds);
+		return now;
 	}
 
 	public Measurement<double> Observe() {
@@ -153,7 +155,6 @@ public class DurationMaxTracker : IDurationMaxTracker {
 	}
 
 	public class NoOp : IDurationMaxTracker {
-		public void RecordNow(Instant start) {
-		}
+		public Instant RecordNow(Instant start) => Instant.Now;
 	}
 }

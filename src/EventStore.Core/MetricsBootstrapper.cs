@@ -45,6 +45,10 @@ public static class MetricsBootstrapper {
 			return;
 
 		var coreMeter = new Meter("EventStore.Core", version: "0.0.1");
+		var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
+		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
+		var durationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-duration-max");
+		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
 
 		// checkpoints
 		_ = new CheckpointMetric(
@@ -66,7 +70,6 @@ public static class MetricsBootstrapper {
 
 		// status metrics
 		if (conf.StatusTrackers.Length > 0) {
-			var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
 			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Index))
 				trackers.IndexStatusTracker = new IndexStatusTracker(statusMetric);
 			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Node))
@@ -75,8 +78,6 @@ public static class MetricsBootstrapper {
 				trackers.ScavengeStatusTracker = new ScavengeStatusTracker(statusMetric);
 		}
 
-		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
-
 		// grpc historgrams
 		foreach (var method in Enum.GetValues<Conf.GrpcMethod>()) {
 			if (conf.GrpcMethods.TryGetValue(method, out var label) && !string.IsNullOrWhiteSpace(label))
@@ -84,8 +85,6 @@ public static class MetricsBootstrapper {
 		}
 
 		// queue length trackers
-		var durationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-duration-max");
-
 		trackers.QueueTrackers = new QueueTrackers(
 			conf.Queues,
 			name => new QueueTracker(
@@ -93,6 +92,9 @@ public static class MetricsBootstrapper {
 				new DurationMaxTracker(
 					name: name,
 					metric: durationMaxMetric,
-					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds)));
+					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds),
+				new QueueProcessingTracker(
+					metric: queueProcessingDurationMetric,
+					queueName: name)));
 	}
 }
