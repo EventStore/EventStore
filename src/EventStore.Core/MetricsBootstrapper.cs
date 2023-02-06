@@ -4,6 +4,7 @@ using System.Linq;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
+using EventStore.Core.Messaging;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Scavenging;
@@ -40,6 +41,9 @@ public static class MetricsBootstrapper {
 		Conf conf,
 		TFChunkDbConfig dbConfig,
 		Trackers trackers) {
+
+		MessageLabelConfigurator.ConfigureMessageLabels(
+			conf.MessageTypes, MessageHierarchy.MsgTypeIdByType.Keys);
 
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;

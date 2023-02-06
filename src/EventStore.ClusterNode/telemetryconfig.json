@@ -70,5 +70,80 @@
 			"Regex": ".*",
 			"Label": "Other Queue"
 		}
+	],
+
+	"MessageTypes": [
+		{
+			"Regex": "CoreMessage-Authentication-.*",
+			"Label": "Authentication"
+		},
+		{
+			"Regex": "CoreMessage-Client-.*Completed",
+			"Label": "ClientMessageCompleted"
+		},
+		{
+			"Regex": "CoreMessage-Client-ReadEvent",
+			"Label": "ReadEvent"
+		},
+		{
+			"Regex": "CoreMessage-Client-.*ReadAllEvents.*",
+			"Label": "ReadAll"
+		},
+		{
+			"Regex": "CoreMessage-Client-.*ReadStreamEvents.*",
+			"Label": "ReadStream"
+		},
+		{
+			"Regex": "CoreMessage-Client-.*",
+			"Label": "OtherClientMessage"
+		},
+		{
+			"Regex": "CoreMessage-Election-.*",
+			"Label": "Election"
+		},
+		{
+			"Regex": "CoreMessage-Gossip-.*",
+			"Label": "Gossip"
+		},
+		{
+			"Regex": "CoreMessage-Grpc-.*",
+			"Label": "Grpc"
+		},
+		{
+			"Regex": "CoreMessage-Http-.*",
+			"Label": "Http"
+		},
+		{
+			"Regex": "CoreMessage-Replication-.*",
+			"Label": "Replication"
+		},
+		{
+			"Regex": "CoreMessage-ReplicationTracking-.*",
+			"Label": "Replication"
+		},
+		{
+			"Regex": "CoreMessage-Storage-.*",
+			"Label": "Storage"
+		},
+		{
+			"Regex": "CoreMessage-Subscription-.*",
+			"Label": "Subscription"
+		},
+		{
+			"Regex": "CoreMessage-System-.*",
+			"Label": "System"
+		},
+		{
+			"Regex": "CoreMessage-Tcp-.*",
+			"Label": "Tcp"
+		},
+		{
+			"Regex": "ProjectionMessage-.*",
+			"Label": "Projections"
+		},
+		{
+			"Regex": ".*",
+			"Label": "Other"
+		}
 	]
 }
