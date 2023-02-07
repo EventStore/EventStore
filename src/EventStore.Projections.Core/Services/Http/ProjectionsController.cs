@@ -116,20 +116,18 @@ namespace EventStore.Projections.Core.Services.Http {
 			if (_httpForwarder.ForwardRequest(http))
 				return;
 
-			var envelope = new SendToHttpEnvelope(_networkSendQueue, http,
-				(e, message) => e.ResponseCodec.To("Restarting"),
+			var envelope = new SendToHttpEnvelope<ProjectionSubsystemMessage.SubsystemRestarting>(_networkSendQueue, http,
+				(e, message) => e.To("Restarting"),
 				(e, message) => {
 					switch (message) {
 						case ProjectionSubsystemMessage.SubsystemRestarting _:
-							return Configure.Ok(e.ResponseCodec.ContentType);
-						case ProjectionSubsystemMessage.InvalidSubsystemRestart fail:
-							return Configure.BadRequest
-								($"Projection Subsystem cannot be restarted as it is in the wrong state: {fail.SubsystemState}");
+							return Configure.Ok(e.ContentType);
 						default:
 							return Configure.InternalServerError();
 					}
-				}
+				}, CreateErrorEnvelope(http)
 			);
+
 			Publish(new ProjectionSubsystemMessage.RestartSubsystem(envelope));
 		}
 
@@ -173,10 +171,10 @@ namespace EventStore.Projections.Core.Services.Http {
 			var withConfig = IsOn(match, "config", false);
 			if (withConfig)
 				envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionQuery>(
-					_networkSendQueue, http, QueryConfigFormatter, QueryConfigConfigurator, ErrorsEnvelope(http));
+					_networkSendQueue, http, QueryConfigFormatter, QueryConfigConfigurator, CreateErrorEnvelope(http));
 			else
 				envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionQuery>(
-					_networkSendQueue, http, QueryFormatter, QueryConfigurator, ErrorsEnvelope(http));
+					_networkSendQueue, http, QueryFormatter, QueryConfigurator, CreateErrorEnvelope(http));
 			Publish(new ProjectionManagementMessage.Command.GetQuery(envelope, match.BoundVariables["name"],
 				GetRunAs(http, match)));
 		}
@@ -186,7 +184,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
-				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, CreateErrorEnvelope(http));
 			var emitEnabled = IsOn(match, "emit", null);
 			http.ReadTextRequestAsync(
 				(o, s) =>
@@ -201,7 +199,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionConfig>(
-				_networkSendQueue, http, ProjectionConfigFormatter, ProjectionConfigConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, ProjectionConfigFormatter, ProjectionConfigConfigurator, CreateErrorEnvelope(http));
 			Publish(
 				new ProjectionManagementMessage.Command.GetConfig(
 					envelope, match.BoundVariables["name"], GetRunAs(http, match)));
@@ -212,7 +210,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
-				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, CreateErrorEnvelope(http));
 			http.ReadTextRequestAsync(
 				(o, s) => {
 					var config = http.RequestCodec.From<ProjectionConfigData>(s);
@@ -235,7 +233,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
-				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, CreateErrorEnvelope(http));
 			Publish(new ProjectionManagementMessage.Command.Disable(envelope, match.BoundVariables["name"],
 				GetRunAs(http, match)));
 		}
@@ -245,7 +243,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
-				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, CreateErrorEnvelope(http));
 			var name = match.BoundVariables["name"];
 			Publish(new ProjectionManagementMessage.Command.Enable(envelope, name, GetRunAs(http, match)));
 		}
@@ -255,7 +253,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
-				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, CreateErrorEnvelope(http));
 			Publish(new ProjectionManagementMessage.Command.Reset(envelope, match.BoundVariables["name"],
 				GetRunAs(http, match)));
 		}
@@ -265,7 +263,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
-				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, CreateErrorEnvelope(http));
 			Publish(new ProjectionManagementMessage.Command.Abort(envelope, match.BoundVariables["name"],
 				GetRunAs(http, match)));
 		}
@@ -279,7 +277,7 @@ namespace EventStore.Projections.Core.Services.Http {
 					<ProjectionManagementMessage.Statistics, ProjectionStatisticsHttpFormatted>(
 						_networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
 						status => new ProjectionStatisticsHttpFormatted(status.Projections[0], s => MakeUrl(http, s)),
-						ErrorsEnvelope(http));
+						CreateErrorEnvelope(http));
 			Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, null, match.BoundVariables["name"],
 				true));
 		}
@@ -289,7 +287,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.Updated>(
-				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, DefaultFormatter, OkResponseConfigurator, CreateErrorEnvelope(http));
 			Publish(
 				new ProjectionManagementMessage.Command.Delete(
 					envelope, match.BoundVariables["name"], GetRunAs(http, match),
@@ -307,7 +305,7 @@ namespace EventStore.Projections.Core.Services.Http {
 					<ProjectionManagementMessage.Statistics, ProjectionsStatisticsHttpFormatted>(
 						_networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
 						status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(http, s)),
-						ErrorsEnvelope(http));
+						CreateErrorEnvelope(http));
 			Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, null, match.BoundVariables["name"],
 				true));
 		}
@@ -317,7 +315,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionState>(
-				_networkSendQueue, http, StateFormatter, StateConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, StateFormatter, StateConfigurator, CreateErrorEnvelope(http));
 			Publish(
 				new ProjectionManagementMessage.Command.GetState(
 					envelope, match.BoundVariables["name"], match.BoundVariables["partition"] ?? ""));
@@ -328,7 +326,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<ProjectionManagementMessage.ProjectionResult>(
-				_networkSendQueue, http, ResultFormatter, ResultConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, ResultFormatter, ResultConfigurator, CreateErrorEnvelope(http));
 			Publish(
 				new ProjectionManagementMessage.Command.GetResult(
 					envelope, match.BoundVariables["name"], match.BoundVariables["partition"] ?? ""));
@@ -345,7 +343,7 @@ namespace EventStore.Projections.Core.Services.Http {
 				return;
 
 			var envelope = new SendToHttpEnvelope<FeedReaderMessage.FeedPage>(
-				_networkSendQueue, http, FeedPageFormatter, FeedPageConfigurator, ErrorsEnvelope(http));
+				_networkSendQueue, http, FeedPageFormatter, FeedPageConfigurator, CreateErrorEnvelope(http));
 
 			http.ReadTextRequestAsync(
 				(o, body) => {
@@ -375,7 +373,7 @@ namespace EventStore.Projections.Core.Services.Http {
 					ProjectionsStatisticsHttpFormatted>(
 					_networkSendQueue, http, DefaultFormatter, OkNoCacheResponseConfigurator,
 					status => new ProjectionsStatisticsHttpFormatted(status, s => MakeUrl(http, s)),
-					ErrorsEnvelope(http));
+					CreateErrorEnvelope(http));
 			Publish(new ProjectionManagementMessage.Command.GetStatistics(envelope, mode, null, true));
 		}
 
@@ -390,7 +388,7 @@ namespace EventStore.Projections.Core.Services.Http {
 					return new ResponseConfiguration(
 						201, "Created", codec.ContentType, codec.Encoding,
 						new KeyValuePair<string, string>("Location", url));
-				}, ErrorsEnvelope(http));
+				}, CreateErrorEnvelope(http));
 			http.ReadTextRequestAsync(
 				(o, s) => {
 					ProjectionManagementMessage.Command.Post postMessage;
@@ -531,7 +529,7 @@ namespace EventStore.Projections.Core.Services.Http {
 			return Configure.Ok(codec.ContentType, codec.Encoding, null, null, false);
 		}
 
-		private IEnvelope ErrorsEnvelope(HttpEntityManager http) {
+		private IEnvelope CreateErrorEnvelope(HttpEntityManager http) {
 			return new SendToHttpEnvelope<ProjectionManagementMessage.NotFound>(
 				_networkSendQueue,
 				http,
@@ -548,7 +546,16 @@ namespace EventStore.Projections.Core.Services.Http {
 						ConflictFormatter,
 						ConflictConfigurator,
 						new SendToHttpEnvelope<ProjectionManagementMessage.OperationFailed>(
-							_networkSendQueue, http, OperationFailedFormatter, OperationFailedConfigurator, null))));
+							_networkSendQueue,
+							http,
+							OperationFailedFormatter, 
+							OperationFailedConfigurator, 
+							new SendToHttpEnvelope<ProjectionSubsystemMessage.InvalidSubsystemRestart>(
+								_networkSendQueue,
+								http,
+								InvalidSubsystemRestartFormatter,
+								InvalidSubsystemRestartConfigurator,
+								null)))));
 		}
 
 		private ResponseConfiguration NotFoundConfigurator(ICodec codec, ProjectionManagementMessage.NotFound message) {
@@ -589,6 +596,16 @@ namespace EventStore.Projections.Core.Services.Http {
 		private static string DefaultFormatter<T>(ICodec codec, T message) {
 			return codec.To(message);
 		}
+		
+		private ResponseConfiguration InvalidSubsystemRestartConfigurator(ICodec codec, ProjectionSubsystemMessage.InvalidSubsystemRestart message) {
+			return new ResponseConfiguration(HttpStatusCode.BadRequest, "Bad Request", "text/plain",
+				Helper.UTF8NoBom);
+		}
+
+		private string InvalidSubsystemRestartFormatter(ICodec codec, ProjectionSubsystemMessage.InvalidSubsystemRestart message) {
+			return message.Reason;
+		}
+
 
 		private static ProjectionManagementMessage.RunAs GetRunAs(HttpEntityManager http, UriTemplateMatch match) {
 			return new ProjectionManagementMessage.RunAs(http.User);

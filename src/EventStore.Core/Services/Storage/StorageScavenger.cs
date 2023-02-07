@@ -50,9 +50,9 @@ namespace EventStore.Core.Services.Storage {
 			if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
 				lock (_lock) {
 					if (_currentScavenge != null) {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress,
-							_currentScavenge.ScavengeId));
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseInProgressResponse(message.CorrelationId,
+							_currentScavenge.ScavengeId, "Scavenge is already running"));
+
 					} else {
 						var tfChunkScavengerLog = _logManager.CreateLog();
 						var logger = Log.ForContext("ScavengeId", tfChunkScavengerLog.ScavengeId);
@@ -64,8 +64,7 @@ namespace EventStore.Core.Services.Storage {
 
 						HandleCleanupWhenFinished(_currentScavengeTask, _currentScavenge, logger);
 
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started,
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStartedResponse(message.CorrelationId,
 							tfChunkScavengerLog.ScavengeId));
 					}
 				}
@@ -80,14 +79,12 @@ namespace EventStore.Core.Services.Storage {
 						_cancellationTokenSource.Cancel();
 
 						_currentScavengeTask.ContinueWith(_ => {
-							message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-								ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped,
+							message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseStoppedResponse(message.CorrelationId,
 								_currentScavenge.ScavengeId));
 						});
 					} else {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(message.CorrelationId,
-							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InvalidScavengeId,
-							_currentScavenge?.ScavengeId));
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseNotFoundResponse(message.CorrelationId,
+							_currentScavenge?.ScavengeId, "Scavenge Id does not exist"));
 					}
 				}
 			}
@@ -97,15 +94,13 @@ namespace EventStore.Core.Services.Storage {
 			if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
 				lock (_lock) {
 					if (_currentScavenge != null) {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetResponse(
 							message.CorrelationId,
-							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress,
+							ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.InProgress,
 							_currentScavenge.ScavengeId));
 					} else {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(
-							message.CorrelationId,
-							ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Stopped,
-							scavengeId: null));
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseGetResponse(
+							message.CorrelationId, ClientMessage.ScavengeDatabaseGetResponse.ScavengeResult.Stopped, scavengeId: null));
 					}
 				}
 			}
@@ -134,8 +129,7 @@ namespace EventStore.Core.Services.Storage {
 
 		private bool IsAllowed(ClaimsPrincipal user, Guid correlationId, IEnvelope envelope) {
 			if (user == null || (!user.LegacyRoleCheck(SystemRoles.Admins) && !user.LegacyRoleCheck(SystemRoles.Operations))) {
-				envelope.ReplyWith(new ClientMessage.ScavengeDatabaseResponse(correlationId,
-					ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized, null));
+				envelope.ReplyWith(new ClientMessage.ScavengeDatabaseUnauthorizedResponse(correlationId, null, "User not authorized"));
 				return false;
 			}
 

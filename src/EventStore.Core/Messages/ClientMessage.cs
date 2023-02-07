@@ -1805,29 +1805,93 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage]
-		public partial class ScavengeDatabaseResponse : Message {
+		public partial class ScavengeDatabaseGetResponse : Message {
 			public readonly Guid CorrelationId;
 			public readonly ScavengeResult Result;
 			public readonly string ScavengeId;
 
-			public ScavengeDatabaseResponse(Guid correlationId,
+			public ScavengeDatabaseGetResponse(Guid correlationId, 
 				ScavengeResult result, string scavengeId) {
 				CorrelationId = correlationId;
 				Result = result;
 				ScavengeId = scavengeId;
 			}
 
-			public override string ToString() {
-				return String.Format("Result: {0}, ScavengeId: {1}", Result, ScavengeId);
+			public override string ToString() => $"Result: {Result}, ScavengeId: {ScavengeId}";
+			public enum ScavengeResult {
+				InProgress,
+				Stopped
+			}
+		}
+		
+		[DerivedMessage]
+		public partial class ScavengeDatabaseStartedResponse : Message {
+			public readonly Guid CorrelationId;
+			public readonly string ScavengeId;
+
+			public ScavengeDatabaseStartedResponse(Guid correlationId, string scavengeId) {
+				CorrelationId = correlationId;
+				ScavengeId = scavengeId;
+			}
+			public override string ToString() => $"ScavengeId: {ScavengeId}";
+		}
+		
+		[DerivedMessage]
+		public partial class ScavengeDatabaseInProgressResponse : Message {
+			public readonly Guid CorrelationId;
+			public readonly string ScavengeId;
+			public readonly string Reason;
+
+			public ScavengeDatabaseInProgressResponse(Guid correlationId, string scavengeId, string reason) {
+				CorrelationId = correlationId;
+				ScavengeId = scavengeId;
+				Reason = reason;
 			}
 
-			public enum ScavengeResult {
-				Started,
-				Unauthorized,
-				InProgress,
-				Stopped,
-				InvalidScavengeId
+			public override string ToString() => $"ScavengeId: {ScavengeId}, Reason: {Reason}";
+		}
+
+		[DerivedMessage]
+		public partial class ScavengeDatabaseStoppedResponse : Message {
+			public readonly Guid CorrelationId;
+			public readonly string ScavengeId;
+
+			public ScavengeDatabaseStoppedResponse(Guid correlationId, string scavengeId) {
+				CorrelationId = correlationId;
+				ScavengeId = scavengeId;
 			}
+
+			public override string ToString() => $"ScavengeId: {ScavengeId}";
+		}
+		
+		[DerivedMessage]
+		public partial class ScavengeDatabaseNotFoundResponse : Message {
+			public readonly Guid CorrelationId;
+			public readonly string ScavengeId;
+			public readonly string Reason;
+
+			public ScavengeDatabaseNotFoundResponse(Guid correlationId, string scavengeId, string reason) {
+				CorrelationId = correlationId;
+				ScavengeId = scavengeId;
+				Reason = reason;
+			}
+
+			public override string ToString() => $"ScavengeId: {ScavengeId}, Reason: {Reason}";
+			
+		}
+		
+		[DerivedMessage]
+		public partial class ScavengeDatabaseUnauthorizedResponse : Message {
+			public readonly Guid CorrelationId;
+			public readonly string ScavengeId;
+			public readonly string Reason;
+
+			public ScavengeDatabaseUnauthorizedResponse(Guid correlationId, string scavengeId, string reason) {
+				CorrelationId = correlationId;
+				ScavengeId = scavengeId;
+				Reason = reason;
+			}
+			public override string ToString() => $"ScavengeId: {ScavengeId}, Reason: {Reason}";
 		}
 
 		[DerivedMessage]

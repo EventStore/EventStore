@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
@@ -34,9 +35,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		protected abstract void SubscribeCore(IHttpService service);
 
 		protected RequestParams SendBadRequest(HttpEntityManager httpEntityManager, string reason) {
-			httpEntityManager.ReplyStatus(HttpStatusCode.BadRequest,
-				reason,
+			httpEntityManager.ReplyContent(Encoding.ASCII.GetBytes(reason), HttpStatusCode.BadRequest,
+				"Bad Request",type: "text/plain", headers:null,
 				e => Log.Debug("Error while closing HTTP connection (bad request): {e}.", e.Message));
+ 
 			return new RequestParams(done: true);
 		}
 

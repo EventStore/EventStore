@@ -235,6 +235,54 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.IsNotNull(dto, "DTO is null");
 			Assert.AreEqual(long.MaxValue, dto.LastEventNumber, "Last event number");
 		}
+		
+		[Test]
+		public void 
+			when_wrapping_scavenge_started_response_should_return_result_and_scavengeId_for_v2_clients() {
+			var scavengeId = Guid.NewGuid().ToString();
+			var msg = new ClientMessage.ScavengeDatabaseStartedResponse(Guid.NewGuid(), scavengeId);
+
+			var package = _dispatcher.WrapMessage(msg, (byte)ClientVersion.V2);
+			Assert.IsNotNull(package, "Package is null");
+			Assert.AreEqual(TcpCommand.ScavengeDatabaseResponse, package.Value.Command, "TcpCommand");
+
+			var dto = package.Value.Data.Deserialize<ScavengeDatabaseResponse>();
+			Assert.IsNotNull(dto, "DTO is null");
+			Assert.AreEqual(dto.Result, ScavengeDatabaseResponse.Types.ScavengeResult.Started);
+			Assert.AreEqual(dto.ScavengeId, scavengeId);
+		}
+		
+		[Test]
+		public void 
+			when_wrapping_scavenge_inprogress_response_should_return_result_and_scavengeId_for_v2_clients() {
+			var scavengeId = Guid.NewGuid().ToString();
+			var msg = new ClientMessage.ScavengeDatabaseInProgressResponse(Guid.NewGuid(), scavengeId, reason:"In Progress");
+
+			var package = _dispatcher.WrapMessage(msg, (byte)ClientVersion.V2);
+			Assert.IsNotNull(package, "Package is null");
+			Assert.AreEqual(TcpCommand.ScavengeDatabaseResponse, package.Value.Command, "TcpCommand");
+			
+			var dto = package.Value.Data.Deserialize<ScavengeDatabaseResponse>();
+			Assert.IsNotNull(dto, "DTO is null");
+			Assert.AreEqual(dto.Result, ScavengeDatabaseResponse.Types.ScavengeResult.InProgress);
+			Assert.AreEqual(dto.ScavengeId, scavengeId);
+		}
+
+		[Test]
+		public void 
+			when_wrapping_scavenge_unauthorized_response_should_return_result_and_scavengeId_for_v2_clients() {
+			var scavengeId = Guid.NewGuid().ToString();
+			var msg = new ClientMessage.ScavengeDatabaseUnauthorizedResponse(Guid.NewGuid(), scavengeId,"Unauthorized" );
+
+			var package = _dispatcher.WrapMessage(msg, (byte)ClientVersion.V2);
+			Assert.IsNotNull(package, "Package is null");
+			Assert.AreEqual(TcpCommand.ScavengeDatabaseResponse, package.Value.Command, "TcpCommand");
+
+			var dto = package.Value.Data.Deserialize<ScavengeDatabaseResponse>();
+			Assert.IsNotNull(dto, "DTO is null");
+			Assert.AreEqual(dto.Result, ScavengeDatabaseResponse.Types.ScavengeResult.Unauthorized);
+			Assert.AreEqual(dto.ScavengeId, scavengeId);
+		}
 
 		private EventRecord CreateDeletedEventRecord() {
 			return new EventRecord(long.MaxValue,

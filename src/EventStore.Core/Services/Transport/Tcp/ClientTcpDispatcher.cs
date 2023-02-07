@@ -81,7 +81,9 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				WrapPersistentSubscriptionStreamEventAppeared, ClientVersion.V2);
 
 			AddUnwrapper(TcpCommand.ScavengeDatabase, UnwrapScavengeDatabase, ClientVersion.V2);
-			AddWrapper<ClientMessage.ScavengeDatabaseResponse>(WrapScavengeDatabaseResponse, ClientVersion.V2);
+			AddWrapper<ClientMessage.ScavengeDatabaseInProgressResponse>(WrapScavengeDatabaseResponse, ClientVersion.V2);
+			AddWrapper<ClientMessage.ScavengeDatabaseStartedResponse>(WrapScavengeDatabaseResponse, ClientVersion.V2);
+			AddWrapper<ClientMessage.ScavengeDatabaseUnauthorizedResponse>(WrapScavengeDatabaseResponse, ClientVersion.V2);
 
 			AddWrapper<ClientMessage.NotHandled>(WrapNotHandled, ClientVersion.V2);
 			AddUnwrapper(TcpCommand.NotHandled, UnwrapNotHandled, ClientVersion.V2);
@@ -450,25 +452,34 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			ClaimsPrincipal user) {
 			return new ClientMessage.ScavengeDatabase(envelope, package.CorrelationId, user, 0, 1, null, null, false);
 		}
-
-		private TcpPackage WrapScavengeDatabaseResponse(ClientMessage.ScavengeDatabaseResponse msg) {
+		
+		private TcpPackage WrapScavengeDatabaseResponse(Message msg) {
 			ScavengeDatabaseResponse.Types.ScavengeResult result;
-			switch (msg.Result) {
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Started:
+			string scavengeId;
+			Guid correlationId;
+			
+			switch (msg) {
+				case ClientMessage.ScavengeDatabaseStartedResponse startedResponse:
 					result = ScavengeDatabaseResponse.Types.ScavengeResult.Started;
+					scavengeId = startedResponse.ScavengeId;
+					correlationId = startedResponse.CorrelationId;
 					break;
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.Unauthorized:
-					result = ScavengeDatabaseResponse.Types.ScavengeResult.Unauthorized;
-					break;
-				case ClientMessage.ScavengeDatabaseResponse.ScavengeResult.InProgress:
+				case ClientMessage.ScavengeDatabaseInProgressResponse inProgressResponse:
 					result = ScavengeDatabaseResponse.Types.ScavengeResult.InProgress;
+					scavengeId = inProgressResponse.ScavengeId;
+					correlationId = inProgressResponse.CorrelationId;
+					break;
+				case ClientMessage.ScavengeDatabaseUnauthorizedResponse unauthorizedResponse:
+					result = ScavengeDatabaseResponse.Types.ScavengeResult.Unauthorized;
+					scavengeId = unauthorizedResponse.ScavengeId;
+					correlationId = unauthorizedResponse.CorrelationId;
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
 
-			var dto = new ScavengeDatabaseResponse(result, msg.ScavengeId);
-			return new TcpPackage(TcpCommand.ScavengeDatabaseResponse, msg.CorrelationId, dto.Serialize());
+			var dto = new ScavengeDatabaseResponse(result, scavengeId);
+			return new TcpPackage(TcpCommand.ScavengeDatabaseResponse, correlationId, dto.Serialize());
 		}
 
 		private ClientMessage.NotHandled UnwrapNotHandled(TcpPackage package, IEnvelope envelope) {
