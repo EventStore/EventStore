@@ -41,6 +41,9 @@ All notable changes to this project will be documented in this file.
 ### changed
 - Use version 22.10 in the docs [EventStore#3714](https://github.com/EventStore/EventStore/pull/3714)
 
+### Fixes
+- #https://github.com/EventStore/home/issues/884 [EventStore#3694](https://github.com/EventStore/EventStore/pull/3694)
+
 ## [21.10.9] - 2022-11-21
 
 ### Added
