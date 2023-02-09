@@ -3,8 +3,9 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
+using EventStore.Core.Telemetry;
+using EventStore.Core.Time;
 using EventStore.Core.Services.Monitoring.Stats;
-using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Serilog;
 
@@ -20,22 +21,27 @@ namespace EventStore.Core.Services.TimerService {
 		private readonly PairingHeap<ScheduledTask> _tasks =
 			new PairingHeap<ScheduledTask>((x, y) => x.DueTime < y.DueTime);
 
-		private readonly ITimeProvider _timeProvider;
+		private readonly IClock _timeProvider;
 
 		private readonly Thread _timerThread;
 		private volatile bool _stop;
 
 		private readonly QueueStatsCollector _queueStats;
+		private readonly QueueTracker _tracker;
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
 		public Task Task {
 			get { return _tcs.Task; }
 		}
 
-		public ThreadBasedScheduler(ITimeProvider timeProvider, QueueStatsManager queueStatsManager) {
-			Ensure.NotNull(timeProvider, "timeProvider");
-			_timeProvider = timeProvider;
+		public ThreadBasedScheduler(
+			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers,
+			IClock timeProvider = null) {
+
+			_timeProvider = timeProvider ?? Clock.Instance;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Timer");
+			_tracker = trackers.GetTrackerForQueue("Timer");
 
 			_timerThread = new Thread(DoTiming);
 			_timerThread.IsBackground = true;
@@ -48,7 +54,7 @@ namespace EventStore.Core.Services.TimerService {
 		}
 
 		public void Schedule(TimeSpan after, Action<IScheduler, object> callback, object state) {
-			_pending.Enqueue(new ScheduledTask(_timeProvider.UtcNow.Add(after), callback, state));
+			_pending.Enqueue(new ScheduledTask(_timeProvider.Now.Add(after), callback, state));
 		}
 
 		private void DoTiming() {
@@ -72,10 +78,13 @@ namespace EventStore.Core.Services.TimerService {
 
 					_queueStats.ProcessingStarted<ExecuteScheduledTasks>(_tasks.Count);
 					int processed = 0;
-					while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.UtcNow) {
+					while (_tasks.Count > 0 && _tasks.FindMin().DueTime <= _timeProvider.Now) {
 						processed += 1;
 						var scheduledTask = _tasks.DeleteMin();
+						var now = _tracker.RecordMessageDequeued(enqueuedAt: scheduledTask.DueTime);
 						scheduledTask.Action(this, scheduledTask.State);
+						var label = (scheduledTask.State as TimerMessage.Schedule)?.ReplyMessage.Label;
+						_tracker.RecordMessageProcessed(now, label ?? "");
 					}
 
 					_queueStats.ProcessingEnded(processed);
@@ -105,11 +114,11 @@ namespace EventStore.Core.Services.TimerService {
 		}
 
 		private struct ScheduledTask {
-			public readonly DateTime DueTime;
+			public readonly Instant DueTime;
 			public readonly Action<IScheduler, object> Action;
 			public readonly object State;
 
-			public ScheduledTask(DateTime dueTime, Action<IScheduler, object> action, object state) {
+			public ScheduledTask(Instant dueTime, Action<IScheduler, object> action, object state) {
 				DueTime = dueTime;
 				Action = action;
 				State = state;

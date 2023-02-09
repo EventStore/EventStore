@@ -7,7 +7,7 @@ namespace EventStore.Core.Time {
 	}
 
 	public class Clock : IClock {
-		public static readonly Clock Instance = new();
+		public static Clock Instance { get; } = new();
 		private Clock() { }
 		public Instant Now => Instant.Now;
 		public long SecondsSinceEpoch => DateTimeOffset.UtcNow.ToUnixTimeSeconds();

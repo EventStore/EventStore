@@ -1431,7 +1431,7 @@ namespace EventStore.Core {
 
 			// TIMER
 			_timeProvider = new RealTimeProvider();
-			var threadBasedScheduler = new ThreadBasedScheduler(_timeProvider, _queueStatsManager);
+			var threadBasedScheduler = new ThreadBasedScheduler(_queueStatsManager, trackers.QueueTrackers);
 			AddTask(threadBasedScheduler.Task);
 			_timerService = new TimerService(threadBasedScheduler);
 			_mainBus.Subscribe<SystemMessage.BecomeShutdown>(_timerService);
