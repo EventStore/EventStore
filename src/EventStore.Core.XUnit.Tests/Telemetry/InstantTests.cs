@@ -1,4 +1,4 @@
-﻿using EventStore.Core.Telemetry;
+﻿using EventStore.Core.Time;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Telemetry;

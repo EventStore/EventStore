@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using EventStore.Core.Time;
 
 namespace EventStore.Core.Telemetry {
 	public interface IQueueProcessingTracker {

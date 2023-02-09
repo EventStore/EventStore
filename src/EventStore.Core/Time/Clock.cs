@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EventStore.Core.Telemetry {
+namespace EventStore.Core.Time {
 	public interface IClock {
 		Instant Now { get; }
 		long SecondsSinceEpoch { get; }

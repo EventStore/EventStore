@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 
-namespace EventStore.Core.Telemetry;
+namespace EventStore.Core.Time;
 
 // this provides stronger typing than just passing a long representing the number of ticks
 // and provides us a place to change the resolution and size if long ticks is overkill.
