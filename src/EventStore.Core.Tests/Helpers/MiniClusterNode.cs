@@ -174,7 +174,7 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory, new AuthenticationProviderFactory(components =>
-					new InternalAuthenticationProviderFactory(components)),
+					new InternalAuthenticationProviderFactory(components, options.DefaultUser)),
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),

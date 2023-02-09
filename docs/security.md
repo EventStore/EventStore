@@ -51,6 +51,30 @@ For this to work, you can use the `Insecure` option:
 When running with protocol security disabled, everything is sent unencrypted over the wire. In the previous version it included the server credentials. Sending username and password over the wire without encryption is not secure by definition, but it might give a false sense of security. In order to make things explicit, EventStoreDB v20 **does not use any authentication and authorisation** (including ACLs) when running insecure.
 :::
 
+### Running with default admin and ops password
+
+We are adding an ability to set default admin and ops passwords on first run of the database. It will not impact the existing credentials, the user can log into their accounts with exising passwords.
+
+For this to work, you can use the `DefaultAdminPassword` option:
+
+| Format               | Syntax                              |
+|:---------------------|:------------------------------------|
+| Environment variable | `EVENTSTORE_DEFAULT_ADMIN_PASSWORD` |
+
+**Default**: `changeit`
+
+For this to work, you can use the `DefaultOpsPassword` option:
+
+| Format               | Syntax                              |
+|:---------------------|:------------------------------------|
+| Environment variable | `EVENTSTORE_DEFAULT_OPS_PASSWORD`   |
+
+**Default**: `changeit`
+
+::: warning
+Due to security reasons the DefaultAdminPassword and DefaultOpsPassword options can only be set through environment variables. The user will receive the error message if they try to pass the options using command line or config file.
+:::
+
 ### Certificates configuration
 
 In this section, you can find settings related to protocol security (HTTPS and TLS).

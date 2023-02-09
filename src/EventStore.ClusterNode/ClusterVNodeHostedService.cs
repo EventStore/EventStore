@@ -190,7 +190,7 @@ namespace EventStore.ClusterNode {
 				var authenticationTypeToPlugin = new Dictionary<string, AuthenticationProviderFactory> {
 					{
 						"internal", new AuthenticationProviderFactory(components =>
-							new InternalAuthenticationProviderFactory(components))
+							new InternalAuthenticationProviderFactory(components, _options.DefaultUser))
 					}
 				};
 

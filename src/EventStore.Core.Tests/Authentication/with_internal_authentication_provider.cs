@@ -4,6 +4,7 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Helpers;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Services;
 using EventStore.Core.Tests.Helpers;
 using EventStore.Plugins.Authentication;
 
@@ -25,7 +26,7 @@ namespace EventStore.Core.Tests.Authentication {
 
 			PasswordHashAlgorithm passwordHashAlgorithm = new StubPasswordHashAlgorithm();
 			_internalAuthenticationProvider =
-				new InternalAuthenticationProvider(_bus, _ioDispatcher, passwordHashAlgorithm, 1000, false);
+				new InternalAuthenticationProvider(_bus, _ioDispatcher, passwordHashAlgorithm, 1000, false, DefaultData.DefaultUserOptions);
 			_bus.Subscribe(_internalAuthenticationProvider);
 		}
 	}

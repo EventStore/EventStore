@@ -87,7 +87,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 
 			Service.Handle(new SystemMessage.SystemStart());
 			Service.Handle(new SystemMessage.BecomeLeader(Guid.NewGuid()));
-
+			
 			When();
 		}
 
@@ -114,7 +114,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				InMemoryBus.CreateTest(), tcpConn, InMemoryBus.CreateTest(),
 				new InternalAuthenticationProvider(InMemoryBus.CreateTest(),
 					new Core.Helpers.IODispatcher(InMemoryBus.CreateTest(), new NoopEnvelope()),
-					new StubPasswordHashAlgorithm(), 1, false),
+					new StubPasswordHashAlgorithm(), 1, false, DefaultData.DefaultUserOptions),
 				new AuthorizationGateway(new TestAuthorizationProvider()), 
 				TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), (man, err) => { },
 				_connectionPendingSendBytesThreshold, _connectionQueueSizeThreshold);

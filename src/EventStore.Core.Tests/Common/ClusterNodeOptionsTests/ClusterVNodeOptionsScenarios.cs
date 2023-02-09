@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 					.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 						ssl_connections.GetServerCertificate()));
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
-				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
+				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c, _options.DefaultUser)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
 				certificateProvider: new OptionsCertificateProvider(_options));
 			_node.Start();
@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate()));
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
-				new AuthenticationProviderFactory(_ => new InternalAuthenticationProviderFactory(_)),
+				new AuthenticationProviderFactory(_ => new InternalAuthenticationProviderFactory(_, _options.DefaultUser)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
 				certificateProvider: new OptionsCertificateProvider(_options));
 			_node.Start();

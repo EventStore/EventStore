@@ -161,7 +161,7 @@ namespace EventStore.Core.Tests.Helpers {
 					streamExistenceFilterCheckpointIntervalMs: streamExistenceFilterCheckpointIntervalMs,
 					streamExistenceFilterCheckpointDelayMs: streamExistenceFilterCheckpointDelayMs));
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory,
-				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
+				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
 				telemetryConfiguration: null,
 				expiryStrategy: expiryStrategy,
