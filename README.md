@@ -1,12 +1,33 @@
 # EventStoreDB
 
+EventStore Database is an industrial style database that leverages the power of State Transition Databases to make user data more easy to access than ever. As opposed to relational databases, State Transition databases flatten user data into a stream to store current and past changes to code. Often times, when users develop code, the code goes through multiple stages in order to optimize efficiency, combat errors, or natural progress as a product becomes more developed. Sometimes, later, some of these changes are rendered unecessary. Relational databases become hard to use in these cases, because they overwrite current data and make it impossible for users to go back to previous versions of their code. Moreover, data needs to be recorded before the changes can be pushed and in some cases, change logs are needed to piece together information. Event Store DB alleviates this problem by using State Transition Databases which log changes automatically and also why the changes were made. This makes accessing and reverting to previosu versions of user code significantly easier. EventStore DB creates a log of these changes and users are able to access virtually any part of the stream in order to see how your data changed and make predictions/projections about future data. Users are also able to track effects of events to see what may have causes changes. Previous data is also immutable but the overall result is scalable and provides client SDKs for major languages like .NET, Java, Go, Node, and Rust.
+
 The open-source, functional database with Complex Event Processing in JavaScript.
 
 This is the repository for the open source version of EventStoreDB, which includes the clustering implementation for high availability. 
 
-## Support
+More info can be found on the EventStore DB here: https://www.eventstore.com/
+
+## Use Cases
+
+* Finance-- provides immutable logs of changes useful for audits or data analysis, can check various parts of data to reference
+* Healthcare-- can be used for scalability and security, perfect for large scale development
+* Government-- stores large sums of data and compartmentalizes it based on wha† the data contains
+* Retail-- utilizes past data for projections about the future
+* Tech-- allows microservices to be hooked up to databases and supports scalability
+* Transport-- tracks shipments in real time and records them in travel logs
+
+## Support & Tutorials
 
 Information on support and commercial tools such as LDAP authentication can be found here: [Event Store Support](https://eventstore.com/support/).
+
+Getting Started Guide: https://developers.eventstore.com/server/v21.10/#getting-started
+
+Guide to Event Sourcing: https://www.eventstore.com/event-sourcing
+
+Guide to Command Query Responsibility Segregation (CQRS): https://www.eventstore.com/cqrs-pattern
+
+Guide to Event Driven Architecture: https://www.eventstore.com/event-driven-architecture
 
 ## CI Status
 
@@ -21,9 +42,11 @@ Information on support and commercial tools such as LDAP authentication can be f
 ![Build](https://github.com/EventStore/EventStore/actions/workflows/build-container-focal.yml/badge.svg)
 
 ## Documentation
-Documentation is located in the [`docs`](/docs) folder. It's orchestrated in the separate [documentation repository](https://github.com/EventStore/documentation). It's available online at https://developers.eventstore.com/.
+Documentation is located in the [`docs`](/docs) folder. It's orchestrated in the separate [documentation repository](https://github.com/EventStore/documentation). It's available online at https://developers.eventstore.com/. This documentation guide contains information about the server and clients/APIs.
 
 Read more in the [documentation contribution guidelines](./CONTRIBUTING.md#documentation).
+
+Learn more about event streams here: https://developers.eventstore.com/server/v22.10/streams.html#metadata-and-reserved-names
 
 ## Community
 We have a community discussion space at [Event Store Discuss](https://discuss.eventstore.com/). If you prefer [Discord](https://discord.com/), there is also an #eventstore channel in the [DDD-CQRS-ES](https://discord.gg/H6AzpmBA) Discord community ([Sign-up information](https://github.com/ddd-cqrs-es/community)).
@@ -36,6 +59,8 @@ We also host native packages for Linux on [Package Cloud](https://packagecloud.i
 ## Building EventStoreDB
 
 EventStoreDB is written in a mixture of C#, C++ and JavaScript. It can run on Windows, Linux and macOS (using Docker) using the .NET Core runtime. However, the projections library (which uses the V8 javascript engine) contains platform specific code and it must be built for the platform on which you intend to run it.
+
+EventStoreDB can run as a server on most platforms like Windows, Linux and macOS, to Windows and Linux servers, Docker containers, and orchestration tools such as Kubernetes.
 
 ### Windows / Linux
 **Prerequisites**
@@ -148,3 +173,6 @@ Read more in the [contribution guidelines](./CONTRIBUTING.md).
 ### Proto Changes
 
 If you update the protos, continuous integration will fail. After ensuring the proto change is backwards compatible, please run `./protolock.sh commit` at the root of this repository.
+
+## Contact
+Contact a Representative here: https://www.eventstore.com/contact
