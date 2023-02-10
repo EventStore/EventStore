@@ -23,7 +23,10 @@ namespace EventStore.Core.Services.TimerService {
 		}
 
 		public void Handle(TimerMessage.Schedule message) {
-			_scheduler.Schedule(message.TriggerAfter, OnTimerCallback, message);
+			_scheduler.Schedule(
+				message.TriggerAfter,
+				static (scheduler, state) => OnTimerCallback(scheduler, state),
+				message);
 		}
 
 		private static void OnTimerCallback(IScheduler scheduler, object state) {
