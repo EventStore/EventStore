@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - too strict cleanup condition causing a memory leak in rare cases when server becomes unresponsive. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - cancelation of current command. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - downgraded an error log message that is not really and error to debug level [EventStore#3727](https://github.com/EventStore/EventStore/pull/3727)
+- #3697 FilteredAllSubscription checkpoint now continues to update after becomming live [EventStore#3726](https://github.com/EventStore/EventStore/pull/3726)
 
 ### Added
 - Improvements to Scavenge HTTP API (query if scavenge is running, stop any running scavenge) [EventStore#3656](https://github.com/EventStore/EventStore/pull/3656)
@@ -33,6 +34,7 @@ All notable changes to this project will be documented in this file.
 - Publish messages from the persistent subscriptions IODispatcher to the Persistent Subscriptions queue rather than the main queue [EventStore#3702](https://github.com/EventStore/EventStore/pull/3702)
 - CI Unit test settings [EventStore#3712](https://github.com/EventStore/EventStore/pull/3712)
 - log available commands separately. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
+- Adjustments to reduce allocations [EventStore#3731](https://github.com/EventStore/EventStore/pull/3731)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
