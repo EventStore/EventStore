@@ -28,6 +28,48 @@ namespace EventStore.Core.XUnit.Tests.Index {
 		}
 
 		[Fact]
+		public void can_observe_opening() {
+			_clock.SecondsSinceEpoch = 500;
+			AssertMeasurements("Idle", 500);
+
+			using (_sut.StartOpening()) {
+				_clock.SecondsSinceEpoch = 501;
+				AssertMeasurements("Opening", 501);
+			}
+
+			_clock.SecondsSinceEpoch = 502;
+			AssertMeasurements("Idle", 502);
+		}
+
+		[Fact]
+		public void can_observe_rebuilding() {
+			_clock.SecondsSinceEpoch = 500;
+			AssertMeasurements("Idle", 500);
+
+			using (_sut.StartRebuilding()) {
+				_clock.SecondsSinceEpoch = 501;
+				AssertMeasurements("Rebuilding", 501);
+			}
+
+			_clock.SecondsSinceEpoch = 502;
+			AssertMeasurements("Idle", 502);
+		}
+
+		[Fact]
+		public void can_observe_initializing() {
+			_clock.SecondsSinceEpoch = 500;
+			AssertMeasurements("Idle", 500);
+
+			using (_sut.StartInitializing()) {
+				_clock.SecondsSinceEpoch = 501;
+				AssertMeasurements("Initializing", 501);
+			}
+
+			_clock.SecondsSinceEpoch = 502;
+			AssertMeasurements("Idle", 502);
+		}
+
+		[Fact]
 		public void can_observe_merging() {
 			_clock.SecondsSinceEpoch = 500;
 			AssertMeasurements("Idle", 500);
