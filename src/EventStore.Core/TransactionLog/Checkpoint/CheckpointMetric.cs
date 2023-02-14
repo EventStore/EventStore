@@ -22,7 +22,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 				};
 			}
 
-			// we could consider using ObservableUpDownCounter, but ICheckpoint does allow the values to
+			// we could consider using ObservableCounter, but ICheckpoint does allow the values to
 			// go down as well as up, so we are currently supporting that here.
 			meter.CreateObservableUpDownCounter(name, Observe);
 		}

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 namespace EventStore.Core.Telemetry {
+	// This represents an activity that can fail
 	public struct Duration : IDisposable {
 		private readonly DurationMetric _metric;
 		private readonly string _name;

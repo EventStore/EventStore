@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 
 namespace EventStore.Core.Telemetry;
@@ -6,10 +6,12 @@ namespace EventStore.Core.Telemetry;
 // this provides stronger typing than just passing a long representing the number of ticks
 // and provides us a place to change the resolution and size if long ticks is overkill.
 public struct Instant {
-	private static readonly double _secondsPerTick = 1 / (double)Stopwatch.Frequency;
+	public static long TicksPerSecond { get; } = Stopwatch.Frequency;
+
+	private static readonly double _secondsPerTick = 1 / (double)TicksPerSecond;
 
 	public static Instant Now => new(Stopwatch.GetTimestamp());
-	public static Instant FromSeconds(long seconds) => new(stopwatchTicks: seconds * Stopwatch.Frequency);
+	public static Instant FromSeconds(long seconds) => new(stopwatchTicks: seconds * TicksPerSecond);
 
 	public static bool operator ==(Instant x, Instant y) => x._ticks == y._ticks;
 	public static bool operator !=(Instant x, Instant y) => x._ticks != y._ticks;
@@ -22,6 +24,8 @@ public struct Instant {
 	private Instant(long stopwatchTicks) {
 		_ticks = stopwatchTicks;
 	}
+
+	public long Ticks => _ticks;
 
 	public double ElapsedSecondsSince(Instant start) => TicksToSeconds(ElapsedTicksSince(start));
 

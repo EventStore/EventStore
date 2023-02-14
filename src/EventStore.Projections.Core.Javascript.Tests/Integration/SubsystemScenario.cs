@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 
 		protected SubsystemScenario(Func<InMemoryBus, IQueuedHandler, ICheckpoint, (Action stopAction, IPublisher subsystemCommands)> createSubsystem, string readyStream, CancellationToken testTimeout) {
 			_mainBus = new InMemoryBus("main");
-			_mainQueue = QueuedHandler.CreateQueuedHandler(_mainBus, "bossQ", new QueueStatsManager());
+			_mainQueue = QueuedHandler.CreateQueuedHandler(_mainBus, "bossQ", new QueueStatsManager(), new());
 			_writerCheckpoint = new InMemoryCheckpoint(0);
 			_miniStore = new MiniStore(_writerCheckpoint, _mainBus);
 			TestTimeout = testTimeout;

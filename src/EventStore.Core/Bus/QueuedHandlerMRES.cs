@@ -4,7 +4,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
-using System.Collections.Concurrent;
+using EventStore.Core.Telemetry;
 using System.Threading.Tasks;
 using ILogger = Serilog.ILogger;
 
@@ -31,7 +31,7 @@ namespace EventStore.Core.Bus {
 		private readonly bool _watchSlowMsg;
 		private readonly TimeSpan _slowMsgThreshold;
 
-		private readonly ConcurrentQueueWrapper<Message> _queue = new ConcurrentQueueWrapper<Message>();
+		private readonly ConcurrentQueueWrapper<QueueItem> _queue = new ConcurrentQueueWrapper<QueueItem>();
 		private readonly ManualResetEventSlim _msgAddEvent = new ManualResetEventSlim(false, 1);
 
 		private Thread _thread;
@@ -42,12 +42,14 @@ namespace EventStore.Core.Bus {
 
 		private readonly QueueMonitor _queueMonitor;
 		private readonly QueueStatsCollector _queueStats;
+		private readonly QueueTracker _tracker;
 		private readonly TaskCompletionSource<object> _tcs = new TaskCompletionSource<object>();
 
 
 		public QueuedHandlerMRES(IHandle<Message> consumer,
 			string name,
 			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers,
 			bool watchSlowMsg = true,
 			TimeSpan? slowMsgThreshold = null,
 			TimeSpan? threadStopWaitTimeout = null,
@@ -63,6 +65,7 @@ namespace EventStore.Core.Bus {
 
 			_queueMonitor = QueueMonitor.Default;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector(name, groupName);
+			_tracker = trackers.GetTrackerForQueue(name);
 		}
 
 		public Task Start() {
@@ -96,7 +99,7 @@ namespace EventStore.Core.Bus {
 				while (!_stop) {
 					Message msg = null;
 					try {
-						if (!_queue.TryDequeue(out msg)) {
+						if (!_queue.TryDequeue(out var item)) {
 							_starving = true;
 
 							_queueStats.EnterIdle();
@@ -105,6 +108,8 @@ namespace EventStore.Core.Bus {
 
 							_starving = false;
 						} else {
+							_tracker.RecordMessageDequeued(item.EnqueuedAt);
+							msg = item.Message;
 							_queueStats.EnterBusy();
 #if DEBUG
 							_queueStats.Dequeued(msg);
@@ -163,7 +168,7 @@ namespace EventStore.Core.Bus {
 #if DEBUG
 			_queueStats.Enqueued();
 #endif
-			_queue.Enqueue(message);
+			_queue.Enqueue(new(_tracker.Now, message));
 			if (_starving)
 				_msgAddEvent.Set();
 		}

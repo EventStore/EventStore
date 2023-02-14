@@ -28,6 +28,7 @@ namespace EventStore.Projections.Core {
 				var coreQueue = QueuedHandler.CreateQueuedHandler(coreInputBus,
 					"Projection Core #" + coreQueues.Count,
 					standardComponents.QueueStatsManager,
+					standardComponents.QueueTrackers,
 					groupName: "Projection Core");
 				var workerId = Guid.NewGuid();
 				var projectionNode = new ProjectionWorkerNode(

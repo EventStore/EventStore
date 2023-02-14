@@ -14,13 +14,13 @@ namespace EventStore.Core.Tests.Bus {
 		[Test]
 		public void throw_if_handler_is_null() {
 			Assert.Throws<ArgumentNullException>(
-				() => QueuedHandler.CreateQueuedHandler(null, "throwing", new QueueStatsManager(), watchSlowMsg: false));
+				() => QueuedHandler.CreateQueuedHandler(null, "throwing", new QueueStatsManager(), new(), watchSlowMsg: false));
 		}
 
 		[Test]
 		public void throw_if_name_is_null() {
 			Assert.Throws<ArgumentNullException>(
-				() => QueuedHandler.CreateQueuedHandler(Consumer, null, new QueueStatsManager(), watchSlowMsg: false));
+				() => QueuedHandler.CreateQueuedHandler(Consumer, null, new QueueStatsManager(), new(), watchSlowMsg: false));
 		}
 	}
 
@@ -56,7 +56,7 @@ namespace EventStore.Core.Tests.Bus {
 	[TestFixture]
 	public class queued_handler_threadpool_should : queued_handler_should {
 		public queued_handler_threadpool_should()
-			: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(),false, null, timeout)) {
+			: base((consumer, name, timeout) => new QueuedHandlerThreadPool(consumer, name, new QueueStatsManager(), new(), false, null, timeout)) {
 		}
 	}
 }

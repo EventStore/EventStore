@@ -124,7 +124,7 @@ namespace EventStore.Core.Tests.Bus {
 		public void mres_queued_handler_2_producers_50mln_messages() {
 			QueuedHandlerMRES queue = null;
 			SpeedTest(consumer => {
-				queue = new QueuedHandlerMRES(consumer, "Queue",  new QueueStatsManager(),false);
+				queue = new QueuedHandlerMRES(consumer, "Queue",  new QueueStatsManager(), new(), watchSlowMsg: false);
 				queue.Start();
 				return queue;
 			}, 2, 50000000);
@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests.Bus {
 		public void mres_queued_handler_10_producers_50mln_messages() {
 			QueuedHandlerMRES queue = null;
 			SpeedTest(consumer => {
-				queue = new QueuedHandlerMRES(consumer, "Queue", new QueueStatsManager(), false);
+				queue = new QueuedHandlerMRES(consumer, "Queue", new QueueStatsManager(), new(), watchSlowMsg: false);
 				queue.Start();
 				return queue;
 			}, 10, 50000000);

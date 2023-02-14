@@ -12,6 +12,7 @@ using EventStore.Core.Services.Replication;
 using EventStore.Core.Services.Storage;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
@@ -49,9 +50,10 @@ namespace EventStore.Core.Services {
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
+			QueueTrackers trackers,
 			Func<long> getLastIndexedPosition)
 			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex,
-				eventTypeIndex, emptyEventTypeId, systemStreams, epochManager, queueStatsManager) {
+				eventTypeIndex, emptyEventTypeId, systemStreams, epochManager, queueStatsManager, trackers) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;
