@@ -27,6 +27,8 @@ All notable changes to this project will be documented in this file.
 - a process-wide stopwatch for measuring durations [EventStore#3703](https://github.com/EventStore/EventStore/pull/3703)
 - more information to SLOW QUEUE MSG logs for reads and writes [EventStore#3706](https://github.com/EventStore/EventStore/pull/3706)
 - log errors for gRPC write flood. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
+- Implement Init/Rebuild index status report. [EventStore#3707](https://github.com/EventStore/EventStore/pull/3707)
+- Max queue durations over period per queue  [EventStore#3698](https://github.com/EventStore/EventStore/pull/3698)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
