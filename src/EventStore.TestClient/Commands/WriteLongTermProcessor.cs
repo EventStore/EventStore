@@ -36,10 +36,10 @@ namespace EventStore.TestClient.Commands {
 					return false;
 
 				try {
-					clientsCnt = int.Parse(args[0]);
-					minPerSecond = int.Parse(args[1]);
-					maxPerSecond = int.Parse(args[2]);
-					runTimeMinutes = int.Parse(args[3]);
+					clientsCnt = MetricPrefixValue.ParseInt(args[0]);
+					minPerSecond = MetricPrefixValue.ParseInt(args[1]);
+					maxPerSecond = MetricPrefixValue.ParseInt(args[2]);
+					runTimeMinutes = MetricPrefixValue.ParseInt(args[3]);
 					if (args.Length == 5)
 						eventStreamId = args[4];
 				} catch {

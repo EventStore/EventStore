@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.Common.Log;
 using EventStore.Common.Utils;
 using ExpectedVersion = EventStore.Core.Data.ExpectedVersion;
 
@@ -29,12 +27,12 @@ namespace EventStore.TestClient.Commands {
 					return false;
 
 				try {
-					clientsCnt = int.Parse(args[0]);
-					requestsCnt = long.Parse(args[1]);
+					clientsCnt = MetricPrefixValue.ParseInt(args[0]);
+					requestsCnt = MetricPrefixValue.ParseLong(args[1]);
 					if (args.Length >= 3)
-						streamsCnt = int.Parse(args[2]);
+						streamsCnt = MetricPrefixValue.ParseInt(args[2]);
 					if (args.Length >= 4)
-						size = int.Parse(args[3]);
+						size = MetricPrefixValue.ParseInt(args[3]);
 				} catch {
 					return false;
 				}

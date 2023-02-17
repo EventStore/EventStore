@@ -34,30 +34,29 @@ namespace EventStore.TestClient.GrpcCommands {
 			    if (args.Length < 2 || args.Length > 6)
 			        return false;
 
-			    try
-			    {
-			        clientsCnt = int.Parse(args[0]);
-			        requestsCnt = long.Parse(args[1]);
-			        if (args.Length >= 3)
-			            streamsCnt = int.Parse(args[2]);
-			        if (args.Length >= 4)
-			            size = int.Parse(args[3]);
-			        if (args.Length >= 5)
-			            batchSize = int.Parse(args[4]);
-			        if (args.Length >= 6)
-				        streamNamePrefix = args[5];
-			    }
-			    catch
-			    {
-			        return false;
-			    }
+				try
+				{
+					clientsCnt = MetricPrefixValue.ParseInt(args[0]);
+					requestsCnt = MetricPrefixValue.ParseLong(args[1]);
+					if (args.Length >= 3)
+						streamsCnt = MetricPrefixValue.ParseInt(args[2]);
+					if (args.Length >= 4)
+						size = MetricPrefixValue.ParseInt(args[3]);
+					if (args.Length >= 5)
+						batchSize = MetricPrefixValue.ParseInt(args[4]);
+					if (args.Length >= 6)
+						streamNamePrefix = args[5];
+				}
+				catch
+				{
+					return false;
+				}
 			}
 
-			long interval = 100000;
 			var stats = new WriteFloodStats(Keyword, context.OutputCsv, args);
 			var monitor = new RequestMonitor();
 			try {
-				var task = WriteFlood(context, stats, interval, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamNamePrefix, monitor);
+				var task = WriteFlood(context, stats, clientsCnt, requestsCnt, streamsCnt, size, batchSize, streamNamePrefix, monitor);
 				task.Wait();
 			} catch (Exception ex) {
 				context.Fail(ex);
@@ -66,12 +65,13 @@ namespace EventStore.TestClient.GrpcCommands {
 			return true;
 		}
 
-		private async Task WriteFlood(CommandProcessorContext context, WriteFloodStats stats, long interval, int clientsCnt, long requestsCnt, int streamsCnt,
+		private async Task WriteFlood(CommandProcessorContext context, WriteFloodStats stats, int clientsCnt, long requestsCnt, int streamsCnt,
 			int size, int batchSize, string streamNamePrefix, RequestMonitor monitor) {
 			context.IsAsync();
 
 			long last = 0;
 			long currentInterval = 0;
+			long interval = 100000;
 			byte[] data = UTF8NoBom.GetBytes("{ \"DATA\" : \"" + new string('*', size) + "\"}");
 			byte[] metadata = UTF8NoBom.GetBytes("{ \"METADATA\" : \"" + new string('$', 100) + "\"}");
 
@@ -92,7 +92,6 @@ namespace EventStore.TestClient.GrpcCommands {
 			var clientTasks = new List<Task>();
 			for (int i = 0; i < clientsCnt; i++) {
 				var count = requestsCnt / clientsCnt + ((i == clientsCnt - 1) ? requestsCnt % clientsCnt : 0);
-
 				var client = context._grpcTestClient.CreateGrpcClient();
 				clientTasks.Add(RunClient(client, count));
 			}

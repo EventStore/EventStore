@@ -13,7 +13,7 @@ namespace EventStore.TestClient.Commands {
 			//                     0          1           2               3                  4
 			get { return "RDFL [<clients> <requests> [<streams-cnt> [<stream-prefix> [<require-leader>]]]]"; }
 		}
-
+		
 		public string Keyword {
 			get { return "RDFL"; }
 		}
@@ -30,10 +30,10 @@ namespace EventStore.TestClient.Commands {
 					return false;
 
 				try {
-					clientsCnt = int.Parse(args[0]);
-					requestsCnt = long.Parse(args[1]);
+					clientsCnt = MetricPrefixValue.ParseInt(args[0]);
+					requestsCnt = MetricPrefixValue.ParseLong(args[1]);
 					if (args.Length >= 3)
-						streamsCnt = int.Parse(args[2]);
+						streamsCnt = MetricPrefixValue.ParseInt(args[2]);
 					if (args.Length >= 4)
 						streamPrefix = args[3];
 					if (args.Length >= 5)
@@ -86,13 +86,13 @@ namespace EventStore.TestClient.Commands {
 						} else {
 							if (Interlocked.Increment(ref fail) % 1000 == 0) Console.Write("#");
 						}
-
+						
 						Interlocked.Increment(ref received);
 						var localAll = Interlocked.Increment(ref all);
 						if (localAll % 100000 == 0) {
 							var elapsed = sw2.Elapsed;
 							sw2.Restart();
-							context.Log.Verbose("\nDONE TOTAL {reads} READS IN {elapsed} ({rate:0.0}/s).", localAll,
+							context.Log.Information("\nDONE TOTAL {reads} READS IN {elapsed} ({rate:0.0}/s).", localAll,
 								elapsed, 1000.0 * 100000 / elapsed.TotalMilliseconds);
 						}
 

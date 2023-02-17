@@ -12,7 +12,7 @@ namespace EventStore.TestClient.Commands {
 		public string Usage {
 			get { return "PINGFL [<clients> <messages>]"; }
 		}
-
+		
 		public string Keyword {
 			get { return "PINGFL"; }
 		}
@@ -24,8 +24,8 @@ namespace EventStore.TestClient.Commands {
 				if (args.Length != 2)
 					return false;
 				try {
-					clientsCnt = int.Parse(args[0]);
-					requestsCnt = long.Parse(args[1]);
+					clientsCnt = MetricPrefixValue.ParseInt(args[0]);
+					requestsCnt = MetricPrefixValue.ParseLong(args[1]);
 				} catch {
 					return false;
 				}

@@ -2,8 +2,6 @@ using System;
 using System.Diagnostics;
 using EventStore.Client.Messages;
 using EventStore.Common.Utils;
-using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 
 namespace EventStore.TestClient.Commands {
@@ -27,7 +25,7 @@ namespace EventStore.TestClient.Commands {
 					return false;
 				eventStreamId = args[0];
 				if (args.Length >= 2)
-					fromNumber = int.Parse(args[1]);
+					fromNumber = MetricPrefixValue.ParseInt(args[1]);
 				if (args.Length >= 3)
 					requireLeader = bool.Parse(args[2]);
 			}
