@@ -1,3 +1,5 @@
+using EventStore.Core.Time;
+
 namespace EventStore.Core.Telemetry {
 	// Composite tracker for tracking the various things that queues want to track.
 	// i.e.

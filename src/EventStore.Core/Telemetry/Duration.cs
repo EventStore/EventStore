@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EventStore.Core.Time;
 
 namespace EventStore.Core.Telemetry {
 	// This represents an activity that can fail

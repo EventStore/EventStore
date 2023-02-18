@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using EventStore.Core.Time;
 
 namespace EventStore.Core.Telemetry {
 	// A metric that tracks the statuses of multiple components.

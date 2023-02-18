@@ -51,7 +51,7 @@ public static class MetricsBootstrapper {
 		var coreMeter = new Meter("EventStore.Core", version: "0.0.1");
 		var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
 		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
-		var durationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-duration-max");
+		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
 
 		// checkpoints
@@ -95,7 +95,7 @@ public static class MetricsBootstrapper {
 				name: name,
 				new DurationMaxTracker(
 					name: name,
-					metric: durationMaxMetric,
+					metric: queueQueueingDurationMaxMetric,
 					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds),
 				new QueueProcessingTracker(
 					metric: queueProcessingDurationMetric,

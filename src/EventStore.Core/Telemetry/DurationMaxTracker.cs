@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using EventStore.Core.Time;
 
 namespace EventStore.Core.Telemetry;
 

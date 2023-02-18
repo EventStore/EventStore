@@ -1,4 +1,5 @@
 using EventStore.Core.Telemetry;
+using EventStore.Core.Time;
 using Xunit;
 using Conf = EventStore.Common.Configuration.TelemetryConfiguration;
 

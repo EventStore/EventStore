@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Tests.Subsystem {
 				/* Ignore messages */
 			}), "MainQueue", new QueueStatsManager(), new());
 			var mainBus = new InMemoryBus("mainBus");
-			var threadBasedScheduler = new ThreadBasedScheduler(new RealTimeProvider(), new QueueStatsManager());
+			var threadBasedScheduler = new ThreadBasedScheduler(new QueueStatsManager(), new());
 			var timerService = new TimerService(threadBasedScheduler);
 
 			return new StandardComponents(db, mainQueue, mainBus,

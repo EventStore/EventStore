@@ -32,43 +32,47 @@
 	"Queues": [
 		{
 			"Regex": "MainQueue",
-			"Label": "Main Queue"
+			"Label": "Main"
 		},
 		{
 			"Regex": "MonitoringQueue",
-			"Label": "Monitoring Queue"
+			"Label": "Monitoring"
+		},
+		{
+			"Regex": "Timer",
+			"Label": "Timer"
 		},
 		{
 			"Regex": "StorageReaderQueue #.*",
-			"Label": "Reader Queue"
+			"Label": "Readers"
 		},
 		{
 			"Regex": "StorageWriterQueue",
-			"Label": "Writer Queue"
+			"Label": "Writer"
 		},
 		{
 			"Regex": "Subscriptions",
-			"Label": "Subscriptions Queue"
+			"Label": "Subscriptions"
 		},
 		{
 			"Regex": "PersistentSubscriptions",
-			"Label": "Persistent Subscriptions Queue"
+			"Label": "Persistent Subscriptions"
 		},
 		{
 			"Regex": "Projections Leader",
-			"Label": "Projections Leader Queue"
+			"Label": "Projections Leader"
 		},
 		{
 			"Regex": "Projection Core #.*",
-			"Label": "Projections Core Queue"
+			"Label": "Projections Core"
 		},
 		{
 			"Regex": "Worker #.*",
-			"Label": "Worker Queue"
+			"Label": "Workers"
 		},
 		{
 			"Regex": ".*",
-			"Label": "Other Queue"
+			"Label": "Others"
 		}
 	],
 
