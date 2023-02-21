@@ -289,95 +289,119 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			CreatePersistentSubscription(
-				new PersistentSubscriptionSingleStreamEventSource(message.EventStreamId),
-				message.GroupName,
-				new PersistentSubscriptionSingleStreamPosition(message.StartFrom),
-				message.MessageTimeoutMilliseconds,
-				message.ResolveLinkTos,
-				message.MaxRetryCount,
-				message.BufferSize,
-				message.LiveBufferSize,
-				message.ReadBatchSize,
-				message.MaxSubscriberCount,
-				message.NamedConsumerStrategy,
-				message.MaxCheckPointCount,
-				message.MinCheckPointCount,
-				message.CheckPointAfterMilliseconds,
-				message.RecordStatistics,
-				(msg) => {
-					message.Envelope.ReplyWith(
-						new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
+			try {
+				CreatePersistentSubscription(
+					new PersistentSubscriptionSingleStreamEventSource(message.EventStreamId),
+					message.GroupName,
+					new PersistentSubscriptionSingleStreamPosition(message.StartFrom),
+					message.MessageTimeoutMilliseconds,
+					message.ResolveLinkTos,
+					message.MaxRetryCount,
+					message.BufferSize,
+					message.LiveBufferSize,
+					message.ReadBatchSize,
+					message.MaxSubscriberCount,
+					message.NamedConsumerStrategy,
+					message.MaxCheckPointCount,
+					message.MinCheckPointCount,
+					message.CheckPointAfterMilliseconds,
+					message.RecordStatistics,
+					(msg) => {
+						message.Envelope.ReplyWith(
+							new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
+								message.CorrelationId,
+								ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+									.CreatePersistentSubscriptionToStreamResult.Success,
+								msg));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
 							message.CorrelationId,
-							ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult.Success,
-							msg));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
-						message.CorrelationId,
-						ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult.Fail,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
-						message.CorrelationId,
-						ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult.AlreadyExists,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
-						message.CorrelationId,
-						ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult.AccessDenied,
-						error));
-				},
-				message.User?.Identity?.Name
+							ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+								.CreatePersistentSubscriptionToStreamResult.Fail,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
+							message.CorrelationId,
+							ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+								.CreatePersistentSubscriptionToStreamResult.AlreadyExists,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
+							message.CorrelationId,
+							ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+								.CreatePersistentSubscriptionToStreamResult.AccessDenied,
+							error));
+					},
+					message.User?.Identity?.Name
 				);
+			} catch (Exception ex) {
+				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
+					message.CorrelationId,
+					ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult.Fail,
+					ex.Message));
+			}
 		}
 
 		public void Handle(ClientMessage.CreatePersistentSubscriptionToAll message) {
-			CreatePersistentSubscription(
-				new PersistentSubscriptionAllStreamEventSource(message.EventFilter),
-				message.GroupName,
-				new PersistentSubscriptionAllStreamPosition(message.StartFrom.CommitPosition, message.StartFrom.PreparePosition),
-				message.MessageTimeoutMilliseconds,
-				message.ResolveLinkTos,
-				message.MaxRetryCount,
-				message.BufferSize,
-				message.LiveBufferSize,
-				message.ReadBatchSize,
-				message.MaxSubscriberCount,
-				message.NamedConsumerStrategy,
-				message.MaxCheckPointCount,
-				message.MinCheckPointCount,
-				message.CheckPointAfterMilliseconds,
-				message.RecordStatistics,
-				(msg) => {
-					message.Envelope.ReplyWith(
-						new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
+			try {
+				CreatePersistentSubscription(
+					new PersistentSubscriptionAllStreamEventSource(message.EventFilter),
+					message.GroupName,
+					new PersistentSubscriptionAllStreamPosition(message.StartFrom.CommitPosition,
+						message.StartFrom.PreparePosition),
+					message.MessageTimeoutMilliseconds,
+					message.ResolveLinkTos,
+					message.MaxRetryCount,
+					message.BufferSize,
+					message.LiveBufferSize,
+					message.ReadBatchSize,
+					message.MaxSubscriberCount,
+					message.NamedConsumerStrategy,
+					message.MaxCheckPointCount,
+					message.MinCheckPointCount,
+					message.CheckPointAfterMilliseconds,
+					message.RecordStatistics,
+					(msg) => {
+						message.Envelope.ReplyWith(
+							new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
+								message.CorrelationId,
+								ClientMessage.CreatePersistentSubscriptionToAllCompleted
+									.CreatePersistentSubscriptionToAllResult.Success,
+								msg));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
 							message.CorrelationId,
-							ClientMessage.CreatePersistentSubscriptionToAllCompleted.CreatePersistentSubscriptionToAllResult.Success,
-							msg));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
-						message.CorrelationId,
-						ClientMessage.CreatePersistentSubscriptionToAllCompleted.CreatePersistentSubscriptionToAllResult.Fail,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
-						message.CorrelationId,
-						ClientMessage.CreatePersistentSubscriptionToAllCompleted.CreatePersistentSubscriptionToAllResult.AlreadyExists,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
-						message.CorrelationId,
-						ClientMessage.CreatePersistentSubscriptionToAllCompleted.CreatePersistentSubscriptionToAllResult.AccessDenied,
-						error));
-				},
-				message.User?.Identity?.Name
-			);
+							ClientMessage.CreatePersistentSubscriptionToAllCompleted
+								.CreatePersistentSubscriptionToAllResult.Fail,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
+							message.CorrelationId,
+							ClientMessage.CreatePersistentSubscriptionToAllCompleted
+								.CreatePersistentSubscriptionToAllResult.AlreadyExists,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
+							message.CorrelationId,
+							ClientMessage.CreatePersistentSubscriptionToAllCompleted
+								.CreatePersistentSubscriptionToAllResult.AccessDenied,
+							error));
+					},
+					message.User?.Identity?.Name
+				);
+			} catch (Exception ex) {
+				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToAllCompleted(
+					message.CorrelationId,
+					ClientMessage.CreatePersistentSubscriptionToAllCompleted.CreatePersistentSubscriptionToAllResult.Fail,
+					ex.Message));
+			}
+
 		}
 
 		private void UpdatePersistentSubscription(
@@ -483,97 +507,121 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			UpdatePersistentSubscription(
-				new PersistentSubscriptionSingleStreamEventSource(message.EventStreamId),
-				message.GroupName,
-				new PersistentSubscriptionSingleStreamPosition(message.StartFrom),
-				message.MessageTimeoutMilliseconds,
-				message.ResolveLinkTos,
-				message.MaxRetryCount,
-				message.BufferSize,
-				message.LiveBufferSize,
-				message.ReadBatchSize,
-				message.MaxSubscriberCount,
-				message.NamedConsumerStrategy,
-				message.MaxCheckPointCount,
-				message.MinCheckPointCount,
-				message.CheckPointAfterMilliseconds,
-				message.RecordStatistics,
-				(msg) => {
-					message.Envelope.ReplyWith(
-						new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
+			try {
+				UpdatePersistentSubscription(
+					new PersistentSubscriptionSingleStreamEventSource(message.EventStreamId),
+					message.GroupName,
+					new PersistentSubscriptionSingleStreamPosition(message.StartFrom),
+					message.MessageTimeoutMilliseconds,
+					message.ResolveLinkTos,
+					message.MaxRetryCount,
+					message.BufferSize,
+					message.LiveBufferSize,
+					message.ReadBatchSize,
+					message.MaxSubscriberCount,
+					message.NamedConsumerStrategy,
+					message.MaxCheckPointCount,
+					message.MinCheckPointCount,
+					message.CheckPointAfterMilliseconds,
+					message.RecordStatistics,
+					(msg) => {
+						message.Envelope.ReplyWith(
+							new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
+								message.CorrelationId,
+								ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+									.UpdatePersistentSubscriptionToStreamResult.Success,
+								msg));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
 							message.CorrelationId,
-							ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult.Success,
-							msg));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
-						message.CorrelationId,
-						ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult.Fail,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
-						message.CorrelationId,
-						ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult.DoesNotExist,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
-						message.CorrelationId,
-						ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult.AccessDenied,
-						error));
-				},
-				message.User?.Identity?.Name
-			);
+							ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+								.UpdatePersistentSubscriptionToStreamResult.Fail,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
+							message.CorrelationId,
+							ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+								.UpdatePersistentSubscriptionToStreamResult.DoesNotExist,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
+							message.CorrelationId,
+							ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+								.UpdatePersistentSubscriptionToStreamResult.AccessDenied,
+							error));
+					},
+					message.User?.Identity?.Name
+				);
+			} catch (Exception ex) {
+				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
+					message.CorrelationId,
+					ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult.Fail,
+					ex.Message));
+			}
 		}
 
 		public void Handle(ClientMessage.UpdatePersistentSubscriptionToAll message) {
-			UpdatePersistentSubscription(
-				new PersistentSubscriptionAllStreamEventSource(),
-				message.GroupName,
-				new PersistentSubscriptionAllStreamPosition(message.StartFrom.CommitPosition, message.StartFrom.PreparePosition),
-				message.MessageTimeoutMilliseconds,
-				message.ResolveLinkTos,
-				message.MaxRetryCount,
-				message.BufferSize,
-				message.LiveBufferSize,
-				message.ReadBatchSize,
-				message.MaxSubscriberCount,
-				message.NamedConsumerStrategy,
-				message.MaxCheckPointCount,
-				message.MinCheckPointCount,
-				message.CheckPointAfterMilliseconds,
-				message.RecordStatistics,
-				(msg) => {
-					message.Envelope.ReplyWith(
-						new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
+			try {
+				UpdatePersistentSubscription(
+					new PersistentSubscriptionAllStreamEventSource(),
+					message.GroupName,
+					new PersistentSubscriptionAllStreamPosition(message.StartFrom.CommitPosition,
+						message.StartFrom.PreparePosition),
+					message.MessageTimeoutMilliseconds,
+					message.ResolveLinkTos,
+					message.MaxRetryCount,
+					message.BufferSize,
+					message.LiveBufferSize,
+					message.ReadBatchSize,
+					message.MaxSubscriberCount,
+					message.NamedConsumerStrategy,
+					message.MaxCheckPointCount,
+					message.MinCheckPointCount,
+					message.CheckPointAfterMilliseconds,
+					message.RecordStatistics,
+					(msg) => {
+						message.Envelope.ReplyWith(
+							new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
+								message.CorrelationId,
+								ClientMessage.UpdatePersistentSubscriptionToAllCompleted
+									.UpdatePersistentSubscriptionToAllResult.Success,
+								msg));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
 							message.CorrelationId,
-							ClientMessage.UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult.Success,
-							msg));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
-						message.CorrelationId,
-						ClientMessage.UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult.Fail,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
-						message.CorrelationId,
-						ClientMessage.UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult.DoesNotExist,
-						error));
-				},
-				(error) => {
-					message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
-						message.CorrelationId,
-						ClientMessage.UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult.AccessDenied,
-						error));
-				},
-				message.User?.Identity?.Name
-			);
+							ClientMessage.UpdatePersistentSubscriptionToAllCompleted
+								.UpdatePersistentSubscriptionToAllResult.Fail,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
+							message.CorrelationId,
+							ClientMessage.UpdatePersistentSubscriptionToAllCompleted
+								.UpdatePersistentSubscriptionToAllResult.DoesNotExist,
+							error));
+					},
+					(error) => {
+						message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
+							message.CorrelationId,
+							ClientMessage.UpdatePersistentSubscriptionToAllCompleted
+								.UpdatePersistentSubscriptionToAllResult.AccessDenied,
+							error));
+					},
+					message.User?.Identity?.Name
+				);
+			} catch (Exception ex) {
+				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToAllCompleted(
+					message.CorrelationId,
+					ClientMessage.UpdatePersistentSubscriptionToAllCompleted.UpdatePersistentSubscriptionToAllResult
+						.Fail,
+					ex.Message));
+			}
 		}
-		
+
 		private bool TryCreateSubscriptionGroup(IPersistentSubscriptionEventSource eventSource,
 			string groupName,
 			bool resolveLinkTos,
