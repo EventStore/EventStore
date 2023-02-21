@@ -33,6 +33,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
 - some redundant code [EventStore#3709](https://github.com/EventStore/EventStore/pull/3709)
+- Cleanup V8 scripts. [EventStore#3740](https://github.com/EventStore/EventStore/pull/3740)
 
 ## [22.10.1] - 2023-02-13
 
