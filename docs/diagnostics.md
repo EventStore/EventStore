@@ -19,6 +19,10 @@ the log files and the way to change it is described [below](#logs-location).
 
 There are a few options to change the way how EventStoreDB produces logs and how detailed the logs should be.
 
+::: warning
+The EventStoreDB logs may contain sensitive information such as stream names, user names, and projection definitions.
+:::
+
 ### Log format
 
 EventStoreDB uses the structured logging in JSON format that is more machine-friendly and can be ingested by
