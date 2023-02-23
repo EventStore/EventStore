@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private Guid _timerTickCorrelationId;
 		private bool _handleTick;
 
-		internal PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex<TStreamId> readIndex,
+		public PersistentSubscriptionService(IQueuedHandler queuedHandler, IReadIndex<TStreamId> readIndex,
 			IODispatcher ioDispatcher, IPublisher bus,
 			PersistentSubscriptionConsumerStrategyRegistry consumerStrategyRegistry) {
 			Ensure.NotNull(queuedHandler, "queuedHandler");
@@ -136,13 +136,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		private void Start() {
+		public void Start() {
 			_started = true;
 			_bus.Publish(new SubscriptionMessage.PersistentSubscriptionsStarted());
 			Log.Debug("Persistent Subscriptions have been started.");
 		}
 
-		private void Stop() {
+		public void Stop() {
 			_started = false;
 			_bus.Publish(new SubscriptionMessage.PersistentSubscriptionsStopped());
 			Log.Debug("Persistent Subscriptions have been stopped.");
