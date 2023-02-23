@@ -29,7 +29,7 @@ namespace EventStore.TestClient.Commands {
 				if (args.Length > 1)
 					expectedVersion = args[1].ToUpper() == "ANY" ? ExpectedVersion.Any : int.Parse(args[1]);
 				if (args.Length > 2)
-					eventsCnt = int.Parse(args[1]);
+					eventsCnt = MetricPrefixValue.ParseInt(args[1]);
 			}
 
 			context.IsAsync();

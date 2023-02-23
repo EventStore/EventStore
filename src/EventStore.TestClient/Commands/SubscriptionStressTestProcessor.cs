@@ -21,7 +21,7 @@ namespace EventStore.TestClient.Commands {
 			if (args.Length > 0) {
 				if (args.Length > 1)
 					return false;
-				subscriptionCount = int.Parse(args[0]);
+				subscriptionCount = MetricPrefixValue.ParseInt(args[0]);
 			}
 
 			context.IsAsync();

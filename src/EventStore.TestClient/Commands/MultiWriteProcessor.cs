@@ -1,19 +1,17 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using EventStore.Client.Messages;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.Services.Transport.Tcp;
-using OperationResult = EventStore.Core.Messages.OperationResult;
 
 namespace EventStore.TestClient.Commands {
 	internal class MultiWriteProcessor : ICmdProcessor {
 		public string Usage {
 			get { return "MWR [<write-count=10> [<stream=test-stream> [<expected-version=ANY>]]"; }
 		}
-
+		
 		public string Keyword {
 			get { return "MWR"; }
 		}
@@ -27,7 +25,7 @@ namespace EventStore.TestClient.Commands {
 			if (args.Length > 0) {
 				if (args.Length > 3)
 					return false;
-				writeCount = int.Parse(args[0]);
+				writeCount = MetricPrefixValue.ParseInt(args[0]);
 				if (args.Length >= 2)
 					eventStreamId = args[1];
 				if (args.Length >= 3)

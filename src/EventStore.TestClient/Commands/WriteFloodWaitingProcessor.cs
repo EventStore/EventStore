@@ -26,10 +26,10 @@ namespace EventStore.TestClient.Commands {
 					return false;
 
 				try {
-					clientsCnt = int.Parse(args[0]);
-					requestsCnt = int.Parse(args[1]);
+					clientsCnt = MetricPrefixValue.ParseInt(args[0]);
+					requestsCnt = MetricPrefixValue.ParseInt(args[1]);
 					if (args.Length == 3)
-						payloadSize = int.Parse(args[2]);
+						payloadSize = MetricPrefixValue.ParseInt(args[2]);
 				} catch {
 					return false;
 				}

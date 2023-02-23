@@ -5,7 +5,6 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.TestClient.Commands;
 using EventStore.TestClient.Commands.DvuBasic;
-using EventStore.TestClient.Statistics;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
 #pragma warning disable 1591

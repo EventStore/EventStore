@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using EventStore.Client.Messages;
 using EventStore.Core.Data;
-using EventStore.Core.Messages;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.Transport.Tcp;
 using OperationResult = EventStore.Client.Messages.OperationResult;
@@ -30,10 +28,10 @@ namespace EventStore.TestClient.Commands {
 				if (args.Length != 1 && args.Length != 3)
 					return false;
 				try {
-					writeCount = int.Parse(args[0]);
+					writeCount = MetricPrefixValue.ParseInt(args[0]);
 					if (args.Length > 1) {
-						clientsCnt = int.Parse(args[1]);
-						requestsCnt = long.Parse(args[2]);
+						clientsCnt = MetricPrefixValue.ParseInt(args[1]);
+						requestsCnt = MetricPrefixValue.ParseLong(args[2]);
 					}
 				} catch {
 					return false;

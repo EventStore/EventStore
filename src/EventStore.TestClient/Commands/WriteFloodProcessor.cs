@@ -32,14 +32,14 @@ namespace EventStore.TestClient.Commands {
 					return false;
 
 				try {
-					clientsCnt = int.Parse(args[0]);
-					requestsCnt = long.Parse(args[1]);
+					clientsCnt = MetricPrefixValue.ParseInt(args[0]);
+					requestsCnt = MetricPrefixValue.ParseLong(args[1]);
 					if (args.Length >= 3)
-						streamsCnt = int.Parse(args[2]);
+						streamsCnt = MetricPrefixValue.ParseInt(args[2]);
 					if (args.Length >= 4)
-						size = int.Parse(args[3]);
+						size = MetricPrefixValue.ParseInt(args[3]);
 					if (args.Length >= 5)
-						batchSize = int.Parse(args[4]);
+						batchSize = MetricPrefixValue.ParseInt(args[4]);
 					if (args.Length >= 6)
 						streamNamePrefix = args[5];
 				} catch {
