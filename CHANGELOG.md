@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - CI Unit test settings [EventStore#3712](https://github.com/EventStore/EventStore/pull/3712)
 - log available commands separately. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - Adjustments to reduce allocations [EventStore#3731](https://github.com/EventStore/EventStore/pull/3731)
+- Support specifying values with a metric prefix with the `testclient`. [EventStore#3748](https://github.com/EventStore/EventStore/pull/3748)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
