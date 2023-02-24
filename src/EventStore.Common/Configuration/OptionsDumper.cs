@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -8,37 +9,66 @@ using Microsoft.Extensions.Configuration;
 namespace EventStore.Common.Configuration {
 	public class OptionsDumper {
 		private readonly IEnumerable<Type> _optionSections;
-		private readonly List<string> _sortOrder;
+		private readonly List<(string, List<string>)> _groups;
 
 		public OptionsDumper(IEnumerable<Type> optionSections) {
 			_optionSections = optionSections;
-			_sortOrder = _optionSections.SelectMany(optionSection =>
-					optionSection.GetProperties()
-						.Select(p => NameTranslators.CombineByPascalCase(p.Name, " ").ToUpper()))
-				.OrderBy(x => x)
+			_groups = _optionSections
+				.Select(sectionType => {
+					var description = sectionType.GetCustomAttribute<DescriptionAttribute>()?.Description
+					                  ?? string.Empty;
+					var props = sectionType
+						.GetProperties()
+						.Select(x => NameTranslators.CombineByPascalCase(x.Name, " ").ToUpper())
+						.OrderBy(x => x)
+						.ToList();
+					return (description, props);
+				})
+				.OrderBy(x => x.description)
 				.ToList();
 		}
 
 		public string Dump(IConfigurationRoot configurationRoot) {
 			var info = GetOptionSourceInfo(configurationRoot);
 
-			var @default = info.Where(x => x.Value.source == typeof(Default));
-			var modified = info.Where(x => x.Value.source != typeof(Default));
+			bool Modified(Type x) => x != typeof(Default);
+			bool Default(Type x) => x == typeof(Default);
+			
+			var nameColumnWidth = info.Keys.Select(x => x.Length).Max() + 11;
+			
+			return PrintOptions(nameof(Modified), info, Modified) + Environment.NewLine +
+			       PrintOptions(nameof(Default), info, Default);
 
-			var nameColumnWidth = info.Keys.Select(x => x.Length).Max() + 7;
+			string PrintOptions(
+				string name,
+				IDictionary<string, (Type source, string value)> configOptions,
+				Func<Type, bool> filter) {
 
-			return PrintOptions(nameof(modified), modified) + Environment.NewLine +
-			       PrintOptions(nameof(@default), @default);
+				var dumpOptions = new StringBuilder();
+				dumpOptions.AppendLine().Append($"{name.ToUpper()} OPTIONS:");
 
-			string PrintOptions(string name,
-				IEnumerable<KeyValuePair<string, (Type source, string value)>> options) =>
-				options.OrderBy(pair => _sortOrder.IndexOf(pair.Key)).Aggregate(
-					new StringBuilder().Append($"{name.ToUpper()} OPTIONS:").AppendLine().AppendLine(),
-					(builder, pair) => builder
-						.Append($"     {pair.Key}:".PadRight(nameColumnWidth, ' '))
-						.Append(pair.Value.value).Append(' ').Append(FormatSourceName(pair.Value.source))
-						.AppendLine()).ToString();
+				foreach (var (groupName, groupOptions) in _groups) {
+					bool firstOptionInGroup = true;
 
+					foreach (var option in groupOptions) {
+						if (!configOptions.TryGetValue(option, out var optionValue) ||
+							!filter(optionValue.source))
+							continue;
+							
+						if (firstOptionInGroup) {
+							dumpOptions.AppendLine().Append($"    {groupName}:").AppendLine();
+							firstOptionInGroup = false;
+						}
+						
+						dumpOptions.Append($"         {option}:".PadRight(nameColumnWidth, ' '))
+							.Append(optionValue.value).Append(' ')
+							.Append(FormatSourceName(optionValue.source))
+							.AppendLine();
+					}
+				}
+				return dumpOptions.ToString();
+			}
+			
 			static string FormatSourceName(Type source) =>
 				$"({(source == typeof(Default) ? "<DEFAULT>" : NameTranslators.CombineByPascalCase(source.Name, " "))})"
 			;
@@ -78,7 +108,7 @@ namespace EventStore.Common.Configuration {
 					@"(?<=[A-Z])(?=[A-Z][a-z])|(?<=[^A-Z])(?=[A-Z])|(?<=[A-Za-z])(?=[^A-Za-z])");
 				return regex.Replace(name, token);
 			}
-
+			
 			public static string None(string name) {
 				return name;
 			}
