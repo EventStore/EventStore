@@ -1,6 +1,6 @@
 ﻿namespace EventStore.SourceGenerators.Tests.Messaging.ImpartialNested {
 	public class N {
-		[DerivedMessage]
+		[DerivedMessage(TestMessageGroup.ImpartialNested)]
 		public partial class A : Message {
 		}
 	}

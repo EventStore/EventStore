@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ProjectionSubsystemMessage {
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class RestartSubsystem : Message  {
 			public IEnvelope ReplyEnvelope { get; }
 			
@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class InvalidSubsystemRestart : Message {
 			public string SubsystemState { get; }
 			public string Reason { get; }
@@ -23,11 +23,11 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class SubsystemRestarting : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class StartComponents : Message  {
 			public Guid InstanceCorrelationId { get; }
 
@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}	
 			
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class ComponentStarted : Message  {
 			public string ComponentName { get; }
 			public Guid InstanceCorrelationId { get; }
@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}	
 	
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class StopComponents : Message  {
 			public Guid InstanceCorrelationId { get; }
 
@@ -56,7 +56,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class ComponentStopped : Message {
 			public string ComponentName { get; }
 			public Guid InstanceCorrelationId { get; }
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Subsystem)]
 		public partial class IODispatcherDrained : Message {
 			public string ComponentName { get; }
 

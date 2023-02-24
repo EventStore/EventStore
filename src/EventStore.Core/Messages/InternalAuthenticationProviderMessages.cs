@@ -2,7 +2,7 @@
 
 namespace EventStore.Core.Messages {
 	public static partial class InternalAuthenticationProviderMessages {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Authentication)]
 		public sealed partial class ResetPasswordCache : Message {
 			public readonly string LoginName;
 

@@ -8,11 +8,17 @@ namespace EventStore.SourceGenerators.Tests.Messaging.Simple
 	{
 		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 		public override int MsgTypeId => TypeId;
+		public static string OriginalLabelStatic { get; } = "TestMessageGroup-Simple-A";
+		public static string LabelStatic { get; set; } = "TestMessageGroup-Simple-A";
+		public override string Label => LabelStatic;
 	}
 
 	public partial class B
 	{
 		private static readonly int TypeId = Interlocked.Increment(ref NextMsgId);
 		public override int MsgTypeId => TypeId;
+		public static string OriginalLabelStatic { get; } = "TestMessageGroup-Simple-B";
+		public static string LabelStatic { get; set; } = "TestMessageGroup-Simple-B";
+		public override string Label => LabelStatic;
 	}
 }

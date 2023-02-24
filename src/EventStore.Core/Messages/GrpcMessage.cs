@@ -4,7 +4,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static partial class GrpcMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Grpc)]
 		public partial class SendOverGrpc : Message {
 
 			public readonly EndPoint DestinationEndpoint;

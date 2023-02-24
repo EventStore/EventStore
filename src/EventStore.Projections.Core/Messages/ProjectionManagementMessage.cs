@@ -26,7 +26,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class PostBatch : ControlMessage {
 				public ProjectionPost[] Projections { get; }
 
@@ -68,7 +68,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class Post : ControlMessage {
 				private readonly ProjectionMode _mode;
 				private readonly string _name;
@@ -162,7 +162,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class Disable : ControlMessage {
 				private readonly string _name;
 
@@ -176,7 +176,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class Enable : ControlMessage {
 				private readonly string _name;
 
@@ -190,7 +190,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class Abort : ControlMessage {
 				private readonly string _name;
 
@@ -204,7 +204,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class SetRunAs : ControlMessage {
 				public enum SetRemove {
 					Set,
@@ -229,7 +229,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class UpdateQuery : ControlMessage {
 				private readonly string _name;
 				private readonly string _handlerType;
@@ -262,7 +262,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class Reset : ControlMessage {
 				private readonly string _name;
 
@@ -276,7 +276,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class Delete : ControlMessage {
 				private readonly string _name;
 				private readonly bool _deleteCheckpointStream;
@@ -310,7 +310,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class GetQuery : ControlMessage {
 				private readonly string _name;
 
@@ -324,7 +324,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class GetConfig : ControlMessage {
 				private readonly string _name;
 
@@ -338,7 +338,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class UpdateConfig : ControlMessage {
 				private readonly string _name;
 				private readonly bool _emitEnabled;
@@ -403,7 +403,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class GetStatistics : Message {
 				private readonly IEnvelope _envelope;
 				private readonly ProjectionMode? _mode;
@@ -434,7 +434,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class GetState : Message {
 				private readonly IEnvelope _envelope;
 				private readonly string _name;
@@ -462,7 +462,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class GetResult : Message {
 				private readonly IEnvelope _envelope;
 				private readonly string _name;
@@ -491,7 +491,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class OperationFailed : Message {
 			private readonly string _reason;
 
@@ -504,21 +504,21 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class NotFound : OperationFailed {
 			public NotFound()
 				: base("Not Found") {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class NotAuthorized : OperationFailed {
 			public NotAuthorized()
 				: base("Not authorized") {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class Conflict : OperationFailed {
 			public Conflict(string reason)
 				: base(reason) {
@@ -583,7 +583,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class Updated : Message {
 			private readonly string _name;
 
@@ -596,7 +596,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class Statistics : Message {
 			private readonly ProjectionStatistics[] _projections;
 
@@ -641,7 +641,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class ProjectionState : ProjectionDataBase {
 			private readonly string _state;
 
@@ -656,7 +656,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class ProjectionResult : ProjectionDataBase {
 			private readonly string _result;
 
@@ -671,7 +671,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class ProjectionQuery : Message {
 			private readonly string _name;
 			private readonly string _query;
@@ -735,15 +735,15 @@ namespace EventStore.Projections.Core.Messages {
 		}
 
 		public static partial class Internal {
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class CleanupExpired : Message {
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class RegularTimeout : Message {
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class ReadTimeout : Message {
 				private readonly Guid _correlationId;
 				private readonly string _streamId;
@@ -772,7 +772,7 @@ namespace EventStore.Projections.Core.Messages {
 				}
 			}
 
-			[DerivedMessage]
+			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class Deleted : Message {
 				private readonly string _name;
 				private readonly Guid _id;
@@ -792,7 +792,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.Management)]
 		public partial class ProjectionConfig : Message {
 			private readonly bool _emitEnabled;
 			private readonly bool _trackEmittedStreams;

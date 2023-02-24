@@ -6,7 +6,7 @@ using EventStore.Core.Services.PersistentSubscription;
 
 namespace EventStore.Core.Messages {
 	public static partial class MonitoringMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetAllPersistentSubscriptionStats : Message {
 			public readonly IEnvelope Envelope;
 
@@ -16,7 +16,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetPersistentSubscriptionStats : Message {
 			public string EventStreamId {
 				get { return _eventStreamId; }
@@ -38,7 +38,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetStreamPersistentSubscriptionStats : Message {
 			public string EventStreamId {
 				get { return _eventStreamId; }
@@ -54,7 +54,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetPersistentSubscriptionStatsCompleted : Message {
 			public readonly OperationStatus Result;
 			public readonly List<PersistentSubscriptionInfo> SubscriptionStats;
@@ -118,7 +118,7 @@ namespace EventStore.Core.Messages {
 			public string ConnectionName { get; set; }
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetFreshStats : Message {
 			public readonly IEnvelope Envelope;
 			public readonly Func<Dictionary<string, object>, Dictionary<string, object>> StatsSelector;
@@ -139,7 +139,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetFreshStatsCompleted : Message {
 			public readonly bool Success;
 			public readonly Dictionary<string, object> Stats;
@@ -150,7 +150,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetFreshTcpConnectionStats : Message {
 			public readonly IEnvelope Envelope;
 
@@ -161,7 +161,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class GetFreshTcpConnectionStatsCompleted : Message {
 			public readonly List<TcpConnectionStats> ConnectionStats;
 
@@ -183,7 +183,7 @@ namespace EventStore.Core.Messages {
 			public bool IsSslConnection { get; set; }
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class InternalStatsRequest : Message {
 			public readonly IEnvelope Envelope;
 
@@ -194,7 +194,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Monitoring)]
 		public partial class InternalStatsRequestResponse : Message {
 			public readonly Dictionary<string, object> Stats;
 
@@ -205,7 +205,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Misc)]
 		public partial class DynamicCacheManagerTick : Message {
 		}
 	}

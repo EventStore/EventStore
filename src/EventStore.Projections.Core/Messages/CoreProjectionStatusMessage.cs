@@ -5,14 +5,14 @@ using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionStatusMessage {
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class CoreProjectionStatusMessageBase : CoreProjectionManagementMessageBase {
 			protected CoreProjectionStatusMessageBase(Guid projectionId)
 				: base(projectionId) {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class Started : CoreProjectionStatusMessageBase {
 			public string Name { get; }
 			public Started(Guid projectionId, string name)
@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class Faulted : CoreProjectionStatusMessageBase {
 			private readonly string _faultedReason;
 
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class StateReport : DataReportBase {
 			private readonly string _state;
 
@@ -80,7 +80,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class ResultReport : DataReportBase {
 			private readonly string _result;
 
@@ -99,7 +99,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class StatisticsReport : CoreProjectionStatusMessageBase {
 			private readonly ProjectionStatistics _statistics;
 			private readonly int _sequentialNumber;
@@ -119,7 +119,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class Prepared : CoreProjectionStatusMessageBase {
 			private readonly ProjectionSourceDefinition _sourceDefinition;
 
@@ -133,14 +133,14 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class Suspended : CoreProjectionStatusMessageBase {
 			public Suspended(Guid projectionId)
 				: base(projectionId) {
 			}
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreStatus)]
 		public partial class Stopped : CoreProjectionStatusMessageBase {
 			private readonly bool _completed;
 			private readonly string _name;

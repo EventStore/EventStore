@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class ProjectionCoreServiceMessage {
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ServiceMessage)]
 		public partial class StartCore : Message {
 			public readonly Guid InstanceCorrelationId;
 
@@ -12,7 +12,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ServiceMessage)]
 		public partial class StopCore : Message {
 			public Guid QueueId { get; }
 
@@ -21,7 +21,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ServiceMessage)]
 		public partial class StopCoreTimeout : Message {
 			public Guid QueueId { get; }
 
@@ -30,7 +30,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 		
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ServiceMessage)]
 		public partial class CoreTick : Message {
 			private readonly Action _action;
 
@@ -43,7 +43,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ServiceMessage)]
 		public partial class SubComponentStarted : Message {
 			public string SubComponent { get; }
 			public Guid InstanceCorrelationId { get; }
@@ -54,7 +54,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.ServiceMessage)]
 		public partial class SubComponentStopped : Message {
 			public readonly string SubComponent;
 

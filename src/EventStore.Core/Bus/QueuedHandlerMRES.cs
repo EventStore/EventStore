@@ -108,7 +108,7 @@ namespace EventStore.Core.Bus {
 
 							_starving = false;
 						} else {
-							_tracker.RecordMessageDequeued(item.EnqueuedAt);
+							var start = _tracker.RecordMessageDequeued(item.EnqueuedAt);
 							msg = item.Message;
 							_queueStats.EnterBusy();
 #if DEBUG
@@ -119,11 +119,11 @@ namespace EventStore.Core.Bus {
 							_queueStats.ProcessingStarted(msg.GetType(), cnt);
 
 							if (_watchSlowMsg) {
-								var start = DateTime.UtcNow;
-
 								_consumer.Handle(msg);
 
-								var elapsed = DateTime.UtcNow - start;
+								var end = _tracker.RecordMessageProcessed(start, msg.Label);
+								var elapsed = TimeSpan.FromSeconds(end.ElapsedSecondsSince(start));
+
 								if (elapsed > _slowMsgThreshold) {
 									Log.Debug(
 										"SLOW QUEUE MSG [{queue}]: {message} - {elapsed}ms. Q: {prevQueueCount}/{curQueueCount}. {messageDetail}.",
@@ -138,6 +138,7 @@ namespace EventStore.Core.Bus {
 								}
 							} else {
 								_consumer.Handle(msg);
+								_tracker.RecordMessageProcessed(start, msg.Label);
 							}
 
 							_queueStats.ProcessingEnded(1);

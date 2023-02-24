@@ -9,7 +9,7 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
 		public abstract partial class FeedReaderMessageBase : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.FeedReader)]
 		public sealed partial class ReadPage : FeedReaderMessageBase {
 			public readonly Guid CorrelationId;
 			public readonly IEnvelope Envelope;
@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Messages.EventReaders.Feeds {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.FeedReader)]
 		public sealed partial class FeedPage : FeedReaderMessageBase {
 			public enum ErrorStatus {
 				Success,

@@ -1,10 +1,10 @@
 ﻿namespace EventStore.SourceGenerators.Tests.Messaging.Nested {
 	public partial class N {
-		[DerivedMessage]
+		[DerivedMessage(TestMessageGroup.Nested)]
 		public partial class A : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(TestMessageGroup.Nested)]
 		public partial class B : Message {
 		}
 	}

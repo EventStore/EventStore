@@ -3,7 +3,7 @@ using EventStore.Core.Messaging;
 using EventStore.Transport.Http.EntityManagement;
 
 namespace EventStore.Core.Services.Transport.Http.Messages {
-	[DerivedMessage]
+	[DerivedMessage(CoreMessage.Http)]
 	public partial class IncomingHttpRequestMessage : Message {
 		public readonly IPublisher NextStagePublisher;
 		public readonly IHttpService HttpService;

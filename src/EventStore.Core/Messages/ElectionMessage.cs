@@ -6,14 +6,14 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static partial class ElectionMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class StartElections : Message {
 			public override string ToString() {
 				return "---- StartElections";
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class ViewChange : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
@@ -42,7 +42,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class ViewChangeProof : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
@@ -67,14 +67,14 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class SendViewChangeProof : Message {
 			public override string ToString() {
 				return string.Format("---- SendViewChangeProof");
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class ElectionsTimedOut : Message {
 			public readonly int View;
 
@@ -87,7 +87,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class Prepare : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
@@ -112,7 +112,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class PrepareOk : Message {
 			public readonly int View;
 			public readonly Guid ServerId;
@@ -178,7 +178,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class Proposal : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
@@ -241,7 +241,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class Accept : Message {
 			public readonly Guid ServerId;
 			public readonly EndPoint ServerHttpEndPoint;
@@ -276,7 +276,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class LeaderIsResigning : Message {
 			public readonly Guid LeaderId;
 			public readonly EndPoint LeaderHttpEndPoint;
@@ -297,7 +297,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class LeaderIsResigningOk : Message {
 			public readonly Guid LeaderId;
 			public readonly EndPoint LeaderHttpEndPoint;
@@ -325,7 +325,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.Election)]
 		public partial class ElectionsDone : Message {
 			public readonly int InstalledView;
 			public readonly int ProposalNumber;

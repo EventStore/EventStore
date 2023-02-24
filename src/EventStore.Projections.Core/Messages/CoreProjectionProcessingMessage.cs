@@ -1,10 +1,11 @@
 using System;
 using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Messages;
 using EventStore.Projections.Core.Services.Processing;
 
 namespace EventStore.Projections.Core.Messages {
 	public static partial class CoreProjectionCheckpointWriterMessage {
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreProcessing)]
 		public sealed partial class CheckpointWritten : Message {
 			private readonly CheckpointTag _position;
 
@@ -17,7 +18,7 @@ namespace EventStore.Projections.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(ProjectionMessage.CoreProcessing)]
 		public sealed partial class RestartRequested : Message {
 			public string Reason {
 				get { return _reason; }
@@ -46,7 +47,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class CheckpointLoaded : Message {
 		private readonly CheckpointTag _checkpointTag;
 		private readonly string _checkpointData;
@@ -73,7 +74,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class PrerecordedEventsLoaded : Message {
 		private readonly CheckpointTag _checkpointTag;
 
@@ -87,7 +88,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class CheckpointCompleted : Message {
 		private readonly CheckpointTag _checkpointTag;
 
@@ -101,7 +102,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class RestartRequested : Message {
 		private readonly string _reason;
 
@@ -115,7 +116,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class Failed : Message {
 		private readonly string _reason;
 
@@ -129,7 +130,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class ReadyForCheckpoint : EventStore.Core.Messaging.Message {
 		private readonly object _sender;
 
@@ -142,7 +143,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class EmittedStreamAwaiting : EventStore.Core.Messaging.Message {
 		private readonly IEnvelope _envelope;
 		private readonly string _streamId;
@@ -161,7 +162,7 @@ public static partial class CoreProjectionProcessingMessage {
 		}
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(ProjectionMessage.CoreProcessing)]
 	public partial class EmittedStreamWriteCompleted : EventStore.Core.Messaging.Message {
 		private readonly string _streamId;
 

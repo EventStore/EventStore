@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using EventStore.Core.Time;
 
 namespace EventStore.Core.Telemetry {
 	public class DurationMetric {
@@ -14,13 +15,15 @@ namespace EventStore.Core.Telemetry {
 		public Duration Start(string durationName) =>
 			new(this, durationName, _clock.Now);
 
-		public void Record(
+		public Instant Record(
 			Instant start,
 			KeyValuePair<string, object> tag1,
 			KeyValuePair<string, object> tag2) {
 
-			var elapsedSeconds = _clock.Now.ElapsedSecondsSince(start);
+			var now = _clock.Now;
+			var elapsedSeconds = now.ElapsedSecondsSince(start);
 			_histogram.Record(elapsedSeconds, tag1, tag2);
+			return now;
 		}
 	}
 }

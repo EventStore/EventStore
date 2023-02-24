@@ -4,11 +4,11 @@ using EventStore.Core.Messaging;
 
 namespace EventStore.Core.Messages {
 	public static partial class ReplicationTrackingMessage {
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.ReplicationTracking)]
 		public partial class WriterCheckpointFlushed : Message {
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.ReplicationTracking)]
 		public partial class IndexedTo : Message {
 			public readonly long LogPosition;
 			
@@ -18,7 +18,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.ReplicationTracking)]
 		public partial class ReplicatedTo : Message {
 			public readonly long LogPosition;
 			
@@ -28,7 +28,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.ReplicationTracking)]
 		public partial class LeaderReplicatedTo : Message {
 			public readonly long LogPosition;
 			
@@ -38,7 +38,7 @@ namespace EventStore.Core.Messages {
 			}
 		}
 
-		[DerivedMessage]
+		[DerivedMessage(CoreMessage.ReplicationTracking)]
 		public partial class ReplicaWriteAck : Message {
 			public readonly Guid SubscriptionId;
 			public readonly long ReplicationLogPosition;

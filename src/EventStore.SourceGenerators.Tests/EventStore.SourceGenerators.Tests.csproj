@@ -5,12 +5,21 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Platforms>x64;ARM64</Platforms>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 	</PropertyGroup>
 	<ItemGroup>
+	  <Compile Remove="Messaging\Cases\AbstractWithGroup.NOTCOMPILED.g.cs" />
+	  <Compile Remove="Messaging\Cases\ConcreteWithoutGroup.NOTCOMPILED.g.cs" />
 	  <Compile Remove="Messaging\Cases\Impartial.NOTCOMPILED.g.cs" />
 	  <Compile Remove="Messaging\Cases\ImpartialNested.NOTCOMPILED.g.cs" />
 	</ItemGroup>
 	<ItemGroup>
+	  <None Include="Messaging\Cases\AbstractWithGroup.NOTCOMPILED.g.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Include="Messaging\Cases\ConcreteWithoutGroup.NOTCOMPILED.g.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	  <None Include="Messaging\Cases\Impartial.NOTCOMPILED.g.cs">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
@@ -46,7 +55,13 @@
 		<ProjectReference Include="..\EventStore.SourceGenerators\EventStore.SourceGenerators.csproj" />
 	</ItemGroup>
 	<ItemGroup>
+	  <Compile Update="Messaging\Cases\AbstractWithGroup.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
 	  <Compile Update="Messaging\Cases\FileScopedNamespace.g.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Compile>
+	  <Compile Update="Messaging\Cases\ConcreteWithoutGroup.cs">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Compile>
 	  <Compile Update="Messaging\Cases\ImpartialNested.cs">

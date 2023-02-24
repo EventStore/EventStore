@@ -39,8 +39,18 @@ public class DurationMaxTrackerTests : IDisposable {
 		Assert.Equal(
 			"ExpectedScrapeIntervalSeconds must be 0, 1, 5, 10 or a multiple of 15, but was 16",
 			ex.Message);
-
 	}
+
+	[Fact]
+	public void record_now_returns_now() {
+		_clock.SecondsSinceEpoch = 500;
+		var start = _clock.Now;
+		_clock.SecondsSinceEpoch = 501;
+		var end = _sut.RecordNow(start);
+		var elapsedSeconds = end.ElapsedSecondsSince(start);
+		Assert.Equal(1.000, elapsedSeconds);
+	}
+
 	[Fact]
 	public void no_records() {
 		AssertMeasurements(0);

@@ -1,9 +1,9 @@
 ﻿namespace EventStore.SourceGenerators.Tests.Messaging.Simple {
-	[DerivedMessage]
+	[DerivedMessage(TestMessageGroup.Simple)]
 	public partial class A : Message {
 	}
 
-	[DerivedMessage]
+	[DerivedMessage(TestMessageGroup.Simple)]
 	public partial class B : Message {
 	}
 }

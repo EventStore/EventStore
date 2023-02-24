@@ -75,7 +75,7 @@ namespace EventStore.SourceGenerators.Tests.Messaging {
 				"Impartial.NOTCOMPILED.g.cs",
 				new DiagnosticResult("ESGEN001", DiagnosticSeverity.Error)
 					.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
-					.WithMessage("Class \"A\" must be partial"),
+					.WithMessage("Class \"A\" is not partial"),
 				new DiagnosticResult("CS0101", DiagnosticSeverity.Error)
 					.WithSpan(
 						$"EventStore.SourceGenerators{Path.DirectorySeparatorChar}" +
@@ -90,12 +90,32 @@ namespace EventStore.SourceGenerators.Tests.Messaging {
 				"ImpartialNested.NOTCOMPILED.g.cs",
 				new DiagnosticResult("ESGEN001", DiagnosticSeverity.Error)
 					.WithSpan("/0/Test1.cs", 2, 2, 6, 3)
-					.WithMessage("Class \"N\" must be partial"),
+					.WithMessage("Class \"N\" is not partial"),
 				new DiagnosticResult("CS0101", DiagnosticSeverity.Error)
 					.WithSpan(
 						$"EventStore.SourceGenerators{Path.DirectorySeparatorChar}" +
 						$"EventStore.SourceGenerators.Messaging.{nameof(MessageSourceGenerator)}{Path.DirectorySeparatorChar}" +
 						$"Test1-{GenHash(1)}.g.cs", 7, 15, 7, 16)
 					.WithArguments("N", "EventStore.SourceGenerators.Tests.Messaging.ImpartialNested"));
+
+		[Fact]
+		public async Task AbstractWithGroup() =>
+			await RunTestAsync(
+				"AbstractWithGroup.cs",
+				"AbstractWithGroup.NOTCOMPILED.g.cs",
+				new DiagnosticResult("ESGEN002", DiagnosticSeverity.Error)
+					.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
+					.WithMessage("Abstract class \"A\" has a group specified")
+					.WithArguments("A"));
+
+		[Fact]
+		public async Task ConcreteWithoutGroup() =>
+			await RunTestAsync(
+				"ConcreteWithoutGroup.cs",
+				"ConcreteWithoutGroup.NOTCOMPILED.g.cs",
+				new DiagnosticResult("ESGEN003", DiagnosticSeverity.Error)
+					.WithSpan("/0/Test1.cs", 2, 2, 4, 3)
+					.WithMessage("Concrete class \"A\" does not have a group specified")
+					.WithArguments("A"));
 	}
 }

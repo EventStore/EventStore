@@ -74,5 +74,7 @@ namespace EventStore.Common.Configuration {
 		public int ExpectedScrapeIntervalSeconds { get; set; }
 
 		public LabelMappingCase[] Queues { get; set; } = Array.Empty<LabelMappingCase>();
+
+		public LabelMappingCase[] MessageTypes { get; set; } = Array.Empty<LabelMappingCase>();
 	}
 }

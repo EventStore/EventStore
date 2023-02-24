@@ -1,5 +1,5 @@
 ﻿using EventStore.Core.Messaging;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Time;
 
 namespace EventStore.Core.Bus;
 

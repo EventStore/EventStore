@@ -1,4 +1,5 @@
-﻿using EventStore.Core.Telemetry;
+using EventStore.Core.Telemetry;
+using EventStore.Core.Time;
 using Xunit;
 using Conf = EventStore.Common.Configuration.TelemetryConfiguration;
 
@@ -81,14 +82,15 @@ namespace EventStore.Core.XUnit.Tests.Telemetry {
 		QueueTrackers GenSut(params Conf.LabelMappingCase[] map) =>
 			new(map, x => {
 				var tracker = new FakeTracker { Name = x };
-				return new QueueTracker(x, tracker);
+				return new QueueTracker(x, tracker, tracker);
 			});
 
-		class FakeTracker : IDurationMaxTracker {
+		class FakeTracker : IDurationMaxTracker, IQueueProcessingTracker {
 			public string Name { get; init; }
 
-			public void RecordNow(Instant start) {
-			}
+			public Instant RecordNow(Instant start) => start;
+
+			public Instant RecordNow(Instant start, string messageType) => start;
 		}
 	}
 }
