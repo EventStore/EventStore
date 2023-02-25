@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - log errors for gRPC write flood. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - Implement Init/Rebuild index status report. [EventStore#3707](https://github.com/EventStore/EventStore/pull/3707)
 - Max queue durations over period per queue  [EventStore#3698](https://github.com/EventStore/EventStore/pull/3698)
+- Queue Processing Duration Histograms by Message Type [EventStore#3730](https://github.com/EventStore/EventStore/pull/3730)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
