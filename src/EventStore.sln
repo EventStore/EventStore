@@ -55,9 +55,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Projections.Core
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.MicroBenchmarks", "EventStore.MicroBenchmarks\EventStore.MicroBenchmarks.csproj", "{87F81751-192B-4263-A658-6DFC51EA557C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventStore.SourceGenerators", "EventStore.SourceGenerators\EventStore.SourceGenerators.csproj", "{24BA3208-F690-4DD4-AECB-E339DEE0C69E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.SourceGenerators", "EventStore.SourceGenerators\EventStore.SourceGenerators.csproj", "{24BA3208-F690-4DD4-AECB-E339DEE0C69E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.SourceGenerators.Tests", "EventStore.SourceGenerators.Tests\EventStore.SourceGenerators.Tests.csproj", "{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common.Tests", "EventStore.Common.Tests\EventStore.Common.Tests.csproj", "{58219323-BD46-4F67-A83A-410F56F84EE3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -345,6 +347,18 @@ Global
 		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|ARM64.Build.0 = Release|ARM64
 		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|x64.ActiveCfg = Release|x64
 		{3C9DCA10-0006-4FA5-88CB-9CCEC1B2C522}.Release|x64.Build.0 = Release|x64
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Debug|x64.Build.0 = Debug|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|ARM64.Build.0 = Release|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|x64.ActiveCfg = Release|Any CPU
+		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
