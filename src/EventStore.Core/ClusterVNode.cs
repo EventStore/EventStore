@@ -1190,16 +1190,16 @@ namespace EventStore.Core {
 			var perSubscrBus = new InMemoryBus("PersistentSubscriptionsBus", true, TimeSpan.FromMilliseconds(50));
 			var perSubscrQueue = new QueuedHandlerThreadPool(perSubscrBus, "PersistentSubscriptions", _queueStatsManager,
 				trackers.QueueTrackers, false);
-			var ioDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(perSubscrQueue));
-			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(ioDispatcher.BackwardReader);
-			perSubscrBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher.BackwardReader);
-			perSubscrBus.Subscribe<ClientMessage.WriteEventsCompleted>(ioDispatcher.Writer);
-			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(ioDispatcher.ForwardReader);
-			perSubscrBus.Subscribe<ClientMessage.ReadAllEventsForwardCompleted>(ioDispatcher.AllForwardReader);
-			perSubscrBus.Subscribe<ClientMessage.FilteredReadAllEventsForwardCompleted>(ioDispatcher.AllForwardFilteredReader);
-			perSubscrBus.Subscribe<ClientMessage.DeleteStreamCompleted>(ioDispatcher.StreamDeleter);
-			perSubscrBus.Subscribe<IODispatcherDelayedMessage>(ioDispatcher);
-			perSubscrBus.Subscribe<ClientMessage.NotHandled>(ioDispatcher);
+			var psubDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(perSubscrQueue));
+			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(psubDispatcher.BackwardReader);
+			perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher.BackwardReader);
+			perSubscrBus.Subscribe<ClientMessage.WriteEventsCompleted>(psubDispatcher.Writer);
+			perSubscrBus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(psubDispatcher.ForwardReader);
+			perSubscrBus.Subscribe<ClientMessage.ReadAllEventsForwardCompleted>(psubDispatcher.AllForwardReader);
+			perSubscrBus.Subscribe<ClientMessage.FilteredReadAllEventsForwardCompleted>(psubDispatcher.AllForwardFilteredReader);
+			perSubscrBus.Subscribe<ClientMessage.DeleteStreamCompleted>(psubDispatcher.StreamDeleter);
+			perSubscrBus.Subscribe<IODispatcherDelayedMessage>(psubDispatcher);
+			perSubscrBus.Subscribe<ClientMessage.NotHandled>(psubDispatcher);
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<SystemMessage.StateChangeMessage, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<TcpMessage.ConnectionClosed, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.CreatePersistentSubscriptionToStream, Message>());
@@ -1229,7 +1229,7 @@ namespace EventStore.Core {
 			//TODO CC can have multiple threads working on subscription if partition
 			var consumerStrategyRegistry = new PersistentSubscriptionConsumerStrategyRegistry(_mainQueue, _mainBus,
 				additionalPersistentSubscriptionConsumerStrategyFactories);
-			var persistentSubscription = new PersistentSubscriptionService<TStreamId>(perSubscrQueue, readIndex, ioDispatcher,
+			var persistentSubscription = new PersistentSubscriptionService<TStreamId>(perSubscrQueue, readIndex, psubDispatcher,
 				_mainQueue, consumerStrategyRegistry);
 			perSubscrBus.Subscribe<SystemMessage.BecomeShuttingDown>(persistentSubscription);
 			perSubscrBus.Subscribe<SystemMessage.BecomeLeader>(persistentSubscription);
@@ -1258,6 +1258,12 @@ namespace EventStore.Core {
 
 			// STORAGE SCAVENGER
 			ScavengerFactory scavengerFactory;
+			var scavengerDispatcher = new IODispatcher(_mainQueue, new PublishEnvelope(MainQueue));
+			_mainBus.Subscribe<ClientMessage.ReadStreamEventsBackwardCompleted>(scavengerDispatcher.BackwardReader);
+			_mainBus.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher.BackwardReader);
+			_mainBus.Subscribe<ClientMessage.WriteEventsCompleted>(scavengerDispatcher.Writer);
+			_mainBus.Subscribe<IODispatcherDelayedMessage>(scavengerDispatcher);
+			_mainBus.Subscribe<ClientMessage.NotHandled>(scavengerDispatcher);
 
 			var newScavenge = true;
 			if (newScavenge) {
@@ -1367,7 +1373,7 @@ namespace EventStore.Core {
 						logger: logger,
 						unsafeIgnoreHardDeletes: options.Database.UnsafeIgnoreHardDelete);
 
-					var scavengePointSource = new ScavengePointSource(logger, ioDispatcher);
+					var scavengePointSource = new ScavengePointSource(logger, scavengerDispatcher);
 
 					return new Scavenger<TStreamId>(
 						logger: logger,
@@ -1416,7 +1422,7 @@ namespace EventStore.Core {
 			var scavengerLogManager = new TFChunkScavengerLogManager(
 				nodeEndpoint: NodeInfo.HttpEndPoint.ToString(),
 				scavengeHistoryMaxAge: TimeSpan.FromDays(options.Database.ScavengeHistoryMaxAge),
-				ioDispatcher: ioDispatcher);
+				ioDispatcher: scavengerDispatcher);
 
 			var storageScavenger = new StorageScavenger(
 				logManager: scavengerLogManager,
