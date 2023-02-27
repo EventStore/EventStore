@@ -25,6 +25,7 @@
 		<PackageReference Include="Microsoft.FASTER.Core" Version="1.9.5" />
 		<PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.4.0-rc.1" />
 		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.4.0-rc.1" />
+		<PackageReference Include="Quickenshtein" Version="1.5.1" />
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.0" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.1" />
 		<PackageReference Include="System.IO.Pipelines" Version="6.0.3" />

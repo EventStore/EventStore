@@ -17,6 +17,7 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using Quickenshtein;
 
 #nullable enable
 namespace EventStore.Core {
@@ -36,14 +37,14 @@ namespace EventStore.Core {
 		[OptionGroup] public GrpcOptions Grpc { get; init; } = new();
 		[OptionGroup] public InterfaceOptions Interface { get; init; } = new();
 		[OptionGroup] public ProjectionOptions Projections { get; init; } = new();
-		public UnknownOptions Unknown { get; init; } = new(Array.Empty<string>());
+		public UnknownOptions Unknown { get; init; } = new(Array.Empty<(string, string)>());
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
 		public IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
 
 		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
-			Subsystems = new List<ISubsystem>(Subsystems) {subsystem}
+			Subsystems = new List<ISubsystem>(Subsystems) { subsystem }
 		};
 
 		public X509Certificate2? ServerCertificate { get; init; }
@@ -295,10 +296,14 @@ namespace EventStore.Core {
 				CertificateStoreName = configurationRoot.GetValue<string>(nameof(CertificateStoreName)),
 				CertificateSubjectName = configurationRoot.GetValue<string>(nameof(CertificateSubjectName)),
 				CertificateThumbprint = configurationRoot.GetValue<string>(nameof(CertificateThumbprint)),
-				TrustedRootCertificateStoreLocation = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreLocation)),
-				TrustedRootCertificateStoreName = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreName)),
-				TrustedRootCertificateThumbprint = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateThumbprint)),
-				TrustedRootCertificateSubjectName = configurationRoot.GetValue<string>(nameof(TrustedRootCertificateSubjectName))
+				TrustedRootCertificateStoreLocation =
+					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreLocation)),
+				TrustedRootCertificateStoreName =
+					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateStoreName)),
+				TrustedRootCertificateThumbprint =
+					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateThumbprint)),
+				TrustedRootCertificateSubjectName =
+					configurationRoot.GetValue<string>(nameof(TrustedRootCertificateSubjectName))
 			};
 		}
 
@@ -579,10 +584,11 @@ namespace EventStore.Core {
 				StreamExistenceFilterSize = configurationRoot.GetValue<long>(nameof(StreamExistenceFilterSize)),
 				ScavengeBackendPageSize = configurationRoot.GetValue<int>(nameof(ScavengeBackendPageSize)),
 				ScavengeBackendCacheSize = configurationRoot.GetValue<long>(nameof(ScavengeBackendCacheSize)),
-				ScavengeHashUsersCacheCapacity = configurationRoot.GetValue<int>(nameof(ScavengeHashUsersCacheCapacity)),
+				ScavengeHashUsersCacheCapacity =
+					configurationRoot.GetValue<int>(nameof(ScavengeHashUsersCacheCapacity)),
 			};
 		}
-		
+
 		[Description("gRPC Options")]
 		public record GrpcOptions {
 			[Description("Controls the period (in milliseconds) after which a keepalive ping " +
@@ -683,12 +689,11 @@ namespace EventStore.Core {
 			public bool DisableInternalTcpTls { get; init; } = false;
 
 			[Description("Whether to disable secure external TCP communication."),
-			Deprecated("The '" + nameof(DisableExternalTcpTls) + "' option has been deprecated as of version 20.6.1.")]
+			 Deprecated("The '" + nameof(DisableExternalTcpTls) + "' option has been deprecated as of version 20.6.1.")]
 			public bool DisableExternalTcpTls { get; init; } = false;
 
 			[Description("Enable AtomPub over HTTP Interface."),
-			 Deprecated(
-				 "AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
+			 Deprecated("AtomPub over HTTP Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead")]
 			public bool EnableAtomPubOverHttp { get; init; } = false;
 
 			internal static InterfaceOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
@@ -745,9 +750,10 @@ namespace EventStore.Core {
 			             "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
-			[Description("The time in milliseconds allowed for the compilation phase of user projections")] 
+			[Description("The time in milliseconds allowed for the compilation phase of user projections")]
 			public int ProjectionCompilationTimeout { get; set; } = 500;
-			[Description("The time in milliseconds allowed for the executing a handler in a user projection")] 
+
+			[Description("The time in milliseconds allowed for the executing a handler in a user projection")]
 			public int ProjectionExecutionTimeout { get; set; } = 250;
 
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
@@ -762,10 +768,10 @@ namespace EventStore.Core {
 		}
 
 		public record UnknownOptions {
-			public IReadOnlyList<string> Keys { get; init; }
+			public IReadOnlyList<(string, string)> Options { get; init; }
 
-			public UnknownOptions(IReadOnlyList<string> keys) {
-				Keys = keys;
+			public UnknownOptions(IReadOnlyList<(string, string)> keys) {
+				Options = keys;
 			}
 
 			internal static UnknownOptions FromConfiguration(IConfigurationRoot configurationRoot) {
@@ -782,7 +788,20 @@ namespace EventStore.Core {
 					.Where(key => !allKnownKeys.Contains(key))
 					.ToList();
 
-				return new UnknownOptions(unknownKeys);
+				var unknownOptions = unknownKeys
+					.Select(unknownKey => {
+						var first = allKnownKeys
+							.Select(allowedKey => {
+								var distance = Levenshtein.GetDistance(unknownKey, allowedKey);
+								return (allowedKey, distance);
+							})
+							.OrderBy(x => x.distance)
+							.First();
+						return (unknownKey, first.distance > 5 ? "" : first.allowedKey);
+					})
+					.ToList();
+
+				return new UnknownOptions(unknownOptions);
 			}
 		}
 	}
