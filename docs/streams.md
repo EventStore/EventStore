@@ -3,8 +3,7 @@
 EventStoreDB is a database designed for storing events. In contrast with state-oriented databases that only
 keeps the latest version of the entity state, you can store each state change as a separate event.
 
-Events are logically grouped into streams. They are the representation of the entities. All the entity state
-mutation ends up as the persisted event.
+Events are logically grouped into streams, typically one stream per entity.
 
 ## Metadata and reserved names
 
@@ -148,8 +147,6 @@ consideration:
 
 - Due to the nature of `$all`, projections using `fromAll` read any deleted events that have not been
   scavenged. They also receive any tombstone events from hard deletes.
-- Projections that read from a specific stream receive that stream's metadata events. You can filter these out
-  by ignoring events with an event type `$metadata`.
 - System projections like [by category](projections.md#by-category)
   or [by event type](projections.md#by-event-type) projections produce new (link) events that are stored in
   the database in addition to the original event. When you delete the original events, then link events will
