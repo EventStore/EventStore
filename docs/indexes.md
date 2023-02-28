@@ -115,7 +115,7 @@ Additional information can be found in this [`blog post`](https://www.eventstore
 
 ## Configuration options
 
-The configuration options that effect indexing are:
+The configuration options that affect indexing are:
 
 | Option                                                       | What's it for                                                                                                                                         |
 |:-------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -124,7 +124,6 @@ The configuration options that effect indexing are:
 | [`IndexCacheDepth`](#index-cache-depth)                      | Sets the minimum number of midpoints to calculate for an index file                                                                                   |
 | [`SkipIndexVerify`](#skip-index-verification)                | Tells the server to not verify indexes on startup                                                                                                     |
 | [`MaxAutoMergeIndexLevel`](#auto-merge-index-level)          | The maximum level of index file to merge automatically before manual merge                                                                            |
-| [`OptimizeIndexMerge`](#optimize-index-merge)                | Bypasses the checking of file hashes of indexes during startup and after index merges (allows for faster startup and less disk pressure after merges) |
 | [`StreamExistenceFilterSize`](#stream-existence-filter-size) | Size in bytes of the stream existence filter                                                                                                          |
 | [`IndexCacheSize`](#index-cache-size)                        | Maximum number of entries in each index LRU cache                                                                                                     |
 | [`UseIndexBloomFilters`](#use-index-bloom-filters)           | Feature flag which can be used to disable the index Bloom filters                                                                                     |
@@ -141,7 +140,7 @@ Read more below to understand these options better.
 
 **Default**: data files location
 
-`Index` effects the location of the index files. We recommend you place index files on a separate drive to
+`Index` affects the location of the index files. We recommend you place index files on a separate drive to
 avoid competition for IO between the data, index and log files.
 
 ### Memtable size
@@ -154,7 +153,7 @@ avoid competition for IO between the data, index and log files.
 
 **Default**: `1000000`
 
-`MaxMemTableSize` effects disk IO when EventStoreDB writes files to disk, index seek time and database startup
+`MaxMemTableSize` affects disk IO when EventStoreDB writes files to disk, index seek time and database startup
 time. The default size is a good tradeoff between low disk IO and startup time. Increasing
 the `MaxMemTableSize` results in longer database startup time because a node has to read through the data
 files from the last position in the `indexmap` file and rebuild the in memory index table before it starts.
@@ -178,8 +177,8 @@ written to over longer time periods are more likely to have entries in multiple 
 
 **Default**: `16`
 
-`IndexCacheDepth` effects how many midpoints EventStoreDB calculates for an index file which effects file
-size slightly, but can effect lookup times significantly. Looking up a stream entry in a file requires a
+`IndexCacheDepth` affects how many midpoints EventStoreDB calculates for an index file which affects file
+size slightly, but can affect lookup times significantly. Looking up a stream entry in a file requires a
 binary search on the midpoints to find the nearest midpoint, and then a seek through the entries to find the
 entry or entries that match. Increasing this value decreases the second part of the operation and increase the
 first for extremely large indexes.
@@ -230,21 +229,6 @@ index merges will use a large amount of disk IO.
 For example:
 
 > Merging 2 level 7 files results in at least 3072 MB reads (2 \* 1536 MB), and 3072 MB writes while merging 2 level 8 files together results in at least 6144 MB reads (2 \* 3072 MB) and 6144 MB writes. Setting `MaxAutoMergeLevel` to 7 allows all levels up to and including level 7 to be automatically merged, but to merge the level 8 files together, you need to trigger a manual merge. This manual merge allows better control over when these larger merges happen and which nodes they happen on. Due to the replication process, all nodes tend to merge at about the same time.
-
-### Optimize index merge
-
-| Format               | Syntax                            |
-|:---------------------|:----------------------------------|
-| Command line         | `--optimize-index-merge`          |
-| YAML                 | `OptimizeIndexMerge`              |
-| Environment variable | `EVENTSTORE_OPTIMIZE_INDEX_MERGE` | 
-
-**Default**: `false`
-
-`OptimizeIndexMerge` allows faster merging of indexes when EventStoreDB has scavenged a chunk. This option has
-no effect on non-scavenged chunks. When EventStoreDB has scavenged a chunk, and this option is set to `true`, it
-uses a bloom filter before reading the chunk to see if the value exists before reading the chunk to make sure
-that it still exists.
 
 ### Stream existence filter size
 
