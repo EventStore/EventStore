@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - #3697 FilteredAllSubscription checkpoint now continues to update after becomming live [EventStore#3726](https://github.com/EventStore/EventStore/pull/3726)
 - (EventStore.TestClient) too strict cleanup condition causing a memory leak in rare cases when server becomes unresponsive. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - (EventStore.TestClient) Cancelation of current command. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
+- Use a separate IODispatcher for scavenge log [EventStore#3741](https://github.com/EventStore/EventStore/pull/3741)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
