@@ -136,9 +136,7 @@ read a hard deleted stream, the read returns a `StreamDeleted` or `410` result.
 The events in the deleted stream are liable to be removed in a scavenge, but the tombstone event remains.
 
 A hard delete of a stream is permanent. You cannot append to the stream or recreate it. As such, you should
-generally soft delete streams unless you have a specific need to permanently delete the stream. On rare
-occasions when you need to re-open a hard-deleted stream, you can force EventStoreDB to scavenge it by using
-the [ignore hard deletes](operations.md#ignore-hard-delete) option.
+generally soft delete streams unless you have a specific need to permanently delete the stream.
 
 ### Deleted events and projections
 
