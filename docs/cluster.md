@@ -4,19 +4,17 @@ title: Clustering
 
 ## Highly-available cluster
 
-High availability EventStoreDB allows you to run more than one node as a cluster. Follow this guide to learn how to set up a highly-available EventStoreDB cluster.
+EventStoreDB allows you to run more than one node in a cluster for high availability.
 
 ### Cluster nodes
 
-EventStoreDB clusters follow a "shared nothing" philosophy, meaning that clustering requires no shared disks for clustering to work. Instead, several database nodes store your data to ensure it isn't lost in case of a drive failure or a node crashing. 
+EventStoreDB clusters follow a "shared nothing" philosophy, meaning that clustering requires no shared disks. Instead, each node has a copy of the data to ensure it is not lost in case of a drive failure or a node crashing. 
 
 ::: tip
-Lean more about [cluster node roles](#cluster-node-roles).
+Lean more about [node roles](#node-roles).
 :::
 
-EventStoreDB uses a quorum-based replication model, in which a majority of nodes in the cluster must acknowledge that they committed a write to disk before acknowledging the write to the client. This means that to be able to tolerate the failure of _n_ nodes, the cluster must be of size _(2n + 1)_. A three-database-node cluster can continue to accept writes if one node is unavailable. A five-database-node cluster can continue to accept writes if two nodes are unavailable, and so forth.
-
-A typical deployment topology consists of three physical machines, each running one manager node and one database node. Each of the physical machines may have two network interfaces, one for communicating with other cluster members, and one for serving clients. Although it may be preferable in some situations to run over two separate networks. It's also possible to use different TCP ports on one interface. Read more about the network interfaces configuration in the [networking](networking.md) documentation. 
+EventStoreDB uses a quorum-based replication model, in which a majority of nodes in the cluster must acknowledge that they have received a copy of the write before the write is acknowledged to the client. This means that to be able to tolerate the failure of _n_ nodes, the cluster must be of size _(2n + 1)_. A three node cluster can continue to accept writes if one node is unavailable. A five node cluster can continue to accept writes if two nodes are unavailable, and so forth.
 
 ### Cluster size
 
@@ -36,13 +34,11 @@ Use the `ClusterSize` option to tell each cluster node about how many nodes the 
 
 **Default**: `1` (single node, no high-availability).
 
-When setting up a cluster, you generally want an odd number of nodes as EventStoreDB uses a quorum based algorithm to handle high availability. We recommended you define an odd number of nodes to avoid split brain problems.
-
 Common values for the `ClusterSize` setting are three or five (to have a majority of two nodes and a majority of three nodes).
 
 ### Discovering cluster members
 
-Cluster nodes use the gossip protocol to discover each other and select the cluster leader. There could be only one leader and each client application connecting to the cluster would always be directed to the leader node. 
+Cluster nodes use the gossip protocol to discover each other and elect the cluster leader.
 
 Cluster nodes need to know about one another to gossip. To start this process, you provide gossip seeds for each node. 
 
@@ -54,15 +50,15 @@ The multi-address DNS name cluster discovery only works for clusters that use ce
 
 ### Internal communication
 
-When setting up a cluster the nodes must be able to reach each other over both the HTTP channel, and the internal TCP channel. You should ensure that these ports are open on firewalls on the machines and between the machines.
+When setting up a cluster, the nodes must be able to reach each other over both the HTTP channel, and the internal TCP channel. You should ensure that these ports are open on firewalls on the machines and between the machines.
 
 Learn more about [internal TCP configuration](networking.md#tcp-configuration) and [HTTP configuration](networking.md#http-configuration) to set up the cluster properly.
 
 ## Cluster with DNS
 
-When you tell EventStoreDB to use DNS for its gossip, the server will resolve the DNS name to a list of IP addresses and connect to each of those addresses to find other nodes. This method is very flexible because you can change the list of nodes on your DNS server without changing the cluster configuration. The DNS method is also useful in automated deployment scenario when you control both the cluster deployment and the DNS server from your infrastructure-as-code scripts.
+When you tell EventStoreDB to use DNS for its gossip, the server will resolve the DNS name to a list of IP addresses and connect to each of those addresses to find other nodes. This method is very flexible because you can change the list of nodes on your DNS server without changing the cluster configuration. The DNS method is also useful in automated deployment scenarios when you control both the cluster deployment and the DNS server from your infrastructure-as-code scripts.
 
-To use the DNS discovery, you need to set the `ClusterDns` option to the DNS name that allows making an HTTP call to it. When the server starts, it will attempt to make a gRPC call using the `https://<cluster-dns>:<gossip-port>` URL (`http` if the cluster is insecure).
+To use DNS discovery, you need to set the `ClusterDns` option to the DNS name that allows making an HTTP call to it. When the server starts, it will attempt to make a gRPC call using the `https://<cluster-dns>:<gossip-port>` URL (`http` if the cluster is insecure).
 
 When using a certificate signed by a publicly trusted CA, you'd normally use the wildcard certificate. Ensure that the cluster DNS name fits the wildcard, otherwise the request will fail on SSL check.
 
@@ -104,15 +100,15 @@ The setting accepts a comma-separated list of IP addresses or host names with th
 
 ## Gossip protocol
 
-EventStoreDB uses a quorum-based replication model. When working normally, a cluster has one database node known as a leader, and the remaining nodes are followers. The leader node is responsible for coordinating writes while it is the leader. Database nodes use a consensus algorithm to determine which database node should be master and which should be followers. EventStoreDB bases the decision as to which node should be the leader on a number of factors.
+EventStoreDB uses a quorum-based replication model. When working normally, a cluster has one node known as a leader, and the remaining nodes are followers. The leader node is responsible for coordinating writes while it is the leader. Cluster nodes use a consensus algorithm to determine which node should be the leader and which should be followers. EventStoreDB bases the decision as to which node should be the leader on a number of factors.
 
 For a cluster node to have this information available to them, the nodes gossip with other nodes in the cluster. Gossip runs over HTTP interfaces of cluster nodes.
 
-The gossip protocol configuration can be changed using settings listed below. Pay attention to the settings related to time, like intervals and timeouts, when running in a cloud environment.
+The gossip protocol configuration can be changed using the settings listed below. Pay attention to the settings related to time, like intervals and timeouts, when running in a cloud environment.
 
 ### Gossip port
 
-The gossip port is used for constructing the URL for making a gossip request to other nodes that are discovered via DNS. It's not used when using gossip seeds, because in that case the list contains ip addresses and the port.
+The gossip port is used for constructing the URL for making a gossip request to other nodes that are discovered via DNS. It is not used when using gossip seeds, because in that case the list contains IP addresses and the port.
 
 ::: warning
 Normally, the cluster gossip port is the same as the HTTP port, so you don't need to change this setting.
@@ -128,7 +124,7 @@ Normally, the cluster gossip port is the same as the HTTP port, so you don't nee
 
 ### Gossip interval
 
-Cluster nodes try to ensure that the communication with their neighbour nodes isn't broken. They use gossip protocol and call each other after a specified period of time. This period is called the gossip interval. You can change the `GossipInvervalMs` setting so cluster nodes check in with each other more or less frequently.
+Cluster nodes try to ensure that the communication with their neighbour nodes is not broken. They use the gossip protocol and call each other after a specified period of time. This period is called the gossip interval. You can change the `GossipInvervalMs` setting so cluster nodes check in with each other more or less frequently.
 
 The default value is one second. For cloud deployments, we recommend using two seconds instead (2000 ms).
 
@@ -142,9 +138,9 @@ The default value is one second. For cloud deployments, we recommend using two s
 
 ### Time difference toleration
 
-EventStoreDB expects the time on cluster nodes to be in sync. It is however possible that nodes get their clock desynchronized by a small value. This settings allows adjusting the tolerance of how much the clock on different nodes might be out of sync.
+EventStoreDB expects the time on cluster nodes to be in sync within a given tolerance.
 
-If different nodes have their clock out of sync for a number of milliseconds that exceeds the value of this setting, the gossip gets rejected and the node won't be accepted as the cluster member.
+If different nodes have their clock out of sync for a number of milliseconds that exceeds the value of this setting, the gossip is rejected and the node will not be accepted as a cluster member.
 
 | Format               | Syntax                                    |
 |:---------------------|:------------------------------------------|
@@ -156,7 +152,7 @@ If different nodes have their clock out of sync for a number of milliseconds tha
 
 ### Gossip timeout
 
-When nodes call each other using gossip protocol to understand the cluster status, a busy node might delay the response. When a node isn't getting a response from another node, it might consider that other node as dead. Such a situation might trigger the election process.
+When nodes call each other using the gossip protocol to understand the cluster status, a busy node might delay the response. When a node is not getting a response from another node, it might consider that other node as dead. Such a situation might trigger the election process.
 
 If your cluster network is congested, you might increase the gossip timeout using the `GossipTimeoutMs` setting, so nodes will be more tolerant to delayed gossip responses. The default value is 2.5 seconds (2500 ms).
 
@@ -170,7 +166,7 @@ If your cluster network is congested, you might increase the gossip timeout usin
 
 ### Gossip on single node
 
-You can connect using gossip seeds regardless of whether you have a cluster or not. In the previous versions of EventStoreDB gossip on a single node was disabled. Starting from 21.2 it's enabled by default.
+You can connect using gossip seeds regardless of whether you have a cluster or not. In the previous versions of EventStoreDB gossip on a single node was disabled. Starting from 21.2 it is enabled by default.
 
 ::: warning
 Please note that the `GossipOnSingleNode` option has been deprecated in this version and will be removed in version 21.10.0. The gossip endpoint is now unconditionally available for any deployment topology.
@@ -186,9 +182,9 @@ Please note that the `GossipOnSingleNode` option has been deprecated in this ver
 
 ### Leader election timeout
 
-The leader elections are separate to the node gossip, and are used to elect a node as Leader and assign roles to the other nodes.
+The leader elections are separate to the node gossip, and are used to elect a node as Leader.
 
-In some cases the leader election messages may be delayed, which can result in elections taking longer than they should. If you start seeing election timeouts in the logs or if you've needed to increase the gossip timeout due to a congested network, then you should consider increasing the leader election timeout as well.
+In some cases the leader election messages may be delayed, which can result in elections taking longer than they should. If you start seeing election timeouts in the logs or if you have needed to increase the gossip timeout due to a congested network, then you should consider increasing the leader election timeout as well.
 
 | Format               | Syntax                                  |
 |:---------------------|:----------------------------------------|
@@ -198,15 +194,13 @@ In some cases the leader election messages may be delayed, which can result in e
 
 **Default**: `1000` (in milliseconds).
 
-## Cluster node roles
+## Node roles
 
-Every node in an EventStoreDB cluster can have one of three roles: Leader, Follower and ReadOnlyReplica.
-
-All writes are executed by the Leader node unconditionally, confirmed by a number of other nodes, described on the [acknowledgement](#acknowledgements) page. Subscription clients can connect to Follower or Clone nodes to offload reads from the Leader node.
+Every node in a stable EventStoreDB deployment settles into one of three roles: Leader, Follower, and ReadOnlyReplica. The cluster is composed of the Leader and Followers.
 
 ### Leader
 
-A cluster assigns the leader role based on an election process. The node with the leader role ensures that the data are committed and persisted to disk before sending back to the client an acknowledge message. A cluster can only have one leader at a time. If a cluster detects two nodes with a leader role, a new election begins and shuts down the node with less data to restart and re-join the cluster.
+The leader ensures that writes are persisted to its own disk, replicated to a majority of cluster nodes, and indexed on the leader so that they can be read from the leader, before acknowledging the write as successful to the client.
 
 ### Follower
 
@@ -214,9 +208,9 @@ A cluster assigns the follower role based on an election process. A cluster uses
 
 ### Read-only replica
 
-You can add read-only replica nodes, which won't become cluster members and will not take part in elections. Read-only replicas can be used for scaling up reads if you have many catch-up subscriptions and want to off-load cluster members.
+You can add read-only replica nodes, which will not become cluster members and will not take part in elections. Read-only replicas can be used for scaling up reads if you have many catch-up subscriptions and want to off-load cluster members.
 
-A cluster asynchronously replicates data one way to a node with the read-only replica role. You don't need to wait for an acknowledgement message as the node is not part of the quorum. For this reason a node with a read-only replica role does not add much overhead to the other nodes.
+A cluster asynchronously replicates data one way to a node with the read-only replica role. The read-only replica node is not part of the cluster, so does not add to the replication requirements needed to acknowledge a write. For this reason a node with a read-only replica role does not add much overhead to the other nodes.
 
 You need to explicitly configure the node as a read-only replica using this setting:
 
@@ -232,7 +226,7 @@ The replica node needs to have the cluster gossip DNS or seed configured. For th
 
 ### Node priority
 
-You can control which clones the cluster promotes with the `NodePriority` setting. The default value is `0`, and the cluster is more likely to promote clones with higher values.
+You can control which clones the cluster promotes with the `NodePriority` setting. The default value is `0`, and the cluster is more likely to promote nodes with higher values.
 
 | Format               | Syntax                    |
 |:---------------------|:--------------------------|
@@ -243,27 +237,6 @@ You can control which clones the cluster promotes with the `NodePriority` settin
 **Default**: `0`.
 
 ::: tip
-Changing `NodePriority` doesn't guarantee that the cluster won't promote the clone. It's only one of the criteria that the Election Service considers.
+Changing `NodePriority` does not guarantee that the cluster will not promote the node. It is only one of the criteria that the Election Service considers.
 :::
 
-## Acknowledgements
-
-By default, every write to the cluster needs to be acknowledged by all cluster members. This condition could be relaxed to speed up the writes, but it comes with a risk of data loss.
-
-We do not advise to change the acknowledgement settings.
-
-| Format               | Syntax                    |
-|:---------------------|:--------------------------|
-| Command line         | `--commit-count`          |
-| YAML                 | `CommitCount`             |
-| Environment variable | `EVENTSTORE_COMMIT_COUNT` |
-
-**Default**: `-1`, all nodes must acknowledge commits.
-
-| Format               | Syntax                     |
-|:---------------------|:---------------------------|
-| Command line         | `--prepare-count`          |
-| YAML                 | `PrepareCount`             |
-| Environment variable | `EVENTSTORE_PREPARE_COUNT` |
-
-**Default**: `-1`, all nodes must acknowledge prepares.
