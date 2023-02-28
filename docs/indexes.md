@@ -82,8 +82,8 @@ progress, if EventStoreDB is appending large numbers of events, it may queue 1 o
 persistence. The number of pending operations is logged.
 
 For safety _ptables_ EventStoreDB is currently merging are only deleted after the new _ptable_ has persisted
-and the _indexmap_  updated. In the event of a crash, EventStoreDB recovers by deleting any files not in the _
-indexmap_ and reindexing from the prepare/commit position stored in the _indexmap_ file.
+and the _indexmap_  updated. In the event of a crash, EventStoreDB recovers by deleting any files not in the
+_indexmap_ and reindexing from the prepare/commit position stored in the _indexmap_ file.
 
 ### Manual merging
 
