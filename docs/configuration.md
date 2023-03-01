@@ -281,9 +281,7 @@ This option sets the maximum number of entries to keep in the stream info cache.
 contains the information of any stream that has recently been read or written to. Having entries in this cache
 significantly improves write and read performance to cached streams on larger databases.
 
-The cache is configured at startup based on the available free memory at the time. If there is 4gb or more
-available, it will be configured to take at most 75% of the remaining memory, otherwise it will take at most
-50%. The minimum that it can be set to is 100,000 entries.
+By default, the cache dynamically resizes according to the amount of free memory. The minimum that it can be set to is 100,000 entries.
 
 | Format               | Syntax                         |
 |:---------------------|:-------------------------------|
@@ -291,7 +289,7 @@ available, it will be configured to take at most 75% of the remaining memory, ot
 | YAML                 | `StreamInfoCacheCapacity`      |
 | Environment variable | `STREAM_INFO_CACHE_CAPACITY`   | 
 
-The option is set to 0 by default, which enables autoconfiguration. The default on previous versions of
+The option is set to 0 by default, which enables dynamic resizing. The default on previous versions of
 EventStoreDb was 100,000 entries.
 
 ### ReaderThreadsCount
