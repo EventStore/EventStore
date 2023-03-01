@@ -14,21 +14,12 @@ When you delete events or streams in EventStoreDB, they aren't removed immediate
 these events you need to run a 'scavenge' on your database.
 
 A scavenge operation reclaims disk space by rewriting your database chunks, minus the events to delete, and
-then deleting the old chunks. Scavenges only affect completed chunks, so deleted events in the current chunk
-are still there after you run a scavenge.
+then deleting the old chunks. The scavenged events are also removed from the index.
+
+Running a scavenge causes the active chunk to be completed so that it can be scavenged.
 
 ::: warning 
-Scavenging is destructive. Once a scavenge has run, you cannot recover any deleted events.
-:::
-
-After processing the chunks, the operation updates the chunk indexes using a merge sort algorithm, skipping
-events whose data is no longer available.
-
-::: warning 
-Active chunk: The active (last) chunk won't be affected by the scavenge operation as scavenging
-requires creating a new empty chunk file and copying all the relevant events to it. As the last chunk is the one
-where events are being actively appended, scavenging of the currently active chunk is not possible. It also
-means that all the events from truncated and deleted streams won't be removed from the current chunk.
+Scavenging is destructive. Once a scavenge has run, you cannot recover any deleted events except from a backup.
 :::
 
 ### Starting a scavenge
@@ -39,16 +30,7 @@ using cron or Windows Scheduler, to trigger a scavenge as often as you need.
 You start a scavenge by issuing an empty `POST` request to the HTTP API with the credentials of an `admin`
 or `ops` user:
 
-::: tip 
-Tuning scavenges Scavenge operations have other options you can set to improve performance. For
-example, you can set the number of threads to use.
-:::
-
 @[code{curl}](@samples/scavenge.sh)
-
-::: tip 
-Restart scavenging If you need to restart a stopped scavenge, you can specify the starting chunk ID.
-:::
 
 You can also start scavenges from the _Admin_ page of the Admin UI.
 
@@ -57,7 +39,7 @@ You can also start scavenges from the _Admin_ page of the Admin UI.
 :::
 
 Each node in a cluster has its own independent database. As such, when you run a scavenge, you need to issue a
-scavenge request to each node.
+scavenge request to each node. The scavenges can be run concurrently, but can also be run in series to spread the load.
 
 ### Stopping a scavenge
 
@@ -73,6 +55,10 @@ You can also stop scavenges from the _Admin_ page of the Admin UI.
 ::: tip 
 Scavenge is not cluster-wide Each node in a cluster has its own independent database. As such, when
 you run a scavenge, you need to issue a scavenge request to each node.
+:::
+
+::: warning 
+Stop the scavenge before taking a file-copy style backup
 :::
 
 ### Scavenge progress
@@ -102,7 +88,7 @@ It's safe to run a scavenge while EventStoreDB is running and processing events,
 online operation.
 
 ::: warning 
-Performance impact Scavenging increases the number of reads/writes made to disk, and it is not
+Performance impact: Scavenging increases the number of reads/writes made to disk, and it is not
 recommended when your system is under heavy load.
 :::
 
@@ -110,13 +96,9 @@ recommended when your system is under heavy load.
 
 Below you can find some options that change the way how scavenging works on the server node.
 
-### Disable scavenge merging
+### Disable chunk merging
 
-EventStoreDB might decide to merge indexes, depending on
-the [server settings](./indexes.md#writing-and-merging-of-index-files). The index merge is IO intensive
-operation, as well as scavenging, so you might not want them to run at the same time. Also, the scavenge
-operation rearranges chunks, so indexes might change too. You can instruct EventStoreDB not to merge indexes
-when the scavenging is running.
+Scavenged chunks may be small enough to be merged into a single physical chunk file of approximately 256 MB. This behaviour can be disabled with this option.
 
 | Format               | Syntax                                |
 |:---------------------|:--------------------------------------|
@@ -124,7 +106,7 @@ when the scavenging is running.
 | YAML                 | `DisableScavengeMerging`              |
 | Environment variable | `EVENTSTORE_DISABLE_SCAVENGE_MERGING` | 
 
-**Default**: `false`, so EventStoreDB might run the index merge and scavenge at the same time.
+**Default**: `false`, small scavenged chunks are merged together.
 
 ### Scavenge history
 
@@ -140,62 +122,6 @@ stays in the database:
 | Environment variable | `EVENTSTORE_SCAVENGE_HISTORY_MAX_AGE` | 
 
 **Default**: `30` (days)
-
-### Always keep scavenged
-
-Scavenging aims to save disk space. Therefore, if the scavenging process finds out that the new chunk is for
-some reason larger or has the same size as the old chunk, it won't replace the old chunk because there's no
-disk space to save.
-
-Such behaviour, however, is not always desirable. For example, you might want to be sure that events from
-deleted streams are removed from the disk. It is especially relevant in the context of personal data deletion.
-
-When the `AlwaysKeepScavenged` option is set to `true`, EventStoreDB would replace the old chunk with the new
-one unconditionally, giving you guarantee that all the deleted events in the scavenged chunk actually
-disappear.
-
-| Format               | Syntax                             |
-|:---------------------|:-----------------------------------|
-| Command line         | `--always-keep-scavenged`          |
-| YAML                 | `AlwaysKeepScavenged`              |
-| Environment variable | `EVENTSTORE_ALWAYS_KEEP_SCAVENGED` | 
-
-**Default**: `false`
-
-EventStoreDB will always keep one event in the stream even if the stream was deleted, to indicate the stream
-existence and the last event version. That last event in the deleted stream will still be there even
-with `AlwaysKeepScavenged` option enabled. Read more
-about [deleting streams](streams.md#deleting-streams-and-events) to avoid keeping sensitive information in the
-database, which you otherwise would consider as deleted.
-
-### Ignore hard delete
-
-When you [delete a stream](streams.md#deleting-streams-and-events), you can use either a soft delete or hard
-delete. When using hard delete, the stream gets closed with a tombstone event. Such an event tells the
-database that the stream cannot be reopened, so any attempt to write to the hard-deleted stream will fail. The
-tombstone event doesn't get scavenged.
-
-You can override this behaviour and tell EventStoreDB that you want to delete all the traces of hard-deleted
-streams too, using the option specified below. After a scavenge operation runs, all hard-deleted streams will
-be open for appending new events again.
-
-::: warning 
-Active chunk If you hard-delete a stream in the current chunk, it will remain hard-deleted even
-with this option enabled. It's because the active chunk won't be affected by the scavenge.
-:::
-
-| Format               | Syntax                                 |
-|:---------------------|:---------------------------------------|
-| Command line         | `--unsafe-ignore-hard-delete`          |
-| YAML                 | `UnsafeIgnoreHardDelete`               |
-| Environment variable | `EVENTSTORE_UNSAFE_IGNORE_HARD_DELETE` | 
-
-**Default**: `false`
-
-::: warning 
-Unsafe Setting this option to `true` disables hard deletes and allows clients to write to deleted
-streams. For that reason, the option is considered unsafe and should be used with caution.
-:::
 
 ## Backup and restore
 
