@@ -34,7 +34,7 @@ Use the `ClusterSize` option to tell each cluster node about how many nodes the 
 
 **Default**: `1` (single node, no high-availability).
 
-Common values for the `ClusterSize` setting are three or five (to have a majority of two nodes and a majority of three nodes).
+Common values for the `ClusterSize` setting are three or five (to have a majority of two nodes and a majority of three nodes). We recommended setting this to an odd number of nodes to minimise the chance of a tie during elections, which would lengthen the election process.
 
 ### Discovering cluster members
 
