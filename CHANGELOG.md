@@ -38,6 +38,9 @@ All notable changes to this project will be documented in this file.
 - some redundant code [EventStore#3709](https://github.com/EventStore/EventStore/pull/3709)
 - Cleanup V8 scripts. [EventStore#3740](https://github.com/EventStore/EventStore/pull/3740)
 
+### Cherry picked from https
+- //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3755](https://github.com/EventStore/EventStore/pull/3755)
+
 ## [22.10.1] - 2023-02-13
 
 ### Fixed
