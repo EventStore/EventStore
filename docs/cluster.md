@@ -126,7 +126,7 @@ Normally, the cluster gossip port is the same as the HTTP port, so you don't nee
 
 Cluster nodes try to ensure that the communication with their neighbour nodes is not broken. They use the gossip protocol and call each other after a specified period of time. This period is called the gossip interval. You can change the `GossipInvervalMs` setting so cluster nodes check in with each other more or less frequently.
 
-The default value is one second. For cloud deployments, we recommend using two seconds instead (2000 ms).
+The default value is two seconds (2000 ms).
 
 | Format               | Syntax                          |
 |:---------------------|:--------------------------------|
