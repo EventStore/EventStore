@@ -206,6 +206,74 @@ public static class MetricsBootstrapper {
 				new QueueProcessingTracker(
 					metric: queueProcessingDurationMetric,
 					queueName: name)));
+
+		// kestrel
+		if (conf.Kestrel.TryGetValue(Conf.KestrelTracker.ConnectionCount, out var kestrelConnections) && kestrelConnections) {
+			_ = new ConnectionMetric(coreMeter, "eventstore-kestrel-connections");
+		}
+
+		var timeout = TimeSpan.FromSeconds(1);
+
+		// system
+		var systemMetrics = new SystemMetrics(coreMeter, timeout, conf.System);
+		systemMetrics.CreateLoadAverageMetric("eventstore-sys-load-avg", new() {
+			{ Conf.SystemTracker.LoadAverage1m, "1m" },
+			{ Conf.SystemTracker.LoadAverage5m, "5m" },
+			{ Conf.SystemTracker.LoadAverage15m, "15m" },
+		});
+
+		systemMetrics.CreateCpuMetric("eventstore-sys-cpu");
+
+		systemMetrics.CreateMemoryMetric("eventstore-sys-mem", new() {
+			{ Conf.SystemTracker.FreeMem, "free" },
+			{ Conf.SystemTracker.TotalMem, "total" },
+		});
+
+		systemMetrics.CreateDiskMetric("eventstore-sys-disk", dbConfig.Path, new() {
+			{ Conf.SystemTracker.DriveTotalBytes, "total" },
+			{ Conf.SystemTracker.DriveUsedBytes, "used" },
+		});
+
+		// process
+		var processMetrics = new ProcessMetrics(coreMeter, timeout, conf.Process);
+		processMetrics.CreateObservableMetrics(new() {
+			{ Conf.ProcessTracker.UpTime, "eventstore-proc-up-time" },
+			{ Conf.ProcessTracker.Cpu, "eventstore-proc-cpu" },
+			{ Conf.ProcessTracker.ThreadCount, "eventstore-proc-thread-count" },
+			{ Conf.ProcessTracker.LockContentionCount, "eventstore-proc-contention-count" },
+			{ Conf.ProcessTracker.ExceptionCount, "eventstore-proc-exception-count" },
+			{ Conf.ProcessTracker.TimeInGc, "eventstore-gc-time-in-gc" },
+			{ Conf.ProcessTracker.HeapSize, "eventstore-gc-heap-size" },
+			{ Conf.ProcessTracker.HeapFragmentation, "eventstore-gc-heap-fragmentation" },
+			{ Conf.ProcessTracker.TotalAllocatedBytes, "eventstore-gc-total-allocated" },
+		});
+
+		processMetrics.CreateMemoryMetric("eventstore-proc-mem", new() {
+			{ Conf.ProcessTracker.MemWorkingSet, "working-set" },
+		});
+
+		processMetrics.CreateGcGenerationSizeMetric("eventstore-gc-generation-size", new() {
+			{ Conf.ProcessTracker.Gen0Size, "gen0" },
+			{ Conf.ProcessTracker.Gen1Size, "gen1" },
+			{ Conf.ProcessTracker.Gen2Size, "gen2" },
+			{ Conf.ProcessTracker.LohSize, "loh" },
+		});
+
+		processMetrics.CreateGcCollectionCountMetric("eventstore-gc-collection-count", new() {
+			{ Conf.ProcessTracker.Gen0CollectionCount, "gen0" },
+			{ Conf.ProcessTracker.Gen1CollectionCount, "gen1" },
+			{ Conf.ProcessTracker.Gen2CollectionCount, "gen2" },
+		});
+
+		processMetrics.CreateDiskBytesMetric("eventstore-disk-io", new() {
+			{ Conf.ProcessTracker.DiskReadBytes, "read" },
+			{ Conf.ProcessTracker.DiskWrittenBytes, "written" },
+		});
+
+		processMetrics.CreateDiskOpsMetric("eventstore-disk-io", new() {
+			{ Conf.ProcessTracker.DiskReadOps, "read" },
+			{ Conf.ProcessTracker.DiskWrittenOps, "written" },
+		});
 	}
 
 	private static void LogConfig(Conf conf) {

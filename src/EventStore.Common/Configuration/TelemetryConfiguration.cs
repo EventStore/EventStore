@@ -89,6 +89,45 @@ namespace EventStore.Common.Configuration {
 			Chunk,
 		}
 
+		public enum KestrelTracker {
+			ConnectionCount = 1,
+		}
+
+		public enum SystemTracker {
+			Cpu = 1,
+			LoadAverage1m,
+			LoadAverage5m,
+			LoadAverage15m,
+			FreeMem,
+			TotalMem,
+			DriveTotalBytes,
+			DriveUsedBytes,
+		}
+
+		public enum ProcessTracker {
+			UpTime = 1,
+			Cpu,
+			MemWorkingSet,
+			ThreadCount,
+			LockContentionCount,
+			ExceptionCount,
+			Gen0CollectionCount,
+			Gen1CollectionCount,
+			Gen2CollectionCount,
+			Gen0Size,
+			Gen1Size,
+			Gen2Size,
+			LohSize,
+			TimeInGc,
+			HeapSize,
+			HeapFragmentation,
+			TotalAllocatedBytes,
+			DiskReadBytes,
+			DiskReadOps,
+			DiskWrittenBytes,
+			DiskWrittenOps,
+		}
+
 		public class LabelMappingCase {
 			public string Regex { get; set; }
 			public string Label { get; set; }
@@ -105,6 +144,12 @@ namespace EventStore.Common.Configuration {
 		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
 
 		public Gossip[] GossipTrackers { get; set; } = Array.Empty<Gossip>();
+
+		public Dictionary<KestrelTracker, bool> Kestrel { get; set; } = new();
+
+		public Dictionary<SystemTracker, bool> System { get; set; } = new();
+
+		public Dictionary<ProcessTracker, bool> Process { get; set; } = new();
 
 		public Dictionary<WriterTracker, bool> Writer { get; set; } = new();
 
