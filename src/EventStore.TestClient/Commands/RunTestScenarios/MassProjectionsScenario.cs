@@ -105,17 +105,7 @@ namespace EventStore.TestClient.Commands.RunTestScenarios {
 			if (!success)
 				throw new ApplicationException("Last bank projection failed");
 		}
-
-		private class ProjectionTask {
-			public string Name;
-			public Task Task;
-
-			public ProjectionTask(string name, Task task) {
-				Name = name;
-				Task = task;
-			}
-		}
-
+		
 		private void StartOrStopProjection(IEnumerable<string> projections, bool enable) {
 			var manager = GetProjectionsManager();
 			const int retriesNumber = 5;

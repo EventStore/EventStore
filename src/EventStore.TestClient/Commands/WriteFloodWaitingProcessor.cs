@@ -73,7 +73,6 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						if (Interlocked.Increment(ref all) == requestsCnt) {
-							context.Success();
 							doneEvent.Set();
 						}
 

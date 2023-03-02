@@ -110,7 +110,7 @@ namespace EventStore.TestClient {
 					() => null,
 					onConnectionEstablished,
 					onConnectionFailed,
-					verbose: !_interactiveMode);
+					verbose: false);
 			} else {
 				connection = _connector.ConnectTo(
 					Guid.NewGuid(),
@@ -118,7 +118,7 @@ namespace EventStore.TestClient {
 					TcpConnectionManager.ConnectionTimeout,
 					onConnectionEstablished,
 					onConnectionFailed,
-					verbose: !_interactiveMode);
+					verbose: false);
 			}
 
 			typedConnection = new Connection(connection, new RawMessageFormatter(_bufferManager),
