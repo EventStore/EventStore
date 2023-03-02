@@ -68,9 +68,7 @@ value depends on your use case, but at least between `30,000` and `60,000`.
 
 ### Building from source
 
-You can also build EventStoreDB on Linux from source. Before doing that, you need to install .NET Core 3.1 or
-.NET 5 SDK. EventStoreDB packages have the .NET Core Runtime embedded, so you don't need to install anything
-except the EventStoreDB package.
+You can also build EventStoreDB from source. Before doing that, you need to install the .NET 6 SDK. EventStoreDB packages have the .NET Runtime embedded, so you don't need to install anything except the EventStoreDB package.
 
 ### Uninstall
 
@@ -108,11 +106,11 @@ choco install eventstore-oss
 You can also [download](https://eventstore.com/downloads/) a binary, unzip the archive and run from the folder
 location with an administrator console.
 
-The following command starts EventStoreDB with the database stored at the path _./db_ and the logs in _./logs_. 
-Read mode about configuring the EventStoreDB server node in the [Configuration section](configuration.md).
+The following command starts EventStoreDB in dev mode with the database stored at the path _./db_ and the logs in _./logs_. 
+Read more about configuring the EventStoreDB server in the [Configuration section](configuration.md).
 
 ```powershell:no-line-numbers
-EventStore.ClusterNode.exe --db ./db --log ./logs
+EventStore.ClusterNode.exe --dev --db ./db --log ./logs
 ```
 
 EventStoreDB runs in an administration context because it starts an HTTP server through `http.sys`. For
