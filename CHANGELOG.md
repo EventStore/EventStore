@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - (EventStore.TestClient) too strict cleanup condition causing a memory leak in rare cases when server becomes unresponsive. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - (EventStore.TestClient) Cancelation of current command. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - Use a separate IODispatcher for scavenge log [EventStore#3741](https://github.com/EventStore/EventStore/pull/3741)
+- #3486  [EventStore#3752](https://github.com/EventStore/EventStore/pull/3752)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -40,6 +41,11 @@ All notable changes to this project will be documented in this file.
 
 ### Cherry picked from https
 - //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3755](https://github.com/EventStore/EventStore/pull/3755)
+- //github.com/EventStore/EventStore/pull/3758 [EventStore#3776](https://github.com/EventStore/EventStore/pull/3776)
+- //github.com/EventStore/EventStore/pull/3759 [EventStore#3773](https://github.com/EventStore/EventStore/pull/3773)
+- //github.com/EventStore/EventStore/pull/3760 [EventStore#3772](https://github.com/EventStore/EventStore/pull/3772)
+- //github.com/EventStore/EventStore/pull/3762 [EventStore#3770](https://github.com/EventStore/EventStore/pull/3770)
+- //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3754](https://github.com/EventStore/EventStore/pull/3754)
 
 ## [22.10.1] - 2023-02-13
 
