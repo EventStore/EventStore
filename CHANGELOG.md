@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - (EventStore.TestClient) Cancelation of current command. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - Use a separate IODispatcher for scavenge log [EventStore#3741](https://github.com/EventStore/EventStore/pull/3741)
 - #3486  [EventStore#3752](https://github.com/EventStore/EventStore/pull/3752)
+- Don't require an equals sign when parsing a command line argument followed by an integer [EventStore#3757](https://github.com/EventStore/EventStore/pull/3757)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -24,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - Implement Init/Rebuild index status report. [EventStore#3707](https://github.com/EventStore/EventStore/pull/3707)
 - Max queue durations over period per queue  [EventStore#3698](https://github.com/EventStore/EventStore/pull/3698)
 - Queue Processing Duration Histograms by Message Type [EventStore#3730](https://github.com/EventStore/EventStore/pull/3730)
+- Improved warning when using an invalid delimiter in gossip seed [EventStore#3757](https://github.com/EventStore/EventStore/pull/3757)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
