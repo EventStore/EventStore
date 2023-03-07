@@ -48,6 +48,8 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3760 [EventStore#3772](https://github.com/EventStore/EventStore/pull/3772)
 - //github.com/EventStore/EventStore/pull/3762 [EventStore#3770](https://github.com/EventStore/EventStore/pull/3770)
 - //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3754](https://github.com/EventStore/EventStore/pull/3754)
+- //github.com/EventStore/EventStore/pull/3762 [EventStore#3771](https://github.com/EventStore/EventStore/pull/3771)
+- //github.com/EventStore/EventStore/pull/3758 [EventStore#3775](https://github.com/EventStore/EventStore/pull/3775)
 
 ## [22.10.1] - 2023-02-13
 
