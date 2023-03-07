@@ -452,6 +452,7 @@ namespace EventStore.Core {
 			}
 
 			[Description("Disables Hard Deletes. (UNSAFE: use to remove hard deletes)")]
+			[Deprecated("This setting is unsafe and not recommended")]
 			public bool UnsafeIgnoreHardDelete { get; init; } = false;
 
 			[Description("Bypasses the checking of file hashes of indexes during startup and after index merges " +
@@ -462,9 +463,11 @@ namespace EventStore.Core {
 			public int IndexCacheDepth { get; init; } = 16;
 
 			[Description("Makes index merges faster and reduces disk pressure during merges.")]
+			[Deprecated("This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
 			public bool OptimizeIndexMerge { get; init; } = false;
 
 			[Description("Always keeps the newer chunks from a scavenge operation.")]
+			[Deprecated("This setting is ignored by the new scavenge algorithm and will be removed in future versions.")]
 			public bool AlwaysKeepScavenged { get; init; } = false;
 
 			[Description("Change the way the DB files are opened to reduce their stickiness in the system file cache.")]
