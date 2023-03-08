@@ -26,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - Max queue durations over period per queue  [EventStore#3698](https://github.com/EventStore/EventStore/pull/3698)
 - Queue Processing Duration Histograms by Message Type [EventStore#3730](https://github.com/EventStore/EventStore/pull/3730)
 - Improved warning when using an invalid delimiter in gossip seed [EventStore#3757](https://github.com/EventStore/EventStore/pull/3757)
+- Deprecation warnings for UnsafeIgnoreHardDeletes and AlwaysKeepsScavenged [EventStore#3778](https://github.com/EventStore/EventStore/pull/3778)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
@@ -50,6 +51,9 @@ All notable changes to this project will be documented in this file.
 - //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3754](https://github.com/EventStore/EventStore/pull/3754)
 - //github.com/EventStore/EventStore/pull/3762 [EventStore#3771](https://github.com/EventStore/EventStore/pull/3771)
 - //github.com/EventStore/EventStore/pull/3758 [EventStore#3775](https://github.com/EventStore/EventStore/pull/3775)
+- //github.com/EventStore/EventStore/pull/3763 [EventStore#3768](https://github.com/EventStore/EventStore/pull/3768)
+- //github.com/EventStore/EventStore/pull/3762 [EventStore#3769](https://github.com/EventStore/EventStore/pull/3769)
+- //github.com/EventStore/EventStore/pull/3764 [EventStore#3774](https://github.com/EventStore/EventStore/pull/3774)
 
 ## [22.10.1] - 2023-02-13
 
