@@ -101,9 +101,7 @@ This means that more pressure will be put on the Leader node, and there is no op
 
 It also means that the subscriptions will reload from the last checkpoint whenever the Leader changes.
 
-### Ordering is not guaranteed
+### Ordering guarantee
+Persistent subscriptions provides ordering guarantee on a best-effort basis, however events can still sometimes arrive out of order, for example during event retries.
 
-Ordering is not guaranteed with persistent subscriptions due to the possibility of messages being retried, or consumers handling events before others.
-While some strategies do attempt to mitigate this, it is still on a best-effort basis and messages may still arrive to consumers out of order.
-
-If you need an ordering guarantee then you should use a Catch-up subscription instead and handle the checkpointing in your client code.
+If you need strict ordering guarantee, we recommend using catch-up subscriptions where you have full control over the event processing order and also manage your own checkpointing to keep track of your subscription progress.
