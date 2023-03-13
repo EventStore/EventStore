@@ -10,6 +10,8 @@ using Serilog;
 namespace EventStore.Core.Authorization {
 	public class LegacyAuthorizationProviderFactory : IAuthorizationProviderFactory {
 		private readonly IPublisher _mainQueue;
+		private readonly bool _allowAnonymousEndpointAccess;
+		private readonly bool _allowAnonymousStreamAccess;
 
 		private static readonly Claim[] Admins =
 			{new Claim(ClaimTypes.Role, SystemRoles.Admins), new Claim(ClaimTypes.Name, SystemUsers.Admin)};
@@ -19,28 +21,39 @@ namespace EventStore.Core.Authorization {
 			new Claim(ClaimTypes.Role, SystemRoles.Operations), new Claim(ClaimTypes.Name, SystemUsers.Operations)
 		};
 
-		public LegacyAuthorizationProviderFactory(IPublisher mainQueue) {
+		public LegacyAuthorizationProviderFactory(IPublisher mainQueue, bool allowAnonymousEndpointAccess, bool allowAnonymousStreamAccess) {
 			_mainQueue = mainQueue;
+			_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
+			_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
 		}
 
 		public IAuthorizationProvider Build() {
 			var policy = new Policy("Legacy", 1, DateTimeOffset.MinValue);
-			var streamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
-
-			policy.AllowAnonymous(Operations.Node.Redirect);
-			policy.AllowAnonymous(Operations.Node.StaticContent);
+			var legacyStreamAssertion = new LegacyStreamPermissionAssertion(_mainQueue);
+			
+			// The Node.Ping is set to allow anonymous as it does not disclose any secure information.
 			policy.AllowAnonymous(Operations.Node.Ping);
-			policy.AllowAnonymous(Operations.Node.Options);
 
+			// The following endpoints require anonymous access to load the index.html page.
+			// If the endpoints are secured, then the user will not be able to logged into EventStoreDB
 			policy.AllowAnonymous(Operations.Node.Information.Read);
+			policy.AllowAnonymous(Operations.Node.StaticContent);
+			policy.AllowAnonymous(Operations.Node.Redirect);
+
+			Action<OperationDefinition> addToPolicy = _allowAnonymousEndpointAccess
+				? op => policy.AllowAnonymous(op)
+				: op => policy.RequireAuthenticated(op);
+			
+			addToPolicy(Operations.Node.Options);
+			addToPolicy(Operations.Node.Statistics.Read);
+			addToPolicy(Operations.Node.Statistics.Replication);
+			addToPolicy(Operations.Node.Statistics.Tcp);
+			addToPolicy(Operations.Node.Statistics.Custom);
+			addToPolicy(Operations.Node.Gossip.ClientRead);
+
 			policy.AddMatchAnyAssertion(Operations.Node.Information.Subsystems, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Information.Histogram, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Information.Options, Grant.Allow, OperationsOrAdmins);
-
-			policy.AllowAnonymous(Operations.Node.Statistics.Read);
-			policy.AllowAnonymous(Operations.Node.Statistics.Replication);
-			policy.AllowAnonymous(Operations.Node.Statistics.Tcp);
-			policy.AllowAnonymous(Operations.Node.Statistics.Custom);
 
 			var isSystem = new MultipleClaimMatchAssertion(Grant.Allow, MultipleMatchMode.All, SystemAccounts.System.Claims.ToArray());
 			policy.Add(Operations.Node.Elections.Prepare, isSystem);
@@ -51,10 +64,8 @@ namespace EventStore.Core.Authorization {
 			policy.Add(Operations.Node.Elections.Accept, isSystem);
 			policy.Add(Operations.Node.Elections.LeaderIsResigning, isSystem);
 			policy.Add(Operations.Node.Elections.LeaderIsResigningOk, isSystem);
-
-			policy.AllowAnonymous(Operations.Node.Gossip.Read);
-			policy.AllowAnonymous(Operations.Node.Gossip.ClientRead);
 			policy.Add(Operations.Node.Gossip.Update, isSystem);
+			policy.Add(Operations.Node.Gossip.Read, isSystem);
 
 			policy.AddMatchAnyAssertion(Operations.Node.Shutdown, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.ReloadConfiguration, Grant.Allow, OperationsOrAdmins);
@@ -70,7 +81,7 @@ namespace EventStore.Core.Authorization {
 			var subscriptionAccess =
 				new AndAssertion(
 					new RequireAuthenticatedAssertion(),
-					new RequireStreamReadAssertion(streamAssertion));
+					new RequireStreamReadAssertion(legacyStreamAssertion));
 
 			policy.RequireAuthenticated(Operations.Subscriptions.Statistics);
 			policy.AddMatchAnyAssertion(Operations.Subscriptions.Create, Grant.Allow, OperationsOrAdmins);
@@ -79,6 +90,12 @@ namespace EventStore.Core.Authorization {
 			policy.AddMatchAnyAssertion(Operations.Subscriptions.Restart, Grant.Allow, OperationsOrAdmins);
 			policy.Add(Operations.Subscriptions.ProcessMessages, subscriptionAccess);
 			policy.AddMatchAnyAssertion(Operations.Subscriptions.ReplayParked, Grant.Allow, OperationsOrAdmins);
+
+			IAssertion streamAssertion = _allowAnonymousStreamAccess
+				? legacyStreamAssertion
+				: new AndAssertion(
+					new RequireAuthenticatedAssertion(),
+					legacyStreamAssertion);
 
 			policy.Add(Operations.Streams.Read, streamAssertion);
 			policy.Add(Operations.Streams.Write, streamAssertion);

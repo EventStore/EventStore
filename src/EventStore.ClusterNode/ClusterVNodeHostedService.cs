@@ -107,10 +107,13 @@ namespace EventStore.ClusterNode {
 				if (_options.Application.Insecure) {
 					return new AuthorizationProviderFactory(_ => new PassthroughAuthorizationProviderFactory());
 				}
+
 				var authorizationTypeToPlugin = new Dictionary<string, AuthorizationProviderFactory> {
 					{
 						"internal", new AuthorizationProviderFactory(components =>
-							new LegacyAuthorizationProviderFactory(components.MainQueue))
+							new LegacyAuthorizationProviderFactory(components.MainQueue,
+								_options.Application.AllowAnonymousEndpointAccess,
+								_options.Application.AllowAnonymousStreamAccess))
 					}
 				};
 

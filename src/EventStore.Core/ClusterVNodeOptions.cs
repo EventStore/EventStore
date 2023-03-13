@@ -164,6 +164,12 @@ namespace EventStore.Core {
 			[Description("Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces.")]
 			public bool Insecure { get; init; } = false;
 
+			[Description("Allow anonymous access to API end points")]
+			public bool AllowAnonymousEndpointAccess { get; init; } = true;
+
+			[Description("Allow anonymous access to streams")]
+			public bool AllowAnonymousStreamAccess { get; init; } = true;
+
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
@@ -180,6 +186,8 @@ namespace EventStore.Core {
 					configurationRoot.GetValue<bool>(nameof(LogFailedAuthenticationAttempts)),
 				SkipIndexScanOnReads = configurationRoot.GetValue<bool>(nameof(SkipIndexScanOnReads)),
 				Insecure = configurationRoot.GetValue<bool>(nameof(Insecure)),
+				AllowAnonymousEndpointAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousEndpointAccess)),
+				AllowAnonymousStreamAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousStreamAccess))
 			};
 		}
 

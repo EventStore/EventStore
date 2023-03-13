@@ -21,8 +21,10 @@ namespace EventStore.Core.Tests.ClientOperations {
 				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate());
 			_node = new ClusterVNode<TStreamId>(options, logFormatFactory,
-				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
-				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
+				new AuthenticationProviderFactory(
+					c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
+				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
+					options.Application.AllowAnonymousEndpointAccess, options.Application.AllowAnonymousStreamAccess)),
 				certificateProvider: new OptionsCertificateProvider(options));
 			_node.StartAsync(true).Wait();
 		}

@@ -15,16 +15,24 @@ using EventStore.Plugins.Authorization;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Authorization {
+	[TestFixture(true, true)]
+	[TestFixture(true, false)]
+	[TestFixture(false, true)]
+	[TestFixture(false, false)]
 	public class LegacyPolicyVerification {
 		private const string _streamWithDefaultPermissions = "StreamWithDefaultPermissions";
 		private const string _streamWithCustomPermissions = "StreamWithCustomPermissions";
 
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly AclResponder _aclResponder;
+		private static bool _allowAnonymousEndpointAccess;
+		private static bool _allowAnonymousStreamAccess;
 
-		public LegacyPolicyVerification() {
+		public LegacyPolicyVerification(bool allowAnonymousEndpointAccess, bool allowAnonymousStreamAccess) {
 			_aclResponder = new AclResponder();
-			_authorizationProvider = new LegacyAuthorizationProviderFactory(_aclResponder).Build();
+			_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
+			_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
+			_authorizationProvider = new LegacyAuthorizationProviderFactory(_aclResponder, allowAnonymousEndpointAccess, allowAnonymousStreamAccess).Build();
 		}
 
 		public class PolicyVerificationParameters {
@@ -33,7 +41,10 @@ namespace EventStore.Core.Tests.Authorization {
 			public string Stream { get; }
 			public StorageMessage.EffectiveAcl StreamAcl { get; }
 			public bool IsAuthorized { get; }
+			public Func<bool, bool, bool> AuthorizationCheck { get; }
 			public bool ShouldRequestAcl { get; }
+			public Func<bool, bool> AclCheck { get; }
+			public string TestName { get; }
 
 			public PolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream, StorageMessage.EffectiveAcl streamAcl, bool isAuthorized, bool shouldRequestAcl) {
 				User = user;
@@ -42,12 +53,21 @@ namespace EventStore.Core.Tests.Authorization {
 				StreamAcl = streamAcl;
 				IsAuthorized = isAuthorized;
 				ShouldRequestAcl = shouldRequestAcl;
+				TestName = $"{User.Identity?.Name ?? "Anonymous (empty)"} {(isAuthorized ? "is" : "is not")} authorized to perform operation {Operation}";
+			}
+			public PolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream, StorageMessage.EffectiveAcl streamAcl, Func<bool, bool, bool> authorizationCheck, Func<bool, bool> aclCheck) {
+				User = user;
+				Operation = operation;
+				Stream = stream;
+				StreamAcl = streamAcl;
+				AuthorizationCheck = authorizationCheck;
+				AclCheck = aclCheck;
+				TestName = $"Verify if Anonymous user is authorized to perform operation {Operation}";
 			}
 
-			public override string ToString() {
-				return $"{User?.Identity?.Name ?? "Anonymous (empty)"} {(IsAuthorized ? "is" : "is not")} authorized to perform operation {Operation}";
-			}
+			public override string ToString() => TestName;
 		}
+		
 
 		public static IEnumerable<PolicyVerificationParameters> PolicyTests() {
 			StorageMessage.EffectiveAcl systemStreamPermission = new StorageMessage.EffectiveAcl(
@@ -244,8 +264,8 @@ namespace EventStore.Core.Tests.Authorization {
 				foreach (var operation in AdminOperations()) {
 					yield return new PolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
-						false,
-						operation.Item3 != null
+						(_, _) => false,
+						(allowAnonymousStreamAccess) => allowAnonymousStreamAccess
 					);
 				}
 				foreach (var operation in OpsOperations()) {
@@ -278,6 +298,20 @@ namespace EventStore.Core.Tests.Authorization {
 						operation.Item3 != null
 					);
 				}
+				foreach (var operation in AllowAnonymousEndpointAccessOperations()) {
+					yield return new PolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						(allowAnonymousEndpointAccess, _) => allowAnonymousEndpointAccess,
+						(_) => operation.Item3 != null
+					);
+				}
+				foreach (var operation in AllowAnonymousStreamAccessOperations()) {
+					yield return new PolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						(_, allowAnonymousStreamAccess) => allowAnonymousStreamAccess,
+						(allowAnonymousStreamAccess) => allowAnonymousStreamAccess
+					);
+				}
 			}
 
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> SystemOperations() {
@@ -291,6 +325,7 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.Elections.Accept);
 				yield return CreateOperation(Operations.Node.Elections.LeaderIsResigning);
 				yield return CreateOperation(Operations.Node.Elections.LeaderIsResigningOk);
+				yield return CreateOperation(Operations.Node.Gossip.Read);
 			}
 
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AdminOperations() {
@@ -356,26 +391,36 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.Redirect);
 				yield return CreateOperation(Operations.Node.StaticContent);
 				yield return CreateOperation(Operations.Node.Ping);
+				yield return CreateOperation(Operations.Node.Information.Read);
+			}
+
+			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AllowAnonymousEndpointAccessOperations() {
 				yield return CreateOperation(Operations.Node.Options);
-				yield return CreateOperation(Operations.Node.Information.Read);
-
-				yield return CreateOperation(Operations.Node.Information.Read);
-
 				yield return CreateOperation(Operations.Node.Statistics.Read);
 				yield return CreateOperation(Operations.Node.Statistics.Replication);
 				yield return CreateOperation(Operations.Node.Statistics.Tcp);
 				yield return CreateOperation(Operations.Node.Statistics.Custom);
-
-				yield return CreateOperation(Operations.Node.Gossip.Read);
 				yield return CreateOperation(Operations.Node.Gossip.ClientRead);
-
+			}
+			
+			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AllowAnonymousStreamAccessOperations() {
 				yield return (new Operation(Operations.Streams.Read).WithParameter(
 						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
 					_streamWithDefaultPermissions, defaultUseruserStreamPermission);
+				yield return (new Operation(Operations.Streams.Write).WithParameter(
+						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
+					_streamWithDefaultPermissions, defaultUseruserStreamPermission);
+				yield return (new Operation(Operations.Streams.Delete).WithParameter(
+						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
+					_streamWithDefaultPermissions, defaultUseruserStreamPermission);
+				yield return (new Operation(Operations.Streams.MetadataRead).WithParameter(
+						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
+					_streamWithDefaultPermissions, defaultUseruserStreamPermission);
+				yield return (new Operation(Operations.Streams.MetadataWrite).WithParameter(
+						Operations.Streams.Parameters.StreamId(_streamWithDefaultPermissions)),
+					_streamWithDefaultPermissions, defaultUseruserStreamPermission);
 			}
-
 			
-
 			(Operation, string, StorageMessage.EffectiveAcl) CreateOperation(OperationDefinition def) {
 				return (new Operation(def),null, null);
 			}
@@ -391,11 +436,24 @@ namespace EventStore.Core.Tests.Authorization {
 		[Test]
 		public async Task VerifyPolicy([ValueSource(nameof(PolicyTests))]PolicyVerificationParameters pvp) {
 			_aclResponder.ExpectedAcl(pvp.Stream, pvp.StreamAcl);
-			var result = await _authorizationProvider.CheckAccessAsync(pvp.User, pvp.Operation, CancellationToken.None);
-			Assert.AreEqual(pvp.IsAuthorized, result,pvp.IsAuthorized?"was not authorized" : "was authorized");
-			Assert.AreEqual(pvp.ShouldRequestAcl,_aclResponder.MessageReceived,pvp.ShouldRequestAcl?"did not request acl":"requested acl");
+			var result =
+					await _authorizationProvider.CheckAccessAsync(pvp.User, pvp.Operation, CancellationToken.None);
+			if (pvp.AuthorizationCheck != null && pvp.AclCheck != null) {
+				Assert.AreEqual(pvp.AuthorizationCheck(_allowAnonymousEndpointAccess, _allowAnonymousStreamAccess), result,
+					pvp.AuthorizationCheck(_allowAnonymousEndpointAccess, _allowAnonymousStreamAccess)
+						? "was not authorized"
+						: "was authorized");
+				Assert.AreEqual(pvp.AclCheck(_allowAnonymousStreamAccess), _aclResponder.MessageReceived,
+					pvp.AclCheck(_allowAnonymousStreamAccess) ? "did not request acl" : "requested acl");
+			} else {
+				Assert.AreEqual(pvp.IsAuthorized, result,
+					pvp.IsAuthorized
+						? "was not authorized"
+						: "was authorized");
+				Assert.AreEqual(pvp.ShouldRequestAcl, _aclResponder.MessageReceived,
+					pvp.ShouldRequestAcl ? "did not request acl" : "requested acl");
+			}
 		}
-
 		
 		class AclResponder : IPublisher {
 			public bool MessageReceived { get; private set; }

@@ -75,6 +75,34 @@ For this to work, you can use the `DefaultOpsPassword` option:
 Due to security reasons the DefaultAdminPassword and DefaultOpsPassword options can only be set through environment variables. The user will receive the error message if they try to pass the options using command line or config file.
 :::
 
+### Allow anonymous access to some endpoints and streams
+
+Historically, anonymous users with network access have been allowed to read/write streams that do not have access control lists.
+
+This anonymous access to streams can be disabled, and in the future will likely be disabled by default.
+
+| Format               | Syntax                                     |
+|:---------------------|:-------------------------------------------|
+| Command line         | `--allow-anonymous-stream-access`          |
+| YAML                 | `AllowAnonymousStreamAccess`               |
+| Environment variable | `EVENTSTORE_ALLOW_ANONYMOUS_STREAM_ACCESS` |
+
+**Default**: `true`
+
+Similarly to streams above, anonymous access has historically been available to the `/stats` and `/gossip` endpoints, and the `HTTP OPTIONS` method.
+
+This can be disabled with the following option. Anonymous access will still be granted to `/ping`, `/info`, the static content of the UI, and http redirects
+
+For this to work, you can disable the `AllowAnonymousEndpointAccess` option:
+
+| Format               | Syntax                                       |
+|:---------------------|:---------------------------------------------|
+| Command line         | `--allow-anonymous-endpoint-access`          |
+| YAML                 | `AllowAnonymousEndpointAccess`               |
+| Environment variable | `EVENTSTORE_ALLOW_ANONYMOUS_ENDPOINT_ACCESS` |
+
+**Default**: `true`
+
 ### Certificates configuration
 
 In this section, you can find settings related to protocol security (HTTPS and TLS).
