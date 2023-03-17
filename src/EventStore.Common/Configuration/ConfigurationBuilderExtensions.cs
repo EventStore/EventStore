@@ -6,19 +6,21 @@ using Microsoft.Extensions.Configuration;
 namespace EventStore.Common.Configuration {
 	public static class ConfigurationBuilderExtensions {
 		public static IConfigurationBuilder AddEventStore(this IConfigurationBuilder configurationBuilder,
-			string[] args, IDictionary environment, IEnumerable<KeyValuePair<string, object?>> defaultValues) {
+			string configFileKey,
+			string[] args, 
+			IDictionary environment, 
+			IEnumerable<KeyValuePair<string, object?>> defaultValues) {
+			
 			var builder = configurationBuilder
 				.Add(new DefaultSource(defaultValues))
 				.Add(new EnvironmentVariablesSource(environment))
 				.Add(new CommandLineSource(args));
 
 			var root = builder.Build(); // need to build twice as on disk config is configurable
-
-			var configurationPath = root.GetValue<string>("Config");
-
+			
 			var yamlSource = new YamlSource {
-				Path = configurationPath,
-				Optional = true,
+				Path = root.GetValue<string>(configFileKey),
+				Optional = !root.IsUserSpecified(configFileKey),
 				ReloadOnChange = true
 			};
 			yamlSource.ResolveFileProvider();

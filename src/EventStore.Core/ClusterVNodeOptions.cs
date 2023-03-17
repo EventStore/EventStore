@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common;
 using EventStore.Common.Configuration;
+using EventStore.Common.Exceptions;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Monitoring;
@@ -57,12 +58,15 @@ namespace EventStore.Core {
 		public static ClusterVNodeOptions FromConfiguration(string[] args, IDictionary environment) {
 			if (args == null) throw new ArgumentNullException(nameof(args));
 			if (environment == null) throw new ArgumentNullException(nameof(environment));
-
-			var configurationRoot = new ConfigurationBuilder()
-				.AddEventStore(args, environment, DefaultValues)
-				.Build();
-
-			return FromConfiguration(configurationRoot);
+			
+			try {
+				var configurationRoot = new ConfigurationBuilder()
+					.AddEventStore(nameof(ApplicationOptions.Config), args, environment, DefaultValues)
+					.Build();
+				return FromConfiguration(configurationRoot);
+			} catch (Exception e) {
+				throw new InvalidConfigurationException(e.Message);
+			}
 		}
 
 		public static ClusterVNodeOptions FromConfiguration(IConfigurationRoot configurationRoot) {
