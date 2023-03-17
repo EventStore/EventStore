@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 
 #nullable enable
@@ -16,15 +17,25 @@ namespace EventStore.Common.Configuration {
 
 			var configurationPath = root.GetValue<string>("Config");
 
+			var configurationPathOptional = CompareConfigFilePath(defaultValues, configurationPath);
 			var yamlSource = new YamlSource {
 				Path = configurationPath,
-				Optional = true,
+				Optional = configurationPathOptional,
 				ReloadOnChange = true
 			};
 			yamlSource.ResolveFileProvider();
 			builder.Sources.Insert(1, yamlSource);
 
 			return builder;
+		}
+
+		private static bool CompareConfigFilePath(IEnumerable<KeyValuePair<string, object?>> defaultValues, string? configurationPath) {
+			var defaultValuesDictionary = defaultValues.ToDictionary(x => x.Key, x => x.Value);
+
+			if (defaultValuesDictionary.TryGetValue("Config", out var defaultConfigurationPath)) {
+				return string.Equals(configurationPath, defaultConfigurationPath?.ToString());
+			}
+			return true;
 		}
 	}
 }
