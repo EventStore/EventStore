@@ -23,16 +23,18 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private readonly bool _logFailedAuthenticationAttempts;
 		private readonly LRUCache<string, Tuple<string, ClaimsPrincipal>> _userPasswordsCache;
 		private readonly TaskCompletionSource<bool> _tcs = new TaskCompletionSource<bool>();
+		private readonly ClusterVNodeOptions.DefaultUserOptions _defaultUserOptions;
 
 		public InternalAuthenticationProvider(ISubscriber subscriber, IODispatcher ioDispatcher, PasswordHashAlgorithm passwordHashAlgorithm,
-			int cacheSize, bool logFailedAuthenticationAttempts) {
+			int cacheSize, bool logFailedAuthenticationAttempts, ClusterVNodeOptions.DefaultUserOptions defaultUserOptions) {
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
 			_userPasswordsCache = new LRUCache<string, Tuple<string, ClaimsPrincipal>>("UserPasswords", cacheSize);
 			_logFailedAuthenticationAttempts = logFailedAuthenticationAttempts;
+			_defaultUserOptions = defaultUserOptions;
 			
 			var userManagement = new UserManagementService(ioDispatcher, _passwordHashAlgorithm,
-				skipInitializeStandardUsersCheck: false, _tcs);
+				skipInitializeStandardUsersCheck: false, _tcs, _defaultUserOptions);
 			subscriber.Subscribe<UserManagementMessage.Create>(userManagement);
 			subscriber.Subscribe<UserManagementMessage.Update>(userManagement);
 			subscriber.Subscribe<UserManagementMessage.Enable>(userManagement);

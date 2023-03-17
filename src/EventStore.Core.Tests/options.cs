@@ -207,7 +207,7 @@ namespace EventStore.Core.Tests {
 			Assert.False(certificatePasswordLine.Contains("123"));
 			Assert.True(certificatePasswordLine.Contains("****"));
 		}
-
+		
 		private class ParseCaseData {
 			public static IEnumerable TestCases() {
 				const string array = nameof(TestOptions.ArrayOfStrings);

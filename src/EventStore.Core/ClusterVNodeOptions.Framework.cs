@@ -8,6 +8,7 @@ using System.Text;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using Microsoft.Extensions.Configuration;
+using ConfigurationRootExtensions = EventStore.Common.Configuration.ConfigurationRootExtensions;
 
 #nullable enable
 namespace EventStore.Core {
@@ -60,6 +61,11 @@ namespace EventStore.Core {
 			return builder.Length != 0 ? builder.ToString() : null;
 		}
 
+		public string? CheckForEnvironmentOnlyOptions() {
+			return ConfigurationRootExtensions
+				.CheckProvidersForEnvironmentVariables(ConfigurationRoot, OptionSections);
+		}
+		
 		private static EndPoint ParseGossipEndPoint(string val) {
 			var parts = val.Split(':', 2);
 			
@@ -83,8 +89,21 @@ namespace EventStore.Core {
 				OptionHeaderColumnWidth(o.Name, DefaultValue(o)));
 
 			var header = $"{OPTION.PadRight(optionColumnWidth, ' ')}{DESCRIPTION}";
+			
+			var environmentOnlyOptions = OptionSections.SelectMany(section => section.GetProperties())
+				.Where(option => option.GetCustomAttribute<EnvironmentOnlyAttribute>() != null)
+				.Select(option => option)
+				.ToList();
 
-			var optionGroups = Options().GroupBy(option =>
+			var environmentOnlyOptionsBuilder = environmentOnlyOptions
+				.Aggregate(new StringBuilder(),
+					(builder, property) => builder.Append(ConfigurationRootExtensions.GetEnvironmentOption(property, optionColumnWidth)).AppendLine())
+				.ToString();
+
+			var options = Options().Where(option =>
+				environmentOnlyOptions.All(environmentOption => environmentOption.Name != option.Name)).ToList();
+
+			var optionGroups = options.GroupBy(option =>
 				option.DeclaringType?.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty);
 
 			return optionGroups
@@ -92,7 +111,9 @@ namespace EventStore.Core {
 					optionGroup.Aggregate(
 						builder.AppendLine().Append(optionGroup.Key).AppendLine(),
 						(stringBuilder, property) => stringBuilder.Append(Line(property)).AppendLine()))
+				.AppendLine().AppendLine("EnvironmentOnly Options").Append(environmentOnlyOptionsBuilder)
 				.ToString();
+			
 
 			string Line(PropertyInfo property) {
 				var description = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
@@ -119,7 +140,7 @@ namespace EventStore.Core {
 
 				return builder.ToString();
 			}
-
+			
 			static IEnumerable<PropertyInfo> Options() => OptionSections.SelectMany(type => type.GetProperties());
 
 			static int OptionWidth(string name, string @default) =>

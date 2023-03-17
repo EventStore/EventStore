@@ -1,7 +1,12 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using EventStore.Common.Configuration;
+using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
+using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
@@ -147,6 +152,77 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual($"{InternalIp}.com", _node.GossipAdvertiseInfo.AdvertiseInternalHostAs);
 			Assert.AreEqual($"{ExternalIp}.com", _node.GossipAdvertiseInfo.AdvertiseExternalHostAs);
 			Assert.AreEqual(_httpEndpoint.Port + 1000, _node.GossipAdvertiseInfo.AdvertiseHttpPortAs);
+		}
+	}
+	
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class with_custom_password_for_admin_and_ops_user<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
+		private const string _adminPassword = "Admin";
+		private const string _opsPassword = "Ops";
+		
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
+			options with {
+				DefaultUser = new ClusterVNodeOptions.DefaultUserOptions { DefaultAdminPassword = _adminPassword, DefaultOpsPassword = _opsPassword }
+			};
+
+		[Test]
+		public void should_set_the_custom_admin_and_ops_user_password() {
+			Assert.AreEqual(_adminPassword,_options.DefaultUser.DefaultAdminPassword);
+			Assert.AreEqual(_opsPassword, _options.DefaultUser.DefaultOpsPassword);
+		}
+	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
+	public class with_custom_settings_check_for_environment_only_options<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat,
+			TStreamId> {
+		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
+			options with {
+			};
+		
+		private IConfigurationRoot _configurationRoot;
+		
+		[Test]
+		public void should_return_error_when_default_password_options_pass_through_command_line() {
+
+			var args = new string[] {
+				"--DefaultAdminPassword=Admin#",
+				"--DefaultOpsPassword=Ops#"
+			};
+			_configurationRoot = new ConfigurationBuilder()
+				.Add(new DefaultSource(new Dictionary<string, object> {
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+				}))
+				.Add(new CommandLineSource(args))
+				.Build();
+			
+			var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
+			
+			Assert.NotNull(clusterVNodeOptions.CheckForEnvironmentOnlyOptions());
+		}
+		
+		[Test]
+		public void should_return_null_when_default_password_options_pass_through_environment_variables() {
+
+			var args = Array.Empty<string>();
+			IDictionary environmentVariables = new Dictionary<string, string>();
+			environmentVariables.Add("EVENTSTORE_DEFAULT_ADMIN_PASSWORD", "Admin#");
+			environmentVariables.Add("EVENTSTORE_DEFAULT_OPS_PASSWORD", "Ops#");
+			
+			_configurationRoot = new ConfigurationBuilder()
+				.Add(new DefaultSource(new Dictionary<string, object> {
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+				}))
+				.Add(new CommandLineSource(args))
+				.Add(new EnvironmentVariablesSource(environmentVariables))
+				.Build();
+			
+			var clusterVNodeOptions = ClusterVNodeOptions.FromConfiguration(_configurationRoot);
+			
+			Assert.Null(clusterVNodeOptions.CheckForEnvironmentOnlyOptions());
 		}
 	}
 }

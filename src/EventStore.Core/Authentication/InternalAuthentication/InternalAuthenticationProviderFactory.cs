@@ -12,12 +12,14 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private readonly AuthenticationProviderFactoryComponents _components;
 		private readonly IODispatcher _dispatcher;
 		private readonly Rfc2898PasswordHashAlgorithm _passwordHashAlgorithm;
+		private readonly ClusterVNodeOptions.DefaultUserOptions _defaultUserOptions;
 
-		public InternalAuthenticationProviderFactory(AuthenticationProviderFactoryComponents components) {
+		public InternalAuthenticationProviderFactory(AuthenticationProviderFactoryComponents components, ClusterVNodeOptions.DefaultUserOptions defaultUserOptions) {
 			_components = components;
 			_passwordHashAlgorithm = new Rfc2898PasswordHashAlgorithm();
 			_dispatcher = new IODispatcher(components.MainQueue,
 				new PublishEnvelope(components.WorkersQueue, crossThread: true));
+			_defaultUserOptions = defaultUserOptions;
 
 			foreach (var bus in components.WorkerBuses) {
 				bus.Subscribe<ClientMessage.ReadStreamEventsForwardCompleted>(_dispatcher.ForwardReader);
@@ -38,7 +40,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		public IAuthenticationProvider Build(bool logFailedAuthenticationAttempts, ILogger logger) {
 			var provider =
 				new InternalAuthenticationProvider(_components.MainBus, _dispatcher, _passwordHashAlgorithm, ESConsts.CachedPrincipalCount,
-					logFailedAuthenticationAttempts);
+					logFailedAuthenticationAttempts, _defaultUserOptions);
 			var passwordChangeNotificationReader =
 				new PasswordChangeNotificationReader(_components.MainQueue, _dispatcher);
 			_components.MainBus.Subscribe<SystemMessage.SystemStart>(passwordChangeNotificationReader);

@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Services.UserManagementService {
 
 				_users = new Core.Authentication.InternalAuthentication.UserManagementService(
 					_ioDispatcher, new StubPasswordHashAlgorithm(), skipInitializeStandardUsersCheck: true, 
-					new TaskCompletionSource<bool>());
+					new TaskCompletionSource<bool>(), DefaultData.DefaultUserOptions);
 
 				_bus.Subscribe<UserManagementMessage.Get>(_users);
 				_bus.Subscribe<UserManagementMessage.GetAll>(_users);

@@ -36,15 +36,17 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private readonly TaskCompletionSource<bool> _tcs;
 		private int _numberOfStandardUsersToBeCreated = 2;
 		private readonly ILogger _log;
+		private readonly ClusterVNodeOptions.DefaultUserOptions _defaultUserOptions;
 
 		public UserManagementService(IODispatcher ioDispatcher,
 			PasswordHashAlgorithm passwordHashAlgorithm, bool skipInitializeStandardUsersCheck,
-			TaskCompletionSource<bool> tcs) {
+			TaskCompletionSource<bool> tcs, ClusterVNodeOptions.DefaultUserOptions defaultUserOptions) {
 			_log = Serilog.Log.ForContext<UserManagementService>();
 			_ioDispatcher = ioDispatcher;
 			_passwordHashAlgorithm = passwordHashAlgorithm;
 			_skipInitializeStandardUsersCheck = skipInitializeStandardUsersCheck;
 			_tcs = tcs;
+			_defaultUserOptions = defaultUserOptions;
 		}
 
 		private bool VerifyPassword(string password, UserData userDetailsToVerify) {
@@ -480,7 +482,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private void CreateAdminUser() {
 			var userData = CreateUserData(
 				SystemUsers.Admin, "Event Store Administrator", new[] {SystemRoles.Admins},
-				SystemUsers.DefaultAdminPassword);
+				_defaultUserOptions.DefaultAdminPassword);
 			WriteStreamAcl(
 				SystemUsers.Admin, completed1 => {
 					switch (completed1.Result) {
@@ -527,7 +529,7 @@ namespace EventStore.Core.Authentication.InternalAuthentication {
 		private void CreateOperationsUser() {
 			var userData = CreateUserData(
 				SystemUsers.Operations, "Event Store Operations", new[] {SystemRoles.Operations},
-				SystemUsers.DefaultAdminPassword);
+				_defaultUserOptions.DefaultOpsPassword);
 			WriteStreamAcl(
 				SystemUsers.Operations, completed1 => {
 					switch (completed1.Result) {

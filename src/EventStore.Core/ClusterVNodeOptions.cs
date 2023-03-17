@@ -26,6 +26,7 @@ namespace EventStore.Core {
 		internal IConfigurationRoot? ConfigurationRoot { get; init; }
 		[OptionGroup] public ApplicationOptions Application { get; init; } = new();
 		[OptionGroup] public DevModeOptions DevMode { get; init; } = new();
+		[OptionGroup] public DefaultUserOptions DefaultUser { get; init; } = new();
 		[OptionGroup] public LoggingOptions Log { get; init; } = new();
 		[OptionGroup] public AuthOptions Auth { get; init; } = new();
 		[OptionGroup] public CertificateOptions Certificate { get; init; } = new();
@@ -67,6 +68,7 @@ namespace EventStore.Core {
 			return new ClusterVNodeOptions {
 				Application = ApplicationOptions.FromConfiguration(configurationRoot),
 				DevMode = DevModeOptions.FromConfiguration(configurationRoot),
+				DefaultUser = DefaultUserOptions.FromConfiguration(configurationRoot),
 				Log = LoggingOptions.FromConfiguration(configurationRoot),
 				Auth = AuthOptions.FromConfiguration(configurationRoot),
 				Certificate = CertificateOptions.FromConfiguration(configurationRoot),
@@ -84,6 +86,21 @@ namespace EventStore.Core {
 
 		public ClusterVNodeOptions Reload() => ConfigurationRoot == null ? this : FromConfiguration(ConfigurationRoot);
 
+		[Description("Default User Options")]
+		public record DefaultUserOptions {
+			
+			[Description("Admin Default password"), Sensitive, EnvironmentOnly("The Admin user password can only be set using Environment Variables")]
+			public string DefaultAdminPassword { get; init; } = "changeit";
+			
+			[Description("Ops Default password"), Sensitive, EnvironmentOnly("The Ops user password can only be set using Environment Variables")] 
+			public string DefaultOpsPassword { get; init; } = "changeit";
+ 
+			internal static DefaultUserOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
+				DefaultAdminPassword = configurationRoot.GetValue<string>(nameof(DefaultAdminPassword)),
+				DefaultOpsPassword = configurationRoot.GetValue<string>(nameof(DefaultOpsPassword))
+			};
+		}
+		
 		[Description("Dev mode Options")]
 		public record DevModeOptions {
 			[Description("Runs EventStoreDB in dev mode. This will create and add dev certificates to your certificate store, enable atompub over http, and run standard projections.")]
@@ -101,7 +118,7 @@ namespace EventStore.Core {
 		[Description("Application Options")]
 		public record ApplicationOptions {
 			[Description("Show help.")] public bool Help { get; init; } = false;
-
+			
 			[Description("Show version.")] public bool Version { get; init; } = false;
 
 			[Description("Configuration files.")]
