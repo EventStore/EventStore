@@ -31,13 +31,15 @@ namespace EventStore.Core.Cluster {
 
 		public readonly int NodePriority;
 		public readonly bool IsReadOnlyReplica;
+
+		public readonly string ESVersion;
 		
 		public static MemberInfo ForManager(Guid instanceId, DateTime timeStamp, bool isAlive,
-			EndPoint httpEndPoint) {
+			EndPoint httpEndPoint, string esVersion = null) {
 			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, isAlive,
 				httpEndPoint, null, httpEndPoint, null,
 				httpEndPoint, null, 0, 0,
-				-1, -1, -1, -1, -1, Guid.Empty, 0, false);
+				-1, -1, -1, -1, -1, Guid.Empty, 0, false, esVersion);
 		}
 
 		public static MemberInfo ForVNode(Guid instanceId,
@@ -59,7 +61,7 @@ namespace EventStore.Core.Cluster {
 			int epochNumber,
 			Guid epochId,
 			int nodePriority,
-			bool isReadOnlyReplica) {
+			bool isReadOnlyReplica, string version = null) {
 			if (state == VNodeState.Manager)
 				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
 			return new MemberInfo(instanceId, timeStamp, state, isAlive,
@@ -67,7 +69,7 @@ namespace EventStore.Core.Cluster {
 				externalTcpEndPoint, externalSecureTcpEndPoint,
 				httpEndPoint, advertiseHostToClientAs, advertiseHttpPortToClientAs, advertiseTcpPortToClientAs,
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica);
+				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica, version);
 		}
 		
 		public static MemberInfo Initial(Guid instanceId,
@@ -83,14 +85,14 @@ namespace EventStore.Core.Cluster {
 			int advertiseHttpPortToClientAs,
 			int advertiseTcpPortToClientAs,
 			int nodePriority,
-			bool isReadOnlyReplica) {
+			bool isReadOnlyReplica, string esVersion = null) {
 			if (state == VNodeState.Manager)
 				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
 			return new MemberInfo(instanceId, timeStamp, state, isAlive,
 				internalTcpEndPoint, internalSecureTcpEndPoint,
 				externalTcpEndPoint, externalSecureTcpEndPoint,
 				httpEndPoint, advertiseHostToClientAs, advertiseHttpPortToClientAs, advertiseTcpPortToClientAs,
-				-1, -1, -1, -1, -1, Guid.Empty, nodePriority, isReadOnlyReplica);
+				-1, -1, -1, -1, -1, Guid.Empty, nodePriority, isReadOnlyReplica, esVersion);
 		}
 
 		internal MemberInfo(Guid instanceId, DateTime timeStamp, VNodeState state, bool isAlive,
@@ -98,7 +100,7 @@ namespace EventStore.Core.Cluster {
 			EndPoint externalTcpEndPoint, EndPoint externalSecureTcpEndPoint,
 			EndPoint httpEndPoint, string advertiseHostToClientAs, int advertiseHttpPortToClientAs, int advertiseTcpPortToClientAs,
 			long lastCommitPosition, long writerCheckpoint, long chaserCheckpoint,
-			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica) {
+			long epochPosition, int epochNumber, Guid epochId, int nodePriority, bool isReadOnlyReplica, string esVersion = null) {
 			Ensure.Equal(false, internalTcpEndPoint == null && internalSecureTcpEndPoint == null, "Both internal TCP endpoints are null");
 			Ensure.NotNull(httpEndPoint, nameof(httpEndPoint));
 
@@ -127,6 +129,8 @@ namespace EventStore.Core.Cluster {
 
 			NodePriority = nodePriority;
 			IsReadOnlyReplica = isReadOnlyReplica;
+
+			ESVersion = esVersion;
 		}
 
 		internal MemberInfo(MemberInfoDto dto) {
@@ -192,7 +196,7 @@ namespace EventStore.Core.Cluster {
 				epoch != null ? epoch.EpochNumber : EpochNumber,
 				epoch != null ? epoch.EpochId : EpochId,
 				nodePriority ?? NodePriority,
-				IsReadOnlyReplica);
+				IsReadOnlyReplica, ESVersion);
 		}
 
 		public override string ToString() {
@@ -205,7 +209,8 @@ namespace EventStore.Core.Cluster {
 				$"{(InternalSecureTcpEndPoint == null ? "n/a" : InternalSecureTcpEndPoint.ToString())}, " +
 				$"{(ExternalTcpEndPoint == null ? "n/a" : ExternalTcpEndPoint.ToString())}, " +
 				$"{(ExternalSecureTcpEndPoint == null ? "n/a" : ExternalSecureTcpEndPoint.ToString())}, " +
-				$"{HttpEndPoint}, (ADVERTISED: HTTP:{AdvertiseHostToClientAs}:{AdvertiseHttpPortToClientAs}, TCP:{AdvertiseHostToClientAs}:{AdvertiseTcpPortToClientAs})] " +
+				$"{HttpEndPoint}, (ADVERTISED: HTTP:{AdvertiseHostToClientAs}:{AdvertiseHttpPortToClientAs}, TCP:{AdvertiseHostToClientAs}:{AdvertiseTcpPortToClientAs}), " +
+				$"Version: {ESVersion}] " + 
 				$"{LastCommitPosition}/{WriterCheckpoint}/{ChaserCheckpoint}/E{EpochNumber}@{EpochPosition}:{EpochId:B} | {TimeStamp:yyyy-MM-dd HH:mm:ss.fff}";
 		}
 
@@ -228,7 +233,8 @@ namespace EventStore.Core.Cluster {
 			       && other.EpochNumber == EpochNumber
 			       && other.EpochId == EpochId
 			       && other.NodePriority == NodePriority
-				   && other.IsReadOnlyReplica == IsReadOnlyReplica;
+				   && other.IsReadOnlyReplica == IsReadOnlyReplica
+			       && other.ESVersion == ESVersion;
 		}
 
 		public override bool Equals(object obj) {
@@ -257,6 +263,7 @@ namespace EventStore.Core.Cluster {
 				result = (result * 397) ^ EpochNumber.GetHashCode();
 				result = (result * 397) ^ EpochId.GetHashCode();
 				result = (result * 397) ^ NodePriority;
+				result = (result * 397) ^ (ESVersion != null ? ESVersion.GetHashCode() : 0);
 				return result;
 			}
 		}

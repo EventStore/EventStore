@@ -1452,7 +1452,7 @@ namespace EventStore.Core {
 				GossipAdvertiseInfo.AdvertiseHostToClientAs,
 				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
 				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
-				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica);
+				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
 
 			if (!isSingleNode) {
 				// LEADER REPLICATION
@@ -1546,6 +1546,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GetGossipFailed>(gossip);
 				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
+				_mainBus.Subscribe<ClusterStateMessage.MultipleVersionsOnNodes>(gossip);
 			}
 			// kestrel
 			AddTasks(_workersHandler.Start());

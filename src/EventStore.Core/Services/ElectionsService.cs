@@ -136,7 +136,7 @@ namespace EventStore.Core.Services {
 					memberInfo.AdvertiseHostToClientAs, memberInfo.AdvertiseHttpPortToClientAs, memberInfo.AdvertiseTcpPortToClientAs,
 					ownInfo.LastCommitPosition, ownInfo.WriterCheckpoint, ownInfo.ChaserCheckpoint,
 					ownInfo.EpochPosition, ownInfo.EpochNumber, ownInfo.EpochId, ownInfo.NodePriority,
-					memberInfo.IsReadOnlyReplica)
+					memberInfo.IsReadOnlyReplica, VersionInfo.Version)
 			};
 		}
 

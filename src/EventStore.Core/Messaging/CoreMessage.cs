@@ -22,5 +22,6 @@
 		Tcp,
 		Timer,
 		UserManagement,
+		ClusterState
 	}
 }

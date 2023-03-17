@@ -145,6 +145,7 @@ message MemberInfo {
     string advertise_host_to_client_as = 18;
     uint32 advertise_http_port_to_client_as = 19;
     uint32 advertise_tcp_port_to_client_as = 20;
+	string es_version = 21;
 }
 
 message ReplicaLogWrite{

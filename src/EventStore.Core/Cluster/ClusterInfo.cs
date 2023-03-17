@@ -63,7 +63,7 @@ namespace EventStore.Core.Cluster {
 					x.AdvertiseHostToClientAs, (int)x.AdvertiseHttpPortToClientAs, (int)x.AdvertiseTcpPortToClientAs,
 					x.LastCommitPosition, x.WriterCheckpoint, x.ChaserCheckpoint,
 					x.EpochPosition, x.EpochNumber, Uuid.FromDto(x.EpochId).ToGuid(), x.NodePriority,
-					x.IsReadOnlyReplica
+					x.IsReadOnlyReplica, x.EsVersion == String.Empty ? null : x.EsVersion
 				)).ToArray();
 			return new ClusterInfo(receivedMembers);
 		}
@@ -104,7 +104,8 @@ namespace EventStore.Core.Cluster {
 				IsReadOnlyReplica = x.IsReadOnlyReplica,
 				AdvertiseHostToClientAs = x.AdvertiseHostToClientAs ?? "",
 				AdvertiseHttpPortToClientAs = (uint)x.AdvertiseHttpPortToClientAs,
-				AdvertiseTcpPortToClientAs = (uint)x.AdvertiseTcpPortToClientAs
+				AdvertiseTcpPortToClientAs = (uint)x.AdvertiseTcpPortToClientAs,
+				EsVersion = x.ESVersion ?? String.Empty
 			}).ToArray();
 			var info = new EventStore.Cluster.ClusterInfo();
 			info.Members.AddRange(members);
