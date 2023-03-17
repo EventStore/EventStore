@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Serialization {
 
 		[Test]
 		public void undefined_property() {
-			var instance = new ObjectInstance(_engine);
+			var instance = new JsObject(_engine);
 			instance.Set("foo", JsValue.Undefined);
 			instance.Set("bar", "baz");
 			var serialized = _sut.Serialize(instance);
@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Tests.Services.Jint.Serialization {
 				).SingleOrDefault();
 			if(streamName == null) throw new InvalidOperationException($"Could not find {filename}");
 			using var stream = assembly.GetManifestResourceStream(streamName);
-			
+
 			var doc = JsonDocument.Parse(stream);
 			using var ms = new MemoryStream();
 			var writer = new Utf8JsonWriter(ms);

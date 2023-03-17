@@ -30,12 +30,12 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 	public class JintProjectionStateHandler : IProjectionStateHandler {
 		private readonly ILogger _logger = Serilog.Log.ForContext<JintProjectionStateHandler>();
 		private readonly bool _enableContentTypeValidation;
-		static readonly Stopwatch _sw = Stopwatch.StartNew();
+		private static readonly Stopwatch _sw = Stopwatch.StartNew();
 		private readonly Engine _engine;
 		private readonly SourceDefinitionBuilder _definitionBuilder;
 		private readonly List<EmittedEventEnvelope> _emitted;
 		private readonly InterpreterRuntime _interpreterRuntime;
-		JsonParser _parser;
+		private readonly JsonParser _parser;
 		private CheckpointTag? _currentPosition;
 
 		private JsValue _state;
@@ -48,8 +48,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_definitionBuilder.NoWhen();
 			_definitionBuilder.AllEvents();
 			TimeConstraint timeConstraint = new(compilationTimeout, executionTimeout);
-			_engine = new Engine(opts => opts.Constraint(timeConstraint));
-			_engine.Realm.GlobalObject.RemoveOwnProperty("eval");
+			_engine = new Engine(opts => opts.Constraint(timeConstraint).DisableStringCompilation());
 			_state = JsValue.Undefined;
 			_sharedState = JsValue.Undefined;
 			_interpreterRuntime = new InterpreterRuntime(_engine, _definitionBuilder);
@@ -59,8 +58,8 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			_engine.Execute(source);
 			timeConstraint.Executing();
 			_parser = _interpreterRuntime.SwitchToExecutionMode();
-			
-			
+
+
 			_engine.Realm.GlobalObject.FastAddProperty("emit", new ClrFunctionInstance(_engine, "emit", Emit, 4), true, false, true);
 			_engine.Realm.GlobalObject.FastAddProperty("linkTo", new ClrFunctionInstance(_engine, "linkTo", LinkTo, 3), true, false, true);
 			_engine.Realm.GlobalObject.FastAddProperty("linkStreamTo", new ClrFunctionInstance(_engine, "linkStreamTo", LinkStreamTo, 3), true, false, true);
@@ -69,6 +68,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		}
 
 		public void Dispose() {
+			_engine.Dispose();
 		}
 
 		public IQuerySources GetSourceDefinition() {
@@ -89,12 +89,12 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		private void LoadCurrentState(JsValue jsValue) {
 			if (_definitionBuilder.IsBiState) {
 				if (_state == null || _state == JsValue.Undefined)
-					_state = new ArrayInstance(_engine, new[]
+					_state = new JsArray(_engine, new[]
 					{
 						PropertyDescriptor.Undefined, PropertyDescriptor.Undefined
 					});
 
-				_state.AsArray().Set(0, jsValue);
+				_state.AsArray()[0] = jsValue;
 			} else {
 				_state = jsValue;
 			}
@@ -113,12 +113,12 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		private void LoadCurrentSharedState(JsValue jsValue) {
 			if (_definitionBuilder.IsBiState) {
 				if (_state == null || _state == JsValue.Undefined)
-					_state = new ArrayInstance(_engine, new[]
+					_state = new JsArray(_engine, new[]
 					{
 						PropertyDescriptor.Undefined, PropertyDescriptor.Undefined
 					});
 
-				_state.AsArray().Set(1, jsValue);
+				_state.AsArray()[1] = jsValue;
 			} else {
 				_state = jsValue;
 			}
@@ -238,7 +238,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			var eventBody = EnsureNonNullObjectValue(parameters.At(2), "eventBody");
 
 			if (parameters.Length == 4 && !parameters.At(3).IsObject())
-#pragma warning disable CA2208 // ReSharper disable once NotResolvedInText 
+#pragma warning disable CA2208 // ReSharper disable once NotResolvedInText
 				throw new ArgumentException("object expected", "metadata");
 #pragma warning restore CA2208
 
@@ -344,7 +344,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 		JsValue CopyTo(JsValue thisValue, JsValue[] parameters) {
 			return JsValue.Undefined;
 		}
-		
+
 		void Log(string message) {
 			_logger.Debug(message, Array.Empty<object>());
 		}
@@ -379,7 +379,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			return JsValue.Undefined;
 		}
 
-		class TimeConstraint : IConstraint {
+		class TimeConstraint : Constraint {
 			private readonly TimeSpan _compilationTimeout;
 			private readonly TimeSpan _executionTimeout;
 			private TimeSpan _start;
@@ -402,11 +402,11 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				_executing = true;
 
 			}
-			public void Reset() {
+			public override void Reset() {
 				_start = _sw.Elapsed;
 			}
 
-			public void Check() {
+			public override void Check() {
 				if (_sw.Elapsed - _start >= _timeout) {
 					if (Debugger.IsAttached)
 						return;
@@ -439,7 +439,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private readonly SourceDefinitionBuilder _definitionBuilder;
 			private readonly JsonParser _parser;
 
-			private static readonly IReadOnlyDictionary<string, Action<InterpreterRuntime>> _possibleProperties = new Dictionary<string, Action<InterpreterRuntime>>() {
+			private static readonly Dictionary<string, Action<InterpreterRuntime>> _possibleProperties = new Dictionary<string, Action<InterpreterRuntime>>() {
 				["when"] = i => i.FastAddProperty("when", i._whenInstance, true, false, true),
 				["partitionBy"] = i => i.FastAddProperty("partitionBy", i._partitionByInstance, true, false, true),
 				["outputState"] = i => i.FastAddProperty("outputState", i._outputStateInstance, true, false, true),
@@ -450,7 +450,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				["$defines_state_transform"] = i => i.FastAddProperty("$defines_state_transform", i._definesStateTransformInstance, true, false, true),
 			};
 
-			private static readonly IReadOnlyDictionary<string, string[]> _availableProperties = new Dictionary<string, string[]>() {
+			private static readonly Dictionary<string, string[]> _availableProperties = new Dictionary<string, string[]>() {
 				["fromStream"] = new[] { "when", "partitionBy", "outputState" },
 				["fromAll"] = new[] { "when", "partitionBy", "outputState", "foreachStream" },
 				["fromStreams"] = new[] { "when", "partitionBy", "outputState" },
@@ -465,7 +465,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				["execution"] = Array.Empty<string>()
 			};
 
-			private static readonly IReadOnlyDictionary<string, Action<SourceDefinitionBuilder, JsValue>> _setters =
+			private static readonly Dictionary<string, Action<SourceDefinitionBuilder, JsValue>> _setters =
 				new Dictionary<string, Action<SourceDefinitionBuilder, JsValue>>(StringComparer.OrdinalIgnoreCase) {
 					{"$includeLinks", (options, value) => options.SetIncludeLinks(value.IsBoolean()? value.AsBoolean() : throw new Exception("Invalid value"))},
 					{"reorderEvents", (options, value) => options.SetReorderEvents(value.IsBoolean()? value.AsBoolean(): throw new Exception("Invalid value"))},
@@ -477,7 +477,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			private readonly List<string> _definitionFunctions;
 
 			public InterpreterRuntime(Engine engine, SourceDefinitionBuilder builder) : base(engine) {
-				
+
 				_definitionBuilder = builder;
 				_handlers = new Dictionary<string, ScriptFunctionInstance>(StringComparer.Ordinal);
 				_createdHandlers = new List<ScriptFunctionInstance>();
@@ -701,11 +701,11 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 			}
 
 			public JsValue InitializeState() {
-				return _init == null ? new ObjectInstance(Engine) : _init.Call();
+				return _init == null ? new JsObject(Engine) : _init.Call();
 			}
 
 			public JsValue InitializeSharedState() {
-				return _initShared == null ? new ObjectInstance(Engine) : _initShared.Call();
+				return _initShared == null ? new JsObject(Engine) : _initShared.Call();
 			}
 
 			public JsValue Handle(JsValue state, EventEnvelope eventEnvelope) {
@@ -1146,7 +1146,7 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 								var value = propertyDescriptor.Value;
 								if (value.Type == Types.Undefined)
 									continue;
-								
+
 								WriteMaybeCachedPropertyName(name.AsString(), knownPropertyNames, writer);
 								if (value.Type == Types.Object) {
 									if (value is ArrayInstance ai) {
@@ -1214,5 +1214,11 @@ namespace EventStore.Projections.Core.Services.Interpreted {
 				}
 			}
 		}
+	}
+}
+
+internal static class ObjectInstanceExtensions {
+	public static void FastAddProperty(this ObjectInstance target, string name, JsValue value, bool writable, bool enumerable, bool configurable) {
+		target.FastSetProperty(name, new PropertyDescriptor(value, writable, enumerable, configurable));
 	}
 }
