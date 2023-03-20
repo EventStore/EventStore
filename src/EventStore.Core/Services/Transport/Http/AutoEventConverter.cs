@@ -22,9 +22,13 @@ namespace EventStore.Core.Services.Transport.Http {
 
 			switch (targetCodec.ContentType) {
 				case ContentType.Raw:
-					return evnt.Event.Data.ToArray();
+					return dto.data == null ?
+						Array.Empty<byte>() : evnt.Event.Data.ToArray();
 				case ContentType.Xml:
 				case ContentType.ApplicationXml: {
+					if (dto.data == null)
+						return "<data />";
+
 					var serializeObject = JsonConvert.SerializeObject(dto.data);
 					var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "data");
 					return deserializeXmlNode.InnerXml;
@@ -51,8 +55,13 @@ namespace EventStore.Core.Services.Transport.Http {
 
 		public static HttpClientMessageDto.ReadEventCompletedText CreateDataDto(ResolvedEvent evnt) {
 			var dto = new HttpClientMessageDto.ReadEventCompletedText(evnt);
+
+			if (evnt.Event.Flags.HasFlag(PrepareFlags.IsRedacted)) {
+				dto.data = null;
+			}
+
 			if (evnt.Event.Flags.HasFlag(PrepareFlags.IsJson)) {
-				var deserializedData = Codec.Json.From<object>((string)dto.data);
+				var deserializedData = dto.data == null ? null : Codec.Json.From<object>((string)dto.data);
 				var deserializedMetadata = Codec.Json.From<object>((string)dto.metadata);
 
 				if (deserializedData != null)

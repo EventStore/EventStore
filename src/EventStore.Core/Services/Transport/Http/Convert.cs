@@ -342,11 +342,14 @@ namespace EventStore.Core.Services.Transport.Http {
 				richEntry.PositionEventNumber = eventLinkPair.OriginalEvent.EventNumber;
 				richEntry.PositionStreamId = eventLinkPair.OriginalEvent.EventStreamId;
 				richEntry.IsJson = (evnt.Flags & PrepareFlags.IsJson) != 0;
+				richEntry.IsRedacted = (evnt.Flags & PrepareFlags.IsRedacted) != 0;
 
 				var data = evnt.Data.Span;
 
 				if (embedContent >= EmbedLevel.Body && eventLinkPair.Event != null) {
-					if (richEntry.IsJson) {
+					if (richEntry.IsRedacted) {
+						richEntry.Data = null;
+					} else if (richEntry.IsJson) {
 						if (embedContent >= EmbedLevel.PrettyBody) {
 							try {
 								richEntry.Data = Helper.UTF8NoBom.GetString(data);
