@@ -25,6 +25,9 @@ namespace EventStore.Core.Services.Transport.Http {
 					return evnt.Event.Data.ToArray();
 				case ContentType.Xml:
 				case ContentType.ApplicationXml: {
+					if (evnt.Event.Data.IsEmpty)
+						return "<data />";
+
 					var serializeObject = JsonConvert.SerializeObject(dto.data);
 					var deserializeXmlNode = JsonConvert.DeserializeXmlNode(serializeObject, "data");
 					return deserializeXmlNode.InnerXml;

@@ -107,7 +107,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			CorrelationId = correlationId;
 			TimeStamp = timeStamp;
 			EventType = eventType ?? string.Empty;
-			Data = data;
+			Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : data;
 			Metadata = metadata;
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
 		}
@@ -135,6 +135,8 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 
 			var dataCount = reader.ReadInt32();
 			Data = dataCount == 0 ? NoData : reader.ReadBytes(dataCount);
+			if (Flags.HasFlag(PrepareFlags.IsRedacted))
+				Data = NoData;
 
 			var metadataCount = reader.ReadInt32();
 			Metadata = metadataCount == 0 ? NoData : reader.ReadBytes(metadataCount);
