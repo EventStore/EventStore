@@ -61,7 +61,7 @@ namespace EventStore.Core.Cluster {
 			int epochNumber,
 			Guid epochId,
 			int nodePriority,
-			bool isReadOnlyReplica, string version = null) {
+			bool isReadOnlyReplica, string esVersion = null) {
 			if (state == VNodeState.Manager)
 				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
 			return new MemberInfo(instanceId, timeStamp, state, isAlive,
@@ -69,7 +69,7 @@ namespace EventStore.Core.Cluster {
 				externalTcpEndPoint, externalSecureTcpEndPoint,
 				httpEndPoint, advertiseHostToClientAs, advertiseHttpPortToClientAs, advertiseTcpPortToClientAs,
 				lastCommitPosition, writerCheckpoint, chaserCheckpoint,
-				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica, version);
+				epochPosition, epochNumber, epochId, nodePriority, isReadOnlyReplica, esVersion);
 		}
 		
 		public static MemberInfo Initial(Guid instanceId,
