@@ -111,7 +111,7 @@ namespace EventStore.Core.Services.Gossip {
 		public void Handle(GossipMessage.GotGossipSeedSources message) {
 			var now = _timeProvider.UtcNow;
 			var dnsCluster = new ClusterInfo(
-				message.GossipSeeds.Select(x => MemberInfo.ForManager(Guid.Empty, now, true, x, null)).ToArray());
+				message.GossipSeeds.Select(x => MemberInfo.ForManager(Guid.Empty, now, true, x)).ToArray());
 			
 			var oldCluster = _cluster;
 			_cluster = MergeClusters(_cluster, dnsCluster, null, x => x, _timeProvider.UtcNow, _memberInfo,
@@ -319,19 +319,21 @@ namespace EventStore.Core.Services.Gossip {
 			TimeSpan deadMemberRemovalTimeout) {
 			var members = myCluster.Members.ToDictionary(member => member.HttpEndPoint, 
 				new EndPointEqualityComparer());
+			MemberInfo peerNode = peerEndPoint != null
+				? othersCluster.Members.SingleOrDefault(member => member.Is(peerEndPoint), null) : null;
+			bool isPeerOld = peerNode?.ESVersion == null;
 			foreach (var member in othersCluster.Members) {
 				if (member.InstanceId == me.InstanceId || member.Is(me.HttpEndPoint)
 				) // we know about ourselves better
 					continue;
-				if (peerEndPoint != null && member.Is(peerEndPoint)) // peer knows about itself better
+				if (member.Equals(peerNode)) // peer knows about itself better
 				{
 					if ((utcNow - member.TimeStamp).Duration() > allowedTimeDifference) {
 						Log.Error("Time difference between us and [{peerEndPoint}] is too great! "
 						          + "UTC now: {dateTime:yyyy-MM-dd HH:mm:ss.fff}, peer's time stamp: {peerTimestamp:yyyy-MM-dd HH:mm:ss.fff}.",
 							peerEndPoint, utcNow, member.TimeStamp);
 					}
-
-					members[member.HttpEndPoint] = member;
+					members[member.HttpEndPoint] = member.Updated(utcNow: member.TimeStamp, esVersion: isPeerOld ? VersionInfo.OldVersion : member.ESVersion);
 				} else {
 					MemberInfo existingMem;
 					// if there is no data about this member or data is stale -- update
@@ -345,6 +347,13 @@ namespace EventStore.Core.Services.Gossip {
 									state: existingMem.State);
 						else
 							members[member.HttpEndPoint] = member;
+					}
+
+					if (peerNode != null && isPeerOld) {
+						MemberInfo newInfo = members[member.HttpEndPoint];
+						// if we don't have past information about es version of the node, es version is unknown because old peer won't be sending version info in gossip
+						members[member.HttpEndPoint] = newInfo.Updated(newInfo.TimeStamp,
+							esVersion: existingMem?.ESVersion ?? VersionInfo.UnknownVersion);
 					}
 				}
 			}
@@ -397,7 +406,7 @@ namespace EventStore.Core.Services.Gossip {
 		
 		private void PublishIfClusterHasMultipleVersions(ClusterInfo cluster) {
 			List<MemberInfo> aliveMembers = cluster.Members.Where(memberInfo => memberInfo.IsAlive).ToList();
-			int numDistinctVersions = aliveMembers.Select(memberInfo => memberInfo.ESVersion).Distinct().Count();
+			int numDistinctVersions = aliveMembers.Select(memberInfo => memberInfo.ESVersion).Where(esVersion => !VersionInfo.UnknownVersion.Equals(esVersion)).Distinct().Count();
 
 			if (numDistinctVersions > 1) {
 				Dictionary<EndPoint, string> ipAndVersion = aliveMembers.ToDictionary(memberInfo => memberInfo.HttpEndPoint,

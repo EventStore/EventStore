@@ -35,7 +35,7 @@ namespace EventStore.Core.Cluster {
 		public readonly string ESVersion;
 		
 		public static MemberInfo ForManager(Guid instanceId, DateTime timeStamp, bool isAlive,
-			EndPoint httpEndPoint, string esVersion = null) {
+			EndPoint httpEndPoint, string esVersion = VersionInfo.UnknownVersion) {
 			return new MemberInfo(instanceId, timeStamp, VNodeState.Manager, isAlive,
 				httpEndPoint, null, httpEndPoint, null,
 				httpEndPoint, null, 0, 0,
@@ -61,7 +61,7 @@ namespace EventStore.Core.Cluster {
 			int epochNumber,
 			Guid epochId,
 			int nodePriority,
-			bool isReadOnlyReplica, string esVersion = null) {
+			bool isReadOnlyReplica, string esVersion = VersionInfo.UnknownVersion) {
 			if (state == VNodeState.Manager)
 				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
 			return new MemberInfo(instanceId, timeStamp, state, isAlive,
@@ -85,7 +85,7 @@ namespace EventStore.Core.Cluster {
 			int advertiseHttpPortToClientAs,
 			int advertiseTcpPortToClientAs,
 			int nodePriority,
-			bool isReadOnlyReplica, string esVersion = null) {
+			bool isReadOnlyReplica, string esVersion = VersionInfo.UnknownVersion) {
 			if (state == VNodeState.Manager)
 				throw new ArgumentException(string.Format("Wrong State for VNode: {0}", state), "state");
 			return new MemberInfo(instanceId, timeStamp, state, isAlive,
@@ -176,7 +176,7 @@ namespace EventStore.Core.Cluster {
 			long? writerCheckpoint = null,
 			long? chaserCheckpoint = null,
 			EpochRecord epoch = null,
-			int? nodePriority = null) {
+			int? nodePriority = null, string esVersion = null) {
 			return new MemberInfo(InstanceId,
 				utcNow,
 				state ?? State,
@@ -196,7 +196,7 @@ namespace EventStore.Core.Cluster {
 				epoch != null ? epoch.EpochNumber : EpochNumber,
 				epoch != null ? epoch.EpochId : EpochId,
 				nodePriority ?? NodePriority,
-				IsReadOnlyReplica, ESVersion);
+				IsReadOnlyReplica, esVersion ?? ESVersion);
 		}
 
 		public override string ToString() {

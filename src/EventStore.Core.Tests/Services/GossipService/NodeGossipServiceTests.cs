@@ -109,17 +109,17 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		protected static MemberInfo MemberInfoForVNode(VNodeInfo nodeInfo, DateTime utcNow,
 			int? nodePriority = null, int? epochNumber = null, long? writerCheckpoint = null,
-			VNodeState nodeState = VNodeState.Initializing, string version = VersionInfo.DefaultVersion, bool isAlive = true) {
+			VNodeState nodeState = VNodeState.Initializing, string esVersion = VersionInfo.DefaultVersion, bool isAlive = true) {
 			return MemberInfo.ForVNode(nodeInfo.InstanceId, utcNow, nodeState, isAlive,
 				nodeInfo.InternalTcp, nodeInfo.InternalSecureTcp, nodeInfo.ExternalTcp,
 				nodeInfo.ExternalSecureTcp, nodeInfo.HttpEndPoint, null, 0, 0,
-				0, writerCheckpoint ?? 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0, false, version);
+				0, writerCheckpoint ?? 0, 0, -1, epochNumber ?? -1, Guid.Empty, nodePriority ?? 0, false, esVersion);
 		}
 
 		/// <summary>
 		/// The initial state for a node currently is represented as a Manager
 		/// </summary>
-		protected static MemberInfo InitialStateForVNode(VNodeInfo nodeInfo, DateTime utcNow, bool isAlive = true, string version = null) {
+		protected static MemberInfo InitialStateForVNode(VNodeInfo nodeInfo, DateTime utcNow, bool isAlive = true, string version = VersionInfo.UnknownVersion) {
 			return MemberInfo.ForManager(Guid.Empty, utcNow, isAlive, nodeInfo.HttpEndPoint, esVersion: version);
 		}
 	}
@@ -350,20 +350,20 @@ namespace EventStore.Core.Tests.Services.GossipService {
 	}
 	
 	public class if_gossip_reply_includes_es_version : NodeGossipServiceTestFixture {
+		private Message _capturedMessage;
 		protected override Message[] Given() =>
 			GivenSystemInitializedWithKnownGossipSeedSources();
 
 		protected override Message When() =>
-			//gossip containing information about nodeTwo and nodeThree received from nodeTwo
-			new GossipMessage.GossipReceived(new CallbackEnvelope(AssertGossipReply), new ClusterInfo(
-					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber:  1, version: "1.1.1.2"),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3")),
+			new GossipMessage.GossipReceived(new CallbackEnvelope(CaptureGossipReply), new ClusterInfo(
+					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber:  1, esVersion: "1.1.1.2"),
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3")),
 				_nodeTwo.HttpEndPoint);
 
 		private ClusterInfo GetExpectedClusterInfo() {
-			return new ClusterInfo(MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.2"),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3"));
+			return new ClusterInfo(MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.2"),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3"));
 		}
 		
 		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
@@ -379,23 +379,21 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void gossip_update_must_have_es_version() {
 			//updated cluster info should have version info of currentNode, nodeTwo and nodeThree
 			ExpectMessages(new ClusterStateMessage.MultipleVersionsOnNodes(GetExpectedEndPointVsVersion()), new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
+			//gossip reply should have version info of currentNode, nodeTwo and nodeThree
+			AssertEx.AssertUsingDeepCompare(_capturedMessage, new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
 		}
 
-		private void AssertGossipReply(Message message) {
-			//gossip reply should have version info of currentNode, nodeTwo and nodeThree
-			AssertEx.AssertUsingDeepCompare(message, new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
-		}
+		private void CaptureGossipReply(Message message) => _capturedMessage = message;
 	}
 
 	public class if_gossip_read_reply_includes_es_version : NodeGossipServiceTestFixture {
 		private Message _capturedMessage;
 
 		protected override Message[] Given() =>
-			//gossip containing information about nodeTwo and nodeThree received from nodeTwo
 			GivenSystemInitializedWithKnownGossipSeedSources(new GossipMessage.GossipReceived(
 				new CallbackEnvelope(CaptureGossipReply), new ClusterInfo(
-					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.2"),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3")),
+					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.2"),
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3")),
 				_nodeTwo.HttpEndPoint));
 
 		protected override Message When() =>
@@ -403,9 +401,9 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		private ClusterInfo GetExpectedClusterInfo() {
 			return new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.2"),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3"));
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.2"),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3"));
 		}
 
 		[Test]
@@ -420,10 +418,9 @@ namespace EventStore.Core.Tests.Services.GossipService {
 	public class if_client_gossip_reply_includes_es_version : NodeGossipServiceTestFixture {
 		private Message _capturedMessage;
 		protected override Message[] Given() =>
-			//gossip containing information about nodeTwo and nodeThree received from nodeTwo
 			GivenSystemInitializedWithKnownGossipSeedSources(new GossipMessage.GossipReceived(new NoopEnvelope(), new ClusterInfo(
-					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber:  1, version: "1.1.1.2"),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3")),
+					MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber:  1, esVersion: "1.1.1.2"),
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3")),
 				_nodeTwo.HttpEndPoint));
 
 		protected override Message When() =>
@@ -431,9 +428,9 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 		private ClientClusterInfo GetExpectedClusterInfo() {
 			return new ClientClusterInfo(new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.2"),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3")), _currentNode.HttpEndPoint.GetHost(), _currentNode.HttpEndPoint.GetPort());
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.2"),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3")), _currentNode.HttpEndPoint.GetHost(), _currentNode.HttpEndPoint.GetPort());
 		}
 		
 		[Test]
@@ -447,27 +444,25 @@ namespace EventStore.Core.Tests.Services.GossipService {
 
 	public class if_gossip_received_has_alive_nodes_on_old_version : NodeGossipServiceTestFixture {
 		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
-
-		//gossip containing information about nodeTwo, nodeThree and nodeFour received from nodeTwo; one of the node, nodeThree, is dead
 		protected override Message When() =>
 			new GossipMessage.GossipReceived(new CallbackEnvelope(AssertGossipReply),
-				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3",
+				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+					// nodeThree is dead
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
 						isAlive: false),
-					//a node with <null> version represents old version of ES on that node because nodes running old ES version will not be sending version info in gossip
-					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: null)), _nodeTwo.HttpEndPoint);
+					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.OldVersion)), _nodeTwo.HttpEndPoint);
 		
 		private ClusterInfo GetExpectedClusterInfo() {
 			return new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3", isAlive: false),
-				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: null));
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3", isAlive: false),
+				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.OldVersion));
 		}
 
 		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
 			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
-				{ _nodeFour.HttpEndPoint, null },
+				{ _nodeFour.HttpEndPoint, VersionInfo.OldVersion },
 				{ _nodeTwo.HttpEndPoint, VersionInfo.DefaultVersion },
 				{ _currentNode.HttpEndPoint, VersionInfo.DefaultVersion }
 			};
@@ -486,24 +481,24 @@ namespace EventStore.Core.Tests.Services.GossipService {
 	
 	public class if_gossip_received_has_alive_nodes_on_different_version : NodeGossipServiceTestFixture {
 		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
-
-		//gossip containing information about nodeTwo, nodeThree and nodeFour received from nodeTwo; one of the node, nodeThree, is dead
+		
 		protected override Message When() =>
-			new GossipMessage.GossipReceived(new CallbackEnvelope(AssertGossipReply),
-				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3",
+			new GossipMessage.GossipReceived(new NoopEnvelope(),
+				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+					// nodeThree is dead
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
 						isAlive: false),
-					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.4")), _nodeTwo.HttpEndPoint);
+					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.4")), _nodeTwo.HttpEndPoint);
 		
 		private ClusterInfo GetExpectedClusterInfo() {
 			return new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3", isAlive: false),
-				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.4"));
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3", isAlive: false),
+				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.4"));
 		}
 
-		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {//=> GetExpectedClusterInfo().Members.ToDictionary(memberInfo => memberInfo.HttpEndPoint, memberInfo => memberInfo.ESVersion);
+		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
 			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
 				{ _nodeFour.HttpEndPoint, "1.1.1.4" },
 				{ _nodeTwo.HttpEndPoint, VersionInfo.DefaultVersion },
@@ -516,63 +511,124 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_detect_version_mismatch() {
 			ExpectMessages(new ClusterStateMessage.MultipleVersionsOnNodes(GetExpectedEndPointVsVersion()), new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 		}
-
-		private void AssertGossipReply(Message message) {
-			AssertEx.AssertUsingDeepCompare(message, new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
-		}
 	}
 	
-	public class if_gossip_received_has_alive_nodes_on_same_versions : NodeGossipServiceTestFixture {
+	public class if_gossip_received_has_alive_nodes_on_same_version : NodeGossipServiceTestFixture {
 		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
-
-		//gossip containing information about nodeTwo, nodeThree and nodeFour received from nodeTwo; one of the node, nodeThree, is dead
+		
 		protected override Message When() =>
-			new GossipMessage.GossipReceived(new CallbackEnvelope(AssertGossipReply),
-				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3",
+			new GossipMessage.GossipReceived(new NoopEnvelope(),
+				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+					// nodeThree is dead
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
 						isAlive: false),
-					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion)), _nodeTwo.HttpEndPoint);
+					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion)), _nodeTwo.HttpEndPoint);
 		
 		private ClusterInfo GetExpectedClusterInfo() {
 			return new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3", isAlive: false),
-				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion));
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3", isAlive: false),
+				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion));
 		}
 
 		[Test]
 		public void should_not_detect_version_mismatch() {
+			// no ClusterStateMessage.MultipleVersionsOnNodes message
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 		}
+	}
+	
+	public class if_gossip_received_from_old_node_with_NO_previous_version_info : NodeGossipServiceTestFixture {
+		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
+		
+		protected override Message When() =>
+			// nodeTwo is sending gossip; this is an old node hence, no version info (<null> value) for any node
+			new GossipMessage.GossipReceived(new NoopEnvelope(),
+				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: null),
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: null,
+						isAlive: true)), _nodeTwo.HttpEndPoint);
+		
+		private ClusterInfo GetExpectedClusterInfo() {
+			return new ClusterInfo(
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.OldVersion),
+				// since currentNode has no previous information about nodeThree, its version info is Unknown as long as currentNode is concerned
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.UnknownVersion));
+		}
 
-		private void AssertGossipReply(Message message) {
-			AssertEx.AssertUsingDeepCompare(message, new GossipMessage.SendGossip(GetExpectedClusterInfo(), _currentNode.HttpEndPoint));
+		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
+			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
+				{ _nodeThree.HttpEndPoint, VersionInfo.UnknownVersion },
+				{ _nodeTwo.HttpEndPoint, VersionInfo.OldVersion },
+				{ _currentNode.HttpEndPoint, VersionInfo.DefaultVersion }
+			};
+			return endpointVsVersion;
+		}
+
+		[Test]
+		public void version_should_be_unknown() {
+			ExpectMessages(new ClusterStateMessage.MultipleVersionsOnNodes(GetExpectedEndPointVsVersion()), new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
+		}
+	}
+
+	public class if_gossip_received_from_old_node_with_previous_version_info : NodeGossipServiceTestFixture {
+		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources(
+			//after this gossip from nodeThree, currentNode has information about nodeThree
+			new GossipMessage.GossipReceived(new NoopEnvelope(),
+			new ClusterInfo(MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
+					isAlive: true)), _nodeThree.HttpEndPoint));
+		
+		protected override Message When() =>
+			// nodeTwo is sending gossip; this is an old node hence, no version info (<null> value) for any node
+			new GossipMessage.GossipReceived(new NoopEnvelope(),
+				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 2, esVersion: null),
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 2, esVersion: null,
+						isAlive: true)), _nodeTwo.HttpEndPoint);
+		
+		private ClusterInfo GetExpectedClusterInfo() {
+			return new ClusterInfo(
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 2, esVersion: VersionInfo.OldVersion),
+				// version info from previous gossip (from nodeThree) will be retained
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 2, esVersion: "1.1.1.3"));
+		}
+
+		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
+			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
+				{ _nodeThree.HttpEndPoint, "1.1.1.3" },
+				{ _nodeTwo.HttpEndPoint, VersionInfo.OldVersion },
+				{ _currentNode.HttpEndPoint, VersionInfo.DefaultVersion }
+			};
+			return endpointVsVersion;
+		}
+
+		[Test]
+		public void should_retain_previous_version_info() {
+			ExpectMessages(new ClusterStateMessage.MultipleVersionsOnNodes(GetExpectedEndPointVsVersion()), new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 		}
 	}
 	
 	public class if_Get_gossip_received_has_alive_nodes_on_old_version : NodeGossipServiceTestFixture {
 		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
-
-		//gossip containing information about nodeTwo, nodeThree and nodeFour received from nodeTwo; one of the node, nodeThree, is dead
 		protected override Message When() =>
-			new GossipMessage.GetGossipReceived(new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3",
+			new GossipMessage.GetGossipReceived(new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				// nodeThree is dead	
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
 						isAlive: false),
-					//a node with <null> version represents old version of ES on that node because nodes running old ES version will not be sending version info in gossip
-					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: null)), _nodeTwo.HttpEndPoint);
+					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.OldVersion)), _nodeTwo.HttpEndPoint);
 		
 		private ClusterInfo GetExpectedClusterInfo() {
 			return new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3", isAlive: false),
-				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: null));
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3", isAlive: false),
+				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.OldVersion));
 		}
 
-		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {//=> GetExpectedClusterInfo().Members.ToDictionary(memberInfo => memberInfo.HttpEndPoint, memberInfo => memberInfo.ESVersion);
+		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
 			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
-				{ _nodeFour.HttpEndPoint, null },
+				{ _nodeFour.HttpEndPoint, VersionInfo.OldVersion },
 				{ _nodeTwo.HttpEndPoint, VersionInfo.DefaultVersion },
 				{ _currentNode.HttpEndPoint, VersionInfo.DefaultVersion }
 			};
@@ -587,23 +643,22 @@ namespace EventStore.Core.Tests.Services.GossipService {
 	
 	public class if_Get_gossip_received_has_alive_nodes_on_different_version : NodeGossipServiceTestFixture {
 		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
-
-		//gossip containing information about nodeTwo, nodeThree and nodeFour received from nodeTwo; one of the node, nodeThree, is dead
 		protected override Message When() =>
-			new GossipMessage.GetGossipReceived(new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3",
+			new GossipMessage.GetGossipReceived(new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				// nodeThree is dead	
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
 						isAlive: false),
-					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.4")), _nodeTwo.HttpEndPoint);
+					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.4")), _nodeTwo.HttpEndPoint);
 		
 		private ClusterInfo GetExpectedClusterInfo() {
 			return new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3", isAlive: false),
-				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.4"));
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3", isAlive: false),
+				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.4"));
 		}
 
-		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {//=> GetExpectedClusterInfo().Members.ToDictionary(memberInfo => memberInfo.HttpEndPoint, memberInfo => memberInfo.ESVersion);
+		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
 			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
 				{ _nodeFour.HttpEndPoint, "1.1.1.4" },
 				{ _nodeTwo.HttpEndPoint, VersionInfo.DefaultVersion },
@@ -620,25 +675,95 @@ namespace EventStore.Core.Tests.Services.GossipService {
 	
 	public class if_Get_gossip_received_has_alive_nodes_on_same_versions : NodeGossipServiceTestFixture {
 		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
-
-		//gossip containing information about nodeTwo, nodeThree and nodeFour received from nodeTwo; one of the node, nodeThree, is dead
 		protected override Message When() =>
-			new GossipMessage.GetGossipReceived(new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3",
+			new GossipMessage.GetGossipReceived(new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				// nodeThree is dead	
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
 						isAlive: false),
-					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion)), _nodeTwo.HttpEndPoint);
+					MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion)), _nodeTwo.HttpEndPoint);
 		
 		private ClusterInfo GetExpectedClusterInfo() {
 			return new ClusterInfo(
-				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion),
-				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, version: "1.1.1.3", isAlive: false),
-				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, version: VersionInfo.DefaultVersion));
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3", isAlive: false),
+				MemberInfoForVNode(_nodeFour, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.DefaultVersion));
 		}
 
 		[Test]
 		public void should_not_detect_version_mismatch() {
+			// no ClusterStateMessage.MultipleVersionsOnNodes message
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
+		}
+	}
+	
+	public class if_GET_gossip_received_from_old_node_with_NO_previous_version_info : NodeGossipServiceTestFixture {
+		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources();
+		
+		protected override Message When() =>
+			// nodeTwo is sending gossip; this is an old node hence, no version info (<null> value) for any node
+			new GossipMessage.GetGossipReceived(
+				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: null),
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: null,
+						isAlive: true)), _nodeTwo.HttpEndPoint);
+		
+		private ClusterInfo GetExpectedClusterInfo() {
+			return new ClusterInfo(
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.OldVersion),
+				// since currentNode has no previous information about nodeThree, its version info is Unknown as far as currentNode is concerned
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: VersionInfo.UnknownVersion));
+		}
+
+		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
+			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
+				{ _nodeThree.HttpEndPoint, VersionInfo.UnknownVersion },
+				{ _nodeTwo.HttpEndPoint, VersionInfo.OldVersion },
+				{ _currentNode.HttpEndPoint, VersionInfo.DefaultVersion }
+			};
+			return endpointVsVersion;
+		}
+
+		[Test]
+		public void version_should_be_unknown() {
+			ExpectMessages(new ClusterStateMessage.MultipleVersionsOnNodes(GetExpectedEndPointVsVersion()), new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
+		}
+	}
+
+	public class if_GET_gossip_received_from_old_node_with_previous_version_info : NodeGossipServiceTestFixture {
+		protected override Message[] Given() => GivenSystemInitializedWithKnownGossipSeedSources(
+			//after this gossip from nodeThree, currentNode has information about nodeThree
+			new GossipMessage.GossipReceived(new NoopEnvelope(),
+			new ClusterInfo(MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 1, esVersion: "1.1.1.3",
+					isAlive: true)), _nodeThree.HttpEndPoint));
+		
+		protected override Message When() =>
+			// nodeTwo is sending gossip; this is an old node hence, no version info (<null> value) for any node
+			new GossipMessage.GetGossipReceived(
+				new ClusterInfo(MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 2, esVersion: null),
+					MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 2, esVersion: null,
+						isAlive: true)), _nodeTwo.HttpEndPoint);
+		
+		private ClusterInfo GetExpectedClusterInfo() {
+			return new ClusterInfo(
+				MemberInfoForVNode(_currentNode, _timeProvider.UtcNow, esVersion: VersionInfo.DefaultVersion),
+				MemberInfoForVNode(_nodeTwo, _timeProvider.UtcNow, epochNumber: 2, esVersion: VersionInfo.OldVersion),
+				// version info from previous gossip (from nodeThree) will be retained
+				MemberInfoForVNode(_nodeThree, _timeProvider.UtcNow, epochNumber: 2, esVersion: "1.1.1.3"));
+		}
+
+		private Dictionary<EndPoint, string> GetExpectedEndPointVsVersion() {
+			Dictionary<EndPoint, string> endpointVsVersion = new Dictionary<EndPoint, string> {
+				{ _nodeThree.HttpEndPoint, "1.1.1.3" },
+				{ _nodeTwo.HttpEndPoint, VersionInfo.OldVersion },
+				{ _currentNode.HttpEndPoint, VersionInfo.DefaultVersion }
+			};
+			return endpointVsVersion;
+		}
+
+		[Test]
+		public void should_retain_previous_version_info() {
+			ExpectMessages(new ClusterStateMessage.MultipleVersionsOnNodes(GetExpectedEndPointVsVersion()), new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 		}
 	}
 	
