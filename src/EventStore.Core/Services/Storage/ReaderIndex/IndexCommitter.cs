@@ -133,7 +133,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				var fullRebuild = startPosition == 0;
 				reader.Reposition(startPosition);
 
-				var commitedPrepares = new List<IPrepareLogRecord<TStreamId>>();
+				var committedPrepares = new List<IPrepareLogRecord<TStreamId>>();
 
 				long processed = 0;
 				SeqReadResult result;
@@ -144,28 +144,29 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						case LogRecordType.Prepare: {
 								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 								if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {
-									if (prepare.Flags.HasAnyOf(PrepareFlags.SingleWrite)) {
-										Commit(commitedPrepares, false, false);
-										commitedPrepares.Clear();
-										Commit(new[] { prepare }, result.Eof, false);
+									if (prepare.Flags.HasAllOf(PrepareFlags.SingleWrite)) {
+										CommitIncompleteImplicitTransaction(ref committedPrepares);
+										CommitSingleWrite(prepare);
 									} else {
+										if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionBegin))
+											CommitIncompleteImplicitTransaction(ref committedPrepares);
 										if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
-											commitedPrepares.Add(prepare);
-										if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd)) {
-											Commit(commitedPrepares, result.Eof, false);
-											commitedPrepares.Clear();
-										}
+											committedPrepares.Add(prepare);
+										if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd))
+											CommitCompleteImplicitTransaction(ref committedPrepares);
 									}
 								}
 
 								break;
 							}
 						case LogRecordType.Commit:
+							CommitIncompleteImplicitTransaction(ref committedPrepares);
 							Commit((CommitLogRecord)result.LogRecord, result.Eof, false);
 							break;
 						case LogRecordType.System:
 						case LogRecordType.Partition:
 						case LogRecordType.PartitionType:
+							CommitIncompleteImplicitTransaction(ref committedPrepares);
 							break;
 						default:
 							throw new Exception(string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));
@@ -189,6 +190,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						}
 					}
 				}
+
+				CommitIncompleteImplicitTransaction(ref committedPrepares);
 
 				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 					processed, DateTime.UtcNow - startTime);
@@ -217,6 +220,38 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				_backend.SetSystemSettings(GetSystemSettings());
 			}
 			_indexRebuild = false;
+		}
+
+		private void CommitSingleWrite(IPrepareLogRecord<TStreamId> prepare) {
+			Commit(new[] { prepare }, false, false);
+		}
+
+		private void CommitCompleteImplicitTransaction(ref List<IPrepareLogRecord<TStreamId>> committedPrepares) {
+			if (committedPrepares.Count == 0)
+				return;
+
+			Commit(committedPrepares, false, false);
+			committedPrepares.Clear();
+		}
+
+		private void CommitIncompleteImplicitTransaction(ref List<IPrepareLogRecord<TStreamId>> committedPrepares) {
+			if (committedPrepares.Count == 0)
+				return;
+
+			var streamId = committedPrepares[0].EventStreamId;
+			var startEventNumber = committedPrepares[0].ExpectedVersion + 1;
+			var endEventNumber = committedPrepares[^1].ExpectedVersion + 1;
+
+			Log.Error("Events {startEventNumber} - {endEventNumber} from stream: {stream} are part "
+			            + "of an incomplete implicit transaction. They were committed to the log due to an old bug "
+			            + "that could happen when a node ran out of disk space while writing an implicit transaction "
+			            + "or when a node was interrupted while writing an implicit transaction that spans the "
+			            + "boundaries of two chunks. These events will still be added to the index as otherwise there "
+			            + "will be gap in in the stream's event numbers. If you do not want to process these events, "
+			            + "please consider redacting them or adding special handling to your application to ignore them.",
+				startEventNumber, endEventNumber, streamId);
+
+			CommitCompleteImplicitTransaction(ref committedPrepares);
 		}
 
 		public void Dispose() {
