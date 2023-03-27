@@ -2,6 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
+		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
