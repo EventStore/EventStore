@@ -86,11 +86,15 @@ namespace EventStore.ClusterNode {
 					? LogEventLevel.Information
 					: LogEventLevel.Fatal;
 
-				foreach (var key in options.Unknown.Keys) {
-					Log.Write(level, "The option {key} is not a known option.", key);
+				foreach (var (option, suggestion) in options.Unknown.Options) {
+					if (string.IsNullOrEmpty(suggestion)) {
+						Log.Write(level, "The option {option} is not a known option.", option);	
+					} else {
+						Log.Write(level, "The option {option} is not a known option. Did you mean {suggestion}?", option, suggestion);
+					}
 				}
 
-				if (options.Unknown.Keys.Any() && !options.Application.AllowUnknownOptions) {
+				if (options.Unknown.Options.Any() && !options.Application.AllowUnknownOptions) {
 					Log.Fatal(
 						$"Found unknown options. To continue anyway, set {nameof(ClusterVNodeOptions.ApplicationOptions.AllowUnknownOptions)} to true.");
 					Log.Information($"Options:{Environment.NewLine}{ClusterVNodeOptions.HelpText}");
