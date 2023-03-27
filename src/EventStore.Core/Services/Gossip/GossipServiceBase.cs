@@ -168,10 +168,9 @@ namespace EventStore.Core.Services.Gossip {
 
 			message.Envelope.ReplyWith(new GossipMessage.SendGossip(_cluster, _memberInfo.HttpEndPoint));
 
-			if (_cluster.HasChangedSince(oldCluster)) {
+			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, $"gossip received from [{message.Server}]");
-				PublishIfClusterHasMultipleVersions(_cluster);
-			}
+			PublishIfClusterHasMultipleVersions(_cluster);
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 		
@@ -260,10 +259,9 @@ namespace EventStore.Core.Services.Gossip {
 				_timeProvider.UtcNow, _memberInfo, CurrentLeader?.InstanceId, AllowedTimeDifference,
 				DeadMemberRemovalPeriod);
 
-			if (_cluster.HasChangedSince(oldCluster)) {
+			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, string.Format("gossip received from [{0}]", message.Server));
-				PublishIfClusterHasMultipleVersions(_cluster);
-			}
+			PublishIfClusterHasMultipleVersions(_cluster);
 
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
