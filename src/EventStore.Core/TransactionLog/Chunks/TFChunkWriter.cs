@@ -25,6 +25,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private const int MaxChunkNumberWarning = MaxChunkNumber - 50_000;
 
 		private static readonly ILogger Log = Serilog.Log.ForContext<TFChunkWriter>();
+		private volatile bool _closed;
 
 		public TFChunkWriter(TFChunkDb db) {
 			Ensure.NotNull(db, "db");
@@ -42,6 +43,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public bool Write(ILogRecord record, out long newPos) {
+			if (_closed)
+				throw new Exception("Writer is closed.");
+
 			var result = _currentChunk.TryAppend(record);
 			if (result.Success)
 				_writerPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition;
@@ -52,6 +56,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public void CompleteChunk() {
+			if (_closed)
+				throw new Exception("Writer is closed.");
+
 			var chunk = _currentChunk;
 			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
@@ -65,6 +72,9 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk) {
+			if (_closed)
+				throw new Exception("Writer is closed.");
+
 			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
 			rawChunk.CompleteRaw();
@@ -104,6 +114,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public void Close() {
 			Flush();
+			_closed = true;
 		}
 
 		public void Flush() {

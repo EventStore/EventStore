@@ -100,7 +100,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Writer.Open();
 			WriteTestScenario();
 			Writer.Close();
-			Writer = null;
 
 			WriterCheckpoint.Flush();
 			ChaserCheckpoint.Write(WriterCheckpoint.Read());
