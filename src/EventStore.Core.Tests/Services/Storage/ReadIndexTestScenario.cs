@@ -477,7 +477,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		protected TFPos GetBackwardReadPos() {
-			var pos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
+			var pos = new TFPos(WriterCheckpoint.Read(), WriterCheckpoint.Read());
 			return pos;
 		}
 
