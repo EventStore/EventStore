@@ -17,6 +17,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private readonly TFChunkDb _db;
 		private readonly ICheckpoint _writerCheckpoint;
+		private long _writerPosition;
 
 		private TFChunk.TFChunk _currentChunk;
 
@@ -31,7 +32,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			_db = db;
 			_writerCheckpoint = db.Config.WriterCheckpoint;
-			_currentChunk = db.Manager.GetChunkFor(_writerCheckpoint.Read());
+			_writerPosition = _writerCheckpoint.Read();
+			_currentChunk = db.Manager.GetChunkFor(_writerPosition);
 			if (_currentChunk == null)
 				throw new InvalidOperationException("No chunk given for existing position.");
 		}
@@ -43,10 +45,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		public bool Write(ILogRecord record, out long newPos) {
 			var result = _currentChunk.TryAppend(record);
 			if (result.Success)
-				_writerCheckpoint.Write(result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition);
+				_writerPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition;
 			else
 				CompleteChunk(); // complete updates checkpoint internally
-			newPos = _writerCheckpoint.ReadNonFlushed();
+			newPos = _writerPosition;
 			return result.Success;
 		}
 
@@ -56,8 +58,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			chunk.Complete();
 
-			_writerCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
-			_writerCheckpoint.Flush();
+			_writerPosition = chunk.ChunkHeader.ChunkEndPosition;
 
 			var nextChunkNumber = chunk.ChunkHeader.ChunkEndNumber + 1;
 			VerifyChunkNumberLimits(nextChunkNumber);
@@ -70,7 +71,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			rawChunk.CompleteRaw();
 			_db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
-			_writerCheckpoint.Write(rawChunk.ChunkHeader.ChunkEndPosition);
+			_writerPosition = rawChunk.ChunkHeader.ChunkEndPosition;
+
+			// we can safely flush the writer checkpoint here since data in a raw chunk is already committed to the log
+			_writerCheckpoint.Write(_writerPosition);
 			_writerCheckpoint.Flush();
 
 			var nextChunkNumber = rawChunk.ChunkHeader.ChunkEndNumber + 1;
@@ -107,6 +111,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			if (_currentChunk == null) // the last chunk allocation failed
 				return;
 			_currentChunk.Flush();
+			_writerCheckpoint.Write(_writerPosition);
 			_writerCheckpoint.Flush();
 		}
 	}
