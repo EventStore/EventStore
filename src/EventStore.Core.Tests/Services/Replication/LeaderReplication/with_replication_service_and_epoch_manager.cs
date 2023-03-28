@@ -101,7 +101,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 		public IPrepareLogRecord<TStreamId> CreateLogRecord(long eventNumber, string data = "*************") {
 			var tStreamId = LogFormatHelper<TLogFormat, TStreamId>.StreamId;
 			var eventType = LogFormatHelper<TLogFormat, TStreamId>.EventTypeId;
-			return LogRecord.Prepare(_logFormat.RecordFactory, Db.Config.WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), Guid.NewGuid(), 0, 0,
+			return LogRecord.Prepare(_logFormat.RecordFactory, Writer.LogPosition, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
 				tStreamId, eventNumber, PrepareFlags.None, eventType, Encoding.UTF8.GetBytes(data),
 				null, DateTime.UtcNow);
 		}

@@ -118,7 +118,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Guid eventId = default(Guid),
 			string eventType = "some-type") {
 
-			long pos = WriterCheckpoint.ReadNonFlushed();
+			long pos = Writer.LogPosition;
 			_logFormatFactory.StreamNameIndex.GetOrReserve(
 				_logFormatFactory.RecordFactory,
 				eventStreamName,
