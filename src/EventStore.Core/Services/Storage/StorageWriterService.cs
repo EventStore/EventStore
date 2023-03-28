@@ -236,7 +236,7 @@ namespace EventStore.Core.Services.Storage {
 				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
-			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed()) {
+			if (Writer.FlushedLogPosition != Writer.LogPosition) {
 				Writer.Flush();
 				Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			}
@@ -265,7 +265,7 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				var logPosition = Writer.LogPosition;
 
 				var preExisting = _streamNameIndex.GetOrReserve(
 					recordFactory: _recordFactory,
@@ -377,7 +377,7 @@ namespace EventStore.Core.Services.Storage {
 			if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out modifiedMeta))
 				return;
 
-			var logPosition = Writer.Checkpoint.ReadNonFlushed();
+			var logPosition = Writer.LogPosition;
 			var streamMetadataEventTypeId = GetOrWriteEventType(SystemEventTypes.StreamMetadata, ref logPosition);
 
 			var res = WritePrepareWithRetry(
@@ -415,7 +415,7 @@ namespace EventStore.Core.Services.Storage {
 
 				var eventId = Guid.NewGuid();
 
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				var logPosition = Writer.LogPosition;
 
 				var preExisting = _streamNameIndex.GetOrReserve(
 					recordFactory: _recordFactory,
@@ -484,7 +484,7 @@ namespace EventStore.Core.Services.Storage {
 					return;
 
 				var streamId = _indexWriter.GetStreamId(message.EventStreamId);
-				var record = LogRecord.TransactionBegin(_recordFactory, Writer.Checkpoint.ReadNonFlushed(),
+				var record = LogRecord.TransactionBegin(_recordFactory, Writer.LogPosition,
 					message.CorrelationId,
 					streamId,
 					message.ExpectedVersion);
@@ -504,8 +504,8 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<StorageMessage.WriteTransactionData>.Handle(StorageMessage.WriteTransactionData message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+				var logPosition = Writer.LogPosition;
+				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.FlushedLogPosition, message.TransactionId);
 				if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
 					return;
 
@@ -550,11 +550,11 @@ namespace EventStore.Core.Services.Storage {
 				if (message.LiveUntil < DateTime.UtcNow)
 					return;
 
-				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.FlushedLogPosition, message.TransactionId);
 				if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
 					return;
 
-				var record = LogRecord.TransactionEnd(_recordFactory, Writer.Checkpoint.ReadNonFlushed(),
+				var record = LogRecord.TransactionEnd(_recordFactory, Writer.LogPosition,
 					message.CorrelationId,
 					Guid.NewGuid(),
 					message.TransactionId,
@@ -586,7 +586,7 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<StorageMessage.WriteCommit>.Handle(StorageMessage.WriteCommit message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
-				var commitPos = Writer.Checkpoint.ReadNonFlushed();
+				var commitPos = Writer.LogPosition;
 				var commitCheck = _indexWriter.CheckCommitStartingAt(message.TransactionPosition, commitPos);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
@@ -678,7 +678,7 @@ namespace EventStore.Core.Services.Storage {
 				StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
 
 				Writer.CompleteChunk();
-				newPos = Writer.Checkpoint.ReadNonFlushed();
+				newPos = Writer.LogPosition;
 			}
 
 			return new WriteResult(writtenPos, newPos, record);
@@ -712,7 +712,7 @@ namespace EventStore.Core.Services.Storage {
 		protected bool Flush(bool force = false) {
 			var start = _watch.ElapsedTicks;
 			if (force || FlushMessagesInQueue == 0 || start - _lastFlushTimestamp >= _lastFlushDelay + _minFlushDelay) {
-				var flushSize = Writer.Checkpoint.ReadNonFlushed() - Writer.Checkpoint.Read();
+				var flushSize = Writer.LogPosition - Writer.FlushedLogPosition;
 
 				Writer.Flush();
 				HistogramService.SetValue(_writerFlushHistogram,

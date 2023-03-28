@@ -114,7 +114,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					if (epochPos < 0) {
 						// we probably have lost/uninitialized epoch checkpoint scan back to find the most recent epoch in the log
 						Log.Information("No epoch checkpoint. Scanning log backwards for most recent epoch...");
-						reader.Reposition(_writer.Checkpoint.Read());
+						reader.Reposition(_writer.FlushedLogPosition);
 
 						SeqReadResult result;
 						while ((result = reader.TryReadPrev()).Success) {
@@ -296,7 +296,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 
 		private EpochRecord WriteEpochRecordWithRetry(int epochNumber, Guid epochId, long lastEpochPosition,
 			Guid instanceId) {
-			long pos = _writer.Checkpoint.ReadNonFlushed();
+			long pos = _writer.LogPosition;
 			var epoch = new EpochRecord(pos, epochNumber, epochId, lastEpochPosition, DateTime.UtcNow, instanceId);
 			var rec = _recordFactory.CreateEpoch(epoch);
 
@@ -334,7 +334,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			if (!TryGetExpectedVersionForEpochInformation(epoch, out var expectedVersion))
 				expectedVersion = ExpectedVersion.NoStream;
 
-			var originalLogPosition = _writer.Checkpoint.ReadNonFlushed();
+			var originalLogPosition = _writer.LogPosition;
 
 			var epochInformation = LogRecord.Prepare(
 					factory: _recordFactory,
