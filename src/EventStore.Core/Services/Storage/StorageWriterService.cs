@@ -335,6 +335,8 @@ namespace EventStore.Core.Services.Storage {
 					SoftUndeleteStream(streamId, commitCheck.CurrentVersion + 1);
 				if (softUndeleteMetastream)
 					SoftUndeleteMetastream(streamId);
+
+				Commit();
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");
 				throw;
@@ -469,6 +471,8 @@ namespace EventStore.Core.Services.Storage {
 							data, null));
 					_indexWriter.PreCommit(new[] { res.Prepare });
 				}
+
+				Commit();
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");
 				throw;
@@ -493,6 +497,8 @@ namespace EventStore.Core.Services.Storage {
 				// we update cache to avoid non-cached look-up on next TransactionWrite
 				_indexWriter.UpdateTransactionInfo(res.WrittenPos, res.WrittenPos,
 					new TransactionInfo<TStreamId>(-1, streamId));
+
+				Commit();
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");
 				throw;
@@ -536,6 +542,8 @@ namespace EventStore.Core.Services.Storage {
 						transactionInfo.EventStreamId);
 					_indexWriter.UpdateTransactionInfo(message.TransactionId, lastLogPosition, info);
 				}
+
+				Commit();
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");
 				throw;
@@ -560,6 +568,8 @@ namespace EventStore.Core.Services.Storage {
 					message.TransactionId,
 					transactionInfo.EventStreamId);
 				WritePrepareWithRetry(record);
+
+				Commit();
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");
 				throw;
@@ -610,6 +620,8 @@ namespace EventStore.Core.Services.Storage {
 					SoftUndeleteStream(commitCheck.EventStreamId, commitCheck.CurrentVersion + 1);
 				if (softUndeleteMetastream)
 					SoftUndeleteMetastream(commitCheck.EventStreamId);
+
+				Commit();
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");
 				throw;
@@ -707,6 +719,10 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			return commit;
+		}
+
+		protected void Commit() {
+			Writer.Commit();
 		}
 
 		protected bool Flush(bool force = false) {

@@ -50,6 +50,7 @@ namespace EventStore.Core.LogV3 {
 				if (!_writer.Write(rootPartitionType, out pos))
 					throw new Exception($"Failed to write root partition type!");
 
+				_writer.Commit();
 				_writer.Flush();
 				
 				_log.Debug("Root partition type created, id: {id}", RootTypeId);
@@ -71,6 +72,7 @@ namespace EventStore.Core.LogV3 {
 				if (!_writer.Write(rootPartition, out pos))
 					throw new Exception($"Failed to write root partition!");
 
+				_writer.Commit();
 				_writer.Flush();
 
 				_recordFactory.SetRootPartitionId(RootId.Value);

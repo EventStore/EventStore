@@ -8,6 +8,7 @@ using Serilog.Events;
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkWriter : ITransactionFileWriter {
 		public long LogPosition => _writerPosition;
+		public long CommittedLogPosition => _writerCheckpoint.ReadNonFlushed();
 		public long FlushedLogPosition => _writerCheckpoint.Read();
 
 		public TFChunk.TFChunk CurrentChunk {
@@ -53,6 +54,10 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				CompleteChunk(); // complete updates checkpoint internally
 			newPos = _writerPosition;
 			return result.Success;
+		}
+
+		public void Commit() {
+			_writerCheckpoint.Write(_writerPosition);
 		}
 
 		public void CompleteChunk() {
@@ -121,7 +126,6 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			if (_currentChunk == null) // the last chunk allocation failed
 				return;
 			_currentChunk.Flush();
-			_writerCheckpoint.Write(_writerPosition);
 			_writerCheckpoint.Flush();
 		}
 	}

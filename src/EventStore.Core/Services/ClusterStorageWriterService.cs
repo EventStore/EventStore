@@ -312,6 +312,9 @@ namespace EventStore.Core.Services {
 
 					_subscriptionPos = chunk.ChunkHeader.ChunkEndPosition;
 					_framer.Reset();
+				} else {
+					// we do not want to commit at chunk boundaries since it's not necessarily a transaction boundary
+					Commit();
 				}
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");

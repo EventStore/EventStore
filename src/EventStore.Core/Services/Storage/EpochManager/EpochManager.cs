@@ -312,6 +312,7 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 			}
 			_partitionManager.Initialize();
 			WriteEpochInformationWithRetry(epoch);
+			_writer.Commit();
 			_writer.Flush();
 			_bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			_bus.Publish(new SystemMessage.EpochWritten(epoch));
