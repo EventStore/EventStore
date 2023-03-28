@@ -9,6 +9,7 @@ namespace EventStore.Core.TransactionLog {
 		void Flush();
 		void Close();
 
-		ICheckpoint Checkpoint { get; }
+		long LogPosition { get; }
+		long FlushedLogPosition { get; }
 	}
 }
