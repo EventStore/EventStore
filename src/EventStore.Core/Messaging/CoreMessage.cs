@@ -21,7 +21,6 @@
 		System,
 		Tcp,
 		Timer,
-		UserManagement,
-		ClusterState
+		UserManagement
 	}
 }

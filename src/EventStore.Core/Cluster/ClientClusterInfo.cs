@@ -112,7 +112,7 @@ namespace EventStore.Core.Cluster {
 					$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
 					$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, " +
 					$"EpochPosition: {EpochPosition}, EpochNumber: {EpochNumber}, EpochId: {EpochId:B}, NodePriority: {NodePriority}, " +
-					$"IsReadOnlyReplica: {IsReadOnlyReplica}, $ESVersion: ${ESVersion}";
+					$"IsReadOnlyReplica: {IsReadOnlyReplica}, ESVersion: ${ESVersion}";
 			}
 		}
 	}

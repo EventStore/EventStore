@@ -25,7 +25,7 @@ namespace EventStore.Core.Services.Gossip {
 		IHandle<SystemMessage.VNodeConnectionEstablished>,
 		IHandle<GossipMessage.GetGossipReceived>,
 		IHandle<GossipMessage.GetGossipFailed>,
-		IHandle<ElectionMessage.ElectionsDone>, IHandle<ClusterStateMessage.MultipleVersionsOnNodes> {
+		IHandle<ElectionMessage.ElectionsDone> {
 		public const int GossipRoundStartupThreshold = 20;
 		public static readonly TimeSpan DnsRetryTimeout = TimeSpan.FromMilliseconds(1000);
 		public static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
@@ -170,14 +170,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, $"gossip received from [{message.Server}]");
-			PublishIfClusterHasMultipleVersions(_cluster);
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
-		}
-		
-		public void Handle(ClusterStateMessage.MultipleVersionsOnNodes message) {
-			//more handling can be added here (like updating cluster "health")
-			IEnumerable<string> ipAndVersion = message.NodeHTTPEndpointVsVersion.Select(keyvalue => $"({keyvalue.Key},{keyvalue.Value ?? "<null>"})");
-			Log.Warning($"MULTIPLE ES VERSIONS ON CLUSTER NODES FOUND [ {String.Join(", ", ipAndVersion)} ]");
 		}
 
 		public void Handle(GossipMessage.ReadGossip message) {
@@ -261,7 +254,6 @@ namespace EventStore.Core.Services.Gossip {
 
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, string.Format("gossip received from [{0}]", message.Server));
-			PublishIfClusterHasMultipleVersions(_cluster);
 
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
@@ -400,17 +392,6 @@ namespace EventStore.Core.Services.Gossip {
 				, oldMembers
 				, newMembers
 			);
-		}
-		
-		private void PublishIfClusterHasMultipleVersions(ClusterInfo cluster) {
-			List<MemberInfo> aliveMembers = cluster.Members.Where(memberInfo => memberInfo.IsAlive).ToList();
-			int numDistinctVersions = aliveMembers.Select(memberInfo => memberInfo.ESVersion).Where(esVersion => !VersionInfo.UnknownVersion.Equals(esVersion)).Distinct().Count();
-
-			if (numDistinctVersions > 1) {
-				Dictionary<EndPoint, string> ipAndVersion = aliveMembers.ToDictionary(memberInfo => memberInfo.HttpEndPoint,
-					memberInfo => memberInfo.ESVersion);
-				_bus.Publish(new ClusterStateMessage.MultipleVersionsOnNodes(ipAndVersion));
-			}
 		}
 	}
 }

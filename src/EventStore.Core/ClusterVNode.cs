@@ -1546,8 +1546,11 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<GossipMessage.GetGossipFailed>(gossip);
 				_mainBus.Subscribe<GossipMessage.GetGossipReceived>(gossip);
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
-				_mainBus.Subscribe<ClusterStateMessage.MultipleVersionsOnNodes>(gossip);
 			}
+			
+			var clusterStateChangeListener = new ClusterStateChangeListener();
+			_mainBus.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
+			
 			// kestrel
 			AddTasks(_workersHandler.Start());
 			AddTask(_mainQueue.Start());
