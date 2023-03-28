@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - Improved warning when using an invalid delimiter in gossip seed [EventStore#3757](https://github.com/EventStore/EventStore/pull/3757)
 - Deprecation warnings for UnsafeIgnoreHardDeletes and AlwaysKeepsScavenged [EventStore#3778](https://github.com/EventStore/EventStore/pull/3778)
 - The ability to set default admin and ops passwords on first run of the database [EventStore#3738](https://github.com/EventStore/EventStore/pull/3738)
+- Suggestions for unknown/invalid configuration parameters (#3784) [EventStore#3785](https://github.com/EventStore/EventStore/pull/3785)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
@@ -37,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - log available commands separately. [EventStore#3705](https://github.com/EventStore/EventStore/pull/3705)
 - Adjustments to reduce allocations [EventStore#3731](https://github.com/EventStore/EventStore/pull/3731)
 - Support specifying values with a metric prefix with the `testclient`. [EventStore#3748](https://github.com/EventStore/EventStore/pull/3748)
+- Jint library version to 3.0.0-beta-2048 [EventStore#3788](https://github.com/EventStore/EventStore/pull/3788)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
