@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file.
 - Adjustments to reduce allocations [EventStore#3731](https://github.com/EventStore/EventStore/pull/3731)
 - Support specifying values with a metric prefix with the `testclient`. [EventStore#3748](https://github.com/EventStore/EventStore/pull/3748)
 - Jint library version to 3.0.0-beta-2048 [EventStore#3788](https://github.com/EventStore/EventStore/pull/3788)
+- Minor adjustments in solution file [EventStore#3798](https://github.com/EventStore/EventStore/pull/3798)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
