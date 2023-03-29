@@ -803,7 +803,8 @@ namespace EventStore.Core {
 			var inaugurationManager = new InaugurationManager(
 				publisher: _mainQueue,
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
-				indexCheckpoint: Db.Config.IndexCheckpoint);
+				indexCheckpoint: Db.Config.IndexCheckpoint,
+				statusTracker: trackers.InaugurationStatusTracker);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(inaugurationManager);
 			_mainBus.Subscribe<SystemMessage.ChaserCaughtUp>(inaugurationManager);
 			_mainBus.Subscribe<SystemMessage.EpochWritten>(inaugurationManager);

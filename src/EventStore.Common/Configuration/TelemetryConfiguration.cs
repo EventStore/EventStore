@@ -33,9 +33,10 @@ namespace EventStore.Common.Configuration {
 		}
 
 		public enum StatusTracker {
-			Index = 1,
+			Inauguration = 1,
+			Index,
 			Node,
-			Scavenge
+			Scavenge,
 		}
 
 		public enum Checkpoint {
