@@ -2,22 +2,52 @@
 using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Services.VNode {
-	public interface INodeStatusTracker {
+	public interface IInaugurationStatusTracker {
+		void OnStateChange(InaugurationManager.ManagerState newState);
+	}
+
+	public interface INodeStatusTracker : IInaugurationStatusTracker {
 		void OnStateChange(VNodeState newState);
 	}
 
 	public class NodeStatusTracker : INodeStatusTracker {
 		private readonly StatusSubMetric _subMetric;
+		private readonly object _lock = new();
+
+		private VNodeState _nodeState;
+		private InaugurationManager.ManagerState _inaugurationState;
 
 		public NodeStatusTracker(StatusMetric metric) {
-			_subMetric = new StatusSubMetric("Node", VNodeState.Initializing, metric);
+			_nodeState = VNodeState.Initializing;
+			_inaugurationState = InaugurationManager.ManagerState.Idle;
+			_subMetric = new StatusSubMetric("Node", _nodeState, metric);
 		}
 
-		public void OnStateChange(VNodeState newState) =>
-			_subMetric.SetStatus(newState.ToString());
+		public void OnStateChange(VNodeState newState) {
+			lock (_lock) {
+				_nodeState = newState;
+				UpdateStatus();
+			}
+		}
+
+		public void OnStateChange(InaugurationManager.ManagerState newState) {
+			lock (_lock) {
+				_inaugurationState = newState;
+				UpdateStatus();
+			}
+		}
+
+		private void UpdateStatus() {
+			_subMetric.SetStatus(_inaugurationState == InaugurationManager.ManagerState.Idle
+				? $"{_nodeState}"
+				: $"{_nodeState} - {_inaugurationState}");
+		}
 
 		public class NoOp : INodeStatusTracker {
 			public void OnStateChange(VNodeState newState) {
+			}
+
+			public void OnStateChange(InaugurationManager.ManagerState newState) {
 			}
 		}
 	}

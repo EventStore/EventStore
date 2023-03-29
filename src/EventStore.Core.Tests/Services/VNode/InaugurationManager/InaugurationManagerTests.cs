@@ -34,7 +34,7 @@ namespace EventStore.Core.Tests.Services.VNode.InaugurationManagement {
 			_publisher = new FakePublisher();
 			_replicationCheckpoint = new InMemoryCheckpoint();
 			_indexCheckpoint = new InMemoryCheckpoint();
-			_sut = new InaugurationManager(_publisher, _replicationCheckpoint, _indexCheckpoint, new InaugurationStatusTracker.NoOp());
+			_sut = new InaugurationManager(_publisher, _replicationCheckpoint, _indexCheckpoint, new NodeStatusTracker.NoOp());
 			Given();
 		}
 
