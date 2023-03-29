@@ -67,6 +67,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
 			var rec = _logFormat.RecordFactory.CreateEpoch(epoch);
 			_writer.Write(rec, out _);
+			_writer.Commit();
 			_writer.Flush();
 			return epoch;
 		}

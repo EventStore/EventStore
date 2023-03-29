@@ -128,6 +128,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			Writer = new TFChunkWriter(_db);
 			Writer.Open();
 			SetupDB();
+			Writer.Commit();
 			Writer.Close();
 			Writer = null;
 
@@ -180,6 +181,7 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			Writer = new TFChunkWriter(_db);
 			Writer.Open();
 			Given();
+			Writer.Commit();
 			Writer.Close();
 			Writer = null;
 

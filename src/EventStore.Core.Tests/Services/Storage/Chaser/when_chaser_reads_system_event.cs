@@ -17,6 +17,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				SystemRecordSerialization.Json, epoch.AsSerialized());
 
 			Assert.True(Writer.Write(rec, out _));
+			Writer.Commit();
 			Writer.Flush();
 		}
 		[Test]

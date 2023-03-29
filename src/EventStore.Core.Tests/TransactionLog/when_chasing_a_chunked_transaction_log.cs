@@ -147,6 +147,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			writer.Open();
 			long pos;
 			Assert.IsTrue(writer.Write(recordToWrite, out pos));
+			writer.Commit();
 			writer.Close();
 
 			writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());
@@ -194,6 +195,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			writer.Open();
 			long pos;
 			Assert.IsTrue(writer.Write(recordToWrite, out pos));
+			writer.Commit();
 			writer.Close();
 
 			writerchk.Write(recordToWrite.GetSizeWithLengthPrefixAndSuffix());

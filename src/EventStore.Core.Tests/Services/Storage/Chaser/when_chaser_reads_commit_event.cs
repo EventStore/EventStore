@@ -33,6 +33,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				data: new byte[] { 1, 2, 3, 4, 5 },
 				metadata: new byte[] { 7, 17 });
 			Assert.True(Writer.Write(record, out _logPosition));
+			Writer.Commit();
 			Writer.Flush();
 
 			IndexCommitter.AddPendingPrepare(new[]{ record},_logPosition);
@@ -44,6 +45,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				firstEventNumber: 10);
 
 			Assert.True(Writer.Write(record2, out _logPosition));
+			Writer.Commit();
 			Writer.Flush();
 		}
 		[Test]

@@ -142,8 +142,11 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 	}
 	
 	class FakeWriter: ITransactionFileWriter {
+		public long LogPosition { get; }
+		public long CommittedLogPosition { get; }
+		public long FlushedLogPosition { get; }
+
 		public FakeWriter() {
-			Checkpoint = new InMemoryCheckpoint();
 			WrittenRecords = new List<ILogRecord>();
 		}
 		
@@ -158,13 +161,12 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			return true;
 		}
 
+		public void Commit() {}
+
 		public void Flush() {
 			IsFlushed = true;
 		}
 		public void Close() {}
-
-		public ICheckpoint Checkpoint { get; }
-		
 		public void Dispose() {}
 	}
 	

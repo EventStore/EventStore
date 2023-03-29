@@ -81,6 +81,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 
 			WriteTestScenario();
 
+			Writer.Commit();
 			Writer.Close();
 			Writer = null;
 			WriterCheckpoint.Flush();

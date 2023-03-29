@@ -45,7 +45,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			var rec = LogRecord.SingleWrite(recordFactory, 0, Guid.NewGuid(), Guid.NewGuid(), streamId, -1, eventTypeId, new byte[] {7}, null);
 			long tmp;
 			Assert.IsTrue(writer.Write(rec, out tmp));
-			writer.Flush();
+			writer.Commit();
 			writer.Close();
 
 			var res = reader.TryReadNext();

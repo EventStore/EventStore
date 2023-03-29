@@ -58,6 +58,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			long pos;
 			Assert.IsTrue(writer.Write(record, out pos));
+			writer.Commit();
 			writer.Close();
 			db.Dispose();
 

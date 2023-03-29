@@ -33,6 +33,7 @@ namespace EventStore.Core.Tests.Services.Storage.Chaser {
 				metadata: new byte[] { 7, 17 });
 
 			Assert.True(Writer.Write(record, out _));
+			Writer.Commit();
 			Writer.Flush();
 		}
 		[Test]

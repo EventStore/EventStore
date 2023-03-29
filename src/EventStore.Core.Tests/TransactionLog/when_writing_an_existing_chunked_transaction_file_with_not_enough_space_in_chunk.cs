@@ -85,6 +85,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				data: new byte[] {1, 2, 3, 4, 5},
 				metadata: new byte[2000]);
 			Assert.IsTrue(tf.Write(record3, out pos));
+			tf.Commit();
 			tf.Close();
 			db.Dispose();
 

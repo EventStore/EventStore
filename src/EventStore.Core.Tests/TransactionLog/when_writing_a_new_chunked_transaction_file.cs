@@ -43,6 +43,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				metadata: new byte[] {7, 17});
 			long tmp;
 			tf.Write(record, out tmp);
+			tf.Commit();
 			tf.Close();
 			db.Dispose();
 

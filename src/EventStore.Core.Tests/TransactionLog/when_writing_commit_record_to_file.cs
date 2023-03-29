@@ -32,6 +32,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				firstEventNumber: 10);
 			long newPos;
 			_writer.Write(_record, out newPos);
+			_writer.Commit();
 			_writer.Flush();
 		}
 

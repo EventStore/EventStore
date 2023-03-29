@@ -125,6 +125,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Writer.Write(CreateLogRecord(5), out _);
 			Writer.Write(CreateLogRecord(6), out _);
 			Writer.Write(CreateLogRecord(7), out var lastWritePosition);
+			Writer.Commit();
 			Writer.Flush();
 
 			_replicaEpochs = new List<Epoch> {

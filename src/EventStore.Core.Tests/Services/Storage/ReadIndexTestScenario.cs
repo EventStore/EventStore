@@ -99,6 +99,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			Writer = new TFChunkWriter(Db);
 			Writer.Open();
 			WriteTestScenario();
+			Writer.Commit();
 			Writer.Close();
 
 			WriterCheckpoint.Flush();

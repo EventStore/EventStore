@@ -48,6 +48,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 				metadata: new byte[] {7, 17});
 			long newPos;
 			_writer.Write(_record, out newPos);
+			_writer.Commit();
 			_writer.Flush();
 		}
 

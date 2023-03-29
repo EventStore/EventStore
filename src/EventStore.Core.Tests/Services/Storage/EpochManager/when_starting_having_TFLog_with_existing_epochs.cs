@@ -66,6 +66,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 				SystemRecordSerialization.Json, epoch.AsSerialized());
 			_writer.Write(rec, out _);
+			_writer.Commit();
 			_writer.Flush();
 			return epoch;
 		}
