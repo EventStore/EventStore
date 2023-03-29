@@ -269,6 +269,10 @@ namespace EventStore.Projections.Core.Services.Processing {
 				return;
 			if (message.CorrelationId != _pendingRequestCorrelationId)
 				return;
+			if (message.Result == ReadStreamResult.StreamDeleted) {
+				throw new InvalidOperationException($"Stream : {_streamId} is deleted. Cannot emit events to it");
+			}
+			
 			_pendingRequestCorrelationId = Guid.Empty;
 			_awaitingListEventsCompleted = false;
 
