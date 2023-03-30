@@ -224,7 +224,7 @@ differential backup.
 
 #### Backup
 
-Backup the index
+First backup the index
 
 1. If there are no files in the index directory (apart from directories), go to step 7.
 2. Copy the `index/indexmap` file to the backup. If the source file does not exist, repeat until it does.
@@ -236,20 +236,21 @@ Backup the index
    in `indexFiles`.
 7. Copy the `index/stream-existence/streamExistenceFilter.chk` file (if present) to the backup.
 8. Copy the `index/stream-existence/streamExistenceFilter.dat` file (if present) to the backup.
+9. Copy the `index/scavenging/scavenging.db` file (if present) to the backup. It should be the only file in the directory.
 
-Backup the log
+Then backup the log
 
-9. Rename the last chunk in the backup to have a `.old` suffix. e.g. rename `chunk-000123.000000`
+1. Rename the last chunk in the backup to have a `.old` suffix. e.g. rename `chunk-000123.000000`
    to `chunk-000123.000000.old`
-10. Copy `chaser.chk` to the backup.
-11. Copy `epoch.chk` to the backup.
-12. Copy `writer.chk` to the backup.
-13. Copy `proposal.chk` to the backup.
-14. Make a list `chunkFiles` of all chunk files (`chunk-X.Y`) in the source.
-15. Copy the files listed in `chunkFiles` to the backup, skipping file names already in the backup. All files
-    should copy successfully - none should have been deleted since scavenge is not running.
-16. Remove any chunks from the backup that are not in the `chunksFiles` list. This will include the `.old`
-    file from step 9.
+2. Copy `chaser.chk` to the backup.
+3. Copy `epoch.chk` to the backup.
+4. Copy `writer.chk` to the backup.
+5. Copy `proposal.chk` to the backup.
+6. Make a list `chunkFiles` of all chunk files (`chunk-X.Y`) in the source.
+7. Copy the files listed in `chunkFiles` to the backup, skipping file names already in the backup. All files
+   should copy successfully - none should have been deleted since scavenge is not running.
+8. Remove any chunks from the backup that are not in the `chunksFiles` list. This will include the `.old`
+    file from step 1.
 
 #### Restore
 
