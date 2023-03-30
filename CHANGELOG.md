@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Deprecation warnings for UnsafeIgnoreHardDeletes and AlwaysKeepsScavenged [EventStore#3778](https://github.com/EventStore/EventStore/pull/3778)
 - The ability to set default admin and ops passwords on first run of the database [EventStore#3738](https://github.com/EventStore/EventStore/pull/3738)
 - Suggestions for unknown/invalid configuration parameters (#3784) [EventStore#3785](https://github.com/EventStore/EventStore/pull/3785)
+- Inauguration status tracker [EventStore#3699](https://github.com/EventStore/EventStore/pull/3699)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
