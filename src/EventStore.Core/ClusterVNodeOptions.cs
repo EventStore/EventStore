@@ -60,7 +60,7 @@ namespace EventStore.Core {
 			
 			try {
 				var configurationRoot = new ConfigurationBuilder()
-					.AddEventStore(args, environment, DefaultValues)
+					.AddEventStore(nameof(ApplicationOptions.Config), args, environment, DefaultValues)
 					.Build();
 				return FromConfiguration(configurationRoot);
 			} catch (Exception e) {

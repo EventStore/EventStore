@@ -135,7 +135,7 @@ namespace EventStore.Core.Tests {
 				await writer.WriteAsync(configurationFileContent);
 				await writer.FlushAsync();
 				var options = ClusterVNodeOptions.FromConfiguration(new ConfigurationBuilder()
-					.AddEventStore(args, environment, defaultValues.Concat(new[] {
+					.AddEventStore(nameof(ClusterVNodeOptions.ApplicationOptions.Config), args, environment, defaultValues.Concat(new[] {
 						new KeyValuePair<string, object>(nameof(ClusterVNodeOptions.Application.Config),
 							configurationFile.FullName)
 					}))
