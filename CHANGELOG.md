@@ -60,6 +60,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3762 [EventStore#3769](https://github.com/EventStore/EventStore/pull/3769)
 - //github.com/EventStore/EventStore/pull/3764 [EventStore#3774](https://github.com/EventStore/EventStore/pull/3774)
 - //github.com/EventStore/EventStore/pull/3778 [EventStore#3779](https://github.com/EventStore/EventStore/pull/3779)
+- //github.com/EventStore/EventStore/pull/3801 [EventStore#3806](https://github.com/EventStore/EventStore/pull/3806)
 
 ## [22.10.1] - 2023-02-13
 
