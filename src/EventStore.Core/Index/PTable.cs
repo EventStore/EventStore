@@ -128,7 +128,10 @@ namespace EventStore.Core.Index {
 			var sw = Stopwatch.StartNew();
 			_size = new FileInfo(_filename).Length;
 
-			File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
+			Helper.EatException(() => {
+				// this action will fail if the file is created on a Unix system that does not have permissions to make files read-only
+				File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
+			});
 
 			_workItems = new ObjectPool<WorkItem>(string.Format("PTable {0} work items", _id),
 				initialReaders,
