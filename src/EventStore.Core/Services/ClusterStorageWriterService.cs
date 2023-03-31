@@ -312,9 +312,6 @@ namespace EventStore.Core.Services {
 
 					_subscriptionPos = chunk.ChunkHeader.ChunkEndPosition;
 					_framer.Reset();
-				} else {
-					// we do not want to commit at chunk boundaries since it's not necessarily a transaction boundary
-					Commit();
 				}
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");
@@ -350,6 +347,20 @@ namespace EventStore.Core.Services {
 					"First write failed when writing replicated record: {0}.",
 					"First write failed when writing replicated record: {record}.",
 					record);
+
+			switch (record) {
+				case IPrepareLogRecord prepare:
+					if (prepare.Flags.HasFlag(PrepareFlags.IsCommitted)) { // single write or implicit transaction
+						if (prepare.Flags.HasFlag(PrepareFlags.TransactionEnd)) // single write or complete implicit transaction
+							Commit();
+					} else // explicit transaction, safe to write a partial transaction
+						Commit();
+					break;
+				default:
+					// all other log record types are atomic
+					Commit();
+					break;
+			}
 		}
 
 		private void ReplicationFail(string message, string messageStructured, params object[] args) {
