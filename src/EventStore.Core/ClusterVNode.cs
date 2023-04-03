@@ -590,7 +590,9 @@ namespace EventStore.Core {
 					new EventStoreClusterClient(
 						options.Application.Insecure ? Uri.UriSchemeHttp : Uri.UriSchemeHttps,
 						endpoint, options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
-						publisher, _internalServerCertificateValidator, _certificateSelector));
+						publisher, _internalServerCertificateValidator, _certificateSelector,
+						gossipSendTracker: trackers.GossipTrackers.PushToPeer,
+						gossipGetTracker: trackers.GossipTrackers.PullFromPeer));
 
 			_mainBus.Subscribe<ClusterClientMessage.CleanCache>(_eventStoreClusterClientCache);
 			_mainBus.Subscribe<SystemMessage.SystemInit>(_eventStoreClusterClientCache);
@@ -1087,7 +1089,8 @@ namespace EventStore.Core {
 			var metricsController = new MetricsController();
 			var atomController = new AtomController(_mainQueue, _workersHandler,
 				options.Application.DisableHttpCaching, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
-			var gossipController = new GossipController(_mainQueue, _workersHandler);
+			var gossipController = new GossipController(_mainQueue, _workersHandler,
+				trackers.GossipTrackers.ProcessingRequestFromHttpClient);
 			var persistentSubscriptionController =
 				new PersistentSubscriptionController(httpSendService, _mainQueue, _workersHandler);
 			var infoController = new InfoController(options, new Dictionary<string, bool> {

@@ -39,17 +39,31 @@ namespace EventStore.Core.Cluster {
 
 		private async Task<ClusterInfo> SendGossipAsync(ClusterInfo clusterInfo,
 			EndPoint server, DateTime deadline) {
-			var request = new GossipRequest {
-				Info = ClusterInfo.ToGrpcClusterInfo(clusterInfo),
-				Server = new GossipEndPoint(server.GetHost(), (uint)server.GetPort())
-			};
-			var clusterInfoDto = await _gossipClient.UpdateAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
-			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
+
+			using var duration = _gossipSendTracker.Start();
+			try {
+				var request = new GossipRequest {
+					Info = ClusterInfo.ToGrpcClusterInfo(clusterInfo),
+					Server = new GossipEndPoint(server.GetHost(), (uint)server.GetPort())
+				};
+				var clusterInfoDto = await _gossipClient.UpdateAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
+				return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
+			}
+			catch (Exception ex) {
+				duration.SetException(ex);
+				throw;
+			}
 		}
 
 		private async Task<ClusterInfo> GetGossipAsync(DateTime deadline) {
-			var clusterInfoDto = await _gossipClient.ReadAsync(new Empty(), deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
-			return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
+			using var duration = _gossipGetTracker.Start();
+			try {
+				var clusterInfoDto = await _gossipClient.ReadAsync(new Empty(), deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
+				return ClusterInfo.FromGrpcClusterInfo(clusterInfoDto, _clusterDns);
+			} catch (Exception ex) {
+				duration.SetException(ex);
+				throw;
+			}
 		}
 	}
 }

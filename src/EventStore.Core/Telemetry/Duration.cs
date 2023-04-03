@@ -10,6 +10,8 @@ namespace EventStore.Core.Telemetry {
 		private readonly Instant _start;
 		private bool _failed;
 
+		public static Duration Nil { get; } = new();
+
 		public Duration(DurationMetric metric, string name, Instant start) {
 			_metric = metric;
 			_name = name;

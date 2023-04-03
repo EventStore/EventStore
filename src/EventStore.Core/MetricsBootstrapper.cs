@@ -19,6 +19,7 @@ public class Trackers {
 	public IScavengeStatusTracker ScavengeStatusTracker { get; set; } = new ScavengeStatusTracker.NoOp();
 	public GrpcTrackers GrpcTrackers { get; } = new();
 	public QueueTrackers QueueTrackers { get; set; } = new();
+	public GossipTrackers GossipTrackers { get; set; } = new ();
 }
 
 public class GrpcTrackers {
@@ -37,6 +38,15 @@ public class GrpcTrackers {
 	}
 }
 
+public class GossipTrackers {
+	public IDurationTracker PullFromPeer { get; set; } = new DurationTracker.NoOp();
+	public IDurationTracker PushToPeer { get; set; } = new DurationTracker.NoOp();
+	public IDurationTracker ProcessingPushFromPeer { get; set; } = new DurationTracker.NoOp();
+	public IDurationTracker ProcessingRequestFromPeer { get; set; } = new DurationTracker.NoOp();
+	public IDurationTracker ProcessingRequestFromHttpClient { get; set; } = new DurationTracker.NoOp();
+	public IDurationTracker ProcessingRequestFromGrpcClient { get; set; } = new DurationTracker.NoOp();
+}
+
 public static class MetricsBootstrapper {
 	public static void Bootstrap(
 		Conf conf,
@@ -52,8 +62,31 @@ public static class MetricsBootstrapper {
 		var coreMeter = new Meter("EventStore.Core", version: "0.0.1");
 		var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
 		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
+		var latencyMetric = new DurationMetric(coreMeter, "eventstore-latency");
+		var gossipProcessingMetric = new DurationMetric(coreMeter, "eventstore-gossip-processing-duration");
 		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
+
+		// gossip
+		if (conf.GossipTrackers.Length != 0) {
+			if (conf.GossipTrackers.Contains(Conf.Gossip.PullFromPeer))
+				trackers.GossipTrackers.PullFromPeer = new DurationTracker(latencyMetric, "pull-gossip-from-peer");
+
+			if (conf.GossipTrackers.Contains(Conf.Gossip.PushToPeer))
+				trackers.GossipTrackers.PushToPeer = new DurationTracker(latencyMetric, "push-gossip-to-peer");
+
+			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingPushFromPeer))
+				trackers.GossipTrackers.ProcessingPushFromPeer = new DurationTracker(gossipProcessingMetric, "push-from-peer");
+
+			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingRequestFromPeer))
+				trackers.GossipTrackers.ProcessingRequestFromPeer = new DurationTracker(gossipProcessingMetric, "request-from-peer");
+
+			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingRequestFromGrpcClient))
+				trackers.GossipTrackers.ProcessingRequestFromGrpcClient = new DurationTracker(gossipProcessingMetric, "request-from-grpc-client");
+
+			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingRequestFromHttpClient))
+				trackers.GossipTrackers.ProcessingRequestFromHttpClient = new DurationTracker(gossipProcessingMetric, "request-from-http-client");
+		}
 
 		// checkpoints
 		_ = new CheckpointMetric(

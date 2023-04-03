@@ -7,6 +7,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Telemetry;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
 
@@ -16,7 +17,9 @@ namespace EventStore.Core.Tests.Cluster {
 			(endpoint, bus) =>
 				new EventStoreClusterClient(
 					Uri.UriSchemeHttps, endpoint, null, bus,
-					delegate { return (true, null); }, null);
+					delegate { return (true, null); }, null,
+					new DurationTracker.NoOp(),
+					new DurationTracker.NoOp());
 
 		[Test]
 		public void BusShouldNotBeNull() {

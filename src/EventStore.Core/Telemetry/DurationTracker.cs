@@ -16,7 +16,7 @@
 		public Duration Start() => _metric.Start(_durationName);
 
 		public class NoOp : IDurationTracker {
-			public Duration Start() => new();
+			public Duration Start() => Duration.Nil;
 		}
 	}
 }
