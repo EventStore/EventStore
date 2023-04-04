@@ -31,6 +31,7 @@ namespace EventStore.Core.Services {
 
 		private readonly Func<long> _getLastIndexedPosition;
 		private readonly LengthPrefixSuffixFramer _framer;
+		private readonly TransactionTracker _transactionTracker;
 
 		private Guid _subscriptionId;
 		private TFChunk _activeChunk;
@@ -58,6 +59,7 @@ namespace EventStore.Core.Services {
 
 			_getLastIndexedPosition = getLastIndexedPosition;
 			_framer = new LengthPrefixSuffixFramer(OnLogRecordUnframed, TFConsts.MaxLogRecordSize);
+			_transactionTracker = new TransactionTracker();
 
 			SubscribeToMessage<ReplicationMessage.ReplicaSubscribed>();
 			SubscribeToMessage<ReplicationMessage.CreateChunk>();
@@ -87,6 +89,7 @@ namespace EventStore.Core.Services {
 			}
 
 			_framer.Reset();
+			_transactionTracker.Clear();
 
 			_subscriptionId = message.SubscriptionId;
 			_ackedSubscriptionPos = _subscriptionPos = message.SubscriptionPosition;
@@ -281,8 +284,16 @@ namespace EventStore.Core.Services {
 						"Data chunk bulk received, but we have active chunk for receiving raw chunk bulks.");
 
 				var chunk = Writer.CurrentChunk;
-				if (chunk.ChunkHeader.ChunkStartNumber != message.ChunkStartNumber ||
-				    chunk.ChunkHeader.ChunkEndNumber != message.ChunkEndNumber) {
+				var chunkStartNumber = chunk.ChunkHeader.ChunkStartNumber;
+				var chunkEndNumber = chunk.ChunkHeader.ChunkEndNumber;
+
+				if (_transactionTracker.IsChunkCompletionPending) {
+					chunkStartNumber++;
+					chunkEndNumber++;
+				}
+
+				if (chunkStartNumber != message.ChunkStartNumber ||
+				    chunkEndNumber != message.ChunkEndNumber) {
 					Log.Error(
 						"Received DataChunkBulk for TFChunk {chunkStartNumber}-{chunkEndNumber}, but active chunk is {activeChunkStartNumber}-{activeChunkEndNumber}.",
 						message.ChunkStartNumber, message.ChunkEndNumber, chunk.ChunkHeader.ChunkStartNumber,
@@ -301,9 +312,8 @@ namespace EventStore.Core.Services {
 				_subscriptionPos += message.DataBytes.Length;
 
 				if (message.CompleteChunk) {
-					Log.Debug("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
-						message.ChunkEndNumber);
-					Writer.CompleteChunk();
+					if (_transactionTracker.CanCompleteChunk(message.ChunkStartNumber, message.ChunkEndNumber))
+						CompleteChunk(message.ChunkStartNumber, message.ChunkEndNumber);
 
 					if (_framer.HasData)
 						ReplicationFail(
@@ -330,6 +340,12 @@ namespace EventStore.Core.Services {
 			}
 		}
 
+		private void CompleteChunk(int chunkStartNumber, int chunkEndNumber) {
+			Log.Debug("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...",
+				chunkStartNumber, chunkEndNumber);
+			Writer.CompleteChunk();
+		}
+
 		private void OnLogRecordUnframed(BinaryReader reader) {
 			var rawLength = reader.BaseStream.Length;
 
@@ -341,26 +357,30 @@ namespace EventStore.Core.Services {
 			var length = (int)rawLength;
 
 			var record = LogRecord.ReadFrom(reader, length: length);
-			long newPos;
-			if (!Writer.Write(record, out newPos))
-				ReplicationFail(
-					"First write failed when writing replicated record: {0}.",
-					"First write failed when writing replicated record: {record}.",
-					record);
 
-			switch (record) {
-				case IPrepareLogRecord prepare:
-					if (prepare.Flags.HasFlag(PrepareFlags.IsCommitted)) { // single write or implicit transaction
-						if (prepare.Flags.HasFlag(PrepareFlags.TransactionEnd)) // single write or complete implicit transaction
-							Commit();
-					} else // explicit transaction, safe to write a partial transaction
-						Commit();
-					break;
-				default:
-					// all other log record types are atomic
-					Commit();
-					break;
+			_transactionTracker.Track(record, out var canCommit);
+
+			if (!canCommit)
+				return;
+
+			foreach (var rec in _transactionTracker.Records) {
+				switch (rec) {
+					case TrackerLogRecord trackerLogRec:
+						if (!Writer.Write(trackerLogRec.LogRecord, out _))
+							ReplicationFail(
+								"First write failed when writing replicated record: {0}.",
+								"First write failed when writing replicated record: {record}.",
+								record);
+						break;
+					case CompleteChunkRecord completeChunkRec:
+						CompleteChunk(completeChunkRec.ChunkStartNumber, completeChunkRec.ChunkEndNumber);
+						break;
+				}
 			}
+
+			_transactionTracker.Clear();
+
+			Commit();
 		}
 
 		private void ReplicationFail(string message, string messageStructured, params object[] args) {
