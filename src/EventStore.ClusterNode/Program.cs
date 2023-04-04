@@ -22,8 +22,6 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
-using EventStore.Core.Services;
-using EventStore.Core.Util;
 using Serilog.Events;
 
 namespace EventStore.ClusterNode {
@@ -143,22 +141,9 @@ namespace EventStore.ClusterNode {
 				if (deprecationWarnings != null) {
 					Log.Warning($"DEPRECATED{Environment.NewLine}{deprecationWarnings}");
 				}
-				
-				var environmentOnlyOptions = options.CheckForEnvironmentOnlyOptions();
-				if (environmentOnlyOptions != null) {
-					Log.Error($"PLAIN TEXT PASSWORD {Environment.NewLine}{environmentOnlyOptions}");
+
+				if (!ClusterVNodeOptionsValidator.ValdiateForStartup(options)) {
 					return 1;
-				}
-				
-				if (options.Application.Insecure || options.Auth.AuthenticationType != Opts.AuthenticationTypeDefault) {
-					if (options.DefaultUser.DefaultAdminPassword != SystemUsers.DefaultAdminPassword) {
-						Log.Error("Cannot set default admin password when not using the internal authentication.");
-						return 1;
-					}
-					if (options.DefaultUser.DefaultOpsPassword != SystemUsers.DefaultOpsPassword) {
-						Log.Error("Cannot set default ops password when not using the internal authentication.");
-						return 1;
-					}
 				}
 
 				if (options.Application.Insecure) {
@@ -168,15 +153,7 @@ namespace EventStore.ClusterNode {
 						"INSECURE MODE WILL DISABLE ALL AUTHENTICATION, AUTHORIZATION AND TRANSPORT SECURITY FOR ALL CLIENTS AND NODES.\n" +
 						"==============================================================================================================\n");
 				}
-
-				if (!options.Cluster.DiscoverViaDns && options.Cluster.GossipSeed.Length == 0 &&
-				    options.Cluster.ClusterSize == 1) {
-					Log.Information(
-						"DNS discovery is disabled, but no gossip seed endpoints have been specified. Since "
-						+ "the cluster size is set to 1, this may be intentional. Gossip seeds can be specified "
-						+ "using the `GossipSeed` option.");
-				}
-
+				
 				if (options.Application.WhatIf) {
 					return 0;
 				}

@@ -228,30 +228,16 @@ namespace EventStore.Core {
 			Guid? instanceId = null, int debugIndex = 0) {
 
 			_certificateProvider = certificateProvider;
-			if (options == null) {
-				throw new ArgumentNullException(nameof(options));
-			}
-
+			
+			ClusterVNodeOptionsValidator.Validate(options);
+			
 			ReloadLogOptions(options);
 
 			instanceId ??= Guid.NewGuid();
 			if (instanceId == Guid.Empty) {
 				throw new ArgumentException("InstanceId may not be empty.", nameof(instanceId));
 			}
-
-			if (options.Interface.ExtIp == null) {
-				throw new ArgumentNullException(nameof(options.Interface.ExtIp));
-			}
-
-			if (options.Interface.IntIp == null) {
-				throw new ArgumentNullException(nameof(options.Interface.IntIp));
-			}
-
-			if (options.Cluster.ClusterSize <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Cluster.ClusterSize), options.Cluster.ClusterSize,
-					$"{nameof(options.Cluster.ClusterSize)} must be greater than 0.");
-			}
-
+			
 			if (!options.Application.Insecure) {
 				ReloadCertificates(options);
 
@@ -259,80 +245,7 @@ namespace EventStore.Core {
 					throw new InvalidConfigurationException("A certificate is required unless insecure mode (--insecure) is set.");
 				}
 			}
-
-			if (options.Cluster.ClusterDns == null) {
-				throw new ArgumentNullException(nameof(options.Cluster.ClusterDns));
-			}
-
-			if (options.Cluster.GossipSeed == null) {
-				throw new ArgumentNullException(nameof(options.Cluster.GossipSeed));
-			}
-
-			if (options.Cluster.PrepareAckCount <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Cluster.PrepareAckCount),
-					options.Cluster.PrepareAckCount,
-					$"{nameof(options.Cluster.PrepareAckCount)} must be greater than 0.");
-			}
-
-			if (options.Cluster.CommitAckCount <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Cluster.CommitAckCount),
-					options.Cluster.CommitAckCount,
-					$"{nameof(options.Cluster.CommitAckCount)} must be greater than 0.");
-			}
-
-			if (options.Database.InitializationThreads <= 0) {
-				throw new ArgumentOutOfRangeException(nameof(options.Database.InitializationThreads),
-					options.Database.InitializationThreads,
-					$"{nameof(options.Database.InitializationThreads)} must be greater than 0.");
-			}
-
-			if (options.Grpc.KeepAliveTimeout < 0) {
-				throw new ArgumentOutOfRangeException($"Invalid {nameof(options.Grpc.KeepAliveTimeout)} {options.Grpc.KeepAliveTimeout}. Please provide a positive integer.");
-			}
-
-			if (options.Grpc.KeepAliveInterval < 0) {
-				throw new ArgumentOutOfRangeException($"Invalid {nameof(options.Grpc.KeepAliveInterval)} {options.Grpc.KeepAliveInterval}. Please provide a positive integer.");
-			}
-
-			if (options.Grpc.KeepAliveInterval >= 0 && options.Grpc.KeepAliveInterval < 10) {
-				Log.Warning($"Specified {nameof(options.Grpc.KeepAliveInterval)} of {options.Grpc.KeepAliveInterval} is less than recommended 10_000 ms.");
-			}
-
-			if (options.Application.MaxAppendSize > TFConsts.EffectiveMaxLogRecordSize) {
-				throw new ArgumentOutOfRangeException(nameof(options.Application.MaxAppendSize),
-					$"{nameof(options.Application.MaxAppendSize)} exceeded {TFConsts.EffectiveMaxLogRecordSize} bytes.");
-			}
-
-			if (options.Cluster.DiscoverViaDns && string.IsNullOrWhiteSpace(options.Cluster.ClusterDns))
-				throw new ArgumentException(
-					"Either DNS Discovery must be disabled (and seeds specified), or a cluster DNS name must be provided.");
-
-			if (options.Database.Db.StartsWith("~")) {
-				throw new ApplicationInitializationException(
-					"The given database path starts with a '~'. Event Store does not expand '~'.");
-			}
-
-			if (options.Database.Index != null && options.Database.Db != null) {
-				string absolutePathIndex = Path.GetFullPath(options.Database.Index);
-				string absolutePathDb = Path.GetFullPath(options.Database.Db);
-				if (absolutePathDb.Equals(absolutePathIndex)) {
-					throw new ApplicationInitializationException(
-						$"The given database ({absolutePathDb}) and index ({absolutePathIndex}) paths cannot point to the same directory.");
-				}
-			}
-
-			if (options.Cluster.GossipSeed.Length > 1 && options.Cluster.ClusterSize == 1) {
-				throw new ApplicationInitializationException(
-					"The given ClusterSize is set to 1 but GossipSeeds are multiple. We will never be able to sync up with this configuration.");
-			}
-
-			if (options.Cluster.ReadOnlyReplica && options.Cluster.ClusterSize <= 1) {
-				throw new InvalidConfigurationException(
-					"This node cannot be configured as a Read Only Replica as these node types are only supported in a clustered configuration.");
-			}
-
-
-
+			
 			_options = options;
 
 #if DEBUG
