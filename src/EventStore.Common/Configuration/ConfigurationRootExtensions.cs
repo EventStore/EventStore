@@ -25,6 +25,21 @@ namespace EventStore.Common.Configuration {
 			return value.Split(',', StringSplitOptions.RemoveEmptyEntries);
 		}
 		
+		// has the user specified what they want, or left it up to the default.
+		// specifying the same value as the default still counts as being used specified.
+		public static bool IsUserSpecified(this IConfigurationRoot configurationRoot, string key) {
+			foreach (var provider in configurationRoot.Providers) {
+				if (provider.GetType() == typeof(Default))
+					continue;
+
+				if (provider.TryGet(key, out _)) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		public static string? CheckProvidersForEnvironmentVariables(IConfigurationRoot? configurationRoot, IEnumerable<Type> OptionSections) {
 			if (configurationRoot != null) {
 				var environmentOptionsOnly = OptionSections.SelectMany(section => section.GetProperties())
