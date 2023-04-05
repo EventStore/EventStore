@@ -13,7 +13,7 @@ using Conf = EventStore.Common.Configuration.TelemetryConfiguration;
 namespace EventStore.Core;
 
 public class Trackers {
-	public IInaugurationStatusTracker InaugurationStatusTracker { get; set; } = new InaugurationStatusTracker.NoOp();
+	public IInaugurationStatusTracker InaugurationStatusTracker { get; set; } = new NodeStatusTracker.NoOp();
 	public IIndexStatusTracker IndexStatusTracker { get; set; } = new IndexStatusTracker.NoOp();
 	public INodeStatusTracker NodeStatusTracker { get; set; } = new NodeStatusTracker.NoOp();
 	public IScavengeStatusTracker ScavengeStatusTracker { get; set; } = new ScavengeStatusTracker.NoOp();
@@ -108,12 +108,15 @@ public static class MetricsBootstrapper {
 
 		// status metrics
 		if (conf.StatusTrackers.Length > 0) {
-			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Inauguration))
-				trackers.InaugurationStatusTracker = new InaugurationStatusTracker(statusMetric);
+			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Node)) {
+				var tracker = new NodeStatusTracker(statusMetric);
+				trackers.NodeStatusTracker = tracker;
+				trackers.InaugurationStatusTracker = tracker;
+			}
+
 			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Index))
 				trackers.IndexStatusTracker = new IndexStatusTracker(statusMetric);
-			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Node))
-				trackers.NodeStatusTracker = new NodeStatusTracker(statusMetric);
+
 			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Scavenge))
 				trackers.ScavengeStatusTracker = new ScavengeStatusTracker(statusMetric);
 		}

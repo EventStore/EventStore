@@ -41,6 +41,62 @@ namespace EventStore.Core.TransactionLog.Services.VNode {
 			AssertMeasurements("Follower", 502);
 		}
 
+		[Fact]
+		public void can_observe_initial() {
+			_clock.SecondsSinceEpoch = 500;
+			_sut.OnStateChange(Data.VNodeState.PreLeader);
+			_sut.OnStateChange(InaugurationManager.ManagerState.BecomingLeader);
+			AssertMeasurements("PreLeader - BecomingLeader", 500);
+
+			_clock.SecondsSinceEpoch = 502;
+			_sut.OnStateChange(InaugurationManager.ManagerState.Idle);
+			AssertMeasurements("PreLeader", 502);
+		}
+
+		[Fact]
+		public void can_observe_waiting_for_chaser() {
+			_clock.SecondsSinceEpoch = 500;
+			_sut.OnStateChange(Data.VNodeState.PreLeader);
+			AssertMeasurements("PreLeader", 500);
+
+			_clock.SecondsSinceEpoch = 502;
+			_sut.OnStateChange(InaugurationManager.ManagerState.WaitingForChaser);
+			AssertMeasurements("PreLeader - WaitingForChaser", 502);
+		}
+
+		[Fact]
+		public void can_observe_writing_epoch() {
+			_clock.SecondsSinceEpoch = 500;
+			_sut.OnStateChange(Data.VNodeState.PreLeader);
+			AssertMeasurements("PreLeader", 500);
+
+			_clock.SecondsSinceEpoch = 502;
+			_sut.OnStateChange(InaugurationManager.ManagerState.WritingEpoch);
+			AssertMeasurements("PreLeader - WritingEpoch", 502);
+		}
+
+		[Fact]
+		public void can_observe_waiting_for_conditions() {
+			_clock.SecondsSinceEpoch = 500;
+			_sut.OnStateChange(Data.VNodeState.PreLeader);
+			AssertMeasurements("PreLeader", 500);
+
+			_clock.SecondsSinceEpoch = 502;
+			_sut.OnStateChange(InaugurationManager.ManagerState.WaitingForConditions);
+			AssertMeasurements("PreLeader - WaitingForConditions", 502);
+		}
+
+		[Fact]
+		public void can_observe_becoming_leader() {
+			_clock.SecondsSinceEpoch = 500;
+			_sut.OnStateChange(Data.VNodeState.PreLeader);
+			AssertMeasurements("PreLeader", 500);
+
+			_clock.SecondsSinceEpoch = 502;
+			_sut.OnStateChange(InaugurationManager.ManagerState.BecomingLeader);
+			AssertMeasurements("PreLeader - BecomingLeader", 502);
+		}
+
 		void AssertMeasurements(string expectedStatus, int expectedValue) {
 			_listener.Observe();
 
