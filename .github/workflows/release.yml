@@ -12,6 +12,30 @@ jobs:
       - name: Get the version
         id: get_version
         run: echo ::set-output name=version::${GITHUB_REF:15}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Verify new release tag
+        shell: pwsh
+        run: |
+          #
+          # Verify the tag to make sure minver can find it.
+          #
+          $tag="oss-v${{ steps.get_version.outputs.version }}"
+          # only check the first tag of every maintained release
+          if ($tag -like "oss-v*.*.0") {
+            Write-Output "Checking tag: $($tag)"
+            $branchesWithTag = $(git branch --all --contains $tag) -join " "
+            if (-not ($branchesWithTag -match "main")) {
+              Write-Error "Tag $($tag) should be created with a commit from master and not from a release branch!"
+            }
+          } else {
+            Write-Output "Skip checking tag: $($tag)"
+          }
+
       - name: Perform Release 
         run: |
           curl -X POST https://api.github.com/repos/EventStore/TrainStation/dispatches \
