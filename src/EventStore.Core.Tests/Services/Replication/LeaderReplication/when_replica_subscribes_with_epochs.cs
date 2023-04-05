@@ -200,7 +200,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(1);
 
-			var subscribePosition = Writer.LogPosition + 1000;
+			var subscribePosition = Writer.CommittedLogPosition + 1000;
 			_replicaEpochs = new List<Epoch> {
 				new Epoch(subscribePosition, 2, Guid.NewGuid()),
 			};
@@ -215,7 +215,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			var subscribed = GetTcpSendsFor(_replicaManager).Select(x => x.Message)
 				.OfType<ReplicationMessage.ReplicaSubscribed>().ToArray();
 			Assert.AreEqual(1, subscribed.Length);
-			Assert.AreEqual(Writer.LogPosition, subscribed[0].SubscriptionPosition);
+			Assert.AreEqual(Writer.CommittedLogPosition, subscribed[0].SubscriptionPosition);
 			Assert.AreEqual(_replicaId, subscribed[0].SubscriptionId);
 			Assert.AreEqual(LeaderId, subscribed[0].LeaderId);
 		}
@@ -237,7 +237,7 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 			Writer.Write(CreateLogRecord(4), out _);
 			EpochManager.WriteNewEpoch(4);
 
-			var subscribePosition = Writer.LogPosition + 1000;
+			var subscribePosition = Writer.CommittedLogPosition + 1000;
 			_replicaEpochs = new List<Epoch> {
 				new Epoch(subscribePosition, 2, Guid.NewGuid()),
 			};

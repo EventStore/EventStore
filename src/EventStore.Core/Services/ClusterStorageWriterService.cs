@@ -216,7 +216,7 @@ namespace EventStore.Core.Services {
 			Bus.Publish(new ReplicationMessage.AckLogPosition(
 				subscriptionId: _subscriptionId,
 				replicationLogPosition: _ackedSubscriptionPos,
-				writerLogPosition: Writer.LogPosition));
+				writerLogPosition: Writer.CommittedLogPosition));
 		}
 
 		public void Handle(ReplicationMessage.RawChunkBulk message) {
@@ -267,7 +267,7 @@ namespace EventStore.Core.Services {
 				Bus.Publish(new ReplicationMessage.AckLogPosition(
 					subscriptionId: _subscriptionId,
 					replicationLogPosition: _ackedSubscriptionPos,
-					writerLogPosition: Writer.LogPosition));
+					writerLogPosition: Writer.CommittedLogPosition));
 			}
 		}
 
@@ -329,7 +329,7 @@ namespace EventStore.Core.Services {
 					subscriptionId: _subscriptionId,
 					replicationLogPosition: _ackedSubscriptionPos,
 					// we leave it up to the Flush call above whether to truly flush or not
-					writerLogPosition: Writer.LogPosition));
+					writerLogPosition: Writer.CommittedLogPosition));
 			}
 		}
 

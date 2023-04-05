@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 		[Test]
 		public void check_commmit_should_return_ok_decision() {
 			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare.LogPosition,
-				Writer.LogPosition);
+				Writer.CommittedLogPosition);
 
 			var streamId = _logFormat.StreamIds.LookupValue("ES");
 

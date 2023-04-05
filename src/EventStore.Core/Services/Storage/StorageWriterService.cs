@@ -236,7 +236,12 @@ namespace EventStore.Core.Services.Storage {
 				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
-			if (Writer.FlushedLogPosition != Writer.LogPosition) {
+			if (Writer.CommittedLogPosition != Writer.LogPosition)
+				throw new Exception("Invariant failure: " +
+				                    $"writer's log position ({Writer.LogPosition}) does not match " +
+				                    $"writer's committed position ({Writer.CommittedLogPosition})");
+
+			if (Writer.FlushedLogPosition != Writer.CommittedLogPosition) {
 				Writer.Flush();
 				Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			}
