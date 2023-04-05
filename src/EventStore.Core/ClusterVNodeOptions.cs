@@ -274,7 +274,8 @@ namespace EventStore.Core {
 		public record CertificateOptions {
 			[Description("The path to a directory which contains trusted X.509 (.pem, .crt, .cer, .der) " +
 			             "root certificate files.")]
-			public string? TrustedRootCertificatesPath { get; init; }
+			public string? TrustedRootCertificatesPath { get; init; } =
+				Locations.DefaultTrustedRootCertificateDirectory;
 
 			[Description("The reserved common name to authenticate EventStoreDB nodes/servers from certificates")]
 			public string CertificateReservedNodeCommonName { get; init; } = "eventstoredb-node";
