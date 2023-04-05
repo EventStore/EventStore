@@ -22,37 +22,37 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private long _t2CommitPos, _t1CommitPos, _postCommitPos;
 
 		protected override void WriteTestScenario() {
-			var t1 = WriteTransactionBeginV0(Guid.NewGuid(), Writer.LogPosition, _streamIdOne,
+			var t1 = WriteTransactionBeginV0(Guid.NewGuid(), Writer.NextRecordPosition, _streamIdOne,
 				ExpectedVersion.NoStream);
-			var t2 = WriteTransactionBeginV0(Guid.NewGuid(), Writer.LogPosition, _streamIdTwo,
+			var t2 = WriteTransactionBeginV0(Guid.NewGuid(), Writer.NextRecordPosition, _streamIdTwo,
 				ExpectedVersion.NoStream);
 
-			_p1 = WriteTransactionEventV0(t1.CorrelationId, Writer.LogPosition, t1.LogPosition, 0,
+			_p1 = WriteTransactionEventV0(t1.CorrelationId, Writer.NextRecordPosition, t1.LogPosition, 0,
 				t1.EventStreamId, 0, "es1", PrepareFlags.Data);
-			_p2 = WriteTransactionEventV0(t2.CorrelationId, Writer.LogPosition, t2.LogPosition, 0,
+			_p2 = WriteTransactionEventV0(t2.CorrelationId, Writer.NextRecordPosition, t2.LogPosition, 0,
 				t2.EventStreamId, 0, "abc1", PrepareFlags.Data);
-			_p3 = WriteTransactionEventV0(t1.CorrelationId, Writer.LogPosition, t1.LogPosition, 1,
+			_p3 = WriteTransactionEventV0(t1.CorrelationId, Writer.NextRecordPosition, t1.LogPosition, 1,
 				t1.EventStreamId, 1, "es1", PrepareFlags.Data);
-			_p4 = WriteTransactionEventV0(t2.CorrelationId, Writer.LogPosition, t2.LogPosition, 1,
+			_p4 = WriteTransactionEventV0(t2.CorrelationId, Writer.NextRecordPosition, t2.LogPosition, 1,
 				t2.EventStreamId, 1, "abc1", PrepareFlags.Data);
-			_p5 = WriteTransactionEventV0(t1.CorrelationId, Writer.LogPosition, t1.LogPosition, 2,
+			_p5 = WriteTransactionEventV0(t1.CorrelationId, Writer.NextRecordPosition, t1.LogPosition, 2,
 				t1.EventStreamId, 2, "es1", PrepareFlags.Data);
 
-			WriteTransactionEndV0(t2.CorrelationId, Writer.LogPosition, t2.TransactionPosition,
+			WriteTransactionEndV0(t2.CorrelationId, Writer.NextRecordPosition, t2.TransactionPosition,
 				t2.EventStreamId);
-			WriteTransactionEndV0(t1.CorrelationId, Writer.LogPosition, t1.TransactionPosition,
+			WriteTransactionEndV0(t1.CorrelationId, Writer.NextRecordPosition, t1.TransactionPosition,
 				t1.EventStreamId);
 
-			_t2CommitPos = WriteCommitV0(t2.CorrelationId, Writer.LogPosition, t2.TransactionPosition,
+			_t2CommitPos = WriteCommitV0(t2.CorrelationId, Writer.NextRecordPosition, t2.TransactionPosition,
 				t2.EventStreamId, 0, out _postCommitPos);
-			_t1CommitPos = WriteCommitV0(t1.CorrelationId, Writer.LogPosition, t1.TransactionPosition,
+			_t1CommitPos = WriteCommitV0(t1.CorrelationId, Writer.NextRecordPosition, t1.TransactionPosition,
 				t1.EventStreamId, 0, out _postCommitPos);
 
 			Writer.CompleteChunk();
 
 			// Need to have a second chunk as otherwise the checkpoints will be off
 			_random1 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), "random-stream",
-				Writer.LogPosition, 0);
+				Writer.NextRecordPosition, 0);
 
 			Scavenge(completeLast: false, mergeChunks: true);
 		}

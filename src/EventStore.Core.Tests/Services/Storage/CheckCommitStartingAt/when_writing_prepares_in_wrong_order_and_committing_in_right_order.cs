@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 		[Test]
 		public void check_commmit_on_expected_prepare_should_return_ok_decision() {
 			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare1.LogPosition,
-				Writer.CommittedLogPosition);
+				Writer.CommittedPosition);
 
 			Assert.AreEqual(CommitDecision.Ok, res.Decision);
 			Assert.AreEqual("ES", res.EventStreamId);
@@ -38,7 +38,7 @@ namespace EventStore.Core.Tests.Services.Storage.CheckCommitStartingAt {
 		[Test]
 		public void check_commmit_on_not_expected_prepare_should_return_wrong_expected_version() {
 			var res = ReadIndex.IndexWriter.CheckCommitStartingAt(_prepare4.LogPosition,
-				Writer.CommittedLogPosition);
+				Writer.CommittedPosition);
 
 			Assert.AreEqual(CommitDecision.WrongExpectedVersion, res.Decision);
 			Assert.AreEqual("ES", res.EventStreamId);

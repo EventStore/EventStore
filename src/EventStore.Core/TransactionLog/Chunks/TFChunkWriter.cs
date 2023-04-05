@@ -7,9 +7,9 @@ using Serilog.Events;
 
 namespace EventStore.Core.TransactionLog.Chunks {
 	public class TFChunkWriter : ITransactionFileWriter {
-		public long LogPosition => _writerPosition;
-		public long CommittedLogPosition => _writerCheckpoint.ReadNonFlushed();
-		public long FlushedLogPosition => _writerCheckpoint.Read();
+		public long NextRecordPosition => _writerPosition;
+		public long CommittedPosition => _writerCheckpoint.ReadNonFlushed();
+		public long FlushedPosition => _writerCheckpoint.Read();
 
 		public TFChunk.TFChunk CurrentChunk {
 			get { return _currentChunk; }

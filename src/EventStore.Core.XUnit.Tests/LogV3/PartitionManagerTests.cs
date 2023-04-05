@@ -142,9 +142,9 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 	}
 	
 	class FakeWriter: ITransactionFileWriter {
-		public long LogPosition { get; }
-		public long CommittedLogPosition { get; }
-		public long FlushedLogPosition { get; }
+		public long NextRecordPosition { get; }
+		public long CommittedPosition { get; }
+		public long FlushedPosition { get; }
 
 		public FakeWriter() {
 			WrittenRecords = new List<ILogRecord>();

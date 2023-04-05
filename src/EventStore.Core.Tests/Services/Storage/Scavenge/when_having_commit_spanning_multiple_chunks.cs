@@ -16,11 +16,11 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 			GetOrReserve("s1", out var s1StreamId, out _);
 			GetOrReserveEventType("event-type", out var eventTypeId, out _);
-			var transPos = Writer.LogPosition;
+			var transPos = Writer.NextRecordPosition;
 
 			for (int i = 0; i < 10; ++i) {
 				long tmp;
-				var r = LogRecord.Prepare(_recordFactory, Writer.LogPosition,
+				var r = LogRecord.Prepare(_recordFactory, Writer.NextRecordPosition,
 					Guid.NewGuid(),
 					Guid.NewGuid(),
 					transPos,

@@ -10,8 +10,8 @@ namespace EventStore.Core.TransactionLog {
 		void Flush();
 		void Close();
 
-		long LogPosition { get; }
-		long CommittedLogPosition { get; }
-		long FlushedLogPosition { get; }
+		long NextRecordPosition { get; }
+		long CommittedPosition { get; }
+		long FlushedPosition { get; }
 	}
 }

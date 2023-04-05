@@ -119,7 +119,7 @@ namespace EventStore.Core.Tests.ClientAPI.ExpectedVersion64Bit {
 			Guid eventId = default(Guid),
 			string eventType = "some-type") {
 
-			long pos = Writer.LogPosition;
+			long pos = Writer.NextRecordPosition;
 			_logFormatFactory.StreamNameIndex.GetOrReserve(
 				_logFormatFactory.RecordFactory,
 				eventStreamName,

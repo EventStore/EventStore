@@ -39,7 +39,7 @@ namespace EventStore.Core.LogV3 {
 			// below code only takes into account offline truncation
 			if (!RootTypeId.HasValue) {
 				RootTypeId = Guid.NewGuid();
-				long pos = _writer.LogPosition;
+				long pos = _writer.NextRecordPosition;
 				var rootPartitionType = _recordFactory.CreatePartitionTypeRecord(
 					timeStamp: DateTime.UtcNow,
 					logPosition: pos,
@@ -58,7 +58,7 @@ namespace EventStore.Core.LogV3 {
 
 			if (!RootId.HasValue) {
 				RootId = Guid.NewGuid();
-				long pos = _writer.LogPosition;
+				long pos = _writer.NextRecordPosition;
 				var rootPartition = _recordFactory.CreatePartitionRecord(
 					timeStamp: DateTime.UtcNow,
 					logPosition: pos, 
