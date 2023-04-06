@@ -15,6 +15,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			void Uncache();
 
 			bool ExistsAt(long logicalPosition);
+			long GetActualPosition(long logicalPosition);
 			RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged);
 			RecordReadResult TryReadFirst();
 			RecordReadResult TryReadClosestForward(long logicalPosition);
@@ -39,6 +40,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			public bool ExistsAt(long logicalPosition) {
 				return logicalPosition >= 0 && logicalPosition < Chunk.LogicalDataSize;
+			}
+
+			public long GetActualPosition(long logicalPosition) {
+				Ensure.Nonnegative(logicalPosition, nameof(logicalPosition));
+
+				if (logicalPosition >= Chunk.LogicalDataSize)
+					return -1;
+
+				return logicalPosition;
 			}
 
 			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {
@@ -93,7 +103,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					return new RawReadResult(true, nextLogicalPos, record, length);
 				} finally {
 					Chunk.ReturnReaderWorkItem(workItem);
-				};
+				}
 			}
 
 			public RecordReadResult TryReadLast() {
@@ -276,6 +286,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			public bool MayExistAt(long logicalPosition) {
 				/* This function is much faster than ExistsAt. However, it may return false positives (with a very low probability) but never false negatives */
 				return _logPositionsBloomFilter.MightContain(logicalPosition);
+			}
+
+			public long GetActualPosition(long logicalPosition) {
+				Ensure.Nonnegative(logicalPosition, nameof(logicalPosition));
+
+				var workItem = Chunk.GetReaderWorkItem();
+				try {
+					return TranslateExactPosition(workItem, logicalPosition);
+				} finally {
+					Chunk.ReturnReaderWorkItem(workItem);
+				}
 			}
 
 			public RecordReadResult TryReadAt(long logicalPosition, bool couldBeScavenged) {

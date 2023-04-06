@@ -18,6 +18,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		//Update = 0x30,                  // prepare updates previous instance of the same event, DANGEROUS!
 
 		IsJson = 0x100, // indicates data & metadata are valid json
+		IsRedacted = 0x200,
 
 		// aggregate flag set
 		// unused and easily confused with StreamDelete:  DeleteTombstone = TransactionBegin | TransactionEnd | StreamDelete,

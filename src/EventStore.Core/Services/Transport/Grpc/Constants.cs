@@ -23,6 +23,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public const string ScavengeNotFound = "scavenge-not-found";
 
+			public const string RedactionLockFailed = "redaction-lock-failed";
+			public const string RedactionGetEventPositionFailed = "redaction-get-event-position-failed";
+			public const string RedactionSwitchChunkFailed = "redaction-switch-chunk-failed";
+
 			public const string ExpectedVersion = "expected-version";
 			public const string ActualVersion = "actual-version";
 			public const string StreamName = "stream-name";

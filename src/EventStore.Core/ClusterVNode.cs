@@ -52,6 +52,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
@@ -105,6 +106,7 @@ namespace EventStore.Core {
 		abstract public Func<X509Certificate2> CertificateSelector { get; }
 		abstract public Func<X509Certificate2Collection> IntermediateCertificatesSelector { get; }
 		abstract public bool DisableHttps { get; }
+		abstract public bool EnableUnixSocket { get; }
 		abstract public void Start();
 		abstract public Task<ClusterVNode> StartAsync(bool waitUntilRead);
 		abstract public Task StopAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default);
@@ -174,6 +176,7 @@ namespace EventStore.Core {
 		private readonly IAuthenticationProvider _authenticationProvider;
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly IReadIndex<TStreamId> _readIndex;
+		private readonly SemaphoreSlimLock _switchChunksLock = new();
 
 		private readonly InMemoryBus[] _workerBuses;
 		private readonly MultiQueuedHandler _workersHandler;
@@ -181,6 +184,7 @@ namespace EventStore.Core {
 		private readonly List<Task> _tasks = new List<Task>();
 		private readonly QueueStatsManager _queueStatsManager;
 		private readonly bool _disableHttps;
+		private readonly bool _enableUnixSocket;
 		private readonly Func<X509Certificate2> _certificateSelector;
 		private readonly Func<X509Certificate2Collection> _trustedRootCertsSelector;
 		private readonly Func<X509Certificate2Collection> _intermediateCertsSelector;
@@ -204,6 +208,7 @@ namespace EventStore.Core {
 		public override Func<X509Certificate2> CertificateSelector => _certificateSelector;
 		public override Func<X509Certificate2Collection> IntermediateCertificatesSelector => _intermediateCertsSelector;
 		public override bool DisableHttps => _disableHttps;
+		public sealed override bool EnableUnixSocket => _enableUnixSocket;
 
 #if DEBUG
 		public TaskCompletionSource<bool> _taskAddedTrigger = new TaskCompletionSource<bool>();
@@ -449,6 +454,7 @@ namespace EventStore.Core {
 
 			var isSingleNode = options.Cluster.ClusterSize == 1;
 			_disableHttps = options.Application.Insecure;
+			_enableUnixSocket = options.Interface.EnableUnixSocket;
 			_mainBus = new InMemoryBus("MainBus");
 			_queueStatsManager = new QueueStatsManager();
 
@@ -671,7 +677,7 @@ namespace EventStore.Core {
 					Db.Config.WriterCheckpoint.AsReadOnly(),
 					optimizeReadSideCache: Db.Config.OptimizeReadSideCache),
 				writer);
-			
+
 			var epochManager = new EpochManager<TStreamId>(_mainQueue,
 				ESConsts.CachedEpochCount,
 				Db.Config.EpochCheckpoint,
@@ -989,6 +995,9 @@ namespace EventStore.Core {
 
 				if (options.Interface.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
+
+				if (EnableUnixSocket)
+					httpAuthenticationProviders.Add(new UnixSocketAuthenticationProvider());
 			}
 
 			//default authentication provider
@@ -1343,7 +1352,8 @@ namespace EventStore.Core {
 
 			var storageScavenger = new StorageScavenger(
 				logManager: scavengerLogManager,
-				scavengerFactory: scavengerFactory);
+				scavengerFactory: scavengerFactory,
+				switchChunksLock: _switchChunksLock);
 
 			// ReSharper disable RedundantTypeArgumentsOfMethod
 			_mainBus.Subscribe<ClientMessage.ScavengeDatabase>(storageScavenger);
@@ -1351,6 +1361,24 @@ namespace EventStore.Core {
 			_mainBus.Subscribe<ClientMessage.GetDatabaseScavenge>(storageScavenger);
 			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(storageScavenger);
 			// ReSharper restore RedundantTypeArgumentsOfMethod
+
+			// REDACTION
+			var redactionBus = new InMemoryBus("RedactionBus", true, TimeSpan.FromSeconds(2));
+			var redactionQueue = new QueuedHandlerThreadPool(redactionBus, "Redaction", _queueStatsManager,
+				trackers.QueueTrackers, false);
+
+			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.GetEventPosition, Message>());
+			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.AcquireChunksLock, Message>());
+			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.SwitchChunk, Message>());
+			_mainBus.Subscribe(redactionQueue.WidenFrom<RedactionMessage.ReleaseChunksLock, Message>());
+			_mainBus.Subscribe(redactionQueue.WidenFrom<SystemMessage.BecomeShuttingDown, Message>());
+
+			var redactionService = new RedactionService<TStreamId>(redactionQueue, Db, _readIndex, _switchChunksLock);
+			redactionBus.Subscribe<RedactionMessage.GetEventPosition>(redactionService);
+			redactionBus.Subscribe<RedactionMessage.AcquireChunksLock>(redactionService);
+			redactionBus.Subscribe<RedactionMessage.SwitchChunk>(redactionService);
+			redactionBus.Subscribe<RedactionMessage.ReleaseChunksLock>(redactionService);
+			redactionBus.Subscribe<SystemMessage.BecomeShuttingDown>(redactionService);
 
 			// TIMER
 			_timeProvider = new RealTimeProvider();
@@ -1470,6 +1498,7 @@ namespace EventStore.Core {
 			AddTask(monitoringQueue.Start());
 			AddTask(subscrQueue.Start());
 			AddTask(perSubscrQueue.Start());
+			AddTask(redactionQueue.Start());
 
 			if (Runtime.IsUnixOrMac) {
 				UnixSignalManager.GetInstance().Subscribe(Signum.SIGHUP, () => {
@@ -1613,6 +1642,7 @@ namespace EventStore.Core {
 
 			cts.CancelAfter(timeout.Value);
 			await _shutdownSource.Task.ConfigureAwait(false);
+			_switchChunksLock?.Dispose();
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {

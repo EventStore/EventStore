@@ -14,6 +14,7 @@
 		LeaderDiscovery,
 		Monitoring,
 		Misc,
+		Redaction,
 		Replication,
 		ReplicationTracking,
 		Storage,

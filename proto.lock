@@ -4601,6 +4601,132 @@
       }
     },
     {
+      "protopath": "Grpc:/:redaction.proto",
+      "def": {
+        "messages": [
+          {
+            "name": "GetEventPositionReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "stream_identifier",
+                "type": "event_store.client.StreamIdentifier"
+              },
+              {
+                "id": 2,
+                "name": "stream_revision",
+                "type": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "GetEventPositionResp",
+            "fields": [
+              {
+                "id": 1,
+                "name": "event_positions",
+                "type": "EventPosition",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "EventPosition",
+            "fields": [
+              {
+                "id": 1,
+                "name": "log_position",
+                "type": "uint64"
+              },
+              {
+                "id": 2,
+                "name": "chunk_info",
+                "type": "ChunkInfo"
+              }
+            ]
+          },
+          {
+            "name": "ChunkInfo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "file_name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "version",
+                "type": "uint32"
+              },
+              {
+                "id": 3,
+                "name": "is_complete",
+                "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "event_offset",
+                "type": "uint32"
+              }
+            ]
+          },
+          {
+            "name": "SwitchChunkReq",
+            "fields": [
+              {
+                "id": 1,
+                "name": "target_chunk_file",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "new_chunk_file",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "SwitchChunkResp"
+          }
+        ],
+        "services": [
+          {
+            "name": "Redaction",
+            "rpcs": [
+              {
+                "name": "GetEventPositions",
+                "in_type": "GetEventPositionReq",
+                "out_type": "GetEventPositionResp",
+                "in_streamed": true,
+                "out_streamed": true
+              },
+              {
+                "name": "SwitchChunks",
+                "in_type": "SwitchChunkReq",
+                "out_type": "SwitchChunkResp",
+                "in_streamed": true,
+                "out_streamed": true
+              }
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "path": "shared.proto"
+          }
+        ],
+        "package": {
+          "name": "event_store.client.redaction"
+        },
+        "options": [
+          {
+            "name": "java_package",
+            "value": "com.eventstore.dbclient.proto.redaction"
+          }
+        ]
+      }
+    },
+    {
       "protopath": "Grpc:/:serverfeatures.proto",
       "def": {
         "messages": [

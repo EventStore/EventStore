@@ -7,6 +7,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Scavenging;
 using Serilog;
@@ -22,6 +23,8 @@ namespace EventStore.Core.Services.Storage {
 		protected static ILogger Log { get; } = Serilog.Log.ForContext<StorageScavenger>();
 		private readonly ITFChunkScavengerLogManager _logManager;
 		private readonly ScavengerFactory _scavengerFactory;
+		private readonly SemaphoreSlimLock _switchChunksLock;
+		private Guid _switchChunksLockId = Guid.Empty;
 		private readonly object _lock = new object();
 
 		private IScavenger _currentScavenge;
@@ -31,13 +34,16 @@ namespace EventStore.Core.Services.Storage {
 
 		public StorageScavenger(
 			ITFChunkScavengerLogManager logManager,
-			ScavengerFactory scavengerFactory) {
+			ScavengerFactory scavengerFactory,
+			SemaphoreSlimLock switchChunksLock) {
 
-			Ensure.NotNull(logManager, "logManager");
-			Ensure.NotNull(scavengerFactory, "scavengerFactory");
+			Ensure.NotNull(logManager, nameof(logManager));
+			Ensure.NotNull(scavengerFactory, nameof(scavengerFactory));
+			Ensure.NotNull(switchChunksLock, nameof(switchChunksLock));
 
 			_logManager = logManager;
 			_scavengerFactory = scavengerFactory;
+			_switchChunksLock = switchChunksLock;
 		}
 
 		public void Handle(SystemMessage.StateChangeMessage message) {
@@ -50,10 +56,18 @@ namespace EventStore.Core.Services.Storage {
 			if (IsAllowed(message.User, message.CorrelationId, message.Envelope)) {
 				lock (_lock) {
 					if (_currentScavenge != null) {
-						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseInProgressResponse(message.CorrelationId,
-							_currentScavenge.ScavengeId, "Scavenge is already running"));
-
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseInProgressResponse(
+							message.CorrelationId,
+							_currentScavenge.ScavengeId,
+							"Scavenge is already running"));
+					} else if (!_switchChunksLock.TryAcquire(out _switchChunksLockId)) {
+						Log.Information("SCAVENGING: Failed to acquire the chunks lock");
+						message.Envelope.ReplyWith(new ClientMessage.ScavengeDatabaseInProgressResponse(
+							message.CorrelationId,
+							Guid.Empty.ToString(),
+							"Failed to acquire the chunk switch lock"));
 					} else {
+						Log.Information("SCAVENGING: Acquired the chunks lock");
 						var tfChunkScavengerLog = _logManager.CreateLog();
 						var logger = Log.ForContext("ScavengeId", tfChunkScavengerLog.ScavengeId);
 
@@ -118,6 +132,21 @@ namespace EventStore.Core.Services.Storage {
 				} catch (Exception ex) {
 					logger.Error(ex, "SCAVENGING: Unexpected error when disposing the scavenger");
 				}
+			}
+
+			Guid switchChunksLockId;
+			lock (_lock) {
+				switchChunksLockId = _switchChunksLockId;
+			}
+
+			try {
+				if (_switchChunksLock.TryRelease(switchChunksLockId)) {
+					logger.Information("SCAVENGING: Released the chunks lock");
+				} else {
+					logger.Information("SCAVENGING: Failed to release the chunks lock");
+				}
+			} catch (Exception ex) {
+				logger.Error(ex, "SCAVENGING: Unexpected error when releasing the chunks lock");
 			}
 
 			lock (_lock) {

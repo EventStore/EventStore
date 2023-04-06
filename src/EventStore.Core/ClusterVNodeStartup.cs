@@ -146,6 +146,11 @@ namespace EventStore.Core {
 						.UseOpenTelemetryPrometheusScrapingEndpoint()
 						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
 				)
+				// enable redaction service on unix sockets only
+				.UseWhen(ctx => ctx.IsUnixSocketConnection(),
+					b => b
+						.UseRouting()
+						.UseEndpoints(ep => ep.MapGrpcService<Redaction>()))
 				.UseEndpoints(ep => ep.MapGrpcService<PersistentSubscriptions>())
 				.UseEndpoints(ep => ep.MapGrpcService<Users>())
 				.UseEndpoints(ep => ep.MapGrpcService<Streams<TStreamId>>())
@@ -186,6 +191,7 @@ namespace EventStore.Core {
 						.AddSingleton(new Elections(_mainQueue, _authorizationProvider, _clusterDns))
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
 						.AddSingleton(new Monitoring(_monitoringQueue))
+						.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
 						.AddSingleton<ServerFeatures>()
 
 						// OpenTelemetry
