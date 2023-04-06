@@ -1,18 +1,17 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
-using Serilog;
 
 namespace EventStore.Core.Services.Gossip;
 
 public class ClusterStateChangeListener : IHandle<GossipMessage.GossipUpdated> {
-	private static readonly ILogger Log = Serilog.Log.ForContext<ClusterStateChangeListener>();
+	private static readonly ThrottledLog<ClusterStateChangeListener> Log = new(TimeSpan.FromSeconds(1));
 
 	public void Handle(GossipMessage.GossipUpdated message) {
 		ClusterInfo updatedCluster = message.ClusterInfo;
