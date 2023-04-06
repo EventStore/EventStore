@@ -17,6 +17,7 @@ namespace EventStore.Common.Utils {
 		public static readonly string DefaultLogDirectory;
 		public static readonly string DefaultTestClientLogDirectory;
 		public static readonly string FallbackDefaultDataDirectory;
+		public static readonly string DefaultTrustedRootCertificateDirectory;
 
 		static Locations() {
 			ApplicationDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ??
@@ -31,6 +32,7 @@ namespace EventStore.Common.Utils {
 					DefaultConfigurationDirectory = "/etc/eventstore";
 					DefaultDataDirectory = "/var/lib/eventstore";
 					DefaultLogDirectory = "/var/log/eventstore";
+					DefaultTrustedRootCertificateDirectory = "/etc/ssl/certs";
 					DefaultTestClientLogDirectory = Path.Combine(ApplicationDirectory, "testclientlog");
 					if (!Directory.Exists(PluginsDirectory))
 						PluginsDirectory = Path.Combine(DefaultContentDirectory, "plugins");
