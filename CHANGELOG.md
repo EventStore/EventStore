@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Use a separate IODispatcher for scavenge log [EventStore#3741](https://github.com/EventStore/EventStore/pull/3741)
 - #3486  [EventStore#3752](https://github.com/EventStore/EventStore/pull/3752)
 - Don't require an equals sign when parsing a command line argument followed by an integer [EventStore#3757](https://github.com/EventStore/EventStore/pull/3757)
+- Ignore exceptions when failing to change PTable index file permissions [EventStore#3807](https://github.com/EventStore/EventStore/pull/3807)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -30,6 +31,9 @@ All notable changes to this project will be documented in this file.
 - The ability to set default admin and ops passwords on first run of the database [EventStore#3738](https://github.com/EventStore/EventStore/pull/3738)
 - Suggestions for unknown/invalid configuration parameters (#3784) [EventStore#3785](https://github.com/EventStore/EventStore/pull/3785)
 - Inauguration status tracker [EventStore#3699](https://github.com/EventStore/EventStore/pull/3699)
+- Support for unix sockets [EventStore#3713](https://github.com/EventStore/EventStore/pull/3713)
+- APIs for external redaction [EventStore#3713](https://github.com/EventStore/EventStore/pull/3713)
+- default location for trusted root certs [EventStore#3811](https://github.com/EventStore/EventStore/pull/3811)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
