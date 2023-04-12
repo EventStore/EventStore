@@ -19,6 +19,7 @@ using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Chunks;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.TransactionLog.Scavenging;
 using EventStore.Core.Util;
@@ -54,6 +55,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 		private Type _cancelWhenCheckpointingType;
 		private (string Message, int Line)[] _expectedTrace;
 		private bool _unsafeIgnoreHardDeletes;
+		private readonly HashSet<int> _chunkNumsToEmpty = new();
 
 		protected Tracer Tracer { get; set; }
 
@@ -179,6 +181,11 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 			return this;
 		}
 
+		public Scenario<TLogFormat, TStreamId> EmptyChunk(int chunkNumber) {
+			_chunkNumsToEmpty.Add(chunkNumber);
+			return this;
+		}
+
 		public async Task<DbResult> RunAsync(
 			Func<DbResult, ILogRecord[][]> getExpectedKeptRecords = null,
 			Func<DbResult, ILogRecord[][]> getExpectedKeptIndexEntries = null) {
@@ -286,6 +293,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				} catch {
 				}
 			}
+
+			EmptyRequestedChunks(dbResult.Db);
 
 			Scavenger<TStreamId> sut = null;
 			try {
@@ -674,6 +683,36 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					Assert.True(info.EventNumber >= min);
 					Assert.True(info.EventNumber <= max);
 				});
+			}
+		}
+
+		private void EmptyRequestedChunks(TFChunkDb db) {
+			foreach (var chunkNum in _chunkNumsToEmpty) {
+				var chunk = db.Manager.GetChunk(chunkNum);
+				var header = chunk.ChunkHeader;
+
+				var newChunkHeader = new ChunkHeader(
+					version: header.Version,
+					chunkSize: header.ChunkSize,
+					chunkStartNumber: header.ChunkStartNumber,
+					chunkEndNumber: header.ChunkEndNumber,
+					isScavenged: true,
+					chunkId: Guid.NewGuid());
+
+				var newChunk = TFChunk.CreateWithHeader(
+					filename: $"{chunk.FileName}.tmp",
+					header: newChunkHeader,
+					fileSize: ChunkHeader.Size,
+					inMem: false,
+					unbuffered: false,
+					writethrough: false,
+					initialReaderCount: 1,
+					maxReaderCount: 1,
+					reduceFileCachePressure: false);
+
+				newChunk.CompleteScavenge(null);
+
+				db.Manager.SwitchChunk(newChunk, false, false);
 			}
 		}
 	}

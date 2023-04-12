@@ -7,5 +7,6 @@
 		// index will just keep such indexentries.
 		MaybeDiscard,
 		Keep,
+		AlreadyDiscarded,
 	}
 }

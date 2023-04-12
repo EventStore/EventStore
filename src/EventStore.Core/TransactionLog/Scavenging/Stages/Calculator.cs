@@ -208,6 +208,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 			const int maxCount = 8192;
 
 			var first = true;
+			var allDiscardedSoFar = true;
 
 			while (true) {
 				// read in slices because the stream might be huge.
@@ -246,6 +247,7 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 						case DiscardDecision.Discard:
 							weights.OnDiscard(eventCalc.LogicalChunkNumber);
 							discardPoint = DiscardPoint.DiscardIncluding(eventInfo.EventNumber);
+							allDiscardedSoFar = true;
 							break;
 
 						case DiscardDecision.MaybeDiscard:
@@ -255,6 +257,21 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 							// by the previous scavenge
 							weights.OnMaybeDiscard(eventCalc.LogicalChunkNumber);
 							maybeDiscardPoint = DiscardPoint.DiscardIncluding(eventInfo.EventNumber);
+							allDiscardedSoFar = false;
+							break;
+
+						case DiscardDecision.AlreadyDiscarded:
+							// this event has already been deleted from the chunks but not from the index.
+							// we move the discard point forward only if all events before it have been or will be discarded for the following reasons:
+							//
+							// i) usually, there should be no gaps between the event numbers of a stream but this property is not guaranteed
+							// with the previous scavenger. if it happens that this event was in a stream gap and we always moved the discard point
+							// forward, we would end up deleting all the events that were present before the gap.
+							//
+							// ii) we do our best to delete stale entries from the index
+
+							if (allDiscardedSoFar)
+								discardPoint = DiscardPoint.DiscardIncluding(eventInfo.EventNumber);
 							break;
 
 						case DiscardDecision.Keep:
