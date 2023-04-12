@@ -1548,7 +1548,7 @@ namespace EventStore.Core {
 				_mainBus.Subscribe<ElectionMessage.ElectionsDone>(gossip);
 			}
 			
-			var clusterStateChangeListener = new ClusterStateChangeListener();
+			var clusterStateChangeListener = new ClusterMultipleVersionsLogger();
 			_mainBus.Subscribe<GossipMessage.GossipUpdated>(clusterStateChangeListener);
 			
 			// kestrel

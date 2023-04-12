@@ -10,8 +10,8 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Core.Services.Gossip;
 
-public class ClusterStateChangeListener : IHandle<GossipMessage.GossipUpdated> {
-	private static readonly ThrottledLog<ClusterStateChangeListener> Log = new(TimeSpan.FromSeconds(1));
+public class ClusterMultipleVersionsLogger : IHandle<GossipMessage.GossipUpdated> {
+	private static readonly ThrottledLog<ClusterMultipleVersionsLogger> Log = new(TimeSpan.FromMinutes(1));
 
 	public void Handle(GossipMessage.GossipUpdated message) {
 		ClusterInfo updatedCluster = message.ClusterInfo;

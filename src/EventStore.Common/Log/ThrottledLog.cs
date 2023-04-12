@@ -24,19 +24,19 @@ public class ThrottledLog<T> {
 	
 	public bool Fatal(string message) {
 		bool canLog = CanLog();
-		if (canLog) _log.Warning(message);
+		if (canLog) _log.Fatal(message);
 		return canLog;
 	}
 	
 	public bool Information(string message) {
 		bool canLog = CanLog();
-		if (canLog) _log.Warning(message);
+		if (canLog) _log.Information(message);
 		return canLog;
 	}
 	
 	public bool Error(string message) {
 		bool canLog = CanLog();
-		if (canLog) _log.Warning(message);
+		if (canLog) _log.Error(message);
 		return canLog;
 	}
 

@@ -473,7 +473,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_detect_version_mismatch() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(2, numDistinctKnownVersions);
 		}
@@ -515,7 +515,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_detect_version_mismatch() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(2, numDistinctKnownVersions);
 		}
@@ -544,7 +544,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_not_detect_version_mismatch() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			Assert.AreEqual(1, numDistinctKnownVersions);
 		}
 	}
@@ -581,7 +581,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			// version of nodeThree is Unknown
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(2, numDistinctKnownVersions);
 		}
@@ -622,7 +622,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_retain_previous_version_info() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(3, numDistinctKnownVersions);
 		}
@@ -658,7 +658,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_detect_version_mismatch() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(2, numDistinctKnownVersions);
 		}
@@ -694,7 +694,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_detect_version_mismatch() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(2, numDistinctKnownVersions);
 		}
@@ -721,7 +721,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_not_detect_version_mismatch() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			Assert.AreEqual(1, numDistinctKnownVersions);
 		}
 	}
@@ -758,7 +758,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 			// version of nodeThree is Unknown
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(2, numDistinctKnownVersions);
 		}
@@ -799,7 +799,7 @@ namespace EventStore.Core.Tests.Services.GossipService {
 		public void should_retain_previous_version_info() {
 			ExpectMessages(new GossipMessage.GossipUpdated(GetExpectedClusterInfo()));
 			
-			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterStateChangeListener.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
+			Dictionary<EndPoint, string> ipAddressVsVersion = ClusterMultipleVersionsLogger.GetIPAddressVsVersion(GetExpectedClusterInfo(), out int numDistinctKnownVersions);
 			AssertEx.AssertUsingDeepCompare(ipAddressVsVersion, GetExpectedEndPointVsVersion());
 			Assert.AreEqual(3, numDistinctKnownVersions);
 		}
