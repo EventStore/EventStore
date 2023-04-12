@@ -95,7 +95,10 @@ namespace EventStore.Core.TransactionLog.Scavenging {
 		private DiscardDecision ShouldDiscardForMaxAge(DateTime cutoffTime) {
 			// establish a range that the event was definitely created between.
 			if (!State.TryGetChunkTimeStampRange(LogicalChunkNumber, out var createdAtRange)) {
-				throw new Exception($"Could not get TimeStamp range for chunk {LogicalChunkNumber}");
+				// we don't have a time stamp range for this chunk which implies that it was empty during accumulation.
+				// however while reading event infos from the index, we encountered an event from that chunk.
+				// this indicates that the event was deleted from the chunk but not from the index by the old scavenger.
+				return DiscardDecision.AlreadyDiscarded;
 			}
 
 			// range is guaranteed to be non-empty

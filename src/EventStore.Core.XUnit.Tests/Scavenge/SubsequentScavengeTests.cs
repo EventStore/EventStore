@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -128,6 +129,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					x.SetCheckpoint(new ScavengeCheckpoint.Done(ScavengePoint(
 						chunk: 1,
 						eventNumber: 0)));
+					for (int i = 0; i < 6; i++)
+						x.SetChunkTimeStampRange(i, new ChunkTimeStampRange(DateTime.UtcNow, DateTime.UtcNow));
 				})
 				.AssertTrace(
 					Tracer.Line("Accumulating from SP-0 to SP-2"),
@@ -518,6 +521,9 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 					x.SetCheckpoint(new ScavengeCheckpoint.Done(ScavengePoint(
 						chunk: 1,
 						eventNumber: 0)));
+
+					for (int i = 0; i < 4; i++)
+						x.SetChunkTimeStampRange(i, new ChunkTimeStampRange(DateTime.UtcNow, DateTime.UtcNow));
 				})
 				.AssertState(state => {
 					// we changed the maxcount to 4, but we expect the discard points to remain
