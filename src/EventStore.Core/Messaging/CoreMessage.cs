@@ -22,6 +22,6 @@
 		System,
 		Tcp,
 		Timer,
-		UserManagement,
+		UserManagement
 	}
 }

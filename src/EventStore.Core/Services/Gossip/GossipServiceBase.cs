@@ -254,6 +254,7 @@ namespace EventStore.Core.Services.Gossip {
 
 			if (_cluster.HasChangedSince(oldCluster))
 				LogClusterChange(oldCluster, _cluster, string.Format("gossip received from [{0}]", message.Server));
+
 			_bus.Publish(new GossipMessage.GossipUpdated(_cluster));
 		}
 
@@ -308,19 +309,21 @@ namespace EventStore.Core.Services.Gossip {
 			TimeSpan deadMemberRemovalTimeout) {
 			var members = myCluster.Members.ToDictionary(member => member.HttpEndPoint, 
 				new EndPointEqualityComparer());
+			MemberInfo peerNode = peerEndPoint != null
+				? othersCluster.Members.SingleOrDefault(member => member.Is(peerEndPoint), null) : null;
+			bool isPeerOld = peerNode?.ESVersion == null;
 			foreach (var member in othersCluster.Members) {
 				if (member.InstanceId == me.InstanceId || member.Is(me.HttpEndPoint)
 				) // we know about ourselves better
 					continue;
-				if (peerEndPoint != null && member.Is(peerEndPoint)) // peer knows about itself better
+				if (member.Equals(peerNode)) // peer knows about itself better
 				{
 					if ((utcNow - member.TimeStamp).Duration() > allowedTimeDifference) {
 						Log.Error("Time difference between us and [{peerEndPoint}] is too great! "
 						          + "UTC now: {dateTime:yyyy-MM-dd HH:mm:ss.fff}, peer's time stamp: {peerTimestamp:yyyy-MM-dd HH:mm:ss.fff}.",
 							peerEndPoint, utcNow, member.TimeStamp);
 					}
-
-					members[member.HttpEndPoint] = member;
+					members[member.HttpEndPoint] = member.Updated(utcNow: member.TimeStamp, esVersion: isPeerOld ? VersionInfo.OldVersion : member.ESVersion);
 				} else {
 					MemberInfo existingMem;
 					// if there is no data about this member or data is stale -- update
@@ -334,6 +337,13 @@ namespace EventStore.Core.Services.Gossip {
 									state: existingMem.State);
 						else
 							members[member.HttpEndPoint] = member;
+					}
+
+					if (peerNode != null && isPeerOld) {
+						MemberInfo newInfo = members[member.HttpEndPoint];
+						// if we don't have past information about es version of the node, es version is unknown because old peer won't be sending version info in gossip
+						members[member.HttpEndPoint] = newInfo.Updated(newInfo.TimeStamp,
+							esVersion: existingMem?.ESVersion ?? VersionInfo.UnknownVersion);
 					}
 				}
 			}

@@ -1983,6 +1983,11 @@
                 "id": 20,
                 "name": "advertise_tcp_port_to_client_as",
                 "type": "uint32"
+              },
+              {
+                "id": 21,
+                "name": "es_version",
+                "type": "string"
               }
             ]
           },

@@ -52,6 +52,8 @@ namespace EventStore.Core.Cluster {
 
 			public int NodePriority { get; set; }
 			public bool IsReadOnlyReplica { get; set; }
+			
+			public string ESVersion { get; set; }
 
 			public ClientMemberInfo() {
 			}
@@ -98,6 +100,8 @@ namespace EventStore.Core.Cluster {
 
 				NodePriority = member.NodePriority;
 				IsReadOnlyReplica = member.IsReadOnlyReplica;
+
+				ESVersion = member.ESVersion;
 			}
 
 			public override string ToString() {
@@ -108,7 +112,7 @@ namespace EventStore.Core.Cluster {
 					$"HttpEndPointIp: {HttpEndPointIp}, HttpEndPointPort: {HttpEndPointPort}, " +
 					$"LastCommitPosition: {LastCommitPosition}, WriterCheckpoint: {WriterCheckpoint}, ChaserCheckpoint: {ChaserCheckpoint}, " +
 					$"EpochPosition: {EpochPosition}, EpochNumber: {EpochNumber}, EpochId: {EpochId:B}, NodePriority: {NodePriority}, " +
-					$"IsReadOnlyReplica: {IsReadOnlyReplica}";
+					$"IsReadOnlyReplica: {IsReadOnlyReplica}, ESVersion: ${ESVersion}";
 			}
 		}
 	}
