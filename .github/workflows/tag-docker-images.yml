@@ -19,19 +19,40 @@ jobs:
         uses: EventStore/Automations/tag-docker-images@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Trigger TestData container building
-        run: |
-          curl -X POST https://api.github.com/repos/EventStore/EventStore-Client-gRPC-TestData/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.GITHUB_TOKEN }} \
-          --data '{"event_type": "build", "inputs": { "repository": "'"$GITHUB_REPOSITORY"'", "version": "previous-lts" }}'
-          
-          curl -X POST https://api.github.com/repos/EventStore/EventStore-Client-gRPC-TestData/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.GITHUB_TOKEN }} \
-          --data '{"event_type": "build", "inputs": { "repository": "'"$GITHUB_REPOSITORY"'", "version": "lts" }}'
-          
-          curl -X POST https://api.github.com/repos/EventStore/EventStore-Client-gRPC-TestData/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.GITHUB_TOKEN }} \
-          --data '{"event_type": "build", "inputs": { "repository": "'"$GITHUB_REPOSITORY"'", "version": "latest" }}'
+
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'EventStore',
+              repo: 'EventStore-Client-gRPC-TestData',
+              workflow_id: 'build.yml',
+              ref: 'master',
+              inputs: {
+                'repository': "'"$GITHUB_REPOSITORY"'",
+                'version': 'previous-lts'
+              }
+            });
+            
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'EventStore',
+              repo: 'EventStore-Client-gRPC-TestData',
+              workflow_id: 'build.yml',
+              ref: 'master',
+              inputs: {
+                'repository': "'"$GITHUB_REPOSITORY"'",
+                'version': 'lts'
+              }
+            });
+            
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'EventStore',
+              repo: 'EventStore-Client-gRPC-TestData',
+              workflow_id: 'build.yml',
+              ref: 'master',
+              inputs: {
+                'repository': "'"$GITHUB_REPOSITORY"'",
+                'version': 'ci'
+              }
+            });
