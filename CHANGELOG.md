@@ -34,6 +34,9 @@ All notable changes to this project will be documented in this file.
 - Support for unix sockets [EventStore#3713](https://github.com/EventStore/EventStore/pull/3713)
 - APIs for external redaction [EventStore#3713](https://github.com/EventStore/EventStore/pull/3713)
 - default location for trusted root certs [EventStore#3811](https://github.com/EventStore/EventStore/pull/3811)
+- ES version in gossip message between nodes [EventStore#3792](https://github.com/EventStore/EventStore/pull/3792)
+- Every node will monitor versions of other alive nodes; if version mismatch detected in cluster, nodes will log this [EventStore#3792](https://github.com/EventStore/EventStore/pull/3792)
+- "/gossip" endpoint will also have ES version info  [EventStore#3792](https://github.com/EventStore/EventStore/pull/3792)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
