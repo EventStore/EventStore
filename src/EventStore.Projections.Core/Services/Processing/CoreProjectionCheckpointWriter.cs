@@ -75,9 +75,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 				switch (operationResult) {
 					case OperationResult.WrongExpectedVersion:
-						_envelope.ReplyWith(
-							new CoreProjectionCheckpointWriterMessage.RestartRequested(
-								"Checkpoint stream has been written to from the outside"));
+						_envelope.ReplyWith(new CoreProjectionProcessingMessage.Failed(Guid.Empty,
+							$"Checkpoint stream `{eventStreamId}` has been written to from the outside"
+						));
 						break;
 					case OperationResult.PrepareTimeout:
 					case OperationResult.ForwardTimeout:
