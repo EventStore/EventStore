@@ -242,6 +242,7 @@ namespace EventStore.Transport.Http.Atom {
 
 		public bool IsMetaData { get; set; }
 		public bool IsLinkMetaData { get; set; }
+		public bool IsRedacted { get; set; }
 
 		public long PositionEventNumber { get; set; }
 
