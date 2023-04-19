@@ -993,7 +993,6 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		private void UpdateQuery(ProjectionManagementMessage.Command.UpdateQuery message) {
-			PersistedProjectionState.HandlerType = message.HandlerType ?? HandlerType;
 			PersistedProjectionState.Query = message.Query;
 			PersistedProjectionState.EmitEnabled = message.EmitEnabled ?? PersistedProjectionState.EmitEnabled;
 			_pendingWritePersistedState = true;

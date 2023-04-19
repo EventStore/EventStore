@@ -11,32 +11,27 @@ using NUnit.Framework;
 namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
-	public class when_updating_a_disabled_projection_query_text<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
-		protected override void Given() {
-			NoStream("$projections-test-projection");
-			NoStream("$projections-test-projection-result");
-			NoStream("$projections-test-projection-order");
-			AllWritesToSucceed("$projections-test-projection-order");
-			NoStream("$projections-test-projection-checkpoint");
-			AllWritesSucceed();
-		}
-
+	public class when_updating_an_onetime_system_projection_query_text<TLogFormat, TStreamId> : TestFixtureWithProjectionCoreAndManagementServices<TLogFormat, TStreamId> {
 		private string _projectionName;
 		private string _newProjectionSource;
 
+		protected override void Given() {
+			NoOtherStreams();
+		}
+		
 		protected override IEnumerable<WhenStep> When() {
-			_projectionName = "test-projection";
+			_projectionName = "$by_correlation_id";
 			yield return (new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 			yield return
 				(new ProjectionManagementMessage.Command.Post(
-					new PublishEnvelope(_bus), ProjectionMode.Continuous, _projectionName,
-					ProjectionManagementMessage.RunAs.System, "JS", @"fromAll(); on_any(function(){});log(1);",
-					enabled: false, checkpointsEnabled: true, emitEnabled: true, trackEmittedStreams: true));
+					new PublishEnvelope(_bus), ProjectionMode.Transient, _projectionName,
+					ProjectionManagementMessage.RunAs.Anonymous, "native:EventStore.Projections.Core.Standard.ByCorrelationId", "{\"correlationIdProperty\":\"$myCorrelationId\"}",
+					enabled: true, checkpointsEnabled: false, emitEnabled: false, trackEmittedStreams: true));
 			// when
-			_newProjectionSource = @"fromAll(); on_any(function(){});log(2);";
+			_newProjectionSource = "{\"correlationIdProperty\":\"$updateCorrelationId\"}";
 			yield return
 				(new ProjectionManagementMessage.Command.UpdateQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System,
+					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous,
 					_newProjectionSource, emitEnabled: null));
 		}
 
@@ -53,7 +48,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 		}
 
 		[Test, Category("v8")]
-		public void the_projection_status_is_still_stopped() {
+		public void the_projection_status_is_still_running() {
 			_manager.Handle(
 				new ProjectionManagementMessage.Command.GetStatistics(new PublishEnvelope(_bus), null, _projectionName,
 					false));
@@ -64,15 +59,11 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Length);
 			Assert.AreEqual(
 				_projectionName,
-				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
-					.Single()
-					.Projections.Single()
+				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
 					.Name);
 			Assert.AreEqual(
-				ManagedProjectionState.Stopped,
-				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>()
-					.Single()
-					.Projections.Single()
+				ManagedProjectionState.Running,
+				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().Single().Projections.Single()
 					.LeaderStatus);
 		}
 

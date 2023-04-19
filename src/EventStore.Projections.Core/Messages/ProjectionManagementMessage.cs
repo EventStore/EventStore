@@ -232,15 +232,13 @@ namespace EventStore.Projections.Core.Messages {
 			[DerivedMessage(ProjectionMessage.Management)]
 			public partial class UpdateQuery : ControlMessage {
 				private readonly string _name;
-				private readonly string _handlerType;
 				private readonly string _query;
 				private readonly bool? _emitEnabled;
 
 				public UpdateQuery(
-					IEnvelope envelope, string name, RunAs runAs, string handlerType, string query, bool? emitEnabled)
+					IEnvelope envelope, string name, RunAs runAs, string query, bool? emitEnabled)
 					: base(envelope, runAs) {
 					_name = name;
-					_handlerType = handlerType;
 					_query = query;
 					_emitEnabled = emitEnabled;
 				}
@@ -251,10 +249,6 @@ namespace EventStore.Projections.Core.Messages {
 
 				public string Name {
 					get { return _name; }
-				}
-
-				public string HandlerType {
-					get { return _handlerType; }
 				}
 
 				public bool? EmitEnabled {

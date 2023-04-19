@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			_newProjectionSource = @"fromAll().when({a:function(){return {};}});log(2);";
 			yield return
 				(new ProjectionManagementMessage.Command.UpdateQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System, "JS",
+					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System,
 					_newProjectionSource, emitEnabled: null));
 		}
 

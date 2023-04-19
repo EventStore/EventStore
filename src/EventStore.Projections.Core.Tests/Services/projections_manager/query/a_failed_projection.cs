@@ -39,7 +39,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.query {
 				yield return
 					(new ProjectionManagementMessage.Command.UpdateQuery(
 						new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.Anonymous,
-						"native:" + typeof(FakeProjection).AssemblyQualifiedName, @"", null));
+						@"", null));
 			}
 
 			[Test]

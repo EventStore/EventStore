@@ -20,7 +20,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 				.ConfigureAwait(false)) {
 				throw RpcExceptions.AccessDenied();
 			}
-			const string handlerType = "JS";
+
 			var name = options.Name;
 			var query = options.Query;
 			bool? emitEnabled = (options.EmitOptionCase, options.EmitEnabled) switch {
@@ -33,7 +33,7 @@ namespace EventStore.Projections.Core.Services.Grpc {
 
 			var envelope = new CallbackEnvelope(OnMessage);
 			_queue.Publish(
-				new ProjectionManagementMessage.Command.UpdateQuery(envelope, name, runAs, handlerType, query,
+				new ProjectionManagementMessage.Command.UpdateQuery(envelope, name, runAs, query,
 					emitEnabled));
 
 			await updatedSource.Task.ConfigureAwait(false);
