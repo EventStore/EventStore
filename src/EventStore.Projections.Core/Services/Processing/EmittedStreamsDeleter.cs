@@ -74,7 +74,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 				if (onReadCompleted.Events.Length == 0) {
 					_ioDispatcher.DeleteStream(_emittedStreamsCheckpointStreamId, ExpectedVersion.Any, false,
 						SystemAccounts.System, x => {
-							if (x.Result == OperationResult.Success || x.Result == OperationResult.StreamDeleted) {
+							// this piece of code works because, DeleteStream request is always made with ExpectedVersion.Any
+							// this is a workaround to maintain contract and compatibility with TCP/GRPC/Web clients who expect WrongExpectedVersion in response to deleting non-existing streams
+							if (x.Result == OperationResult.WrongExpectedVersion) {
+								// stream was never created
+								Log.Information("PROJECTIONS: Projection Stream '{stream}' was not deleted since it does not exist", _emittedStreamsCheckpointStreamId);
+							} else if (x.Result == OperationResult.Success || x.Result == OperationResult.StreamDeleted) {
 								Log.Information("PROJECTIONS: Projection Stream '{stream}' deleted",
 									_emittedStreamsCheckpointStreamId);
 							} else {
@@ -84,8 +89,13 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 							_ioDispatcher.DeleteStream(_emittedStreamsId, ExpectedVersion.Any, false,
 								SystemAccounts.System, y => {
-									if (y.Result == OperationResult.Success ||
-									    y.Result == OperationResult.StreamDeleted) {
+									// this piece of code works because, DeleteStream request is always made with ExpectedVersion.Any
+									// this is a workaround to maintain contract and compatibility with TCP/GRPC/Web clients who expect WrongExpectedVersion in response to deleting non-existing streams
+									if (x.Result == OperationResult.WrongExpectedVersion) {
+										// stream was never created
+										Log.Information("PROJECTIONS: Projection Stream '{stream}' was not deleted since it does not exist", _emittedStreamsId);
+									} else if (y.Result == OperationResult.Success ||
+									           y.Result == OperationResult.StreamDeleted) {
 										Log.Information("PROJECTIONS: Projection Stream '{stream}' deleted",
 											_emittedStreamsId);
 									} else {
