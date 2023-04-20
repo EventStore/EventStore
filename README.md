@@ -22,8 +22,8 @@ EventStoreDB is a new category of operational database that has evolved from the
   <a href='https://www.youtube.com/embed/IxPXizeHJM4'> <img src='https://user-images.githubusercontent.com/5140165/232470679-4716b5bb-0814-4bec-958f-0f20fc2b9586.png' width='75%'> </a>
 </p>
 
-Download the [latest version](https://www.eventstore.com/downloads)
-For more product information visit [the website](https://www.eventstore.com/eventstoredb)
+Download the [latest version](https://www.eventstore.com/downloads).
+For more product information visit [the website](https://www.eventstore.com/eventstoredb).
 
 ## What is Event Store Cloud?
 
@@ -33,7 +33,7 @@ For more details visit [the website](https://www.eventstore.com/event-store-clou
 
 ## Licensing
 
-View [Event Store Ltd's licensing information]https://github.com/EventStore/EventStore/blob/master/LICENSE.md).
+View [Event Store Ltd's licensing information](https://github.com/EventStore/EventStore/blob/master/LICENSE.md).
 
 ## Docs
 
@@ -41,12 +41,12 @@ For guidance on installation, development, deployment, and administration, see t
 
 ## Getting started with EventStoreDB
 
-Follow the getting started guide [here](https://developers.eventstore.com/latest.html).
+Follow the [getting started guide](https://developers.eventstore.com/latest.html).
 
 ## Getting started with Event Store Cloud
 
 Event Store can manage EventStoreDB for you, so you don't have to run your own clusters.
-See the online documentation: [Getting started with Event Store Cloud.](https://developers.eventstore.com/cloud/)
+See the online documentation: [Getting started with Event Store Cloud](https://developers.eventstore.com/cloud/).
 
 ## Client libraries
 
@@ -75,8 +75,8 @@ Read more in the [documentation](https://developers.eventstore.com/server/v22.10
 
 ## Deployment
 
-- Event Store Cloud - [steps to get started in cloud.](https://developers.eventstore.com/cloud/)
-- Self-managed - [steps to host EventStoreDB yourself.](https://developers.eventstore.com/server/v22.10/#getting-started)
+- Event Store Cloud - [steps to get started in cloud](https://developers.eventstore.com/cloud/).
+- Self-managed - [steps to host EventStoreDB yourself](https://developers.eventstore.com/server/v22.10/#getting-started).
 
 ## Communities
 
