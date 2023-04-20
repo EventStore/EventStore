@@ -781,8 +781,9 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private void DeleteStreamCompleted(ClientMessage.DeleteStreamCompleted message, string streamId,
 			Action completed) {
-			// this piece of code works because, DeleteStream request is always made with ExpectedVersion.Any
-			// this is a workaround to maintain contract and compatibility with TCP/GRPC/Web clients who expect WrongExpectedVersion in response to deleting non-existing streams
+			// currently, WrongExpectedVersion is returned when deleting non-existing streams, even when specifying ExpectedVersion.Any.
+			// it is not too intuitive but changing the response would break the contract and compatibility with TCP/gRPC/web clients or require adding a new error code to all clients.
+			// note: we don't need to check if CurrentVersion == -1 here to make sure it's a non-existing stream since the deletion is done with ExpectedVersion.Any
 			if (message.Result == OperationResult.WrongExpectedVersion) {
 				// stream was never created
 				_logger.Information("PROJECTIONS: Projection Stream '{stream}' was not deleted since it does not exist", streamId);
