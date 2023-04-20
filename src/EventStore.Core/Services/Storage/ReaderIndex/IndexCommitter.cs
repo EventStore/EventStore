@@ -47,6 +47,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
 		private readonly INameExistenceFilter _streamExistenceFilter;
 		private readonly IIndexStatusTracker _statusTracker;
+		private readonly IIndexTracker _tracker;
 		private INameExistenceFilterInitializer _streamExistenceFilterInitializer;
 		private readonly bool _additionalCommitChecks;
 		private long _persistedPreparePos = -1;
@@ -68,6 +69,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameExistenceFilterInitializer streamExistenceFilterInitializer,
 			ICheckpoint indexChk,
 			IIndexStatusTracker statusTracker,
+			IIndexTracker tracker,
 			bool additionalCommitChecks) {
 			_bus = bus;
 			_backend = backend;
@@ -83,6 +85,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 			_statusTracker = statusTracker;
+			_tracker = tracker;
 		}
 
 		public void Init(long buildToPosition) {
@@ -440,6 +443,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							isTfEof && i == n - 1));
 				}
 			}
+
+			_tracker.OnIndexed(prepares);
 
 			return eventNumber;
 		}

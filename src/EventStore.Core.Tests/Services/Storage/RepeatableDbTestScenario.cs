@@ -90,7 +90,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint,
-				indexStatusTracker: new IndexStatusTracker.NoOp());
+				indexStatusTracker: new IndexStatusTracker.NoOp(),
+				indexTracker: new IndexTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
 			ReadIndex = readIndex;

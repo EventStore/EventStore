@@ -291,14 +291,16 @@ namespace EventStore.Core {
 
 			EnsureNet5CompatFileStream();
 
-			Db = new TFChunkDb(CreateDbConfig(
+			var dbConfig = CreateDbConfig(
 				out var statsHelper,
 				out var readerThreadsCount,
-				out var workerThreadsCount));
+				out var workerThreadsCount);
 
-			telemetryConfiguration ??= new();
 			var trackers = new Trackers();
-			MetricsBootstrapper.Bootstrap(telemetryConfiguration, Db.Config, trackers);
+			telemetryConfiguration ??= new();
+			MetricsBootstrapper.Bootstrap(telemetryConfiguration, dbConfig, trackers);
+
+			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
 
 			TFChunkDbConfig CreateDbConfig(
 				out SystemStatsHelper statsHelper,
@@ -668,7 +670,8 @@ namespace EventStore.Core {
 				options.Application.SkipIndexScanOnReads,
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
 				Db.Config.IndexCheckpoint,
-				trackers.IndexStatusTracker);
+				trackers.IndexStatusTracker,
+				trackers.IndexTracker);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);
 

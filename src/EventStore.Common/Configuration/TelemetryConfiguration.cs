@@ -66,6 +66,11 @@ namespace EventStore.Common.Configuration {
 			ProcessingRequestFromHttpClient,
 		}
 
+		public enum EventTracker {
+			Read = 1,
+			Written,
+		}
+
 		public class LabelMappingCase {
 			public string Regex { get; set; }
 			public string Label { get; set; }
@@ -80,6 +85,8 @@ namespace EventStore.Common.Configuration {
 		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
 
 		public Gossip[] GossipTrackers { get; set; } = Array.Empty<Gossip>();
+
+		public Dictionary<EventTracker, bool> Events { get; set; } = new();
 
 		// must be 0, 1, 5, 10 or a multiple of 15
 		public int ExpectedScrapeIntervalSeconds { get; set; }

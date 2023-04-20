@@ -1,4 +1,5 @@
 using System;
+using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
@@ -17,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 			_testChunk = TFChunk.FromCompletedFile(Filename, true, false,
 				Constants.TFChunkInitialReaderCountDefault,
 				Constants.TFChunkMaxReaderCountDefault,
-				reduceFileCachePressure: false);
+				reduceFileCachePressure: false, tracker: new TFChunkTracker.NoOp());
 		}
 
 		[TearDown]

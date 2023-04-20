@@ -43,9 +43,10 @@ namespace EventStore.Core.XUnit.Tests.Telemetry {
 			ReadOnlySpan<KeyValuePair<string, object>> tags,
 			object state) {
 
-			if (!_measurementsByInstrument.TryGetValue(instrument.Name, out var measurements)) {
+			var instrumentName = GenName(instrument);
+			if (!_measurementsByInstrument.TryGetValue(instrumentName, out var measurements)) {
 				measurements = new();
-				_measurementsByInstrument[instrument.Name] = measurements;
+				_measurementsByInstrument[instrumentName] = measurements;
 			}
 
 			measurements.Add(new TestMeasurement {
@@ -53,6 +54,11 @@ namespace EventStore.Core.XUnit.Tests.Telemetry {
 				Tags = tags.ToArray(),
 			});
 		}
+
+		private static string GenName(Instrument instrument) =>
+			string.IsNullOrWhiteSpace(instrument.Unit)
+			? instrument.Name
+			: instrument.Name + "-" + instrument.Unit;
 
 		public class TestMeasurement {
 			public T Value { get; init; }
