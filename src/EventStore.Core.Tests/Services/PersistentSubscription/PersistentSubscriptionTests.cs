@@ -1242,7 +1242,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(streamBuffer.RetryBufferCount, 0);
 
 			//Disconnect the client
-			sub.RemoveClientByConnectionId(clientConnectionId);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(clientConnectionId));
 
 			//this should empty the _outstandingMessages buffer and move events 2 & 3 to the retry queue
 			Assert.AreEqual(sub.OutstandingMessageCount, 0);
@@ -1995,7 +1995,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(1, client1Envelope.Replies.Count);
 			Assert.AreEqual(1, client2Envelope.Replies.Count);
 
-			sub.RemoveClientByConnectionId(connectionId);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(connectionId));
 
 			Assert.AreEqual(1, sub.ClientCount);
 
@@ -2006,6 +2006,25 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			// Retry count should have increased
 			Assert.AreEqual(1,
 				((ClientMessage.PersistentSubscriptionStreamEventAppeared)client1Envelope.Replies.Last()).RetryCount);
+		}
+
+		[Test]
+		public void disconnecting_a_client_with_no_persistent_subscription() {
+			var fakeCheckpointReader = new FakeCheckpointReader();
+			var sub = new Core.Services.PersistentSubscription.PersistentSubscription(
+				Helper.CreatePersistentSubscriptionBuilderFor(_eventSource)
+					.WithEventLoader(new FakeStreamReader())
+					.WithCheckpointReader(fakeCheckpointReader)
+					.WithMessageParker(new FakeMessageParker())
+					.PreferRoundRobin()
+					.StartFromCurrent()
+					.WithCheckpointWriter(new FakeCheckpointWriter(x => { })));
+
+			fakeCheckpointReader.Load(null);
+
+			var clientConnectionId = Guid.NewGuid();
+			
+			Assert.IsFalse(sub.RemoveClientByConnectionId(clientConnectionId));
 		}
 	}
 

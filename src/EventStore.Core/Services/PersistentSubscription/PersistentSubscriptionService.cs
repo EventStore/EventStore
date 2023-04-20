@@ -847,12 +847,13 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(TcpMessage.ConnectionClosed message) {
-			//TODO CC make a map for this
-			Log.Debug("Persistent subscription lost connection from {remoteEndPoint}",
-				message.Connection.RemoteEndPoint);
-			if (_subscriptionsById == null) return; //havn't built yet.
+			if (_subscriptionsById == null) return; //haven't built yet.
+
 			foreach (var subscription in _subscriptionsById.Values) {
-				subscription.RemoveClientByConnectionId(message.Connection.ConnectionId);
+				if (subscription.RemoveClientByConnectionId(message.Connection.ConnectionId))
+					Log.Debug("Persistent subscription {subscription} lost connection from {remoteEndPoint}",
+						subscription.SubscriptionId,
+						message.Connection.RemoteEndPoint);
 			}
 		}
 
