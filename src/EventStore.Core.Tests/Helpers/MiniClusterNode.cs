@@ -173,10 +173,13 @@ namespace EventStore.Core.Tests.Helpers {
 				HttpEndPoint);
 
 			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
-			Node = new ClusterVNode<TStreamId>(options, logFormatFactory, new AuthenticationProviderFactory(components =>
-					new InternalAuthenticationProviderFactory(components, options.DefaultUser)),
+			Node = new ClusterVNode<TStreamId>(options, logFormatFactory, new AuthenticationProviderFactory(
+					components =>
+						new InternalAuthenticationProviderFactory(components, options.DefaultUser)),
 				new AuthorizationProviderFactory(components =>
-					new LegacyAuthorizationProviderFactory(components.MainQueue)),
+					new LegacyAuthorizationProviderFactory(components.MainQueue,
+						options.Application.AllowAnonymousEndpointAccess,
+						options.Application.AllowAnonymousStreamAccess)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(options),
 				telemetryConfiguration: null,
