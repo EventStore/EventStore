@@ -26,6 +26,7 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 
 		public static DateTime EffectiveNow { get; } = new DateTime(2022, 1, 5, 00, 00, 00);
 		public static DateTime Expired { get; } = EffectiveNow - TimeSpan.FromDays(3);
+		public static DateTime Cutoff { get; } = EffectiveNow - MaxAgeTimeSpan;
 		public static DateTime Active { get; } = EffectiveNow - TimeSpan.FromDays(1);
 
 		public static Rec ScavengePointRec(int transaction, int threshold = 0, DateTime? timeStamp = null) => Rec.Write(
