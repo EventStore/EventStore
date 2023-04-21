@@ -195,7 +195,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					writethrough: _db.Config.WriteThrough,
 					initialReaderCount: _db.Config.InitialReaderCount,
 					maxReaderCount: _db.Config.MaxReaderCount,
-					reduceFileCachePressure: _db.Config.ReduceFileCachePressure);
+					reduceFileCachePressure: _db.Config.ReduceFileCachePressure,
+					tracker: new TFChunkTracker.NoOp());
 			} catch (IOException exc) {
 				_logger.Error(exc,
 					"IOException during creating new chunk for scavenging purposes. Stopping scavenging process...");
@@ -430,7 +431,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 					writethrough: db.Config.WriteThrough,
 					initialReaderCount: db.Config.InitialReaderCount,
 					maxReaderCount: db.Config.MaxReaderCount,
-					reduceFileCachePressure: db.Config.ReduceFileCachePressure);
+					reduceFileCachePressure: db.Config.ReduceFileCachePressure,
+					tracker: new TFChunkTracker.NoOp());
 			} catch (IOException exc) {
 				logger.Error(exc,
 					"IOException during creating new chunk for scavenging merge purposes. Stopping scavenging merge process...");

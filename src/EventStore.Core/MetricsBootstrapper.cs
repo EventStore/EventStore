@@ -1,12 +1,15 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.VNode;
 using EventStore.Core.Telemetry;
+using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
 using Conf = EventStore.Common.Configuration.TelemetryConfiguration;
 
@@ -20,6 +23,8 @@ public class Trackers {
 	public GrpcTrackers GrpcTrackers { get; } = new();
 	public QueueTrackers QueueTrackers { get; set; } = new();
 	public GossipTrackers GossipTrackers { get; set; } = new ();
+	public ITransactionFileTracker TransactionFileTracker { get; set; } = new TFChunkTracker.NoOp();
+	public IIndexTracker IndexTracker { get; set; } = new IndexTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -66,6 +71,23 @@ public static class MetricsBootstrapper {
 		var gossipProcessingMetric = new DurationMetric(coreMeter, "eventstore-gossip-processing-duration");
 		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
+		var byteMetric = coreMeter.CreateCounter<long>("eventstore-io", unit: "bytes");
+		var eventMetric = coreMeter.CreateCounter<long>("eventstore-io", unit: "events");
+
+		// events
+		if (conf.Events.TryGetValue(Conf.EventTracker.Read, out var readEnabled) && readEnabled) {
+			var readTag = new KeyValuePair<string, object>("activity", "read");
+			trackers.TransactionFileTracker = new TFChunkTracker(
+				readBytes: new CounterSubMetric<long>(byteMetric, readTag),
+				readEvents: new CounterSubMetric<long>(eventMetric, readTag));
+		}
+
+		// from a users perspective an event is written when it is indexed: thats when it can be read.
+		if (conf.Events.TryGetValue(Conf.EventTracker.Written, out var writtenEnabled) && writtenEnabled) {
+			trackers.IndexTracker = new IndexTracker(new CounterSubMetric<long>(
+				eventMetric,
+				new KeyValuePair<string, object>("activity", "written")));
+		}
 
 		// gossip
 		if (conf.GossipTrackers.Length != 0) {

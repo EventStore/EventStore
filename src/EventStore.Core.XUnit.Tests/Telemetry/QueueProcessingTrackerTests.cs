@@ -34,7 +34,7 @@ namespace EventStore.Core.XUnit.Tests.Telemetry {
 		void AssertMeasurements(int expectedValue) {
 
 			Assert.Collection(
-				_listener.RetrieveMeasurements("the-metric"),
+				_listener.RetrieveMeasurements("the-metric-seconds"),
 				m => {
 					Assert.Equal(expectedValue, m.Value);
 					Assert.Collection(

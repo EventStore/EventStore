@@ -276,7 +276,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				skipIndexScanOnReads: Opts.SkipIndexScanOnReadsDefault,
 				replicationCheckpoint: dbResult.Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: dbResult.Db.Config.IndexCheckpoint,
-				indexStatusTracker: new IndexStatusTracker.NoOp());
+				indexStatusTracker: new IndexStatusTracker.NoOp(),
+				indexTracker: new IndexTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(dbResult.Db.Config.WriterCheckpoint.Read());
 			// wait for tables to be merged. for one of the tests this takes a while

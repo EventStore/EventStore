@@ -84,7 +84,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				new LRUCache<TStreamId, IndexBackend<TStreamId>.MetadataCached>("StreamMetadata", 100),
 				true, _metastreamMaxCount,
 				Opts.HashCollisionReadLimitDefault, Opts.SkipIndexScanOnReadsDefault,
-				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint, new IndexStatusTracker.NoOp());
+				_dbResult.Db.Config.ReplicationCheckpoint,_dbResult.Db.Config.IndexCheckpoint, new IndexStatusTracker.NoOp(), new IndexTracker.NoOp());
 			readIndex.IndexCommitter.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 			ReadIndex = readIndex;
 

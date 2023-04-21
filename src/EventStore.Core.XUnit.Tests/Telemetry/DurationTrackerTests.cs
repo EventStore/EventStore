@@ -46,7 +46,7 @@ namespace EventStore.Core.XUnit.Tests.Telemetry {
 			int expectedValue) {
 
 			Assert.Collection(
-				_listener.RetrieveMeasurements("the-histogram"),
+				_listener.RetrieveMeasurements("the-histogram-seconds"),
 				m => {
 					Assert.Equal(expectedValue, m.Value);
 					Assert.Collection(

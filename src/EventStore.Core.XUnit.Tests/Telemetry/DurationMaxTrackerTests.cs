@@ -160,7 +160,7 @@ public class DurationMaxTrackerTests : IDisposable {
 		_listener.Observe();
 
 		Assert.Collection(
-			_listener.RetrieveMeasurements("the-metric"),
+			_listener.RetrieveMeasurements("the-metric-seconds"),
 			m => {
 				Assert.Equal(expectedValue, m.Value);
 				Assert.Collection(
