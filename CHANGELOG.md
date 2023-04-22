@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Don't require an equals sign when parsing a command line argument followed by an integer [EventStore#3757](https://github.com/EventStore/EventStore/pull/3757)
 - Ignore exceptions when failing to change PTable index file permissions [EventStore#3807](https://github.com/EventStore/EventStore/pull/3807)
 - #2187  [EventStore#3816](https://github.com/EventStore/EventStore/pull/3816)
+- Handle events that have been deleted from (now empty) chunks but not from the index [EventStore#3813](https://github.com/EventStore/EventStore/pull/3813)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -39,6 +40,8 @@ All notable changes to this project will be documented in this file.
 - Every node will monitor versions of other alive nodes; if version mismatch detected in cluster, nodes will log this [EventStore#3792](https://github.com/EventStore/EventStore/pull/3792)
 - "/gossip" endpoint will also have ES version info  [EventStore#3792](https://github.com/EventStore/EventStore/pull/3792)
 - Handle redacted events in AtomPub [EventStore#3793](https://github.com/EventStore/EventStore/pull/3793)
+- Options to restrict EventStoreDB access for anonymous users [EventStore#3787](https://github.com/EventStore/EventStore/pull/3787)
+- Metrics for count of events being read/written and bytes being read [EventStore#3737](https://github.com/EventStore/EventStore/pull/3737)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
