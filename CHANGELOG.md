@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - #2187  [EventStore#3816](https://github.com/EventStore/EventStore/pull/3816)
 - Handle events that have been deleted from (now empty) chunks but not from the index [EventStore#3813](https://github.com/EventStore/EventStore/pull/3813)
 - Compile error caused by conflicting PRs [EventStore#3822](https://github.com/EventStore/EventStore/pull/3822)
+- Compile error caused by conflicting PRs [EventStore#3822](https://github.com/EventStore/EventStore/pull/3822)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -74,6 +75,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3764 [EventStore#3774](https://github.com/EventStore/EventStore/pull/3774)
 - //github.com/EventStore/EventStore/pull/3778 [EventStore#3779](https://github.com/EventStore/EventStore/pull/3779)
 - //github.com/EventStore/EventStore/pull/3801 [EventStore#3806](https://github.com/EventStore/EventStore/pull/3806)
+- //github.com/EventStore/EventStore/pull/3813 [EventStore#3821](https://github.com/EventStore/EventStore/pull/3821)
 - //github.com/EventStore/EventStore/pull/3813 [EventStore#3821](https://github.com/EventStore/EventStore/pull/3821)
 
 ## [22.10.1] - 2023-02-13
