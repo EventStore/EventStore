@@ -32,6 +32,14 @@
 		"StreamTombstone": ""
 	},
 
+	"IncomingGrpcCalls": {
+		"Current": true,
+		"Total" :  true,
+		"Failed": true,
+		"Unimplemented": true,
+		"DeadlineExceeded": true
+	},
+
 	"GossipTrackers": [
 //		"PullFromPeer",
 		"PushToPeer",

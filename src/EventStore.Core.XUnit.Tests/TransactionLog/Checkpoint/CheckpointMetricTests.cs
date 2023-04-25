@@ -8,7 +8,7 @@ namespace EventStore.Core.XUnit.Tests.TransactionLog.Checkpoint {
 	public class CheckpointMetricTests {
 		[Fact]
 		public void can_collect() {
-			var meter = new Meter($"{typeof(CheckpointMetricTests)}");
+			using var meter = new Meter($"{typeof(CheckpointMetricTests)}");
 			using var listener = new TestMeterListener<long>(meter);
 			var metric = new CheckpointMetric(
 				meter,

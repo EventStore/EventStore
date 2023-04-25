@@ -49,6 +49,14 @@ namespace EventStore.Common.Configuration {
 			Writer,
 		}
 
+		public enum IncomingGrpcCall {
+			Current = 1,
+			Total,
+			Failed,
+			Unimplemented,
+			DeadlineExceeded,
+		}
+
 		public enum GrpcMethod {
 			StreamRead = 1,
 			StreamAppend,
@@ -81,6 +89,8 @@ namespace EventStore.Common.Configuration {
 		public StatusTracker[] StatusTrackers { get; set; } = Array.Empty<StatusTracker>();
 
 		public Checkpoint[] Checkpoints { get; set; } = Array.Empty<Checkpoint>();
+
+		public Dictionary<IncomingGrpcCall, bool> IncomingGrpcCalls { get; set; } = new();
 
 		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
 

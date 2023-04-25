@@ -74,6 +74,12 @@ public static class MetricsBootstrapper {
 		var byteMetric = coreMeter.CreateCounter<long>("eventstore-io", unit: "bytes");
 		var eventMetric = coreMeter.CreateCounter<long>("eventstore-io", unit: "events");
 
+		// incoming grpc calls
+		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
+		if (enabledCalls.Length > 0) {
+			_ = new IncomingGrpcCallsMetric(coreMeter, "eventstore-incoming-grpc-calls", enabledCalls);
+		}
+
 		// events
 		if (conf.Events.TryGetValue(Conf.EventTracker.Read, out var readEnabled) && readEnabled) {
 			var readTag = new KeyValuePair<string, object>("activity", "read");
