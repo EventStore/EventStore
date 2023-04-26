@@ -25,6 +25,8 @@ public class Trackers {
 	public GossipTrackers GossipTrackers { get; set; } = new ();
 	public ITransactionFileTracker TransactionFileTracker { get; set; } = new TFChunkTracker.NoOp();
 	public IIndexTracker IndexTracker { get; set; } = new IndexTracker.NoOp();
+	public IMaxTracker<long> WriterFlushSizeTracker { get; set; } = new MaxTracker<long>.NoOp();
+	public IDurationMaxTracker WriterFlushDurationTracker { get; set; } = new DurationMaxTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -153,6 +155,25 @@ public static class MetricsBootstrapper {
 		foreach (var method in Enum.GetValues<Conf.GrpcMethod>()) {
 			if (conf.GrpcMethods.TryGetValue(method, out var label) && !string.IsNullOrWhiteSpace(label))
 				trackers.GrpcTrackers[method] = new DurationTracker(durationMetric, label);
+		}
+
+		// storage writer
+		if (conf.Writer.Count > 0) {
+			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushSize, out var flushSizeEnabled) && flushSizeEnabled) {
+				var maxMetric = new MaxMetric<long>(coreMeter, "eventstore-writer-flush-size-max");
+				trackers.WriterFlushSizeTracker = new MaxTracker<long>(
+					metric: maxMetric,
+					name: null,
+					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds);
+			}
+
+			if (conf.Writer.TryGetValue(Conf.WriterTracker.FlushDuration, out var flushDurationEnabled) && flushDurationEnabled) {
+				var maxDurationmetric = new DurationMaxMetric(coreMeter, "eventstore-writer-flush-duration-max");
+				trackers.WriterFlushDurationTracker = new DurationMaxTracker(
+					maxDurationmetric,
+					name: null,
+					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds);
+			}
 		}
 
 		// queue length trackers

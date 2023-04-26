@@ -707,6 +707,8 @@ namespace EventStore.Core {
 				logFormat.SystemStreams,
 				epochManager, _queueStatsManager,
 				trackers.QueueTrackers,
+				trackers.WriterFlushSizeTracker,
+				trackers.WriterFlushDurationTracker,
 				() => readIndex.LastIndexedPosition);
 			// subscribes internally
 			AddTasks(storageWriter.Tasks);

@@ -17,6 +17,7 @@ using EventStore.Core.Services.Monitoring.Stats;
 using EventStore.Core.Services.Storage.EpochManager;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Telemetry;
+using EventStore.Core.Time;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using Newtonsoft.Json;
@@ -51,18 +52,19 @@ namespace EventStore.Core.Services.Storage {
 		private readonly INameIndex<TStreamId> _streamNameIndex;
 		private readonly INameIndex<TStreamId> _eventTypeIndex;
 		private readonly ISystemStreamLookup<TStreamId> _systemStreams;
+		private readonly IMaxTracker<long> _flushSizeTracker;
+		private readonly IDurationMaxTracker _flushDurationTracker;
 
 		protected readonly IEpochManager EpochManager;
-
 		protected readonly IPublisher Bus;
 		private readonly ISubscriber _subscribeToBus;
 		protected readonly IQueuedHandler StorageWriterQueue;
 		private readonly InMemoryBus _writerBus;
 
-		private readonly Stopwatch _watch = Stopwatch.StartNew();
+		private readonly Clock _clock = Clock.Instance;
 		private readonly double _minFlushDelay;
 		private long _lastFlushDelay;
-		private long _lastFlushTimestamp;
+		private Instant _lastFlushTimestamp;
 
 		protected int FlushMessagesInQueue;
 		private VNodeState _vnodeState = VNodeState.Initializing;
@@ -100,7 +102,9 @@ namespace EventStore.Core.Services.Storage {
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
-			QueueTrackers trackers) {
+			QueueTrackers queueTrackers,
+			IMaxTracker<long> flushSizeTracker,
+			IDurationMaxTracker flushDurationTracker) {
 
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
@@ -123,13 +127,14 @@ namespace EventStore.Core.Services.Storage {
 			_systemStreams = systemStreams;
 			_emptyEventTypeId = emptyEventTypeId;
 			EpochManager = epochManager;
-
+			_flushDurationTracker = flushDurationTracker;
+			_flushSizeTracker = flushSizeTracker;
 			_scavengePointsStreamId = _streamNameIndex.GetExisting(SystemStreams.ScavengePointsStream);
 			_scavengePointEventTypeId = _eventTypeIndex.GetExisting(SystemEventTypes.ScavengePoint);
 
 			_minFlushDelay = minFlushDelay.TotalMilliseconds * TicksPerMs;
 			_lastFlushDelay = 0;
-			_lastFlushTimestamp = _watch.ElapsedTicks;
+			_lastFlushTimestamp = _clock.Now;
 
 			Writer = writer;
 			Writer.Open();
@@ -138,7 +143,7 @@ namespace EventStore.Core.Services.Storage {
 			StorageWriterQueue = QueuedHandler.CreateQueuedHandler(new AdHocHandler<Message>(CommonHandle),
 				"StorageWriterQueue",
 				queueStatsManager,
-				trackers,
+				queueTrackers,
 				true,
 				TimeSpan.FromMilliseconds(500));
 			_tasks.Add(StorageWriterQueue.Start());
@@ -710,15 +715,20 @@ namespace EventStore.Core.Services.Storage {
 		}
 
 		protected bool Flush(bool force = false) {
-			var start = _watch.ElapsedTicks;
-			if (force || FlushMessagesInQueue == 0 || start - _lastFlushTimestamp >= _lastFlushDelay + _minFlushDelay) {
+			var start = _clock.Now;
+			if (force || FlushMessagesInQueue == 0 || start.ElapsedTicksSince(_lastFlushTimestamp) >= _lastFlushDelay + _minFlushDelay) {
 				var flushSize = Writer.Checkpoint.ReadNonFlushed() - Writer.Checkpoint.Read();
 
 				Writer.Flush();
-				HistogramService.SetValue(_writerFlushHistogram,
-					(long)((((double)_watch.ElapsedTicks - start) / Stopwatch.Frequency) * 1000000000));
-				var end = _watch.ElapsedTicks;
-				var flushDelay = end - start;
+
+				_flushSizeTracker.Record(flushSize);
+				var end = _flushDurationTracker.RecordNow(start);
+
+				var flushDelay = end.ElapsedTicksSince(start);
+				var flushDelaySeconds = ((double)flushDelay) / Stopwatch.Frequency;
+				var flushDelayNanoSeconds = (long)(flushDelaySeconds * 1_000_000_000);
+				HistogramService.SetValue(_writerFlushHistogram, flushDelayNanoSeconds);
+
 				Interlocked.Exchange(ref _lastFlushDelay, flushDelay);
 				Interlocked.Exchange(ref _lastFlushSize, flushSize);
 				_lastFlushTimestamp = end;

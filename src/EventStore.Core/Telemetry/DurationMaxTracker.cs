@@ -39,10 +39,11 @@ public class DurationMaxTracker : IDurationMaxTracker {
 		_clock = clock ?? Clock.Instance;
 		_recentMax = new RecentMax<double>(expectedScrapeIntervalSeconds);
 
-		_maxTags = new KeyValuePair<string, object>[] {
-			new("name", name),
-			new("range", $"{_recentMax.MinPeriodSeconds}-{_recentMax.MaxPeriodSeconds} seconds"),
-		};
+		var maxTags = new List<KeyValuePair<string, object>>();
+		if (!string.IsNullOrWhiteSpace(name))
+			maxTags.Add(new("name", name));
+		maxTags.Add(new("range", $"{_recentMax.MinPeriodSeconds}-{_recentMax.MaxPeriodSeconds} seconds"));
+		_maxTags = maxTags.ToArray();
 
 		metric.Add(this);
 	}

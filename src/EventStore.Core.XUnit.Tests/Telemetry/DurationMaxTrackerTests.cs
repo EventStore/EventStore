@@ -175,4 +175,28 @@ public class DurationMaxTrackerTests : IDisposable {
 					});
 			});
 	}
+
+	[Fact]
+	public void no_name() {
+		using var meter = new Meter($"{typeof(DurationMaxTrackerTests)}");
+		using var listener = new TestMeterListener<double>(meter);
+		var sut = new DurationMaxTracker(
+			metric: new DurationMaxMetric(meter, "the-metric"),
+			name: null,
+			expectedScrapeIntervalSeconds: 15);
+
+		listener.Observe();
+
+		Assert.Collection(
+			listener.RetrieveMeasurements("the-metric-seconds"),
+			m => {
+				Assert.Equal(0, m.Value);
+				Assert.Collection(
+					m.Tags.ToArray(),
+					t => {
+						Assert.Equal("range", t.Key);
+						Assert.Equal("16-20 seconds", t.Value);
+					});
+			});
+	}
 }

@@ -47,5 +47,6 @@ public struct Instant : IEquatable<Instant> {
 	public override int GetHashCode() =>
 		_ticks.GetHashCode();
 
-	private long ElapsedTicksSince(Instant since) => _ticks - since._ticks;
+	/// Stopwatch Ticks, not DateTime Ticks.
+	public long ElapsedTicksSince(Instant since) => _ticks - since._ticks;
 }
