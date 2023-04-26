@@ -12,6 +12,7 @@ using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Settings;
+using EventStore.Core.Telemetry;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Index.Hashers;
@@ -284,7 +285,8 @@ namespace EventStore.Core.XUnit.Tests.Scavenge {
 				replicationCheckpoint: dbResult.Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: dbResult.Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(dbResult.Db.Config.WriterCheckpoint.Read());
 			// wait for tables to be merged. for one of the tests this takes a while

@@ -6,6 +6,7 @@ using EventStore.Core.Index;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.Telemetry;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.TransactionLog;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
@@ -89,7 +90,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
 			ReadIndex = readIndex;

@@ -9,10 +9,12 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
+using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using static EventStore.Common.Configuration.TelemetryConfiguration;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
@@ -56,7 +58,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			IReadOnlyCheckpoint replicationCheckpoint,
 			ICheckpoint indexCheckpoint,
 			IIndexStatusTracker indexStatusTracker,
-			IIndexTracker indexTracker) {
+			IIndexTracker indexTracker,
+			ICacheHitsMissesTracker cacheTracker) {
 
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(readerPool, "readerPool");
@@ -91,6 +94,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				_streamNames, eventTypeIndex, eventTypeNames, systemStreams, streamExistenceFilter,
 				streamExistenceFilterInitializer, indexCheckpoint, indexStatusTracker, indexTracker, additionalCommitChecks);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames, eventTypeNames);
+
+			RegisterHitsMisses(cacheTracker);
 		}
 
 		IndexReadEventResult IReadIndex<TStreamId>.ReadEvent(string streamName, TStreamId streamId, long eventNumber) {
@@ -179,6 +184,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 		public StorageMessage.EffectiveAcl GetEffectiveAcl(TStreamId streamId) {
 			return _indexReader.GetEffectiveAcl(streamId);
+		}
+
+		void RegisterHitsMisses(ICacheHitsMissesTracker tracker) {
+			tracker.Register(
+				Cache.Chunk,
+				() => Interlocked.Read(ref TFChunkReader.CachedReads),
+				() => Interlocked.Read(ref TFChunkReader.NotCachedReads));
+
+			tracker.Register(
+				Cache.StreamInfo,
+				() => _indexReader.CachedStreamInfo,
+				() => _indexReader.NotCachedStreamInfo);
 		}
 
 		ReadIndexStats IReadIndex.GetStatistics() {

@@ -671,7 +671,8 @@ namespace EventStore.Core {
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
 				Db.Config.IndexCheckpoint,
 				trackers.IndexStatusTracker,
-				trackers.IndexTracker);
+				trackers.IndexTracker,
+				trackers.CacheHitsMissesTracker);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);
 

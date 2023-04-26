@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.Tests.Services;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
 	public abstract class TruncateAndReOpenDbScenario<TLogFormat, TStreamId> : TruncateScenario<TLogFormat, TStreamId> {
@@ -69,7 +70,8 @@ namespace EventStore.Core.Tests.TransactionLog.Truncation {
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 			readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
 			ReadIndex = readIndex;
 		}

@@ -84,6 +84,11 @@ namespace EventStore.Common.Configuration {
 			Written,
 		}
 
+		public enum Cache {
+			StreamInfo = 1,
+			Chunk,
+		}
+
 		public class LabelMappingCase {
 			public string Regex { get; set; }
 			public string Label { get; set; }
@@ -104,6 +109,8 @@ namespace EventStore.Common.Configuration {
 		public Dictionary<WriterTracker, bool> Writer { get; set; } = new();
 
 		public Dictionary<EventTracker, bool> Events { get; set; } = new();
+
+		public Dictionary<Cache, bool> CacheHitsMisses { get; set; } = new();
 
 		// must be 0, 1, 5, 10 or a multiple of 15
 		public int ExpectedScrapeIntervalSeconds { get; set; }

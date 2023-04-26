@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -60,7 +61,8 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions {
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 			readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
 			ReadIndex = readIndex;
 		}
