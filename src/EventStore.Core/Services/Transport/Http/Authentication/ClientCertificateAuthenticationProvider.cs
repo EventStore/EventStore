@@ -5,6 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.UserManagement;
 using Microsoft.AspNetCore.Http;
+using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
@@ -20,11 +21,21 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 			if (clientCertificate is null) return false;
 
 			bool hasReservedNodeCN;
+			string clientCertificateCN;
 			try {
-				hasReservedNodeCN = clientCertificate.GetNameInfo(X509NameType.SimpleName, false) == _certificateReservedNodeCommonName;
+				clientCertificateCN = clientCertificate.GetCommonName();
+				hasReservedNodeCN = clientCertificateCN == _certificateReservedNodeCommonName;
 			} catch (CryptographicException) {
 				return false;
 			} catch (NullReferenceException) {
+				return false;
+			}
+
+			if (!hasReservedNodeCN) {
+				var ip = context.Connection.RemoteIpAddress?.ToString() ?? "<unknown>";
+				Log.Error(
+					"Connection from node: {ip} was denied because its CN: {clientCertificateCN} does not match with the reserved node CN: {reservedNodeCN}",
+					ip, clientCertificateCN, _certificateReservedNodeCommonName);
 				return false;
 			}
 
@@ -32,13 +43,15 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 				.Where(x => x.type is CertificateNameType.DnsName or CertificateNameType.IpAddress)
 				.IsNotEmpty();
 
-			if (hasReservedNodeCN && hasIpOrDnsSan) {
-				request = new HttpAuthenticationRequest(context, "system", "");
-				request.Authenticated(SystemAccounts.System);
-				return true;
+			if (!hasIpOrDnsSan) {
+				var ip = context.Connection.RemoteIpAddress?.ToString() ?? "<unknown>";
+				Log.Error("Connection from node: {ip} was denied because its certificate does not have any IP or DNS Subject Alternative Names (SAN).", ip);
+				return false;
 			}
-
-			return false;
+			
+			request = new HttpAuthenticationRequest(context, "system", "");
+			request.Authenticated(SystemAccounts.System);
+			return true;
 		}
 	}
 }

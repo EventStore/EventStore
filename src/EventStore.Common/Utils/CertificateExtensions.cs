@@ -74,7 +74,7 @@ namespace EventStore.Common.Utils {
 			return cn != null && MatchesName(cn, CertificateNameType.DnsName, name);
 		}
 
-		private static string GetCommonName(X509Certificate2 certificate) => certificate.GetNameInfo(X509NameType.SimpleName, false);
+		public static string GetCommonName(this X509Certificate2 certificate) => certificate.GetNameInfo(X509NameType.SimpleName, false);
 
 		private static bool HasNonAsciiChars(string s) => s.Any(t => t > 127);
 

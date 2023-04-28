@@ -19,6 +19,16 @@ namespace EventStore.Core.Certificates {
 
 			var (certificate, intermediates) = _options.LoadNodeCertificate();
 
+			var certificateCN = certificate.GetCommonName();
+			var reservedNodeCN = _options.Certificate.CertificateReservedNodeCommonName;
+
+			if (certificateCN != reservedNodeCN) {
+				Log.Error(
+					"Certificate CN: {certificateCN} does not match with the CertificateReservedNodeCommonName configuration setting: {reservedNodeCN}",
+					certificateCN, reservedNodeCN);
+				return LoadCertificateResult.VerificationFailed;
+			}
+			
 			var previousThumbprint = Certificate?.Thumbprint;
 			var newThumbprint = certificate.Thumbprint;
 			Log.Information("Loading the node's certificate. Subject: {subject}, Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}",
