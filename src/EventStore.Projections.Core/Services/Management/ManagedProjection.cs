@@ -515,8 +515,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 
 		private void DeleteIfConditionsAreMet() {
-			Interlocked.Decrement(ref PersistedProjectionState.NumberOfPrequisitesMetForDeletion);
-			if (PersistedProjectionState.NumberOfPrequisitesMetForDeletion <= 0) {
+			if (Interlocked.Decrement(ref PersistedProjectionState.NumberOfPrequisitesMetForDeletion) <= 0) {
 				Deleted = true;
 				Deleting = false;
 				Reply();
@@ -723,6 +722,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (Mode == ProjectionMode.Transient) {
 				//TODO: move to common completion procedure
 				_lastWrittenVersion = PersistedProjectionState.Version ?? -1;
+				_pendingWritePersistedState = false;
 				StartOrLoadStopped();
 				return;
 			}
@@ -781,6 +781,15 @@ namespace EventStore.Projections.Core.Services.Management {
 
 		private void DeleteStreamCompleted(ClientMessage.DeleteStreamCompleted message, string streamId,
 			Action completed) {
+			// currently, WrongExpectedVersion is returned when deleting non-existing streams, even when specifying ExpectedVersion.Any.
+			// it is not too intuitive but changing the response would break the contract and compatibility with TCP/gRPC/web clients or require adding a new error code to all clients.
+			// note: we don't need to check if CurrentVersion == -1 here to make sure it's a non-existing stream since the deletion is done with ExpectedVersion.Any
+			if (message.Result == OperationResult.WrongExpectedVersion) {
+				// stream was never created
+				_logger.Information("PROJECTIONS: Projection Stream '{stream}' was not deleted since it does not exist", streamId);
+				completed();
+				return;
+			}
 			if (message.Result == OperationResult.Success || message.Result == OperationResult.StreamDeleted) {
 				_logger.Information("PROJECTIONS: Projection Stream '{stream}' deleted", streamId);
 				completed();
@@ -1022,7 +1031,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (_lastReplyEnvelope != null)
 				_lastReplyEnvelope.ReplyWith(new ProjectionManagementMessage.Updated(_name));
 			_lastReplyEnvelope = null;
-			if (Deleted) {
+			if (Deleted && !_pendingWritePersistedState) {
 				DisposeCoreProjection();
 				_output.Publish(new ProjectionManagementMessage.Internal.Deleted(_name, Id));
 			}
