@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EventStore.Common.Utils;
+using EventStore.Core;
 using EventStore.Core.Bus;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services;
@@ -219,11 +220,15 @@ namespace EventStore.Projections.Core.Services.Http {
 						return;
 					}
 
+					if (config.ProjectionExecutionTimeout <= 0) {
+						SendBadRequest(o, $"projectionExecutionTimeout should be positive. Found : {config.ProjectionExecutionTimeout}");
+						return;
+					}
 					var message = new ProjectionManagementMessage.Command.UpdateConfig(
 						envelope, match.BoundVariables["name"], config.EmitEnabled, config.TrackEmittedStreams,
 						config.CheckpointAfterMs, config.CheckpointHandledThreshold,
 						config.CheckpointUnhandledBytesThreshold, config.PendingEventsThreshold,
-						config.MaxWriteBatchLength, config.MaxAllowedWritesInFlight, GetRunAs(http, match));
+						config.MaxWriteBatchLength, config.MaxAllowedWritesInFlight, GetRunAs(http, match), config.ProjectionExecutionTimeout);
 					Publish(message);
 				}, ex => Log.Debug("Failed to update projection configuration. Error: {e}", ex));
 		}
@@ -650,6 +655,9 @@ namespace EventStore.Projections.Core.Services.Http {
 			public int PendingEventsThreshold { get; set; }
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
+
+			public int ProjectionExecutionTimeout { get; set; } =
+				ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout;
 		}
 	}
 }
