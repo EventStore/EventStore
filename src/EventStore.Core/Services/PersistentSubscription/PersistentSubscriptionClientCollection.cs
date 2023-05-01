@@ -28,9 +28,16 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			return _consumerStrategy.PushMessageToClient(message);
 		}
 
-		public IEnumerable<OutstandingMessage> RemoveClientByConnectionId(Guid connectionId) {
+		public bool RemoveClientByConnectionId(Guid connectionId,
+			out IEnumerable<OutstandingMessage> unconfirmedEvents) {
 			var clients = _hash.Values.Where(x => x.ConnectionId == connectionId).ToList();
-			return clients.SelectMany(client => RemoveClientByCorrelationId(client.CorrelationId, false));
+			if (clients.Count == 0) {
+				unconfirmedEvents = Array.Empty<OutstandingMessage>();
+				return false;
+			}
+
+			unconfirmedEvents = clients.SelectMany(client => RemoveClientByCorrelationId(client.CorrelationId, false));
+			return true;
 		}
 
 		public void ShutdownAll() {
@@ -39,7 +46,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
-		public IEnumerable<OutstandingMessage> RemoveClientByCorrelationId(Guid correlationId, bool sendDropNotification) {
+		public IEnumerable<OutstandingMessage> RemoveClientByCorrelationId(Guid correlationId,
+			bool sendDropNotification) {
 			PersistentSubscriptionClient client;
 			if (!_hash.TryGetValue(correlationId, out client)) return new OutstandingMessage[0];
 			_hash.Remove(client.CorrelationId);

@@ -352,17 +352,21 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			TryMarkCheckpoint(false);
 		}
 
-		public void RemoveClientByConnectionId(Guid connectionId) {
+		public bool RemoveClientByConnectionId(Guid connectionId) {
 			lock (_lock) {
-				var lostMessages =
-					_pushClients.RemoveClientByConnectionId(connectionId).OrderBy(v => v.ResolvedEvent.OriginalEventNumber);
+				if (!_pushClients.RemoveClientByConnectionId(connectionId,
+					    out var unconfirmedEvents))
+					return false;
+				
+				var lostMessages = unconfirmedEvents.OrderBy(v => v.ResolvedEvent.OriginalEventNumber);
 				foreach (var m in lostMessages) {
 					if (ActionTakenForRetriedMessage(m))
-						return;
+						return true; 
 					RetryMessage(m);
 				}
 
 				TryPushingMessagesToClients();
+				return true;
 			}
 		}
 

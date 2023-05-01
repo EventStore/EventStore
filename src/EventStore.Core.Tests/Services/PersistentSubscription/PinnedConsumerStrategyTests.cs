@@ -281,7 +281,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(3, client1Envelope.Replies.Count);
 			Assert.AreEqual(0, client2Envelope.Replies.Count);
 
-			sub.RemoveClientByConnectionId(conn1Id);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(conn1Id));
 
 			// Used to throw a null reference exception.
 			Assert.That(() => sub.RemoveClientByConnectionId(conn2Id), Throws.Nothing);
@@ -314,7 +314,7 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 			Assert.AreEqual(1, client1Envelope.Replies.Count);
 			Assert.AreEqual(1, client2Envelope.Replies.Count);
 
-			sub.RemoveClientByConnectionId(client2Id);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(client2Id));
 
 			// Message 2 should be retried on client 1 as it wasn't acked.
 			Assert.AreEqual(2, client1Envelope.Replies.Count);
@@ -348,11 +348,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(24));
 
-			sub.RemoveClientByConnectionId(client2Id);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(client2Id));
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(14));
 
-			sub.RemoveClientByConnectionId(client1Id);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(client1Id));
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(0));
 		}
@@ -393,11 +393,11 @@ namespace EventStore.Core.Tests.Services.PersistentSubscription {
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(22));
 
-			sub.RemoveClientByConnectionId(client2Id);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(client2Id));
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(12));
 
-			sub.RemoveClientByConnectionId(client1Id);
+			Assert.IsTrue(sub.RemoveClientByConnectionId(client1Id));
 
 			Assert.That(consumerStrategy.AvailableCapacity, Is.EqualTo(0));
 		}
