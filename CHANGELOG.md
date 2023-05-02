@@ -18,6 +18,9 @@ All notable changes to this project will be documented in this file.
 - Compile error caused by conflicting PRs [EventStore#3822](https://github.com/EventStore/EventStore/pull/3822)
 - Compile error caused by conflicting PRs [EventStore#3822](https://github.com/EventStore/EventStore/pull/3822)
 - #3791  [EventStore#3814](https://github.com/EventStore/EventStore/pull/3814)
+- race condition in ManagedProjection code when deleting a projection [EventStore#3812](https://github.com/EventStore/EventStore/pull/3812)
+- projection code used to throw error if projection substreams (e.g. emitted streams, checkpoint streams etc.) did not exist, when deleting projection [EventStore#3812](https://github.com/EventStore/EventStore/pull/3812)
+- Only log that a connection to a persistent subscription has been dropped if there was a subscription running on the TCP connection [EventStore#3824](https://github.com/EventStore/EventStore/pull/3824)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
