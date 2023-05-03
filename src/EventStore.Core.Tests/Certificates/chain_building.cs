@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(),
-				new X509Certificate2Collection(_root));
+				new X509Certificate2Collection(_root), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.NoError);
 		}
 	}
@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(_intermediate),
-				new X509Certificate2Collection(_root));
+				new X509Certificate2Collection(_root), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.NoError);
 		}
 	}
@@ -32,7 +32,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(_intermediate),
-				new X509Certificate2Collection(_root));
+				new X509Certificate2Collection(_root), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.NotTimeValid);
 		}
 	}
@@ -44,7 +44,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(_intermediate),
-				new X509Certificate2Collection(_root));
+				new X509Certificate2Collection(_root), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.NotTimeValid);
 		}
 	}
@@ -57,7 +57,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(_intermediate),
-				new X509Certificate2Collection(_root));
+				new X509Certificate2Collection(_root), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.NotTimeValid);
 		}
 	}
@@ -68,7 +68,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(),
-				new X509Certificate2Collection(_root));
+				new X509Certificate2Collection(_root), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.PartialChain);
 		}
 	}
@@ -79,7 +79,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(_intermediate),
-				new X509Certificate2Collection());
+				new X509Certificate2Collection(), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.PartialChain);
 		}
 	}
@@ -90,7 +90,7 @@ namespace EventStore.Core.Tests.Certificates {
 			var chainStatus = CertificateUtils.BuildChain(
 				_leaf,
 				new X509Certificate2Collection(new []{_intermediate, _root}),
-				new X509Certificate2Collection());
+				new X509Certificate2Collection(), out _);
 			Assert.True(chainStatus == X509ChainStatusFlags.UntrustedRoot);
 		}
 	}
