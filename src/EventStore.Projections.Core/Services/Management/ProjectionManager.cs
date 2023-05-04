@@ -15,6 +15,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
 using EventStore.Projections.Core.Common;
 using ILogger = Serilog.ILogger;
+using OperationResult = EventStore.Core.Messages.OperationResult;
 
 namespace EventStore.Projections.Core.Services.Management {
 	public class ProjectionManager
@@ -86,6 +87,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		private bool _started;
 		private bool _projectionsStarted;
 		private long _projectionsRegistrationExpectedVersion = 0;
+		private bool _isWritePending = false;
 		private HashSet<string> _projectionsRegistrationState = new HashSet<string>();
 		private readonly PublishEnvelope _publishEnvelope;
 
@@ -240,13 +242,17 @@ namespace EventStore.Projections.Core.Services.Management {
 
 				PostNewTransientProjection(transientProjection, message.Envelope);
 			} else {
-				var expectedVersion = _projectionsRegistrationExpectedVersion;
-				var pendingProjections = new Dictionary<string, PendingProjection> {
-					{message.Name, new PendingProjection(expectedVersion + 1, message)}
-				};
-				if (!ValidateProjections(pendingProjections.Values.ToArray(), message)) return;
-	
-				PostNewProjections(pendingProjections, expectedVersion, message.Envelope);		
+				if (_isWritePending) {
+					DelayMessage(message);
+				} else {
+					var expectedVersion = _projectionsRegistrationExpectedVersion;
+					var pendingProjections = new Dictionary<string, PendingProjection> {
+						{message.Name, new PendingProjection(expectedVersion + 1, message)}
+					};
+					if (!ValidateProjections(pendingProjections.Values.ToArray(), message)) return;
+						
+					PostNewProjections(pendingProjections, expectedVersion, message.Envelope);
+				}
 			}
 		}
 
@@ -260,19 +266,22 @@ namespace EventStore.Projections.Core.Services.Management {
 						"Transient projections in batches are not supported."));
 				return;
 			}
-
-			var expectedVersion = _projectionsRegistrationExpectedVersion;
-			var pendingProjections = new Dictionary<string, PendingProjection>();
+			if (_isWritePending) {
+				DelayMessage(message);
+			} else {
+				var expectedVersion = _projectionsRegistrationExpectedVersion;
+				var pendingProjections = new Dictionary<string, PendingProjection>();
 			
-			var projectionId = expectedVersion + 1;
-			foreach (var projection in message.Projections) {
-				pendingProjections.Add(projection.Name, new PendingProjection(projectionId, projection));
-				projectionId++;
+				var projectionId = expectedVersion + 1;
+				foreach (var projection in message.Projections) {
+					pendingProjections.Add(projection.Name, new PendingProjection(projectionId, projection));
+					projectionId++;
+				}
+
+				if (!ValidateProjections(pendingProjections.Values.ToArray(), message)) return;
+
+				PostNewProjections(pendingProjections, expectedVersion, message.Envelope);
 			}
-
-			if (!ValidateProjections(pendingProjections.Values.ToArray(), message)) return;
-			
-			PostNewProjections(pendingProjections, expectedVersion, message.Envelope);
 		}
 		
 		private bool ValidateProjections(
@@ -623,13 +632,18 @@ namespace EventStore.Projections.Core.Services.Management {
 					_projectionsRegistrationState.Remove(message.Name);
 					return;
 			}
-			DeleteProjection(message,
-				expVer => {
-					_projections.Remove(message.Name);
-					_projectionsMap.Remove(message.Id);
-					_projectionsRegistrationState.Remove(message.Name);
-					_projectionsRegistrationExpectedVersion = expVer;
-				});
+
+			if (_isWritePending) {
+				DelayMessage(message);
+			} else {
+				DeleteProjection(message,
+					expVer => {
+						_projections.Remove(message.Name);
+						_projectionsMap.Remove(message.Id);
+						_projectionsRegistrationState.Remove(message.Name);
+						_projectionsRegistrationExpectedVersion = expVer;
+					});
+			}
 		}
 
 		private void DeleteProjection(
@@ -650,7 +664,10 @@ namespace EventStore.Projections.Core.Services.Management {
 						Empty.ByteArray),
 					SystemAccounts.System);
 
-			BeginWriteProjectionDeleted(writeDelete, message, completed);
+			_isWritePending = true;
+			_writeDispatcher.Publish(
+				writeDelete,
+				m => WriteProjectionDeletedCompleted(m, writeDelete, message, completed, retryCount));
 		}
 
 		public void Dispose() {
@@ -938,6 +955,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				events.ToArray(),
 				SystemAccounts.System);
 
+			_isWritePending = true;
 			_writeDispatcher.Publish(
 				writeEvents,
 				m => WriteNewProjectionsCompleted
@@ -950,6 +968,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			IDictionary<string, PendingProjection> newProjections,
 			IEnvelope envelope, int retryCount = ProjectionCreationRetryCount) {
 
+			_isWritePending = false;
 			if (completed.Result == OperationResult.Success) {
 				foreach (var name in newProjections.Keys)
 					_projectionsRegistrationState.Add(name);
@@ -971,6 +990,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				if (retryCount > 0) {
 					_logger.Information("PROJECTIONS: Retrying write projection creations for {projections}",
 						newProjections.Keys);
+					_isWritePending = true;
 					_writeDispatcher.Publish(
 						write,
 						m => WriteNewProjectionsCompleted
@@ -1056,22 +1076,13 @@ namespace EventStore.Projections.Core.Services.Management {
 			_logger.Debug($"PROJECTIONS: Caught up with projections registration. Next expected version: {_projectionsRegistrationExpectedVersion}");
 		}
 
-		private void BeginWriteProjectionDeleted(
-			ClientMessage.WriteEvents writeDelete,
-			ProjectionManagementMessage.Internal.Deleted message,
-			Action<long> onCompleted,
-			int retryCount = ProjectionCreationRetryCount) {
-			_writeDispatcher.Publish(
-				writeDelete,
-				m => WriteProjectionDeletedCompleted(m, writeDelete, message, onCompleted, retryCount));
-		}
-
 		private void WriteProjectionDeletedCompleted(ClientMessage.WriteEventsCompleted writeCompleted,
 			ClientMessage.WriteEvents writeDelete,
 			ProjectionManagementMessage.Internal.Deleted message,
 			Action<long> onCompleted,
 			int retryCount) {
 
+			_isWritePending = false;
 			if (writeCompleted.Result == OperationResult.Success) {
 				onCompleted?.Invoke(writeCompleted.LastEventNumber);
 				return;
@@ -1087,7 +1098,10 @@ namespace EventStore.Projections.Core.Services.Management {
 																	   || writeCompleted.Result == OperationResult.PrepareTimeout) {
 				if (retryCount > 0) {
 					_logger.Information("PROJECTIONS: Retrying write projection deletion for {projection}", message.Name);
-					BeginWriteProjectionDeleted(writeDelete, message, onCompleted, retryCount - 1);
+					_isWritePending = true;
+					_writeDispatcher.Publish(
+						writeDelete,
+						m => WriteProjectionDeletedCompleted(m, writeDelete, message, onCompleted, retryCount - 1));
 					return;
 				}
 			}
@@ -1101,6 +1115,10 @@ namespace EventStore.Projections.Core.Services.Management {
 			_logger.Error(
 				"PROJECTIONS: The projection '{0}' could not be deleted because the deletion event could not be written due to {1}",
 				message.Name, writeCompleted.Result);
+		}
+
+		private void DelayMessage(Message messageToDelay) {
+			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromSeconds(2), new PublishEnvelope(_inputQueue), messageToDelay));
 		}
 
 		public class NewProjectionInitializer {

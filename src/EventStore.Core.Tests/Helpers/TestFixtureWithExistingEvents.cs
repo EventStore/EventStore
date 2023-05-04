@@ -157,8 +157,8 @@ namespace EventStore.Core.Tests.Helpers {
 			return new StreamMetadata(null, null, EventNumber.DeletedStream, null, null, null).ToJsonString();
 		}
 
-		protected void AllWritesSucceed() {
-			_allWritesSucceed = true;
+		protected void AllWritesSucceed(bool succeed = true) {
+			_allWritesSucceed = succeed;
 		}
 
 		protected void AllWritesToSucceed(string streamId) {

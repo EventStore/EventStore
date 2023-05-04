@@ -54,6 +54,14 @@ namespace EventStore.Core.Tests.Helpers {
 			}
 		}
 
+		public IEnumerable<TimerMessage.Schedule> TimerMessagesOfType<T>() {
+			foreach (var message in _timerQueue) {
+				if (message.Message.ReplyMessage is T) {
+					yield return message.Message;
+				}
+			}
+		}
+
 		public void DisableTimer() {
 			_timerDisabled = true;
 		}
