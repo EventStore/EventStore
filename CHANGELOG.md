@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - Handle redacted events in AtomPub [EventStore#3793](https://github.com/EventStore/EventStore/pull/3793)
 - Options to restrict EventStoreDB access for anonymous users [EventStore#3787](https://github.com/EventStore/EventStore/pull/3787)
 - Metrics for count of events being read/written and bytes being read [EventStore#3737](https://github.com/EventStore/EventStore/pull/3737)
+- metrics for current/total/failed grpc calls [EventStore#3825](https://github.com/EventStore/EventStore/pull/3825)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
