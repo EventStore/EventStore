@@ -23,7 +23,10 @@ public sealed class CacheHitsMissesTrackerTests : IDisposable {
 
 		var meter = new Meter($"{typeof(CacheHitsMissesTrackerTests)}-{callerName}").DisposeWith(_disposables);
 		var listener = new TestMeterListener<long>(meter).DisposeWith(_disposables);
-		var metric = new CacheHitsMissesMetric(meter, "the-metric", enabledCaches);
+		var metric = new CacheHitsMissesMetric(meter, enabledCaches, "the-metric", new() {
+			{ Cache.StreamInfo, "stream-info" },
+			{ Cache.Chunk, "chunk" },
+		});
 		var sut =  new CacheHitsMissesTracker(metric);
 		return (sut, listener);
 	}

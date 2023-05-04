@@ -86,7 +86,10 @@ public static class MetricsBootstrapper {
 		// cache hits/misses
 		var enabledCacheHitsMisses = conf.CacheHitsMisses.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCacheHitsMisses.Length > 0) {
-			var metric = new CacheHitsMissesMetric(coreMeter, "eventstore-cache-hits-misses", enabledCacheHitsMisses);
+			var metric = new CacheHitsMissesMetric(coreMeter, enabledCacheHitsMisses, "eventstore-cache-hits-misses", new() {
+				{ Conf.Cache.StreamInfo, "stream-info" },
+				{ Conf.Cache.Chunk, "chunk" },
+			});
 			trackers.CacheHitsMissesTracker = new CacheHitsMissesTracker(metric);
 		}
 

@@ -7,13 +7,18 @@ using static EventStore.Common.Configuration.TelemetryConfiguration;
 namespace EventStore.Core.Telemetry;
 
 public class CacheHitsMissesMetric {
-	private readonly Cache[] _enabledCaches;
+	private readonly Dictionary<Cache, string> _enabledCaches;
 	private readonly List<Func<long>> _funcs = new();
 	private readonly List<KeyValuePair<string, object>[]> _tagss = new();
 	private readonly object _lock = new();
 
-	public CacheHitsMissesMetric(Meter meter, string name, Cache[] enabledCaches) {
-		_enabledCaches = enabledCaches;
+	public CacheHitsMissesMetric(
+		Meter meter,
+		Cache[] enabledCaches,
+		string name,
+		Dictionary<Cache, string> cacheNames) {
+
+		_enabledCaches = new(cacheNames.Where(x => enabledCaches.Contains(x.Key)));
 		meter.CreateObservableCounter(name, Observe);
 	}
 
@@ -23,23 +28,17 @@ public class CacheHitsMissesMetric {
 	}
 
 	private void Register(Cache cache, string kind, Func<long> func) {
-		if (!_enabledCaches.Contains(cache))
+		if (!_enabledCaches.TryGetValue(cache, out var cacheName))
 			return;
 
 		lock (_lock) {
 			_funcs.Add(func);
 			_tagss.Add(new KeyValuePair<string, object>[] {
-				new("cache", KebabCase(cache)),
+				new("cache", cacheName),
 				new("kind", kind),
 			});
 		}
 	}
-
-	private static string KebabCase(Cache cache) => cache switch {
-		Cache.StreamInfo => "stream-info",
-		Cache.Chunk => "chunk",
-		_ => throw new ArgumentOutOfRangeException(nameof(cache), cache, null),
-	};
 
 	private IEnumerable<Measurement<long>> Observe() {
 		lock (_lock) {
