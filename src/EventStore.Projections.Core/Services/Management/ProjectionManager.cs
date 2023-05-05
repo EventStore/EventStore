@@ -375,11 +375,11 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (!_projectionsStarted)
 				return;
 			_logger.Information(
-				"Updating '{projection}' projection source to '{source}' (Requested type is: '{type}')",
+				"Updating '{projection}' projection source to '{source}`",
 				message.Name,
-				message.Query,
-				message.HandlerType);
+				message.Query);
 			var projection = GetProjection(message.Name);
+
 			if (projection == null)
 				message.Envelope.ReplyWith(new ProjectionManagementMessage.NotFound());
 			else {

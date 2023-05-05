@@ -36,7 +36,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 			// when
 			yield return
 				(new ProjectionManagementMessage.Command.UpdateQuery(
-					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System, "JS",
+					new PublishEnvelope(_bus), _projectionName, ProjectionManagementMessage.RunAs.System,
 					_source, emitEnabled: false));
 		}
 

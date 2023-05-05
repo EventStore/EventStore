@@ -189,9 +189,9 @@ namespace EventStore.Projections.Core.Services.Http {
 			http.ReadTextRequestAsync(
 				(o, s) =>
 					Publish(
-						new ProjectionManagementMessage.Command.UpdateQuery(
-							envelope, match.BoundVariables["name"], GetRunAs(http, match), match.BoundVariables["type"],
-							s, emitEnabled: emitEnabled)), Console.WriteLine);
+				new ProjectionManagementMessage.Command.UpdateQuery(
+					envelope, match.BoundVariables["name"], GetRunAs(http, match),
+					s, emitEnabled: emitEnabled)), Console.WriteLine);
 		}
 
 		private void OnProjectionConfigGet(HttpEntityManager http, UriTemplateMatch match) {

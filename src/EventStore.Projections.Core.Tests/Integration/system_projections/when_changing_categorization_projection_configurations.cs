@@ -22,11 +22,11 @@ namespace EventStore.Projections.Core.Tests.Integration.system_projections {
 			yield return
 				new ProjectionManagementMessage.Command.UpdateQuery(
 					Envelope, ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
-					ProjectionManagementMessage.RunAs.System, handlerType: null, query: query, emitEnabled: null);
+					ProjectionManagementMessage.RunAs.System, query: query, emitEnabled: null);
 			yield return
 				new ProjectionManagementMessage.Command.UpdateQuery(
 					Envelope, ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
-					ProjectionManagementMessage.RunAs.System, handlerType: null, query: query, emitEnabled: null);
+					ProjectionManagementMessage.RunAs.System, query: query, emitEnabled: null);
 			yield return
 				new ProjectionManagementMessage.Command.Enable(
 					Envelope, ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,

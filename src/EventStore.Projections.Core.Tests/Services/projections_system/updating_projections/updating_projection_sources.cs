@@ -42,7 +42,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_system.updating
 						Envelope, _projectionName, ProjectionManagementMessage.RunAs.System);
 				yield return
 					new ProjectionManagementMessage.Command.UpdateQuery(
-						Envelope, _projectionName, ProjectionManagementMessage.RunAs.System, "js",
+						Envelope, _projectionName, ProjectionManagementMessage.RunAs.System,
 						GivenUpdatedSource(), _emitEnabled);
 				yield return CreateWriteEvent("stream2", "type3", "{\"Data\": 6}");
 				yield return CreateWriteEvent("stream3", "type4", "{\"Data\": 7}");
