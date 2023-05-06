@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - race condition in ManagedProjection code when deleting a projection [EventStore#3812](https://github.com/EventStore/EventStore/pull/3812)
 - projection code used to throw error if projection substreams (e.g. emitted streams, checkpoint streams etc.) did not exist, when deleting projection [EventStore#3812](https://github.com/EventStore/EventStore/pull/3812)
 - Only log that a connection to a persistent subscription has been dropped if there was a subscription running on the TCP connection [EventStore#3824](https://github.com/EventStore/EventStore/pull/3824)
+- Do not change the handlerType of a projection when it is updated [EventStore#3823](https://github.com/EventStore/EventStore/pull/3823)
+- When multiple projection write requests arrive within short-period (create-create, create-delete, delete-create, delete-delete), projection manager used to pick same expected version number for both write requests which caused WrongExpectedVersion error for one of the request [EventStore#3817](https://github.com/EventStore/EventStore/pull/3817)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
