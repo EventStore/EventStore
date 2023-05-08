@@ -454,6 +454,16 @@ projection starts reading again.
 
 **Default:** `5000` (events).
 
+#### Projection Execution Timeout
+
+The `ProjectionExecutionTimeout` setting specifies per event projection processing timeout. If an event is not processed within the specified duration, the projection will fault and won't process further events.
+
+::: tip 
+Increase value of this setting if projection handler is compute intensive or server is under heavy load
+:::
+
+**Default:** `250` (ms).
+
 ## Debugging
 
 [User projections you create in JavaScript](#user-defined-projections) have a bonus that debugging is easier

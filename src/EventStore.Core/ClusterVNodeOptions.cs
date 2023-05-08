@@ -789,7 +789,7 @@ namespace EventStore.Core {
 			[Description("The time in milliseconds allowed for the compilation phase of user projections")]
 			public int ProjectionCompilationTimeout { get; set; } = 500;
 
-			[Description("The time in milliseconds allowed for the executing a handler in a user projection")]
+			[Description("The time in milliseconds allowed for the executing a handler in a user projection. It can be overriden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
 			public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
 
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
