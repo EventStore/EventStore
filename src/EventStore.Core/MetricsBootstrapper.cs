@@ -96,23 +96,23 @@ public static class MetricsBootstrapper {
 		}
 
 		// gossip
-		if (conf.GossipTrackers.Length != 0) {
-			if (conf.GossipTrackers.Contains(Conf.Gossip.PullFromPeer))
+		if (conf.GossipTrackers.Count != 0) {
+			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.PullFromPeer, out var pullFromPeer) && pullFromPeer)
 				trackers.GossipTrackers.PullFromPeer = new DurationTracker(latencyMetric, "pull-gossip-from-peer");
 
-			if (conf.GossipTrackers.Contains(Conf.Gossip.PushToPeer))
+			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.PushToPeer, out var pushToPeer) && pushToPeer)
 				trackers.GossipTrackers.PushToPeer = new DurationTracker(latencyMetric, "push-gossip-to-peer");
 
-			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingPushFromPeer))
+			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingPushFromPeer, out var processingPushFromPeer) && processingPushFromPeer)
 				trackers.GossipTrackers.ProcessingPushFromPeer = new DurationTracker(gossipProcessingMetric, "push-from-peer");
 
-			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingRequestFromPeer))
+			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingRequestFromPeer, out var processingRequestFromPeer) && processingRequestFromPeer)
 				trackers.GossipTrackers.ProcessingRequestFromPeer = new DurationTracker(gossipProcessingMetric, "request-from-peer");
 
-			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingRequestFromGrpcClient))
+			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingRequestFromGrpcClient, out var processingRequestFromGrpcClient) && processingRequestFromGrpcClient)
 				trackers.GossipTrackers.ProcessingRequestFromGrpcClient = new DurationTracker(gossipProcessingMetric, "request-from-grpc-client");
 
-			if (conf.GossipTrackers.Contains(Conf.Gossip.ProcessingRequestFromHttpClient))
+			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingRequestFromHttpClient, out var processingRequestFromHttpClient) && processingRequestFromHttpClient)
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient = new DurationTracker(gossipProcessingMetric, "request-from-http-client");
 		}
 
@@ -120,7 +120,7 @@ public static class MetricsBootstrapper {
 		_ = new CheckpointMetric(
 			coreMeter,
 			"eventstore-checkpoints",
-			conf.Checkpoints.Select(x => x switch {
+			conf.Checkpoints.Where(x => x.Value).Select(x => x.Key switch {
 				Conf.Checkpoint.Chaser => dbConfig.ChaserCheckpoint,
 				Conf.Checkpoint.Epoch => dbConfig.EpochCheckpoint,
 				Conf.Checkpoint.Index => dbConfig.IndexCheckpoint,
@@ -135,17 +135,17 @@ public static class MetricsBootstrapper {
 			}).ToArray());
 
 		// status metrics
-		if (conf.StatusTrackers.Length > 0) {
-			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Node)) {
+		if (conf.StatusTrackers.Count > 0) {
+			if (conf.StatusTrackers.TryGetValue(Conf.StatusTracker.Node, out var nodeStatus) && nodeStatus) {
 				var tracker = new NodeStatusTracker(statusMetric);
 				trackers.NodeStatusTracker = tracker;
 				trackers.InaugurationStatusTracker = tracker;
 			}
 
-			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Index))
+			if (conf.StatusTrackers.TryGetValue(Conf.StatusTracker.Index, out var indexStatus) && indexStatus)
 				trackers.IndexStatusTracker = new IndexStatusTracker(statusMetric);
 
-			if (conf.StatusTrackers.Contains(Conf.StatusTracker.Scavenge))
+			if (conf.StatusTrackers.TryGetValue(Conf.StatusTracker.Scavenge, out var scavengeStatus) && scavengeStatus)
 				trackers.ScavengeStatusTracker = new ScavengeStatusTracker(statusMetric);
 		}
 

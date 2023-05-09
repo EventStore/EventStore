@@ -86,15 +86,15 @@ namespace EventStore.Common.Configuration {
 
 		public string[] Meters { get; set; } = Array.Empty<string>();
 
-		public StatusTracker[] StatusTrackers { get; set; } = Array.Empty<StatusTracker>();
+		public Dictionary<StatusTracker, bool> StatusTrackers { get; set; } = new ();
 
-		public Checkpoint[] Checkpoints { get; set; } = Array.Empty<Checkpoint>();
+		public Dictionary<Checkpoint, bool> Checkpoints { get; set; } = new();
 
 		public Dictionary<IncomingGrpcCall, bool> IncomingGrpcCalls { get; set; } = new();
 
 		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
 
-		public Gossip[] GossipTrackers { get; set; } = Array.Empty<Gossip>();
+		public Dictionary<Gossip, bool> GossipTrackers { get; set; } = new();
 
 		public Dictionary<EventTracker, bool> Events { get; set; } = new();
 
