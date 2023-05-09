@@ -6,17 +6,17 @@
 		"EventStore.Core"
 	],
 
-	"StatusTrackers": [
-		"Index",
-		"Node",
-		"Scavenge"
-	],
+	"StatusTrackers": {
+		"Index": true,
+		"Node": true,
+		"Scavenge": true
+	},
 
-	"Checkpoints": [
-		"Writer",
-		"Index",
-		"Replication"
-	],
+	"Checkpoints": {
+		"Writer": true,
+		"Index": true,
+		"Replication": true
+	},
 
 	"Events": {
 		"Read": true,
@@ -40,14 +40,14 @@
 		"DeadlineExceeded": true
 	},
 
-	"GossipTrackers": [
-//		"PullFromPeer",
-		"PushToPeer",
-		"ProcessingPushFromPeer"
-//		"ProcessingRequestFromPeer",
-//		"ProcessingRequestFromGrpcClient",
-//		"ProcessingRequestFromHttpClient"
-	],
+	"GossipTrackers": {
+		"PullFromPeer": false,
+		"PushToPeer":  true,
+		"ProcessingPushFromPeer": true,
+		"ProcessingRequestFromPeer": false,
+		"ProcessingRequestFromGrpcClient": false,
+		"ProcessingRequestFromHttpClient": false
+	},
 
 	// this specifies what name to track each queue under, according to regular expressions to
 	// match the queue names against
