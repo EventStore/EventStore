@@ -281,11 +281,21 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(ClientMessage.CreatePersistentSubscriptionToStream message) {
-			if (string.IsNullOrEmpty(message.EventStreamId) || message.EventStreamId == SystemStreams.AllStream) {
+			if (string.IsNullOrEmpty(message.EventStreamId)) {
 				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
 					message.CorrelationId,
-					ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult.Fail,
+					ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+						.CreatePersistentSubscriptionToStreamResult.Fail,
 					"Bad stream name."));
+				return;
+			}
+
+			if (message.EventStreamId == SystemStreams.AllStream) {
+				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
+					message.CorrelationId,
+					ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+						.CreatePersistentSubscriptionToStreamResult.Fail,
+					"Persistent subscriptions to $all are only supported over gRPC through gRPC clients"));
 				return;
 			}
 
@@ -340,7 +350,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			} catch (Exception ex) {
 				message.Envelope.ReplyWith(new ClientMessage.CreatePersistentSubscriptionToStreamCompleted(
 					message.CorrelationId,
-					ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult.Fail,
+					ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+						.CreatePersistentSubscriptionToStreamResult.Fail,
 					ex.Message));
 			}
 		}
@@ -499,11 +510,21 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public void Handle(ClientMessage.UpdatePersistentSubscriptionToStream message) {
-			if (string.IsNullOrEmpty(message.EventStreamId) || message.EventStreamId == SystemStreams.AllStream) {
+			if (string.IsNullOrEmpty(message.EventStreamId)) {
 				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
 					message.CorrelationId,
-					ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult.Fail,
+					ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+						.UpdatePersistentSubscriptionToStreamResult.Fail,
 					"Bad stream name."));
+				return;
+			}
+
+			if (message.EventStreamId == SystemStreams.AllStream) {
+				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
+					message.CorrelationId,
+					ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+						.UpdatePersistentSubscriptionToStreamResult.Fail,
+					"Persistent subscriptions to $all are only supported over gRPC through gRPC clients"));
 				return;
 			}
 
@@ -558,7 +579,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			} catch (Exception ex) {
 				message.Envelope.ReplyWith(new ClientMessage.UpdatePersistentSubscriptionToStreamCompleted(
 					message.CorrelationId,
-					ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult.Fail,
+					ClientMessage.UpdatePersistentSubscriptionToStreamCompleted
+						.UpdatePersistentSubscriptionToStreamResult.Fail,
 					ex.Message));
 			}
 		}
@@ -704,11 +726,21 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 
 		public void Handle(ClientMessage.DeletePersistentSubscriptionToStream message) {
-			if (string.IsNullOrEmpty(message.EventStreamId) || message.EventStreamId == SystemStreams.AllStream) {
+			if (string.IsNullOrEmpty(message.EventStreamId)) {
 				message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionToStreamCompleted(
 					message.CorrelationId,
-					ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult.Fail,
+					ClientMessage.DeletePersistentSubscriptionToStreamCompleted
+						.DeletePersistentSubscriptionToStreamResult.Fail,
 					"Bad stream name."));
+				return;
+			}
+
+			if (message.EventStreamId == SystemStreams.AllStream) {
+				message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionToStreamCompleted(
+					message.CorrelationId,
+					ClientMessage.DeletePersistentSubscriptionToStreamCompleted
+						.DeletePersistentSubscriptionToStreamResult.Fail,
+					"Persistent subscriptions to $all are only supported over gRPC through gRPC clients"));
 				return;
 			}
 
@@ -724,19 +756,22 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				(error) => {
 					message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionToStreamCompleted(
 						message.CorrelationId,
-						ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult.Fail,
+						ClientMessage.DeletePersistentSubscriptionToStreamCompleted
+							.DeletePersistentSubscriptionToStreamResult.Fail,
 						error));
 				},
 				(error) => {
 					message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionToStreamCompleted(
 						message.CorrelationId,
-						ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult.DoesNotExist,
+						ClientMessage.DeletePersistentSubscriptionToStreamCompleted
+							.DeletePersistentSubscriptionToStreamResult.DoesNotExist,
 						error));
 				},
 				(error) => {
 					message.Envelope.ReplyWith(new ClientMessage.DeletePersistentSubscriptionToStreamCompleted(
 						message.CorrelationId,
-						ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult.AccessDenied,
+						ClientMessage.DeletePersistentSubscriptionToStreamCompleted
+							.DeletePersistentSubscriptionToStreamResult.AccessDenied,
 						error));
 				},
 				message.User?.Identity?.Name
@@ -1005,11 +1040,19 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		public void Handle(ClientMessage.ReadNextNPersistentMessages message) {
 			if (!_started) return;
 
-			if (string.IsNullOrEmpty(message.EventStreamId) || message.EventStreamId == SystemStreams.AllStream) {
+			if (string.IsNullOrEmpty(message.EventStreamId)) {
 				message.Envelope.ReplyWith(new ClientMessage.ReadNextNPersistentMessagesCompleted(
 					message.CorrelationId,
 					ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.Fail,
 					"Bad stream name.", null));
+				return;
+			}
+
+			if (message.EventStreamId == SystemStreams.AllStream) {
+				message.Envelope.ReplyWith(new ClientMessage.ReadNextNPersistentMessagesCompleted(
+					message.CorrelationId,
+					ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult.Fail,
+					"Persistent subscriptions to $all are only supported over gRPC through gRPC clients", null));
 				return;
 			}
 

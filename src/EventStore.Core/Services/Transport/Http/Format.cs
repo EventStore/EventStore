@@ -135,9 +135,10 @@ namespace EventStore.Core.Services.Transport.Http {
 			string streamId, string groupName, int count, EmbedLevel embed) {
 			var msg = message as ClientMessage.ReadNextNPersistentMessagesCompleted;
 			if (msg == null || msg.Result != ClientMessage.ReadNextNPersistentMessagesCompleted
-				    .ReadNextNPersistentMessagesResult.Success)
-				return String.Empty;
-
+				    .ReadNextNPersistentMessagesResult.Success) {
+				return msg != null ? entity.ResponseCodec.To(msg.Reason) : string.Empty;
+			}
+			
 			return entity.ResponseCodec.To(Convert.ToNextNPersistentMessagesFeed(msg, entity.ResponseUrl, streamId,
 				groupName, count, embed));
 		}

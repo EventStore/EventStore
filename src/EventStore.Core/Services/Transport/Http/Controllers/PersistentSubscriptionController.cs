@@ -456,17 +456,24 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					var m = message as ClientMessage.CreatePersistentSubscriptionToStreamCompleted;
 					if (m == null) throw new Exception("unexpected message " + message);
 					switch (m.Result) {
-						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult
+						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+							.CreatePersistentSubscriptionToStreamResult
 							.Success:
 							code = HttpStatusCode.Created;
 							break;
-						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult
+						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+							.CreatePersistentSubscriptionToStreamResult
 							.AlreadyExists:
 							code = HttpStatusCode.Conflict;
 							break;
-						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted.CreatePersistentSubscriptionToStreamResult
+						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+							.CreatePersistentSubscriptionToStreamResult
 							.AccessDenied:
 							code = HttpStatusCode.Unauthorized;
+							break;
+						case ClientMessage.CreatePersistentSubscriptionToStreamCompleted
+							.CreatePersistentSubscriptionToStreamResult.Fail:
+							code = HttpStatusCode.BadRequest;
 							break;
 						default:
 							code = HttpStatusCode.InternalServerError;
@@ -533,6 +540,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						case ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult
 							.AccessDenied:
 							code = HttpStatusCode.Unauthorized;
+							break;
+						case ClientMessage.UpdatePersistentSubscriptionToStreamCompleted.UpdatePersistentSubscriptionToStreamResult
+							.Fail:
+							code = HttpStatusCode.BadRequest;
 							break;
 						default:
 							code = HttpStatusCode.InternalServerError;
@@ -672,6 +683,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						case ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult
 							.AccessDenied:
 							code = HttpStatusCode.Unauthorized;
+							break;
+						case ClientMessage.DeletePersistentSubscriptionToStreamCompleted.DeletePersistentSubscriptionToStreamResult
+							.Fail:
+							code = HttpStatusCode.BadRequest;
 							break;
 						default:
 							code = HttpStatusCode.InternalServerError;
@@ -829,6 +844,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 							ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult
 								.AccessDenied:
 							code = HttpStatusCode.Unauthorized;
+							break;
+						case
+							ClientMessage.ReadNextNPersistentMessagesCompleted.ReadNextNPersistentMessagesResult
+								.Fail:
+							code = HttpStatusCode.BadRequest;
 							break;
 						default:
 							code = HttpStatusCode.InternalServerError;
