@@ -74,6 +74,11 @@ namespace EventStore.Common.Configuration {
 			ProcessingRequestFromHttpClient,
 		}
 
+		public enum WriterTracker {
+			FlushSize = 1,
+			FlushDuration,
+		}
+
 		public enum EventTracker {
 			Read = 1,
 			Written,
@@ -95,6 +100,8 @@ namespace EventStore.Common.Configuration {
 		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
 
 		public Gossip[] GossipTrackers { get; set; } = Array.Empty<Gossip>();
+
+		public Dictionary<WriterTracker, bool> Writer { get; set; } = new();
 
 		public Dictionary<EventTracker, bool> Events { get; set; } = new();
 

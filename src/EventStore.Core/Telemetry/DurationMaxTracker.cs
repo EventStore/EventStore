@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
-using System.Linq;
 using EventStore.Core.Time;
 
 namespace EventStore.Core.Telemetry;
@@ -25,134 +24,40 @@ public interface IDurationMaxTracker {
 // This keeps resource consumption low even when there are a lot of durations recorded.
 // On recording/observing, buckets that contain data that is old enough to not be relevant are reset.
 //
-// Multiple threads can RecordNow and Observe concurrently.
+// One thread can RecordNow while another Observes concurrently.
 public class DurationMaxTracker : IDurationMaxTracker {
-	private readonly long _ticksPerBucket;
-	private readonly int _numBuckets;
 	private readonly IClock _clock;
 	private readonly KeyValuePair<string, object>[] _maxTags;
-	private readonly double[] _maxBuckets;
-	private readonly object _lock = new();
-
-	// the sub period when this was last accessed (for recording or observation)
-	// we use this to determine what data (buckets) have become stale in the mean time
-	private long _lastSubPeriod;
+	private readonly RecentMax<double> _recentMax;
 
 	public DurationMaxTracker(
 		DurationMaxMetric metric,
 		string name,
 		int expectedScrapeIntervalSeconds,
-		IClock clock = null,
-		IBucketCalculator bucketCalculator = null) {
+		IClock clock = null) {
 
 		_clock = clock ?? Clock.Instance;
-		bucketCalculator ??= new BucketCalculator();
+		_recentMax = new RecentMax<double>(expectedScrapeIntervalSeconds);
 
-		bucketCalculator.Calculate(
-			expectedScrapeIntervalSeconds: expectedScrapeIntervalSeconds,
-			numBuckets: out _numBuckets,
-			secondsPerBucket: out var secondsPerBucket,
-			minPeriodSeconds: out var minPeriodSeconds,
-			maxPeriodSeconds: out var maxPeriodSeconds);
-
-		_ticksPerBucket = secondsPerBucket * Instant.TicksPerSecond;
-
-		_maxTags = new KeyValuePair<string, object>[] {
-			new("name", name),
-			new("range", $"{minPeriodSeconds}-{maxPeriodSeconds} seconds"),
-		};
-
-		_maxBuckets = new double[_numBuckets];
+		var maxTags = new List<KeyValuePair<string, object>>();
+		if (!string.IsNullOrWhiteSpace(name))
+			maxTags.Add(new("name", name));
+		maxTags.Add(new("range", $"{_recentMax.MinPeriodSeconds}-{_recentMax.MaxPeriodSeconds} seconds"));
+		_maxTags = maxTags.ToArray();
 
 		metric.Add(this);
 	}
 
 	public Instant RecordNow(Instant start) {
 		var now = _clock.Now;
-		var currentSubPeriod = now.Ticks / _ticksPerBucket;
-
-		ResetStaleBuckets(currentSubPeriod);
-
 		var elapsedSeconds = now.ElapsedSecondsSince(start);
-		var currentIndex = (int)(currentSubPeriod % _numBuckets);
-		_maxBuckets[currentIndex] = Math.Max(_maxBuckets[currentIndex], elapsedSeconds);
+		_recentMax.Record(now, elapsedSeconds);
 		return now;
 	}
 
 	public Measurement<double> Observe() {
-		ResetStaleBuckets(_clock.Now.Ticks / _ticksPerBucket);
-		return new Measurement<double>(_maxBuckets.Max(), _maxTags.AsSpan());
-	}
-
-	private void ResetStaleBuckets(long currentSubPeriod) {
-		lock (_lock) {
-			// reset from the _lastSubPeriod (exclusive) to the currentSubPeriod (inclusive)
-			// which means we need to reset n buckets starting from the bucket after the
-			// _lastSubPeriod where n is currentSubPeriod - _lastSubPeriod, but at most _numBuckets.
-			var numBucketsToReset = Math.Min(currentSubPeriod - _lastSubPeriod, _numBuckets);
-			var targetBucket = (_lastSubPeriod + 1) % _numBuckets;
-			for (var n = 0; n < numBucketsToReset; n++) {
-				_maxBuckets[targetBucket] = 0;
-				targetBucket = (targetBucket + 1) % _numBuckets;
-			}
-
-			_lastSubPeriod = currentSubPeriod;
-		}
-	}
-
-	public interface IBucketCalculator {
-		void Calculate(
-			int expectedScrapeIntervalSeconds,
-			out int numBuckets,
-			out int secondsPerBucket,
-			out int minPeriodSeconds,
-			out int maxPeriodSeconds);
-	}
-
-	// calculates the number of buckets and the length of time each bucket represents. we calculate
-	// these such that the amount of time that observations cover is more than the expected scrape
-	// interval, so that we are likely to capture all the spikes even if a scape is a little late.
-	// if a scrape is _really_ late, e.g. because a blocking GC pauses all the threads for a long
-	// time, then some datapoints to be missed because they have become stale - but they will be
-	// the datapoints immediately before the GC, not the spike from the GC itself.
-	// we can't improve on this by comparing the time of the scrape with the time of the previous
-	// scrape because there might be multiple scrapers.
-	public class BucketCalculator : IBucketCalculator {
-		public void Calculate(
-			int expectedScrapeIntervalSeconds,
-			out int numBuckets,
-			out int secondsPerBucket,
-			out int minPeriodSeconds,
-			out int maxPeriodSeconds) {
-
-			if (expectedScrapeIntervalSeconds == 0) {
-				// observed durations in the range 0-1s
-				numBuckets = 1;
-				secondsPerBucket = 1;
-			} else if (expectedScrapeIntervalSeconds == 1) {
-				// observed durations in the range 2-3s
-				numBuckets = 3;
-				secondsPerBucket = 1;
-			} else if (expectedScrapeIntervalSeconds == 5) {
-				// observed durations in the range 6-8s
-				numBuckets = 4;
-				secondsPerBucket = 2;
-			} else if (expectedScrapeIntervalSeconds == 10) {
-				// observed durations in the range 12-15s
-				numBuckets = 5;
-				secondsPerBucket = 3;
-			} else if (expectedScrapeIntervalSeconds % 15 == 0) {
-				numBuckets = 5;
-				secondsPerBucket = expectedScrapeIntervalSeconds / 15 * 4;
-			} else {
-				throw new ArgumentException(
-					$"ExpectedScrapeIntervalSeconds must be 0, 1, 5, 10 or a multiple of 15, " +
-					$"but was {expectedScrapeIntervalSeconds}");
-			}
-
-			maxPeriodSeconds = numBuckets * secondsPerBucket;
-			minPeriodSeconds = maxPeriodSeconds - secondsPerBucket;
-		}
+		var value = _recentMax.Observe(_clock.Now);
+		return new(value, _maxTags.AsSpan());
 	}
 
 	public class NoOp : IDurationMaxTracker {

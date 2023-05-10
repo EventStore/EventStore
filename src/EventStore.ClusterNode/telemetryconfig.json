@@ -49,6 +49,11 @@
 //		"ProcessingRequestFromHttpClient"
 	],
 
+	"Writer": {
+		"FlushSize": true,
+		"FlushDuration": true
+	},
+
 	// this specifies what name to track each queue under, according to regular expressions to
 	// match the queue names against
 	"Queues": [

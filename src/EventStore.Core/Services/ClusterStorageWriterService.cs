@@ -51,9 +51,12 @@ namespace EventStore.Core.Services {
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
 			QueueTrackers trackers,
+			IMaxTracker<long> flushSizeTracker,
+			IDurationMaxTracker flushDurationTracker,
 			Func<long> getLastIndexedPosition)
 			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex,
-				eventTypeIndex, emptyEventTypeId, systemStreams, epochManager, queueStatsManager, trackers) {
+				eventTypeIndex, emptyEventTypeId, systemStreams, epochManager, queueStatsManager, trackers,
+				flushSizeTracker, flushDurationTracker) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;

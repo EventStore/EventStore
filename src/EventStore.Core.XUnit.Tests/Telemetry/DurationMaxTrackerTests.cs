@@ -176,51 +176,27 @@ public class DurationMaxTrackerTests : IDisposable {
 			});
 	}
 
-	public class BucketCalculatorTests {
-		private readonly DurationMaxTracker.BucketCalculator _sut = new();
+	[Fact]
+	public void no_name() {
+		using var meter = new Meter($"{typeof(DurationMaxTrackerTests)}");
+		using var listener = new TestMeterListener<double>(meter);
+		var sut = new DurationMaxTracker(
+			metric: new DurationMaxMetric(meter, "the-metric"),
+			name: null,
+			expectedScrapeIntervalSeconds: 15);
 
-		[Theory]
-		[InlineData(0, 1, 1, 0, 1)]
-		[InlineData(1, 3, 1, 2, 3)]
-		[InlineData(5, 4, 2, 6, 8)]
-		[InlineData(10, 5, 3, 12, 15)]
-		[InlineData(15, 5, 4, 16, 20)]
-		[InlineData(30, 5, 8, 32, 40)]
-		[InlineData(45, 5, 12, 48, 60)]
-		[InlineData(60, 5, 16, 64, 80)]
-		[InlineData(75, 5, 20, 80, 100)]
-		[InlineData(90, 5, 24, 96, 120)]
-		[InlineData(105, 5, 28, 112, 140)]
-		[InlineData(120, 5, 32, 128, 160)]
-		public void calculates_happy_path(
-			int scrapeIntervalSeconds,
-			int expectedNumBuckets,
-			int expectedSecondsPerBucket,
-			int expectedMinPeriodSeconds,
-			int expectedMaxPeriodSeconds) {
+		listener.Observe();
 
-			_sut.Calculate(
-				scrapeIntervalSeconds,
-				out var actualNumBuckets,
-				out var actualSecondsPerBucket,
-				out var actualMinPeriodSeconds,
-				out var actualMaxPeriodSeconds);
-
-			Assert.Equal(expectedNumBuckets, actualNumBuckets);
-			Assert.Equal(expectedSecondsPerBucket, actualSecondsPerBucket);
-			Assert.Equal(expectedMinPeriodSeconds, actualMinPeriodSeconds);
-			Assert.Equal(expectedMaxPeriodSeconds, actualMaxPeriodSeconds);
-		}
-
-		[Fact]
-		public void throws() {
-			var ex = Assert.Throws<ArgumentException>(() => {
-				_sut.Calculate(16, out _, out _, out _, out _);
+		Assert.Collection(
+			listener.RetrieveMeasurements("the-metric-seconds"),
+			m => {
+				Assert.Equal(0, m.Value);
+				Assert.Collection(
+					m.Tags.ToArray(),
+					t => {
+						Assert.Equal("range", t.Key);
+						Assert.Equal("16-20 seconds", t.Value);
+					});
 			});
-
-			Assert.Equal(
-				"ExpectedScrapeIntervalSeconds must be 0, 1, 5, 10 or a multiple of 15, but was 16",
-				ex.Message);
-		}
 	}
 }
