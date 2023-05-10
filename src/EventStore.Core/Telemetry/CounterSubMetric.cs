@@ -1,18 +1,24 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Threading;
 
-namespace EventStore.Core.Telemetry {
-	public class CounterSubMetric<T> where T : struct {
-		private readonly Counter<T> _metric;
-		private readonly KeyValuePair<string, object> _tag;
+namespace EventStore.Core.Telemetry; 
 
-		public CounterSubMetric(Counter<T> metric, KeyValuePair<string, object> tag) {
-			_metric = metric;
-			_tag = tag;
-		}
+public class CounterSubMetric {
+	private readonly KeyValuePair<string, object>[] _tags;
+	private long _counter;
 
-		public void Add(T delta) {
-			_metric.Add(delta, _tag);
-		}
+	public CounterSubMetric(CounterMetric metric, KeyValuePair<string, object>[] tags) {
+		_tags = tags;
+		metric.Add(this);
+	}
+	
+	public void Add(long delta) {
+		Interlocked.Add(ref _counter, delta);
+	}
+
+	public Measurement<long> Observe() {
+		return new Measurement<long>(Interlocked.Read(ref _counter), _tags);
 	}
 }

@@ -18,11 +18,8 @@ public class IndexTrackerTests : IDisposable {
 		var meter = new Meter($"{typeof(IndexTrackerTests)}");
 		_listener = new TestMeterListener<long>(meter);
 
-		var eventMetric = meter.CreateCounter<long>("eventstore-io", unit: "events");
-		_sut = new IndexTracker(
-			new CounterSubMetric<long>(
-				eventMetric,
-				new KeyValuePair<string, object>("activity", "written")));
+		var eventMetric = new CounterMetric(meter, "eventstore-io", "events");
+		_sut = new IndexTracker(new CounterSubMetric(eventMetric, new[] {new KeyValuePair<string, object>("activity", "written")}));
 	}
 
 	public void Dispose() {
@@ -49,8 +46,6 @@ public class IndexTrackerTests : IDisposable {
 	}
 
 	private void AssertMeasurements(long expectedEventsWritten) {
-		_listener.Observe();
-
 		Assert.Collection(
 			_listener.RetrieveMeasurements("eventstore-io-events"),
 			m => {
