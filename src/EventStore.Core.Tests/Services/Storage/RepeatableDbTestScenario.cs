@@ -16,6 +16,7 @@ using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
 using EventStore.Core.Caching;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	[TestFixture]
@@ -91,7 +92,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				replicationCheckpoint: DbRes.Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: DbRes.Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(DbRes.Db.Config.ChaserCheckpoint.Read());
 			ReadIndex = readIndex;

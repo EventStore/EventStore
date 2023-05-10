@@ -22,6 +22,7 @@ using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogV3;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.LogCommon;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
@@ -139,7 +140,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				replicationCheckpoint: Db.Config.ReplicationCheckpoint,
 				indexCheckpoint: Db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(ChaserCheckpoint.Read());
 			ReadIndex = readIndex;

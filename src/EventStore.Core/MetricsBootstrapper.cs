@@ -27,6 +27,7 @@ public class Trackers {
 	public IIndexTracker IndexTracker { get; set; } = new IndexTracker.NoOp();
 	public IMaxTracker<long> WriterFlushSizeTracker { get; set; } = new MaxTracker<long>.NoOp();
 	public IDurationMaxTracker WriterFlushDurationTracker { get; set; } = new DurationMaxTracker.NoOp();
+	public ICacheHitsMissesTracker CacheHitsMissesTracker { get; set; } = new CacheHitsMissesTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -80,6 +81,16 @@ public static class MetricsBootstrapper {
 		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCalls.Length > 0) {
 			_ = new IncomingGrpcCallsMetric(coreMeter, "eventstore-incoming-grpc-calls", enabledCalls);
+		}
+
+		// cache hits/misses
+		var enabledCacheHitsMisses = conf.CacheHitsMisses.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
+		if (enabledCacheHitsMisses.Length > 0) {
+			var metric = new CacheHitsMissesMetric(coreMeter, enabledCacheHitsMisses, "eventstore-cache-hits-misses", new() {
+				{ Conf.Cache.StreamInfo, "stream-info" },
+				{ Conf.Cache.Chunk, "chunk" },
+			});
+			trackers.CacheHitsMissesTracker = new CacheHitsMissesTracker(metric);
 		}
 
 		// events

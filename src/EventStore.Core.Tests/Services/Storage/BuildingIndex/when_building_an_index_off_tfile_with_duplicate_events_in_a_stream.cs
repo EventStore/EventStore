@@ -21,6 +21,7 @@ using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using ReadStreamResult = EventStore.Core.Services.Storage.ReaderIndex.ReadStreamResult;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -170,7 +171,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				replicationCheckpoint: _db.Config.ReplicationCheckpoint,
 				indexCheckpoint: _db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 
 			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
@@ -217,7 +219,8 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 				replicationCheckpoint: _db.Config.ReplicationCheckpoint,
 				indexCheckpoint: _db.Config.IndexCheckpoint,
 				indexStatusTracker: new IndexStatusTracker.NoOp(),
-				indexTracker: new IndexTracker.NoOp());
+				indexTracker: new IndexTracker.NoOp(),
+				cacheTracker: new CacheHitsMissesTracker.NoOp());
 
 			readIndex.IndexCommitter.Init(chaserCheckpoint.Read());
 			ReadIndex = readIndex;
