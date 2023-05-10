@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Only log that a connection to a persistent subscription has been dropped if there was a subscription running on the TCP connection [EventStore#3824](https://github.com/EventStore/EventStore/pull/3824)
 - Do not change the handlerType of a projection when it is updated [EventStore#3823](https://github.com/EventStore/EventStore/pull/3823)
 - When multiple projection write requests arrive within short-period (create-create, create-delete, delete-create, delete-delete), projection manager used to pick same expected version number for both write requests which caused WrongExpectedVersion error for one of the request [EventStore#3817](https://github.com/EventStore/EventStore/pull/3817)
+- add an error message when user performs an CRUD operation to $all stream using HTTP API [EventStore#3830](https://github.com/EventStore/EventStore/pull/3830)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
