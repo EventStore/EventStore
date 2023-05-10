@@ -11,6 +11,9 @@ using EventStore.Core.Services.VNode;
 using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Serilog;
 using Conf = EventStore.Common.Configuration.TelemetryConfiguration;
 
 namespace EventStore.Core;
@@ -56,10 +59,14 @@ public class GossipTrackers {
 }
 
 public static class MetricsBootstrapper {
+	private static readonly ILogger Log = Serilog.Log.ForContext(typeof(MetricsBootstrapper));
+
 	public static void Bootstrap(
 		Conf conf,
 		TFChunkDbConfig dbConfig,
 		Trackers trackers) {
+
+		LogConfig(conf);
 
 		MessageLabelConfigurator.ConfigureMessageLabels(
 			conf.MessageTypes, MessageHierarchy.MsgTypeIdByType.Keys);
@@ -199,5 +206,19 @@ public static class MetricsBootstrapper {
 				new QueueProcessingTracker(
 					metric: queueProcessingDurationMetric,
 					queueName: name)));
+	}
+
+	private static void LogConfig(Conf conf) {
+		var jsonSerializerSettings = new JsonSerializerSettings {
+			NullValueHandling = NullValueHandling.Ignore,
+		};
+		jsonSerializerSettings.Converters.Add(new StringEnumConverter());
+
+		var confJson = JsonConvert.SerializeObject(
+			conf,
+			Formatting.Indented,
+			jsonSerializerSettings);
+
+		Log.Information(confJson);
 	}
 }
