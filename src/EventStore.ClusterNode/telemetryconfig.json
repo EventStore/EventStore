@@ -59,6 +59,45 @@
 		"Chunk": false
 	},
 
+	"Kestrel": {
+		"ConnectionCount": true
+	},
+
+	"System": {
+		"Cpu": true,
+		"LoadAverage1m": true,
+		"LoadAverage5m": true,
+		"LoadAverage15m": true,
+		"FreeMem": true,
+		"TotalMem": true,
+		"DriveTotalBytes": true,
+		"DriveUsedBytes": true
+	},
+
+	"Process": {
+		"UpTime": true,
+		"Cpu": true,
+		"MemWorkingSet": true,
+		"ThreadCount": true,
+		"LockContentionCount": true,
+		"ExceptionCount": true,
+		"Gen0CollectionCount": true,
+		"Gen1CollectionCount": true,
+		"Gen2CollectionCount": true,
+		"Gen0Size": true,
+		"Gen1Size": true,
+		"Gen2Size": true,
+		"LohSize": true,
+		"TimeInGc": true,
+		"HeapSize": true,
+		"HeapFragmentation": true,
+		"TotalAllocatedBytes": true,
+		"DiskReadBytes": true,
+		"DiskReadOps": true,
+		"DiskWrittenBytes": true,
+		"DiskWrittenOps": true
+	},
+
 	// this specifies what name to track each queue under, according to regular expressions to
 	// match the queue names against
 	"Queues": [
