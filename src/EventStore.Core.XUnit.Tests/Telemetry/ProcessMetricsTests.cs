@@ -30,6 +30,7 @@ public class ProcessMetricsTests : IDisposable {
 			{ TelemetryConfiguration.ProcessTracker.UpTime, "eventstore-proc-up-time" },
 			{ TelemetryConfiguration.ProcessTracker.Cpu, "eventstore-proc-cpu" },
 			{ TelemetryConfiguration.ProcessTracker.ThreadCount, "eventstore-proc-thread-count" },
+			{ TelemetryConfiguration.ProcessTracker.ThreadPoolPendingWorkItemCount, "eventstore-proc-thread-pool-pending-work-item-count" },
 			{ TelemetryConfiguration.ProcessTracker.LockContentionCount, "eventstore-proc-contention-count" },
 			{ TelemetryConfiguration.ProcessTracker.ExceptionCount, "eventstore-proc-exception-count" },
 			{ TelemetryConfiguration.ProcessTracker.TimeInGc, "eventstore-gc-time-in-gc" },
@@ -40,6 +41,8 @@ public class ProcessMetricsTests : IDisposable {
 
 		_sut.CreateMemoryMetric("eventstore-proc-mem", new() {
 			{ TelemetryConfiguration.ProcessTracker.MemWorkingSet, "working-set" },
+			{ TelemetryConfiguration.ProcessTracker.MemPagedBytes, "paged-bytes" },
+			{ TelemetryConfiguration.ProcessTracker.MemVirtualBytes, "virtual-bytes" },
 		});
 
 		_sut.CreateGcGenerationSizeMetric("eventstore-gc-generation-size", new() {
@@ -105,6 +108,16 @@ public class ProcessMetricsTests : IDisposable {
 	public void can_collect_proc_contention_count() {
 		Assert.Collection(
 			_longListener.RetrieveMeasurements("eventstore-proc-contention-count"),
+			m => {
+				Assert.True(m.Value >= 0);
+				Assert.Empty(m.Tags);
+			});
+	}
+
+	[Fact]
+	public void can_collect_thread_pool_pending_work_item_count() {
+		Assert.Collection(
+			_longListener.RetrieveMeasurements("eventstore-proc-thread-pool-pending-work-item-count"),
 			m => {
 				Assert.True(m.Value >= 0);
 				Assert.Empty(m.Tags);
@@ -182,6 +195,24 @@ public class ProcessMetricsTests : IDisposable {
 					tag => {
 						Assert.Equal("kind", tag.Key);
 						Assert.Equal("working-set", tag.Value);
+					});
+			},
+			m => {
+				Assert.True(m.Value >= 0);
+				Assert.Collection(
+					m.Tags,
+					tag => {
+						Assert.Equal("kind", tag.Key);
+						Assert.Equal("paged-bytes", tag.Value);
+					});
+			},
+			m => {
+				Assert.True(m.Value >= 0);
+				Assert.Collection(
+					m.Tags,
+					tag => {
+						Assert.Equal("kind", tag.Key);
+						Assert.Equal("virtual-bytes", tag.Value);
 					});
 			});
 	}
