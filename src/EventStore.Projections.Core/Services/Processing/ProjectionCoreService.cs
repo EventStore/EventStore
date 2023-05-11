@@ -153,7 +153,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 					_logger,
 					message.HandlerType,
 					message.Query,
-					message.EnableContentTypeValidation);
+					message.EnableContentTypeValidation, message.Config.ProjectionExecutionTimeout);
 
 				string name = message.Name;
 				var sourceDefinition = ProjectionSourceDefinition.From(stateHandler.GetSourceDefinition());
@@ -301,11 +301,11 @@ namespace EventStore.Projections.Core.Services.Processing {
 			ILogger logger,
 			string handlerType,
 			string query,
-			bool enableContentTypeValidation) {
+			bool enableContentTypeValidation, int projectionExecutionTimeout) {
 			var stateHandler = factory.Create(
 				handlerType,
 				query,
-				enableContentTypeValidation,
+				enableContentTypeValidation, projectionExecutionTimeout,
 				logger: logger.Verbose,
 				cancelCallbackFactory:
 				singletonTimeoutScheduler == null ? null : singletonTimeoutScheduler.Schedule);

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using EventStore.Core;
 using EventStore.Projections.Core.Services.Interpreted;
 
 namespace EventStore.Projections.Core.Services.Management {
@@ -15,7 +16,7 @@ namespace EventStore.Projections.Core.Services.Management {
 		}
 		public IProjectionStateHandler Create(
 			string factoryType, string source,
-			bool enableContentTypeValidation,
+			bool enableContentTypeValidation, int projectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout,
 			Action<int, Action> cancelCallbackFactory = null,
 			Action<string, object[]> logger = null) {
 			var colonPos = factoryType.IndexOf(':');
@@ -29,10 +30,13 @@ namespace EventStore.Projections.Core.Services.Management {
 			}
 
 			IProjectionStateHandler result;
+			var executionTimeout = projectionExecutionTimeout <= 0
+				? _javascriptExecutionTimeout
+				: TimeSpan.FromMilliseconds(projectionExecutionTimeout);
 			switch (kind.ToLowerInvariant()) {
 				case "js":
 					result = new JintProjectionStateHandler(source, enableContentTypeValidation,
-						_javascriptCompilationTimeout, _javascriptExecutionTimeout);
+						_javascriptCompilationTimeout, executionTimeout);
 					break;
 				case "native":
 					var type = Type.GetType(rest);

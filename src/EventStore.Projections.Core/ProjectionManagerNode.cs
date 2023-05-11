@@ -49,7 +49,7 @@ namespace EventStore.Projections.Core {
 				new RealTimeProvider(),
 				projectionsStandardComponents.RunProjections,
 				ioDispatcher,
-				projectionQueryExpiry);
+				projectionQueryExpiry, defaultProjectionExecutionTimeout: projectionsStandardComponents.ProjectionExecutionTimeout);
 
 			SubscribeMainBus(
 				projectionsStandardComponents.LeaderMainBus,

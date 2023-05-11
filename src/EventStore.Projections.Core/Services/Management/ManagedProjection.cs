@@ -14,6 +14,7 @@ using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Utils;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 using System.Threading;
+using EventStore.Core;
 using EventStore.Core.Helpers;
 using EventStore.Projections.Core.Common;
 using FastSerialization;
@@ -63,6 +64,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			public int MaxWriteBatchLength { get; set; }
 			public int MaxAllowedWritesInFlight { get; set; }
 			public int? ProjectionSubsystemVersion { get; set; }
+			
+			public int ProjectionExecutionTimeout { get; set; }
 
 			public PersistedState() {
 				CheckpointHandledThreshold = ProjectionConsts.CheckpointHandledThreshold;
@@ -71,6 +74,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				PendingEventsThreshold = ProjectionConsts.PendingEventsThreshold;
 				MaxWriteBatchLength = ProjectionConsts.MaxWriteBatchLength;
 				MaxAllowedWritesInFlight = ProjectionConsts.MaxAllowedWritesInFlight;
+				ProjectionExecutionTimeout = ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout;
 			}
 		}
 
@@ -461,7 +465,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					PersistedProjectionState.CheckpointHandledThreshold,
 					PersistedProjectionState.CheckpointUnhandledBytesThreshold,
 					PersistedProjectionState.PendingEventsThreshold, PersistedProjectionState.MaxWriteBatchLength,
-					PersistedProjectionState.MaxAllowedWritesInFlight));
+					PersistedProjectionState.MaxAllowedWritesInFlight, PersistedProjectionState.ProjectionExecutionTimeout));
 		}
 
 		public void Handle(ProjectionManagementMessage.Command.UpdateConfig message) {
@@ -479,6 +483,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			PersistedProjectionState.PendingEventsThreshold = message.PendingEventsThreshold;
 			PersistedProjectionState.MaxWriteBatchLength = message.MaxWriteBatchLength;
 			PersistedProjectionState.MaxAllowedWritesInFlight = message.MaxAllowedWritesInFlight;
+			PersistedProjectionState.ProjectionExecutionTimeout = message.ProjectionExecutionTimeout;
 
 			UpdateProjectionVersion();
 			_pendingWritePersistedState = true;
@@ -958,6 +963,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			var emitEventEnabled = PersistedProjectionState.EmitEnabled == true;
 			var createTempStreams = PersistedProjectionState.CreateTempStreams == true;
 			var stopOnEof = PersistedProjectionState.Mode <= ProjectionMode.OneTime;
+			var projectionExecutionTimeout = PersistedProjectionState.ProjectionExecutionTimeout;
 
 			var projectionConfig = new ProjectionConfig(
 				_runAs,
@@ -971,7 +977,7 @@ namespace EventStore.Projections.Core.Services.Management {
 				stopOnEof,
 				trackEmittedStreams,
 				checkpointAfterMs,
-				maximumAllowedWritesInFlight);
+				maximumAllowedWritesInFlight, projectionExecutionTimeout);
 			return projectionConfig;
 		}
 

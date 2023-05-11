@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using EventStore.Core;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Tests;
@@ -36,7 +37,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 			CheckpointUnhandledBytesThreshold = 3,
 			PendingEventsThreshold = 4,
 			MaxWriteBatchLength = 5,
-			MaxAllowedWritesInFlight = 6
+			MaxAllowedWritesInFlight = 6,
+			ProjectionExecutionTimeout = 11
 		};
 
 		public when_getting_config() {
@@ -72,6 +74,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 			Assert.AreEqual(_persistedState.MaxWriteBatchLength, _config.MaxWriteBatchLength, "MaxWriteBatchLength");
 			Assert.AreEqual(_persistedState.MaxAllowedWritesInFlight, _config.MaxAllowedWritesInFlight,
 				"MaxAllowedWritesInFlight");
+			Assert.AreEqual(_persistedState.ProjectionExecutionTimeout, _config.ProjectionExecutionTimeout,
+				"ProjectionExecutionTimeout");
 		}
 	}
 
@@ -101,6 +105,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 					Epoch = -1,
 					Version = -1,
 					RunAs = SerializedRunAs.SerializePrincipal(ProjectionManagementMessage.RunAs.Anonymous),
+					ProjectionExecutionTimeout = 11
 				},
 				null);
 
@@ -171,7 +176,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 			CheckpointUnhandledBytesThreshold = 3,
 			PendingEventsThreshold = 4,
 			MaxWriteBatchLength = 5,
-			MaxAllowedWritesInFlight = 6
+			MaxAllowedWritesInFlight = 6,
+			ProjectionExecutionTimeout = 11
 		};
 
 		private InvalidOperationException _thrownException;
@@ -223,6 +229,8 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 				"MaxWriteBatchLength");
 			Assert.AreEqual(_persistedState.MaxAllowedWritesInFlight, getConfigResult.MaxAllowedWritesInFlight,
 				"MaxAllowedWritesInFlight");
+			Assert.AreEqual(_persistedState.ProjectionExecutionTimeout, getConfigResult.ProjectionExecutionTimeout,
+				"ProjectionExecutionTimeout");
 		}
 	}
 
@@ -257,7 +265,7 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager.managed
 		protected ProjectionManagementMessage.Command.UpdateConfig CreateConfig() {
 			return new ProjectionManagementMessage.Command.UpdateConfig(
 				new NoopEnvelope(), "name", true, false, 100, 200, 300, 400, 500, 600,
-				ProjectionManagementMessage.RunAs.Anonymous);
+				ProjectionManagementMessage.RunAs.Anonymous, ClusterVNodeOptions.ProjectionOptions.DefaultProjectionExecutionTimeout);
 		}
 
 		protected ProjectionManagementMessage.ProjectionConfig GetProjectionConfig(ManagedProjection mp) {

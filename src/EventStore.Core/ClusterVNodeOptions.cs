@@ -768,6 +768,7 @@ namespace EventStore.Core {
 
 		[Description("Projection Options")]
 		public record ProjectionOptions {
+			public const int DefaultProjectionExecutionTimeout = 250;
 			[Description("Enables the running of projections. System runs built-in projections, " +
 			             "All runs user projections.")]
 			public ProjectionType RunProjections { get; init; }
@@ -788,8 +789,8 @@ namespace EventStore.Core {
 			[Description("The time in milliseconds allowed for the compilation phase of user projections")]
 			public int ProjectionCompilationTimeout { get; set; } = 500;
 
-			[Description("The time in milliseconds allowed for the executing a handler in a user projection")]
-			public int ProjectionExecutionTimeout { get; set; } = 250;
+			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
+			public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
 
 			internal static ProjectionOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				RunProjections = configurationRoot.GetValue<ProjectionType>(nameof(RunProjections)),
