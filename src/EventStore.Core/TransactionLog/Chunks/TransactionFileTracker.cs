@@ -5,12 +5,12 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.TransactionLog.Chunks;
 
 public class TFChunkTracker : ITransactionFileTracker {
-	private readonly CounterSubMetric<long> _readBytes;
-	private readonly CounterSubMetric<long> _readEvents;
+	private readonly CounterSubMetric _readBytes;
+	private readonly CounterSubMetric _readEvents;
 
 	public TFChunkTracker(
-		CounterSubMetric<long> readBytes,
-		CounterSubMetric<long> readEvents) {
+		CounterSubMetric readBytes,
+		CounterSubMetric readEvents) {
 
 		_readBytes = readBytes;
 		_readEvents = readEvents;

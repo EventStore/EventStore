@@ -17,13 +17,13 @@ public class TFChunkTrackerTests : IDisposable {
 	public TFChunkTrackerTests() {
 		var meter = new Meter($"{typeof(TFChunkTrackerTests)}");
 		_listener = new TestMeterListener<long>(meter);
-		var byteMetric = meter.CreateCounter<long>("eventstore-io", unit: "bytes");
-		var eventMetric = meter.CreateCounter<long>("eventstore-io", unit: "events");
+		var byteMetric = new CounterMetric(meter, "eventstore-io", unit: "bytes");
+		var eventMetric = new CounterMetric(meter, "eventstore-io", unit: "events");
 
 		var readTag = new KeyValuePair<string, object>("activity", "read");
 		_sut = new TFChunkTracker(
-			readBytes: new CounterSubMetric<long>(byteMetric, readTag),
-			readEvents: new CounterSubMetric<long>(eventMetric, readTag));
+			readBytes: new CounterSubMetric(byteMetric, new[] {readTag}),
+			readEvents: new CounterSubMetric(eventMetric, new[] {readTag}));
 	}
 
 	public void Dispose() {
@@ -49,8 +49,8 @@ public class TFChunkTrackerTests : IDisposable {
 		_sut.OnRead(system);
 		_listener.Observe();
 
-		AssertEventsRead(null);
-		AssertBytesRead(null);
+		AssertEventsRead(0);
+		AssertBytesRead(0);
 	}
 
 	[Fact]
@@ -59,8 +59,8 @@ public class TFChunkTrackerTests : IDisposable {
 		_sut.OnRead(system);
 		_listener.Observe();
 
-		AssertEventsRead(null);
-		AssertBytesRead(null);
+		AssertEventsRead(0);
+		AssertBytesRead(0);
 	}
 
 	private void AssertEventsRead(long? expectedEventsRead) =>
@@ -70,7 +70,6 @@ public class TFChunkTrackerTests : IDisposable {
 		AssertMeasurements("eventstore-io-bytes", expectedBytesRead);
 
 	private void AssertMeasurements(string instrumentName, long? expectedValue) {
-		_listener.Observe();
 		var actual = _listener.RetrieveMeasurements(instrumentName);
 
 		if (expectedValue is null) {

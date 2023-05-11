@@ -9,9 +9,9 @@ namespace EventStore.Core.Index {
 	}
 
 	public class IndexTracker : IIndexTracker {
-		private readonly CounterSubMetric<long> _indexedEvents;
+		private readonly CounterSubMetric _indexedEvents;
 
-		public IndexTracker(CounterSubMetric<long> indexedEvents) {
+		public IndexTracker(CounterSubMetric indexedEvents) {
 			_indexedEvents = indexedEvents;
 		}
 

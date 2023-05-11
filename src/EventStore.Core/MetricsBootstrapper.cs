@@ -81,8 +81,8 @@ public static class MetricsBootstrapper {
 		var gossipProcessingMetric = new DurationMetric(coreMeter, "eventstore-gossip-processing-duration");
 		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
-		var byteMetric = coreMeter.CreateCounter<long>("eventstore-io", unit: "bytes");
-		var eventMetric = coreMeter.CreateCounter<long>("eventstore-io", unit: "events");
+		var byteMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
+		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
 
 		// incoming grpc calls
 		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
@@ -104,15 +104,15 @@ public static class MetricsBootstrapper {
 		if (conf.Events.TryGetValue(Conf.EventTracker.Read, out var readEnabled) && readEnabled) {
 			var readTag = new KeyValuePair<string, object>("activity", "read");
 			trackers.TransactionFileTracker = new TFChunkTracker(
-				readBytes: new CounterSubMetric<long>(byteMetric, readTag),
-				readEvents: new CounterSubMetric<long>(eventMetric, readTag));
+				readBytes: new CounterSubMetric(byteMetric, new[] {readTag}),
+				readEvents: new CounterSubMetric(eventMetric, new[] {readTag}));
 		}
 
 		// from a users perspective an event is written when it is indexed: thats when it can be read.
 		if (conf.Events.TryGetValue(Conf.EventTracker.Written, out var writtenEnabled) && writtenEnabled) {
-			trackers.IndexTracker = new IndexTracker(new CounterSubMetric<long>(
+			trackers.IndexTracker = new IndexTracker(new CounterSubMetric(
 				eventMetric,
-				new KeyValuePair<string, object>("activity", "written")));
+				new[] {new KeyValuePair<string, object>("activity", "written")}));
 		}
 
 		// gossip
