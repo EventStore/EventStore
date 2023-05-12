@@ -55,6 +55,8 @@ All notable changes to this project will be documented in this file.
 - log of telemetry configuration on startup [EventStore#3835](https://github.com/EventStore/EventStore/pull/3835)
 - Chunk and StreamInfo cache hits/misses metrics [EventStore#3829](https://github.com/EventStore/EventStore/pull/3829)
 - Storage writer flush size/duration metrics [EventStore#3827](https://github.com/EventStore/EventStore/pull/3827)
+- support for per projection execution timeout [EventStore#3831](https://github.com/EventStore/EventStore/pull/3831)
+- Add system, process, and connection metrics. [EventStore#3777](https://github.com/EventStore/EventStore/pull/3777)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
@@ -66,6 +68,8 @@ All notable changes to this project will be documented in this file.
 - Support specifying values with a metric prefix with the `testclient`. [EventStore#3748](https://github.com/EventStore/EventStore/pull/3748)
 - Jint library version to 3.0.0-beta-2048 [EventStore#3788](https://github.com/EventStore/EventStore/pull/3788)
 - Minor adjustments in solution file [EventStore#3798](https://github.com/EventStore/EventStore/pull/3798)
+- Move metric configuration from arrays to dictionaries. [EventStore#3837](https://github.com/EventStore/EventStore/pull/3837)
+- IO metrics using Counter instrument to ObservableCounter instrument [EventStore#3834](https://github.com/EventStore/EventStore/pull/3834)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
