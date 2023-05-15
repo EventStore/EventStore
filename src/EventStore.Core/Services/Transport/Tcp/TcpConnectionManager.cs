@@ -209,6 +209,13 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				"Connection '{connectionName}{clientConnectionName}' [{remoteEndPoint}, {connectionId:B}] closed: {e}.",
 				ConnectionName, ClientConnectionName.IsEmptyString() ? string.Empty : ":" + ClientConnectionName,
 				connection.RemoteEndPoint, ConnectionId, socketError);
+
+			if (_serviceType == TcpServiceType.Internal && _connection.TotalBytesSent == 0) {
+				Log.Warning(
+					"Unable to connect to Remote EndPoint : {remoteEndPoint}. Connection is potentially blocked. Total bytes sent: {TotalBytesSent}, Total bytes received: {TotalBytesReceived}",
+					RemoteEndPoint, _connection.TotalBytesSent, _connection.TotalBytesReceived);
+			}
+			
 			if (_connectionClosed != null)
 				_connectionClosed(this, socketError);
 		}
