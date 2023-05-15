@@ -55,6 +55,10 @@ public class DurationMaxTracker : IDurationMaxTracker {
 		return now;
 	}
 
+	public void RecordNow(TimeSpan duration) {
+		_recentMax.Record(_clock.Now, duration.TotalSeconds);
+	}
+
 	public Measurement<double> Observe() {
 		var value = _recentMax.Observe(_clock.Now);
 		return new(value, _maxTags.AsSpan());

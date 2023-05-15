@@ -126,6 +126,7 @@ namespace EventStore.Common.Configuration {
 			DiskReadOps,
 			DiskWrittenBytes,
 			DiskWrittenOps,
+			GcPauseDuration,
 		}
 
 		public class LabelMappingCase {

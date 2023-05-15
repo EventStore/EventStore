@@ -18,13 +18,15 @@ public class ProcessMetrics {
 	private readonly Meter _meter;
 	private readonly TimeSpan _timeout;
 	private readonly Dictionary<ProcessTracker, bool> _config;
+	private readonly int _scrapingPeriodInSeconds;
 	private readonly Func<DiskIo> _getDiskIo;
 	private readonly Func<Process> _getCurrentProc;
 
-	public ProcessMetrics(Meter meter, TimeSpan timeout, Dictionary<ProcessTracker, bool> config) {
+	public ProcessMetrics(Meter meter, TimeSpan timeout, int scrapingPeriodInSeconds, Dictionary<ProcessTracker, bool> config) {
 		_meter = meter;
 		_timeout = timeout;
 		_config = config;
+		_scrapingPeriodInSeconds = scrapingPeriodInSeconds;
 
 		_getDiskIo = Functions.Debounce(() => DiskIo.GetDiskIo(Environment.ProcessId, _log), timeout);
 		_getCurrentProc = Functions.Debounce(Process.GetCurrentProcess, _timeout);
@@ -69,6 +71,15 @@ public class ProcessMetrics {
 				var upTime = (DateTime.Now - process.StartTime).TotalSeconds;
 				return new Measurement<double>(upTime, new KeyValuePair<string, object?>("pid", process.Id));
 			});
+
+		if (enabledNames.TryGetValue(ProcessTracker.GcPauseDuration, out var gcMaxPauseName)) {
+			var maxGcPauseDurationMetric = new DurationMaxMetric(_meter, gcMaxPauseName);
+			var maxGcPauseDurationTracker = new DurationMaxTracker(
+				maxGcPauseDurationMetric,
+				name: null,
+				expectedScrapeIntervalSeconds: _scrapingPeriodInSeconds);
+			_ = new GcSuspensionMetric(maxGcPauseDurationTracker);
+		}
 
 		CreateObservableCounter(ProcessTracker.Cpu, getProcCpuUsage);
 		CreateObservableCounter(ProcessTracker.LockContentionCount, () => Monitor.LockContentionCount);

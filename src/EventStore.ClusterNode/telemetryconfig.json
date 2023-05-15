@@ -89,6 +89,7 @@
 		"Gen2Size": true,
 		"LohSize": true,
 		"TimeInGc": true,
+		"GcPauseDuration": true,
 		"HeapSize": true,
 		"HeapFragmentation": true,
 		"TotalAllocatedBytes": true,
