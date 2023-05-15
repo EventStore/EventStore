@@ -81,6 +81,7 @@ public static class MetricsBootstrapper {
 		var gossipProcessingMetric = new DurationMetric(coreMeter, "eventstore-gossip-processing-duration");
 		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
+		var queueBusyMetric = new AverageMetric(coreMeter, "eventstore-queue-busy", "seconds", label => new("queue", label));
 		var byteMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
 		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
 
@@ -197,15 +198,14 @@ public static class MetricsBootstrapper {
 		// queue length trackers
 		trackers.QueueTrackers = new QueueTrackers(
 			conf.Queues,
-			name => new QueueTracker(
-				name: name,
-				new DurationMaxTracker(
+			name => new QueueBusyTracker(queueBusyMetric, name),
+			name => new DurationMaxTracker(
 					name: name,
 					metric: queueQueueingDurationMaxMetric,
 					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds),
-				new QueueProcessingTracker(
+			name => new QueueProcessingTracker(
 					metric: queueProcessingDurationMetric,
-					queueName: name)));
+					queueName: name));
 
 		// kestrel
 		if (conf.Kestrel.TryGetValue(Conf.KestrelTracker.ConnectionCount, out var kestrelConnections) && kestrelConnections) {

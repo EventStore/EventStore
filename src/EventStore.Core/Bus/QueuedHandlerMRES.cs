@@ -103,6 +103,7 @@ namespace EventStore.Core.Bus {
 							_starving = true;
 
 							_queueStats.EnterIdle();
+							_tracker.EnterIdle();
 							_msgAddEvent.Wait(100);
 							_msgAddEvent.Reset();
 
@@ -111,6 +112,7 @@ namespace EventStore.Core.Bus {
 							var start = _tracker.RecordMessageDequeued(item.EnqueuedAt);
 							msg = item.Message;
 							_queueStats.EnterBusy();
+							_tracker.EnterBusy();
 #if DEBUG
 							_queueStats.Dequeued(msg);
 #endif

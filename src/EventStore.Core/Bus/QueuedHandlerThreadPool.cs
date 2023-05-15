@@ -105,6 +105,7 @@ namespace EventStore.Core.Bus {
 				while (proceed) {
 					_stopped.Reset();
 					_queueStats.EnterBusy();
+					_tracker.EnterBusy();
 
 					Message msg;
 					while (!_stop && _queue.TryDequeue(out var item)) {
@@ -152,6 +153,7 @@ namespace EventStore.Core.Bus {
 					}
 
 					_queueStats.EnterIdle();
+					_tracker.EnterIdle();
 					Interlocked.CompareExchange(ref _isRunning, 0, 1);
 					if (_stop) {
 						TryStopQueueStats();
