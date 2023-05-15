@@ -31,19 +31,21 @@ namespace EventStore.Core.Caching {
 			var key = BuildStatsKey(parentKey);
 			var size = 0L;
 			var count = 0L;
+			var numChildren = 0;
 
 			foreach (var child in _children) {
 				foreach (var childStats in child.GetStats(key)) {
 					if (GetParentKey(childStats.Key) == key) {
 						size += childStats.Size;
 						count += childStats.Count;
+						numChildren++;
 					}
 
 					yield return childStats;
 				}
 			}
 
-			yield return new CacheStats(key, Name, Cache.Capacity, size, count);
+			yield return new CacheStats(key, Name, Cache.Capacity, size, count, numChildren);
 		}
 
 		private static ResizerUnit GetUniqueUnit(ICacheResizer[] children) {

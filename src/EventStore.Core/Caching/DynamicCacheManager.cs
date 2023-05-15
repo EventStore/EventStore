@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Telemetry;
+using EventStore.Core.Util;
 using Serilog;
 
 namespace EventStore.Core.Caching {
@@ -27,6 +30,8 @@ namespace EventStore.Core.Caching {
 		private readonly long _minResizeThreshold;
 		private readonly ICacheResizer _rootCacheResizer;
 		private readonly Message _scheduleTick;
+		private readonly Func<Dictionary<string, CacheStats>> _fetchOrGetCachedStats;
+		private readonly ICacheResourcesTracker _cacheResourcesTracker;
 
 		private DateTime _lastResize = DateTime.UtcNow;
 		private long _lastAvailableMem;
@@ -43,7 +48,8 @@ namespace EventStore.Core.Caching {
 			TimeSpan monitoringInterval,
 			TimeSpan minResizeInterval,
 			long minResizeThreshold,
-			ICacheResizer rootCacheResizer) {
+			ICacheResizer rootCacheResizer,
+			ICacheResourcesTracker cacheResourcesTracker) {
 
 			if (keepFreeMemPercent is < 0 or > 100)
 				throw new ArgumentException($"{nameof(keepFreeMemPercent)} must be between 0 to 100 inclusive.");
@@ -66,6 +72,10 @@ namespace EventStore.Core.Caching {
 				monitoringInterval,
 				new PublishEnvelope(_bus),
 				new MonitoringMessage.DynamicCacheManagerTick());
+			_cacheResourcesTracker = cacheResourcesTracker;
+			_fetchOrGetCachedStats = Functions.Debounce(
+				() => _rootCacheResizer.GetStats(string.Empty).ToDictionary(stats => stats.Key),
+				TimeSpan.FromSeconds(1));
 		}
 
 		private readonly struct AvailableMemoryInfo {
@@ -98,9 +108,14 @@ namespace EventStore.Core.Caching {
 				Tick();
 			}
 
-			foreach (var stat in _rootCacheResizer.GetStats(string.Empty)) {
+			var allStats = _fetchOrGetCachedStats();
+			foreach (var stat in allStats.Values) {
+				var key = stat.Key;
 				Log.Information("Cache {key} capacity initialized to {capacity:N0} {unit}",
-					stat.Key, stat.Capacity, _rootCacheResizer.Unit);
+					key, stat.Capacity, _rootCacheResizer.Unit);
+				
+				if (stat.NumChildren == 0)
+					_cacheResourcesTracker.Register(stat.Name, _rootCacheResizer.Unit, () => _fetchOrGetCachedStats()[key]);
 			}
 		}
 

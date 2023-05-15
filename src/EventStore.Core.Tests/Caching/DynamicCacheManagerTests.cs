@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using EventStore.Core.Caching;
 using EventStore.Core.Messages;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Telemetry;
 using EventStore.Core.Tests.Fakes;
 using EventStore.Core.Tests.Services.Replication;
 using NUnit.Framework;
@@ -37,7 +38,8 @@ namespace EventStore.Core.Tests.Caching {
 				monitoringInterval,
 				minResizeInterval,
 				minResizeThreshold,
-				rootCacheResizer);
+				rootCacheResizer,
+				new CacheResourcesTracker.NoOp());
 			sut.Start();
 
 			_fakePublisher.Messages.Clear();
@@ -80,13 +82,15 @@ namespace EventStore.Core.Tests.Caching {
 				() => 0,
 				mem => Interlocked.Exchange(ref cache1Mem, mem),
 				() => 1, // included in total free mem
-				() => { }));
+				() => { },
+				name: "cache1"));
 
 			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 100_000, 40, new AdHocDynamicCache(
 				() => 0,
 				mem => Interlocked.Exchange(ref cache2Mem, mem),
 				() => 1, // included in total free mem
-				() => { }));
+				() => { },
+				name: "cache2"));
 
 			var freeSystemMemReq = 0;
 			var freeSystemMem = new[] { 100, 11 + (aboveKeepFreeMem ? 1 : 0)}; // included in total free mem
@@ -127,10 +131,10 @@ namespace EventStore.Core.Tests.Caching {
 			long cache1Mem = -1, cache2Mem = -1;
 			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 100_000, 60, new AdHocDynamicCache(
 				() => 0,
-				mem => Interlocked.Exchange(ref cache1Mem, mem)));
+				mem => Interlocked.Exchange(ref cache1Mem, mem), name: "cache1"));
 			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 100_000, 40, new AdHocDynamicCache(
 				() => 0,
-				mem => Interlocked.Exchange(ref cache2Mem, mem)));
+				mem => Interlocked.Exchange(ref cache2Mem, mem), name: "cache2"));
 
 			var request = 0;
 			var freeMem = new[] { 100, 90 };
@@ -168,11 +172,11 @@ namespace EventStore.Core.Tests.Caching {
 			long cache1Mem = -1, cache2Mem = -1;
 			var cache1 = new DynamicCacheResizer(ResizerUnit.Bytes, 1, 100_000, 60, new AdHocDynamicCache(
 				() => 0,
-				mem => Interlocked.Exchange(ref cache1Mem, mem)));
+				mem => Interlocked.Exchange(ref cache1Mem, mem), name: "cache1"));
 
 			var cache2 = new DynamicCacheResizer(ResizerUnit.Bytes, 2, 100_000, 40, new AdHocDynamicCache(
 				() => 0,
-				mem => Interlocked.Exchange(ref cache2Mem, mem)));
+				mem => Interlocked.Exchange(ref cache2Mem, mem), name: "cache2"));
 
 			var freeSystemMemReq = 0;
 			var freeSystemMem = new[] { 100, 19 };
