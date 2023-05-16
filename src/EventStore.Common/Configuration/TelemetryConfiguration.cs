@@ -131,6 +131,12 @@ namespace EventStore.Common.Configuration {
 			DiskWrittenOps,
 		}
 
+		public enum QueueTracker {
+			Busy = 1,
+			Length,
+			Processing,
+		}
+
 		public class LabelMappingCase {
 			public string Regex { get; set; }
 			public string Label { get; set; }
@@ -163,7 +169,9 @@ namespace EventStore.Common.Configuration {
 		// must be 0, 1, 5, 10 or a multiple of 15
 		public int ExpectedScrapeIntervalSeconds { get; set; }
 
-		public LabelMappingCase[] Queues { get; set; } = Array.Empty<LabelMappingCase>();
+		public Dictionary<QueueTracker, bool> Queues { get; set; } = new();
+
+		public LabelMappingCase[] QueueLabels { get; set; } = Array.Empty<LabelMappingCase>();
 
 		public LabelMappingCase[] MessageTypes { get; set; } = Array.Empty<LabelMappingCase>();
 	}
