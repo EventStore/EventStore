@@ -76,6 +76,7 @@ public class ProcessMetrics {
 		CreateObservableCounter(ProcessTracker.TotalAllocatedBytes, () => GC.GetTotalAllocatedBytes(), "bytes");
 
 		CreateObservableUpDownCounter(ProcessTracker.ThreadCount, () => ThreadPool.ThreadCount);
+		CreateObservableUpDownCounter(ProcessTracker.ThreadPoolPendingWorkItemCount, () => ThreadPool.PendingWorkItemCount);
 		CreateObservableUpDownCounter(ProcessTracker.TimeInGc, getPercentTimeInGc);
 		CreateObservableUpDownCounter(ProcessTracker.HeapSize, () => GC.GetGCMemoryInfo().HeapSizeBytes, "bytes");
 		CreateObservableUpDownCounter(ProcessTracker.HeapFragmentation, () => {
@@ -88,6 +89,8 @@ public class ProcessMetrics {
 		var dims = new Dimensions<ProcessTracker, long>(_config, dimNames, tag => new("kind", tag));
 
 		dims.Register(ProcessTracker.MemWorkingSet, () => _getCurrentProc().WorkingSet64);
+		dims.Register(ProcessTracker.MemPagedBytes, () => _getCurrentProc().PagedMemorySize64);
+		dims.Register(ProcessTracker.MemVirtualBytes, () => _getCurrentProc().VirtualMemorySize64);
 
 		if (dims.AnyRegistered())
 			_meter.CreateObservableGauge(metricName, dims.GenObserve(), "bytes");

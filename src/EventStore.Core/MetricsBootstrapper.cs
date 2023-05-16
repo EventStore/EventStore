@@ -240,6 +240,7 @@ public static class MetricsBootstrapper {
 			{ Conf.ProcessTracker.UpTime, "eventstore-proc-up-time" },
 			{ Conf.ProcessTracker.Cpu, "eventstore-proc-cpu" },
 			{ Conf.ProcessTracker.ThreadCount, "eventstore-proc-thread-count" },
+			{ Conf.ProcessTracker.ThreadPoolPendingWorkItemCount, "eventstore-proc-thread-pool-pending-work-item-count" },
 			{ Conf.ProcessTracker.LockContentionCount, "eventstore-proc-contention-count" },
 			{ Conf.ProcessTracker.ExceptionCount, "eventstore-proc-exception-count" },
 			{ Conf.ProcessTracker.TimeInGc, "eventstore-gc-time-in-gc" },
@@ -250,6 +251,8 @@ public static class MetricsBootstrapper {
 
 		processMetrics.CreateMemoryMetric("eventstore-proc-mem", new() {
 			{ Conf.ProcessTracker.MemWorkingSet, "working-set" },
+			{ Conf.ProcessTracker.MemPagedBytes, "paged-bytes" },
+			{ Conf.ProcessTracker.MemVirtualBytes, "virtual-bytes" },
 		});
 
 		processMetrics.CreateGcGenerationSizeMetric("eventstore-gc-generation-size", new() {
