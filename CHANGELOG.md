@@ -70,6 +70,8 @@ All notable changes to this project will be documented in this file.
 - Minor adjustments in solution file [EventStore#3798](https://github.com/EventStore/EventStore/pull/3798)
 - Move metric configuration from arrays to dictionaries. [EventStore#3837](https://github.com/EventStore/EventStore/pull/3837)
 - IO metrics using Counter instrument to ObservableCounter instrument [EventStore#3834](https://github.com/EventStore/EventStore/pull/3834)
+- Use `$GITHUB_OUTPUT` for workflow output. [EventStore#3833](https://github.com/EventStore/EventStore/pull/3833)
+- Use latest `actions/checkout@v3`. [EventStore#3833](https://github.com/EventStore/EventStore/pull/3833)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
