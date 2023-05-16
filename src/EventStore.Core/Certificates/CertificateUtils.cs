@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 
 namespace EventStore.Core {
@@ -217,7 +218,9 @@ namespace EventStore.Core {
 			return name;
 		}
 
-		public static X509ChainStatusFlags BuildChain(X509Certificate certificate, X509Certificate2Collection intermediateCerts, X509Certificate2Collection trustedRootCerts) {
+		public static X509ChainStatusFlags BuildChain(X509Certificate certificate,
+			X509Certificate2Collection intermediateCerts, X509Certificate2Collection trustedRootCerts,
+			out List<string> statusInformation) {
 			using var chain = new X509Chain {
 				ChainPolicy = {
 					RevocationMode = X509RevocationMode.NoCheck,
@@ -241,8 +244,13 @@ namespace EventStore.Core {
 			chain.Build(new X509Certificate2(certificate));
 
 			var chainStatus = X509ChainStatusFlags.NoError;
+			statusInformation = new List<string>();
+
+			var cn = ((X509Certificate2)certificate).GetCommonName();
+
 			foreach (var status in chain.ChainStatus) {
 				chainStatus |= status.Status;
+				statusInformation.Add($"{cn} : {status.StatusInformation}");
 			}
 
 			return chainStatus;

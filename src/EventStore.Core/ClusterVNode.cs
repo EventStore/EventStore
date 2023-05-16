@@ -1755,7 +1755,7 @@ namespace EventStore.Core {
 				}
 			}
 
-			var chainStatus = CertificateUtils.BuildChain(certificate, intermediates, trustedRootCertsSelector());
+			var chainStatus = CertificateUtils.BuildChain(certificate, intermediates, trustedRootCertsSelector(), out var chainStatusInformation);
 			if (chainStatus == X509ChainStatusFlags.NoError)
 				sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors; //clear the RemoteCertificateChainErrors flag
 			else
@@ -1768,6 +1768,9 @@ namespace EventStore.Core {
 			}
 
 			if (sslPolicyErrors != SslPolicyErrors.None) {
+				foreach (var status in chainStatusInformation) {
+					Log.Error(status);
+				}
 				return (false, $"The certificate ({certificate.Subject}) provided by the {certificateOrigin} failed validation with the following error(s): {sslPolicyErrors.ToString()} ({chainStatus})");
 			}
 

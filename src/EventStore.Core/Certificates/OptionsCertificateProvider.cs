@@ -90,16 +90,21 @@ namespace EventStore.Core.Certificates {
 
 			if (error) return false;
 
-			var chainStatus = CertificateUtils.BuildChain(nodeCertificate, intermediates, trustedRoots);
+			var chainStatus = CertificateUtils.BuildChain(nodeCertificate, intermediates, trustedRoots, out var chainStatusInformation );
 
 			if (chainStatus != X509ChainStatusFlags.NoError) {
-				Log.Error("Failed to build the certificate chain with the node's own certificate up to the root with error: {chainStatus}. " +
-				             "If you have intermediate certificates, please bundle them with the node's certificate (in PEM or PKCS #12 format).", chainStatus);
+				Log.Error(
+					"Failed to build the certificate chain with the node's own certificate up to the root. " +
+					"If you have intermediate certificates, please bundle them with the node's certificate (in PEM or PKCS #12 format). Errors:-");
+				foreach (var status in chainStatusInformation) {
+					Log.Error(status);
+				}
+
 				error = true;
 			}
 
 			if (!error && intermediates != null) {
-				chainStatus = CertificateUtils.BuildChain(nodeCertificate, null, trustedRoots);
+				chainStatus = CertificateUtils.BuildChain(nodeCertificate, null, trustedRoots, out chainStatusInformation);
 
 				// Adding the intermediate certificates to the store is required so that
 				// i)  the full certificate chain (excluding the root) is sent from client to server (on both Windows/Linux)
