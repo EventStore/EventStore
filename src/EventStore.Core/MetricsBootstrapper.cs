@@ -290,6 +290,6 @@ public static class MetricsBootstrapper {
 			Formatting.Indented,
 			jsonSerializerSettings);
 
-		Log.Information(confJson);
+		Log.Information("Telemetry Configuration: " + confJson);
 	}
 }
