@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - Do not change the handlerType of a projection when it is updated [EventStore#3823](https://github.com/EventStore/EventStore/pull/3823)
 - When multiple projection write requests arrive within short-period (create-create, create-delete, delete-create, delete-delete), projection manager used to pick same expected version number for both write requests which caused WrongExpectedVersion error for one of the request [EventStore#3817](https://github.com/EventStore/EventStore/pull/3817)
 - add an error message when user performs an CRUD operation to $all stream using HTTP API [EventStore#3830](https://github.com/EventStore/EventStore/pull/3830)
+- Log more readable error message in the server logs when the SSL handshakes fail. [EventStore#3832](https://github.com/EventStore/EventStore/pull/3832)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -57,6 +58,7 @@ All notable changes to this project will be documented in this file.
 - Storage writer flush size/duration metrics [EventStore#3827](https://github.com/EventStore/EventStore/pull/3827)
 - support for per projection execution timeout [EventStore#3831](https://github.com/EventStore/EventStore/pull/3831)
 - Add system, process, and connection metrics. [EventStore#3777](https://github.com/EventStore/EventStore/pull/3777)
+- Add paged bytes, virtual bytes, and thread pool tasks queue length metrics [EventStore#3838](https://github.com/EventStore/EventStore/pull/3838)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
