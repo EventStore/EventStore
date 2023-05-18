@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		[SetUp]
 		public void SetUp() {
 			// certificate exported to PKCS #12 due to this issue on Windows: https://github.com/dotnet/runtime/issues/45680
-			_cert = new X509Certificate2(_leaf.Export(X509ContentType.Pkcs12));
+			_cert = new X509Certificate2(_leaf.ExportToPkcs12());
 
 			_clientCertValidator = (_,_,_) => (true, null);
 			_serverEndPoint = new IPEndPoint(IPAddress.Loopback, PortsHelper.GetAvailablePort(IPAddress.Loopback));

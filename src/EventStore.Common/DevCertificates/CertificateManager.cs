@@ -8,6 +8,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Text;
+using EventStore.Common.Utils;
 
 namespace EventStore.Common.DevCertificates {
 
@@ -410,7 +411,7 @@ namespace EventStore.Common.DevCertificates {
 				if (includePrivateKey) {
 					switch (format) {
 						case CertificateKeyExportFormat.Pfx:
-							bytes = certificate.Export(X509ContentType.Pkcs12, password);
+							bytes = certificate.ExportToPkcs12(password);
 							break;
 						case CertificateKeyExportFormat.Pem:
 							key = certificate.GetRSAPrivateKey()!;

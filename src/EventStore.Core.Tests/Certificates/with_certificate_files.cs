@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Utils;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Certificates {
@@ -96,7 +97,7 @@ namespace EventStore.Core.Tests.Certificates {
 		[SetUp]
 		public void Setup() {
 			_certPath = $"{PathName}/leaf.p12";
-			File.WriteAllBytes(_certPath, _leaf.Export(X509ContentType.Pkcs12, Password));
+			File.WriteAllBytes(_certPath, _leaf.ExportToPkcs12(Password));
 		}
 
 		[Test]
@@ -115,7 +116,7 @@ namespace EventStore.Core.Tests.Certificates {
 		[SetUp]
 		public void Setup() {
 			_certPath = $"{PathName}/leaf.p12";
-			File.WriteAllBytes(_certPath, _leaf.Export(X509ContentType.Pkcs12, Password));
+			File.WriteAllBytes(_certPath, _leaf.ExportToPkcs12(Password));
 		}
 
 		[Test]
@@ -138,11 +139,11 @@ namespace EventStore.Core.Tests.Certificates {
 			using var wrongKey = RSA.Create();
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddCertificate(_leaf);
 			safeContents.AddShroudedKey(wrongKey, Password, pbeParams);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -237,12 +238,12 @@ namespace EventStore.Core.Tests.Certificates {
 			rsa.ImportRSAPrivateKey(_leaf.GetRSAPrivateKey()!.ExportRSAPrivateKey(), out _);
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddCertificate(_leaf);
 			safeContents.AddCertificate(_intermediate);
 			safeContents.AddShroudedKey(rsa, Password, pbeParams);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -270,12 +271,12 @@ namespace EventStore.Core.Tests.Certificates {
 			rsa.ImportRSAPrivateKey(_leaf.GetRSAPrivateKey()!.ExportRSAPrivateKey(), out _);
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddCertificate(_leaf);
 			safeContents.AddCertificate(_intermediate);
 			safeContents.AddShroudedKey(rsa, Password, pbeParams);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -303,12 +304,12 @@ namespace EventStore.Core.Tests.Certificates {
 			rsa.ImportRSAPrivateKey(_leaf.GetRSAPrivateKey()!.ExportRSAPrivateKey(), out _);
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddCertificate(_intermediate);
 			safeContents.AddCertificate(_leaf);
 			safeContents.AddShroudedKey(rsa, Password, pbeParams);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -333,11 +334,11 @@ namespace EventStore.Core.Tests.Certificates {
 			rsa.ImportRSAPrivateKey(_leaf.GetRSAPrivateKey()!.ExportRSAPrivateKey(), out _);
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddCertificate(_leaf);
 			safeContents.AddCertificate(_intermediate);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -363,10 +364,10 @@ namespace EventStore.Core.Tests.Certificates {
 			rsa.ImportRSAPrivateKey(_leaf.GetRSAPrivateKey()!.ExportRSAPrivateKey(), out _);
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddShroudedKey(rsa, Password, pbeParams);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -394,13 +395,13 @@ namespace EventStore.Core.Tests.Certificates {
 			using var rsa2 = RSA.Create();
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddCertificate(_intermediate);
 			safeContents.AddCertificate(_leaf);
 			safeContents.AddShroudedKey(rsa, Password, pbeParams);
 			safeContents.AddShroudedKey(rsa2, Password, pbeParams);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -425,12 +426,12 @@ namespace EventStore.Core.Tests.Certificates {
 			using var rsa = RSA.Create();
 			var builder = new Pkcs12Builder();
 			var safeContents = new Pkcs12SafeContents();
-			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2048); // openssl defaults
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
 			safeContents.AddCertificate(_intermediate);
 			safeContents.AddCertificate(_leaf);
 			safeContents.AddShroudedKey(rsa, Password, pbeParams);
 			builder.AddSafeContentsEncrypted(safeContents, Password, pbeParams);
-			builder.SealWithMac(Password, HashAlgorithmName.SHA1, 2048); //openssl defaults
+			builder.SealWithMac(Password, HashAlgorithmName.SHA256, 2048);
 
 			File.WriteAllBytes(_certPath, builder.Encode());
 		}
@@ -455,8 +456,8 @@ namespace EventStore.Core.Tests.Certificates {
 			File.WriteAllText($"{p}.cer", _leaf.Export(X509ContentType.Cert).PEM("CERTIFICATE"));
 			File.WriteAllText($"{p}.cert", _leaf.Export(X509ContentType.Cert).PEM("CERTIFICATE"));
 			File.WriteAllText($"{p}.pem", _leaf.Export(X509ContentType.Cert).PEM("CERTIFICATE"));
-			File.WriteAllBytes($"{p}.p12", _leaf.Export(X509ContentType.Pkcs12));
-			File.WriteAllBytes($"{p}.pfx", _leaf.Export(X509ContentType.Pkcs12));
+			File.WriteAllBytes($"{p}.p12", _leaf.ExportToPkcs12());
+			File.WriteAllBytes($"{p}.pfx", _leaf.ExportToPkcs12());
 			File.WriteAllText($"{p}.key", _leaf.PemPrivateKey());
 		}
 

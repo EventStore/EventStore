@@ -35,7 +35,7 @@
 		<PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.0.5" />
 		<PackageReference Include="NETStandard.Library" Version="2.0.3" />
 		<PackageReference Include="HostStat.NET" Version="1.0.2" />
-		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="6.0.1" />
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="7.0.1" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.10" />
 		<!-- CVE-2022-35737 -->
 		<PackageReference Include="SQLitePCLRaw.core" Version="2.1.2" />

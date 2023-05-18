@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Services.Transport.Tcp;
@@ -94,36 +96,51 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			Assert.AreEqual(sent, received.ToArray());
 		}
 
+		private static X509Certificate2 _root, _server, _otherServer, _untrusted;
 		public static X509Certificate2 GetRootCertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.ca.ca.pem");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray());
+			_root ??= GetCertificate("ca", loadKey: false);
+			return new X509Certificate2(_root);
 		}
 
 		public static X509Certificate2 GetServerCertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node1.node1.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
+			_server ??= GetCertificate("node1");
+			return new X509Certificate2(_server);
 		}
 
 		public static X509Certificate2 GetOtherServerCertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.node2.node2.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
+			_otherServer ??= GetCertificate("node2");
+			return new X509Certificate2(_otherServer);
 		}
 
 		public static X509Certificate2 GetUntrustedCertificate() {
-			using var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.untrusted.untrusted.p12");
-			using var mem = new MemoryStream();
-			stream.CopyTo(mem);
-			return new X509Certificate2(mem.ToArray(), "password");
+			_untrusted ??= GetCertificate("untrusted");
+			return new X509Certificate2(_untrusted);
+		}
+
+		private static X509Certificate2 GetCertificate(string name, bool loadKey = true) {
+			const string resourcePath = "EventStore.Core.Tests.Services.Transport.Tcp.test_certificates";
+
+			var certBytes = LoadResource($"{resourcePath}.{name}.{name}.crt");
+			var certificate = X509Certificate2.CreateFromPem(Encoding.UTF8.GetString(certBytes));
+
+			if (!loadKey)
+				return certificate;
+
+			var keyBytes = LoadResource($"{resourcePath}.{name}.{name}.key");
+			using var rsa = RSA.Create();
+			rsa.ImportFromPem(Encoding.UTF8.GetString(keyBytes));
+
+			return certificate.CopyWithPrivateKey(rsa);
+		}
+
+		private static byte[] LoadResource(string resource) {
+			using var resourceStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource);
+			if (resourceStream == null)
+				return null;
+
+			using var memStream = new MemoryStream();
+			resourceStream.CopyTo(memStream);
+			return memStream.ToArray();
 		}
 	}
 }
