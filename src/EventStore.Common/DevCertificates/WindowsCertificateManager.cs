@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Utils;
 
 namespace EventStore.Common.DevCertificates {
 
@@ -46,7 +47,7 @@ namespace EventStore.Common.DevCertificates {
 			StoreLocation storeLocation) {
 			// On non OSX systems we need to export the certificate and import it so that the transient
 			// key that we generated gets persisted.
-			var export = certificate.Export(X509ContentType.Pkcs12, "");
+			var export = certificate.ExportToPkcs12(string.Empty);
 			certificate.Dispose();
 			certificate = new X509Certificate2(export, "",
 				X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);

@@ -32,8 +32,8 @@
 		<ProjectReference Include="..\EventStore.Transport.Tcp\EventStore.Transport.Tcp.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.pem" />
-		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.p12" />
+		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.crt" />
+		<EmbeddedResource Include="Services\Transport\Tcp\test_certificates\**\*.key" />
 		<EmbeddedResource Remove="FakePlugin\**" />
 	</ItemGroup>
 	<ItemGroup>
