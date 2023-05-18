@@ -16,6 +16,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		private readonly TFChunkDb _db;
 		private readonly ICheckpoint _writerCheckpoint;
+		private long _nextRecordPosition;
+		private bool _inTransaction;
 
 		private TFChunk.TFChunk _currentChunk;
 
@@ -30,7 +32,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 			_db = db;
 			_writerCheckpoint = db.Config.WriterCheckpoint;
-			_currentChunk = db.Manager.GetChunkFor(_writerCheckpoint.Read());
+			_nextRecordPosition = _writerCheckpoint.Read();
+			_currentChunk = db.Manager.GetChunkFor(_nextRecordPosition);
 			if (_currentChunk == null)
 				throw new InvalidOperationException("No chunk given for existing position.");
 		}
@@ -40,41 +43,78 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public bool Write(ILogRecord record, out long newPos) {
+			OpenTransaction();
+			bool wasWritten = WriteToTransaction(record, out newPos);
+			CommitTransaction();
+			return wasWritten;
+		}
+
+		public void OpenTransaction() {
+			if (_inTransaction)
+				throw new InvalidOperationException("Attempted to open a new transaction while there was an ongoing transaction.");
+
+			_inTransaction = true;
+		}
+
+		public bool WriteToTransaction(ILogRecord record, out long newPos) {
 			var result = _currentChunk.TryAppend(record);
 			if (result.Success)
-				_writerCheckpoint.Write(result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition);
+				_nextRecordPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition;
 			else
-				CompleteChunk(); // complete updates checkpoint internally
-			newPos = _writerCheckpoint.ReadNonFlushed();
+				CompleteChunkInTransaction(); // complete updates _nextRecordPosition internally
+
+			newPos = _nextRecordPosition;
 			return result.Success;
 		}
 
-		public void CompleteChunk() {
+		public void CommitTransaction() {
+			if (!_inTransaction)
+				throw new InvalidOperationException("Attempted to commit a transaction while there was no ongoing transaction.");
+
+			_inTransaction = false;
+			_writerCheckpoint.Write(_nextRecordPosition);
+		}
+
+		public bool HasOpenTransaction() => _inTransaction;
+
+		public void CompleteChunkInTransaction() {
 			var chunk = _currentChunk;
 			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
 			chunk.Complete();
 
-			_writerCheckpoint.Write(chunk.ChunkHeader.ChunkEndPosition);
-			_writerCheckpoint.Flush();
+			_nextRecordPosition = chunk.ChunkHeader.ChunkEndPosition;
 
 			var nextChunkNumber = chunk.ChunkHeader.ChunkEndNumber + 1;
 			VerifyChunkNumberLimits(nextChunkNumber);
 			_currentChunk = _db.Manager.AddNewChunk();
 		}
 
-		public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk) {
+		public void CompleteChunk() {
+			OpenTransaction();
+			CompleteChunkInTransaction();
+			CommitTransaction();
+			Flush();
+		}
+
+		private void CompleteReplicatedRawChunkInTransaction(TFChunk.TFChunk rawChunk) {
 			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 
 			rawChunk.CompleteRaw();
 			_db.Manager.SwitchChunk(rawChunk, verifyHash: true, removeChunksWithGreaterNumbers: true);
 
-			_writerCheckpoint.Write(rawChunk.ChunkHeader.ChunkEndPosition);
-			_writerCheckpoint.Flush();
+			_nextRecordPosition = rawChunk.ChunkHeader.ChunkEndPosition;
 
 			var nextChunkNumber = rawChunk.ChunkHeader.ChunkEndNumber + 1;
 			VerifyChunkNumberLimits(nextChunkNumber);
 			_currentChunk = _db.Manager.AddNewChunk();
+		}
+
+		public void CompleteReplicatedRawChunk(TFChunk.TFChunk rawChunk) {
+			OpenTransaction();
+			CompleteReplicatedRawChunkInTransaction(rawChunk);
+			CommitTransaction();
+			Flush();
 		}
 
 		private static void VerifyChunkNumberLimits(int chunkNumber) {

@@ -5,6 +5,10 @@ namespace EventStore.Core.TransactionLog {
 	public interface ITransactionFileWriter : IDisposable {
 		void Open();
 		bool Write(ILogRecord record, out long newPos);
+		void OpenTransaction();
+		bool WriteToTransaction(ILogRecord record, out long newPos);
+		void CommitTransaction();
+		bool HasOpenTransaction();
 		void Flush();
 		void Close();
 

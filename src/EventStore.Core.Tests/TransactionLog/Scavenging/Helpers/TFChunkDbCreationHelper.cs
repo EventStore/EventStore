@@ -47,7 +47,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 			return this;
 		}
 
-		public DbResult CreateDb() {
+		public DbResult CreateDb(bool commit = false) {
 			var records = new List<ILogRecord>[_chunkRecs.Count];
 			for (int i = 0; i < records.Length; ++i) {
 				records[i] = new();
@@ -95,11 +95,13 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				}
 			}
 
+			long logPos = 0;
+
 			// convert the Recs into LogRecords and write them to the database.
 			// for each chunk i
 			for (int i = 0; i < _chunkRecs.Count; ++i) {
 				var chunk = i == 0 ? _db.Manager.GetChunk(0) : _db.Manager.AddNewChunk();
-				_db.Config.WriterCheckpoint.Write(i * (long)_db.Config.ChunkSize);
+				logPos = i * (long)_db.Config.ChunkSize;
 
 				var completedChunk = false;
 				// for each record j in chunk i
@@ -108,17 +110,16 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 						throw new InvalidOperationException("Don't try to write more data to completed chunk");
 					var rec = _chunkRecs[i][j];
 					var transInfo = transactions[rec.Transaction];
-					var logPos = _db.Config.WriterCheckpoint.ReadNonFlushed();
 
 					_logFormat.StreamNameIndex.GetOrReserve(_logFormat.RecordFactory, rec.StreamId, logPos, out var streamNumber, out var streamRecord);
 					if (streamRecord != null) {
-						Write(i, chunk, streamRecord, out logPos);
+						Write(i, chunk, streamRecord, false, out logPos);
 						records[i].Add(streamRecord);
 					}
 					
 					_logFormat.EventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, rec.EventType, logPos, out var eventTypeNumber, out var eventTypeRecord);
 					if (eventTypeRecord != null) {
-						Write(i, chunk, eventTypeRecord, out logPos);
+						Write(i, chunk, eventTypeRecord, false, out logPos);
 						records[i].Add(eventTypeRecord);
 					}
 
@@ -217,7 +218,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 							throw new ArgumentOutOfRangeException();
 					}
 
-					Write(i, chunk, record, out logPos);
+					Write(i, chunk, record, rec.CommitWrite, out logPos);
 					records[i].Add(record);
 					if (record is IPrepareLogRecord<TStreamId> prepare &&
 						StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId)) {
@@ -235,16 +236,22 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				}
 			}
 
+			if (commit)
+				_db.Config.WriterCheckpoint.Write(logPos);
+
 			_db.Config.WriterCheckpoint.Flush();
 			return new DbResult(_db, records.Select(rs => rs.ToArray()).ToArray(), streams);
 		}
 
-		void Write(int chunkNum, TFChunk chunk, ILogRecord record, out long newPos) {
+		void Write(int chunkNum, TFChunk chunk, ILogRecord record, bool commitWrite, out long newPos) {
 			var writerRes = chunk.TryAppend(record);
 			if (!writerRes.Success)
 				throw new Exception(string.Format("Could not write log record: {0}", record));
-			_db.Config.WriterCheckpoint.Write(chunkNum * (long)_db.Config.ChunkSize + writerRes.NewPosition);
-			newPos = _db.Config.WriterCheckpoint.ReadNonFlushed();
+
+			newPos = chunkNum * (long)_db.Config.ChunkSize + writerRes.NewPosition;
+
+			if (commitWrite)
+				_db.Config.WriterCheckpoint.Write(newPos);
 		}
 
 		private byte[] FormatData(Rec rec) {
@@ -435,6 +442,11 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public readonly PrepareFlags PrepareFlags;
 		public readonly byte Version;
 
+		// commit all writes except incomplete implicit transactions
+		public bool CommitWrite => !(Type == RecType.Prepare &&
+		                             PrepareFlags.HasFlag(PrepareFlags.IsCommitted) &&
+		                             !PrepareFlags.HasFlag(PrepareFlags.TransactionEnd));
+
 		public Rec(RecType type, int transaction, string streamId, string eventType, DateTime? timestamp, byte version,
 			long? eventNumber = null,
 			byte[] data = null,
@@ -485,7 +497,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 		public static Rec Write(int transaction, string stream, string eventType = null, DateTime? timestamp = null,
 			long? eventNumber = null,
 			byte[] data = null,
-			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.Data | PrepareFlags.IsCommitted,
+			StreamMetadata metadata = null, PrepareFlags prepareFlags = PrepareFlags.SingleWrite | PrepareFlags.IsCommitted,
 			byte version = PrepareLogRecord.PrepareRecordVersion) {
 			return new Rec(RecType.Prepare, transaction, stream, eventType, timestamp, version, eventNumber, data, metadata, prepareFlags);
 		}

@@ -254,6 +254,66 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return eventRecord;
 		}
 
+		protected EventRecord[] WriteEvents(string streamName, long startEventNumber, Event[] events, DateTime? timestamp = null) {
+			GetOrReserve(streamName, out var eventStreamId, out var pos);
+
+			var eventTypeIds = new List<TStreamId>();
+			for (var i = 0; i < events.Length; i++) {
+				GetOrReserveEventType(events[i].EventType, out var eventTypeId, out pos);
+				eventTypeIds.Add(eventTypeId);
+			}
+
+			Writer.OpenTransaction();
+
+			var eventRecords = new List<EventRecord>();
+			for (var i = 0; i < events.Length; i++) {
+				var curEvent = events[i];
+
+				var flags = PrepareFlags.IsCommitted | PrepareFlags.Data;
+				if (curEvent.IsJson)
+					flags |= PrepareFlags.IsJson;
+
+				if (i == 0)
+					flags |= PrepareFlags.TransactionBegin;
+
+				if (i == events.Length - 1)
+					flags |= PrepareFlags.TransactionEnd;
+
+				var eventNumber = startEventNumber + i;
+
+				var prepare = LogRecord.Prepare(
+					factory: _recordFactory,
+					logPosition: pos,
+					correlationId: Guid.NewGuid(),
+					eventId: curEvent.EventId,
+					transactionPos: pos,
+					transactionOffset: i,
+					eventStreamId: eventStreamId,
+					expectedVersion: eventNumber - 1,
+					flags: flags,
+					eventType: eventTypeIds[i],
+					data: curEvent.Data,
+					metadata: curEvent.Metadata,
+					timeStamp: timestamp ?? DateTime.UtcNow);
+
+				var firstPos = prepare.LogPosition;
+				if (!Writer.WriteToTransaction(prepare, out pos)) {
+					prepare = prepare.CopyForRetry(
+						logPosition: pos,
+						transactionPosition: pos);
+
+					if (!Writer.WriteToTransaction(prepare, out pos))
+						Assert.Fail($"Second write failed when first writing prepare at {firstPos}, then at {prepare.LogPosition}.");
+				}
+
+				eventRecords.Add(new EventRecord(eventNumber, prepare, streamName, curEvent.EventType));
+			}
+
+			Writer.CommitTransaction();
+
+			return eventRecords.ToArray();
+		}
+
 		protected EventRecord WriteStreamMetadata(string eventStreamName, long eventNumber, string metadata,
 			DateTime? timestamp = null) {
 			GetOrReserve(SystemStreams.MetastreamOf(eventStreamName), out var eventStreamId, out var pos);
