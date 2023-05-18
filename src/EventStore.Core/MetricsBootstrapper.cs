@@ -81,6 +81,7 @@ public static class MetricsBootstrapper {
 		var gossipProcessingMetric = new DurationMetric(coreMeter, "eventstore-gossip-processing-duration");
 		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
+		var queueBusyMetric = new AverageMetric(coreMeter, "eventstore-queue-busy", "seconds", label => new("queue", label));
 		var byteMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "bytes");
 		var eventMetric = new CounterMetric(coreMeter, "eventstore-io", unit: "events");
 
@@ -194,18 +195,24 @@ public static class MetricsBootstrapper {
 			}
 		}
 
-		// queue length trackers
-		trackers.QueueTrackers = new QueueTrackers(
-			conf.Queues,
-			name => new QueueTracker(
+		// queue trackers
+		Func<string, IQueueBusyTracker> busyTrackerFactory = name => new QueueBusyTracker.NoOp();
+		Func<string, IDurationMaxTracker> lengthFactory = name => new DurationMaxTracker.NoOp();
+		Func<string, IQueueProcessingTracker> processingFactory = name => new QueueProcessingTracker.NoOp();
+
+		if (conf.Queues.TryGetValue(Conf.QueueTracker.Busy, out var busyEnabled) && busyEnabled)
+			busyTrackerFactory = name => new QueueBusyTracker(queueBusyMetric, name);
+
+		if (conf.Queues.TryGetValue(Conf.QueueTracker.Length, out var lengthEnabled) && lengthEnabled)
+			lengthFactory = name => new DurationMaxTracker(
 				name: name,
-				new DurationMaxTracker(
-					name: name,
-					metric: queueQueueingDurationMaxMetric,
-					expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds),
-				new QueueProcessingTracker(
-					metric: queueProcessingDurationMetric,
-					queueName: name)));
+				metric: queueQueueingDurationMaxMetric,
+				expectedScrapeIntervalSeconds: conf.ExpectedScrapeIntervalSeconds);
+
+		if (conf.Queues.TryGetValue(Conf.QueueTracker.Processing, out var processingEnabled) && processingEnabled)
+			processingFactory = name => new QueueProcessingTracker(queueProcessingDurationMetric, name);
+
+		trackers.QueueTrackers = new QueueTrackers(conf.QueueLabels, busyTrackerFactory, lengthFactory, processingFactory);
 
 		// kestrel
 		if (conf.Kestrel.TryGetValue(Conf.KestrelTracker.ConnectionCount, out var kestrelConnections) && kestrelConnections) {

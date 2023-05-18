@@ -80,13 +80,19 @@ namespace EventStore.Core.XUnit.Tests.Telemetry {
 		}
 
 		QueueTrackers GenSut(params Conf.LabelMappingCase[] map) =>
-			new(map, x => {
-				var tracker = new FakeTracker { Name = x };
-				return new QueueTracker(x, tracker, tracker);
-			});
+			new(map,
+				x => new FakeTracker { Name = x },
+				x => new FakeTracker { Name = x },
+				x => new FakeTracker { Name = x });
 
-		class FakeTracker : IDurationMaxTracker, IQueueProcessingTracker {
+		class FakeTracker : IDurationMaxTracker, IQueueProcessingTracker, IQueueBusyTracker {
 			public string Name { get; init; }
+
+			public void EnterBusy() {
+			}
+
+			public void EnterIdle() {
+			}
 
 			public Instant RecordNow(Instant start) => start;
 
