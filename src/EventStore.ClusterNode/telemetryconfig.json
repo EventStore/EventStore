@@ -59,6 +59,8 @@
 		"Chunk": false
 	},
 
+	"CacheResources": true,
+
 	"Kestrel": {
 		"ConnectionCount": true
 	},

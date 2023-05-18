@@ -31,6 +31,7 @@ public class Trackers {
 	public IMaxTracker<long> WriterFlushSizeTracker { get; set; } = new MaxTracker<long>.NoOp();
 	public IDurationMaxTracker WriterFlushDurationTracker { get; set; } = new DurationMaxTracker.NoOp();
 	public ICacheHitsMissesTracker CacheHitsMissesTracker { get; set; } = new CacheHitsMissesTracker.NoOp();
+	public ICacheResourcesTracker CacheResourcesTracker { get; set; } = new CacheResourcesTracker.NoOp();
 }
 
 public class GrpcTrackers {
@@ -99,6 +100,12 @@ public static class MetricsBootstrapper {
 				{ Conf.Cache.Chunk, "chunk" },
 			});
 			trackers.CacheHitsMissesTracker = new CacheHitsMissesTracker(metric);
+		}
+
+		// dynamic cache resources
+		if (conf.CacheResources) {
+			var metrics = new CacheResourcesMetrics(coreMeter, "eventstore-cache-resources");
+			trackers.CacheResourcesTracker = new CacheResourcesTracker(metrics);
 		}
 
 		// events

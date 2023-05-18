@@ -28,7 +28,7 @@ namespace EventStore.Core.Caching {
 		}
 
 		public IEnumerable<CacheStats> GetStats(string parentKey) {
-			yield return new CacheStats(BuildStatsKey(parentKey), Name, Cache.Capacity, Size, Count);
+			yield return new CacheStats(BuildStatsKey(parentKey), Name, Cache.Capacity, Size, Count, numChildren: 0);
 		}
 	}
 }
