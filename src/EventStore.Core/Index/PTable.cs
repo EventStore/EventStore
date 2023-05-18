@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Security.Cryptography;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
@@ -12,6 +11,8 @@ using ILogger = Serilog.ILogger;
 using Range = EventStore.Core.Data.Range;
 using EventStore.Core.DataStructures.ProbabilisticFilter;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using MD5 = EventStore.Core.Hashing.MD5;
 
 namespace EventStore.Core.Index {
 	public class PTableVersions {
@@ -293,7 +294,7 @@ namespace EventStore.Core.Index {
 			UnmanagedMemoryAppendOnlyList<Midpoint> midpoints = null;
 
 			try {
-				using (MD5 md5 = MD5.Create()) {
+				using (var md5 = MD5.Create()) {
 					int midpointsCount;
 					try {
 						midpointsCount = (int)Math.Max(2L, Math.Min((long)1 << depth, count));
@@ -453,7 +454,7 @@ namespace EventStore.Core.Index {
 
 		private readonly byte[] TmpReadBuf = new byte[DefaultBufferSize];
 
-		private void ReadUntilWithMd5(long nextPos, Stream fileStream, MD5 md5) {
+		private void ReadUntilWithMd5(long nextPos, Stream fileStream, HashAlgorithm md5) {
 			long toRead = nextPos - fileStream.Position;
 			if (toRead < 0)
 				throw new Exception("should not do negative reads.");

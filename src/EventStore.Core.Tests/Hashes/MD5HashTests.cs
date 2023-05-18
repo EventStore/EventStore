@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Security.Cryptography;
+using EventStore.Core.Hashing;
 using EventStore.Core.Util;
 using NUnit.Framework;
 

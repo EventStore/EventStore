@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
@@ -13,8 +12,10 @@ using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog.LogRecords;
 using EventStore.Core.Util;
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using EventStore.Core.TransactionLog.Unbuffered;
 using ILogger = Serilog.ILogger;
+using MD5 = EventStore.Core.Hashing.MD5;
 
 
 namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
@@ -502,7 +503,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			_writerWorkItem = new WriterWorkItem(stream, null, md5);
 		}
 
-		private void WriteHeader(MD5 md5, Stream stream, ChunkHeader chunkHeader) {
+		private void WriteHeader(HashAlgorithm md5, Stream stream, ChunkHeader chunkHeader) {
 			var chunkHeaderBytes = chunkHeader.AsByteArray();
 			md5.TransformBlock(chunkHeaderBytes, 0, ChunkHeader.Size, null, 0);
 			stream.Write(chunkHeaderBytes, 0, ChunkHeader.Size);
