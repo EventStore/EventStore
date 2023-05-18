@@ -59,6 +59,7 @@ All notable changes to this project will be documented in this file.
 - support for per projection execution timeout [EventStore#3831](https://github.com/EventStore/EventStore/pull/3831)
 - Add system, process, and connection metrics. [EventStore#3777](https://github.com/EventStore/EventStore/pull/3777)
 - Add paged bytes, virtual bytes, and thread pool tasks queue length metrics [EventStore#3838](https://github.com/EventStore/EventStore/pull/3838)
+- context when logging the telemetry config [EventStore#3845](https://github.com/EventStore/EventStore/pull/3845)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
