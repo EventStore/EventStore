@@ -10,6 +10,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.DataStructures;
 using EventStore.Core.DataStructures.ProbabilisticFilter;
+using MD5 = EventStore.Core.Hashing.MD5;
 
 namespace EventStore.Core.Index {
 	public unsafe partial class PTable {

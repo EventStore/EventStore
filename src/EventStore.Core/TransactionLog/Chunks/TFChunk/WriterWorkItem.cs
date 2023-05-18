@@ -23,9 +23,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		public readonly MemoryStream Buffer;
 		public readonly BinaryWriter BufferWriter;
-		public readonly MD5 MD5;
+		public readonly HashAlgorithm MD5;
 
-		public WriterWorkItem(Stream fileStream, UnmanagedMemoryStream memStream, MD5 md5) {
+		public WriterWorkItem(Stream fileStream, UnmanagedMemoryStream memStream, HashAlgorithm md5) {
 			_fileStream = fileStream;
 			_memStream = memStream;
 			_workingStream = (Stream)fileStream ?? memStream;
