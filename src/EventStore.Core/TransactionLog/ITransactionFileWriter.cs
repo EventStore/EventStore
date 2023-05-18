@@ -1,5 +1,4 @@
 using System;
-using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog {
@@ -9,6 +8,7 @@ namespace EventStore.Core.TransactionLog {
 		void Flush();
 		void Close();
 
-		ICheckpoint Checkpoint { get; }
+		long Position { get; }
+		long FlushedPosition { get; }
 	}
 }

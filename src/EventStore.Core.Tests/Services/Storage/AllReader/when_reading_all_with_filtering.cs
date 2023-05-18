@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				retryOnFail: true);
 
 			_forwardReadPos = new TFPos(firstEvent.LogPosition, firstEvent.LogPosition);
-			_backwardReadPos = new TFPos(WriterCheckpoint.ReadNonFlushed(), WriterCheckpoint.ReadNonFlushed());
+			_backwardReadPos = new TFPos(Writer.Position, Writer.Position);
 		}
 
 		[Test]

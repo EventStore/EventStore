@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Services.RedactionService {
 			WriteSingleEvent(StreamId, 7, new string('7', 50), retryOnFail: true);
 			WriteSingleEvent(StreamId, 8, new string('8', 50), retryOnFail: true);
 
-			var writerPos = Db.Config.WriterCheckpoint.Read();
+			var writerPos = Writer.Position;
 			var chunk = Path.GetFileName(Db.Manager.GetChunkFor(writerPos).FileName);
 			var chunkNum = Db.Config.FileNamingStrategy.GetIndexFor(chunk);
 			Assert.AreEqual(2, chunkNum);

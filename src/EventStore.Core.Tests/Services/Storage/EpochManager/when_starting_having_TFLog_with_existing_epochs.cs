@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				.GetValue(_epochManager);
 		}
 		private EpochRecord WriteEpoch(int epochNumber, long lastPos, Guid instanceId) {
-			long pos = _writer.Checkpoint.ReadNonFlushed();
+			long pos = _writer.Position;
 			var epoch = new EpochRecord(pos, epochNumber, Guid.NewGuid(), lastPos, DateTime.UtcNow, instanceId);
 			var rec = new SystemLogRecord(epoch.EpochPosition, epoch.TimeStamp, SystemRecordType.Epoch,
 				SystemRecordSerialization.Json, epoch.AsSerialized());
