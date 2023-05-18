@@ -82,7 +82,7 @@ namespace EventStore.ClusterNode {
 				Log.Information(options.DumpOptions());
 
 				var level = options.Application.AllowUnknownOptions
-					? LogEventLevel.Information
+					? LogEventLevel.Warning
 					: LogEventLevel.Fatal;
 
 				foreach (var (option, suggestion) in options.Unknown.Options) {
