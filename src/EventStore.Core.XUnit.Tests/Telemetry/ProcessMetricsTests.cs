@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Threading;
 using EventStore.Common.Configuration;
 using EventStore.Core.Telemetry;
 using Xunit;
+using Xunit.Sdk;
 
 namespace EventStore.Core.XUnit.Tests.Telemetry;
 
@@ -25,7 +27,7 @@ public class ProcessMetricsTests : IDisposable {
 			config[value] = true;
 		}
 
-		_sut = new ProcessMetrics(meter, TimeSpan.FromSeconds(42), config);
+		_sut = new ProcessMetrics(meter, TimeSpan.FromSeconds(42), scrapingPeriodInSeconds: 15, config);
 		_sut.CreateObservableMetrics(new() {
 			{ TelemetryConfiguration.ProcessTracker.UpTime, "eventstore-proc-up-time" },
 			{ TelemetryConfiguration.ProcessTracker.Cpu, "eventstore-proc-cpu" },
@@ -37,6 +39,7 @@ public class ProcessMetricsTests : IDisposable {
 			{ TelemetryConfiguration.ProcessTracker.HeapSize, "eventstore-gc-heap-size" },
 			{ TelemetryConfiguration.ProcessTracker.HeapFragmentation, "eventstore-gc-heap-fragmentation" },
 			{ TelemetryConfiguration.ProcessTracker.TotalAllocatedBytes, "eventstore-gc-total-allocated" },
+			{ TelemetryConfiguration.ProcessTracker.GcPauseDuration, "eventstore-gc-pause-duration" },
 		});
 
 		_sut.CreateMemoryMetric("eventstore-proc-mem", new() {
@@ -67,6 +70,9 @@ public class ProcessMetricsTests : IDisposable {
 			{ TelemetryConfiguration.ProcessTracker.DiskReadBytes, "read" },
 			{ TelemetryConfiguration.ProcessTracker.DiskWrittenBytes, "written" },
 		});
+
+		// To trigger the GC pause detection metric.
+		GC.Collect();
 
 		_intListener.Observe();
 		_doubleListener.Observe();
@@ -314,5 +320,31 @@ public class ProcessMetricsTests : IDisposable {
 						Assert.Equal("written", tag.Value);
 					});
 			});
+	}
+
+	[Fact]
+	public void can_detect_gc_pauses() {
+		for (var count = 0; count < 50; ++count) {
+			try {
+				Assert.Collection(
+					_doubleListener.RetrieveMeasurements("eventstore-gc-pause-duration-seconds"),
+					m => {
+						Assert.Collection(
+							m.Tags,
+							tag => {
+								Assert.Equal("range", tag.Key);
+								Assert.Equal("16-20 seconds", tag.Value);
+							});
+
+						Assert.True(m.Value > 0);
+					});
+
+				return;
+			} catch (CollectionException) {
+			}
+
+			Thread.Sleep(10);
+			_doubleListener.Observe();
+		}
 	}
 }

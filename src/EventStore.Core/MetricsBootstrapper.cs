@@ -249,7 +249,7 @@ public static class MetricsBootstrapper {
 		});
 
 		// process
-		var processMetrics = new ProcessMetrics(coreMeter, timeout, conf.Process);
+		var processMetrics = new ProcessMetrics(coreMeter, timeout, conf.ExpectedScrapeIntervalSeconds, conf.Process);
 		processMetrics.CreateObservableMetrics(new() {
 			{ Conf.ProcessTracker.UpTime, "eventstore-proc-up-time" },
 			{ Conf.ProcessTracker.Cpu, "eventstore-proc-cpu" },
@@ -261,6 +261,7 @@ public static class MetricsBootstrapper {
 			{ Conf.ProcessTracker.HeapSize, "eventstore-gc-heap-size" },
 			{ Conf.ProcessTracker.HeapFragmentation, "eventstore-gc-heap-fragmentation" },
 			{ Conf.ProcessTracker.TotalAllocatedBytes, "eventstore-gc-total-allocated" },
+			{ Conf.ProcessTracker.GcPauseDuration, "eventstore-gc-pause-duration-max" },
 		});
 
 		processMetrics.CreateMemoryMetric("eventstore-proc-mem", new() {
