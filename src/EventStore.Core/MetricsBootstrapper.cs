@@ -75,7 +75,7 @@ public static class MetricsBootstrapper {
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;
 
-		var coreMeter = new Meter("EventStore.Core", version: "0.0.1");
+		var coreMeter = new Meter("EventStore.Core", version: "1.0.0");
 		var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
 		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
 		var latencyMetric = new DurationMetric(coreMeter, "eventstore-latency");
