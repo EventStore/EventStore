@@ -6,7 +6,7 @@
 		"EventStore.Core"
 	],
 
-	"StatusTrackers": {
+	"Statuses": {
 		"Index": true,
 		"Node": true,
 		"Scavenge": true
@@ -40,7 +40,7 @@
 		"DeadlineExceeded": true
 	},
 
-	"GossipTrackers": {
+	"Gossip": {
 		"PullFromPeer": false,
 		"PushToPeer":  true,
 		"ProcessingPushFromPeer": true,

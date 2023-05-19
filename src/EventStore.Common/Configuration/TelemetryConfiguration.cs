@@ -65,7 +65,7 @@ namespace EventStore.Common.Configuration {
 			StreamTombstone,
 		}
 
-		public enum Gossip {
+		public enum GossipTracker {
 			PullFromPeer = 1,
 			PushToPeer,
 			ProcessingPushFromPeer,
@@ -145,7 +145,7 @@ namespace EventStore.Common.Configuration {
 
 		public string[] Meters { get; set; } = Array.Empty<string>();
 
-		public Dictionary<StatusTracker, bool> StatusTrackers { get; set; } = new ();
+		public Dictionary<StatusTracker, bool> Statuses { get; set; } = new ();
 
 		public Dictionary<Checkpoint, bool> Checkpoints { get; set; } = new();
 
@@ -153,7 +153,7 @@ namespace EventStore.Common.Configuration {
 
 		public Dictionary<GrpcMethod, string> GrpcMethods { get; set; } = new();
 
-		public Dictionary<Gossip, bool> GossipTrackers { get; set; } = new();
+		public Dictionary<GossipTracker, bool> Gossip { get; set; } = new();
 
 		public Dictionary<KestrelTracker, bool> Kestrel { get; set; } = new();
 
