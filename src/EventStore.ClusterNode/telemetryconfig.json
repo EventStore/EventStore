@@ -6,7 +6,7 @@
 		"EventStore.Core"
 	],
 
-	"StatusTrackers": {
+	"Statuses": {
 		"Index": true,
 		"Node": true,
 		"Scavenge": true
@@ -40,7 +40,7 @@
 		"DeadlineExceeded": true
 	},
 
-	"GossipTrackers": {
+	"Gossip": {
 		"PullFromPeer": false,
 		"PushToPeer":  true,
 		"ProcessingPushFromPeer": true,
@@ -109,7 +109,7 @@
 		"Length": true,
 		// this is the most expensive metric, creating a histogram for each
 		// queue grouping and message type grouping as defined in the config below
-		"Processing": true
+		"Processing": false
 	},
 
 	// this specifies what name to track each queue under, according to regular expressions to

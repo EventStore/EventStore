@@ -75,7 +75,7 @@ public static class MetricsBootstrapper {
 		if (conf.ExpectedScrapeIntervalSeconds <= 0)
 			return;
 
-		var coreMeter = new Meter("EventStore.Core", version: "0.0.1");
+		var coreMeter = new Meter("EventStore.Core", version: "1.0.0");
 		var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
 		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
 		var latencyMetric = new DurationMetric(coreMeter, "eventstore-latency");
@@ -124,23 +124,23 @@ public static class MetricsBootstrapper {
 		}
 
 		// gossip
-		if (conf.GossipTrackers.Count != 0) {
-			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.PullFromPeer, out var pullFromPeer) && pullFromPeer)
+		if (conf.Gossip.Count != 0) {
+			if (conf.Gossip.TryGetValue(Conf.GossipTracker.PullFromPeer, out var pullFromPeer) && pullFromPeer)
 				trackers.GossipTrackers.PullFromPeer = new DurationTracker(latencyMetric, "pull-gossip-from-peer");
 
-			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.PushToPeer, out var pushToPeer) && pushToPeer)
+			if (conf.Gossip.TryGetValue(Conf.GossipTracker.PushToPeer, out var pushToPeer) && pushToPeer)
 				trackers.GossipTrackers.PushToPeer = new DurationTracker(latencyMetric, "push-gossip-to-peer");
 
-			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingPushFromPeer, out var processingPushFromPeer) && processingPushFromPeer)
+			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingPushFromPeer, out var processingPushFromPeer) && processingPushFromPeer)
 				trackers.GossipTrackers.ProcessingPushFromPeer = new DurationTracker(gossipProcessingMetric, "push-from-peer");
 
-			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingRequestFromPeer, out var processingRequestFromPeer) && processingRequestFromPeer)
+			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingRequestFromPeer, out var processingRequestFromPeer) && processingRequestFromPeer)
 				trackers.GossipTrackers.ProcessingRequestFromPeer = new DurationTracker(gossipProcessingMetric, "request-from-peer");
 
-			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingRequestFromGrpcClient, out var processingRequestFromGrpcClient) && processingRequestFromGrpcClient)
+			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingRequestFromGrpcClient, out var processingRequestFromGrpcClient) && processingRequestFromGrpcClient)
 				trackers.GossipTrackers.ProcessingRequestFromGrpcClient = new DurationTracker(gossipProcessingMetric, "request-from-grpc-client");
 
-			if (conf.GossipTrackers.TryGetValue(Conf.Gossip.ProcessingRequestFromHttpClient, out var processingRequestFromHttpClient) && processingRequestFromHttpClient)
+			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingRequestFromHttpClient, out var processingRequestFromHttpClient) && processingRequestFromHttpClient)
 				trackers.GossipTrackers.ProcessingRequestFromHttpClient = new DurationTracker(gossipProcessingMetric, "request-from-http-client");
 		}
 
@@ -163,17 +163,17 @@ public static class MetricsBootstrapper {
 			}).ToArray());
 
 		// status metrics
-		if (conf.StatusTrackers.Count > 0) {
-			if (conf.StatusTrackers.TryGetValue(Conf.StatusTracker.Node, out var nodeStatus) && nodeStatus) {
+		if (conf.Statuses.Count > 0) {
+			if (conf.Statuses.TryGetValue(Conf.StatusTracker.Node, out var nodeStatus) && nodeStatus) {
 				var tracker = new NodeStatusTracker(statusMetric);
 				trackers.NodeStatusTracker = tracker;
 				trackers.InaugurationStatusTracker = tracker;
 			}
 
-			if (conf.StatusTrackers.TryGetValue(Conf.StatusTracker.Index, out var indexStatus) && indexStatus)
+			if (conf.Statuses.TryGetValue(Conf.StatusTracker.Index, out var indexStatus) && indexStatus)
 				trackers.IndexStatusTracker = new IndexStatusTracker(statusMetric);
 
-			if (conf.StatusTrackers.TryGetValue(Conf.StatusTracker.Scavenge, out var scavengeStatus) && scavengeStatus)
+			if (conf.Statuses.TryGetValue(Conf.StatusTracker.Scavenge, out var scavengeStatus) && scavengeStatus)
 				trackers.ScavengeStatusTracker = new ScavengeStatusTracker(statusMetric);
 		}
 
