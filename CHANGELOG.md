@@ -62,6 +62,7 @@ All notable changes to this project will be documented in this file.
 - context when logging the telemetry config [EventStore#3845](https://github.com/EventStore/EventStore/pull/3845)
 - collect count, size and capacity metrics from DynamicCacheManager [EventStore#3840](https://github.com/EventStore/EventStore/pull/3840)
 - metric for queue busy/idle [EventStore#3841](https://github.com/EventStore/EventStore/pull/3841)
+- Add CG max Execution Engine Suspension duration. [EventStore#3842](https://github.com/EventStore/EventStore/pull/3842)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
@@ -77,6 +78,7 @@ All notable changes to this project will be documented in this file.
 - IO metrics using Counter instrument to ObservableCounter instrument [EventStore#3834](https://github.com/EventStore/EventStore/pull/3834)
 - Use `$GITHUB_OUTPUT` for workflow output. [EventStore#3833](https://github.com/EventStore/EventStore/pull/3833)
 - Use latest `actions/checkout@v3`. [EventStore#3833](https://github.com/EventStore/EventStore/pull/3833)
+- Disable queue processing metrics by default, they add a lot of histograms [EventStore#3850](https://github.com/EventStore/EventStore/pull/3850)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
