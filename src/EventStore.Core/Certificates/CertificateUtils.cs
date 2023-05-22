@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
+using System.Text;
 using EventStore.Core.Exceptions;
 
 namespace EventStore.Core {
@@ -77,7 +78,7 @@ namespace EventStore.Core {
 		public static (X509Certificate2 certificate, X509Certificate2Collection intermediates) LoadFromFile(
 			string certificatePath,
 			string privateKeyPath,
-			string password) {
+			string certificatePassword, string certificatePrivateKeyPassword = null) {
 
 			if (string.IsNullOrEmpty(privateKeyPath)) {
 				// no private key file - assume PKCS12 format
@@ -86,7 +87,7 @@ namespace EventStore.Core {
 				try {
 					if (TryReadPkcs12CertificateBundle(
 						certificatePath,
-						password,
+						certificatePassword,
 						out var nodeCertificate,
 						out var intermediateCertificates)) {
 						return (nodeCertificate, intermediateCertificates);
@@ -96,18 +97,41 @@ namespace EventStore.Core {
 				}
 
 				// if the above attempt failed, try to load the certificate via the standard constructor
-				var certificate = new X509Certificate2(certificatePath, password);
+				var certificate = new X509Certificate2(certificatePath, certificatePassword);
 				if (!certificate.HasPrivateKey)
 					throw new NoCertificatePrivateKeyException();
 				return (certificate, null);
 			}
 
-			var privateKey = Convert.FromBase64String(string.Join(string.Empty, File.ReadAllLines(privateKeyPath)
-				.Skip(1)
-				.SkipLast(1)));
+			string[] allLines = File.ReadAllLines(privateKeyPath);
+			var header = allLines[0].Replace("-", "");
+			var privateKey = Convert.FromBase64String(string.Join(string.Empty, allLines.Skip(1).SkipLast(1)));
 
 			using var rsa = RSA.Create();
-			rsa.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
+			switch (header) {
+				case "BEGIN PRIVATE KEY":
+					rsa.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
+					break;
+				case "BEGIN RSA PRIVATE KEY":
+					rsa.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
+					break;
+				case "BEGIN ENCRYPTED PRIVATE KEY":
+					if (certificatePrivateKeyPassword is null) {
+						throw new ArgumentException(
+							"A password is required to read the certificate's private key file.");
+					}
+					try {
+						rsa.ImportEncryptedPkcs8PrivateKey(new ReadOnlySpan<byte>(Encoding.UTF8.GetBytes(certificatePrivateKeyPassword)), new ReadOnlySpan<byte>(privateKey), out _);
+					} catch (CryptographicException e) {
+						throw new ArgumentException(
+							"Failed to read the certificate's private key file. The password may be incorrect or the private key may not be an RSA key.", e);
+					}
+					break;
+				default:
+					throw new NotSupportedException($"Unsupported private key file format: {header}");
+					
+			}
+			
 
 			// assume it's a PEM bundle
 			var certificateBundle = new X509Certificate2Collection();
@@ -121,7 +145,7 @@ namespace EventStore.Core {
 
 			if (!bundleLoadSucceeded || certificateBundle.Count == 0) {
 				// make a last attempt to open the certificate, leaving the file format guess-work to the library
-				certificateBundle.Add(new X509Certificate2(certificatePath, password));
+				certificateBundle.Add(new X509Certificate2(certificatePath, certificatePassword));
 			}
 
 			using var publicCertificate = certificateBundle[0];

@@ -270,9 +270,14 @@ namespace EventStore.Core {
 			[Description("The password to the certificate if a PKCS #12 (.p12/.pfx) certificate file is provided."),
 			 Sensitive]
 			public string? CertificatePassword { get; init; }
+			
+			[Description("The password to the certificate private key file if an encrypted PKCS #8 private key file is provided."),
+			 Sensitive]
+			public string? CertificatePrivateKeyPassword { get; init; }
 
 			public static CertificateFileOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				CertificatePassword = configurationRoot.GetValue<string>(nameof(CertificatePassword)),
+				CertificatePrivateKeyPassword = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyPassword)),
 				CertificatePrivateKeyFile = configurationRoot.GetValue<string>(nameof(CertificatePrivateKeyFile)),
 				CertificateFile = configurationRoot.GetValue<string>(nameof(CertificateFile))
 			};

@@ -37,7 +37,7 @@ namespace EventStore.Core.Tests.Certificates {
 
 			using var wrongKey = RSA.Create();
 			File.WriteAllBytes(_certPath, _leaf.Export(X509ContentType.Cert));
-			File.WriteAllText(_keyPath, wrongKey.ExportRSAPrivateKey().PEM("PRIVATE KEY"));
+			File.WriteAllText(_keyPath, wrongKey.ExportRSAPrivateKey().PEM("RSA PRIVATE KEY"));
 		}
 
 		[Test]
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Certificates {
 
 			using var wrongKey = RSA.Create();
 			File.WriteAllText(_certPath, _leaf.Export(X509ContentType.Cert).PEM("CERTIFICATE"));
-			File.WriteAllText(_keyPath, wrongKey.ExportRSAPrivateKey().PEM("PRIVATE KEY"));
+			File.WriteAllText(_keyPath, wrongKey.ExportRSAPrivateKey().PEM("RSA PRIVATE KEY"));
 		}
 
 		[Test]
@@ -102,6 +102,51 @@ namespace EventStore.Core.Tests.Certificates {
 		[Test]
 		public void can_load_certificate() {
 			var (certificate, intermediates) = CertificateUtils.LoadFromFile(_certPath, null, Password);
+			Assert.AreEqual(_leaf, certificate);
+			Assert.IsNull(intermediates);
+			Assert.True(certificate.HasPrivateKey);
+		}
+	}
+	
+	public class with_passwordless_pkcs8_private_key : with_certificate_chain_of_length_1 {
+		private string _certPath;
+		private string _privateKeyPath;
+
+		[SetUp]
+		public void Setup() {
+			_certPath = $"{PathName}/leaf.pem";
+			File.WriteAllText(_certPath, _leaf.Export(X509ContentType.Cert).PEM("CERTIFICATE"));
+			
+			_privateKeyPath = $"{PathName}/leaf.p8";
+			File.WriteAllText(_privateKeyPath, _leaf.PemPkcs8PrivateKey());
+		}
+
+		[Test]
+		public void can_load_certificate_and_private_key() {
+			var (certificate, intermediates) = CertificateUtils.LoadFromFile(_certPath, _privateKeyPath, null);
+			Assert.AreEqual(_leaf, certificate);
+			Assert.IsNull(intermediates);
+			Assert.True(certificate.HasPrivateKey);
+		}
+	}
+	
+	public class with_password_protected_pkcs8_private_key : with_certificate_chain_of_length_1 {
+		private string _certPath;
+		private string _privateKeyPath;
+		private const string Password = "test$1234";
+
+		[SetUp]
+		public void Setup() {
+			_certPath = $"{PathName}/leaf.pem";
+			File.WriteAllText(_certPath, _leaf.Export(X509ContentType.Cert).PEM("CERTIFICATE"));
+			
+			_privateKeyPath = $"{PathName}/leaf.p8";
+			File.WriteAllText(_privateKeyPath, _leaf.EncryptedPemPkcs8PrivateKey(Password));
+		}
+
+		[Test]
+		public void can_load_certificate() {
+			var (certificate, intermediates) = CertificateUtils.LoadFromFile(_certPath, _privateKeyPath, null, Password);
 			Assert.AreEqual(_leaf, certificate);
 			Assert.IsNull(intermediates);
 			Assert.True(certificate.HasPrivateKey);
@@ -192,7 +237,7 @@ namespace EventStore.Core.Tests.Certificates {
 
 			using var wrongKey = RSA.Create();
 			File.WriteAllText(_certPath, leaf + intermediate);
-			File.WriteAllText(_keyPath, wrongKey.ExportRSAPrivateKey().PEM("PRIVATE KEY"));
+			File.WriteAllText(_keyPath, wrongKey.ExportRSAPrivateKey().PEM("RSA PRIVATE KEY"));
 		}
 
 		[Test]
