@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - When multiple projection write requests arrive within short-period (create-create, create-delete, delete-create, delete-delete), projection manager used to pick same expected version number for both write requests which caused WrongExpectedVersion error for one of the request [EventStore#3817](https://github.com/EventStore/EventStore/pull/3817)
 - add an error message when user performs an CRUD operation to $all stream using HTTP API [EventStore#3830](https://github.com/EventStore/EventStore/pull/3830)
 - Log more readable error message in the server logs when the SSL handshakes fail. [EventStore#3832](https://github.com/EventStore/EventStore/pull/3832)
+- Update log level to Warning if allowUnknownOptions sets to true [EventStore#3848](https://github.com/EventStore/EventStore/pull/3848)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
