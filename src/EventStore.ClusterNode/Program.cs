@@ -96,8 +96,7 @@ namespace EventStore.ClusterNode {
 				if (options.Unknown.Options.Any() && !options.Application.AllowUnknownOptions) {
 					Log.Fatal(
 						$"Found unknown options. To continue anyway, set {nameof(ClusterVNodeOptions.ApplicationOptions.AllowUnknownOptions)} to true.");
-					Log.Information($"Options:{Environment.NewLine}{ClusterVNodeOptions.HelpText}");
-
+					Log.Information("Use the --help option in the command line to see the full list of EventStoreDB configuration options.");
 					return 1;
 				}
 
