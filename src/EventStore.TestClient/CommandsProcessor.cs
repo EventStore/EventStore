@@ -55,8 +55,11 @@ namespace EventStore.TestClient {
 						exitC = context.ExitCode;
 					} else {
 						exitC = 1;
-						_log.Information("Usage of {command}:{newLine}{usage}", commandName, Environment.NewLine,
-							commandProcessor.Usage);
+						_log.Information("Usage of {command}:", commandName);
+						
+						foreach (var s in commandProcessor.Usage.Split("\n")) {
+							_log.Information("    {usage}", s);
+						}
 					}
 
 					executedEvent.Set();

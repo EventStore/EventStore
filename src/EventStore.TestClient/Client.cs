@@ -77,6 +77,7 @@ namespace EventStore.TestClient {
 			_commands.Register(new SubscriptionStressTestProcessor());
 
 			// gRPC
+			_commands.Register(new GrpcCommands.ReadAllProcessor());
 			_commands.Register(new GrpcCommands.WriteFloodProcessor());
 
 			// TCP Client API

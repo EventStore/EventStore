@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using EventStore.ClientAPI.Exceptions;
 using EventStore.Core.Services.Transport.Tcp;
 using EventStore.TestClient.Commands.RunTestScenarios;
 using EventStore.Transport.Tcp;
@@ -16,7 +15,7 @@ namespace EventStore.TestClient.Commands {
 		private const string AllScenariosFlag = "ALL";
 
 		public string Keyword {
-			get { return string.Format("RT"); }
+			get { return "RT"; }
 		}
 
 		public string Usage {

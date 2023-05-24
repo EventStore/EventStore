@@ -84,20 +84,7 @@ namespace EventStore.TestClient.Commands {
 						return;
 					}
 
-					var sb = new StringBuilder();
-					for (int i = 0; i < dto.Events.Count; ++i) {
-						var evnt = dto.Events[i].Event;
-						sb.AppendFormat(
-							"\n{0}:\tStreamId: {1},\n\tEventNumber: {2},\n\tData:\n{3},\n\tEventType: {4}\n",
-							total,
-							evnt.EventStreamId,
-							evnt.EventNumber,
-							Helper.UTF8NoBom.GetString(evnt.Data.ToByteArray()),
-							evnt.EventType);
-						total += 1;
-					}
-
-					context.Log.Information("Next {count} events read:\n{events}", dto.Events.Count, sb.ToString());
+					total += dto.Events.Count;
 
 					var readDto = new ReadAllEvents(dto.NextCommitPosition, dto.NextPreparePosition,
 						10, resolveLinkTos, requireLeader);

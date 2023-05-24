@@ -97,7 +97,6 @@ namespace EventStore.TestClient.Commands {
 						}
 
 						if (localAll == requestsCnt) {
-							context.Success();
 							doneEvent.Set();
 						}
 					},
@@ -126,6 +125,8 @@ namespace EventStore.TestClient.Commands {
 							Thread.Sleep(1);
 						}
 					}
+					context.Log.Information("Reader #{clientNum} done", clientNum);
+					
 				}) {IsBackground = true});
 			}
 

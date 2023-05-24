@@ -1,4 +1,5 @@
-﻿using EventStore.Client;
+﻿using System;
+using EventStore.Client;
 using Connection = EventStore.Transport.Tcp.TcpTypedConnection<byte[]>;
 using ILogger = Serilog.ILogger;
 
@@ -25,12 +26,22 @@ namespace EventStore.TestClient {
 		/// </summary>
 		/// <returns></returns>
 		public EventStoreClient CreateGrpcClient() {
-			var connectionString = string.IsNullOrWhiteSpace(_options.ConnectionString)
-				? $"esdb://{_options.Host}:{_options.HttpPort}?tls={_options.UseTls}&tlsVerifyCert={_options.TlsValidateServer}"
-				: _options.ConnectionString;
-			_log.Debug("Creating gRPC client with connection string '{connectionString}'.", connectionString);
-			var settings = EventStoreClientSettings.Create(connectionString);
-			return new EventStoreClient(settings);
+			_log.Debug("Creating gRPC client with connection string '{connectionString}'.", ConnectionString);
+			return new EventStoreClient(Settings);
 		}
+
+		/// <summary>
+		/// True in case username and/or password are not specified.
+		/// </summary>
+		public bool AreCredentialsMissing =>
+			string.IsNullOrWhiteSpace(Settings.DefaultCredentials?.Username) ||
+			string.IsNullOrWhiteSpace(Settings.DefaultCredentials?.Password);
+
+		private EventStoreClientSettings Settings => EventStoreClientSettings.Create(ConnectionString);
+		
+		private string ConnectionString => string.IsNullOrWhiteSpace(_options.ConnectionString)
+			? $"esdb://{_options.Host}:{_options.HttpPort}?tls={_options.UseTls}&tlsVerifyCert={_options.TlsValidateServer}"
+			: _options.ConnectionString;
+		
 	}
 }
