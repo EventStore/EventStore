@@ -26,6 +26,8 @@ All notable changes to this project will be documented in this file.
 - add an error message when user performs an CRUD operation to $all stream using HTTP API [EventStore#3830](https://github.com/EventStore/EventStore/pull/3830)
 - Log more readable error message in the server logs when the SSL handshakes fail. [EventStore#3832](https://github.com/EventStore/EventStore/pull/3832)
 - Update log level to Warning if allowUnknownOptions sets to true [EventStore#3848](https://github.com/EventStore/EventStore/pull/3848)
+- Remove options dump from server logs incase the config is incorrect [EventStore#3847](https://github.com/EventStore/EventStore/pull/3847)
+- Only call `context.Success()` once to prevent early exit of command. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -64,6 +66,7 @@ All notable changes to this project will be documented in this file.
 - collect count, size and capacity metrics from DynamicCacheManager [EventStore#3840](https://github.com/EventStore/EventStore/pull/3840)
 - metric for queue busy/idle [EventStore#3841](https://github.com/EventStore/EventStore/pull/3841)
 - Add CG max Execution Engine Suspension duration. [EventStore#3842](https://github.com/EventStore/EventStore/pull/3842)
+- Read $all command `RDALLGRPC`. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
@@ -85,6 +88,7 @@ All notable changes to this project will be documented in this file.
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
 - some redundant code [EventStore#3709](https://github.com/EventStore/EventStore/pull/3709)
 - Cleanup V8 scripts. [EventStore#3740](https://github.com/EventStore/EventStore/pull/3740)
+- Some logging to prevent flooding of console/logs. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
 
 ### Cherry picked from https
 - //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3755](https://github.com/EventStore/EventStore/pull/3755)
