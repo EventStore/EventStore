@@ -455,7 +455,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			string reason) {
 			lock (_lock) {
 				foreach (var id in processedEventIds) {
-					Log.Information("Message NAK'ed id {id} action to take {action} reason '{reason}'", id, action,
+					Log.Verbose("Message NAK'ed id {id} action to take {action} reason '{reason}'", id, action,
 						reason ?? "");
 					HandleNackedMessage(action, id, reason);
 				}
