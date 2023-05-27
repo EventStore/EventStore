@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - Update log level to Warning if allowUnknownOptions sets to true [EventStore#3848](https://github.com/EventStore/EventStore/pull/3848)
 - Remove options dump from server logs incase the config is incorrect [EventStore#3847](https://github.com/EventStore/EventStore/pull/3847)
 - Only call `context.Success()` once to prevent early exit of command. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
+- Improved log message for connectivity problem between nodes [EventStore#3839](https://github.com/EventStore/EventStore/pull/3839)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
