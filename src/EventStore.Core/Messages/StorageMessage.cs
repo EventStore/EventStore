@@ -7,6 +7,8 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messaging;
 using EventStore.Core.TransactionLog.LogRecords;
+using EventStore.LogV3;
+using EventRecord = EventStore.Core.Data.EventRecord;
 
 namespace EventStore.Core.Messages {
 	public static partial class StorageMessage {

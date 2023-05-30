@@ -54,6 +54,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				_semaphore = new SemaphoreSlim(1, 1);
 				_channel = Channel.CreateBounded<ReadResp>(BoundedChannelOptions);
 
+				if (_streamName == "$logs") {
+					startRevision = StreamRevision.End;
+				}
+
 				ReadPage(startRevision);
 			}
 

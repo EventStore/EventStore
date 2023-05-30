@@ -25,6 +25,7 @@ namespace EventStore.Common.Log {
 
 		public static readonly Logger ConsoleLog = StandardLoggerConfiguration
 			.WriteTo.Console(outputTemplate: ConsoleOutputTemplate)
+			.WriteTo.Sink(LogPublisher.Instance)
 			.CreateLogger();
 
 		private static readonly Func<LogEvent, bool> RegularStats = Matching.FromSource("REGULAR-STATS-LOGGER");

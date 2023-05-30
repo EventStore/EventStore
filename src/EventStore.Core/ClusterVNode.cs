@@ -457,8 +457,11 @@ namespace EventStore.Core {
 			var isSingleNode = options.Cluster.ClusterSize == 1;
 			_disableHttps = options.Application.Insecure;
 			_enableUnixSocket = options.Interface.EnableUnixSocket;
-			_mainBus = new InMemoryBus("MainBus");
+			IBus _inMemoryBus = new InMemoryBus("MainBus");
+			_mainBus = _inMemoryBus;
 			_queueStatsManager = new QueueStatsManager();
+
+			LogPublisher.Instance.Register(new LogsStreamPublisher(_inMemoryBus));
 
 			_certificateSelector = () => _certificateProvider?.Certificate;
 			_trustedRootCertsSelector = () => _certificateProvider?.TrustedRootCerts;

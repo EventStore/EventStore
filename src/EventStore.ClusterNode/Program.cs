@@ -23,6 +23,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using System.Runtime;
 using EventStore.Common.DevCertificates;
+using Microsoft.Extensions.Logging;
 using Serilog.Events;
 
 namespace EventStore.ClusterNode {

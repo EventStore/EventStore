@@ -265,7 +265,8 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(StorageMessage.EventCommitted message) {
-			_lastSeenCommitPosition = message.CommitPosition;
+			if (message.CommitPosition != -1)
+				_lastSeenCommitPosition = message.CommitPosition;
 
 			var resolvedEvent =
 				ProcessEventCommited(AllStreamsSubscriptionId, message.CommitPosition, message.Event, null);
