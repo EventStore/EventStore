@@ -13,9 +13,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Rec.TransSt(1, "transaction_stream_id"),
 				Rec.Prepare(1, "transaction_stream_id"),
 				Rec.TransEnd(1, "transaction_stream_id"),
-				Rec.Prepare(2, "single_write_stream_id_2", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(4, "single_write_stream_id_4", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted));
+				Rec.Prepare(2, "single_write_stream_id_2", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted),
+				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted),
+				Rec.Prepare(4, "single_write_stream_id_4", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted));
 
 			var firstRead = ReadIndex.ReadAllEventsForward(new Data.TFPos(0, 0), 10);
 
@@ -30,9 +30,9 @@ namespace EventStore.Core.Tests.Services.Storage.AllReader {
 				Rec.TransSt(1, "transaction_stream_id"),
 				Rec.Prepare(1, "transaction_stream_id"),
 				Rec.TransEnd(1, "transaction_stream_id"),
-				Rec.Prepare(2, "single_write_stream_id_2", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
-				Rec.Prepare(4, "single_write_stream_id_4", prepareFlags: PrepareFlags.Data | PrepareFlags.IsCommitted),
+				Rec.Prepare(2, "single_write_stream_id_2", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted),
+				Rec.Prepare(3, "single_write_stream_id_3", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted),
+				Rec.Prepare(4, "single_write_stream_id_4", prepareFlags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted),
 				Rec.Commit(1, "transaction_stream_id"));
 
 			var transactionRead = ReadIndex.ReadAllEventsForward(firstRead.NextPos, 10);

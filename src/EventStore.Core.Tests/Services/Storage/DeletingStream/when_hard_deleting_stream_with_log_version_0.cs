@@ -21,7 +21,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 
 		private void WriteV0HardDelete(string eventStreamId) {
 			long pos;
-			var logPosition = WriterCheckpoint.ReadNonFlushed();
+			var logPosition = Writer.Position;
 			var prepare = new PrepareLogRecord(logPosition, Guid.NewGuid(), Guid.NewGuid(), logPosition, 0,
 				eventStreamId,
 				int.MaxValue - 1, DateTime.UtcNow,
@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				prepareRecordVersion: LogRecordVersion.LogRecordV0);
 			Writer.Write(prepare, out pos);
 
-			var commit = new CommitLogRecord(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId,
+			var commit = new CommitLogRecord(pos, prepare.CorrelationId,
 				prepare.LogPosition, DateTime.UtcNow, int.MaxValue,
 				commitRecordVersion: LogRecordVersion.LogRecordV0);
 			Writer.Write(commit, out pos);

@@ -19,24 +19,24 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		protected override void WriteTestScenario() {
 			// Stream that will be kept
-			_event1 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, WriterCheckpoint.ReadNonFlushed(),
+			_event1 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
 				0);
-			_event2 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, WriterCheckpoint.ReadNonFlushed(),
+			_event2 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
 				1);
 
 			// Stream that will be deleted
-			WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, WriterCheckpoint.ReadNonFlushed(),
+			WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, Writer.Position,
 				0);
-			WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, WriterCheckpoint.ReadNonFlushed(),
+			WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId, Writer.Position,
 				1);
 			_deleted = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _deletedEventStreamId,
-				WriterCheckpoint.ReadNonFlushed(), int.MaxValue - 1,
+				Writer.Position, int.MaxValue - 1,
 				PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd);
 
 			// Stream that will be kept
-			_event3 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, WriterCheckpoint.ReadNonFlushed(),
+			_event3 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
 				2);
-			_event4 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, WriterCheckpoint.ReadNonFlushed(),
+			_event4 = WriteSingleEventWithLogVersion0(Guid.NewGuid(), _eventStreamId, Writer.Position,
 				3);
 
 			Writer.CompleteChunk();

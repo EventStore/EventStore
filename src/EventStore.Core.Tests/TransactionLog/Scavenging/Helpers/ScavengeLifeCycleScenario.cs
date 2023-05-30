@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				.Chunk().CompleteLastChunk()
 				.Chunk().CompleteLastChunk()
 				.Chunk()
-				.CreateDb();
+				.CreateDb(commit: true);
 
 			_dbResult.Db.Config.WriterCheckpoint.Flush();
 			_dbResult.Db.Config.ChaserCheckpoint.Write(_dbResult.Db.Config.WriterCheckpoint.Read());

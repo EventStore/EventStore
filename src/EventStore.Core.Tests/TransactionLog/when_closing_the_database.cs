@@ -72,7 +72,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 			var writer = new TFChunkWriter(_db);
 			Assert.IsTrue(writer.Write(CreateRecord(), out _));
-			_db.Config.ChaserCheckpoint.Write(_db.Config.WriterCheckpoint.ReadNonFlushed());
+
+			_db.Config.ChaserCheckpoint.Write(1); // any non-zero value just to test if the checkpoint is flushed
 
 			_db.Close();
 

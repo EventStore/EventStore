@@ -179,7 +179,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected abstract void WriteTestScenario();
 
 		protected void GetOrReserve(string eventStreamName, out TStreamId eventStreamId, out long newPos) {
-			newPos = WriterCheckpoint.ReadNonFlushed();
+			newPos = Writer.Position;
 			_streamNameIndex.GetOrReserve(_logFormat.RecordFactory, eventStreamName, newPos, out eventStreamId, out var streamRecord);
 			if (streamRecord != null) {
 				Writer.Write(streamRecord, out newPos);
@@ -187,7 +187,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 		
 		protected void GetOrReserveEventType(string eventType, out TStreamId eventTypeId, out long newPos) {
-			newPos = WriterCheckpoint.ReadNonFlushed();
+			newPos = Writer.Position;
 			_eventTypeIndex.GetOrReserveEventType(_logFormat.RecordFactory, eventType, newPos, out eventTypeId, out var eventTypeRecord);
 			if (eventTypeRecord != null) {
 				Writer.Write(eventTypeRecord, out newPos);
@@ -234,7 +234,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 
 			
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
+			var commit = LogRecord.Commit(Writer.Position, prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
 			if (!retryOnFail) {
 				Assert.IsTrue(Writer.Write(commit, out pos));
@@ -254,6 +254,66 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return eventRecord;
 		}
 
+		protected EventRecord[] WriteEvents(string streamName, long startEventNumber, Event[] events, DateTime? timestamp = null) {
+			GetOrReserve(streamName, out var eventStreamId, out var pos);
+
+			var eventTypeIds = new List<TStreamId>();
+			for (var i = 0; i < events.Length; i++) {
+				GetOrReserveEventType(events[i].EventType, out var eventTypeId, out pos);
+				eventTypeIds.Add(eventTypeId);
+			}
+
+			Writer.OpenTransaction();
+
+			var eventRecords = new List<EventRecord>();
+			for (var i = 0; i < events.Length; i++) {
+				var curEvent = events[i];
+
+				var flags = PrepareFlags.IsCommitted | PrepareFlags.Data;
+				if (curEvent.IsJson)
+					flags |= PrepareFlags.IsJson;
+
+				if (i == 0)
+					flags |= PrepareFlags.TransactionBegin;
+
+				if (i == events.Length - 1)
+					flags |= PrepareFlags.TransactionEnd;
+
+				var eventNumber = startEventNumber + i;
+
+				var prepare = LogRecord.Prepare(
+					factory: _recordFactory,
+					logPosition: pos,
+					correlationId: Guid.NewGuid(),
+					eventId: curEvent.EventId,
+					transactionPos: pos,
+					transactionOffset: i,
+					eventStreamId: eventStreamId,
+					expectedVersion: eventNumber - 1,
+					flags: flags,
+					eventType: eventTypeIds[i],
+					data: curEvent.Data,
+					metadata: curEvent.Metadata,
+					timeStamp: timestamp ?? DateTime.UtcNow);
+
+				var firstPos = prepare.LogPosition;
+				if (!Writer.WriteToTransaction(prepare, out pos)) {
+					prepare = prepare.CopyForRetry(
+						logPosition: pos,
+						transactionPosition: pos);
+
+					if (!Writer.WriteToTransaction(prepare, out pos))
+						Assert.Fail($"Second write failed when first writing prepare at {firstPos}, then at {prepare.LogPosition}.");
+				}
+
+				eventRecords.Add(new EventRecord(eventNumber, prepare, streamName, curEvent.EventType));
+			}
+
+			Writer.CommitTransaction();
+
+			return eventRecords.ToArray();
+		}
+
 		protected EventRecord WriteStreamMetadata(string eventStreamName, long eventNumber, string metadata,
 			DateTime? timestamp = null) {
 			GetOrReserve(SystemStreams.MetastreamOf(eventStreamName), out var eventStreamId, out var pos);
@@ -270,7 +330,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 				PrepareFlags.IsJson);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), prepare.CorrelationId, prepare.LogPosition,
+			var commit = LogRecord.Commit(Writer.Position, prepare.CorrelationId, prepare.LogPosition,
 				eventNumber);
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			Assert.AreEqual(eventStreamId, prepare.EventStreamId);
@@ -287,7 +347,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var prepare = LogRecord.Prepare(_recordFactory, pos,
 				Guid.NewGuid(),
 				Guid.NewGuid(),
-				WriterCheckpoint.ReadNonFlushed(),
+				Writer.Position,
 				0,
 				eventStreamId,
 				expectedVersion,
@@ -369,7 +429,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		protected IPrepareLogRecord<TStreamId> WriteTransactionEnd(Guid correlationId, long transactionId, TStreamId eventStreamId) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			var prepare = LogRecord.TransactionEnd(_recordFactory, WriterCheckpoint.ReadNonFlushed(),
+			var prepare = LogRecord.TransactionEnd(_recordFactory, Writer.Position,
 				correlationId,
 				Guid.NewGuid(),
 				transactionId,
@@ -404,7 +464,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		protected CommitLogRecord WriteCommit(long preparePos, string eventStreamName, long eventNumber) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), Guid.NewGuid(), preparePos, eventNumber);
+			var commit = LogRecord.Commit(Writer.Position, Guid.NewGuid(), preparePos, eventNumber);
 			long pos;
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			return commit;
@@ -418,7 +478,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 
 		protected long WriteCommit(Guid correlationId, long transactionId, TStreamId eventStreamId, long eventNumber) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(), correlationId, transactionId, eventNumber);
+			var commit = LogRecord.Commit(Writer.Position, correlationId, transactionId, eventNumber);
 			long pos;
 			Assert.IsTrue(Writer.Write(commit, out pos));
 			return commit.LogPosition;
@@ -430,7 +490,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
 				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, EventNumber.DeletedStream - 1);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
+			var commit = LogRecord.Commit(Writer.Position,
 				prepare.CorrelationId,
 				prepare.LogPosition,
 				EventNumber.DeletedStream);
@@ -453,7 +513,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected CommitLogRecord WriteDeleteCommit(IPrepareLogRecord prepare) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 			long pos;
-			var commit = LogRecord.Commit(WriterCheckpoint.ReadNonFlushed(),
+			var commit = LogRecord.Commit(Writer.Position,
 				prepare.CorrelationId,
 				prepare.LogPosition,
 				EventNumber.DeletedStream);

@@ -142,8 +142,10 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 	}
 	
 	class FakeWriter: ITransactionFileWriter {
+		public long Position { get; }
+		public long FlushedPosition { get; }
+
 		public FakeWriter() {
-			Checkpoint = new InMemoryCheckpoint();
 			WrittenRecords = new List<ILogRecord>();
 		}
 		
@@ -158,13 +160,20 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 			return true;
 		}
 
+		public void OpenTransaction() => throw new NotImplementedException();
+
+		public bool WriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
+
+		public void CommitTransaction() => throw new NotImplementedException();
+
+		public bool HasOpenTransaction() => throw new NotImplementedException();
+
 		public void Flush() {
 			IsFlushed = true;
 		}
+
 		public void Close() {}
 
-		public ICheckpoint Checkpoint { get; }
-		
 		public void Dispose() {}
 	}
 	

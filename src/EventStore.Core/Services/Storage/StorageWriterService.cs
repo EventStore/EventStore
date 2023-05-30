@@ -241,7 +241,10 @@ namespace EventStore.Core.Services.Storage {
 				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
-			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed()) {
+			if (Writer.HasOpenTransaction())
+				throw new InvalidOperationException("Writer has an open transaction.");
+
+			if (Writer.FlushedPosition != Writer.Position) {
 				Writer.Flush();
 				Bus.Publish(new ReplicationTrackingMessage.WriterCheckpointFlushed());
 			}
@@ -270,7 +273,7 @@ namespace EventStore.Core.Services.Storage {
 				if (msg.CancellationToken.IsCancellationRequested)
 					return;
 
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				var logPosition = Writer.Position;
 
 				var preExisting = _streamNameIndex.GetOrReserve(
 					recordFactory: _recordFactory,
@@ -293,13 +296,15 @@ namespace EventStore.Core.Services.Storage {
 
 				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 				if (msg.Events.Length > 0) {
+					OpenTransaction();
+
 					// get/write the eventtypes first because they go in a different stream
 					var eventTypes = new TStreamId[msg.Events.Length]; // todo: pool
 					for (int i = 0; i < msg.Events.Length; ++i) {
 						var evnt = msg.Events[i];
-						eventTypes[i] = GetOrWriteEventType(evnt.EventType, ref logPosition);
+						eventTypes[i] = GetOrWriteEventType(evnt.EventType, ref logPosition, inTransaction: true);
 					}
-					
+
 					var transactionPosition = logPosition;
 					for (int i = 0; i < msg.Events.Length; ++i) {
 						var evnt = msg.Events[i];
@@ -316,13 +321,16 @@ namespace EventStore.Core.Services.Storage {
 						var res = WritePrepareWithRetry(
 							LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, evnt.EventId,
 								transactionPosition, i, streamId,
-								expectedVersion, flags, eventTypes[i], evnt.Data, evnt.Metadata));
+								expectedVersion, flags, eventTypes[i], evnt.Data, evnt.Metadata),
+							inTransaction: true);
 						logPosition = res.NewPos;
 						if (i == 0)
 							transactionPosition = res.WrittenPos;
 						// transaction position could be changed due to switching to new chunk
 						prepares.Add(res.Prepare);
 					}
+
+					CommitTransaction();
 				} else {
 					WritePrepareWithRetry(
 						LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, Guid.NewGuid(), logPosition, -1,
@@ -348,7 +356,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private TStreamId GetOrWriteEventType(string eventType, ref long logPosition) {
+		private TStreamId GetOrWriteEventType(string eventType, ref long logPosition, bool inTransaction = false) {
 			_eventTypeIndex.GetOrReserveEventType(
 				recordFactory: _recordFactory,
 				eventType: eventType,
@@ -358,7 +366,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (eventTypeRecord != null)
 			{
-				var result = WritePrepareWithRetry(eventTypeRecord);
+				var result = WritePrepareWithRetry(eventTypeRecord, inTransaction);
 				logPosition = result.NewPos;
 			}
 			
@@ -382,7 +390,7 @@ namespace EventStore.Core.Services.Storage {
 			if (!SoftUndeleteRawMeta(rawMeta, recreateFrom, out modifiedMeta))
 				return;
 
-			var logPosition = Writer.Checkpoint.ReadNonFlushed();
+			var logPosition = Writer.Position;
 			var streamMetadataEventTypeId = GetOrWriteEventType(SystemEventTypes.StreamMetadata, ref logPosition);
 
 			var res = WritePrepareWithRetry(
@@ -420,7 +428,7 @@ namespace EventStore.Core.Services.Storage {
 
 				var eventId = Guid.NewGuid();
 
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
+				var logPosition = Writer.Position;
 
 				var preExisting = _streamNameIndex.GetOrReserve(
 					recordFactory: _recordFactory,
@@ -489,7 +497,7 @@ namespace EventStore.Core.Services.Storage {
 					return;
 
 				var streamId = _indexWriter.GetStreamId(message.EventStreamId);
-				var record = LogRecord.TransactionBegin(_recordFactory, Writer.Checkpoint.ReadNonFlushed(),
+				var record = LogRecord.TransactionBegin(_recordFactory, Writer.Position,
 					message.CorrelationId,
 					streamId,
 					message.ExpectedVersion);
@@ -509,8 +517,8 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<StorageMessage.WriteTransactionData>.Handle(StorageMessage.WriteTransactionData message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
-				var logPosition = Writer.Checkpoint.ReadNonFlushed();
-				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+				var logPosition = Writer.Position;
+				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.FlushedPosition, message.TransactionId);
 				if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
 					return;
 
@@ -555,11 +563,11 @@ namespace EventStore.Core.Services.Storage {
 				if (message.LiveUntil < DateTime.UtcNow)
 					return;
 
-				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.Checkpoint.Read(), message.TransactionId);
+				var transactionInfo = _indexWriter.GetTransactionInfo(Writer.FlushedPosition, message.TransactionId);
 				if (!CheckTransactionInfo(message.TransactionId, transactionInfo))
 					return;
 
-				var record = LogRecord.TransactionEnd(_recordFactory, Writer.Checkpoint.ReadNonFlushed(),
+				var record = LogRecord.TransactionEnd(_recordFactory, Writer.Position,
 					message.CorrelationId,
 					Guid.NewGuid(),
 					message.TransactionId,
@@ -591,7 +599,7 @@ namespace EventStore.Core.Services.Storage {
 		void IHandle<StorageMessage.WriteCommit>.Handle(StorageMessage.WriteCommit message) {
 			Interlocked.Decrement(ref FlushMessagesInQueue);
 			try {
-				var commitPos = Writer.Checkpoint.ReadNonFlushed();
+				var commitPos = Writer.Position;
 				var commitCheck = _indexWriter.CheckCommitStartingAt(message.TransactionPosition, commitPos);
 				if (commitCheck.Decision != CommitDecision.Ok) {
 					ActOnCommitCheckFailure(message.Envelope, message.CorrelationId, commitCheck);
@@ -657,11 +665,25 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private WriteResult WritePrepareWithRetry(IPrepareLogRecord<TStreamId> prepare) {
+		private bool WritePrepare(ILogRecord prepare, bool inTransaction, out long newPos) {
+			return inTransaction ? Writer.WriteToTransaction(prepare, out newPos) : Writer.Write(prepare, out newPos);
+		}
+
+		private void CompleteChunk(bool inTransaction, out long newPos) {
+			if (inTransaction)
+				Writer.CompleteChunkInTransaction();
+			else
+				Writer.CompleteChunk();
+
+			newPos = Writer.Position;
+		}
+
+		private WriteResult WritePrepareWithRetry(IPrepareLogRecord<TStreamId> prepare, bool inTransaction = false) {
 			long writtenPos = prepare.LogPosition;
 			long newPos;
 			var record = prepare;
-			if (!Writer.Write(prepare, out newPos)) {
+
+			if (!WritePrepare(prepare, inTransaction, out newPos)) {
 				var transactionPos = prepare.TransactionPosition == prepare.LogPosition
 					? newPos
 					: prepare.TransactionPosition;
@@ -671,7 +693,7 @@ namespace EventStore.Core.Services.Storage {
 					transactionPosition: transactionPos);
 
 				writtenPos = newPos;
-				if (!Writer.Write(record, out newPos)) {
+				if (!WritePrepare(record, inTransaction, out newPos)) {
 					throw new Exception(
 						string.Format("Second write try failed when first writing prepare at {0}, then at {1}.",
 							prepare.LogPosition,
@@ -681,9 +703,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId) &&
 				StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
-
-				Writer.CompleteChunk();
-				newPos = Writer.Checkpoint.ReadNonFlushed();
+				CompleteChunk(inTransaction, out newPos);
 			}
 
 			return new WriteResult(writtenPos, newPos, record);
@@ -714,10 +734,18 @@ namespace EventStore.Core.Services.Storage {
 			return commit;
 		}
 
+		protected void OpenTransaction() {
+			Writer.OpenTransaction();
+		}
+
+		protected void CommitTransaction() {
+			Writer.CommitTransaction();
+		}
+
 		protected bool Flush(bool force = false) {
 			var start = _clock.Now;
 			if (force || FlushMessagesInQueue == 0 || start.ElapsedTicksSince(_lastFlushTimestamp) >= _lastFlushDelay + _minFlushDelay) {
-				var flushSize = Writer.Checkpoint.ReadNonFlushed() - Writer.Checkpoint.Read();
+				var flushSize = Writer.Position - Writer.FlushedPosition;
 
 				Writer.Flush();
 
