@@ -284,7 +284,7 @@ namespace EventStore.Core {
 				? options.Interface.ExtTcpPortAdvertiseAs
 				: 0;
 
-			Log.Information("Quorum size set to {quorum}.", options.Cluster.PrepareAckCount);
+			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
 
 			NodeInfo = new VNodeInfo(instanceId.Value, debugIndex, intTcp, intSecIp, extTcp, extSecIp,
 				httpEndPoint, options.Cluster.ReadOnlyReplica);
@@ -759,7 +759,7 @@ namespace EventStore.Core {
 			var indexCommitterService = new IndexCommitterService<TStreamId>(readIndex.IndexCommitter, _mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
-				options.Cluster.CommitAckCount, tableIndex, _queueStatsManager);
+				tableIndex, _queueStatsManager);
 
 			AddTask(indexCommitterService.Task);
 

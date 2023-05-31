@@ -58,8 +58,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(false, _options.Database.UnsafeIgnoreHardDelete,
 				"UnsafeIgnoreHardDeletes");
 			Assert.That(string.IsNullOrEmpty(_options.Database.Index), "IndexPath");
-			Assert.AreEqual(1, _options.Cluster.PrepareAckCount, "PrepareAckCount");
-			Assert.AreEqual(1, _options.Cluster.CommitAckCount, "CommitAckCount");
 			Assert.AreEqual(2000, _options.Database.PrepareTimeoutMs, "PrepareTimeout");
 			Assert.AreEqual(2000, _options.Database.CommitTimeoutMs, "CommitTimeout");
 			Assert.AreEqual(2000, _options.Database.WriteTimeoutMs, "WriteTimeout");
@@ -110,13 +108,6 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.IsFalse(_options.Interface.DisableExternalTcpTls);
 		}
 
-		[Test]
-		public void should_set_commit_and_prepare_counts_to_quorum_size() {
-			var quorumSize = _clusterSize / 2 + 1;
-			Assert.AreEqual(quorumSize, _options.Cluster.PrepareAckCount, "PrepareAckCount");
-			Assert.AreEqual(quorumSize, _options.Cluster.CommitAckCount, "CommitAckCount");
-		}
-
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options;
 	}
 
@@ -145,14 +136,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(externalTcp.ToDnsEndPoint(), _node.GossipAdvertiseInfo.ExternalTcp);
 			Assert.AreEqual(httpEndPoint.ToDnsEndPoint(), _node.GossipAdvertiseInfo.HttpEndPoint);
 		}
-
-		[Test]
-		public void should_set_commit_and_prepare_counts_to_quorum_size() {
-			var quorumSize = _clusterSize / 2 + 1;
-			Assert.AreEqual(quorumSize, _options.Cluster.PrepareAckCount, "PrepareAckCount");
-			Assert.AreEqual(quorumSize, _options.Cluster.CommitAckCount, "CommitAckCount");
-		}
-
+		
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) =>
 			options.Insecure();
 	}

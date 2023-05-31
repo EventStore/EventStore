@@ -15,7 +15,6 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Services.IndexCommitter {
 	public abstract class with_index_committer_service<TLogFormat, TStreamId> {
-		protected int CommitCount = 2;
 		protected ITableIndex TableIndex;
 
 		protected ICheckpoint ReplicationCheckpoint;
@@ -35,7 +34,7 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 			WriterCheckpoint = new InMemoryCheckpoint(0);
 			TableIndex = new FakeTableIndex<TStreamId>();
 			TfChunkScavengerLogManager = new FakeTfChunkLogManager();
-			Service = new IndexCommitterService<TStreamId>(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, CommitCount, TableIndex, new QueueStatsManager());
+			Service = new IndexCommitterService<TStreamId>(IndexCommitter, Publisher, WriterCheckpoint, ReplicationCheckpoint, TableIndex, new QueueStatsManager());
 			Service.Init(0);
 			Publisher.Subscribe(new AdHocHandler<StorageMessage.CommitIndexed>(m => CommitReplicatedMgs.Enqueue(m)));
 			Publisher.Subscribe(new AdHocHandler<ReplicationTrackingMessage.IndexedTo>(m => IndexWrittenMgs.Enqueue(m)));

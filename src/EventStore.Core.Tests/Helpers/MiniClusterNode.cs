@@ -104,8 +104,6 @@ namespace EventStore.Core.Tests.Helpers {
 					ClusterDns = string.Empty,
 					GossipSeed = gossipSeeds,
 					ClusterSize = 3,
-					PrepareCount = 2,
-					CommitCount = 2,
 					NodePriority = nodePriority,
 					GossipIntervalMs = 2_000,
 					GossipAllowedDifferenceMs = 1_000,
