@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Remove options dump from server logs incase the config is incorrect [EventStore#3847](https://github.com/EventStore/EventStore/pull/3847)
 - Only call `context.Success()` once to prevent early exit of command. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
 - Improved log message for connectivity problem between nodes [EventStore#3839](https://github.com/EventStore/EventStore/pull/3839)
+- Prevent risk of implicit transactions being partially written when crossing a chunk boundary on the leader node [EventStore#3808](https://github.com/EventStore/EventStore/pull/3808)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -68,6 +69,7 @@ All notable changes to this project will be documented in this file.
 - metric for queue busy/idle [EventStore#3841](https://github.com/EventStore/EventStore/pull/3841)
 - Add CG max Execution Engine Suspension duration. [EventStore#3842](https://github.com/EventStore/EventStore/pull/3842)
 - Read $all command `RDALLGRPC`. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
+- logging es version every 12 hours so that es version is logged in every log file [EventStore#3853](https://github.com/EventStore/EventStore/pull/3853)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
