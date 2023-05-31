@@ -115,7 +115,7 @@ namespace EventStore.Core.Services {
 			var lastEventNumber = msg.EventStreamId.IsEmptyString()
 				? (long?)null
 				: _readIndex.GetStreamLastEventNumber(_readIndex.GetStreamId(msg.EventStreamId));
-			var lastIndexedPos = _readIndex.LastIndexedPosition;
+			var lastIndexedPos = msg.EventStreamId == "$logs" ? -1 : _readIndex.LastIndexedPosition;
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 				msg.ResolveLinkTos, lastIndexedPos, lastEventNumber,
 				msg.EventStreamId.IsEmptyString() ? EventFilter.DefaultAllFilter : EventFilter.DefaultStreamFilter);
@@ -265,7 +265,7 @@ namespace EventStore.Core.Services {
 		}
 
 		public void Handle(StorageMessage.EventCommitted message) {
-			if (message.CommitPosition != -1)
+			if (message.CommitPosition != 0)
 				_lastSeenCommitPosition = message.CommitPosition;
 
 			var resolvedEvent =

@@ -31,7 +31,7 @@ public class LogsStreamPublisher : ILogEventSink {
 		var prepare = new PrepareLogRecord(0, Guid.NewGuid(), Guid.NewGuid(), 0, 0, "$logs", _eventNumber, DateTime.Now, Flags, "log-emitted", data, Array.Empty<byte>());
 		var @event = new EventRecord(_eventNumber, prepare, "$logs", "log-emitted");
 
-		_mainBus.Publish(new StorageMessage.EventCommitted(-1, @event, false));
+		_mainBus.Publish(new StorageMessage.EventCommitted(0, @event, false));
 		_eventNumber++;
 	}
 }

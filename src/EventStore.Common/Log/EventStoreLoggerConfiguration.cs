@@ -25,7 +25,6 @@ namespace EventStore.Common.Log {
 
 		public static readonly Logger ConsoleLog = StandardLoggerConfiguration
 			.WriteTo.Console(outputTemplate: ConsoleOutputTemplate)
-			.WriteTo.Sink(LogPublisher.Instance)
 			.CreateLogger();
 
 		private static readonly Func<LogEvent, bool> RegularStats = Matching.FromSource("REGULAR-STATS-LOGGER");
@@ -177,6 +176,8 @@ namespace EventStore.Common.Log {
 				} else {
 					configuration.WriteTo.Console(new ExpressionTemplate(CompactJsonTemplate));
 				}
+
+				configuration.WriteTo.Sink(LogPublisher.Instance);
 
 				if (!disableLogFile) {
 					configuration.WriteTo
