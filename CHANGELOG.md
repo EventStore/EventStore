@@ -110,6 +110,15 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3813 [EventStore#3821](https://github.com/EventStore/EventStore/pull/3821)
 - //github.com/EventStore/EventStore/pull/3813 [EventStore#3821](https://github.com/EventStore/EventStore/pull/3821)
 
+## [22.10.2] - 2023-05-15
+
+### Fixed
+- Handle events that have been deleted from (now empty) chunks but not from the index [EventStore#3813](https://github.com/EventStore/EventStore/pull/3813)
+- Sender of create / update Persistent Subscription now notified of failure [EventStore#3747](https://github.com/EventStore/EventStore/pull/3747)
+
+### Added
+- Deprecation warnings for UnsafeIgnoreHardDeletes and AlwaysKeepsScavenged [EventStore#3778](https://github.com/EventStore/EventStore/pull/3778)
+
 ## [22.10.1] - 2023-02-13
 
 ### Fixed
