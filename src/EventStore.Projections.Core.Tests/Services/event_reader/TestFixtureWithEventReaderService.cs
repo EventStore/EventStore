@@ -48,8 +48,8 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 
 
-			_bus.Subscribe<ReaderCoreServiceMessage.StartReader>(_readerService);
-			_bus.Subscribe<ReaderCoreServiceMessage.StopReader>(_readerService);
+			_bus.Subscribe<ReaderCoreServiceMessage.InitReaderService>(_readerService);
+			_bus.Subscribe<ReaderCoreServiceMessage.DisposeReader>(_readerService);
 			_bus.Subscribe<ReaderSubscriptionMessage.CommittedEventDistributed>(_readerService);
 			_bus.Subscribe<ReaderSubscriptionMessage.EventReaderEof>(_readerService);
 			_bus.Subscribe<ReaderSubscriptionMessage.EventReaderPartitionEof>(_readerService);
@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.event_reader {
 
 			GivenAdditionalServices();
 
-			_bus.Publish(new ReaderCoreServiceMessage.StartReader(Guid.NewGuid()));
+			_bus.Publish(new ReaderCoreServiceMessage.InitReaderService(Guid.NewGuid()));
 
 			WhenLoop();
 		}

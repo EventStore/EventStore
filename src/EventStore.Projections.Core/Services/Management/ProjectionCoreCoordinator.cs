@@ -100,7 +100,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			ScheduleRegularTimeout();
 			
 			foreach (var queue in _queues.Values) {
-				queue.Publish(new ReaderCoreServiceMessage.StartReader(_instanceCorrelationId));
+				queue.Publish(new ReaderCoreServiceMessage.InitReaderService(_instanceCorrelationId));
 				_pendingSubComponentsStarts += 1 /*EventReaderCoreService*/;
 
 				if (_runProjections >= ProjectionType.System) {
@@ -125,7 +125,7 @@ namespace EventStore.Projections.Core.Services.Management {
 					 queue.Value.Publish(new ProjectionCoreServiceMessage.StopCore(queue.Key));
 				} else {
 					 // TODO: Find out why projections still run even when ProjectionType.None
-					 queue.Value.Publish(new ReaderCoreServiceMessage.StopReader(queue.Key));
+					 queue.Value.Publish(new ReaderCoreServiceMessage.DisposeReader(queue.Key));
 				}
 			}
 		}
@@ -167,7 +167,7 @@ namespace EventStore.Projections.Core.Services.Management {
 			if (message.SubComponent == ProjectionCoreService.SubComponentName) {
 				if (!_queues.TryGetValue(message.QueueId, out var queue))
 					return;
-				queue.Publish(new ReaderCoreServiceMessage.StopReader(message.QueueId));
+				queue.Publish(new ReaderCoreServiceMessage.DisposeReader(message.QueueId));
 			}
 
 			if (_activeSubComponents == 0) {

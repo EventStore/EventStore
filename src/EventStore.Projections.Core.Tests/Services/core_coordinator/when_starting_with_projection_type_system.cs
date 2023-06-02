@@ -28,7 +28,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 
 		[Test]
 		public void should_publish_start_reader_messages() {
-			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
+			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.InitReaderService).Count);
 		}
 
 		[Test]

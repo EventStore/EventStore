@@ -114,7 +114,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				throw new InvalidOperationException(
 					string.Format(
 						"Invalid committed event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
-						_lastEventPosition, message.Data.Position, _lastEventPosition));
+						_lastEventPosition, message.Data.Position, _lastDeletePosition));
 			_lastEventPosition = message.Data.Position;
 		}
 
@@ -124,7 +124,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 				throw new InvalidOperationException(
 					string.Format(
 						"Invalid partition deleted event order.  Last: '{0}' Received: '{1}'  LastDelete: '{2}'",
-						_lastEventPosition, message.DeleteLinkOrEventPosition.Value, _lastEventPosition));
+						_lastEventPosition, message.DeleteLinkOrEventPosition.Value, _lastDeletePosition));
 			_lastDeletePosition = message.DeleteLinkOrEventPosition.Value;
 		}
 

@@ -16,7 +16,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		IHandle<ProjectionManagementMessage.Internal.ReadTimeout> {
 		private bool _eventsRequested;
 		private int _maxReadCount = 250;
-		private TFPos _from;
+		public TFPos From { get; private set; }
 		private readonly bool _deliverEndOfTfPosition;
 		private readonly bool _resolveLinkTos;
 		private readonly ITimeProvider _timeProvider;
@@ -35,7 +35,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			bool resolveLinkTos = true)
 			: base(publisher, eventReaderCorrelationId, readAs, stopOnEof) {
 			if (publisher == null) throw new ArgumentNullException("publisher");
-			_from = @from;
+			From = @from;
 			_deliverEndOfTfPosition = deliverEndOfTFPosition;
 			_resolveLinkTos = resolveLinkTos;
 			_timeProvider = timeProvider;
@@ -66,8 +66,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 			var eof = (message.Events.Length == 0) && message.IsEndOfStream;
 			_eof = eof;
 			var willDispose = _stopOnEof && eof;
-			var oldFrom = _from;
-			_from = message.NextPos;
+			var oldFrom = From;
+			From = message.NextPos;
 
 			if (!willDispose) {
 				PauseOrContinueProcessing();
@@ -76,7 +76,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (eof) {
 				// the end
 				if (_deliverEndOfTfPosition)
-					DeliverLastCommitPosition(_from);
+					DeliverLastCommitPosition(From);
 				// allow joining heading distribution
 				SendIdle();
 				SendEof();
@@ -141,8 +141,8 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private Message CreateReadEventsMessage(Guid correlationId) {
 			return new ClientMessage.ReadAllEventsForward(
-				correlationId, correlationId, new SendToThisEnvelope(this), _from.CommitPosition,
-				_from.PreparePosition == -1 ? _from.CommitPosition : _from.PreparePosition, _maxReadCount,
+				correlationId, correlationId, new SendToThisEnvelope(this), From.CommitPosition,
+				From.PreparePosition == -1 ? From.CommitPosition : From.PreparePosition, _maxReadCount,
 				_resolveLinkTos, false, null, ReadAs, replyOnExpired: false);
 		}
 

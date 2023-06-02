@@ -128,7 +128,7 @@ namespace EventStore.Projections.Core.Tests.Services {
 				_subscriptionDispatcher.CreateSubscriber<EventReaderSubscriptionMessage.ReaderAssignedReader>());
 			
 			var instanceCorrelationId = Guid.NewGuid();
-			_readerService.Handle(new ReaderCoreServiceMessage.StartReader(instanceCorrelationId));
+			_readerService.Handle(new ReaderCoreServiceMessage.InitReaderService(instanceCorrelationId));
 			_service.Handle(new ProjectionCoreServiceMessage.StartCore(instanceCorrelationId));
 		}
 

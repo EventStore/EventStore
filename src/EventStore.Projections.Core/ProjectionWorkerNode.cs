@@ -134,8 +134,8 @@ namespace EventStore.Projections.Core {
 					Forwarder.Create<CoreProjectionStatusMessage.DataReportBase>(_leaderOutputBus));
 			}
 
-			coreInputBus.Subscribe<ReaderCoreServiceMessage.StartReader>(_eventReaderCoreService);
-			coreInputBus.Subscribe<ReaderCoreServiceMessage.StopReader>(_eventReaderCoreService);
+			coreInputBus.Subscribe<ReaderCoreServiceMessage.InitReaderService>(_eventReaderCoreService);
+			coreInputBus.Subscribe<ReaderCoreServiceMessage.DisposeReader>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Subscribe>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Unsubscribe>(_eventReaderCoreService);
 			coreInputBus.Subscribe<ReaderSubscriptionManagement.Pause>(_eventReaderCoreService);

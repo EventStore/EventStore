@@ -40,7 +40,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 
 		[Test]
 		public void should_publish_stop_reader_messages() {
-			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
+			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.DisposeReader).Count);
 		}
 
 		[Test]

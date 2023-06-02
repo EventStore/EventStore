@@ -53,7 +53,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Start Components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 			
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.InitReaderService).Count);
 			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ProjectionCoreServiceMessage.StartCore).Count);
 		}
 
@@ -67,7 +67,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Start Components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.InitReaderService).Count);
 			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ProjectionCoreServiceMessage.StartCore).Count);
 		}
 
@@ -84,7 +84,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Start components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 
-			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
+			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.InitReaderService).Count);
 			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ProjectionCoreServiceMessage.StartCore).Count);
 		}
 
@@ -113,7 +113,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(newInstanceCorrelationId));
 
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.DisposeReader).Count);
 			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ProjectionCoreServiceMessage.StopCore).Count);
 		}
 
@@ -132,7 +132,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(Guid.NewGuid()));
 
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.DisposeReader).Count);
 			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ProjectionCoreServiceMessage.StopCore).Count);
 		}
 
@@ -164,7 +164,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			var incorrectCorrelationId = Guid.NewGuid();
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(incorrectCorrelationId));
 
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.DisposeReader).Count);
 			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ProjectionCoreServiceMessage.StopCore).Count);
 		}
 	}

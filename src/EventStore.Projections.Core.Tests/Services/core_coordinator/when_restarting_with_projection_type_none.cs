@@ -37,7 +37,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components but don't handle component stopped
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(instanceCorrelationId));
 
-			var stopReader = queues[0].Messages.OfType<ReaderCoreServiceMessage.StopReader>().First();
+			var stopReader = queues[0].Messages.OfType<ReaderCoreServiceMessage.DisposeReader>().First();
 			queueId = stopReader.QueueId;
 			//clear queues for clearer testing
 			queues[0].Messages.Clear();
@@ -50,7 +50,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Start components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 			
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.InitReaderService).Count);
 		}
 
 
@@ -64,7 +64,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Start component
 			_coordinator.Handle(new ProjectionSubsystemMessage.StartComponents(Guid.NewGuid()));
 
-			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StartReader).Count);
+			Assert.AreEqual(1, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.InitReaderService).Count);
 		}
 
 		[Test]
@@ -82,7 +82,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(newInstanceCorrelationId));
 
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.DisposeReader).Count);
 		}
 
 		[Test]
@@ -95,7 +95,7 @@ namespace EventStore.Projections.Core.Tests.Services.core_coordinator {
 			// Stop components without starting
 			_coordinator.Handle(new ProjectionSubsystemMessage.StopComponents(Guid.NewGuid()));
 
-			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.StopReader).Count);
+			Assert.AreEqual(0, queues[0].Messages.FindAll(x => x is ReaderCoreServiceMessage.DisposeReader).Count);
 		}
 	}
 }
