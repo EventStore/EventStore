@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Only call `context.Success()` once to prevent early exit of command. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
 - Improved log message for connectivity problem between nodes [EventStore#3839](https://github.com/EventStore/EventStore/pull/3839)
 - Prevent risk of implicit transactions being partially written when crossing a chunk boundary on the leader node [EventStore#3808](https://github.com/EventStore/EventStore/pull/3808)
+- Lower the log level of NACK logs for persistent subscriptions [EventStore#3854](https://github.com/EventStore/EventStore/pull/3854)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
