@@ -14,6 +14,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="DotNext.IO" Version="4.7.4" />
 		<PackageReference Include="EventStore.Plugins" Version="22.10.2" />
 		<PackageReference Include="Google.Protobuf" Version="3.21.6" />
 		<PackageReference Include="Grpc.AspNetCore" Version="2.49.0" />
