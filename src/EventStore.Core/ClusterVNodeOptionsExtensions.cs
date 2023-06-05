@@ -237,7 +237,7 @@ namespace EventStore.Core {
 
 			if (options.CertificateFile.CertificateFile.IsNotEmptyString()) {
 				Log.Information("Loading the node's certificate(s) from file: {path}", options.CertificateFile.CertificateFile);
-				return CertificateUtils.LoadFromFile(options.CertificateFile.CertificateFile, options.CertificateFile.CertificatePrivateKeyFile, options.CertificateFile.CertificatePassword);
+				return CertificateUtils.LoadFromFile(options.CertificateFile.CertificateFile, options.CertificateFile.CertificatePrivateKeyFile, options.CertificateFile.CertificatePassword, options.CertificateFile.CertificatePrivateKeyPassword);
 			}
 
 			throw new InvalidConfigurationException(
