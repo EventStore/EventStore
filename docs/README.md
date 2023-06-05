@@ -69,7 +69,7 @@ Find out more about configuring the TCP protocol on the [TCP configuration](netw
 #### EventStoreDB supported clients
 
 - [.NET Framework and .NET Core](http://www.nuget.org/packages/EventStore.Client)
-- [JVM Client (EventStore/EventStore.JVM)](https://github.com/EventStore/EventStore.JVM)
+- [JVM Client (EventStore/EventStore.JVM)](https://github.com/EventStore/EventStore.JVM) (Out Of Support)
 - [Haskell (EventStore/EventStoreDB-Client-Haskell)](https://github.com/EventStore/EventStoreDB-Client-Haskell)
 
 #### Community developed clients
