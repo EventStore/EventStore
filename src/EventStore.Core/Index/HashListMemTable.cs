@@ -66,7 +66,6 @@ namespace EventStore.Core.Index {
 					Ensure.Nonnegative(entry.Version, "entry.Version");
 					Ensure.Nonnegative(entry.Position, "entry.Position");
 
-					block.WriteUInt64(stream, true);
 					block.WriteUInt64((ulong)entry.Version, true);
 					block.WriteUInt64((ulong)entry.Position, true);
 				}
@@ -243,13 +242,13 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return ret;
 
-				var count = block.WrittenCount / 24;
+				var count = block.WrittenCount / MemTableEntrySize;
 				var buffer = block.WrittenMemory.AsStream();
 				if (!ClosestLowerOrEqualRevision(buffer, (ulong) endNumber, count, out var endIdx))
 					return ret;
 				
 				for (int i = endIdx; i >= 0; i--) {
-					buffer.Seek((i * 24) + 8, SeekOrigin.Begin);
+					buffer.Seek(i * MemTableEntrySize, SeekOrigin.Begin);
 					var entry = new IndexEntry(hash, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
 					
 					if (entry.Version < startNumber || ret.Count == limit)
