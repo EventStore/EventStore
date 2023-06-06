@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,13 +7,9 @@ using System.Threading;
 using DotNext.Buffers;
 using DotNext.IO;
 using EventStore.Common.Utils;
-using EventStore.Core.Exceptions;
 
 namespace EventStore.Core.Index {
 	public class HashListMemTable : IMemTable, ISearchTable {
-		private static readonly IComparer<Entry> MemTableComparer = new EventNumberComparer();
-		private static readonly IComparer<Entry> LogPosComparer = new LogPositionComparer();
-
 		public long Count {
 			get { return _count; }
 		}
@@ -125,7 +120,6 @@ namespace EventStore.Core.Index {
 					return false;
 
 				var count = block.WrittenCount / 24;
-				var last = count - 1;
 				var buffer = block.WrittenMemory.AsStream();
 				IndexEntry prev = TableIndex.InvalidIndexEntry;
 
@@ -173,67 +167,63 @@ namespace EventStore.Core.Index {
 			if (afterNumber >= long.MaxValue)
 				return false;
 
-			SortedList<Entry, byte> list;
-			if (_hash.TryGetValue(hash, out list)) {
-				if (!Monitor.TryEnter(list, 10000))
-					throw new UnableToAcquireLockInReasonableTimeException();
-				try {
-					int endIdx = list.LowerBound(new Entry(afterNumber + 1, 0));
-					if (endIdx == -1)
-						return false;
+			lock (_hash) {
+				if (!_hash.TryGetValue(hash, out var block))
+					return false;
 
-					var e = list.Keys[endIdx];
-					entry = new IndexEntry(hash, e.EvNum, e.LogPos);
-					return true;
-				} finally {
-					Monitor.Exit(list);
-				}
+				var count = block.WrittenCount / 24;
+				var buffer = block.WrittenMemory.AsStream();
+
+				if (!ClosestGreaterOrEqualRevision(buffer, (ulong)(afterNumber + 1), count, out var index))
+					return false;
+
+				buffer.Seek((index * 24) + 8, SeekOrigin.Begin);
+				entry = new IndexEntry(hash, (long) buffer.Read<ulong>(), (long) buffer.Read<ulong>());
+				return true;
 			}
-
-			return false;
 		}
 
 		public bool TryGetPreviousEntry(ulong stream, long beforeNumber, out IndexEntry entry) {
-			if (beforeNumber < 0)
-				throw new ArgumentOutOfRangeException(nameof(beforeNumber));
+			Ensure.Nonnegative(beforeNumber, nameof(beforeNumber));
 
 			ulong hash = GetHash(stream);
 			entry = TableIndex.InvalidIndexEntry;
 
-			if (beforeNumber <= 0)
+			if (beforeNumber == 0) 
 				return false;
 
-			SortedList<Entry, byte> list;
-			if (_hash.TryGetValue(hash, out list)) {
-				if (!Monitor.TryEnter(list, 10000))
-					throw new UnableToAcquireLockInReasonableTimeException();
-				try {
-					int endIdx = list.UpperBound(new Entry(beforeNumber - 1, long.MaxValue));
-					if (endIdx == -1)
-						return false;
+			lock (_hash) {
+				if (!_hash.TryGetValue(hash, out var block))
+					return false;
 
-					var e = list.Keys[endIdx];
-					entry = new IndexEntry(hash, e.EvNum, e.LogPos);
-					return true;
-				} finally {
-					Monitor.Exit(list);
-				}
+				var count = block.WrittenCount / 24;
+				var buffer = block.WrittenMemory.AsStream();
+
+				if (!ClosestLowerOrEqualRevision(buffer, (ulong)(beforeNumber + 1), count, out var index))
+					return false;
+
+				buffer.Seek((index * 24) + 8, SeekOrigin.Begin);
+				entry = new IndexEntry(hash, (long) buffer.Read<ulong>(), (long) buffer.Read<ulong>());
+				return true;
 			}
-
-			return false;
 		}
 
 		public IEnumerable<IndexEntry> IterateAllInOrder() {
 			//Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder...");
 
-			var keys = _hash.Keys.ToArray();
-			Array.Sort(keys, new ReverseComparer<ulong>());
+			lock (_hash) {
+				var keys = _hash.Keys.ToArray();
+				Array.Sort(keys, new ReverseComparer<ulong>());
 
-			foreach (var key in keys) {
-				var list = _hash[key];
-				for (int i = list.Count - 1; i >= 0; --i) {
-					var x = list.Keys[i];
-					yield return new IndexEntry(key, x.EvNum, x.LogPos);
+				foreach (var key in keys) {
+					var block = _hash[key];
+					var count = block.WrittenCount / 24;
+					var buffer = block.WrittenMemory.AsStream();
+
+					for (int i = count - 1; i >= 0; --i) {
+						buffer.Seek((i * 24) + 8, SeekOrigin.Begin);
+						yield return new IndexEntry(key, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
+					}
 				}
 			}
 
@@ -241,35 +231,39 @@ namespace EventStore.Core.Index {
 		}
 
 		public void Clear() {
-			_hash.Clear();
+			lock (_hash) {
+				_hash.Clear();
+			}
 		}
 
 		public IList<IndexEntry> GetRange(ulong stream, long startNumber, long endNumber, int? limit = null) {
-			if (startNumber < 0)
-				throw new ArgumentOutOfRangeException("startNumber");
-			if (endNumber < 0)
-				throw new ArgumentOutOfRangeException("endNumber");
+			Ensure.Nonnegative(startNumber, nameof(startNumber));
+			Ensure.Nonnegative(endNumber, nameof(endNumber));
 
 			ulong hash = GetHash(stream);
 			var ret = new List<IndexEntry>();
 
-			SortedList<Entry, byte> list;
-			if (_hash.TryGetValue(hash, out list)) {
-				if (!Monitor.TryEnter(list, 10000)) throw new UnableToAcquireLockInReasonableTimeException();
-				try {
-					var endIdx = list.UpperBound(new Entry(endNumber, long.MaxValue));
-					for (int i = endIdx; i >= 0; i--) {
-						var key = list.Keys[i];
-						if (key.EvNum < startNumber || ret.Count == limit)
-							break;
-						ret.Add(new IndexEntry(hash, version: key.EvNum, position: key.LogPos));
-					}
-				} finally {
-					Monitor.Exit(list);
-				}
-			}
+			lock (_hash) {
+				if (!_hash.TryGetValue(hash, out var block))
+					return ret;
 
-			return ret;
+				var count = block.WrittenCount / 24;
+				var buffer = block.WrittenMemory.AsStream();
+				if (!ClosestLowerOrEqualRevision(buffer, (ulong) endNumber, count, out var endIdx))
+					return ret;
+				
+				for (int i = endIdx; i >= 0; i--) {
+					buffer.Seek((i * 24) + 8, SeekOrigin.Begin);
+					var entry = new IndexEntry(hash, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
+					
+					if (entry.Version < startNumber || ret.Count == limit)
+						break;
+					
+					ret.Add(entry);
+				}
+
+				return ret;
+			}
 		}
 
 		private ulong GetHash(ulong hash) {
@@ -304,32 +298,72 @@ namespace EventStore.Core.Index {
 			return false;
 		}
 		
-		private struct Entry {
-			public readonly long EvNum;
-			public readonly long LogPos;
+		private static bool ClosestGreaterOrEqualRevision(Stream buffer, ulong expected, int count, out int index) {
+			var low = 0;
+			var high = count;
+			var closest = -1;
 
-			public Entry(long evNum, long logPos) {
-				EvNum = evNum;
-				LogPos = logPos;
+			index = -1;
+			
+			while (low <= high) {
+				var mid = (low + high) / 2;
+				// We move to the mid-th entry and also skip the first 8 bytes dedicated to the stream hash.
+				buffer.Seek((mid * 24) + 8, SeekOrigin.Begin);
+				var revision = buffer.Read<ulong>();
+				switch (revision.CompareTo(expected)) {
+					case -1:
+						low = mid + 1;
+						break;
+					case 1:
+						closest = mid;
+						high = mid - 1;
+						break;
+					case 0:
+						// We found the correct stream revision
+						index = mid;
+						return true;
+				}
 			}
+
+			if (closest == -1)
+				return false;
+			
+			index = closest;
+			return true;
 		}
+		
+		private static bool ClosestLowerOrEqualRevision(Stream buffer, ulong expected, int count, out int index) {
+			var low = 0;
+			var high = count;
+			var closest = -1;
 
-		private class EventNumberComparer : IComparer<Entry> {
-			public int Compare(Entry x, Entry y) {
-				if (x.EvNum < y.EvNum) return -1;
-				if (x.EvNum > y.EvNum) return 1;
-				if (x.LogPos < y.LogPos) return -1;
-				if (x.LogPos > y.LogPos) return 1;
-				return 0;
+			index = -1;
+			
+			while (low <= high) {
+				var mid = (low + high) / 2;
+				// We move to the mid-th entry and also skip the first 8 bytes dedicated to the stream hash.
+				buffer.Seek((mid * 24) + 8, SeekOrigin.Begin);
+				var revision = buffer.Read<ulong>();
+				switch (revision.CompareTo(expected)) {
+					case -1:
+						closest = mid;
+						low = mid + 1;
+						break;
+					case 1:
+						high = mid - 1;
+						break;
+					case 0:
+						// We found the correct stream revision
+						index = mid;
+						return true;
+				}
 			}
-		}
 
-		private class LogPositionComparer : IComparer<Entry> {
-			public int Compare(Entry x, Entry y) {
-				if (x.LogPos < y.LogPos) return -1;
-				if (x.LogPos > y.LogPos) return 1;
-				return 0;
-			}
+			if (closest == -1)
+				return false;
+			
+			index = closest;
+			return true;
 		}
 	}
 
