@@ -246,7 +246,7 @@ namespace EventStore.Core.Index {
 				var buffer = block.WrittenMemory.AsStream();
 				if (!ClosestLowerOrEqualRevision(buffer, (ulong) endNumber, count, out var endIdx))
 					return ret;
-				
+
 				for (int i = endIdx; i >= 0; i--) {
 					buffer.Seek(i * MemTableEntrySize, SeekOrigin.Begin);
 					var entry = new IndexEntry(hash, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
@@ -285,7 +285,16 @@ namespace EventStore.Core.Index {
 						break;
 					case 0:
 						// We found the correct stream revision
-						position = (long) buffer.Read<ulong>();
+						position = (long)buffer.Read<ulong>();
+						
+						// We take care of existing duplicates on the edge.
+						for (var i = mid + 1; i < count; i++) {
+							if (buffer.Read<ulong>() != expected)
+								break;
+
+							position = (long) buffer.Read<ulong>();
+						}
+						
 						return true;
 				}
 			}
@@ -336,7 +345,6 @@ namespace EventStore.Core.Index {
 			
 			while (low <= high) {
 				var mid = (low + high) / 2;
-				// We move to the mid-th entry and also skip the first 8 bytes dedicated to the stream hash.
 				buffer.Seek(mid * MemTableEntrySize, SeekOrigin.Begin);
 				var revision = buffer.Read<ulong>();
 				switch (revision.CompareTo(expected)) {
@@ -348,16 +356,32 @@ namespace EventStore.Core.Index {
 						high = mid - 1;
 						break;
 					case 0:
-						// We found the correct stream revision
-						index = mid;
-						return true;
+						// We found the correct stream revision so we exit the loop
+						closest = mid;
+						high = -1;
+						
+						// We ignore the encoded position and place ourselves onto
+						// the next index entry.
+						buffer.Seek(8, SeekOrigin.Current);
+						break;
 				}
 			}
 
 			if (closest == -1)
 				return false;
-			
+
 			index = closest;
+			
+			// We take care of existing duplicates on the edge.
+			for (var i = closest + 1; i < count; i++) {
+				if (buffer.Read<ulong>() != expected)
+					break;
+
+				index = i;
+				// We ignore the encoded position because it's not needed.
+				buffer.Seek(8, SeekOrigin.Current);
+			}
+
 			return true;
 		}
 	}
