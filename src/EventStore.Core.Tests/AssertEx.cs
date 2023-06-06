@@ -65,16 +65,19 @@ namespace EventStore.Core.Tests {
 		/// <param name="func">The function to evaluate.</param>
 		/// <param name="timeout">A timeout in milliseconds. If not specified, defaults to 1000.</param>
 		/// <param name="msg">A message to display if the condition is not satisfied.</param>
+		/// <param name="onFail">Action to invoke on failure.</param>
 		/// <param name="yieldThread">If true, the thread relinquishes the remainder of its time
 		/// slice to any thread of equal priority that is ready to run.</param>
 		public static void IsOrBecomesTrue(Func<bool> func, TimeSpan? timeout = null,
-			string msg = "AssertEx.IsOrBecomesTrue() timed out", bool yieldThread = false,
+			string msg = "AssertEx.IsOrBecomesTrue() timed out", bool yieldThread = false, Action onFail = null,
 			[CallerMemberName] string memberName = "",
 			[CallerFilePath] string sourceFilePath = "",
 			[CallerLineNumber] int sourceLineNumber = 0) {
 
 			if (IsOrBecomesTrueImpl(func, timeout, yieldThread))
 				return;
+
+			onFail?.Invoke();
 
 			Assert.Fail($"{msg} in {memberName} {sourceFilePath}:{sourceLineNumber}");
 		}
