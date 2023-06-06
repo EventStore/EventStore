@@ -10,6 +10,8 @@ using EventStore.Common.Utils;
 
 namespace EventStore.Core.Index {
 	public class HashListMemTable : IMemTable, ISearchTable {
+		private const int MemTableEntrySize = 16;
+		
 		public long Count {
 			get { return _count; }
 		}
@@ -83,7 +85,7 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 				
-				var entryCount = block.WrittenCount / 24;
+				var entryCount = block.WrittenCount / MemTableEntrySize;
 				var buffer = block.WrittenMemory.AsStream();
 
 				return TryGetPosition(buffer, (ulong)number, entryCount, out position);
@@ -98,11 +100,11 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 
-				var count = block.WrittenCount / 24;
+				var count = block.WrittenCount / MemTableEntrySize;
 				var last = count - 1;
 				var buffer = block.WrittenMemory.AsStream();
 
-				buffer.Seek((last * 24) + 8, SeekOrigin.Begin);
+				buffer.Seek(last * MemTableEntrySize, SeekOrigin.Begin);
 				
 				entry = new IndexEntry(hash, (long) buffer.Read<ulong>(), (long) buffer.Read<ulong>());
 				return true;
@@ -119,13 +121,12 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 
-				var count = block.WrittenCount / 24;
+				var entryCount = block.WrittenCount / MemTableEntrySize;
 				var buffer = block.WrittenMemory.AsStream();
 				IndexEntry prev = TableIndex.InvalidIndexEntry;
 
 				var found = false;
-				for (var i = 0; i < count; i++) {
-					buffer.Seek(8, SeekOrigin.Current);
+				for (var i = 0; i < entryCount; i++) {
 					var temp = new IndexEntry(hash, (long) buffer.Read<ulong>(), (long) buffer.Read<ulong>());
 					if (!isForThisStream(entry))
 						break;
@@ -151,7 +152,6 @@ namespace EventStore.Core.Index {
 					return false;
 
 				var buffer = block.WrittenMemory.AsStream();
-				buffer.Seek(8, SeekOrigin.Begin);
 				entry = new IndexEntry(hash, (long) buffer.Read<ulong>(), (long) buffer.Read<ulong>());
 
 				return false;
@@ -171,7 +171,7 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 
-				var count = block.WrittenCount / 24;
+				var count = block.WrittenCount / MemTableEntrySize;
 				var buffer = block.WrittenMemory.AsStream();
 
 				if (!ClosestGreaterOrEqualRevision(buffer, (ulong)(afterNumber + 1), count, out var index))
@@ -196,38 +196,34 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 
-				var count = block.WrittenCount / 24;
+				var count = block.WrittenCount / MemTableEntrySize;
 				var buffer = block.WrittenMemory.AsStream();
 
 				if (!ClosestLowerOrEqualRevision(buffer, (ulong)(beforeNumber + 1), count, out var index))
 					return false;
 
-				buffer.Seek((index * 24) + 8, SeekOrigin.Begin);
+				buffer.Seek(index * MemTableEntrySize, SeekOrigin.Begin);
 				entry = new IndexEntry(hash, (long) buffer.Read<ulong>(), (long) buffer.Read<ulong>());
 				return true;
 			}
 		}
 
 		public IEnumerable<IndexEntry> IterateAllInOrder() {
-			//Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder...");
-
 			lock (_hash) {
 				var keys = _hash.Keys.ToArray();
 				Array.Sort(keys, new ReverseComparer<ulong>());
 
 				foreach (var key in keys) {
 					var block = _hash[key];
-					var count = block.WrittenCount / 24;
+					var count = block.WrittenCount / MemTableEntrySize;
 					var buffer = block.WrittenMemory.AsStream();
 
 					for (int i = count - 1; i >= 0; --i) {
-						buffer.Seek((i * 24) + 8, SeekOrigin.Begin);
+						buffer.Seek(i * MemTableEntrySize, SeekOrigin.Begin);
 						yield return new IndexEntry(key, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
 					}
 				}
 			}
-
-			//Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder... DONE!");
 		}
 
 		public void Clear() {
@@ -279,7 +275,7 @@ namespace EventStore.Core.Index {
 			while (low <= high) {
 				var mid = (low + high) / 2;
 				// We move to the mid-th entry and also skip the first 8 bytes dedicated to the stream hash.
-				buffer.Seek((mid * 24) + 8, SeekOrigin.Begin);
+				buffer.Seek(mid * MemTableEntrySize, SeekOrigin.Begin);
 				var revision = buffer.Read<ulong>();
 				switch (revision.CompareTo(expected)) {
 					case -1:
@@ -308,7 +304,7 @@ namespace EventStore.Core.Index {
 			while (low <= high) {
 				var mid = (low + high) / 2;
 				// We move to the mid-th entry and also skip the first 8 bytes dedicated to the stream hash.
-				buffer.Seek((mid * 24) + 8, SeekOrigin.Begin);
+				buffer.Seek(mid * MemTableEntrySize, SeekOrigin.Begin);
 				var revision = buffer.Read<ulong>();
 				switch (revision.CompareTo(expected)) {
 					case -1:
@@ -342,7 +338,7 @@ namespace EventStore.Core.Index {
 			while (low <= high) {
 				var mid = (low + high) / 2;
 				// We move to the mid-th entry and also skip the first 8 bytes dedicated to the stream hash.
-				buffer.Seek((mid * 24) + 8, SeekOrigin.Begin);
+				buffer.Seek(mid * MemTableEntrySize, SeekOrigin.Begin);
 				var revision = buffer.Read<ulong>();
 				switch (revision.CompareTo(expected)) {
 					case -1:
