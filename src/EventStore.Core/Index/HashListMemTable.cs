@@ -217,13 +217,12 @@ namespace EventStore.Core.Index {
 				var mem = block.ClosestLowerOrEqualEntry(endNumber, long.MaxValue);
 				if (mem.Index == -1)
 					return ret;
+
+				foreach (var elem in block.List()) {
+					Console.WriteLine($"idx: {elem.Index}, rev: {elem.Revision}, pos: {elem.Position}");	
+				}
 				
-				ret.Add(new IndexEntry(hash, mem.Revision, mem.Position));
-				var endIdx = mem.Index - 1;
-				if (endIdx < 0)
-					return ret;
-				
-				foreach (var elem in block.ListFromEnd(endIdx)) {
+				foreach (var elem in block.ListFromEnd(mem.Index)) {
 					var entry = new IndexEntry(hash, elem.Revision, elem.Position);
 					if (entry.Version < startNumber || ret.Count == limit)
 						break;
