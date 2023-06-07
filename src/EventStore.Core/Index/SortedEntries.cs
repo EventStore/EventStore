@@ -1,3 +1,4 @@
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
@@ -80,16 +81,12 @@ public struct SortedEntries {
 					_block.WriteUInt64((ulong)position, true);
 					_block.Write(afterBuffer);
 				} else {
-					beforeBuffer = ArrayPool<byte>.Shared.Rent(entry.Index * MemTableEntrySize);
-					afterBuffer = ArrayPool<byte>.Shared.Rent((_count - entry.Index) * MemTableEntrySize);
+					var beforeSize = entry.Index * MemTableEntrySize;
+					beforeBuffer = ArrayPool<byte>.Shared.Rent(beforeSize);
+					afterBuffer = ArrayPool<byte>.Shared.Rent(_block.WrittenCount - beforeSize);
 
-					var afterStartIndex = _count - entry.Index;
-					// If the entry is not the last entry in the table.
-					if (_count - 1 != entry.Index)
-						afterStartIndex -= 1;
-					
-					_block.WrittenMemory.Slice(0, entry.Index * MemTableEntrySize).CopyTo(beforeBuffer);
-					_block.WrittenMemory.Slice(afterStartIndex * MemTableEntrySize).CopyTo(afterBuffer);
+					_block.WrittenMemory.Slice(0, beforeSize).CopyTo(beforeBuffer);
+					_block.WrittenMemory.Slice(beforeSize).CopyTo(afterBuffer);
 					_block.Clear(true);
 					_block.Write(beforeBuffer);
 					_block.WriteUInt64((ulong)revision, true);

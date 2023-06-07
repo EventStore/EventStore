@@ -134,7 +134,7 @@ namespace EventStore.Core.Index {
 				var mem = block.First();
 				entry = new IndexEntry(hash, mem.Revision, mem.Position);
 
-				return false;
+				return true;
 			}
 		}
 
@@ -218,10 +218,6 @@ namespace EventStore.Core.Index {
 				if (mem.Index == -1)
 					return ret;
 
-				foreach (var elem in block.List()) {
-					Console.WriteLine($"idx: {elem.Index}, rev: {elem.Revision}, pos: {elem.Position}");	
-				}
-				
 				foreach (var elem in block.ListFromEnd(mem.Index)) {
 					var entry = new IndexEntry(hash, elem.Revision, elem.Position);
 					if (entry.Version < startNumber || ret.Count == limit)
@@ -236,6 +232,20 @@ namespace EventStore.Core.Index {
 
 		private ulong GetHash(ulong hash) {
 			return _version == PTableVersions.IndexV1 ? hash >> 32 : hash;
+		}
+
+		public void Dump() {
+			lock (_hash) {
+				foreach (var key in _hash.Keys) {
+					Console.WriteLine($"Stream: {key}");
+					var block = _hash[key];
+					foreach (var entry in block.ListFromEnd()) {
+						Console.WriteLine($"idx: {entry.Index}, rev: {entry.Revision}, pos: {entry.Position} ");	
+					}
+					Console.WriteLine("------------------");
+					Console.WriteLine();
+				}	
+			}
 		}
 	}
 
