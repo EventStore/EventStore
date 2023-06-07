@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
-using DotNext.IO;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Index {
@@ -232,20 +230,6 @@ namespace EventStore.Core.Index {
 
 		private ulong GetHash(ulong hash) {
 			return _version == PTableVersions.IndexV1 ? hash >> 32 : hash;
-		}
-
-		public void Dump() {
-			lock (_hash) {
-				foreach (var key in _hash.Keys) {
-					Console.WriteLine($"Stream: {key}");
-					var block = _hash[key];
-					foreach (var entry in block.ListFromEnd()) {
-						Console.WriteLine($"idx: {entry.Index}, rev: {entry.Revision}, pos: {entry.Position} ");	
-					}
-					Console.WriteLine("------------------");
-					Console.WriteLine();
-				}	
-			}
 		}
 	}
 

@@ -68,30 +68,32 @@ public struct SortedEntries {
 				// The new entry is smaller than our last one, we need to insert the new entry at the right location
 				// to keep the table sorted.
 				var entry = ClosestGreaterOrEqualEntry(revision, position);
-				
+
 				byte[] afterBuffer;
 				byte[] beforeBuffer = null;
 				
 				// If we have to write the entry at the beginning of the table.
 				if (entry.Index <= 0) {
-					afterBuffer = ArrayPool<byte>.Shared.Rent(_block.WrittenCount);
+					var siz = _block.WrittenCount;
+					afterBuffer = ArrayPool<byte>.Shared.Rent(siz);
 					_block.WrittenMemory.CopyTo(afterBuffer);
 					_block.Clear(true);
 					_block.WriteUInt64((ulong)revision, true);
 					_block.WriteUInt64((ulong)position, true);
-					_block.Write(afterBuffer);
+					_block.Write(afterBuffer.AsSpan()[..siz]);
 				} else {
 					var beforeSize = entry.Index * MemTableEntrySize;
+					var afterSize = _block.WrittenCount - beforeSize;
 					beforeBuffer = ArrayPool<byte>.Shared.Rent(beforeSize);
-					afterBuffer = ArrayPool<byte>.Shared.Rent(_block.WrittenCount - beforeSize);
+					afterBuffer = ArrayPool<byte>.Shared.Rent(afterSize);
 
-					_block.WrittenMemory.Slice(0, beforeSize).CopyTo(beforeBuffer);
-					_block.WrittenMemory.Slice(beforeSize).CopyTo(afterBuffer);
+					_block.WrittenMemory[..beforeSize].CopyTo(beforeBuffer);
+					_block.WrittenMemory[beforeSize..].CopyTo(afterBuffer);
 					_block.Clear(true);
-					_block.Write(beforeBuffer);
+					_block.Write(beforeBuffer.AsSpan()[..beforeSize]);
 					_block.WriteUInt64((ulong)revision, true);
 					_block.WriteUInt64((ulong)position, true);
-					_block.Write(afterBuffer);
+					_block.Write(afterBuffer.AsSpan()[..afterSize]);
 				}
 
 				if (beforeBuffer != null)
