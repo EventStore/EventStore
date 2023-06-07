@@ -48,8 +48,6 @@ namespace EventStore.Core.Tests.Index.IndexV1 {
 				memTable.Add((uint)rnd.Next(), rnd.Next(0, 1 << 20), Math.Abs(rnd.Next() * rnd.Next()));
 			}
 
-			memTable.Dump();
-
 			var ptable = PTable.FromMemtable(memTable, file, Constants.PTableInitialReaderCount, Constants.PTableMaxReaderCountDefault, depth, skipIndexVerify: _skipIndexVerify);
 			return ptable;
 		}
