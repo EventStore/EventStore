@@ -5,7 +5,7 @@ using System.Threading;
 using EventStore.Common.Utils;
 
 namespace EventStore.Core.Index {
-	public class HashListMemTable : IMemTable, ISearchTable {
+	public class HashListMemTable : IMemTable, ISearchTable{
 		public long Count {
 			get { return _count; }
 		}
@@ -101,22 +101,10 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 
-				IndexEntry prev = TableIndex.InvalidIndexEntry;
-				var found = false;
-				
-				foreach (var mem in block.List()) {
-					var temp = new IndexEntry(hash, mem.Revision, mem.Position);
-					if (!isForThisStream(temp))
-						break;
-
-					prev = temp;
-					found = true;
-				}
-
-				if (!found)
+				if (!block.PositionUpperBound(beforePosition - 1, out var mem, m => isForThisStream(new IndexEntry(hash, m.Revision, m.Position))))
 					return false;
-
-				entry = prev;
+				
+				entry = new IndexEntry(hash, mem.Revision, mem.Position);
 				return true;
 			}
 		}

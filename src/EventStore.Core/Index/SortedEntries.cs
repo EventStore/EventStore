@@ -240,4 +240,45 @@ public struct SortedEntries {
 
 		return closest;
 	}
+
+	public bool PositionUpperBound(long position, out MemEntry result, Func<MemEntry, bool> keepGoing) {
+		MemEntry entry = MemEntry.Default;
+		result = entry;
+		
+		if (_count == 0)
+			return false;
+		
+		using var buffer = _block.WrittenMemory.AsStream();
+		buffer.Seek((_count - 1) * MemTableEntrySize, SeekOrigin.Begin);
+		entry = new MemEntry(_count - 1, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
+
+		if (!keepGoing(entry) || entry.Position.CompareTo(position) < 0)
+			return false;
+		
+		var low = 0;
+		var high = _count - 1;
+
+		while (low < high) {
+			var mid = low + (high - low + 1) / 2;
+			buffer.Seek(mid * MemTableEntrySize, SeekOrigin.Begin);
+			entry = new MemEntry(mid, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
+
+			if (!keepGoing(entry))
+				break;
+
+			if (entry.Position.CompareTo(position) <= 0)
+				low = mid;
+			else
+				high = mid - 1;
+		}
+
+		buffer.Seek(low * MemTableEntrySize, SeekOrigin.Begin);
+		entry = new MemEntry(low, (long)buffer.Read<ulong>(), (long)buffer.Read<ulong>());
+
+		if (!keepGoing(entry))
+			return false;
+		
+		result = entry;
+		return true;
+	} 
 }
