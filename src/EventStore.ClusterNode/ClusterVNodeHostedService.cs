@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using EventStore.Common.Configuration;
 using EventStore.Common.Exceptions;
@@ -16,6 +17,7 @@ using EventStore.Core.Authentication.InternalAuthentication;
 using EventStore.Core.Authentication.PassthroughAuthentication;
 using EventStore.Core.Authorization;
 using EventStore.Core.Certificates;
+using EventStore.Core.Hashing;
 using EventStore.Core.PluginModel;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Plugins.Authentication;
@@ -24,6 +26,7 @@ using EventStore.Projections.Core;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using EventStore.Core.LogAbstraction;
+using EventStore.Plugins.MD5;
 
 namespace EventStore.ClusterNode {
 	internal class ClusterVNodeHostedService : IHostedService, IDisposable {
@@ -41,6 +44,18 @@ namespace EventStore.ClusterNode {
 			TelemetryConfiguration telemetryConfiguration) {
 
 			if (options == null) throw new ArgumentNullException(nameof(options));
+
+			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
+			var plugInContainer = FindPlugins();
+
+			try {
+				ConfigureMD5();
+			} catch {
+				throw new
+					InvalidConfigurationException(
+						"Failed to configure MD5. If FIPS mode is enabled, please use the FIPS commercial plugin or disable FIPS mode.");
+			}
+
 			var projectionMode = options.DevMode.Dev && options.Projections.RunProjections == ProjectionType.None
 				? ProjectionType.System
 				: options.Projections.RunProjections;
@@ -79,10 +94,6 @@ namespace EventStore.ClusterNode {
 				? _options.Application.Config
 				: _options.Auth.AuthenticationConfig;
 
-			var pluginLoader = new PluginLoader(new DirectoryInfo(Locations.PluginsDirectory));
-
-			var plugInContainer = FindPlugins();
-
 			if (_options.Database.DbLogFormat == DbLogFormat.V2) {
 				var logFormatFactory = new LogV2FormatAbstractorFactory();
             	Node = ClusterVNode.Create(_options, logFormatFactory, GetAuthenticationProviderFactory(),
@@ -94,7 +105,7 @@ namespace EventStore.ClusterNode {
 					GetAuthorizationProviderFactory(), GetPersistentSubscriptionConsumerStrategyFactories(), certificateProvider,
 					telemetryConfiguration);
 			} else {
-				throw new ArgumentOutOfRangeException("Unexpected log format specified.");
+				throw new ArgumentOutOfRangeException(nameof(_options.Database.DbLogFormat), "Unexpected log format specified.");
 			}
 
 			var enabledNodeSubsystems = projectionMode >= ProjectionType.System
@@ -219,6 +230,29 @@ namespace EventStore.ClusterNode {
 						$"to be provided by an authentication plugin, confirm the plugin DLL is located in {Locations.PluginsDirectory}." +
 						Environment.NewLine +
 						$"Valid options for authentication are: {string.Join(", ", authenticationTypeToPlugin.Keys)}.");
+			}
+
+			void ConfigureMD5() {
+				var md5Provider = GetMD5ProviderFactories().FirstOrDefault()?.Build();
+				MD5.UseProvider(md5Provider ?? new NetMD5Provider());
+			}
+
+			IEnumerable<IMD5ProviderFactory> GetMD5ProviderFactories() {
+				var md5ProviderFactories = new List<IMD5ProviderFactory>();
+
+				foreach (var plugin in pluginLoader.Load<IMD5Plugin>()) {
+					try {
+						var commandLine = plugin.CommandLineName.ToLowerInvariant();
+						Log.Information(
+							"Loaded MD5 plugin: {plugin} version {version} (Command Line: {commandLine})",
+							plugin.Name, plugin.Version, commandLine);
+						md5ProviderFactories.Add(plugin.GetMD5ProviderFactory());
+					} catch (CompositionException ex) {
+						Log.Error(ex, "Error loading MD5 plugin: {plugin}.", plugin.Name);
+					}
+				}
+
+				return md5ProviderFactories.ToArray();
 			}
 		}
 

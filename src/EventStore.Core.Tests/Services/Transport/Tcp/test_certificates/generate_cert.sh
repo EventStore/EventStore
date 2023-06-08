@@ -27,7 +27,7 @@ openssl x509 \
     -sha256 \
     -days 10000 \
     -in "$certificate_name".csr \
-    -CA ../ca/ca.pem -CAkey ../ca/ca.key \
+    -CA ../ca/ca.crt -CAkey ../ca/ca.key \
     -passin pass:password \
     -CAcreateserial \
     -extfile <(\
@@ -39,14 +39,9 @@ openssl x509 \
     ) \
     -out "$certificate_name".crt &>/dev/null
 
-echo "Generating PKCS#12 certificate: $certificate_name.p12"
-openssl pkcs12 -export -inkey "$certificate_name".key -in "$certificate_name".crt -out "$certificate_name".p12 -password pass:password  &>/dev/null
-
-echo "Deleting CSR, certificate and key file"
+echo "Deleting CSR file"
 rm "$certificate_name".csr &>/dev/null
-rm "$certificate_name".crt &>/dev/null
-rm "$certificate_name".key &>/dev/null
-rm .srl &>/dev/null
+rm ../ca/ca.srl &>/dev/null
 
 popd &>/dev/null
 

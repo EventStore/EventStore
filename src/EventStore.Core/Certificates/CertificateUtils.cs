@@ -70,7 +70,7 @@ namespace EventStore.Core {
 			using var publicCertificate = certs[0];
 			using var publicWithPrivate = publicCertificate.CopyWithPrivateKey(rsa);
 			certs.RemoveAt(0);
-			certificate = new X509Certificate2(publicWithPrivate.Export(X509ContentType.Pfx));
+			certificate = new X509Certificate2(publicWithPrivate.ExportToPkcs12());
 			intermediates = certs.Count == 0 ? null : certs;
 			return true;
 		}
@@ -150,7 +150,7 @@ namespace EventStore.Core {
 
 			using var publicCertificate = certificateBundle[0];
 			using var publicWithPrivate = publicCertificate.CopyWithPrivateKey(rsa);
-			var serverCertificate = new X509Certificate2(publicWithPrivate.Export(X509ContentType.Pfx));
+			var serverCertificate = new X509Certificate2(publicWithPrivate.ExportToPkcs12());
 			certificateBundle.RemoveAt(0);
 			var intermediates = certificateBundle.Count == 0 ? null : certificateBundle;
 

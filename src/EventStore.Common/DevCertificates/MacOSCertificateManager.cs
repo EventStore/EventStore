@@ -7,6 +7,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using EventStore.Common.Utils;
 
 namespace EventStore.Common.DevCertificates {
 
@@ -252,7 +253,7 @@ namespace EventStore.Common.DevCertificates {
 			var passwordBytes = new byte[48];
 			RandomNumberGenerator.Fill(passwordBytes.AsSpan()[0..35]);
 			var password = Convert.ToBase64String(passwordBytes, 0, 36);
-			var certBytes = certificate.Export(X509ContentType.Pfx, password);
+			var certBytes = certificate.ExportToPkcs12(password);
 			var certificatePath = Path.GetTempFileName();
 			File.WriteAllBytes(certificatePath, certBytes);
 

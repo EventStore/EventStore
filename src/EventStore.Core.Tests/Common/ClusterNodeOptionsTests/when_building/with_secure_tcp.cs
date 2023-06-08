@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using EventStore.Common.Utils;
 using EventStore.Core.Certificates;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Tests.Services.Transport.Tcp;
@@ -48,14 +49,13 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		}
 
 		private string GetCertificatePath() {
-			var filePath = Path.Combine(Path.GetTempPath(), string.Format("cert-{0}.p12", Guid.NewGuid()));
-			using (var stream = Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("EventStore.Core.Tests.Services.Transport.Tcp.test_certificates.untrusted.untrusted.p12"))
-			using (var fileStream = File.Create(filePath)) {
-				stream.Seek(0, SeekOrigin.Begin);
-				stream.CopyTo(fileStream);
-				return filePath;
-			}
+			var filePath = Path.Combine(Path.GetTempPath(), $"cert-{Guid.NewGuid()}.p12");
+			var cert = ssl_connections.GetUntrustedCertificate();
+
+			using var fileStream = File.Create(filePath);
+			fileStream.Write(cert.ExportToPkcs12());
+
+			return filePath;
 		}
 	}
 

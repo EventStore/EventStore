@@ -1,9 +1,9 @@
 using System.IO;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using EventStore.Core.Data.Redaction;
 using EventStore.Core.TransactionLog.Chunks;
 using NUnit.Framework;
+using MD5 = EventStore.Core.Hashing.MD5;
 
 // successful chunk switching tests have individual classes as they modify the database and thus the test fixture cannot be reused
 

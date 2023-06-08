@@ -1,11 +1,12 @@
 using System;
-using System.Security.Cryptography;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 using NUnit.Framework;
 using EventStore.Core.Index;
 using EventStore.Common.Utils;
 using EventStore.Common.Options;
+using MD5 = EventStore.Core.Hashing.MD5;
 
 namespace EventStore.Core.Tests.Index.IndexV1 {
 	[TestFixture(PTable.IndexEntryV1Size), Explicit, Ignore("Long running, unsafe")]

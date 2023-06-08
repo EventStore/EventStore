@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 
 namespace EventStore.Common.Utils {
@@ -75,6 +76,23 @@ namespace EventStore.Common.Utils {
 		}
 
 		public static string GetCommonName(this X509Certificate2 certificate) => certificate.GetNameInfo(X509NameType.SimpleName, false);
+
+		// FIPS compliant PKCS #12 bundle creation
+		public static byte[] ExportToPkcs12(this X509Certificate2 certificate, string password = null) {
+			password ??= string.Empty;
+
+			using var rsa = RSA.Create();
+			rsa.ImportRSAPrivateKey(certificate.GetRSAPrivateKey()!.ExportRSAPrivateKey(), out _);
+			var builder = new Pkcs12Builder();
+			var safeContents = new Pkcs12SafeContents();
+			var pbeParams = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2048);
+			safeContents.AddCertificate(certificate);
+			safeContents.AddShroudedKey(rsa, password, pbeParams);
+			builder.AddSafeContentsEncrypted(safeContents, password, pbeParams);
+			builder.SealWithMac(password, HashAlgorithmName.SHA256, 2048);
+
+			return builder.Encode();
+		}
 
 		private static bool HasNonAsciiChars(string s) => s.Any(t => t > 127);
 
