@@ -186,10 +186,14 @@ public struct SortedEntries {
 
 		return closest;
 	}
-	
+
 	public MemEntry ClosestLowerOrEqualEntry(long revision, long position) {
-		var buffer = _block.WrittenArray;
 		var entry = new MemEntry(-1, revision, position);
+		return ClosestLowerOrEqualEntry(current => current.CompareTo(entry));
+	}
+	
+	public MemEntry ClosestLowerOrEqualEntry(Func<MemEntry, int> comparer) {
+		var buffer = _block.WrittenArray;
 		var low = 0;
 		var high = _count - 1;
 		var closest = MemEntry.Default;
@@ -198,7 +202,7 @@ public struct SortedEntries {
 			var mid = (low + high) / 2;
 			var current = ReadEntryAt(buffer, mid);
 			
-			switch (current.CompareTo(entry)) {
+			switch (comparer(current)) {
 				case -1:
 					closest = current;
 					low = mid + 1;
@@ -216,19 +220,26 @@ public struct SortedEntries {
 
 		return closest;
 	}
-
-	public bool PositionUpperBound(long position, out MemEntry result, Func<MemEntry, bool> keepGoing) {
+	
+	/// <summary>
+	/// Returns the largest entry based on log position that is less than or equal to provided position.
+	/// Returns not found if all entries position are greater than provided position.
+	/// </summary>
+	public QueryResult PositionUpperBound(long position, out MemEntry result, Func<MemEntry, bool> keepGoing) {
 		MemEntry entry = MemEntry.Default;
 		result = entry;
 		
 		if (_count == 0)
-			return false;
+			return QueryResult.NotFound;
 
 		var buffer = _block.WrittenArray;
-		entry = ReadEntryAt(buffer, _count - 1);
+		entry = ReadEntryAt(buffer, 0);
 
-		if (!keepGoing(entry) || entry.Position.CompareTo(position) < 0)
-			return false;
+		if (!keepGoing(entry))
+			return QueryResult.Stopped;
+
+		if (position.CompareTo(entry.Position) < 0)
+			return QueryResult.NotFound;
 		
 		var low = 0;
 		var high = _count - 1;
@@ -238,7 +249,7 @@ public struct SortedEntries {
 			entry = ReadEntryAt(buffer, mid);
 
 			if (!keepGoing(entry))
-				break;
+				return QueryResult.Stopped;
 
 			if (entry.Position.CompareTo(position) <= 0)
 				low = mid;
@@ -249,9 +260,15 @@ public struct SortedEntries {
 		entry = ReadEntryAt(buffer, low);
 
 		if (!keepGoing(entry))
-			return false;
+			return QueryResult.NotFound;
 		
 		result = entry;
-		return true;
+		return QueryResult.Found;
 	} 
+}
+
+public enum QueryResult {
+	NotFound,
+	Stopped,
+	Found,
 }

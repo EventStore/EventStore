@@ -101,11 +101,35 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 
-				if (!block.PositionUpperBound(beforePosition - 1, out var mem, m => isForThisStream(new IndexEntry(hash, m.Revision, m.Position))))
-					return false;
-				
-				entry = new IndexEntry(hash, mem.Revision, mem.Position);
-				return true;
+				var queryResult = block.PositionUpperBound(beforePosition - 1, out var mem,
+					m => isForThisStream(new IndexEntry(hash, m.Revision, m.Position)));
+
+				bool result = false;
+				switch (queryResult) {
+					case QueryResult.Found: 
+						entry = new IndexEntry(hash, mem.Revision, mem.Position);
+						result = true;
+						break;
+					
+					case QueryResult.Stopped:
+						mem = block.ClosestLowerOrEqualEntry(e => e.Position.CompareTo(beforePosition - 1));
+						
+						foreach (var elem in block.ListFromEnd(mem.Index)) {
+							entry = new IndexEntry(hash, elem.Revision, elem.Position);
+							if (!isForThisStream(entry))
+								continue;
+							
+							result = true;
+							break;
+						}
+						
+						break;
+					
+					case QueryResult.NotFound:
+						break;
+				}
+
+				return result;
 			}
 		}
 
