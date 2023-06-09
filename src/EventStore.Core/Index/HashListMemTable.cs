@@ -183,7 +183,7 @@ namespace EventStore.Core.Index {
 				if (!_hash.TryGetValue(hash, out var block))
 					return false;
 
-				var mem = block.ClosestLowerOrEqualEntry(beforeNumber - 1, 0);
+				var mem = block.ClosestLowerOrEqualEntry(e => e.Revision.CompareTo(beforeNumber - 1));
 				if (mem.Index == -1)
 					return false;
 				
