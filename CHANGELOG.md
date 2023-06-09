@@ -73,6 +73,7 @@ All notable changes to this project will be documented in this file.
 - Read $all command `RDALLGRPC`. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
 - logging es version every 12 hours so that es version is logged in every log file [EventStore#3853](https://github.com/EventStore/EventStore/pull/3853)
 - Based on header of the private key file, ES will now accept encrypted and unencrypted PKCS8 private key files [EventStore#3851](https://github.com/EventStore/EventStore/pull/3851)
+- Support for the FIPS commercial plugin [EventStore#3846](https://github.com/EventStore/EventStore/pull/3846)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
