@@ -996,7 +996,7 @@ namespace EventStore.Core {
 			if (!options.Application.Insecure) {
 				//transport-level authentication providers
 				httpAuthenticationProviders.Add(
-					new ClientCertificateAuthenticationProvider(options.Certificate.CertificateReservedNodeCommonName));
+					new ClientCertificateAuthenticationProvider(options.Certificate.CertificateReservedNodeCommonName, options.Cluster.GossipSeed));
 
 				if (options.Interface.EnableTrustedAuth)
 					httpAuthenticationProviders.Add(new TrustedHttpAuthenticationProvider());
