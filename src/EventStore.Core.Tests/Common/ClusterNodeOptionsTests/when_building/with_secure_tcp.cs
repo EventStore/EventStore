@@ -110,7 +110,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				.WithExternalSecureTcpOn(externalSecTcp);
 			try {
 				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory,
-					certificateProvider: new OptionsCertificateProvider(_options));
+					certificateProvider: new OptionsCertificateProvider());
 			} catch (Exception ex) {
 				_caughtException = ex;
 			}

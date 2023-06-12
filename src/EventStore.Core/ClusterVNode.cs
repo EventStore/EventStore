@@ -193,7 +193,6 @@ namespace EventStore.Core {
 		private readonly CertificateDelegates.ClientCertificateValidator _externalClientCertificateValidator;
 		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 		private readonly CertificateProvider _certificateProvider;
-
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
@@ -1816,8 +1815,8 @@ namespace EventStore.Core {
 				Log.Information("Skipping reload of certificates since TLS is disabled.");
 				return;
 			}
-
-			if (_certificateProvider?.LoadCertificates() == LoadCertificateResult.VerificationFailed){
+			
+			if (_certificateProvider?.LoadCertificates(options) == LoadCertificateResult.VerificationFailed){
 				throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
 			}
 		}

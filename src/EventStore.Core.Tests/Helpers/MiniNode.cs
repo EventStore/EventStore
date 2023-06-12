@@ -167,7 +167,7 @@ namespace EventStore.Core.Tests.Helpers {
 					options.Application.AllowAnonymousEndpointAccess, options.Application.AllowAnonymousStreamAccess)),
 				telemetryConfiguration: null,
 				expiryStrategy: expiryStrategy,
-				certificateProvider: new OptionsCertificateProvider(options));
+				certificateProvider: new OptionsCertificateProvider());
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));

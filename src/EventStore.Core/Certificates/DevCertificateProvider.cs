@@ -1,3 +1,4 @@
+using System;
 using System.Security.Cryptography.X509Certificates;
 
 namespace EventStore.Core.Certificates {
@@ -6,8 +7,7 @@ namespace EventStore.Core.Certificates {
 			Certificate = certificate;
 			TrustedRootCerts = new X509Certificate2Collection(certificate);
 		}
-
-		public override LoadCertificateResult LoadCertificates() {
+		public override LoadCertificateResult LoadCertificates(ClusterVNodeOptions options) {
 			return LoadCertificateResult.Skipped;
 		}
 	}
