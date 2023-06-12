@@ -170,6 +170,8 @@ namespace EventStore.Core {
 			[Description("Allow anonymous access to streams")]
 			public bool AllowAnonymousStreamAccess { get; init; } = true;
 
+			public string SegmentWriteKey { get; init; } = default!;
+
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
@@ -187,7 +189,8 @@ namespace EventStore.Core {
 				SkipIndexScanOnReads = configurationRoot.GetValue<bool>(nameof(SkipIndexScanOnReads)),
 				Insecure = configurationRoot.GetValue<bool>(nameof(Insecure)),
 				AllowAnonymousEndpointAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousEndpointAccess)),
-				AllowAnonymousStreamAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousStreamAccess))
+				AllowAnonymousStreamAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousStreamAccess)),
+				SegmentWriteKey = configurationRoot.GetValue<string>(key:nameof(SegmentWriteKey)),
 			};
 		}
 

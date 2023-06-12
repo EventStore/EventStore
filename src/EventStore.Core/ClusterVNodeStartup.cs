@@ -23,6 +23,7 @@ using Microsoft.Net.Http.Headers;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using Segment.Analytics;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
 	System.Func<System.Threading.Tasks.Task>,
@@ -57,6 +58,7 @@ namespace EventStore.Core {
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly MultiQueuedHandler _httpMessageHandler;
 		private readonly string _clusterDns;
+		private readonly Configuration _segmentConf;
 
 		public ClusterVNodeStartup(ISubsystem[] subsystems,
 			IPublisher mainQueue,
@@ -73,7 +75,8 @@ namespace EventStore.Core {
 			KestrelHttpService httpService,
 			TelemetryConfiguration telemetryConfiguration,
 			Trackers trackers,
-			string clusterDns) {
+			string clusterDns,
+			Configuration segmentConf) {
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
 			}
@@ -122,6 +125,7 @@ namespace EventStore.Core {
 			_telemetryConfiguration = telemetryConfiguration;
 			_trackers = trackers;
 			_clusterDns = clusterDns;
+			_segmentConf = segmentConf;
 
 			_statusCheck = new StatusCheck(this);
 		}
@@ -171,6 +175,7 @@ namespace EventStore.Core {
 			_subsystems
 				.Aggregate(services
 						.AddRouting()
+						.AddScoped(_ => new Analytics(_segmentConf))
 						.AddSingleton(_httpAuthenticationProviders)
 						.AddSingleton(_authenticationProvider)
 						.AddSingleton(_authorizationProvider)

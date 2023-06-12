@@ -12,7 +12,11 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using Segment.Analytics;
+using Segment.Analytics.Utilities;
+using Segment.Serialization;
 using ILogger = Serilog.ILogger;
+using String = System.String;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class InfoController : IHttpController,
@@ -23,9 +27,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		private readonly ClusterVNodeOptions _options;
 		private readonly IDictionary<string, bool> _features;
 		private readonly IAuthenticationProvider _authenticationProvider;
+		private readonly Analytics _analytics;
 		private VNodeState _currentState;
 
 		public InfoController(ClusterVNodeOptions options, IDictionary<string, bool> features, IAuthenticationProvider authenticationProvider) {
+			_analytics = new Analytics(new Configuration(options.Application.SegmentWriteKey, flushAt: 1, flushInterval:10, storageProvider: new InMemoryStorageProvider()));
 			_options = options;
 			_features = features;
 			_authenticationProvider = authenticationProvider;
@@ -45,6 +51,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		}
 
 		private void OnGetInfo(HttpEntityManager entity, UriTemplateMatch match) {
+			_analytics.Track("Info", new JsonObject() {
+				["EsVersion"] = VersionInfo.Version,
+				["State"] = _currentState.ToString().ToLower(),
+				["Features"] = new JsonObject(_features.ToDictionary<KeyValuePair<string, bool>, string, JsonElement>(s => s.Key, s => s.Value)),
+				// ["Authentication"] = new JsonObject(GetAuthenticationInfo().ToDictionary<KeyValuePair<string, object>, string, JsonElement>(s => s.Key, s => s.Value.ToString())),
+			});
+			
 			entity.ReplyTextContent(Codec.Json.To(new {
 					ESVersion = VersionInfo.Version,
 					State = _currentState.ToString().ToLower(),
