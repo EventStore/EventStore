@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using EventStore.Common.Exceptions;
+using EventStore.Core;
 using EventStore.Core.Services;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
@@ -33,18 +34,6 @@ public static class ClusterVNodeOptionsValidator {
 
 		if (options.Cluster.GossipSeed == null) {
 			throw new ArgumentNullException(nameof(options.Cluster.GossipSeed));
-		}
-
-		if (options.Cluster.PrepareAckCount <= 0) {
-			throw new ArgumentOutOfRangeException(nameof(options.Cluster.PrepareAckCount),
-				options.Cluster.PrepareAckCount,
-				$"{nameof(options.Cluster.PrepareAckCount)} must be greater than 0.");
-		}
-
-		if (options.Cluster.CommitAckCount <= 0) {
-			throw new ArgumentOutOfRangeException(nameof(options.Cluster.CommitAckCount),
-				options.Cluster.CommitAckCount,
-				$"{nameof(options.Cluster.CommitAckCount)} must be greater than 0.");
 		}
 
 		if (options.Database.InitializationThreads <= 0) {

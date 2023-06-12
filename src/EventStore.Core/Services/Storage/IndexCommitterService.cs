@@ -38,7 +38,6 @@ namespace EventStore.Core.Services.Storage {
 		private readonly IPublisher _publisher;
 		private readonly IReadOnlyCheckpoint _replicationCheckpoint;
 		private readonly IReadOnlyCheckpoint _writerCheckpoint;
-		private readonly int _commitCount;
 		private readonly ITableIndex _tableIndex;
 		private Thread _thread;
 		private bool _stop;
@@ -69,20 +68,18 @@ namespace EventStore.Core.Services.Storage {
 			IPublisher publisher,
 			IReadOnlyCheckpoint writerCheckpoint,
 			IReadOnlyCheckpoint replicationCheckpoint,
-			int commitCount,
 			ITableIndex tableIndex,
 			QueueStatsManager queueStatsManager) {
 			Ensure.NotNull(indexCommitter, nameof(indexCommitter));
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
-			Ensure.Positive(commitCount, nameof(commitCount));
+			
 
 			_indexCommitter = indexCommitter;
 			_publisher = publisher;
 			_writerCheckpoint = writerCheckpoint;
 			_replicationCheckpoint = replicationCheckpoint;
-			_commitCount = commitCount;
 			_tableIndex = tableIndex;
 			_queueStats = queueStatsManager.CreateQueueStatsCollector("Index Committer");
 		}

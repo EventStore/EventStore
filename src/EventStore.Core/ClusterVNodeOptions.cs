@@ -353,12 +353,6 @@ namespace EventStore.Core {
 			[Description("The node priority used during leader election.")]
 			public int NodePriority { get; init; } = 0;
 
-			[Description("The number of nodes which must acknowledge commits before acknowledging to a client.")]
-			public int CommitCount { get; init; } = -1;
-
-			[Description("The number of nodes which must acknowledge prepares.")]
-			public int PrepareCount { get; init; } = -1;
-
 			[Description("Whether to use DNS lookup to discover other cluster nodes.")]
 			public bool DiscoverViaDns { get; init; } = true;
 
@@ -395,8 +389,6 @@ namespace EventStore.Core {
 			public int LeaderElectionTimeoutMs { get; init; } = 1_000;
 
 			public int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
-			public int PrepareAckCount => PrepareCount > QuorumSize ? PrepareCount : QuorumSize;
-			public int CommitAckCount => CommitCount > QuorumSize ? CommitCount : QuorumSize;
 
 			internal static ClusterOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				GossipSeed = Array.ConvertAll(configurationRoot.GetCommaSeparatedValueAsArray(nameof(GossipSeed)),
@@ -404,8 +396,6 @@ namespace EventStore.Core {
 				DiscoverViaDns = configurationRoot.GetValue<bool>(nameof(DiscoverViaDns)),
 				ClusterSize = configurationRoot.GetValue<int>(nameof(ClusterSize)),
 				NodePriority = configurationRoot.GetValue<int>(nameof(NodePriority)),
-				CommitCount = configurationRoot.GetValue<int>(nameof(CommitCount)),
-				PrepareCount = configurationRoot.GetValue<int>(nameof(PrepareCount)),
 				ClusterDns = configurationRoot.GetValue<string>(nameof(ClusterDns)),
 				ClusterGossipPort = configurationRoot.GetValue<int>(nameof(ClusterGossipPort)),
 				GossipIntervalMs = configurationRoot.GetValue<int>(nameof(GossipIntervalMs)),

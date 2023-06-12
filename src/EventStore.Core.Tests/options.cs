@@ -62,8 +62,6 @@ namespace EventStore.Core.Tests {
 				nameof(ClusterVNodeOptions.TrustedRootCertificates), 
 				nameof(ClusterVNodeOptions.IndexBitnessVersion), 
 				nameof(ClusterVNodeOptions.Cluster.QuorumSize),
-				nameof(ClusterVNodeOptions.Cluster.CommitAckCount),
-				nameof(ClusterVNodeOptions.Cluster.PrepareAckCount),
 				nameof(ClusterVNodeOptions.Database.ChunkSize),
 				nameof(ClusterVNodeOptions.Database.StatsStorage),
 				nameof(ClusterVNodeOptions.Unknown.Options),
