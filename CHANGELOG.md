@@ -32,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - Prevent risk of implicit transactions being partially written when crossing a chunk boundary on the leader node [EventStore#3808](https://github.com/EventStore/EventStore/pull/3808)
 - Lower the log level of NACK logs for persistent subscriptions [EventStore#3854](https://github.com/EventStore/EventStore/pull/3854)
 - Rename ubuntu build workflow with correct version [EventStore#3863](https://github.com/EventStore/EventStore/pull/3863)
+- Want to remove PrepareCount and CommitCount db settings and docs [EventStore#3858](https://github.com/EventStore/EventStore/pull/3858)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
