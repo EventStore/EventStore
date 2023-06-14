@@ -123,6 +123,9 @@ namespace EventStore.Core.Tests.Helpers {
 						UnsafeDisableFlushToDisk = disableFlushToDisk,
 						StreamExistenceFilterSize = streamExistenceFilterSize,
 					},
+					Log = new () {
+						DisableLogFile = true // normal logging isn't initialized
+					},
 					Subsystems = new List<ISubsystem>(subsystems ?? Array.Empty<ISubsystem>())
 				}.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate())

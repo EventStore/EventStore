@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -36,7 +35,6 @@ namespace EventStore.Common.Log {
 		private static object _defaultLogLevelSwitchLock = new object();
 
 		private readonly string _logsDirectory;
-		private readonly string _componentName;
 		private readonly LoggerConfiguration _loggerConfiguration;
 
 		static EventStoreLoggerConfiguration() {
@@ -50,9 +48,10 @@ namespace EventStore.Common.Log {
 			EventListener = new SerilogEventListener();
 		}
 
-		public static void Initialize(string logsDirectory, string componentName, LogConsoleFormat logConsoleFormat,
+		public static void Initialize(string logsDirectory, LogConsoleFormat logConsoleFormat,
 			int logFileSize, RollingInterval logFileInterval, int logFileRetentionCount, bool disableLogFile,
 			string logConfig = "logconfig.json") {
+			
 			if (Interlocked.Exchange(ref Initialized, 1) == 1) {
 				throw new InvalidOperationException($"{nameof(Initialize)} may not be called more than once.");
 			}
@@ -90,7 +89,7 @@ namespace EventStore.Common.Log {
 
 			Serilog.Log.Logger = (configurationRoot.GetSection("Serilog").Exists()
 					? FromConfiguration(configurationRoot)
-					: Default(logsDirectory, componentName, configurationRoot, logConsoleFormat, logFileInterval,
+					: Default(logsDirectory, configurationRoot, logConsoleFormat, logFileInterval,
 						logFileSize, logFileRetentionCount, disableLogFile))
 				.CreateLogger();
 
@@ -116,29 +115,25 @@ namespace EventStore.Common.Log {
 		private static LoggerConfiguration FromConfiguration(IConfiguration configuration) =>
 			new LoggerConfiguration().ReadFrom.Configuration(configuration);
 
-		private static LoggerConfiguration Default(string logsDirectory, string componentName,
-			IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
-			RollingInterval logFileInterval, int logFileSize, int logFileRetentionCount, bool disableLogFile) =>
-			new EventStoreLoggerConfiguration(logsDirectory, componentName, logLevelConfigurationRoot, logConsoleFormat,
+		private static LoggerConfiguration Default(string logsDirectory, IConfigurationRoot logLevelConfigurationRoot,
+			LogConsoleFormat logConsoleFormat, RollingInterval logFileInterval, int logFileSize,
+			int logFileRetentionCount, bool disableLogFile) =>
+			new EventStoreLoggerConfiguration(logsDirectory, logLevelConfigurationRoot, logConsoleFormat,
 				logFileInterval, logFileSize, logFileRetentionCount, disableLogFile);
 
-		private EventStoreLoggerConfiguration(string logsDirectory, string componentName,
-			IConfigurationRoot logLevelConfigurationRoot, LogConsoleFormat logConsoleFormat,
-			RollingInterval logFileInterval, int logFileSize, int logFileRetentionCount, bool disableLogFile) {
+		private EventStoreLoggerConfiguration(string logsDirectory, IConfigurationRoot logLevelConfigurationRoot,
+			LogConsoleFormat logConsoleFormat, RollingInterval logFileInterval, int logFileSize,
+			int logFileRetentionCount, bool disableLogFile) {
+			
 			if (logsDirectory == null) {
 				throw new ArgumentNullException(nameof(logsDirectory));
 			}
-
-			if (componentName == null) {
-				throw new ArgumentNullException(nameof(componentName));
-			}
-
+			
 			if (logLevelConfigurationRoot == null) {
 				throw new ArgumentNullException(nameof(logLevelConfigurationRoot));
 			}
 
 			_logsDirectory = logsDirectory;
-			_componentName = componentName;
 
 			var loglevelSection = logLevelConfigurationRoot.GetSection("Logging").GetSection("LogLevel");
 			var defaultLogLevelSection = loglevelSection.GetSection("Default");
@@ -226,7 +221,7 @@ namespace EventStore.Common.Log {
 
 
 		private string GetLogFileName(string log = null) =>
-			Path.Combine(_logsDirectory, $"{_componentName}/log{(log == null ? string.Empty : $"-{log}")}.json");
+			Path.Combine(_logsDirectory, $"log{(log == null ? string.Empty : $"-{log}")}.json");
 
 		private static bool Errors(LogEvent e) => e.Exception != null || e.Level >= LogEventLevel.Error;
 

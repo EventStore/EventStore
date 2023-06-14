@@ -57,6 +57,7 @@ namespace EventStore.Core {
 		private readonly IAuthorizationProvider _authorizationProvider;
 		private readonly MultiQueuedHandler _httpMessageHandler;
 		private readonly string _clusterDns;
+		private readonly string _serveLogsFromDir;
 
 		public ClusterVNodeStartup(ISubsystem[] subsystems,
 			IPublisher mainQueue,
@@ -73,7 +74,9 @@ namespace EventStore.Core {
 			KestrelHttpService httpService,
 			TelemetryConfiguration telemetryConfiguration,
 			Trackers trackers,
-			string clusterDns) {
+			string clusterDns,
+			string serveLogsFromDir) {
+			
 			if (subsystems == null) {
 				throw new ArgumentNullException(nameof(subsystems));
 			}
@@ -122,7 +125,7 @@ namespace EventStore.Core {
 			_telemetryConfiguration = telemetryConfiguration;
 			_trackers = trackers;
 			_clusterDns = clusterDns;
-
+			_serveLogsFromDir = serveLogsFromDir;
 			_statusCheck = new StatusCheck(this);
 		}
 
@@ -144,6 +147,7 @@ namespace EventStore.Core {
 						.UseMiddleware<KestrelToInternalBridgeMiddleware>()
 						.UseMiddleware<AuthorizationMiddleware>()
 						.UseOpenTelemetryPrometheusScrapingEndpoint()
+						.UseLogDownloadEndpoint(_serveLogsFromDir)
 						.UseLegacyHttp(internalDispatcher.InvokeAsync, _httpService)
 				)
 				// enable redaction service on unix sockets only
@@ -258,7 +262,8 @@ namespace EventStore.Core {
 			}
 
 			public void Configure(IApplicationBuilder builder) =>
-				builder.Use(GetAndHeadOnly)
+				builder
+					.Use(GetAndHeadOnly)
 					.UseRouter(router => router
 						.MapMiddlewareGet("live", inner => inner.Use(Live)));
 

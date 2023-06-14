@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -16,7 +17,15 @@ namespace EventStore.Core {
 		private static readonly IEnumerable<Type> OptionSections;
 		public static readonly string HelpText;
 
-		public string GetComponentName() => $"{Interface.ExtIp}-{Interface.HttpPort}-cluster-node";
+		public string GetFullLogsDir() {
+			var logsDirectory = string.IsNullOrWhiteSpace(Log.Log)
+				? Locations.DefaultLogDirectory
+				: Log.Log;
+
+			var componentName = $"{Interface.ExtIp}-{Interface.HttpPort}-cluster-node";
+			
+			return Path.Combine(logsDirectory, componentName);
+		}
 
 		static ClusterVNodeOptions() {
 			OptionSections = typeof(ClusterVNodeOptions)

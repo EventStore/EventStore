@@ -46,8 +46,8 @@ namespace EventStore.TestClient {
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 
 			try {
-				var logsDirectory = log?.FullName ?? Locations.DefaultTestClientLogDirectory;
-				EventStoreLoggerConfiguration.Initialize(logsDirectory, "client", LogConsoleFormat.Plain,
+				var logsDirectory = Path.Combine(log?.FullName ?? Locations.DefaultTestClientLogDirectory, "client");
+				EventStoreLoggerConfiguration.Initialize(logsDirectory, LogConsoleFormat.Plain,
 					1024 * 1024 * 1024, RollingInterval.Day, 31, false);
 				var statsLog = statsFormat == StatsFormat.Csv
 					? TestClientCsvLoggerConfiguration.Initialize(logsDirectory, "client")

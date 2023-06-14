@@ -64,6 +64,11 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				SupportedCodecs, ReadStreamOperationForScavengeStream);
 			Register(service, "/streams/$scavenges?embed={embed}", HttpMethod.Get, GetStreamEventsBackwardScavenges, Codec.NoCodecs,
 				SupportedCodecs, ReadStreamOperationForScavengeStream);
+			
+			// this exists only to specify the permissions required for the /admin/logs & /admin/logs/{file} endpoint
+			// Kestrel handles the request itself
+			RegisterAuthOnly(service, "/admin/logs", HttpMethod.Get, Codec.NoCodecs, new ICodec[]{Codec.Json}, Operations.Node.Shutdown);
+			RegisterAuthOnly(service, "/admin/logs/{file}", HttpMethod.Get, Codec.NoCodecs, new ICodec[]{Codec.Json}, Operations.Node.Shutdown);
 		}
 	
 		private static Func<UriTemplateMatch, Operation> ForScavengeStream(OperationDefinition definition) {

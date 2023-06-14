@@ -1533,7 +1533,8 @@ namespace EventStore.Core {
 				_httpService,
 				telemetryConfiguration,
 				trackers,
-				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
+				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null,
+				serveLogsFromDir: options.Log.DisableLogFile ? null : options.GetFullLogsDir());
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 

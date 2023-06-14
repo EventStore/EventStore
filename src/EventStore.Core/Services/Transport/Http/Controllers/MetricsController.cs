@@ -19,12 +19,8 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			Ensure.NotNull(service, "service");
 
 			// this exists only to specify the permissions required for the /metrics endpoint
-			service.RegisterAction(new ControllerAction("/metrics", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs,
-				new Operation(Operations.Node.Statistics.Read)),
-				(x, y) => {
-					// the PrometheusExporterMiddleware handles the request itself, this will not be called
-					throw new InvalidOperationException();
-				});
+			// the PrometheusExporterMiddleware handles the request itself
+			RegisterAuthOnly(service, "/metrics", HttpMethod.Get, Codec.NoCodecs, SupportedCodecs, Operations.Node.Statistics.Read);
 		}
 
 		class NoOpPublisher : IPublisher {

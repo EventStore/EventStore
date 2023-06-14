@@ -67,6 +67,13 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, operation),
 				handler);
 		}
+		
+		protected void RegisterAuthOnly(IHttpService service, string uriTemplate, string httpMethod,
+			ICodec[] requestCodecs, ICodec[] responseCodecs, OperationDefinition operation) {
+			
+			service.RegisterAction(new ControllerAction(uriTemplate, httpMethod, requestCodecs, responseCodecs, new Operation(operation)),
+				(_, _) => throw new InvalidOperationException());
+		}
 
 		protected void RegisterCustom(IHttpService service, string uriTemplate, string httpMethod,
 			Func<HttpEntityManager, UriTemplateMatch, RequestParams> handler,

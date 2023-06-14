@@ -35,10 +35,8 @@ namespace EventStore.ClusterNode {
 			Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
 			try {
 				var options = ClusterVNodeOptions.FromConfiguration(args, Environment.GetEnvironmentVariables());
-				var logsDirectory = string.IsNullOrWhiteSpace(options.Log.Log)
-					? Locations.DefaultLogDirectory
-					: options.Log.Log;
-				EventStoreLoggerConfiguration.Initialize(logsDirectory, options.GetComponentName(),
+				var logsDirectory = options.GetFullLogsDir();
+				EventStoreLoggerConfiguration.Initialize(logsDirectory,
 					options.Log.LogConsoleFormat,
 					options.Log.LogFileSize,
 					options.Log.LogFileInterval,

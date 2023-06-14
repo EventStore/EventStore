@@ -146,6 +146,9 @@ namespace EventStore.Core.Tests.Helpers {
 				Projections = new() {
 					RunProjections = ProjectionType.None
 				},
+				Log = new() {
+					DisableLogFile = true // normal logging isn't initialized
+				},
 				Subsystems = subsystems ?? Array.Empty<ISubsystem>()
 			};
 

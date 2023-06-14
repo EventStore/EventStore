@@ -72,7 +72,8 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 						1024 * 1024, _timeout, expiryStrategy: null, _service,
 						new TelemetryConfiguration(),
 						new Trackers(),
-						null)));
+						clusterDns: null,
+						serveLogsFromDir: null)));
 			_httpMessageHandler = _server.CreateHandler();
 			_client = new HttpAsyncClient(_timeout, _httpMessageHandler);
 			
