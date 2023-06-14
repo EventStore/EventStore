@@ -35,7 +35,7 @@
 		<!-- upgrade because of transitive dependency vulnerability -->
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
 		<!-- upgrade because of transitive dependency vulnerability -->
-		<PackageReference Include="NuGet.Protocol" Version="5.11.3" />
+		<PackageReference Include="NuGet.Protocol" Version="6.0.5" />
 		<PackageReference Include="System.Linq.Async" Version="6.0.1" />
 		<!-- upgrade because of transitive dependency vulnerability -->
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
