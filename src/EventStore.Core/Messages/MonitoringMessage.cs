@@ -208,5 +208,9 @@ namespace EventStore.Core.Messages {
 		[DerivedMessage(CoreMessage.Misc)]
 		public partial class DynamicCacheManagerTick : Message {
 		}
+		
+		[DerivedMessage(CoreMessage.Misc)]
+		public partial class CheckCertificateExpiry : Message {
+		}
 	}
 }

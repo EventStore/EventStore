@@ -51,7 +51,7 @@ namespace EventStore.Core.Tests.Certificates {
 			return utf8Encoding.GetBytes(s);
 		}
 
-		private static string GenerateSubject() {
+		protected static string GenerateSubject() {
 			var charset = GetCharset();
 			string s = "";
 			for (var j = 0; j < 10; j++) {
