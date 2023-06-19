@@ -442,9 +442,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 							new EventRecord(indexEntries[i].Version, prepares[i], streamName, eventType),
 							isTfEof && i == n - 1));
 				}
-			}
 
-			_tracker.OnIndexed(prepares);
+				_tracker.OnIndexed(prepares);
+			}
 
 			return eventNumber;
 		}

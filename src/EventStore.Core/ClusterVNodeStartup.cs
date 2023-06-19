@@ -200,7 +200,9 @@ namespace EventStore.Core {
 							.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
 							.AddMeter(_telemetryConfiguration.Meters)
 							.AddView(i => {
-								if (i.Name.StartsWith("eventstore-latency") && i.Unit == "seconds")
+								if (i.Name.StartsWith("eventstore-") &&
+									i.Name.EndsWith("-latency") &&
+									i.Unit == "seconds")
 									return new ExplicitBucketHistogramConfiguration {
 										Boundaries = new double[] {
 											0.001, //    1 ms
