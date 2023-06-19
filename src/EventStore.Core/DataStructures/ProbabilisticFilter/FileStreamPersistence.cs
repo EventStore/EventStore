@@ -122,11 +122,13 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 					$"The expected file size ({DataAccessor.FileSize:N0}) does not match " +
 					$"the actual file size ({bulkFileStream.Length:N0}) of file {_path}");
 
+			// linux only reads 2147479552 at a time (4095 bytes less than intmax)
+			var blockSize = int.MaxValue / 2;
 			var bytesToRead = DataAccessor.FileSize;
 			var bytesRead = 0L;
 			while (bytesToRead > 0) {
-				var bytesToReadInBlock = bytesToRead > int.MaxValue
-					? int.MaxValue
+				var bytesToReadInBlock = bytesToRead > blockSize
+					? blockSize
 					: (int)bytesToRead;
 				
 				// consider reading in buffer size blocks. or using random access in net6
