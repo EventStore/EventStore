@@ -71,7 +71,10 @@ namespace EventStore.Core.Index {
 			// We could count them to be precise, but a reasonable estimate will be faster.
 			const int averageEventsPerStreamPerFile = 4;
 			long size = entryCount / averageEventsPerStreamPerFile;
-			size = Math.Max(size, 10_000);
+			size = Math.Clamp(
+				value: size,
+				min: BloomFilterAccessor.MinSizeKB * 1000,
+				max: BloomFilterAccessor.MaxSizeKB * 1000);
 			return size;
 		}
 
