@@ -40,6 +40,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 			if (logicalFilterSize < MinSizeKB * 1000 || logicalFilterSize > MaxSizeKB * 1000) {
 				throw new ArgumentOutOfRangeException(
 					nameof(logicalFilterSize),
+					logicalFilterSize,
 					$"size should be between {MinSizeKB:N0} KB and {MaxSizeKB:N0} KB inclusive");
 			}
 
