@@ -33,6 +33,10 @@ All notable changes to this project will be documented in this file.
 - Lower the log level of NACK logs for persistent subscriptions [EventStore#3854](https://github.com/EventStore/EventStore/pull/3854)
 - Rename ubuntu build workflow with correct version [EventStore#3863](https://github.com/EventStore/EventStore/pull/3863)
 - Want to remove PrepareCount and CommitCount db settings and docs [EventStore#3858](https://github.com/EventStore/EventStore/pull/3858)
+- Bump reference of System.Security.Cryptography.Pkcs for CVE-2023-29331 [EventStore#3878](https://github.com/EventStore/EventStore/pull/3878)
+- Bump transitive reference of System.Security.Cryptography.Pkcs from 7.0.2. [EventStore#3877](https://github.com/EventStore/EventStore/pull/3877)
+- Bump `System.Security.Cryptography.Pkcs` from 7.0.1 to 7.0.2. [EventStore#3874](https://github.com/EventStore/EventStore/pull/3874)
+- Running EventStore with `--dev` on Windows [EventStore#3875](https://github.com/EventStore/EventStore/pull/3875)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
