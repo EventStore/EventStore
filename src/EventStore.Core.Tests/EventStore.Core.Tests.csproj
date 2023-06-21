@@ -22,6 +22,7 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="Serilog.Sinks.InMemory" Version="0.11.0" />
 
 	</ItemGroup>
 	<ItemGroup>

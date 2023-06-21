@@ -65,6 +65,8 @@ namespace EventStore.Core.Tests.Integration {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
+			
+			MiniNodeLogging.Setup();
 
 			_nodeEndpoints[0] = new Endpoints();
 			_nodeEndpoints[1] = new Endpoints();
@@ -107,6 +109,7 @@ namespace EventStore.Core.Tests.Integration {
 				await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(60));
 			} catch (TimeoutException ex) {
 				if (_nodes.Select(x => x.Started).Count() < 2){
+					MiniNodeLogging.WriteLogs();
 					throw new TimeoutException($"Cluster nodes did not start. Statuses: {_nodes[0].NodeState}/{_nodes[1].NodeState}/{_nodes[2].NodeState}", ex);
 				}
 			}
@@ -114,12 +117,14 @@ namespace EventStore.Core.Tests.Integration {
 			// wait for cluster to be fully operational, tests depend on leader and followers
 			AssertEx.IsOrBecomesTrue(() => _nodes.Any(x => x.NodeState == Data.VNodeState.Leader),
 				timeout: TimeSpan.FromSeconds(30),
+				onFail: MiniNodeLogging.WriteLogs,
 				msg: "Waiting for leader timed out!");
 
 			//flaky: most tests only need 1 follower, waiting for 2 causes timeouts 
 			AssertEx.IsOrBecomesTrue(() =>
 					_nodes.Any(x => x.NodeState is VNodeState.Follower or VNodeState.ReadOnlyReplica),
 				timeout: TimeSpan.FromSeconds(90),
+				onFail: MiniNodeLogging.WriteLogs,
 				msg: $"Waiting for followers timed out! States={string.Join(", ", _nodes.Select(n => n.NodeState))}");
 
 			_conn = CreateConnection();
@@ -152,6 +157,8 @@ namespace EventStore.Core.Tests.Integration {
 				_nodes[1].Shutdown(),
 				_nodes[2].Shutdown());
 
+			MiniNodeLogging.Clear();
+			
 			await base.TestFixtureTearDown();
 		}
 

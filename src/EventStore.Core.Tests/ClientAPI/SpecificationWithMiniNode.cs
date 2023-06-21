@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.Core.Tests.ClientAPI.Helpers;
@@ -29,6 +28,9 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
+			
+			MiniNodeLogging.Setup();
+			
 			try {
 				await base.TestFixtureSetUp();
 			} catch (Exception ex) {
@@ -41,18 +43,21 @@ namespace EventStore.Core.Tests.ClientAPI {
 				_conn = BuildConnection(_node);
 				await _conn.ConnectAsync();		
 			} catch (Exception ex) {
+				MiniNodeLogging.WriteLogs();
 				throw new Exception("MiniNodeSetUp Failed", ex);
 			}
 
 			try {
 				await Given().WithTimeout(Timeout);
 			} catch (Exception ex) {
+				MiniNodeLogging.WriteLogs();
 				throw new Exception("Given Failed", ex);
 			}
 
 			try {
 				await When().WithTimeout(Timeout);
 			} catch (Exception ex) {
+				MiniNodeLogging.WriteLogs();
 				throw new Exception("When Failed", ex);
 			}
 		}
@@ -62,6 +67,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 			_conn?.Close();
 			await _node.Shutdown();
 			await base.TestFixtureTearDown();
+
+			MiniNodeLogging.Clear();
 		}
 	}
 }
