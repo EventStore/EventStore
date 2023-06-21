@@ -19,13 +19,19 @@ public class IncomingGrpcCallsMetric : EventListener {
 	private long _callsUnimplemented;
 	private long _callsDeadlineExceeded;
 
-	public IncomingGrpcCallsMetric(Meter meter, string name, IncomingGrpcCall[] filter) {
-		var funcs = new List<Func<Measurement<long>>>();
+	public IncomingGrpcCallsMetric(
+		Meter meter,
+		string currentCallsMetricName,
+		string totalCallsMetricName,
+		IncomingGrpcCall[] filter) {
 
 		if (filter.Contains(IncomingGrpcCall.Current)) {
-			var tags = GenTags("current");
-			funcs.Add(() => new(Volatile.Read(ref _callsCurrent), tags.AsSpan()));
+			meter.CreateObservableUpDownCounter(
+				currentCallsMetricName,
+				() => Volatile.Read(ref _callsCurrent));
 		}
+
+		var funcs = new List<Func<Measurement<long>>>();
 
 		if (filter.Contains(IncomingGrpcCall.Total)) {
 			var tags = GenTags("total");
@@ -47,7 +53,7 @@ public class IncomingGrpcCallsMetric : EventListener {
 			funcs.Add(() => new(Volatile.Read(ref _callsDeadlineExceeded), tags.AsSpan()));
 		}
 
-		meter.CreateObservableUpDownCounter(name, GenObserveCalls(funcs.ToArray()));
+		meter.CreateObservableCounter(totalCallsMetricName, GenObserveCalls(funcs.ToArray()));
 	}
 
 	private static KeyValuePair<string, object>[] GenTags(string kind) =>

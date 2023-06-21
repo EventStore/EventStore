@@ -34,7 +34,7 @@
 
 	"IncomingGrpcCalls": {
 		"Current": true,
-		"Total" :  true,
+		"Total": true,
 		"Failed": true,
 		"Unimplemented": true,
 		"DeadlineExceeded": true
@@ -42,7 +42,7 @@
 
 	"Gossip": {
 		"PullFromPeer": false,
-		"PushToPeer":  true,
+		"PushToPeer": true,
 		"ProcessingPushFromPeer": true,
 		"ProcessingRequestFromPeer": false,
 		"ProcessingRequestFromGrpcClient": false,
@@ -80,8 +80,8 @@
 		"UpTime": true,
 		"Cpu": true,
 		"MemWorkingSet": true,
-		"MemPagedBytes": true,
-		"MemVirtualBytes": true,
+		"MemPagedBytes": false,
+		"MemVirtualBytes": false,
 		"ThreadCount": true,
 		"ThreadPoolPendingWorkItemCount": true,
 		"LockContentionCount": true,

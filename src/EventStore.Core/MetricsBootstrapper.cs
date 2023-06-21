@@ -77,8 +77,8 @@ public static class MetricsBootstrapper {
 
 		var coreMeter = new Meter("EventStore.Core", version: "1.0.0");
 		var statusMetric = new StatusMetric(coreMeter, "eventstore-statuses");
-		var durationMetric = new DurationMetric(coreMeter, "eventstore-duration");
-		var latencyMetric = new DurationMetric(coreMeter, "eventstore-latency");
+		var grpcMethodMetric = new DurationMetric(coreMeter, "eventstore-grpc-method-duration");
+		var gossipLatencyMetric = new DurationMetric(coreMeter, "eventstore-gossip-latency");
 		var gossipProcessingMetric = new DurationMetric(coreMeter, "eventstore-gossip-processing-duration");
 		var queueQueueingDurationMaxMetric = new DurationMaxMetric(coreMeter, "eventstore-queue-queueing-duration-max");
 		var queueProcessingDurationMetric = new DurationMetric(coreMeter, "eventstore-queue-processing-duration");
@@ -89,7 +89,11 @@ public static class MetricsBootstrapper {
 		// incoming grpc calls
 		var enabledCalls = conf.IncomingGrpcCalls.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToArray();
 		if (enabledCalls.Length > 0) {
-			_ = new IncomingGrpcCallsMetric(coreMeter, "eventstore-incoming-grpc-calls", enabledCalls);
+			_ = new IncomingGrpcCallsMetric(
+				coreMeter,
+				"eventstore-current-incoming-grpc-calls",
+				"eventstore-incoming-grpc-calls",
+				enabledCalls);
 		}
 
 		// cache hits/misses
@@ -126,10 +130,10 @@ public static class MetricsBootstrapper {
 		// gossip
 		if (conf.Gossip.Count != 0) {
 			if (conf.Gossip.TryGetValue(Conf.GossipTracker.PullFromPeer, out var pullFromPeer) && pullFromPeer)
-				trackers.GossipTrackers.PullFromPeer = new DurationTracker(latencyMetric, "pull-gossip-from-peer");
+				trackers.GossipTrackers.PullFromPeer = new DurationTracker(gossipLatencyMetric, "pull-from-peer");
 
 			if (conf.Gossip.TryGetValue(Conf.GossipTracker.PushToPeer, out var pushToPeer) && pushToPeer)
-				trackers.GossipTrackers.PushToPeer = new DurationTracker(latencyMetric, "push-gossip-to-peer");
+				trackers.GossipTrackers.PushToPeer = new DurationTracker(gossipLatencyMetric, "push-to-peer");
 
 			if (conf.Gossip.TryGetValue(Conf.GossipTracker.ProcessingPushFromPeer, out var processingPushFromPeer) && processingPushFromPeer)
 				trackers.GossipTrackers.ProcessingPushFromPeer = new DurationTracker(gossipProcessingMetric, "push-from-peer");
@@ -180,7 +184,7 @@ public static class MetricsBootstrapper {
 		// grpc historgrams
 		foreach (var method in Enum.GetValues<Conf.GrpcMethod>()) {
 			if (conf.GrpcMethods.TryGetValue(method, out var label) && !string.IsNullOrWhiteSpace(label))
-				trackers.GrpcTrackers[method] = new DurationTracker(durationMetric, label);
+				trackers.GrpcTrackers[method] = new DurationTracker(grpcMethodMetric, label);
 		}
 
 		// storage writer

@@ -23,7 +23,7 @@ public class IncomingGrpcCallsMetricTests {
 		using var testSource = new TestEventSource();
 		using var meter = new Meter($"{typeof(IncomingGrpcCallsMetricTests)}");
 		using var listener = new TestMeterListener<long>(meter);
-		using var sut = new IncomingGrpcCallsMetric(meter, "grpc-calls", new[] {
+		using var sut = new IncomingGrpcCallsMetric(meter, "current", "totals", new[] {
 			Conf.IncomingGrpcCall.Current,
 			Conf.IncomingGrpcCall.Total,
 			Conf.IncomingGrpcCall.Failed,
@@ -32,48 +32,55 @@ public class IncomingGrpcCallsMetricTests {
 		});
 
 		sut.EnableEvents(testSource, EventLevel.Verbose);
-		AssertMeasurements(listener,
-			AssertMeasurement("current", 0),
+
+		listener.Observe();
+		AssertMeasurements(listener, "current", AssertCurrentMeasurement(0));
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 0),
 			AssertMeasurement("failed", 0),
 			AssertMeasurement("unimplemented", 0),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallStart();
-		AssertMeasurements(listener,
-			AssertMeasurement("current", 1),
+		listener.Observe();
+		AssertMeasurements(listener, "current", AssertCurrentMeasurement(1));
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("failed", 0),
 			AssertMeasurement("unimplemented", 0),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallFailed();
-		AssertMeasurements(listener,
-			AssertMeasurement("current", 1),
+		listener.Observe();
+		AssertMeasurements(listener, "current", AssertCurrentMeasurement(1));
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("failed", 1),
 			AssertMeasurement("unimplemented", 0),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallUnimplemented();
-		AssertMeasurements(listener,
-			AssertMeasurement("current", 1),
+		listener.Observe();
+		AssertMeasurements(listener, "current", AssertCurrentMeasurement(1));
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("failed", 1),
 			AssertMeasurement("unimplemented", 1),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallDeadlineExceeded();
-		AssertMeasurements(listener,
-			AssertMeasurement("current", 1),
+		listener.Observe();
+		AssertMeasurements(listener, "current", AssertCurrentMeasurement(1));
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("failed", 1),
 			AssertMeasurement("unimplemented", 1),
 			AssertMeasurement("deadline-exceeded", 1));
 
 		testSource.CallStop();
-		AssertMeasurements(listener,
-			AssertMeasurement("current", 0),
+		listener.Observe();
+		AssertMeasurements(listener, "current", AssertCurrentMeasurement(0));
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("failed", 1),
 			AssertMeasurement("unimplemented", 1),
@@ -85,41 +92,61 @@ public class IncomingGrpcCallsMetricTests {
 		using var testSource = new TestEventSource();
 		using var meter = new Meter($"{typeof(IncomingGrpcCallsMetricTests)}");
 		using var listener = new TestMeterListener<long>(meter);
-		using var sut = new IncomingGrpcCallsMetric(meter, "grpc-calls", new[] {
+		using var sut = new IncomingGrpcCallsMetric(meter, "current", "totals", new[] {
 			Conf.IncomingGrpcCall.Total,
 			Conf.IncomingGrpcCall.DeadlineExceeded
 		});
 
 		sut.EnableEvents(testSource, EventLevel.Verbose);
-		AssertMeasurements(listener,
+		listener.Observe();
+		AssertMeasurements(listener, "current");
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 0),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallStart();
-		AssertMeasurements(listener,
+		listener.Observe();
+		AssertMeasurements(listener, "current");
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallFailed();
-		AssertMeasurements(listener,
+		listener.Observe();
+		AssertMeasurements(listener, "current");
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallUnimplemented();
-		AssertMeasurements(listener,
+		listener.Observe();
+		AssertMeasurements(listener, "current");
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("deadline-exceeded", 0));
 
 		testSource.CallDeadlineExceeded();
-		AssertMeasurements(listener,
+		listener.Observe();
+		AssertMeasurements(listener, "current");
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("deadline-exceeded", 1));
 
 		testSource.CallStop();
-		AssertMeasurements(listener,
+		listener.Observe();
+		AssertMeasurements(listener, "current");
+		AssertMeasurements(listener, "totals",
 			AssertMeasurement("total", 1),
 			AssertMeasurement("deadline-exceeded", 1));
 	}
+
+	static Action<TestMeterListener<long>.TestMeasurement> AssertCurrentMeasurement(
+		long expectedValue) =>
+
+		actualMeasurement => {
+			Assert.Equal(expectedValue, actualMeasurement.Value);
+			Assert.Empty(actualMeasurement.Tags);
+		};
 
 	static Action<TestMeterListener<long>.TestMeasurement> AssertMeasurement(
 		string expectedKind,
@@ -137,9 +164,9 @@ public class IncomingGrpcCallsMetricTests {
 
 	static void AssertMeasurements(
 		TestMeterListener<long> listener,
+		string name,
 		params Action<TestMeterListener<long>.TestMeasurement>[] actions) {
 
-		listener.Observe();
-		Assert.Collection(listener.RetrieveMeasurements("grpc-calls"), actions);
+		Assert.Collection(listener.RetrieveMeasurements(name), actions);
 	}
 }
