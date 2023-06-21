@@ -24,7 +24,7 @@ namespace EventStore.Core.Index {
 
 		private const int MidpointsOverflowSafetyNet = 20;
 
-		private static PersistentBloomFilter ConstructBloomFilter(
+		public static PersistentBloomFilter ConstructBloomFilter(
 			bool useBloomFilter,
 			string filename,
 			long indexEntryCount) {
