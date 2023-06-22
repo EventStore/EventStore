@@ -80,6 +80,8 @@ All notable changes to this project will be documented in this file.
 - logging es version every 12 hours so that es version is logged in every log file [EventStore#3853](https://github.com/EventStore/EventStore/pull/3853)
 - Based on header of the private key file, ES will now accept encrypted and unencrypted PKCS8 private key files [EventStore#3851](https://github.com/EventStore/EventStore/pull/3851)
 - Support for the FIPS commercial plugin [EventStore#3846](https://github.com/EventStore/EventStore/pull/3846)
+- polishing new metrics [EventStore#3879](https://github.com/EventStore/EventStore/pull/3879)
+- Show MiniNode logs in case test fails [EventStore#3866](https://github.com/EventStore/EventStore/pull/3866)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
@@ -119,6 +121,8 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3801 [EventStore#3806](https://github.com/EventStore/EventStore/pull/3806)
 - //github.com/EventStore/EventStore/pull/3813 [EventStore#3821](https://github.com/EventStore/EventStore/pull/3821)
 - //github.com/EventStore/EventStore/pull/3813 [EventStore#3821](https://github.com/EventStore/EventStore/pull/3821)
+- //github.com/EventStore/EventStore/pull/3876 [EventStore#3880](https://github.com/EventStore/EventStore/pull/3880)
+- //github.com/EventStore/EventStore/pull/3876 [EventStore#3881](https://github.com/EventStore/EventStore/pull/3881)
 
 ## [22.10.2] - 2023-05-15
 
