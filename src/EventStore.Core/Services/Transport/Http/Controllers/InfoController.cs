@@ -16,7 +16,6 @@ using Segment.Analytics;
 using Segment.Analytics.Utilities;
 using Segment.Serialization;
 using ILogger = Serilog.ILogger;
-using String = System.String;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
 	public class InfoController : IHttpController,
