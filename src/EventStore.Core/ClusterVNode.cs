@@ -62,8 +62,6 @@ using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Mono.Unix.Native;
-using Segment.Analytics;
-using Segment.Analytics.Utilities;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core {
@@ -1528,7 +1526,6 @@ namespace EventStore.Core {
 				}
 			}
 
-			var segmentConf = new Configuration(options.Application.SegmentWriteKey, flushAt:1, flushInterval:10, storageProvider: new InMemoryStorageProvider());
 			_startup = new ClusterVNodeStartup<TStreamId>(_subsystems, _mainQueue, monitoringQueue, _mainBus, _workersHandler,
 				_authenticationProvider, httpAuthenticationProviders, _authorizationProvider, _readIndex,
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
@@ -1536,7 +1533,7 @@ namespace EventStore.Core {
 				_httpService,
 				telemetryConfiguration,
 				trackers,
-				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null, segmentConf);
+				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
 
