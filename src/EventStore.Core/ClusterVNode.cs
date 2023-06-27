@@ -52,6 +52,7 @@ using EventStore.Core.Authorization;
 using EventStore.Core.Caching;
 using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
+using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Synchronization;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
@@ -193,7 +194,7 @@ namespace EventStore.Core {
 		private readonly CertificateDelegates.ClientCertificateValidator _externalClientCertificateValidator;
 		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 		private readonly CertificateProvider _certificateProvider;
-		
+
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
@@ -1539,6 +1540,9 @@ namespace EventStore.Core {
 			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
 			_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
 			_mainBus.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);
+			var periodicLogging = new PeriodicallyLoggingService(_mainQueue, VersionInfo.Version, Log);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(periodicLogging);
+			_mainBus.Subscribe<MonitoringMessage.CheckEsVersion>(periodicLogging);
 
 			dynamicCacheManager.Start();
 		}

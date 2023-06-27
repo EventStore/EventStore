@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using EventStore.Common.Log;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
@@ -32,7 +31,6 @@ namespace EventStore.Core.Services.Gossip {
 		public static readonly TimeSpan GossipStartupInterval = TimeSpan.FromMilliseconds(100);
 		private readonly TimeSpan DeadMemberRemovalPeriod;
 		private static readonly ILogger Log = Serilog.Log.ForContext<GossipServiceBase>();
-		private static readonly ThrottledLog<GossipServiceBase> ThrottledLog = new(TimeSpan.FromHours(12));
 
 		protected readonly MemberInfo _memberInfo;
 		protected VNodeState CurrentRole = VNodeState.Initializing;
@@ -142,7 +140,6 @@ namespace EventStore.Core.Services.Gossip {
 			var gossipRound = Math.Min(int.MaxValue - 1, node == null ? message.GossipRound : message.GossipRound + 1);
 			_bus.Publish(
 				TimerMessage.Schedule.Create(interval, _publishEnvelope, new GossipMessage.Gossip(gossipRound)));
-			ThrottledLog.Information($"Current version of Event Store is : {_memberInfo.ESVersion}");
 		}
 
 		private MemberInfo GetNodeToGossipTo(MemberInfo[] members) {
