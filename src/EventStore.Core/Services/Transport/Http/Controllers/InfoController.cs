@@ -55,7 +55,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 				["EsVersion"] = VersionInfo.Version,
 				["State"] = _currentState.ToString().ToLower(),
 				["Features"] = new JsonObject(_features.ToDictionary<KeyValuePair<string, bool>, string, JsonElement>(s => s.Key, s => s.Value)),
-				// ["Authentication"] = new JsonObject(GetAuthenticationInfo().ToDictionary<KeyValuePair<string, object>, string, JsonElement>(s => s.Key, s => s.Value.ToString())),
 			});
 			
 			entity.ReplyTextContent(Codec.Json.To(new {
