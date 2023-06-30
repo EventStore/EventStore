@@ -29,6 +29,7 @@ module.exports = [
         children: [
             "operations.md",
             "diagnostics.md",
+            "metrics.md"
         ]
     }
 ];
