@@ -193,7 +193,7 @@ namespace EventStore.Core {
 		private readonly CertificateDelegates.ClientCertificateValidator _externalClientCertificateValidator;
 		private readonly CertificateDelegates.ServerCertificateValidator _externalServerCertificateValidator;
 		private readonly CertificateProvider _certificateProvider;
-
+		
 		private readonly ClusterVNodeStartup<TStreamId> _startup;
 		private readonly EventStoreClusterClientCache _eventStoreClusterClientCache;
 
@@ -1536,6 +1536,9 @@ namespace EventStore.Core {
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);
 			_mainBus.Subscribe<SystemMessage.BecomeShuttingDown>(_startup);
+			var certificateExpiryMonitor = new CertificateExpiryMonitor(_mainQueue, _certificateSelector, Log);
+			_mainBus.Subscribe<SystemMessage.SystemStart>(certificateExpiryMonitor);
+			_mainBus.Subscribe<MonitoringMessage.CheckCertificateExpiry>(certificateExpiryMonitor);
 
 			dynamicCacheManager.Start();
 		}
