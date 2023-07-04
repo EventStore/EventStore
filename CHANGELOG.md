@@ -38,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - Bump `System.Security.Cryptography.Pkcs` from 7.0.1 to 7.0.2. [EventStore#3874](https://github.com/EventStore/EventStore/pull/3874)
 - Running EventStore with `--dev` on Windows [EventStore#3875](https://github.com/EventStore/EventStore/pull/3875)
 - Support bloom filters for 400gb+ index files [EventStore#3876](https://github.com/EventStore/EventStore/pull/3876)
+- Log a warning when certificates are close to expiry. [EventStore#3855](https://github.com/EventStore/EventStore/pull/3855)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
