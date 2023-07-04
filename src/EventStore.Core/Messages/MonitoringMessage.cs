@@ -212,5 +212,9 @@ namespace EventStore.Core.Messages {
 		[DerivedMessage(CoreMessage.Misc)]
 		public partial class CheckCertificateExpiry : Message {
 		}
+
+		[DerivedMessage(CoreMessage.Misc)]
+		public partial class CheckEsVersion : Message {
+		}
 	}
 }
