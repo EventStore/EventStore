@@ -47,7 +47,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 		private readonly ICheckpoint _writerCheckpoint;
 		private readonly bool _runHeadingReader;
 		private readonly bool _faultOutOfOrderProjections;
-		private readonly IEnvelope _sendToThisEnvelope;
+		private readonly IEnvelope _publishEnvelope;
 		private Guid _defaultEventReaderId;
 		private Guid _reportProgressId;
 
@@ -61,7 +61,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_writerCheckpoint = writerCheckpoint;
 			_runHeadingReader = runHeadingReader;
 			_faultOutOfOrderProjections = faultOutOfOrderProjections;
-			_sendToThisEnvelope = new SendToThisEnvelope(this);
+			_publishEnvelope = new PublishEnvelope(publisher, true);
 		}
 
 		public void Handle(ReaderSubscriptionManagement.Pause message) {
@@ -257,7 +257,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			}
 
 			_reportProgressId = Guid.NewGuid();
-			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(500), _sendToThisEnvelope, new ReaderSubscriptionMessage.ReportProgress(_reportProgressId)));
+			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(500), _publishEnvelope, new ReaderSubscriptionMessage.ReportProgress(_reportProgressId)));
 		}
 
 		private void StartReaders() {
@@ -347,7 +347,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_publisher.Publish(new ProjectionCoreServiceMessage.SubComponentStarted(
 				SubComponentName, message.InstanceCorrelationId));
 			_reportProgressId = Guid.NewGuid();
-			_publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(500), _sendToThisEnvelope, new ReaderSubscriptionMessage.ReportProgress(_reportProgressId)));
+			 _publisher.Publish(TimerMessage.Schedule.Create(TimeSpan.FromMilliseconds(500), _publishEnvelope, new ReaderSubscriptionMessage.ReportProgress(_reportProgressId)));
 		}
 
 		public void Handle(ReaderCoreServiceMessage.StopReader message) {
