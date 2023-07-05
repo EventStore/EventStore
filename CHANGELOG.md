@@ -83,6 +83,7 @@ All notable changes to this project will be documented in this file.
 - Support for the FIPS commercial plugin [EventStore#3846](https://github.com/EventStore/EventStore/pull/3846)
 - polishing new metrics [EventStore#3879](https://github.com/EventStore/EventStore/pull/3879)
 - Show MiniNode logs in case test fails [EventStore#3866](https://github.com/EventStore/EventStore/pull/3866)
+- Periodically log esdb version on each node [EventStore#3882](https://github.com/EventStore/EventStore/pull/3882)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
