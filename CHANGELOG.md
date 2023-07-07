@@ -106,6 +106,7 @@ All notable changes to this project will be documented in this file.
 - some redundant code [EventStore#3709](https://github.com/EventStore/EventStore/pull/3709)
 - Cleanup V8 scripts. [EventStore#3740](https://github.com/EventStore/EventStore/pull/3740)
 - Some logging to prevent flooding of console/logs. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
+- Software licenses we no longer depend on. [EventStore#3885](https://github.com/EventStore/EventStore/pull/3885)
 
 ### Cherry picked from https
 - //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3755](https://github.com/EventStore/EventStore/pull/3755)
