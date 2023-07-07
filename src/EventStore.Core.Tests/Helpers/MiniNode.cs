@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Helpers {
 			int hashCollisionReadLimit = Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false,
-			long streamExistenceFilterSize = Util.Opts.StreamExistenceFilterSizeDefault,
+			long streamExistenceFilterSize = 10_000,
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
 			int streamExistenceFilterCheckpointDelayMs = 5_000,
 			IExpiryStrategy expiryStrategy = null) {
