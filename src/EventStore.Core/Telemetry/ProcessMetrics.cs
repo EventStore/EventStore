@@ -81,11 +81,11 @@ public class ProcessMetrics {
 			_ = new GcSuspensionMetric(maxGcPauseDurationTracker);
 		}
 
-		CreateObservableCounter(ProcessTracker.Cpu, getProcCpuUsage);
 		CreateObservableCounter(ProcessTracker.LockContentionCount, () => Monitor.LockContentionCount);
 		CreateObservableCounter(ProcessTracker.ExceptionCount, () => (int)getExceptionCount());
 		CreateObservableCounter(ProcessTracker.TotalAllocatedBytes, () => GC.GetTotalAllocatedBytes(), "bytes");
 
+		CreateObservableUpDownCounter(ProcessTracker.Cpu, getProcCpuUsage);
 		CreateObservableUpDownCounter(ProcessTracker.ThreadCount, () => ThreadPool.ThreadCount);
 		CreateObservableUpDownCounter(ProcessTracker.ThreadPoolPendingWorkItemCount, () => ThreadPool.PendingWorkItemCount);
 		CreateObservableUpDownCounter(ProcessTracker.TimeInGc, getPercentTimeInGc);
