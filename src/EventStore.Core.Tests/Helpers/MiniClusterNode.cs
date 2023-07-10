@@ -137,6 +137,7 @@ namespace EventStore.Core.Tests.Helpers {
 					DisableScavengeMerging = true,
 					ScavengeHistoryMaxAge = 30,
 					SkipDbVerify = true,
+					StreamExistenceFilterSize = 10_000,
 					MaxMemTableSize = memTableSize,
 					MemDb = inMemDb,
 					Db = _dbPath,

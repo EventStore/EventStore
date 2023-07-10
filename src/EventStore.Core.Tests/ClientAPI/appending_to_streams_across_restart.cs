@@ -33,7 +33,6 @@ namespace EventStore.Core.Tests.ClientAPI {
 					pathname: PathName,
 					dbPath: Path.Combine(PathName, "mini-node-db"),
 					inMemDb: false,
-					streamExistenceFilterSize: 10_000,
 					streamExistenceFilterCheckpointIntervalMs: 100,
 					streamExistenceFilterCheckpointDelayMs: 0);
 			}
