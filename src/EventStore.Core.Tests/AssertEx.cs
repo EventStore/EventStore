@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using KellermanSoftware.CompareNetObjects;
 using NUnit.Framework;
 
+//poke
+
 namespace EventStore.Core.Tests {
 	public static class AssertEx {
 		private static ComparisonConfig Configuration = new ComparisonConfig {
