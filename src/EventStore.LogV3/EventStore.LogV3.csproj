@@ -7,11 +7,12 @@
 		<Platforms>x64;ARM64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Google.Protobuf" Version="3.15.8" />
-		<PackageReference Include="Grpc.Tools" Version="2.39.1">
+		<PackageReference Include="Google.Protobuf" Version="3.22.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.52.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\EventStore.LogCommon\EventStore.LogCommon.csproj" />
