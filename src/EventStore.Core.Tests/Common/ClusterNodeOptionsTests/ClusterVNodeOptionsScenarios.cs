@@ -29,7 +29,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
 					_options.Application.AllowAnonymousEndpointAccess,
 					_options.Application.AllowAnonymousStreamAccess)),
-				certificateProvider: new OptionsCertificateProvider(_options));
+				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}
 
@@ -64,7 +64,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
 					_options.Application.AllowAnonymousEndpointAccess,
 					_options.Application.AllowAnonymousStreamAccess)),
-				certificateProvider: new OptionsCertificateProvider(_options));
+				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}
 

@@ -179,7 +179,7 @@ namespace EventStore.Core.Tests.Helpers {
 						options.Application.AllowAnonymousEndpointAccess,
 						options.Application.AllowAnonymousStreamAccess)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
-				new OptionsCertificateProvider(options),
+				new OptionsCertificateProvider(),
 				telemetryConfiguration: null,
 				expiryStrategy,
 				Guid.NewGuid(), debugIndex);

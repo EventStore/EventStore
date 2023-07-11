@@ -5,22 +5,16 @@ using Serilog;
 namespace EventStore.Core.Certificates {
 	public class OptionsCertificateProvider: CertificateProvider {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
-		private ClusterVNodeOptions _options;
-
-		public OptionsCertificateProvider(ClusterVNodeOptions options) {
-			_options = options;
-		}
-
-		public override LoadCertificateResult LoadCertificates() {
-			if (_options.Application.Insecure) {
+		public override LoadCertificateResult LoadCertificates(ClusterVNodeOptions options) {
+			if (options.Application.Insecure) {
 				Log.Information("Skipping reload of certificates since TLS is disabled.");
 				return LoadCertificateResult.Skipped;
 			}
 
-			var (certificate, intermediates) = _options.LoadNodeCertificate();
+			var (certificate, intermediates) = options.LoadNodeCertificate();
 
 			var certificateCN = certificate.GetCommonName();
-			var reservedNodeCN = _options.Certificate.CertificateReservedNodeCommonName;
+			var reservedNodeCN = options.Certificate.CertificateReservedNodeCommonName;
 
 			if (certificateCN != reservedNodeCN) {
 				Log.Error(
@@ -33,14 +27,14 @@ namespace EventStore.Core.Certificates {
 			var newThumbprint = certificate.Thumbprint;
 			Log.Information("Loading the node's certificate. Subject: {subject}, Previous thumbprint: {previousThumbprint}, New thumbprint: {newThumbprint}",
 				certificate.SubjectName.Name, previousThumbprint, newThumbprint);
-
+			
 			if (intermediates != null) {
 				foreach (var intermediateCert in intermediates) {
 					Log.Information("Loading intermediate certificate. Subject: {subject}, Thumbprint: {thumbprint}", intermediateCert.SubjectName.Name, intermediateCert.Thumbprint);
 				}
 			}
 
-			var trustedRootCerts = _options.LoadTrustedRootCertificates();
+			var trustedRootCerts = options.LoadTrustedRootCertificates();
 
 			foreach (var trustedRootCert in trustedRootCerts) {
 				Log.Information("Loading trusted root certificate. Subject: {subject}, Thumbprint: {thumbprint}", trustedRootCert.SubjectName.Name, trustedRootCert.Thumbprint);
@@ -58,7 +52,7 @@ namespace EventStore.Core.Certificates {
 			Log.Information("All certificates successfully loaded.");
 			return LoadCertificateResult.Success;
 		}
-		
+
 		private static bool VerifyCertificates(X509Certificate2 nodeCertificate, X509Certificate2Collection intermediates, X509Certificate2Collection trustedRoots) {
 			bool error = false;
 
