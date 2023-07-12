@@ -130,7 +130,7 @@ namespace EventStore.ClusterNode {
 					Log.Information("Running in dev mode using certificate '{cert}'", certs[0]);
 					certificateProvider = new DevCertificateProvider(certs[0]);
 				} else {
-					certificateProvider = new OptionsCertificateProvider(options);
+					certificateProvider = new OptionsCertificateProvider();
 				}
 
 				var deprecationWarnings = options.GetDeprecationWarnings();

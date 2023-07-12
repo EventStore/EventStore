@@ -5,19 +5,13 @@ using Serilog;
 namespace EventStore.Core.Certificates {
 	public class OptionsCertificateProvider: CertificateProvider {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
-		private ClusterVNodeOptions _options;
-
-		public OptionsCertificateProvider(ClusterVNodeOptions options) {
-			_options = options;
-		}
-
-		public override LoadCertificateResult LoadCertificates() {
-			if (_options.Application.Insecure) {
+		public override LoadCertificateResult LoadCertificates(ClusterVNodeOptions options) {
+			if (options.Application.Insecure) {
 				Log.Information("Skipping reload of certificates since TLS is disabled.");
 				return LoadCertificateResult.Skipped;
 			}
 
-			var (certificate, intermediates) = _options.LoadNodeCertificate();
+			var (certificate, intermediates) = options.LoadNodeCertificate();
 
 			var previousThumbprint = Certificate?.Thumbprint;
 			var newThumbprint = certificate.Thumbprint;
@@ -30,7 +24,7 @@ namespace EventStore.Core.Certificates {
 				}
 			}
 
-			var trustedRootCerts = _options.LoadTrustedRootCertificates();
+			var trustedRootCerts = options.LoadTrustedRootCertificates();
 
 			foreach (var trustedRootCert in trustedRootCerts) {
 				Log.Information("Loading trusted root certificate. Subject: {subject}, Thumbprint: {thumbprint}", trustedRootCert.SubjectName.Name, trustedRootCert.Thumbprint);

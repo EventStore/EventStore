@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.ClientOperations {
 			_node = new ClusterVNode<TStreamId>(options, logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
-				certificateProvider: new OptionsCertificateProvider(options));
+				certificateProvider: new OptionsCertificateProvider());
 			_node.StartAsync(true).Wait();
 		}
 		public void Publish(Message message) {

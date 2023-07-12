@@ -1826,7 +1826,7 @@ namespace EventStore.Core {
 				return;
 			}
 
-			if (_certificateProvider?.LoadCertificates() == LoadCertificateResult.VerificationFailed){
+			if (_certificateProvider?.LoadCertificates(options) == LoadCertificateResult.VerificationFailed){
 				throw new InvalidConfigurationException("Aborting certificate loading due to verification errors.");
 			}
 		}

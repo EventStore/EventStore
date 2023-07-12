@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
-				certificateProvider: new OptionsCertificateProvider(_options));
+				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}
 
@@ -58,7 +58,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(_ => new InternalAuthenticationProviderFactory(_)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
-				certificateProvider: new OptionsCertificateProvider(_options));
+				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}
 

@@ -164,7 +164,7 @@ namespace EventStore.Core.Tests.Helpers {
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
 				expiryStrategy: expiryStrategy,
-				certificateProvider: new OptionsCertificateProvider(options));
+				certificateProvider: new OptionsCertificateProvider());
 			Db = Node.Db;
 
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
