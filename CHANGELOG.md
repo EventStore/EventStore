@@ -41,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - Log a warning when certificates are close to expiry. [EventStore#3855](https://github.com/EventStore/EventStore/pull/3855)
 - Bump gRPC packages to  for [CVE-2023-32731](https://nvd.nist.gov/vuln/detail/CVE-2023-32731) [EventStore#3889](https://github.com/EventStore/EventStore/pull/3889)
 - Projections throw an out of order error for Progress changed [EventStore#3887](https://github.com/EventStore/EventStore/pull/3887)
+- Calling the admin/reloadconfig endpoint only reloaded/updated the LogLevel and the certificates were not updated on reloading the config.  [EventStore#3868](https://github.com/EventStore/EventStore/pull/3868)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
