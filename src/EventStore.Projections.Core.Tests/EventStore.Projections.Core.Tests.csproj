@@ -26,8 +26,8 @@
 		<PackageReference Include="NUnit" Version="3.13.3" />
 		<PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
 		<PackageReference Include="Serilog.Sinks.TextWriter" Version="2.1.0" />
-		<PackageReference Include="Google.Protobuf" Version="3.21.6" />
-		<PackageReference Include="Grpc.Tools" Version="2.49.1">
+		<PackageReference Include="Google.Protobuf" Version="3.22.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.52.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
