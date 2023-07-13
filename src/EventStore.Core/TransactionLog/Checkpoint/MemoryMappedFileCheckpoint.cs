@@ -12,21 +12,19 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 
 		private readonly string _filename;
 		private readonly string _name;
-		private readonly bool _cached;
 		private readonly FileStream _fileStream;
 		private readonly MemoryMappedFile _file;
 		private long _last;
 		private long _lastFlushed;
 		private readonly MemoryMappedViewAccessor _accessor;
 
-		public MemoryMappedFileCheckpoint(string filename) : this(filename, Guid.NewGuid().ToString(), false) {
+		public MemoryMappedFileCheckpoint(string filename) : this(filename, Guid.NewGuid().ToString()) {
 		}
 
-		public MemoryMappedFileCheckpoint(string filename, string name, bool cached, bool mustExist = false,
+		public MemoryMappedFileCheckpoint(string filename, string name, bool mustExist = false,
 			long initValue = 0) {
 			_filename = filename;
 			_name = name;
-			_cached = cached;
 			var old = File.Exists(_filename);
 			_fileStream = new FileStream(_filename,
 				mustExist ? FileMode.Open : FileMode.OpenOrCreate,
@@ -42,7 +40,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			_accessor = _file.CreateViewAccessor(0, sizeof(long));
 
 			if (old)
-				_last = _lastFlushed = ReadCurrent();
+				_last = _lastFlushed = _accessor.ReadInt64(0);
 			else {
 				_last = initValue;
 				Flush();
@@ -76,11 +74,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 		}
 
 		public long Read() {
-			return _cached ? Interlocked.Read(ref _lastFlushed) : ReadCurrent();
-		}
-
-		private long ReadCurrent() {
-			return _accessor.ReadInt64(0);
+			return Interlocked.Read(ref _lastFlushed);
 		}
 
 		public long ReadNonFlushed() {
@@ -89,7 +83,7 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 
 		public event Action<long> Flushed;
 
-		protected virtual void OnFlushed(long obj) {
+		private void OnFlushed(long obj) {
 			var onFlushed = Flushed;
 			if (onFlushed != null)
 				onFlushed.Invoke(obj);

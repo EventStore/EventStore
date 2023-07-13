@@ -29,7 +29,7 @@ namespace EventStore.Core.XUnit.Tests.LogAbstraction.Common {
 
 			checkpointInterval ??= TimeSpan.FromMilliseconds(10);
 			var checkpointPath = Path.Combine(_fixture.Directory, $"{name}.chk");
-			var checkpoint = new FileCheckpoint(checkpointPath, name, cached: true, initValue: -1);
+			var checkpoint = new FileCheckpoint(checkpointPath, name, initValue: -1);
 			var filter = new StreamExistenceFilter(
 				directory: _fixture.Directory,
 				checkpoint: checkpoint,
