@@ -7,7 +7,7 @@ namespace EventStore.Core.Certificates {
 			TrustedRootCerts = new X509Certificate2Collection(certificate);
 		}
 
-		public override LoadCertificateResult LoadCertificates() {
+		public override LoadCertificateResult LoadCertificates(ClusterVNodeOptions options) {
 			return LoadCertificateResult.Skipped;
 		}
 	}
