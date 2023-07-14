@@ -20,6 +20,7 @@ namespace EventStore.Core.Tests.ClientOperations {
 			var requestComplete = WaitForNext<StorageMessage.RequestCompleted>();
 			yield return new ClientMessage.TransactionStart(Guid.NewGuid(), Guid.NewGuid(), Envelope, true, _streamId, ExpectedVersion.Any, null);
 			requestComplete.Wait();
+			AssertEx.IsOrBecomesTrue(() => Envelope.Replies.Count > 0);
 			var resp = Envelope.Replies[0] as ClientMessage.TransactionStartCompleted;
 			_transactionId = resp?.TransactionId ?? 0;
 			requestComplete = WaitForNext<StorageMessage.RequestCompleted>();

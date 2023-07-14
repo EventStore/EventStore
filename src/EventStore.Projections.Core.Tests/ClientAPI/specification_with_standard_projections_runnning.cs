@@ -98,6 +98,9 @@ namespace EventStore.Projections.Core.Tests.ClientAPI {
 			var all = await _manager.ListAllAsync(_admin);
 			if (all.Any(p => p.Name == "Faulted"))
 				Assert.Fail("Projections faulted while running the test" + "\r\n" + all);
+#if DEBUG
+			_node?.Shutdown();
+#endif
 		}
 
 		protected async Task EnableStandardProjections() {

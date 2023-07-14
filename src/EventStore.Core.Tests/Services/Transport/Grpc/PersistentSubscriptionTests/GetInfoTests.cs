@@ -76,6 +76,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 			}
 
 			protected override async Task When() {
+				await WaitForSubscriptionsToBeLive(_persistentSubscriptionsClient, GetCallOptions(AdminCredentials));
+				
 				var resp = await _persistentSubscriptionsClient.GetInfoAsync(new GetInfoReq {
 					Options = new GetInfoReq.Types.Options {
 						GroupName = _groupName,
@@ -126,7 +128,9 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 			}
 
 			protected override async Task When() {
-				var resp = await _persistentSubscriptionsClient.ListAsync(new ListReq {
+				await WaitForSubscriptionsToBeLive(_persistentSubscriptionsClient, GetCallOptions(AdminCredentials));
+				
+				ListResp resp = await _persistentSubscriptionsClient.ListAsync(new ListReq {
 					Options = new ListReq.Types.Options {
 						ListForStream = new ListReq.Types.StreamOption{
 							Stream = new StreamIdentifier {
@@ -178,8 +182,10 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 			}
 
 			protected override async Task When() {
+				await WaitForSubscriptionsToBeLive(_persistentSubscriptionsClient, GetCallOptions(AdminCredentials));
+				
 				// Get the subscription info
-				var resp = await _persistentSubscriptionsClient.ListAsync(new ListReq {
+				ListResp resp = await _persistentSubscriptionsClient.ListAsync(new ListReq {
 					Options = new ListReq.Types.Options {
 						ListForStream = new ListReq.Types.StreamOption {
 							All = new Empty()
@@ -252,11 +258,14 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 			}
 
 			protected override async Task When() {
+				await WaitForSubscriptionsToBeLive(_persistentSubscriptionsClient, GetCallOptions(AdminCredentials));
+				
 				var resp = await _persistentSubscriptionsClient.ListAsync(new ListReq {
 					Options = new ListReq.Types.Options {
 						ListAllSubscriptions = new Empty()
 					}
 				}, GetCallOptions(AdminCredentials));
+
 				_actualSubscriptionInfo = resp.Subscriptions.ToList();
 			}
 
@@ -301,6 +310,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 			}
 
 			protected override async Task When() {
+				await WaitForSubscriptionsToBeLive(_persistentSubscriptionsClient, GetCallOptions(AdminCredentials));
+				
 				var resp = await _persistentSubscriptionsClient.GetInfoAsync(new GetInfoReq {
 					Options = new GetInfoReq.Types.Options {
 						GroupName = _groupName,
@@ -394,6 +405,25 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 			}
 
 			return info;
+		}
+
+		private static async Task WaitForSubscriptionsToBeLive(PersistentSubscriptions.PersistentSubscriptionsClient client, CallOptions callOptions) {
+			var resp = await GetSubscriptions();
+
+			for (int i = 0; resp.Subscriptions.Any(s => s.Status != "Live"); i++) {
+				Assert.AreNotEqual(5, i, "Reached too many retries to get all subscriptions live!");
+				
+				await Task.Delay(500);
+				resp = await GetSubscriptions();
+			}
+			
+			async Task<ListResp> GetSubscriptions() {
+				return await client.ListAsync(new ListReq {
+					Options = new ListReq.Types.Options {
+						ListAllSubscriptions = new Empty()
+					}
+				}, callOptions);
+			}
 		}
 	}
 }

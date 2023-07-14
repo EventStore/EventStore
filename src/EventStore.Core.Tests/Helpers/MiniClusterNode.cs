@@ -35,9 +35,6 @@ namespace EventStore.Core.Tests.Helpers {
 		public static readonly Stopwatch StartingTime = new Stopwatch();
 		public static readonly Stopwatch StoppingTime = new Stopwatch();
 
-		public const int ChunkSize = 1024 * 1024;
-		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
-
 		private static readonly ILogger Log = Serilog.Log.ForContext<MiniClusterNode<TLogFormat, TStreamId>>();
 
 		public IPEndPoint InternalTcpEndPoint { get; }
@@ -66,10 +63,10 @@ namespace EventStore.Core.Tests.Helpers {
 		}
 
 		public MiniClusterNode(string pathname, int debugIndex, IPEndPoint internalTcp, IPEndPoint externalTcp,
-			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null, int? chunkSize = null,
-			int? cachedChunkSize = null, bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
-			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0, string intHostAdvertiseAs = null,
-			IExpiryStrategy expiryStrategy = null) {
+			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null,
+			bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
+			bool disableFlushToDisk = false, bool readOnlyReplica = false, int nodePriority = 0,
+			string intHostAdvertiseAs = null, IExpiryStrategy expiryStrategy = null) {
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
@@ -109,7 +106,8 @@ namespace EventStore.Core.Tests.Helpers {
 					GossipAllowedDifferenceMs = 1_000,
 					GossipTimeoutMs = 2_000,
 					DeadMemberRemovalPeriodSec = 1_800_000,
-					ReadOnlyReplica = readOnlyReplica
+					ReadOnlyReplica = readOnlyReplica,
+					StreamInfoCacheCapacity = 10_000
 				},
 				Interface = new() {
 					IntIp = InternalTcpEndPoint.Address,
@@ -140,8 +138,9 @@ namespace EventStore.Core.Tests.Helpers {
 					MaxMemTableSize = memTableSize,
 					MemDb = inMemDb,
 					Db = _dbPath,
-					ChunkSize = chunkSize ?? TFConsts.ChunkSize,
-					ChunksCacheSize = cachedChunkSize ?? TFConsts.ChunksCacheSize
+					ChunkSize = MiniNode.ChunkSize,
+					ChunksCacheSize = MiniNode.CachedChunkSize,
+					StreamExistenceFilterSize = 10_000
 				},
 				Projections = new() {
 					RunProjections = ProjectionType.None

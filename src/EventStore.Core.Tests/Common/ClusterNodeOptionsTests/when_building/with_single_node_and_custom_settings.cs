@@ -71,7 +71,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class with_custom_chunk_size<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
-		private readonly int _chunkSize = 268435712;
+		private readonly int _chunkSize = 268435;
 
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options with {
 			Database = options.Database with {

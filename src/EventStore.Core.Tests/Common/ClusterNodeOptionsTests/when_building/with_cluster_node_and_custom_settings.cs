@@ -46,7 +46,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 				Cluster = new() {
 					DiscoverViaDns = false
 				}
-			}.RunInMemory();
+			}
+			.ReduceMemoryUsageForTests()
+			.RunInMemory();
 			try {
 				_ = new ClusterVNode<TStreamId>(_options, LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory,
 					certificateProvider: new OptionsCertificateProvider(_options));

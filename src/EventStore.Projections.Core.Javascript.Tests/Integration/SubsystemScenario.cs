@@ -45,17 +45,11 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 			_ready = Notify(readyStream);
 			_mainBus.Subscribe(this);
 			(_stop, _subsystemCommands) = createSubsystem(_mainBus, _mainQueue, _writerCheckpoint);
-			
-			
-			
 		}
 
 		protected virtual void OnMainBusMessage(Message msg){}
-		protected virtual Task BeforeInitializeAsync() { return Task.CompletedTask;}
-		protected virtual Task AfterApplicationStopped() { return Task.CompletedTask;}
 
 		public async Task InitializeAsync() {
-			await BeforeInitializeAsync();
 			var _ = _mainQueue.Start();
 			_mainBus.Publish(new SystemMessage.SystemCoreReady());
 			_mainBus.Publish(new SystemMessage.BecomeLeader(Guid.NewGuid()));
@@ -67,7 +61,6 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration {
 			await _complete;
 			_stop();
 			_mainQueue.Stop();
-			await AfterApplicationStopped();
 		}
 
 		protected async Task<(long commitPosition, long nextRevision)> WriteEvents(string stream, long expectedRevision, params Event[] events) {
