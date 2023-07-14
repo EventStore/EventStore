@@ -13,16 +13,25 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 	public abstract class SingleNodeScenario<TLogFormat, TStreamId> {
 		protected ClusterVNode _node;
 		protected ClusterVNodeOptions _options;
-		protected ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
+		private ILogFormatAbstractorFactory<TStreamId> _logFormatFactory;
+		private readonly bool _disableMemoryOptimization;
 
+		public SingleNodeScenario (bool disableMemoryOptimization=false) {
+			_disableMemoryOptimization = disableMemoryOptimization;
+		}
+		
 		[OneTimeSetUp]
 		public virtual void TestFixtureSetUp() {
 			_logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
-			_options = WithOptions(
-				new ClusterVNodeOptions()
-					.RunInMemory()
-					.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
-						ssl_connections.GetServerCertificate()));
+
+			var options = _disableMemoryOptimization
+				? new ClusterVNodeOptions()
+				: new ClusterVNodeOptions().ReduceMemoryUsageForTests();
+			
+			_options = WithOptions(options
+				.RunInMemory()
+				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+					ssl_connections.GetServerCertificate()));
 			_node = new ClusterVNode<TStreamId>(_options, _logFormatFactory,
 				new AuthenticationProviderFactory(c => new InternalAuthenticationProviderFactory(c)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue)),
@@ -51,6 +60,7 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 			_quorumSize = _clusterSize / 2 + 1;
 
 			_options = WithOptions(new ClusterVNodeOptions()
+				.ReduceMemoryUsageForTests()
 				.InCluster(_clusterSize)
 				.RunInMemory()
 				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),

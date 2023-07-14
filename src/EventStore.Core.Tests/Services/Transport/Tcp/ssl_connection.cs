@@ -33,7 +33,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 			var sent = new byte[1000];
 			new Random().NextBytes(sent);
 
-			var received = new MemoryStream();
+			using var received = new MemoryStream();
 
 			var done = new ManualResetEventSlim();
 

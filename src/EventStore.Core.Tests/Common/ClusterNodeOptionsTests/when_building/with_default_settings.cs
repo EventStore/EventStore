@@ -13,6 +13,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 	public class with_default_node_as_single_node<TLogFormat, TStreamId> : SingleNodeScenario<TLogFormat, TStreamId> {
 		protected override ClusterVNodeOptions WithOptions(ClusterVNodeOptions options) => options;
 
+		public with_default_node_as_single_node () : base(disableMemoryOptimization:true) {
+		}
+		
 		[Test]
 		public void should_create_single_cluster_node() {
 			Assert.IsNotNull(_node);

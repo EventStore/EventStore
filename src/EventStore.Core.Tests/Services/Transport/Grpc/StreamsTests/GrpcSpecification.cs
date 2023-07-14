@@ -21,7 +21,7 @@ using GrpcMetadata = EventStore.Core.Services.Transport.Grpc.Constants.Metadata;
 using EventStore.Core.Services.Storage.ReaderIndex;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
-	public abstract class GrpcSpecification<TLogFormat, TStreamId> : IDisposable {
+	public abstract class GrpcSpecification<TLogFormat, TStreamId> {
 		private readonly TestServer _server;
 		protected readonly GrpcChannel Channel;
 		private readonly IHost _host;
@@ -60,16 +60,25 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			await _node.AdminUserCreated;
 			_batchAppender.Start();
 			try {
-				await Given().WithTimeout(TimeSpan.FromSeconds(10));
+				await Given().WithTimeout(TimeSpan.FromSeconds(30));
 			} catch (Exception ex) {
 				throw new Exception("Given Failed", ex);
 			}
 
 			try {
-				await When().WithTimeout(TimeSpan.FromSeconds(10));
+				await When().WithTimeout(TimeSpan.FromSeconds(30));
 			} catch (Exception ex) {
 				throw new Exception("When Failed", ex);
 			}
+		}
+
+		[OneTimeTearDown]
+		public async Task TearDown() {
+			await _batchAppender.DisposeAsync();
+			_server?.Dispose();
+			Channel?.Dispose();
+			_host?.Dispose();
+			await _node.Shutdown();
 		}
 
 		private static CallCredentials CallCredentialsFromUser((string userName, string password) credentials) =>
@@ -107,13 +116,6 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						{GrpcMetadata.Type, "-"}
 					}
 				});
-
-		public void Dispose() {
-			_batchAppender.DisposeAsync().GetAwaiter().GetResult();
-			_server?.Dispose();
-			Channel?.Dispose();
-			_host?.Dispose();
-		}
 
 		private class BatchAppender : IAsyncDisposable {
 			private readonly Lazy<AsyncDuplexStreamingCall<BatchAppendReq, BatchAppendResp>> _batchAppendLazy;

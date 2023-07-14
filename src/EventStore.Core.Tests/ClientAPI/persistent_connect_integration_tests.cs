@@ -100,7 +100,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			}
 
 			if (!_eventsReceived.WaitOne(TimeSpan.FromSeconds(15))) {
-				throw new Exception("Timed out waiting for events.");
+				throw new Exception($"Timed out waiting for events, received {_eventReceivedCount} event(s).");
 			}
 		}
 	}

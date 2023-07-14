@@ -32,7 +32,10 @@ namespace EventStore.Projections.Core.Javascript.Tests.Integration
 			var sc = new StandardComponents(db, mainQueue, mainBus, ts, timeProvider, null, new IHttpService[] { }, mainBus, qs);
 			runtime.Register(sc);
 			runtime.Start();
-			return (runtime.Stop, runtime.LeaderQueue);
+			return (() => {
+				runtime.Stop();
+				db.Dispose();
+			}, runtime.LeaderQueue);
 		}
 	}
 }

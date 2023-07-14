@@ -28,6 +28,9 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace EventStore.Core.Tests.Helpers {
 	public class MiniNode {
+		public const int ChunkSize = 1024 * 1024;
+		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
+		
 		protected static readonly ILogger Log = Serilog.Log.ForContext<MiniNode>();
 		public IPEndPoint TcpEndPoint { get; protected set; }
 		public IPEndPoint IntTcpEndPoint { get; protected set; }
@@ -39,9 +42,6 @@ namespace EventStore.Core.Tests.Helpers {
 		public static readonly Stopwatch RunningTime = new Stopwatch();
 		public static readonly Stopwatch StartingTime = new Stopwatch();
 		public static readonly Stopwatch StoppingTime = new Stopwatch();
-
-		public const int ChunkSize = 1024 * 1024;
-		public const int CachedChunkSize = ChunkSize + ChunkHeader.Size + ChunkFooter.Size;
 
 		public readonly ClusterVNode Node;
 		public readonly TFChunkDb Db;
@@ -60,14 +60,14 @@ namespace EventStore.Core.Tests.Helpers {
 		public MiniNode(string pathname,
 			int? tcpPort = null, int? httpPort = null,
 			ISubsystem[] subsystems = null,
-			int? chunkSize = null, int? cachedChunkSize = null, bool enableTrustedAuth = false,
+			int chunkSize = ChunkSize, int cachedChunkSize = CachedChunkSize, bool enableTrustedAuth = false,
 			int memTableSize = 1000,
 			bool inMemDb = true, bool disableFlushToDisk = false,
 			string advertisedExtHostAddress = null, int advertisedHttpPort = 0,
 			int hashCollisionReadLimit = Util.Opts.HashCollisionReadLimitDefault,
 			byte indexBitnessVersion = Util.Opts.IndexBitnessVersionDefault,
 			string dbPath = "", bool isReadOnlyReplica = false,
-			long streamExistenceFilterSize = Util.Opts.StreamExistenceFilterSizeDefault,
+			long streamExistenceFilterSize = 10_000,
 			int streamExistenceFilterCheckpointIntervalMs = 30_000,
 			int streamExistenceFilterCheckpointDelayMs = 5_000,
 			IExpiryStrategy expiryStrategy = null) {
@@ -76,7 +76,6 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var ip = IPAddress.Loopback;
 			
-
 			int extTcpPort = tcpPort ?? PortsHelper.GetAvailablePort(ip);
 			int httpEndPointPort = httpPort ?? PortsHelper.GetAvailablePort(ip);
 			int intTcpPort = PortsHelper.GetAvailablePort(ip);
@@ -108,11 +107,12 @@ namespace EventStore.Core.Tests.Helpers {
 					},
 					Cluster = new() {
 						DiscoverViaDns = false,
-						ReadOnlyReplica = isReadOnlyReplica
+						ReadOnlyReplica = isReadOnlyReplica,
+						StreamInfoCacheCapacity = 10_000
 					},
 					Database = new() {
-						ChunkSize = chunkSize ?? ChunkSize,
-						ChunksCacheSize = cachedChunkSize ?? CachedChunkSize,
+						ChunkSize = chunkSize,
+						ChunksCacheSize = cachedChunkSize,
 						SkipDbVerify = true,
 						StatsStorage = StatsStorage.None,
 						MaxMemTableSize = memTableSize,
@@ -250,7 +250,6 @@ namespace EventStore.Core.Tests.Helpers {
 
 			StoppingTime.Stop();
 			RunningTime.Stop();
-
 		}
 
 		public void WaitIdle() {

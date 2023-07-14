@@ -17,6 +17,7 @@ namespace EventStore.Core.Tests.ClientOperations {
 		public void CreateTestNode() {
 			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			var options = new ClusterVNodeOptions()
+				.ReduceMemoryUsageForTests()
 				.RunInMemory()
 				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
 					ssl_connections.GetServerCertificate());

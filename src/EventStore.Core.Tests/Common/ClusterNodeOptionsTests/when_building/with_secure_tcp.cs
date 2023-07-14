@@ -105,7 +105,9 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			var baseIpAddress = IPAddress.Parse("127.0.1.15");
 			var internalSecTcp = new IPEndPoint(baseIpAddress, 1114);
 			var externalSecTcp = new IPEndPoint(baseIpAddress, 1115);
-			_options = new ClusterVNodeOptions().RunInMemory()
+			_options = new ClusterVNodeOptions()
+				.ReduceMemoryUsageForTests()
+				.RunInMemory()
 				.WithInternalSecureTcpOn(internalSecTcp)
 				.WithExternalSecureTcpOn(externalSecTcp);
 			try {

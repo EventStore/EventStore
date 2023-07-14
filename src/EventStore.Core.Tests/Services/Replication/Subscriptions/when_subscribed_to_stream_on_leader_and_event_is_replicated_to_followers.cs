@@ -62,7 +62,7 @@ namespace EventStore.Core.Tests.Replication.ReadStream {
 			}
 
 			if (!_subscriptionsConfirmed.Wait(_timeout)) {
-				Assert.Fail("Timed out waiting for subscriptions to confirm");
+				Assert.Fail($"Timed out waiting for subscriptions to confirm, confirmed {_subscriptionsConfirmed.CurrentCount} need {_subscriptionsConfirmed.InitialCount}.");
 			}
 
 			var events = new Event[] { new Event(Guid.NewGuid(), "test-type", false, new byte[10], new byte[0]) };
