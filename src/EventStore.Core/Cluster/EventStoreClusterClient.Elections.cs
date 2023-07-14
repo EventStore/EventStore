@@ -101,7 +101,7 @@ namespace EventStore.Core.Cluster {
 				ServerHttp = new GossipEndPoint(serverHttpEndPoint.GetHost(), (uint)serverHttpEndPoint.GetPort()),
 				AttemptedView = attemptedView
 			};
-			await _electionsClient.ViewChangeAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.ViewChangeAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
 		}
 
 		private async Task SendViewChangeProofAsync(Guid serverId, EndPoint serverHttpEndPoint, int installedView,
@@ -111,7 +111,7 @@ namespace EventStore.Core.Cluster {
 				ServerHttp = new GossipEndPoint(serverHttpEndPoint.GetHost(), (uint)serverHttpEndPoint.GetPort()),
 				InstalledView = installedView
 			};
-			await _electionsClient.ViewChangeProofAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.ViewChangeProofAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
 		}
 
 		private async Task SendPrepareAsync(Guid serverId, EndPoint serverHttpEndPoint, int view, DateTime deadline) {
@@ -120,7 +120,7 @@ namespace EventStore.Core.Cluster {
 				ServerHttp = new GossipEndPoint(serverHttpEndPoint.GetHost(), (uint)serverHttpEndPoint.GetPort()),
 				View = view
 			};
-			await _electionsClient.PrepareAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.PrepareAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
 		}
 
 		private async Task SendPrepareOkAsync(int view, Guid serverId, EndPoint serverHttpEndPoint, int epochNumber,
@@ -140,7 +140,7 @@ namespace EventStore.Core.Cluster {
 				NodePriority = nodePriority,
 				ClusterInfo = ClusterInfo.ToGrpcClusterInfo(clusterInfo)
 			};
-			await _electionsClient.PrepareOkAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.PrepareOkAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
 		}
 
 		private async Task SendProposalAsync(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId,
@@ -162,7 +162,7 @@ namespace EventStore.Core.Cluster {
 				ChaserCheckpoint = chaserCheckpoint,
 				NodePriority = nodePriority
 			};
-			await _electionsClient.ProposalAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.ProposalAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
 		}
 
 		private async Task SendAcceptAsync(Guid serverId, EndPoint serverHttpEndPoint, Guid leaderId,
@@ -174,7 +174,7 @@ namespace EventStore.Core.Cluster {
 				LeaderHttp = new GossipEndPoint(leaderHttp.GetHost(), (uint)leaderHttp.GetPort()),
 				View = view
 			};
-			await _electionsClient.AcceptAsync(request);
+			await _electionsClient.AcceptAsync(request).ConfigureAwait(false);
 			_electionsClient.Accept(request, deadline: deadline.ToUniversalTime());
 		}
 
@@ -183,7 +183,7 @@ namespace EventStore.Core.Cluster {
 				LeaderId = Uuid.FromGuid(leaderId).ToDto(),
 				LeaderHttp = new GossipEndPoint(leaderHttp.GetHost(), (uint)leaderHttp.GetPort()),
 			};
-			await _electionsClient.LeaderIsResigningAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.LeaderIsResigningAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
 		}
 
 		private async Task SendLeaderIsResigningOkAsync(Guid leaderId, EndPoint leaderHttp,
@@ -194,7 +194,7 @@ namespace EventStore.Core.Cluster {
 				ServerId = Uuid.FromGuid(serverId).ToDto(),
 				ServerHttp = new GossipEndPoint(serverHttpEndPoint.GetHost(), (uint)serverHttpEndPoint.GetPort()),
 			};
-			await _electionsClient.LeaderIsResigningOkAsync(request, deadline: deadline.ToUniversalTime());
+			await _electionsClient.LeaderIsResigningOkAsync(request, deadline: deadline.ToUniversalTime()).ConfigureAwait(false);
 		}
 	}
 }
