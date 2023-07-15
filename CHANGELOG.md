@@ -44,6 +44,11 @@ All notable changes to this project will be documented in this file.
 - Calling the admin/reloadconfig endpoint only reloaded/updated the LogLevel and the certificates were not updated on reloading the config.  [EventStore#3868](https://github.com/EventStore/EventStore/pull/3868)
 - Bump gRPC packages to for [CVE-2023-32731](https://nvd.nist.gov/vuln/detail/CVE-2023-32731) [EventStore#3895](https://github.com/EventStore/EventStore/pull/3895)
 - Make Process CPU a UpDownCounter rather than Counter [EventStore#3892](https://github.com/EventStore/EventStore/pull/3892)
+- Bump gRPC packages for [CVE-2023-32731](https://github.com/advisories/GHSA-cfgp-2977-2fmm) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- Bump System.Text.RegularExpressions for [CVE-2019-0820](https://github.com/advisories/GHSA-cmhx-cq75-c4mj) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- Bump System.Drawing.Common [CVE-2021-24112](https://github.com/advisories/GHSA-rxg9-xrhp-64gj) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- Bump System.Security.Cryptography.* [CVE-2022-34716](https://github.com/advisories/GHSA-2m65-m22p-9wjw) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
+- Calling the admin/reloadconfig endpoint only reloaded/updated the LogLevel and the certificates were not updated on reloading the config. This was broken by the Dev Certificate changes in v22.10. This PR has the changes backported to v22.10. [EventStore#3898](https://github.com/EventStore/EventStore/pull/3898)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
