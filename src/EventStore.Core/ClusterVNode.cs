@@ -359,30 +359,28 @@ namespace EventStore.Core {
 
 					if (OS.IsUnix) {
 						Log.Debug("Using File Checkpoints");
-						writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-						chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-						epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+						writerChk = new FileCheckpoint(writerCheckFilename, Checkpoint.Writer);
+						chaserChk = new FileCheckpoint(chaserCheckFilename, Checkpoint.Chaser);
+						epochChk = new FileCheckpoint(epochCheckFilename, Checkpoint.Epoch,
 							initValue: -1);
 						proposalChk = new FileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
-							cached: true,
 							initValue: -1);
 						truncateChk = new FileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
-							cached: true, initValue: -1);
+							initValue: -1);
 						streamExistenceFilterChk = new FileCheckpoint(streamExistenceFilterCheckFilename, Checkpoint.StreamExistenceFilter,
-							cached: true, initValue: -1);
+							initValue: -1);
 					} else {
 						Log.Debug("Using Memory Mapped File Checkpoints");
-						writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer, cached: true);
-						chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser, cached: true);
-						epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch, cached: true,
+						writerChk = new MemoryMappedFileCheckpoint(writerCheckFilename, Checkpoint.Writer);
+						chaserChk = new MemoryMappedFileCheckpoint(chaserCheckFilename, Checkpoint.Chaser);
+						epochChk = new MemoryMappedFileCheckpoint(epochCheckFilename, Checkpoint.Epoch,
 							initValue: -1);
 						proposalChk = new MemoryMappedFileCheckpoint(proposalCheckFilename, Checkpoint.Proposal,
-							cached: true,
 							initValue: -1);
 						truncateChk = new MemoryMappedFileCheckpoint(truncateCheckFilename, Checkpoint.Truncate,
-							cached: true, initValue: -1);
+							initValue: -1);
 						streamExistenceFilterChk = new MemoryMappedFileCheckpoint(streamExistenceFilterCheckFilename, Checkpoint.StreamExistenceFilter,
-							cached: true, initValue: -1);
+							initValue: -1);
 					}
 				}
 

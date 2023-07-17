@@ -11,7 +11,6 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 
 		private long _last;
 		private long _lastFlushed;
-		private readonly bool _cached;
 
 		private readonly BinaryWriter _writer;
 		private readonly BinaryReader _reader;
@@ -20,11 +19,9 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 			: this(filename, Guid.NewGuid().ToString()) {
 		}
 
-		public FileCheckpoint(string filename, string name, bool cached = false, bool mustExist = false,
-			long initValue = 0) {
+		public FileCheckpoint(string filename, string name, bool mustExist = false, long initValue = 0) {
 			_filename = filename;
 			_name = name;
-			_cached = cached;
 			var old = File.Exists(filename);
 			_fileStream = new FileStream(_filename,
 				mustExist ? FileMode.Open : FileMode.OpenOrCreate,
@@ -79,17 +76,16 @@ namespace EventStore.Core.TransactionLog.Checkpoint {
 		}
 
 		public long Read() {
-			return _cached ? Interlocked.Read(ref _lastFlushed) : ReadCurrent();
+			return Interlocked.Read(ref _lastFlushed);
 		}
 
-		public long
-			ReadNonFlushed() {
+		public long ReadNonFlushed() {
 			return Interlocked.Read(ref _last);
 		}
 
 		public event Action<long> Flushed;
 
-		protected virtual void OnFlushed(long obj) {
+		private void OnFlushed(long obj) {
 			var onFlushed = Flushed;
 			if (onFlushed != null)
 				onFlushed.Invoke(obj);

@@ -43,23 +43,19 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public async Task the_new_value_is_not_accessible_if_not_flushed_even_with_delay() {
 			var checkSum = new FileCheckpoint(Filename);
-			var readChecksum = new FileCheckpoint(Filename);
 			checkSum.Write(1011);
 			await Task.Delay(200);
-			Assert.AreEqual(0, readChecksum.Read());
+			Assert.AreEqual(0, checkSum.Read());
 			checkSum.Close(flush: true);
-			readChecksum.Close(flush: true);
 		}
 
 		[Test]
 		public void the_new_value_is_accessible_after_flush() {
 			var checkSum = new FileCheckpoint(Filename);
-			var readChecksum = new FileCheckpoint(Filename);
 			checkSum.Write(1011);
 			checkSum.Flush();
-			Assert.AreEqual(1011, readChecksum.Read());
+			Assert.AreEqual(1011, checkSum.Read());
 			checkSum.Close(flush: true);
-			readChecksum.Close(flush: true);
 		}
 	}
 }
