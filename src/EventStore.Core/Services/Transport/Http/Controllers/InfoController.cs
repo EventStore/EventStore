@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
+using Newtonsoft.Json.Linq;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Services.Transport.Http.Controllers {
@@ -80,8 +81,10 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						Name = x.Metadata.Name,
 						Description = x.Metadata.Description,
 						Group = x.Metadata.SectionMetadata.SectionType.Name,
-						PossibleValues = x.Metadata.AllowedValues.Length > 0 ? x.Metadata.AllowedValues : null,
 						Value = x.DisplayValue,
+						ConfigurationSource = x.SourceDisplayName,
+						DeprecationMessage = x.Metadata.DeprecationMessage,
+						Schema = x.Metadata.OptionSchema
 					}
 				);
 
@@ -106,7 +109,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string Description { get; set; }
 			public string Group { get; set; }
 			public string Value { get; set; }
-			public string[] PossibleValues { get; set; }
+			public string ConfigurationSource { get; set; }
+			public string DeprecationMessage { get; set; }
+			public JObject Schema { get; set; }
 		}
 	}
 }

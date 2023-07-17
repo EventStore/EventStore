@@ -125,7 +125,8 @@ namespace EventStore.Core {
 
 			[Description("Disable HTTP caching.")] public bool DisableHttpCaching { get; init; } = false;
 
-			[Description("The number of seconds between statistics gathers.")]
+			[Description("The number of seconds between statistics gathers."),
+			 Unit("s")]
 			public int StatsPeriodSec { get; init; } = 30;
 
 			[Description("The number of threads to use for pool of worker services. Set to '0' to scale automatically (Default)")]
@@ -291,13 +292,16 @@ namespace EventStore.Core {
 			[Description("Endpoints for other cluster nodes from which to seed gossip.")]
 			public EndPoint[] GossipSeed { get; init; } = [];
 
-			[Description("The interval, in ms, nodes should try to gossip with each other.")]
+			[Description("The interval, in ms, nodes should try to gossip with each other."),
+			 Unit("ms")]
 			public int GossipIntervalMs { get; init; } = 2_000;
 
-			[Description("The amount of drift, in ms, between clocks on nodes allowed before gossip is rejected.")]
+			[Description("The amount of drift, in ms, between clocks on nodes allowed before gossip is rejected."),
+			 Unit("ms")]
 			public int GossipAllowedDifferenceMs { get; init; } = 60_000;
 
-			[Description("The timeout, in ms, on gossip to another node.")]
+			[Description("The timeout, in ms, on gossip to another node."),
+			 Unit("ms")]
 			public int GossipTimeoutMs { get; init; } = 2_500;
 
 			[Description("Sets this node as a read only replica that is not allowed to participate in elections " +
@@ -308,10 +312,12 @@ namespace EventStore.Core {
 			             "(UNSAFE: can cause data loss if a clone is promoted as leader)")]
 			public bool UnsafeAllowSurplusNodes { get; init; } = false;
 
-			[Description("The number of seconds a dead node will remain in the gossip before being pruned.")]
+			[Description("The number of seconds a dead node will remain in the gossip before being pruned."),
+			 Unit("s")]
 			public int DeadMemberRemovalPeriodSec { get; init; } = 1_800;
 
-			[Description("The timeout, in milliseconds, on election messages to other nodes.")]
+			[Description("The timeout, in milliseconds, on election messages to other nodes."),
+			 Unit("ms")]
 			public int LeaderElectionTimeoutMs { get; init; } = 1_000;
 
 			public int QuorumSize => ClusterSize == 1 ? 1 : ClusterSize / 2 + 1;
@@ -319,13 +325,15 @@ namespace EventStore.Core {
 
 		[Description("Database Options")]
 		public record DatabaseOptions {
-			[Description("The minimum flush delay in milliseconds.")]
+			[Description("The minimum flush delay in milliseconds."),
+			 Unit("ms")]
 			public double MinFlushDelayMs { get; init; } = TFConsts.MinFlushDelayMs.TotalMilliseconds;
 
 			[Description("Disables the merging of chunks when scavenge is running.")]
 			public bool DisableScavengeMerging { get; init; } = false;
 
-			[Description("The number of days to keep scavenge history.")]
+			[Description("The number of days to keep scavenge history."),
+			Unit("d")]
 			public int ScavengeHistoryMaxAge { get; init; } = 30;
 
 			[Description("The number of chunks to cache in unmanaged memory.")]
@@ -369,13 +377,16 @@ namespace EventStore.Core {
 			[Description("The initial number of readers to start when opening a TFChunk.")]
 			public int ChunkInitialReaderCount { get; init; } = 5;
 
-			[Description("Prepare timeout (in milliseconds).")]
+			[Description("Prepare timeout (in milliseconds)."),
+			 Unit("ms")]
 			public int PrepareTimeoutMs { get; init; } = 2_000;
 
-			[Description("Commit timeout (in milliseconds).")]
+			[Description("Commit timeout (in milliseconds)."),
+			 Unit("ms")]
 			public int CommitTimeoutMs { get; init; } = 2_000;
 
-			[Description("Write timeout (in milliseconds).")]
+			[Description("Write timeout (in milliseconds)."),
+			 Unit("ms")]
 			public int WriteTimeoutMs { get; init; } = 2_000;
 
 			[Description("Disable flushing to disk. (UNSAFE: on power off)")]
@@ -458,12 +469,14 @@ namespace EventStore.Core {
 		[Description("gRPC Options")]
 		public record GrpcOptions {
 			[Description("Controls the period (in milliseconds) after which a keepalive ping " +
-			             "is sent on the transport.")]
+			             "is sent on the transport."),
+			 Unit("ms")]
 			public int KeepAliveInterval { get; init; } = 10_000;
 
 			[Description("Controls the amount of time (in milliseconds) the sender of the keepalive ping waits " +
 			             "for an acknowledgement. If it does not receive an acknowledgment within this time, " +
-			             "it will close the connection.")]
+			             "it will close the connection."),
+			 Unit("ms")]
 			public int KeepAliveTimeout { get; init; } = 10_000;
 
 			internal static GrpcOptions FromConfiguration(IConfiguration configurationRoot) => new() {
@@ -618,13 +631,15 @@ namespace EventStore.Core {
 			}
 
 			[Description("Heartbeat timeout for internal TCP sockets."),
+			 Unit("ms"),
 			 Deprecated(
 				 "The IntTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatTimeout parameter instead.")]
 			[Obsolete("IntTcpHeartbeatTimeout is deprecated, use ReplicationHeartbeatTimeout instead")]
 			public int IntTcpHeartbeatTimeout { get; init; } = 700;
 
 			private readonly int _replicationHeartbeatTimeout = 700;
-			[Description("Heartbeat timeout for Replication TCP sockets.")]
+			[Description("Heartbeat timeout for Replication TCP sockets."),
+			 Unit("ms")]
 			public int ReplicationHeartbeatTimeout {
 				get {
 					return _replicationHeartbeatTimeout == 700 ? IntTcpHeartbeatTimeout : _replicationHeartbeatTimeout;
@@ -635,13 +650,15 @@ namespace EventStore.Core {
 			}
 
 			[Description("Heartbeat interval for internal TCP sockets."),
+			 Unit("ms"),
 			 Deprecated(
 				 "The IntTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatInterval parameter instead.")]
 			[Obsolete("IntTcpHeartbeatInterval is deprecated, use ReplicationHeartbeatInterval instead")]
 			public int IntTcpHeartbeatInterval { get; init; } = 700;
 
 			private readonly int _replicationHeartbeatInterval = 700;
-			[Description("Heartbeat interval for Replication TCP sockets.")]
+			[Description("Heartbeat interval for Replication TCP sockets."),
+			 Unit("ms")]
 			public int ReplicationHeartbeatInterval {
 				get {
 					return _replicationHeartbeatInterval == 700
@@ -703,17 +720,20 @@ namespace EventStore.Core {
 			[Description("The number of threads to use for projections.")]
 			public int ProjectionThreads { get; init; } = 3;
 
-			[Description("The number of minutes a query can be idle before it expires.")]
+			[Description("The number of minutes a query can be idle before it expires."),
+			 Unit("m")]
 			public int ProjectionsQueryExpiry { get; init; } = 5;
 
 			[Description("Fault the projection if the Event number that was expected in the stream differs " +
 			             "from what is received. This may happen if events have been deleted or expired.")]
 			public bool FaultOutOfOrderProjections { get; init; } = false;
 
-			[Description("The time in milliseconds allowed for the compilation phase of user projections")]
+			[Description("The time in milliseconds allowed for the compilation phase of user projections"),
+			 Unit("ms")]
 			public int ProjectionCompilationTimeout { get; set; } = 500;
 
-			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection")]
+			[Description("The maximum execution time in milliseconds for executing a handler in a user projection. It can be overridden for a specific projection by setting ProjectionExecutionTimeout config for that projection"),
+			 Unit("ms")]
 			public int ProjectionExecutionTimeout { get; set; } = DefaultProjectionExecutionTimeout;
 		}
 
