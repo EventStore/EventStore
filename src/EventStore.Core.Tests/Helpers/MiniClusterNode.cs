@@ -95,6 +95,8 @@ namespace EventStore.Core.Tests.Helpers {
 
 			var options = new ClusterVNodeOptions {
 				Application = new() {
+					AllowAnonymousEndpointAccess = true,
+					AllowAnonymousStreamAccess = true,
 					Insecure = !useHttps,
 					WorkerThreads = 1,
 					StatsPeriodSec = (int)TimeSpan.FromHours(1).TotalSeconds

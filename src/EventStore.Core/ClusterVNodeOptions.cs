@@ -165,10 +165,10 @@ namespace EventStore.Core {
 			public bool Insecure { get; init; } = false;
 
 			[Description("Allow anonymous access to HTTP API endpoints.")]
-			public bool AllowAnonymousEndpointAccess { get; init; } = true;
+			public bool AllowAnonymousEndpointAccess { get; init; } = false;
 
 			[Description("Allow anonymous access to streams.")]
-			public bool AllowAnonymousStreamAccess { get; init; } = true;
+			public bool AllowAnonymousStreamAccess { get; init; } = false;
 
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
