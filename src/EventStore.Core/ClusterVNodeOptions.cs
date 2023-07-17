@@ -164,10 +164,10 @@ namespace EventStore.Core {
 			[Description("Disable Authentication, Authorization and TLS on all TCP/HTTP interfaces.")]
 			public bool Insecure { get; init; } = false;
 
-			[Description("Allow anonymous access to API end points")]
+			[Description("Allow anonymous access to HTTP API endpoints.")]
 			public bool AllowAnonymousEndpointAccess { get; init; } = true;
 
-			[Description("Allow anonymous access to streams")]
+			[Description("Allow anonymous access to streams.")]
 			public bool AllowAnonymousStreamAccess { get; init; } = true;
 
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {

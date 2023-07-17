@@ -126,16 +126,11 @@ namespace EventStore.Core {
 
 			string GetOption(PropertyInfo property) {
 				var builder = new StringBuilder();
-				if (Runtime.IsWindows) {
-					builder.Append('-').Append(property.Name);
-				} else {
-					builder.AppendJoin(string.Empty, GnuOption(property.Name));
-				}
+				builder.AppendJoin(string.Empty, GnuOption(property.Name));
 
 				var defaultValue = DefaultValue(property);
-
 				if (defaultValue != string.Empty) {
-					builder.Append('=').Append(defaultValue);
+					builder.Append(" (Default:").Append(defaultValue).Append(')');
 				}
 
 				return builder.ToString();
