@@ -79,7 +79,7 @@ Due to security reasons the DefaultAdminPassword and DefaultOpsPassword options 
 
 Historically, anonymous users with network access have been allowed to read/write streams that do not have access control lists.
 
-This anonymous access to streams can be disabled, and in the future will likely be disabled by default.
+This is now disabled by default but can be enabled with this setting.
 
 | Format               | Syntax                                     |
 |:---------------------|:-------------------------------------------|
@@ -87,13 +87,13 @@ This anonymous access to streams can be disabled, and in the future will likely 
 | YAML                 | `AllowAnonymousStreamAccess`               |
 | Environment variable | `EVENTSTORE_ALLOW_ANONYMOUS_STREAM_ACCESS` |
 
-**Default**: `true`
+**Default**: `false`
 
 Similarly to streams above, anonymous access has historically been available to the `/stats` and `/gossip` endpoints, and the `HTTP OPTIONS` method.
 
-This can be disabled with the following option. Anonymous access will still be granted to `/ping`, `/info`, the static content of the UI, and http redirects
+This is now disabled by default but can be enabled with this setting.
 
-For this to work, you can disable the `AllowAnonymousEndpointAccess` option:
+Anonymous access is still always granted to `/ping`, `/info`, the static content of the UI, and http redirects.
 
 | Format               | Syntax                                       |
 |:---------------------|:---------------------------------------------|
@@ -101,7 +101,7 @@ For this to work, you can disable the `AllowAnonymousEndpointAccess` option:
 | YAML                 | `AllowAnonymousEndpointAccess`               |
 | Environment variable | `EVENTSTORE_ALLOW_ANONYMOUS_ENDPOINT_ACCESS` |
 
-**Default**: `true`
+**Default**: `false`
 
 ### Certificates configuration
 

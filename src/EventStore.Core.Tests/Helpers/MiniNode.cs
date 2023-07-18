@@ -95,6 +95,8 @@ namespace EventStore.Core.Tests.Helpers {
 			var options = new ClusterVNodeOptions {
 					IndexBitnessVersion = indexBitnessVersion,
 					Application = new() {
+						AllowAnonymousEndpointAccess = true,
+						AllowAnonymousStreamAccess = true,
 						StatsPeriodSec = 60 * 60,
 						WorkerThreads = 1
 					},
