@@ -123,7 +123,7 @@ When using the Event Store [certificate generator](#certificate-generation-tool)
 
 
 ::: warning
-Server certificates **must** have the internal and external IP addresses or DNS names as subject alternative names.
+Server certificates **must** have the internal and external IP addresses (`ReplicationIp` and `NodeIp` respectively) or DNS names as subject alternative names.
 :::
 
 #### Trusted root certificates

@@ -634,57 +634,274 @@ namespace EventStore.Core {
 
 		[Description("Interface Options")]
 		public record InterfaceOptions {
-			[Description("Internal IP Address.")] public IPAddress IntIp { get; init; } = IPAddress.Loopback;
+#pragma warning disable 0618
+			[Description("Internal IP Address."),
+			 Deprecated(
+				 "The IntIp parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationIp parameter instead.")]
+			[Obsolete("IntIp is deprecated, use ReplicationIp instead")]
+			public IPAddress IntIp { get; init; } = IPAddress.Loopback;
+			
+			private readonly IPAddress _replicationIp = IPAddress.Loopback;
+			[Description("The IP Address used by internal replication between nodes in the cluster.")]
+			public IPAddress ReplicationIp {
+				get {
+					return _replicationIp.Equals(IPAddress.Loopback) ? IntIp : _replicationIp;
+				}
+				init { _replicationIp = value; }
+			}
 
-			[Description("External IP Address.")] public IPAddress ExtIp { get; init; } = IPAddress.Loopback;
+			[Description("External IP Address."),
+			 Deprecated(
+				 "The ExtIp parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeIp parameter instead.")]
+			[Obsolete("ExtIp is deprecated, use NodeIp instead")]
+			public IPAddress ExtIp { get; init; } = IPAddress.Loopback;
+			
+			private readonly IPAddress _nodeIp = IPAddress.Loopback;
+			[Description("The IP Address for the node.")]
+			public IPAddress NodeIp {
+				get {
+					return _nodeIp.Equals(IPAddress.Loopback) ? ExtIp : _nodeIp;
+				}
+				init { _nodeIp = value; }
+			}
 
-			[Description("The port to run the HTTP server on.")]
+			[Description("The port to run the HTTP server on."),
+			 Deprecated(
+				 "The HttpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the NodePort parameter instead.")]
+			[Obsolete("HttpPort is deprecated, use NodePort instead")]
 			public int HttpPort { get; init; } = 2113;
+
+			private readonly int _nodePort = 2113;
+
+			[Description("The Port to run the HTTP server on.")]
+			public int NodePort {
+				get {
+					return _nodePort == 2113 ? HttpPort : _nodePort;
+				}
+				init {
+					_nodePort = value;
+				}
+			}
 
 			[Description("Whether to enable external TCP communication"),
 			 Deprecated(
 				 "The Legacy TCP Client Interface has been deprecated as of version 20.6.0. It is recommended to use gRPC instead.")]
 			public bool EnableExternalTcp { get; init; } = false;
 
-			[Description("Internal TCP Port.")] public int IntTcpPort { get; init; } = 1112;
+			[Description("Internal TCP Port."),
+			 Deprecated(
+				 "The IntTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationPort parameter instead.")]
+			[Obsolete("IntTcpPort is deprecated, use ReplicationPort instead")]
+			public int IntTcpPort { get; init; } = 1112;
 
-			[Description("External TCP Port.")] public int ExtTcpPort { get; init; } = 1113;
+			private readonly int _replicationPort = 1112;
+			[Description("The TCP port used by internal replication between nodes in the cluster.")]
+			public int ReplicationPort {
+				get {
+					return _replicationPort == 1112 ? IntTcpPort : _replicationPort;
+				}
+				init {
+					_replicationPort = value;
+				}
+			}
 
-			[Description("Advertise External Tcp Address As.")]
+			[Description("External TCP Port."),
+			 Deprecated(
+				 "This ExtTcpPort parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPort parameter instead.")]
+			[Obsolete("ExtTcpPort is deprecated, use NodeTcpPort instead")]
+			public int ExtTcpPort { get; init; } = 1113;
+			
+			private readonly int _nodeTcpPort = 1113;
+			[Description("The TCP Port that external clients can connect to.")]
+			public int NodeTcpPort {
+				get {
+					return _nodeTcpPort == 1113 ? ExtTcpPort : _nodeTcpPort;
+				}
+				init {
+					_nodeTcpPort = value;
+				}
+			}
+
+			[Description("Advertise External Tcp Address As."),
+			 Deprecated(
+				 "The ExtHostAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHostAdvertiseAs instead.")]
+			[Obsolete("ExtHostAdvertiseAs is deprecated, use NodeHostAdvertiseAs instead")]
 			public string? ExtHostAdvertiseAs { get; init; } = null;
 
-			[Description("Advertise Internal Tcp Address As.")]
+			private readonly string? _nodeHostAdvertiseAs = null;
+			[Description("Advertise the Node's host name to other nodes and external clients as.")]
+			public string? NodeHostAdvertiseAs {
+				get {
+					return _nodeHostAdvertiseAs ?? ExtHostAdvertiseAs;
+				}
+				init {
+					_nodeHostAdvertiseAs = value;
+				}
+			}
+
+			[Description("Advertise Internal Tcp Address As."),
+			 Deprecated(
+				 "The IntHostAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHostAdvertiseAs parameter instead.")]
+			[Obsolete("IntHostAdvertiseAs is deprecated, use ReplicationHostAdvertiseAs instead")]
 			public string? IntHostAdvertiseAs { get; init; } = null;
+			
+			private readonly string? _replicationHostAdvertiseAs = null;
+			[Description("Advertise the Replication host name to other nodes in the cluster as.")]
+			public string? ReplicationHostAdvertiseAs {
+				get {
+					return _replicationHostAdvertiseAs ?? IntHostAdvertiseAs;
+				}
+				init {
+					_replicationHostAdvertiseAs = value;
+				}
+			}
 
 			[Description("Advertise Host in Gossip to Client As.")]
 			public string? AdvertiseHostToClientAs { get; init; } = null;
 
-			[Description("Advertise HTTP Port in Gossip to Client As.")]
+			[Description("Advertise HTTP Port in Gossip to Client As."),
+			 Deprecated(
+				 "The AdvertiseHttpPortToClientAs parameter has been deprecated as of version 23.10.0. It is recommended to use the AdvertiseNodePortToClientAs parameter instead.")]
+			[Obsolete("AdvertiseHttpPortToClientAs is deprecated, use AdvertiseNodePortToClientAs instead")]
 			public int AdvertiseHttpPortToClientAs { get; init; } = 0;
+
+			private readonly int _advertiseNodePortToClientAs = 0;
+
+			[Description("Advertise Node Port in Gossip to Client As.")]
+			public int AdvertiseNodePortToClientAs {
+				get {
+					return _advertiseNodePortToClientAs == 0
+						? AdvertiseHttpPortToClientAs
+						: _advertiseNodePortToClientAs;
+				}
+				init {
+					_advertiseNodePortToClientAs = value;
+				}
+			}
 
 			[Description("Advertise TCP Port in Gossip to Client As.")]
 			public int AdvertiseTcpPortToClientAs { get; init; } = 0;
 
-			[Description("Advertise External Tcp Port As.")]
+			[Description("Advertise External Tcp Port As."),
+			 Deprecated(
+				 "The ExtTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeTcpPortAdvertiseAs parameter instead.")]
+			[Obsolete("ExtTcpPortAdvertiseAs is deprecated, use NodeTcpPortAdvertiseAs instead")]
 			public int ExtTcpPortAdvertiseAs { get; init; } = 0;
 
-			[Description("Advertise Http Port As.")]
+			private readonly int _nodeTcpPortAdvertiseAs = 0;
+			[Description("Advertise Node Tcp Port As.")]
+			public int NodeTcpPortAdvertiseAs {
+				get {
+					return _nodeTcpPortAdvertiseAs == 0 ? ExtTcpPortAdvertiseAs : _nodeTcpPortAdvertiseAs;
+				}
+				init {
+					_nodeTcpPortAdvertiseAs = value;
+				}
+			}
+
+			[Description("Advertise Http Port As."),
+			 Deprecated(
+				 "The HttpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the NodePortAdvertiseAs parameter instead.")]
+			[Obsolete("HttpPortAdvertiseAs is deprecated, use NodePortAdvertiseAs instead")]
 			public int HttpPortAdvertiseAs { get; init; } = 0;
+			
+			private readonly int _nodePortAdvertiseAs = 0;
+			[Description("Advertise Http Port As.")]
+			public int NodePortAdvertiseAs {
+				get {
+					return _nodePortAdvertiseAs == 0 ? HttpPortAdvertiseAs : _nodePortAdvertiseAs;
+				}
+				init {
+					_nodePortAdvertiseAs = value;
+				}
+			}
 
-			[Description("Advertise Internal Tcp Port As.")]
+			[Description("Advertise Internal Tcp Port As."),
+			 Deprecated(
+				 "The IntTcpPortAdvertiseAs parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationTcpPortAdvertiseAs parameter instead.")]
+			[Obsolete("IntTcpPortAdvertiseAs is deprecated, use ReplicationTcpPortAdvertiseAs instead")]
 			public int IntTcpPortAdvertiseAs { get; init; } = 0;
+			
+			private readonly int _replicationTcpPortAdvertiseAs = 0;
+			[Description("Advertise Replication Tcp Port As.")]
+			public int ReplicationTcpPortAdvertiseAs {
+				get {
+					return _replicationTcpPortAdvertiseAs == 0 ? IntTcpPortAdvertiseAs : _replicationTcpPortAdvertiseAs;
+				}
+				init {
+					_replicationTcpPortAdvertiseAs = value;
+				}
+			}
 
-			[Description("Heartbeat timeout for internal TCP sockets.")]
+			[Description("Heartbeat timeout for internal TCP sockets."),
+			 Deprecated(
+				 "The IntTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatTimeout parameter instead.")]
+			[Obsolete("IntTcpHeartbeatTimeout is deprecated, use ReplicationHeartbeatTimeout instead")]
 			public int IntTcpHeartbeatTimeout { get; init; } = 700;
+			
+			private readonly int _replicationHeartbeatTimeout = 700;
+			[Description("Heartbeat timeout for Replication TCP sockets.")]
+			public int ReplicationHeartbeatTimeout {
+				get {
+					return _replicationHeartbeatTimeout == 700 ? IntTcpHeartbeatTimeout : _replicationHeartbeatTimeout;
+				}
+				init {
+					_replicationHeartbeatTimeout = value;
+				}
+			}
 
-			[Description("Heartbeat timeout for external TCP sockets.")]
+			[Description("Heartbeat timeout for external TCP sockets."),
+			 Deprecated(
+				 "The ExtTcpHeartbeatTimeout parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHeartbeatTimeout parameter instead.")]
+			[Obsolete("ExtTcpHeartbeatTimeout is deprecated, use NodeHeartbeatTimeout instead")]
 			public int ExtTcpHeartbeatTimeout { get; init; } = 1_000;
+			
+			private readonly int _nodeHeartbeatTimeout = 1000;
+			[Description("Heartbeat timeout for Node/external TCP sockets.")]
+			public int NodeHeartbeatTimeout {
+				get {
+					return _nodeHeartbeatTimeout == 1000 ? ExtTcpHeartbeatTimeout : _nodeHeartbeatTimeout;
+				}
+				init {
+					_nodeHeartbeatTimeout = value;
+				}
+			}
 
-			[Description("Heartbeat interval for internal TCP sockets.")]
+			[Description("Heartbeat interval for internal TCP sockets."),
+			 Deprecated(
+				 "The IntTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the ReplicationHeartbeatInterval parameter instead.")]
+			[Obsolete("IntTcpHeartbeatInterval is deprecated, use ReplicationHeartbeatInterval instead")]
 			public int IntTcpHeartbeatInterval { get; init; } = 700;
 
-			[Description("Heartbeat interval for external TCP sockets.")]
+			private readonly int _replicationHeartbeatInterval = 700;
+			[Description("Heartbeat interval for Replication TCP sockets.")]
+			public int ReplicationHeartbeatInterval {
+				get {
+					return _replicationHeartbeatInterval == 700
+						? IntTcpHeartbeatInterval
+						: _replicationHeartbeatInterval;
+				}
+				init {
+					_replicationHeartbeatInterval = value;
+				}
+			}
+
+			[Description("Heartbeat interval for external TCP sockets."),
+			 Deprecated(
+				 "The ExtTcpHeartbeatInterval parameter has been deprecated as of version 23.10.0. It is recommended to use the NodeHeartbeatInterval parameter instead.")]
+			[Obsolete("ExtTcpHeartbeatInterval is deprecated, use NodeHeartbeatInterval instead")]
 			public int ExtTcpHeartbeatInterval { get; init; } = 2_000;
+
+			private readonly int _nodeHeartbeatInterval = 2000;
+			[Description("Heartbeat interval for Node/external TCP sockets.")]
+			public int NodeHeartbeatInterval {
+				get {
+					return _nodeHeartbeatInterval == 2000 ? ExtTcpHeartbeatInterval : _nodeHeartbeatInterval;
+				}
+				init {
+					_nodeHeartbeatInterval = value;
+				}
+			}
 
 			[Description("Whether to allow local connections via a UNIX domain socket.")]
 			public bool EnableUnixSocket { get; init; } = false;
@@ -729,24 +946,41 @@ namespace EventStore.Core {
 				GossipOnSingleNode = configurationRoot.GetValue<bool?>(nameof(GossipOnSingleNode)),
 				IntIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(IntIp)) ??
 				                        IPAddress.Loopback.ToString()),
+				ReplicationIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ReplicationIp)) ??
+				                                IPAddress.Loopback.ToString()),
 				ExtIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(ExtIp)) ??
 				                        IPAddress.Loopback.ToString()),
+				NodeIp = IPAddress.Parse(configurationRoot.GetValue<string>(nameof(NodeIp)) ??
+				                        IPAddress.Loopback.ToString()),
 				HttpPort = configurationRoot.GetValue<int>(nameof(HttpPort)),
+				NodePort = configurationRoot.GetValue<int>(nameof(NodePort)),
 				EnableExternalTcp = configurationRoot.GetValue<bool>(nameof(EnableExternalTcp)),
 				ExtTcpPort = configurationRoot.GetValue<int>(nameof(ExtTcpPort)),
+				NodeTcpPort = configurationRoot.GetValue<int>(nameof(NodeTcpPort)),
 				IntTcpPort = configurationRoot.GetValue<int>(nameof(IntTcpPort)),
+				ReplicationPort = configurationRoot.GetValue<int>(nameof(ReplicationPort)),
 				ExtHostAdvertiseAs = configurationRoot.GetValue<string?>(nameof(ExtHostAdvertiseAs)),
+				NodeHostAdvertiseAs = configurationRoot.GetValue<string?>(nameof(NodeHostAdvertiseAs)),
 				AdvertiseHostToClientAs = configurationRoot.GetValue<string?>(nameof(AdvertiseHostToClientAs)),
 				AdvertiseHttpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseHttpPortToClientAs)),
+				AdvertiseNodePortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseNodePortToClientAs)),
 				AdvertiseTcpPortToClientAs = configurationRoot.GetValue<int>(nameof(AdvertiseTcpPortToClientAs)),
 				ExtTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ExtTcpPortAdvertiseAs)),
+				NodeTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(NodeTcpPortAdvertiseAs)),
 				IntHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(IntHostAdvertiseAs)),
+				ReplicationHostAdvertiseAs = configurationRoot.GetValue<string>(nameof(ReplicationHostAdvertiseAs)),
 				HttpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(HttpPortAdvertiseAs)),
+				NodePortAdvertiseAs = configurationRoot.GetValue<int>(nameof(NodePortAdvertiseAs)),
 				IntTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(IntTcpPortAdvertiseAs)),
+				ReplicationTcpPortAdvertiseAs = configurationRoot.GetValue<int>(nameof(ReplicationTcpPortAdvertiseAs)),
 				ExtTcpHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(ExtTcpHeartbeatTimeout)),
+				NodeHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(NodeHeartbeatTimeout)),
 				IntTcpHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatTimeout)),
+				ReplicationHeartbeatTimeout = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatTimeout)),
 				ExtTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(ExtTcpHeartbeatInterval)),
+				NodeHeartbeatInterval = configurationRoot.GetValue<int>(nameof(NodeHeartbeatInterval)),
 				IntTcpHeartbeatInterval = configurationRoot.GetValue<int>(nameof(IntTcpHeartbeatInterval)),
+				ReplicationHeartbeatInterval = configurationRoot.GetValue<int>(nameof(ReplicationHeartbeatInterval)),
 				EnableUnixSocket = configurationRoot.GetValue<bool>(nameof(EnableUnixSocket)),
 				ConnectionPendingSendBytesThreshold =
 					configurationRoot.GetValue<int>(nameof(ConnectionPendingSendBytesThreshold)),
@@ -759,6 +993,7 @@ namespace EventStore.Core {
 				DisableExternalTcpTls = configurationRoot.GetValue<bool>(nameof(DisableExternalTcpTls)),
 				EnableAtomPubOverHttp = configurationRoot.GetValue<bool>(nameof(EnableAtomPubOverHttp))
 			};
+#pragma warning restore 0618
 		}
 
 		[Description("Projection Options")]

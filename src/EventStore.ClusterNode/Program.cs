@@ -196,7 +196,7 @@ namespace EventStore.ClusterNode {
 										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveInterval);
 									server.Limits.Http2.KeepAlivePingTimeout =
 										TimeSpan.FromMilliseconds(options.Grpc.KeepAliveTimeout);
-									server.Listen(options.Interface.ExtIp, options.Interface.HttpPort, listenOptions =>
+									server.Listen(options.Interface.NodeIp, options.Interface.NodePort, listenOptions =>
 										ConfigureHttpOptions(listenOptions, hostedService, useHttps: !hostedService.Node.DisableHttps));
 
 									if (hostedService.Node.EnableUnixSocket)

@@ -89,8 +89,8 @@ RUN mkdir -p /var/lib/eventstore && \
 
 USER eventstore
 
-RUN printf "ExtIp: 0.0.0.0\n\
-IntIp: 0.0.0.0" >> /etc/eventstore/eventstore.conf
+RUN printf "NodeIp: 0.0.0.0\n\
+ReplicationIp: 0.0.0.0" >> /etc/eventstore/eventstore.conf
 
 VOLUME /var/lib/eventstore /var/log/eventstore
 
