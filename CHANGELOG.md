@@ -110,6 +110,7 @@ All notable changes to this project will be documented in this file.
 - Use `$GITHUB_OUTPUT` for workflow output. [EventStore#3833](https://github.com/EventStore/EventStore/pull/3833)
 - Use latest `actions/checkout@v3`. [EventStore#3833](https://github.com/EventStore/EventStore/pull/3833)
 - Disable queue processing metrics by default, they add a lot of histograms [EventStore#3850](https://github.com/EventStore/EventStore/pull/3850)
+- Update help output so that it matches the documentation [EventStore#3904](https://github.com/EventStore/EventStore/pull/3904)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
@@ -117,6 +118,7 @@ All notable changes to this project will be documented in this file.
 - Cleanup V8 scripts. [EventStore#3740](https://github.com/EventStore/EventStore/pull/3740)
 - Some logging to prevent flooding of console/logs. [EventStore#3828](https://github.com/EventStore/EventStore/pull/3828)
 - Software licenses we no longer depend on. [EventStore#3885](https://github.com/EventStore/EventStore/pull/3885)
+- Unused code around checkpoints [EventStore#3900](https://github.com/EventStore/EventStore/pull/3900)
 
 ### Cherry picked from https
 - //github.com/thefringeninja/EventStore/pull/3747 [EventStore#3755](https://github.com/EventStore/EventStore/pull/3755)
