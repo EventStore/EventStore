@@ -247,7 +247,7 @@ namespace EventStore.Core.Tests.Http {
 		protected async Task<T> GetJsonWithoutAcceptHeader<T>(string path) {
 			var request = CreateRequest(path, "", "GET", null);
 			_lastResponse = await GetRequestResponse(request);
-			var memoryStream = new MemoryStream();
+			using var memoryStream = new MemoryStream();
 			await _lastResponse.Content.CopyToAsync(memoryStream);
 			var bytes = memoryStream.ToArray();
 			_lastResponseBody = Helper.UTF8NoBom.GetString(bytes);
@@ -268,7 +268,7 @@ namespace EventStore.Core.Tests.Http {
 			}
 
 			_lastResponse = await GetRequestResponse(request);
-			var memoryStream = new MemoryStream();
+			using var memoryStream = new MemoryStream();
 			await _lastResponse.Content.CopyToAsync(memoryStream);
 			var bytes = memoryStream.ToArray();
 			_lastResponseBytes = bytes;
