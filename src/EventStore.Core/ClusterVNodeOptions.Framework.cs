@@ -43,6 +43,9 @@ namespace EventStore.Core {
 		public string? DumpOptions() =>
 			ConfigurationRoot == null ? null : new OptionsDumper(OptionSections).Dump(ConfigurationRoot);
 
+		public PrintableOption[]? GetPrintableOptions() =>
+			ConfigurationRoot == null ? null : new OptionsDumper(OptionSections).GetOptionSourceInfo(ConfigurationRoot).Values.ToArray();
+
 		public string? GetDeprecationWarnings() {
 			var defaultValues = new Dictionary<string, object?>(DefaultValues, StringComparer.OrdinalIgnoreCase);
 
@@ -154,7 +157,6 @@ namespace EventStore.Core {
 					_ => value?.ToString() ?? string.Empty
 				};
 			}
-
 
 			static IEnumerable<char> GnuOption(string x) {
 				yield return '-';

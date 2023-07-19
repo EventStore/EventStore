@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 
 namespace EventStore.Common.Configuration {
+
 	public class OptionsDumper {
 		private readonly IEnumerable<Type> _optionSections;
 		private readonly List<(string, List<string>)> _groups;
@@ -15,11 +16,11 @@ namespace EventStore.Common.Configuration {
 			_optionSections = optionSections;
 			_groups = _optionSections
 				.Select(sectionType => {
-					var description = sectionType.GetCustomAttribute<DescriptionAttribute>()?.Description
+					var description = sectionType.GetCustomAttribute<DescriptionAttribute>()?.Description.ToUpper()
 					                  ?? string.Empty;
 					var props = sectionType
 						.GetProperties()
-						.Select(x => NameTranslators.CombineByPascalCase(x.Name, " ").ToUpper())
+						.Select(x => FormatOptionKey(x.Name))
 						.OrderBy(x => x)
 						.ToList();
 					return (description, props);
@@ -29,7 +30,12 @@ namespace EventStore.Common.Configuration {
 		}
 
 		public string Dump(IConfigurationRoot configurationRoot) {
-			var info = GetOptionSourceInfo(configurationRoot);
+			var options = GetOptionSourceInfo(configurationRoot);
+			var info = options
+				.Where(x => x.Value.Source is not null)
+				.ToDictionary(
+				x => FormatOptionKey(x.Key),
+				y => (y.Value.Source, y.Value.Value));
 
 			bool Modified(Type x) => x != typeof(Default);
 			bool Default(Type x) => x == typeof(Default);
@@ -73,30 +79,8 @@ namespace EventStore.Common.Configuration {
 				$"({(source == typeof(Default) ? "<DEFAULT>" : NameTranslators.CombineByPascalCase(source.Name, " "))})"
 			;
 		}
-
-		private IDictionary<string, (Type source, string value)> GetOptionSourceInfo(
-			IConfigurationRoot configurationRoot) {
-			var sensitiveOptions = _optionSections.SelectMany(section => section.GetProperties())
-				.Where(option => option.GetCustomAttribute<SensitiveAttribute>() != null)
-				.Select(option => option.Name)
-				.ToArray();
-			var values = new Dictionary<string, (Type source, string value)>();
-
-			foreach (var provider in configurationRoot.Providers) {
-				var source = provider.GetType();
-				foreach (var key in provider.GetChildKeys(Enumerable.Empty<string>(), default)) {
-					if (provider.TryGet(key, out var value)) {
-						values[NameTranslators.CombineByPascalCase(key, " ").ToUpper()] =
-							(source, FormatValue(key, value));
-					}
-				}
-			}
-
-			return values;
-
-			string FormatValue(string key, string value) =>
-				string.IsNullOrEmpty(value) ? "<empty>" : sensitiveOptions.Contains(key) ? "****" : value;
-		}
+		static string FormatOptionKey(string option) =>
+			NameTranslators.CombineByPascalCase(option, " ").ToUpper();
 
 		internal static class NameTranslators {
 			public static string PrefixEnvironmentVariable(string name, string prefix) {
@@ -114,5 +98,40 @@ namespace EventStore.Common.Configuration {
 			}
 		}
 
+		public Dictionary<string, PrintableOption> GetOptionSourceInfo(IConfigurationRoot configurationRoot) {
+			if (configurationRoot is null) return null;
+
+			var result = new Dictionary<string, PrintableOption>();
+			foreach (var section in _optionSections) {
+				foreach (var property in section.GetProperties()) {
+					var argumentDescriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>();
+					var sensitiveAttribute = property.GetCustomAttribute<SensitiveAttribute>();
+					string[] allowedValues = null;
+					if (property.PropertyType.IsEnum) {
+						allowedValues = property.PropertyType.GetEnumNames();
+					}
+
+					result[property.Name] = new PrintableOption(
+						property.Name,
+						argumentDescriptionAttribute?.Description,
+						section.Name,
+						allowedValues,
+						sensitiveAttribute != null
+					);
+				}
+			}
+
+			foreach (var provider in configurationRoot.Providers) {
+				var source = provider.GetType();
+				foreach (var key in provider.GetChildKeys(Enumerable.Empty<string>(), default)) {
+					if (provider.TryGet(key, out var value)) {
+						var opt = result[key];
+						result[key] = opt.WithValue(value, source);
+					}
+				}
+			}
+
+			return result;
+		}
 	}
 }

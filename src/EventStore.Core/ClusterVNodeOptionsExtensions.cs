@@ -2,7 +2,6 @@ using System;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Exceptions;
-using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using Serilog;
 
