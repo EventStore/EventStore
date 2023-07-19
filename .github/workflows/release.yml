@@ -29,7 +29,7 @@ jobs:
           if ($tag -like "oss-v*.*.0") {
             Write-Output "Checking tag: $($tag)"
             $branchesWithTag = $(git branch --all --contains $tag) -join " "
-            if (-not ($branchesWithTag -match "main")) {
+            if (-not ($branchesWithTag -match "master")) {
               Write-Error "Tag $($tag) should be created with a commit from master and not from a release branch!"
             }
           } else {
