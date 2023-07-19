@@ -49,6 +49,9 @@ All notable changes to this project will be documented in this file.
 - Bump System.Drawing.Common [CVE-2021-24112](https://github.com/advisories/GHSA-rxg9-xrhp-64gj) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
 - Bump System.Security.Cryptography.* [CVE-2022-34716](https://github.com/advisories/GHSA-2m65-m22p-9wjw) [EventStore#3893](https://github.com/EventStore/EventStore/pull/3893)
 - Calling the admin/reloadconfig endpoint only reloaded/updated the LogLevel and the certificates were not updated on reloading the config. This was broken by the Dev Certificate changes in v22.10. This PR has the changes backported to v22.10. [EventStore#3898](https://github.com/EventStore/EventStore/pull/3898)
+- Prevent invalid message timeouts from being set in persistent subscriptions UI [EventStore#3906](https://github.com/EventStore/EventStore/pull/3906)
+- Incorrect number of behind messages in the persistent subscriptions UI [EventStore#3906](https://github.com/EventStore/EventStore/pull/3906)
+- Improve test stability. [EventStore#3901](https://github.com/EventStore/EventStore/pull/3901)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -94,6 +97,7 @@ All notable changes to this project will be documented in this file.
 - polishing new metrics [EventStore#3879](https://github.com/EventStore/EventStore/pull/3879)
 - Show MiniNode logs in case test fails [EventStore#3866](https://github.com/EventStore/EventStore/pull/3866)
 - Periodically log esdb version on each node [EventStore#3882](https://github.com/EventStore/EventStore/pull/3882)
+- Allow setting projection execution timeout per projection through the UI [EventStore#3906](https://github.com/EventStore/EventStore/pull/3906)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
@@ -112,6 +116,7 @@ All notable changes to this project will be documented in this file.
 - Disable queue processing metrics by default, they add a lot of histograms [EventStore#3850](https://github.com/EventStore/EventStore/pull/3850)
 - Update help output so that it matches the documentation [EventStore#3904](https://github.com/EventStore/EventStore/pull/3904)
 - Update help output so that it matches the documentation [EventStore#3904](https://github.com/EventStore/EventStore/pull/3904)
+- Disabled anonymous access by default (AllowAnonymousStreamAccess, AllowAnonymousEndpointAccess) [EventStore#3905](https://github.com/EventStore/EventStore/pull/3905)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
