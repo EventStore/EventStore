@@ -90,6 +90,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private int _internalStreamsCount;
 		private int _fileStreamCount;
 		private int _memStreamCount;
+		private int _cleanedUpFileStreams;
 
 		private WriterWorkItem _writerWorkItem;
 		private long _logicalDataSize;
@@ -999,7 +1000,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private bool TryDestructFileStreams() {
 			int fileStreamCount = Interlocked.CompareExchange(ref _fileStreamCount, 0, 0);
-			bool wasZero = fileStreamCount == 0;
 
 			ReaderWorkItem workItem;
 			while (_fileStreams.TryDequeue(out workItem)) {
@@ -1011,17 +1011,24 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				throw new Exception("Count of file streams reduced below zero.");
 
 			if (fileStreamCount == 0) {
-				if (!wasZero) {
-					// we are the last who should "turn the light off" for file streams
-					CleanUpFileStreamDestruction();
-				}
+				CleanUpFileStreamDestruction();
 				return true;
 			}
 
 			return false;
 		}
 
+		// Called when the filestreams have all been returned and disposed.
+		// This used to be a 'last one out turns off the light' mechanism, but now it is idempotent
+		// so it is more like 'make sure the light is off if no one is using it'.
+		// The idempotency means that
+		//  1. we don't have to worry if we just disposed the last filestream or if someone else did before.
+		//  2. this mechanism will work if we decide not to create any pooled filestreams at all
+		//        (previously if we didnt create any filestreams then no one would call this method)
 		private void CleanUpFileStreamDestruction() {
+			if (Interlocked.CompareExchange(ref _cleanedUpFileStreams, 1, 0) != 0)
+				return;
+
 			CleanUpWriterWorkItem(_writerWorkItem);
 
 			if (!_inMem) {
@@ -1103,18 +1110,29 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			var internalStreamCount = Interlocked.Increment(ref _internalStreamsCount);
 			if (internalStreamCount > _maxReaderCount)
-				throw new Exception("Unable to acquire reader work item. Max internal streams limit reached.");
+				throw new Exception("Unable to acquire reader work item. Max reader count reached.");
 
-			bool wasZero = Interlocked.Increment(ref _fileStreamCount) - 1 == 0;
+			Interlocked.Increment(ref _fileStreamCount);
 			if (_selfdestructin54321) {
-				if (Interlocked.Decrement(ref _fileStreamCount) == 0 && !wasZero)
-					CleanUpFileStreamDestruction(); // now we should "turn light off"
+				if (Interlocked.Decrement(ref _fileStreamCount) == 0)
+					CleanUpFileStreamDestruction();
 				throw new FileBeingDeletedException();
 			}
 
 			// if we get here, then we reserved TFChunk for sure so no one should dispose of chunk file
-			// until client returns the reader
-			return CreateInternalReaderWorkItem();
+			// until client returns the reader - if we successfully create one.
+			// creating the reader might fail because of reaching the file handle limit
+			try {
+				return CreateInternalReaderWorkItem();
+			} catch {
+				Interlocked.Decrement(ref _internalStreamsCount);
+
+				var fileStreamCount = Interlocked.Decrement(ref _fileStreamCount);
+				if (_selfdestructin54321 && fileStreamCount == 0)
+					CleanUpFileStreamDestruction();
+
+				throw;
+			}
 		}
 
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
@@ -1130,10 +1148,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public TFChunkBulkReader AcquireReader() {
-			bool wasZero = Interlocked.Increment(ref _fileStreamCount) - 1 == 0;
+			Interlocked.Increment(ref _fileStreamCount);
 			if (_selfdestructin54321) {
-				if (Interlocked.Decrement(ref _fileStreamCount) == 0 && !wasZero) {
-					// now we should "turn light off"
+				if (Interlocked.Decrement(ref _fileStreamCount) == 0) {
 					CleanUpFileStreamDestruction();
 				}
 
