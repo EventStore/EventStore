@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		[Test]
 		public void a_null_checkpoint_throws_argument_null_exception() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 0);
-			var db = new TFChunkDb(config);
+			using var db = new TFChunkDb(config);
 			Assert.Throws<ArgumentNullException>(() => new TFChunkReader(db, null));
 		}
 	}

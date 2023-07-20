@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EventStore.Client;
 using EventStore.Client.Streams;
 using EventStore.Core.Services.Transport.Grpc;
 using Google.Protobuf;
@@ -9,7 +8,6 @@ using Grpc.Core;
 using NUnit.Framework;
 using Position = EventStore.Core.Services.Transport.Grpc.Position;
 using LogV3StreamId = System.UInt32;
-using Empty = Google.Protobuf.WellKnownTypes.Empty;
 
 namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 	[TestFixture]
@@ -192,6 +190,19 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			}
 
 			protected override async Task When() {
+				for (int i = 1; i <= 5; i++) {
+					try {
+						await WhenWhichMightConsumeTooSlow(i);
+						return;
+					} catch (RpcException ex) when(ex.Message.Contains("too slow")) {
+						_positions.Clear();
+						await Task.Delay(500);
+					}
+				}
+			}
+
+			private async Task WhenWhichMightConsumeTooSlow(int attempt) {
+				var streamName = attempt + StreamName;
 				using var call = StreamsClient.Read(new ReadReq {
 					Options = new ReadReq.Types.Options {
 						Subscription = new(),
@@ -199,7 +210,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						Filter = new() {
 							Max = _maxSearchWindow,
 							CheckpointIntervalMultiplier = _checkpointIntervalMultiplier,
-							StreamIdentifier = new() {Prefix = {StreamName}}
+							StreamIdentifier = new() {Prefix = {streamName}}
 						},
 						UuidOption = new() {Structured = new()},
 						ReadDirection = ReadReq.Types.Options.Types.ReadDirection.Forwards
@@ -215,7 +226,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					success = (await AppendToStreamBatch(new BatchAppendReq {
 						Options = new() {
 							Any = new(),
-							StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8(StreamName)}
+							StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8(streamName)}
 						},
 						IsFinal = true,
 						ProposedMessages = {CreateEvents(1)},
@@ -234,7 +245,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					}
 
 					if (response.ContentCase == ReadResp.ContentOneofCase.Event) {
-						Assert.AreEqual(StreamName,
+						Assert.AreEqual(streamName,
 							response.Event.Event.StreamIdentifier.StreamName.ToStringUtf8());
 						if (!(response.Event.CommitPosition < _position.CommitPosition)) {
 							return;

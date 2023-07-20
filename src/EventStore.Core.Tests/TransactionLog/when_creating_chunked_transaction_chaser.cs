@@ -17,13 +17,13 @@ namespace EventStore.Core.Tests.TransactionLog {
 
 		[Test]
 		public void a_null_writer_checksum_throws_argument_null_exception() {
-			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
+			using var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
 			Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, null, new InMemoryCheckpoint(), false));
 		}
 
 		[Test]
 		public void a_null_chaser_checksum_throws_argument_null_exception() {
-			var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
+			using var db = new TFChunkDb(TFChunkHelper.CreateDbConfig(PathName, 0));
 			Assert.Throws<ArgumentNullException>(() => new TFChunkChaser(db, new InMemoryCheckpoint(), null, false));
 		}
 	}

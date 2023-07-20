@@ -37,7 +37,7 @@ namespace EventStore.Core.XUnit.Tests.TransactionLog.LogRecords {
 				_metadata,
 				Version);
 
-			var memoryStream = new MemoryStream();
+			using var memoryStream = new MemoryStream();
 			var writer = new BinaryWriter(memoryStream);
 			prepare.WriteTo(writer);
 

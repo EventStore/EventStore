@@ -669,7 +669,7 @@ namespace EventStore.Core.Tests.TransactionLog.Unbuffered {
 		}
 
 		private byte[] BuildBytes(int count) {
-			var ret = new MemoryStream();
+			using var ret = new MemoryStream();
 			for (int i = 0; i < count / 16; i++) {
 				ret.Write(Guid.NewGuid().ToByteArray(), 0, 16);
 			}
