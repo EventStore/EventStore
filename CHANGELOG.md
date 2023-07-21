@@ -52,6 +52,7 @@ All notable changes to this project will be documented in this file.
 - Prevent invalid message timeouts from being set in persistent subscriptions UI [EventStore#3906](https://github.com/EventStore/EventStore/pull/3906)
 - Incorrect number of behind messages in the persistent subscriptions UI [EventStore#3906](https://github.com/EventStore/EventStore/pull/3906)
 - Improve test stability. [EventStore#3901](https://github.com/EventStore/EventStore/pull/3901)
+- Improve test stability [EventStore#3908](https://github.com/EventStore/EventStore/pull/3908)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -117,6 +118,7 @@ All notable changes to this project will be documented in this file.
 - Update help output so that it matches the documentation [EventStore#3904](https://github.com/EventStore/EventStore/pull/3904)
 - Update help output so that it matches the documentation [EventStore#3904](https://github.com/EventStore/EventStore/pull/3904)
 - Disabled anonymous access by default (AllowAnonymousStreamAccess, AllowAnonymousEndpointAccess) [EventStore#3905](https://github.com/EventStore/EventStore/pull/3905)
+- No longer log misleading error about 'Max internal streams limit' when running out of file handles [EventStore#3902](https://github.com/EventStore/EventStore/pull/3902)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
