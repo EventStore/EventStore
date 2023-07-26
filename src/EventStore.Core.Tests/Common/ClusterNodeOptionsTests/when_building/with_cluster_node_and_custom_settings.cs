@@ -1,14 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using EventStore.Client;
 using EventStore.Common.Configuration;
 using EventStore.Common.Utils;
 using EventStore.Core.Certificates;
-using EventStore.Core.LogAbstraction;
 using EventStore.Core.Services;
+using EventStore.Core.Tests.Services.Transport.Tcp;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 
@@ -31,6 +31,116 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 		[Test]
 		public void should_set_cluster_dns_name() {
 			Assert.AreEqual("ClusterDns", _options.Cluster.ClusterDns);
+		}
+	}
+	
+	[TestFixture(true)]
+	[TestFixture(false)]
+	public class different_certificate_common_name {
+		private static readonly string _dummyCommonName = $"Gondor{new UUID()}";
+		private CertificateProvider _certificateProvider;
+		private readonly bool _devMode;
+		private ClusterVNodeOptions _options;
+
+		public different_certificate_common_name(bool devMode) {
+			_devMode = devMode;
+		}
+
+		[OneTimeSetUp]
+		public virtual void SetUp() {
+			_options = new ClusterVNodeOptions()
+				.RunInMemory()
+				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()),
+					ssl_connections.GetServerCertificate())
+				.WithDevMode(_devMode);
+			
+			_options.Certificate.CertificateReservedNodeCommonName = _dummyCommonName;
+			_certificateProvider = GetCertificateProvider(_options);
+		}
+
+		private static CertificateProvider GetCertificateProvider(ClusterVNodeOptions options) {
+			return options.DevMode.Dev ? new DevCertificateProvider(new X509Certificate2(Array.Empty<byte>())) :  new OptionsCertificateProvider();
+		}
+	
+		[Test]
+		public void load_certificate_should_fail() {
+			LoadCertificateResult result = _certificateProvider.LoadCertificates(_options);
+			if (_devMode) {
+				Assert.AreEqual(LoadCertificateResult.Skipped, result);
+				Assert.Null(_certificateProvider.CertificateCN);
+			} else {
+				Assert.AreEqual(LoadCertificateResult.VerificationFailed, result);
+			}
+		}
+	}
+	
+	[TestFixture(true)]
+	[TestFixture(false)]
+	public class certificate_common_name_absent_in_config {
+		private CertificateProvider _certificateProvider;
+		private readonly bool _devMode;
+		private X509Certificate2 _serverCertificate;
+		private ClusterVNodeOptions _options;
+		
+		public certificate_common_name_absent_in_config(bool devMode) {
+			_devMode = devMode;
+		}
+
+		[OneTimeSetUp]
+		public virtual void SetUp() {
+			_serverCertificate = ssl_connections.GetServerCertificate();
+			
+			_options = new ClusterVNodeOptions()
+				.RunInMemory()
+				.Secure(new X509Certificate2Collection(ssl_connections.GetRootCertificate()), _serverCertificate)
+				.WithDevMode(_devMode);
+			
+			_options.Certificate.CertificateReservedNodeCommonName = null;
+			_certificateProvider = GetCertificateProvider(_options);
+		}
+
+		private static CertificateProvider GetCertificateProvider(ClusterVNodeOptions options) {
+			return options.DevMode.Dev ? new DevCertificateProvider(new X509Certificate2(Array.Empty<byte>())) :  new OptionsCertificateProvider();
+		}
+	
+		[Test]
+		public void certificate_provider_should_load_common_name_from_certificate() {
+			var result = _certificateProvider.LoadCertificates(_options);
+			if (_devMode) {
+				Assert.AreEqual(LoadCertificateResult.Skipped, result);
+			} else {
+				Assert.AreEqual(LoadCertificateResult.Success, result);	
+				Assert.AreEqual(_serverCertificate.GetCommonName(), _certificateProvider.CertificateCN);
+			}
+		}
+	}
+	
+	[TestFixture(true)]
+	[TestFixture(false)]
+	public class load_certificate_insecure_mode {
+		private static readonly string _dummyCommonName = $"Gondor{new UUID()}";
+		private CertificateProvider _certificateProvider;
+		private ClusterVNodeOptions _options;
+		private readonly bool _devMode;
+		public load_certificate_insecure_mode(bool devMode) {
+			_devMode = devMode;
+		}
+
+		[OneTimeSetUp]
+		public virtual void SetUp() {
+			_options = new ClusterVNodeOptions().RunInMemory().Insecure().WithDevMode(_devMode);
+			_options.Certificate.CertificateReservedNodeCommonName = _dummyCommonName;
+			_certificateProvider = GetCertificateProvider(_options);
+		}
+
+		private static CertificateProvider GetCertificateProvider(ClusterVNodeOptions options) {
+			return options.DevMode.Dev ? new DevCertificateProvider(new X509Certificate2(Array.Empty<byte>())) :  new OptionsCertificateProvider();
+		}
+	
+		[Test]
+		public void load_certificate_should_skip() {
+			Assert.AreEqual(LoadCertificateResult.Skipped, _certificateProvider.LoadCertificates(_options));
+			Assert.Null(_certificateProvider.CertificateCN);
 		}
 	}
 
@@ -242,7 +352,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			_configurationRoot = new ConfigurationBuilder()
 				.Add(new DefaultSource(new Dictionary<string, object> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword,
+					[nameof(ClusterVNodeOptions.Certificate.CertificateReservedNodeCommonName)] = "es"
 				}))
 				.Add(new CommandLineSource(args))
 				.Build();
@@ -263,7 +374,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			_configurationRoot = new ConfigurationBuilder()
 				.Add(new DefaultSource(new Dictionary<string, object> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword,
+					[nameof(ClusterVNodeOptions.Certificate.CertificateReservedNodeCommonName)] = "es"
 				}))
 				.Add(new CommandLineSource(args))
 				.Add(new EnvironmentVariablesSource(environmentVariables))

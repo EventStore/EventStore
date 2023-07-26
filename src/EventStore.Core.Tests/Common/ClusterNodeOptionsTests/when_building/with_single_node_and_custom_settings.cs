@@ -193,7 +193,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			_configurationRoot = new ConfigurationBuilder()
 				.Add(new DefaultSource(new Dictionary<string, object> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword,
+					[nameof(ClusterVNodeOptions.Certificate.CertificateReservedNodeCommonName)] = "es"
 				}))
 				.Add(new CommandLineSource(args))
 				.Build();
@@ -214,7 +215,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			_configurationRoot = new ConfigurationBuilder()
 				.Add(new DefaultSource(new Dictionary<string, object> {
 					[nameof(ClusterVNodeOptions.DefaultUser.DefaultAdminPassword)] = SystemUsers.DefaultAdminPassword,
-					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword
+					[nameof(ClusterVNodeOptions.DefaultUser.DefaultOpsPassword)] = SystemUsers.DefaultOpsPassword,
+					[nameof(ClusterVNodeOptions.Certificate.CertificateReservedNodeCommonName)] = "es"
 				}))
 				.Add(new CommandLineSource(args))
 				.Add(new EnvironmentVariablesSource(environmentVariables))

@@ -91,6 +91,18 @@ namespace EventStore.Core {
 			};
 
 		/// <summary>
+		/// Sets/Unsets dev mode
+		/// </summary>
+		/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>
+		/// <param name="dev">true/false flag denoting whether dev mode or not</param>
+		/// <param name="removeDevCerts">true/false flag denoting whether to remove dev certificates or not</param>
+		/// <returns>A <see cref="ClusterVNodeOptions"/> with the options set</returns>
+		public static ClusterVNodeOptions WithDevMode(this ClusterVNodeOptions options, bool dev, bool removeDevCerts = false) =>
+			options with {
+				DevMode = new ClusterVNodeOptions.DevModeOptions { Dev = dev, RemoveDevCerts = removeDevCerts }
+			};
+
+		/// <summary>
 		/// Sets the external tcp endpoint to the specified value
 		/// </summary>
 		/// <param name="options">The <see cref="ClusterVNodeOptions"/></param>

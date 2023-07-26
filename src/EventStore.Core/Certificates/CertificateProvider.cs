@@ -5,6 +5,8 @@ namespace EventStore.Core.Certificates {
 		public X509Certificate2 Certificate;
 		public X509Certificate2Collection IntermediateCerts;
 		public X509Certificate2Collection TrustedRootCerts;
+		public string CertificateCN = null;
+		
 		public abstract LoadCertificateResult LoadCertificates(ClusterVNodeOptions options);
 	}
 

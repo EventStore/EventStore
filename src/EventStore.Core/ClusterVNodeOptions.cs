@@ -291,7 +291,7 @@ namespace EventStore.Core {
 				Locations.DefaultTrustedRootCertificateDirectory;
 
 			[Description("The reserved common name to authenticate EventStoreDB nodes/servers from certificates")]
-			public string CertificateReservedNodeCommonName { get; init; } = "eventstoredb-node";
+			public string? CertificateReservedNodeCommonName { get; set; }
 
 			internal static CertificateOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				TrustedRootCertificatesPath = configurationRoot.GetValue<string>(nameof(TrustedRootCertificatesPath)),

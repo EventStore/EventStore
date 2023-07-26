@@ -67,9 +67,12 @@ namespace EventStore.Core.Tests {
 				nameof(ClusterVNodeOptions.Unknown.Options),
 			};
 			var actual = new List<string>();
-			ClusterVNodeOptions.FromConfiguration(new FakeConfigurationRoot(
-				new ConfigurationBuilder().Add(new DefaultSource(ClusterVNodeOptions.DefaultValues)).Build(),
-				actual.Add));
+			var specificValues = new[]
+				{ new KeyValuePair<string, object>(nameof(ClusterVNodeOptions.ApplicationOptions.Insecure), true) };
+			var defaultValues = SpecificOrDefaultValues(new(specificValues));
+			ClusterVNodeOptions.FromConfiguration(
+				new FakeConfigurationRoot(new ConfigurationBuilder().Add(new DefaultSource(defaultValues)).Build(),
+					actual.Add));
 
 			var expected = typeof(ClusterVNodeOptions).GetProperties().Where(x => !excluded.Contains(x.Name))
 				.SelectMany(property => property.PropertyType.GetProperties().Where(x => !excluded.Contains(x.Name)))
@@ -77,6 +80,13 @@ namespace EventStore.Core.Tests {
 				.Select(property => property.Name);
 
 			CollectionAssert.AreEquivalent(expected, actual);
+		}
+
+		private static IEnumerable<KeyValuePair<string, object>> SpecificOrDefaultValues(List<KeyValuePair<string, object>> specificValues) {
+			var defaultValues = ClusterVNodeOptions.DefaultValues;
+			if (specificValues is null || specificValues.IsEmpty()) return defaultValues;
+			var specifiedKeys = specificValues.Select(kvp => kvp.Key).ToList();
+			return defaultValues.Where(kvp => !specifiedKeys.Contains(kvp.Key)).Concat(specificValues);
 		}
 
 		public static IEnumerable<PrecedenceCase> PrecedenceCases() {
