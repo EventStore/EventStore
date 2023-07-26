@@ -39,6 +39,7 @@ namespace EventStore.Core.Authorization {
 			policy.AllowAnonymous(Operations.Node.Information.Read);
 			policy.AllowAnonymous(Operations.Node.StaticContent);
 			policy.AllowAnonymous(Operations.Node.Redirect);
+			policy.AllowAnonymous(Operations.Node.Gossip.ClientRead);
 
 			Action<OperationDefinition> addToPolicy = _allowAnonymousEndpointAccess
 				? op => policy.AllowAnonymous(op)
@@ -49,7 +50,6 @@ namespace EventStore.Core.Authorization {
 			addToPolicy(Operations.Node.Statistics.Replication);
 			addToPolicy(Operations.Node.Statistics.Tcp);
 			addToPolicy(Operations.Node.Statistics.Custom);
-			addToPolicy(Operations.Node.Gossip.ClientRead);
 
 			policy.AddMatchAnyAssertion(Operations.Node.Information.Subsystems, Grant.Allow, OperationsOrAdmins);
 			policy.AddMatchAnyAssertion(Operations.Node.Information.Histogram, Grant.Allow, OperationsOrAdmins);
