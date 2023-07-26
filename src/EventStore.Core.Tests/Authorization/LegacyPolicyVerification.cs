@@ -392,6 +392,7 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.StaticContent);
 				yield return CreateOperation(Operations.Node.Ping);
 				yield return CreateOperation(Operations.Node.Information.Read);
+				yield return CreateOperation(Operations.Node.Gossip.ClientRead);
 			}
 
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AllowAnonymousEndpointAccessOperations() {
@@ -400,7 +401,6 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.Statistics.Replication);
 				yield return CreateOperation(Operations.Node.Statistics.Tcp);
 				yield return CreateOperation(Operations.Node.Statistics.Custom);
-				yield return CreateOperation(Operations.Node.Gossip.ClientRead);
 			}
 			
 			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> AllowAnonymousStreamAccessOperations() {
