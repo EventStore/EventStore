@@ -88,8 +88,8 @@ public class TFChunkTrackerTests : IDisposable {
 	}
 
 	private static PrepareLogRecord CreatePrepare(byte[] data, byte[] meta) {
-		return new PrepareLogRecord(42, Guid.NewGuid(), Guid.NewGuid(), 42, 42, "tests", 42, DateTime.Now,
-			PrepareFlags.Data, "type-test", data, meta);
+		return new PrepareLogRecord(42, Guid.NewGuid(), Guid.NewGuid(), 42, 42, "tests", null, 42, DateTime.Now,
+			PrepareFlags.Data, "type-test", null, data, meta);
 	}
 
 	private static SystemLogRecord CreateSystemRecord() {

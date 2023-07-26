@@ -29,10 +29,12 @@ namespace EventStore.Core.XUnit.Tests.TransactionLog.LogRecords {
 				TransactionPosition,
 				TransactionOffset,
 				EventStreamId,
+				null,
 				ExpectedVersion,
 				_timestamp,
 				Flags,
 				EventType,
+				null,
 				_data,
 				_metadata,
 				Version);

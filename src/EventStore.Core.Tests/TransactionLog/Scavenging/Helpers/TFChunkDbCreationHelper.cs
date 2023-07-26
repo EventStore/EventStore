@@ -369,10 +369,12 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers {
 				transInfo.TransactionPosition,
 				transOffset,
 				rec.StreamId,
+				null,
 				expectedVersion,
 				rec.TimeStamp,
 				flags,
 				rec.EventType,
+				null,
 				data,
 				null,
 				LogRecordVersion.LogRecordV0);

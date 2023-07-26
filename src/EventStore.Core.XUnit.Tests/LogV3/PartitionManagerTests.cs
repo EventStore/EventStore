@@ -153,7 +153,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 		public List<ILogRecord> WrittenRecords { get; }
 		
 		public void Open() {}
-
+		public bool CanWrite(int numBytes) => true;
 		public bool Write(ILogRecord record, out long newPos) {
 			WrittenRecords.Add(record);
 			newPos = record.LogPosition + 1;
@@ -162,7 +162,7 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 
 		public void OpenTransaction() => throw new NotImplementedException();
 
-		public bool WriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
+		public void WriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
 
 		public void CommitTransaction() => throw new NotImplementedException();
 
