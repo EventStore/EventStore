@@ -52,7 +52,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.PersistentSubscriptionTe
 						Stream = new CreateReq.Types.StreamOptions {
 							Start = new Empty(),
 							StreamIdentifier = new StreamIdentifier {
-								StreamName = ByteString.CopyFromUtf8("stream")
+								StreamName = ByteString.CopyFrom("stream"u8)
 							}
 						},
 						Settings = settings

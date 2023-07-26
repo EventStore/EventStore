@@ -22,7 +22,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 		private readonly ILogger _logger;
 		private readonly string _streamId;
+		private readonly int _streamIdSize;
 		private readonly string _metadataStreamId;
+		private readonly int _metadataStreamIdSize;
 		private readonly WriterConfiguration _writerConfiguration;
 		private readonly ProjectionVersion _projectionVersion;
 		private readonly ClaimsPrincipal _writeAs;
@@ -142,7 +144,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
 			if (readyHandler == null) throw new ArgumentNullException("readyHandler");
 			_streamId = streamId;
+			_streamIdSize = Helper.UTF8NoBom.GetBytes(_streamId).Length;
 			_metadataStreamId = SystemStreams.MetastreamOf(streamId);
+			_metadataStreamIdSize = Helper.UTF8NoBom.GetBytes(_metadataStreamId).Length;
 			_writerConfiguration = writerConfiguration;
 			_projectionVersion = projectionVersion;
 			_writeAs = writerConfiguration.WriteAs;
@@ -443,12 +447,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			if (delayInSeconds == 0) {
 				_writerConfiguration.Writer.WriteEvents(
-					_metadataStreamId, ExpectedVersion.Any, new Event[] {_submittedWriteMetaStreamEvent}, _writeAs,
+					_metadataStreamId, _metadataStreamIdSize, ExpectedVersion.Any, new Event[] {_submittedWriteMetaStreamEvent}, _writeAs,
 					m => HandleMetadataWriteCompleted(m, retryCount));
 			} else {
 				_ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
 					_ => _writerConfiguration.Writer.WriteEvents(
-						_metadataStreamId, ExpectedVersion.Any, new Event[] {_submittedWriteMetaStreamEvent}, _writeAs,
+						_metadataStreamId, _metadataStreamIdSize, ExpectedVersion.Any, new Event[] {_submittedWriteMetaStreamEvent}, _writeAs,
 						m => HandleMetadataWriteCompleted(m, retryCount)));
 			}
 		}
@@ -600,12 +604,12 @@ namespace EventStore.Projections.Core.Services.Processing {
 
 			if (delayInSeconds == 0) {
 				_writerConfiguration.Writer.WriteEvents(
-					_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
+					_streamId, _streamIdSize, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
 					m => HandleWriteEventsCompleted(m, retryCount));
 			} else {
 				_ioDispatcher.Delay(TimeSpan.FromSeconds(delayInSeconds),
 					_ => _writerConfiguration.Writer.WriteEvents(
-						_streamId, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
+						_streamId, _streamIdSize, _lastKnownEventNumber, _submittedToWriteEvents, _writeAs,
 						m => HandleWriteEventsCompleted(m, retryCount)));
 			}
 		}

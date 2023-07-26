@@ -42,11 +42,23 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			// DO NOTHING
 		}
 
+		public bool CanWrite(int numBytes) {
+			return _currentChunk.ChunkHeader.ChunkEndPosition - Position >= numBytes;
+		}
+
 		public bool Write(ILogRecord record, out long newPos) {
 			OpenTransaction();
-			bool wasWritten = WriteToTransaction(record, out newPos);
+
+			if (!TryWriteToTransaction(record, out newPos)) {
+				CompleteChunkInTransaction();
+				CommitTransaction();
+				Flush();
+				newPos = _nextRecordPosition;
+				return false;
+			}
+
 			CommitTransaction();
-			return wasWritten;
+			return true;
 		}
 
 		public void OpenTransaction() {
@@ -56,15 +68,21 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			_inTransaction = true;
 		}
 
-		public bool WriteToTransaction(ILogRecord record, out long newPos) {
-			var result = _currentChunk.TryAppend(record);
-			if (result.Success)
-				_nextRecordPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition;
-			else
-				CompleteChunkInTransaction(); // complete updates _nextRecordPosition internally
+		public void WriteToTransaction(ILogRecord record, out long newPos) {
+			if (!TryWriteToTransaction(record, out newPos))
+				throw new InvalidOperationException("The transaction does not fit in the current chunk.");
+		}
 
+		private bool TryWriteToTransaction(ILogRecord record, out long newPos) {
+			var result = _currentChunk.TryAppend(record);
+			if (!result.Success) {
+				newPos = default;
+				return false;
+			}
+
+			_nextRecordPosition = result.NewPosition + _currentChunk.ChunkHeader.ChunkStartPosition;
 			newPos = _nextRecordPosition;
-			return result.Success;
+			return true;
 		}
 
 		public void CommitTransaction() {
@@ -77,7 +95,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 		public bool HasOpenTransaction() => _inTransaction;
 
-		public void CompleteChunkInTransaction() {
+		private void CompleteChunkInTransaction() {
 			var chunk = _currentChunk;
 			_currentChunk = null; // in case creation of new chunk fails, we shouldn't use completed chunk for write
 

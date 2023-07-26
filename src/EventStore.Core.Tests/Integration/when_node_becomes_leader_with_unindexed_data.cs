@@ -92,8 +92,8 @@ namespace EventStore.Core.Tests.Integration {
 					},
 					Data = ByteString.Empty,
 					Metadata = {
-						[GrpcMetadata.Type] = "type",
-						[GrpcMetadata.ContentType] = GrpcMetadata.ContentTypes.ApplicationJson
+						[GrpcMetadata.Type] = ByteString.CopyFrom("type"u8),
+						[GrpcMetadata.ContentType] = ByteString.CopyFrom(GrpcMetadata.ContentTypes.ApplicationJson)
 					}
 				}
 			});

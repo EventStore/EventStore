@@ -1,3 +1,5 @@
+using System;
+
 namespace EventStore.Core.Services.Transport.Grpc {
 	public static class Constants {
 		public static class Exceptions {
@@ -48,8 +50,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public static readonly string[] RequiredMetadata = {Type, ContentType};
 
 			public static class ContentTypes {
-				public const string ApplicationJson = "application/json";
-				public const string ApplicationOctetStream = "application/octet-stream";
+				private static readonly ReadOnlyMemory<byte> _applicationJson = "application/json"u8.ToArray();
+				public static ReadOnlySpan<byte> ApplicationJson => _applicationJson.Span;
+
+				private static readonly ReadOnlyMemory<byte> _applicationOctetStream = "application/octet-stream"u8.ToArray();
+				public static ReadOnlySpan<byte> ApplicationOctetStream => _applicationOctetStream.Span;
 			}
 		}
 

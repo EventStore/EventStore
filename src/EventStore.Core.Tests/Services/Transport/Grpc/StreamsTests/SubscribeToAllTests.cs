@@ -143,7 +143,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			public void reads_all_the_live_events() {
 				Assert.AreEqual(1,
 					_responses.Count(x => x.ContentCase == ReadResp.ContentOneofCase.Event
-					                      && !x.Event.Event.Metadata["type"].StartsWith("$")));
+					                      && !x.Event.Event.Metadata["type"].ToStringUtf8().StartsWith("$")));
 			}
 		}
 	}

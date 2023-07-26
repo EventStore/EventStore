@@ -10,7 +10,7 @@
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<Copyright>Copyright 2012-2020 Event Store Ltd</Copyright>
 		<PackageReleaseNotes>https://eventstore.com/blog/</PackageReleaseNotes>
-		<LangVersion>10.0</LangVersion>
+		<LangVersion>11.0</LangVersion>
 		<IsPackable>false</IsPackable>
 		<MinVerTagPrefix>oss-v</MinVerTagPrefix>
 		<MinVerMinimumMajorMinor>22.2</MinVerMinimumMajorMinor>
@@ -33,4 +33,7 @@
 	<ItemGroup>
 		<RuntimeHostConfigurationOption Include="System.IO.UseNet5CompatFileStream" Value="true" />
 	</ItemGroup>
+	<PropertyGroup>
+		<ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+	</PropertyGroup>
 </Project>

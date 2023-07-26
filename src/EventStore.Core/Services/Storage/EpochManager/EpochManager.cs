@@ -344,9 +344,11 @@ namespace EventStore.Core.Services.Storage.EpochManager {
 					transactionPos: originalLogPosition,
 					transactionOffset: 0,
 					eventStreamId: GetEpochInformationStream(),
+					eventStreamIdSize: null,
 					expectedVersion: expectedVersion,
 					flags: PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
 					eventType: GetEpochInformationEventType(),
+					eventTypeSize: null,
 					data: epoch.AsSerialized(),
 					metadata: Empty.ByteArray);
 

@@ -30,8 +30,8 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos2);
 			Writer.Write(LogRecord.SingleWrite(_recordFactory, pos2, _id3, _id3, streamId, 1,
 				eventTypeId, new byte[0], new byte[0], DateTime.UtcNow, PrepareFlags.IsCommitted), out pos3);
-			Writer.Write(LogRecord.DeleteTombstone(_recordFactory, pos3, _deleteId, _deleteId, streamId,
-				eventTypeId, EventNumber.DeletedStream - 1, PrepareFlags.IsCommitted), out _);
+			Writer.Write(LogRecord.DeleteTombstone(_recordFactory, pos3, _deleteId, _deleteId, streamId, null,
+				eventTypeId, null, EventNumber.DeletedStream - 1, PrepareFlags.IsCommitted), out _);
 		}
 
 		[Test]

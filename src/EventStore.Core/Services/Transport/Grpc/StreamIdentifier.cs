@@ -15,5 +15,7 @@ namespace EventStore.Client  {
 
 		public static implicit operator StreamIdentifier(string source) =>
 			new() {StreamName = ByteString.CopyFromUtf8(source)};
+
+		public int Size => StreamName.Span.Length;
 	}
 }

@@ -6,6 +6,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		LogRecordType RecordType { get; }
 		byte Version { get; }
 		public long LogPosition { get; }
+		public int SizeOnDisk { get; }
 		void WriteTo(BinaryWriter writer);
 		long GetNextLogPosition(long logicalPosition, int length);
 		long GetPrevLogPosition(long logicalPosition, int length);

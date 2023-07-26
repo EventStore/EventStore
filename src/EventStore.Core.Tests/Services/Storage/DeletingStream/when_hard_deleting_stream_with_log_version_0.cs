@@ -23,10 +23,11 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			long pos;
 			var logPosition = Writer.Position;
 			var prepare = new PrepareLogRecord(logPosition, Guid.NewGuid(), Guid.NewGuid(), logPosition, 0,
-				eventStreamId,
+				eventStreamId, null,
 				int.MaxValue - 1, DateTime.UtcNow,
 				PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd,
-				SystemEventTypes.StreamDeleted, new byte[0], new byte[0],
+				SystemEventTypes.StreamDeleted, null,
+				new byte[0], new byte[0],
 				prepareRecordVersion: LogRecordVersion.LogRecordV0);
 			Writer.Write(prepare, out pos);
 

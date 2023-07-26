@@ -12,9 +12,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_ioDispatcher = ioDispatcher;
 		}
 
-		public void WriteEvents(string streamId, long expectedVersion, Event[] events, ClaimsPrincipal writeAs,
+		public void WriteEvents(string streamId, int? streamIdSize, long expectedVersion, Event[] events, ClaimsPrincipal writeAs,
 			Action<ClientMessage.WriteEventsCompleted> complete) {
-			_ioDispatcher.WriteEvents(streamId, expectedVersion, events, writeAs, complete);
+			_ioDispatcher.WriteEvents(streamId, streamIdSize, expectedVersion, events, writeAs, complete);
 		}
 	}
 }

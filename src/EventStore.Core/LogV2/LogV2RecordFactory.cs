@@ -45,10 +45,12 @@ namespace EventStore.Core.LogV2 {
 			long transactionPosition,
 			int transactionOffset,
 			string eventStreamId,
+			int? eventStreamIdSize,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
 			string eventType,
+			int? eventTypeSize,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata) {
 
@@ -59,10 +61,12 @@ namespace EventStore.Core.LogV2 {
 				transactionPosition: transactionPosition,
 				transactionOffset: transactionOffset,
 				eventStreamId: eventStreamId,
+				eventStreamIdSize: eventStreamIdSize,
 				expectedVersion: expectedVersion,
 				timeStamp: timeStamp,
 				flags: flags,
 				eventType: eventType,
+				eventTypeSize: eventTypeSize,
 				data: data,
 				metadata: metadata);
 			return result;

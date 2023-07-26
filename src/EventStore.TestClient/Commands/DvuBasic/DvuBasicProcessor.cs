@@ -303,7 +303,7 @@ namespace EventStore.TestClient.Commands.DvuBasic {
 				var dto = pkg.Data.Deserialize<ReadEventCompleted>();
 				switch (dto.Result) {
 					case ReadEventCompleted.Types.ReadEventResult.Success:
-						if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType, dto.Event.Event.Data.ToByteArray())) {
+						if (Equal(_streams[streamIdx], eventidx, dto.Event.Event.EventType.ToStringUtf8(), dto.Event.Event.Data.ToByteArray())) {
 							successes++;
 							if (successes % 1000 == 0)
 								status.ReportReadsProgress(readerIdx, successes, fails);

@@ -62,7 +62,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				// ReSharper disable PossibleNullReferenceException
 				var e = dto.Events[i];
 				// ReSharper restore PossibleNullReferenceException
-				events[i] = new Event(new Guid(e.EventId.ToByteArray()), e.EventType, e.DataContentType == 1, e.Data.ToByteArray(), e.Metadata.ToByteArray());
+				events[i] = new Event(new Guid(e.EventId.ToByteArray()), e.EventType.Span, e.DataContentType == 1, e.Data.ToByteArray(), e.Metadata.ToByteArray());
 			}
 
 			var cts = new CancellationTokenSource();
@@ -70,7 +70,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 			cts.CancelAfter(_writeTimeout);
 
 			return new ClientMessage.WriteEvents(Guid.NewGuid(), package.CorrelationId, envelopeWrapper, dto.RequireLeader,
-				dto.EventStreamId, dto.ExpectedVersion, events, user, package.Tokens, cts.Token);
+				dto.EventStreamId.ToStringUtf8(), dto.EventStreamId.Span.Length, dto.ExpectedVersion, events, user, package.Tokens, cts.Token);
 
 			void OnMessage(Message m) {
 				cts.Dispose();
@@ -193,7 +193,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 				// ReSharper disable PossibleNullReferenceException
 				var e = dto.Events[i];
 				// ReSharper restore PossibleNullReferenceException
-				events[i] = new Event(new Guid(e.EventId.ToByteArray()), e.EventType, e.DataContentType == 1, e.Data.ToByteArray(), e.Metadata.ToByteArray());
+				events[i] = new Event(new Guid(e.EventId.ToByteArray()), e.EventType.Span, e.DataContentType == 1, e.Data.ToByteArray(), e.Metadata.ToByteArray());
 			}
 
 			return new ClientMessage.TransactionWrite(Guid.NewGuid(), package.CorrelationId, envelope,

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Caching;
@@ -254,66 +253,6 @@ namespace EventStore.Core.Tests.Services.Storage {
 			return eventRecord;
 		}
 
-		protected EventRecord[] WriteEvents(string streamName, long startEventNumber, Event[] events, DateTime? timestamp = null) {
-			GetOrReserve(streamName, out var eventStreamId, out var pos);
-
-			var eventTypeIds = new List<TStreamId>();
-			for (var i = 0; i < events.Length; i++) {
-				GetOrReserveEventType(events[i].EventType, out var eventTypeId, out pos);
-				eventTypeIds.Add(eventTypeId);
-			}
-
-			Writer.OpenTransaction();
-
-			var eventRecords = new List<EventRecord>();
-			for (var i = 0; i < events.Length; i++) {
-				var curEvent = events[i];
-
-				var flags = PrepareFlags.IsCommitted | PrepareFlags.Data;
-				if (curEvent.IsJson)
-					flags |= PrepareFlags.IsJson;
-
-				if (i == 0)
-					flags |= PrepareFlags.TransactionBegin;
-
-				if (i == events.Length - 1)
-					flags |= PrepareFlags.TransactionEnd;
-
-				var eventNumber = startEventNumber + i;
-
-				var prepare = LogRecord.Prepare(
-					factory: _recordFactory,
-					logPosition: pos,
-					correlationId: Guid.NewGuid(),
-					eventId: curEvent.EventId,
-					transactionPos: pos,
-					transactionOffset: i,
-					eventStreamId: eventStreamId,
-					expectedVersion: eventNumber - 1,
-					flags: flags,
-					eventType: eventTypeIds[i],
-					data: curEvent.Data,
-					metadata: curEvent.Metadata,
-					timeStamp: timestamp ?? DateTime.UtcNow);
-
-				var firstPos = prepare.LogPosition;
-				if (!Writer.WriteToTransaction(prepare, out pos)) {
-					prepare = prepare.CopyForRetry(
-						logPosition: pos,
-						transactionPosition: pos);
-
-					if (!Writer.WriteToTransaction(prepare, out pos))
-						Assert.Fail($"Second write failed when first writing prepare at {firstPos}, then at {prepare.LogPosition}.");
-				}
-
-				eventRecords.Add(new EventRecord(eventNumber, prepare, streamName, curEvent.EventType));
-			}
-
-			Writer.CommitTransaction();
-
-			return eventRecords.ToArray();
-		}
-
 		protected EventRecord WriteStreamMetadata(string eventStreamName, long eventNumber, string metadata,
 			DateTime? timestamp = null) {
 			GetOrReserve(SystemStreams.MetastreamOf(eventStreamName), out var eventStreamId, out var pos);
@@ -364,7 +303,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected IPrepareLogRecord<TStreamId> WriteTransactionBegin(string eventStreamName, long expectedVersion) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			var prepare = LogRecord.TransactionBegin(_recordFactory, pos, Guid.NewGuid(), eventStreamId,
+			var prepare = LogRecord.TransactionBegin(_recordFactory, pos, Guid.NewGuid(), eventStreamId, null,
 				expectedVersion);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			return prepare;
@@ -433,7 +372,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				correlationId,
 				Guid.NewGuid(),
 				transactionId,
-				eventStreamId);
+				eventStreamId,
+				null);
 			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			return prepare;
@@ -488,7 +428,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
 			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
-				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, EventNumber.DeletedStream - 1);
+				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, null, streamDeletedEventTypeId, null,
+				EventNumber.DeletedStream - 1);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			var commit = LogRecord.Commit(Writer.Position,
 				prepare.CorrelationId,
@@ -504,7 +445,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
 			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
-				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, ExpectedVersion.Any);
+				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, null, streamDeletedEventTypeId,
+				null, ExpectedVersion.Any);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			return prepare;
@@ -530,8 +472,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			}
 
 			long pos;
-			var record = new PrepareLogRecord(position, id, id, position, 0, streamId, expectedVersion, DateTime.UtcNow,
-				flags.Value, "type", new byte[10], new byte[0], LogRecordVersion.LogRecordV0);
+			var record = new PrepareLogRecord(position, id, id, position, 0, streamId, null, expectedVersion, DateTime.UtcNow,
+				flags.Value, "type", null, new byte[10], new byte[0], LogRecordVersion.LogRecordV0);
 			Writer.Write(record, out pos);
 			Writer.Write(
 				new CommitLogRecord(pos, id, position, DateTime.UtcNow, expectedVersion, LogRecordVersion.LogRecordV0),
