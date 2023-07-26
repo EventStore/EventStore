@@ -59,10 +59,12 @@ namespace EventStore.Core.LogV2 {
 				transactionPosition: transactionPosition,
 				transactionOffset: transactionOffset,
 				eventStreamId: eventStreamId,
+				eventStreamIdSize: null,
 				expectedVersion: expectedVersion,
 				timeStamp: timeStamp,
 				flags: flags,
 				eventType: eventType,
+				eventTypeSize: null,
 				data: data,
 				metadata: metadata);
 			return result;

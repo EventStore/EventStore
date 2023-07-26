@@ -21,6 +21,8 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 		private List<EventData> _testEventsC;
 
+		public read_all_events_filtered_paging_should() : base(chunkSize: 2 * 1024 * 1024) { }
+
 		protected override async Task When() {
 			await _conn.SetStreamMetadataAsync("$all", -1,
 				StreamMetadata.Build().SetReadRole(SystemRoles.All),

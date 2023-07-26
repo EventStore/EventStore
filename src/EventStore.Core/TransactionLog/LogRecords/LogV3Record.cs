@@ -22,6 +22,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public byte Version => Record.Header.Version;
 
 		public long LogPosition => Record.Header.LogPosition;
+		public int SizeOnDisk => 2 * sizeof(int) + Record.Bytes.Length;
 
 		public DateTime TimeStamp => Record.Header.TimeStamp;
 

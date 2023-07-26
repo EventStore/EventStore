@@ -22,7 +22,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		CommitCheckResult<TStreamId> CheckCommitStartingAt(long transactionPosition, long commitPosition);
 		CommitCheckResult<TStreamId> CheckCommit(TStreamId streamId, long expectedVersion, IEnumerable<Guid> eventIds, bool streamMightExist);
 		void PreCommit(CommitLogRecord commit);
-		void PreCommit(IList<IPrepareLogRecord<TStreamId>> commitedPrepares);
+		void PreCommit(ReadOnlySpan<IPrepareLogRecord<TStreamId>> commitedPrepares);
 		void UpdateTransactionInfo(long transactionId, long logPosition, TransactionInfo<TStreamId> transactionInfo);
 		TransactionInfo<TStreamId> GetTransactionInfo(long writerCheckpoint, long transactionId);
 		void PurgeNotProcessedCommitsTill(long checkpoint);
@@ -311,11 +311,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			}
 		}
 
-		public void PreCommit(IList<IPrepareLogRecord<TStreamId>> commitedPrepares) {
-			if (commitedPrepares.Count == 0)
+		public void PreCommit(ReadOnlySpan<IPrepareLogRecord<TStreamId>> commitedPrepares) {
+			if (commitedPrepares.Length == 0)
 				return;
 
-			var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
+			var lastPrepare = commitedPrepares[^1];
 			var streamId = lastPrepare.EventStreamId;
 			long eventNumber = EventNumber.Invalid;
 			foreach (var prepare in commitedPrepares) {

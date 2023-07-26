@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
@@ -104,7 +105,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		}
 
 		public void PreCommitToIndex(IList<IPrepareLogRecord<TStreamId>> prepares){
-			_indexWriter.PreCommit(prepares);
+			_indexWriter.PreCommit(prepares.ToArray());
 		}
 
 		public void PreCommitToIndex(CommitLogRecord commitLogRecord){

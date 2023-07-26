@@ -1,6 +1,7 @@
 using System;
 using System.IO;
-using System.Linq;
+using System.Numerics;
+using System.Text;
 using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.LogCommon;
@@ -47,13 +48,16 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public int TransactionOffset { get; }
 		public long ExpectedVersion { get; } // if IsCommitted is set, this is final EventNumber
 		public string EventStreamId { get; }
-
+		private int? _eventStreamIdSize;
 		public Guid EventId { get; }
 		public Guid CorrelationId { get; }
 		public DateTime TimeStamp { get; }
 		public string EventType { get; }
+		private int? _eventTypeSize;
 		public ReadOnlyMemory<byte> Data { get; }
 		public ReadOnlyMemory<byte> Metadata { get; }
+
+		private int? _sizeOnDisk;
 
 		public long InMemorySize {
 			get {
@@ -74,16 +78,61 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			}
 		}
 
+		// including length and suffix
+		public int SizeOnDisk {
+			get {
+				if (_sizeOnDisk.HasValue)
+					return _sizeOnDisk.Value;
+
+				_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
+				_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
+
+				_sizeOnDisk =
+					2 * sizeof(int) /* Length prefix & suffix */
+					+ sizeof(byte) /* Record Type */
+					+ sizeof(byte) /* Version */
+					+ sizeof(long) /* Log Position */
+					+ sizeof(ushort) /* Flags */
+					+ sizeof(long) /* TransactionPosition */
+					+ sizeof(int) /* TransactionOffset */
+					+ (Version == LogRecordVersion.LogRecordV0 ? sizeof(int) : sizeof(long)) /* ExpectedVersion */
+					+ StringSizeWithLengthPrefix(_eventStreamIdSize.Value) /* EventStreamId */
+					+ 16 /* EventId */
+					+ 16 /* CorrelationId */
+					+ sizeof(long) /* TimeStamp */
+					+ StringSizeWithLengthPrefix(_eventTypeSize.Value) /* EventType */
+					+ sizeof(int) /* Data length */
+					+ Data.Length /* Data */
+					+ sizeof(int) /* Metadata length */
+					+ Metadata.Length; /* Metadata */
+
+				return _sizeOnDisk.Value;
+			}
+		}
+
+		private static int StringSizeWithLengthPrefix(int stringSize) {
+			// when written to disk by the BinaryWriter, a string is prefixed with its length which is written as a 7-bit encoded integer
+			Ensure.Nonnegative(stringSize, nameof(stringSize));
+
+			if (stringSize == 0)
+				return 1;
+
+			var msb = 31 - BitOperations.LeadingZeroCount((uint)stringSize);
+			return stringSize + msb / 7 + 1;
+		}
+
 		public PrepareLogRecord(long logPosition,
 			Guid correlationId,
 			Guid eventId,
 			long transactionPosition,
 			int transactionOffset,
 			string eventStreamId,
+			int? eventStreamIdSize,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
 			string eventType,
+			int? eventTypeSize,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata,
 			byte prepareRecordVersion = PrepareRecordVersion)
@@ -102,11 +151,13 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			TransactionOffset = transactionOffset;
 			ExpectedVersion = expectedVersion;
 			EventStreamId = eventStreamId;
+			_eventStreamIdSize = eventStreamIdSize;
 
 			EventId = eventId;
 			CorrelationId = correlationId;
 			TimeStamp = timeStamp;
 			EventType = eventType ?? string.Empty;
+			_eventTypeSize = eventTypeSize;
 			Data = Flags.HasFlag(PrepareFlags.IsRedacted) ? NoData : data;
 			Metadata = metadata;
 			if (InMemorySize > TFConsts.MaxLogRecordSize) throw new Exception("Record too large.");
@@ -151,10 +202,12 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				transactionPosition: transactionPosition,
 				transactionOffset: TransactionOffset,
 				eventStreamId: EventStreamId,
+				eventStreamIdSize: _eventStreamIdSize,
 				expectedVersion: ExpectedVersion,
 				timeStamp: TimeStamp,
 				flags: Flags,
 				eventType: EventType,
+				eventTypeSize: _eventTypeSize,
 				data: Data,
 				metadata: Metadata);
 		}

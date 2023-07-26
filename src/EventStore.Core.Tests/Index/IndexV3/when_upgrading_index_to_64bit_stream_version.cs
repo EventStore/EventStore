@@ -141,8 +141,8 @@ namespace EventStore.Core.Tests.Index.IndexV3 {
 
 		public RecordReadResult TryReadAt(long position, bool couldBeScavenged) {
 			var record = (LogRecord)new PrepareLogRecord(position, Guid.NewGuid(), Guid.NewGuid(), 0, 0,
-				position % 2 == 0 ? "testStream-2" : "testStream-1", -1, DateTime.UtcNow, PrepareFlags.None, "type",
-				new byte[0], null);
+				position % 2 == 0 ? "testStream-2" : "testStream-1", null, -1, DateTime.UtcNow, PrepareFlags.None, "type",
+				null, new byte[0], null);
 			return new RecordReadResult(true, position + 1, record, 1);
 		}
 

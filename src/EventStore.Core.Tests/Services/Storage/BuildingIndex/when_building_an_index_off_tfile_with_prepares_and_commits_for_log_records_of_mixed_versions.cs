@@ -21,14 +21,14 @@ namespace EventStore.Core.Tests.Services.Storage.BuildingIndex {
 			_id2 = Guid.NewGuid();
 			_id3 = Guid.NewGuid();
 			long pos1, pos2, pos3, pos4, pos5, pos6;
-			Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "test1", 0, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
+			Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "test1", null, 0, DateTime.UtcNow,
+					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
 				out pos1);
-			Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "test2", 0, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
+			Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "test2", null, 0, DateTime.UtcNow,
+					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
 				out pos2);
-			Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "test2", 1, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+			Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "test2", null, 1, DateTime.UtcNow,
+					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0]),
 				out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, 0, LogRecordVersion.LogRecordV0),
 				out pos4);

@@ -59,9 +59,9 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 
 		private PrepareLogRecord WriteTransactionBeginV0(Guid id, long logPosition, string eventStreamId,
 			long expectedVersion) {
-			var prepare = new PrepareLogRecord(logPosition, id, Guid.NewGuid(), logPosition, -1, eventStreamId,
-				expectedVersion,
-				DateTime.UtcNow, PrepareFlags.TransactionBegin, null, new byte[0], new byte[0],
+			var prepare = new PrepareLogRecord(logPosition, id, Guid.NewGuid(), logPosition, -1,
+				eventStreamId, null, expectedVersion,
+				DateTime.UtcNow, PrepareFlags.TransactionBegin, null, null, new byte[0], new byte[0],
 				LogRecordVersion.LogRecordV0);
 			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
@@ -72,8 +72,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			int transactionOffset, string eventStreamId, long eventNumber, string eventData, PrepareFlags flags) {
 			var prepare = new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionPosition,
 				transactionOffset,
-				eventStreamId, ExpectedVersion.Any, DateTime.UtcNow, flags,
-				"testEventType", Encoding.UTF8.GetBytes(eventData), new byte[0],
+				eventStreamId, null, ExpectedVersion.Any, DateTime.UtcNow, flags,
+				"testEventType", null, Encoding.UTF8.GetBytes(eventData), new byte[0],
 				LogRecordVersion.LogRecordV0);
 			long pos;
 			Writer.Write(prepare, out pos);
@@ -83,8 +83,8 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 		private void WriteTransactionEndV0(Guid correlationId, long logPosition, long transactionId,
 			string eventStreamId) {
 			var prepare = new PrepareLogRecord(logPosition, correlationId, Guid.NewGuid(), transactionId, -1,
-				eventStreamId, ExpectedVersion.Any,
-				DateTime.UtcNow, PrepareFlags.TransactionEnd, null, new byte[0], new byte[0],
+				eventStreamId, null, ExpectedVersion.Any,
+				DateTime.UtcNow, PrepareFlags.TransactionEnd, null, null, new byte[0], new byte[0],
 				LogRecordVersion.LogRecordV0);
 			long pos;
 			Writer.Write(prepare, out pos);

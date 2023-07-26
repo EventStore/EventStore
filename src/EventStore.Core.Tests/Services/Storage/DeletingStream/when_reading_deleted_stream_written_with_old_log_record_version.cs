@@ -22,14 +22,14 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			_deleteId = Guid.NewGuid();
 
 			long pos1, pos2, pos3, pos4, pos5, pos6, pos7, pos8;
-			Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "ES", 0, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
+			Writer.Write(new PrepareLogRecord(0, _id1, _id1, 0, 0, "ES", null, 0, DateTime.UtcNow,
+					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
 				out pos1);
-			Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "ES", 1, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
+			Writer.Write(new PrepareLogRecord(pos1, _id2, _id2, pos1, 0, "ES", null, 1, DateTime.UtcNow,
+					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0], LogRecordVersion.LogRecordV0),
 				out pos2);
-			Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "ES", 2, DateTime.UtcNow,
-					PrepareFlags.SingleWrite, "type", new byte[0], new byte[0]),
+			Writer.Write(new PrepareLogRecord(pos2, _id3, _id3, pos2, 0, "ES", null, 2, DateTime.UtcNow,
+					PrepareFlags.SingleWrite, "type", null, new byte[0], new byte[0]),
 				out pos3);
 			Writer.Write(new CommitLogRecord(pos3, _id1, 0, DateTime.UtcNow, 0, LogRecordVersion.LogRecordV0),
 				out pos4);
@@ -39,11 +39,11 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 				out pos6);
 
 
-			Writer.Write(new PrepareLogRecord(pos6, _deleteId, _deleteId, pos6, 0, "ES", int.MaxValue - 1,
+			Writer.Write(new PrepareLogRecord(pos6, _deleteId, _deleteId, pos6, 0, "ES", null, int.MaxValue - 1,
 					DateTime.UtcNow,
 					PrepareFlags.StreamDelete | PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd |
 					PrepareFlags.None,
-					SystemEventTypes.StreamDeleted, Empty.ByteArray, Empty.ByteArray, LogRecordVersion.LogRecordV0),
+					SystemEventTypes.StreamDeleted, null, Empty.ByteArray, Empty.ByteArray, LogRecordVersion.LogRecordV0),
 				out pos7);
 			Writer.Write(
 				new CommitLogRecord(pos7, _deleteId, pos6, DateTime.UtcNow, int.MaxValue - 1,

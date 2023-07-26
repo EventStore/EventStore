@@ -7,6 +7,7 @@ using NUnit.Framework;
 
 namespace EventStore.Core.Tests.ClientAPI {
 	public abstract class SpecificationWithMiniNode<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
+		private readonly int _chunkSize;
 		protected MiniNode<TLogFormat, TStreamId> _node;
 		protected IEventStoreConnection _conn;
 		protected virtual TimeSpan Timeout { get; } = TimeSpan.FromMinutes(1);
@@ -26,6 +27,12 @@ namespace EventStore.Core.Tests.ClientAPI {
 			await closed.Task.WithTimeout(Timeout);
 		}
 
+		protected SpecificationWithMiniNode() : this(chunkSize: 1024*1024) { }
+
+		protected SpecificationWithMiniNode(int chunkSize) {
+			_chunkSize = chunkSize;
+		}
+
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			
@@ -38,7 +45,7 @@ namespace EventStore.Core.Tests.ClientAPI {
 			}
 			
 			try {
-				_node = new MiniNode<TLogFormat, TStreamId>(PathName);
+				_node = new MiniNode<TLogFormat, TStreamId>(PathName, chunkSize: _chunkSize);
 				await _node.Start();
 				_conn = BuildConnection(_node);
 				await _conn.ConnectAsync();		
