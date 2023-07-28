@@ -53,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - Incorrect number of behind messages in the persistent subscriptions UI [EventStore#3906](https://github.com/EventStore/EventStore/pull/3906)
 - Improve test stability. [EventStore#3901](https://github.com/EventStore/EventStore/pull/3901)
 - Improve test stability [EventStore#3908](https://github.com/EventStore/EventStore/pull/3908)
+- Options API correctly hides the values of the newly-added sensitive options [EventStore#3911](https://github.com/EventStore/EventStore/pull/3911)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
