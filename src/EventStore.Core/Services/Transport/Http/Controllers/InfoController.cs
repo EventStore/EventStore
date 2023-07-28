@@ -1,8 +1,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection;
 using EventStore.Common.Utils;
 using EventStore.Transport.Http;
 using EventStore.Transport.Http.Codecs;
@@ -70,7 +68,14 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		private void OnGetOptions(HttpEntityManager entity, UriTemplateMatch match) {
 			if (entity.User != null && (entity.User.LegacyRoleCheck(SystemRoles.Operations) || entity.User.LegacyRoleCheck(SystemRoles.Admins))) {
-				entity.ReplyTextContent(Codec.Json.To(Filter(GetOptionsInfo(_options), new[] {"CertificatePassword"})),
+				var options = _options.GetPrintableOptions()?.Select(x => new OptionStructure {
+					Name = x.Name,
+					Description = x.Description,
+					Group = x.Group,
+					PossibleValues = x.AllowedValues,
+					Value = x.Value
+				});
+				entity.ReplyTextContent(Codec.Json.To(options),
 					HttpStatusCode.OK,
 					"OK",
 					entity.ResponseCodec.ContentType,
@@ -91,55 +96,6 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string Group { get; set; }
 			public string Value { get; set; }
 			public string[] PossibleValues { get; set; }
-		}
-
-		public OptionStructure[] GetOptionsInfo(ClusterVNodeOptions options) {
-			var optionsToSendToClient = new List<OptionStructure>();
-			var optionGroups = typeof(ClusterVNodeOptions).GetProperties()
-				.Where(p => p.IsDefined(typeof(ClusterVNodeOptions.OptionGroupAttribute)));
-			foreach (PropertyInfo sectionInfo in optionGroups) {
-				var section = sectionInfo.GetValue(options, null);
-				foreach (PropertyInfo property in sectionInfo.PropertyType.GetProperties()) {
-					var argumentDescriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>();
-					var configFileOptionValue = property.GetValue(section, null);
-					string[] possibleValues = null;
-					if (property.PropertyType.IsEnum) {
-						possibleValues = property.PropertyType.GetEnumNames();
-					} else if (property.PropertyType.IsArray) {
-						var array = configFileOptionValue as Array;
-						if (array == null) continue;
-						var configFileOptionValueAsString = String.Empty;
-						for (var i = 0; i < array.Length; i++) {
-							configFileOptionValueAsString += array.GetValue(i).ToString();
-						}
-
-						configFileOptionValue = configFileOptionValueAsString;
-					}
-
-					optionsToSendToClient.Add(new OptionStructure {
-						Name = property.Name,
-						Description = argumentDescriptionAttribute == null ? "" : argumentDescriptionAttribute.Description,
-						Group = property.DeclaringType?.GetCustomAttribute<DescriptionAttribute>()?.Description,
-						Value = configFileOptionValue == null ? "" : configFileOptionValue.ToString(),
-						PossibleValues = possibleValues
-					});
-				}
-			}
-
-			return optionsToSendToClient.ToArray();
-		}
-
-		public OptionStructure[] Filter(OptionStructure[] optionsToBeFiltered, params string[] namesOfValuesToExclude) {
-			return optionsToBeFiltered.Select(x =>
-				new OptionStructure {
-					Name = x.Name,
-					Description = x.Description,
-					Group = x.Group,
-					PossibleValues = x.PossibleValues,
-					Value = namesOfValuesToExclude.Contains(y => y.Equals(x.Name, StringComparison.OrdinalIgnoreCase))
-						? String.Empty
-						: x.Value
-				}).ToArray();
 		}
 	}
 }
