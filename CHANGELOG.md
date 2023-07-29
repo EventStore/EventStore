@@ -120,6 +120,7 @@ All notable changes to this project will be documented in this file.
 - Update help output so that it matches the documentation [EventStore#3904](https://github.com/EventStore/EventStore/pull/3904)
 - Disabled anonymous access by default (AllowAnonymousStreamAccess, AllowAnonymousEndpointAccess) [EventStore#3905](https://github.com/EventStore/EventStore/pull/3905)
 - No longer log misleading error about 'Max internal streams limit' when running out of file handles [EventStore#3902](https://github.com/EventStore/EventStore/pull/3902)
+- Always allow anonymous access to gossip. [EventStore#3912](https://github.com/EventStore/EventStore/pull/3912)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
@@ -148,6 +149,11 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3813 [EventStore#3821](https://github.com/EventStore/EventStore/pull/3821)
 - //github.com/EventStore/EventStore/pull/3876 [EventStore#3880](https://github.com/EventStore/EventStore/pull/3880)
 - //github.com/EventStore/EventStore/pull/3876 [EventStore#3881](https://github.com/EventStore/EventStore/pull/3881)
+- //github.com/EventStore/EventStore/pull/3912 [EventStore#3914](https://github.com/EventStore/EventStore/pull/3914)
+- //github.com/EventStore/EventStore/pull/3911 [EventStore#3913](https://github.com/EventStore/EventStore/pull/3913)
+
+### Cherry-pick of https
+- //github.com/EventStore/EventStore/pull/3915 [EventStore#3916](https://github.com/EventStore/EventStore/pull/3916)
 
 ## [22.10.2] - 2023-05-15
 
