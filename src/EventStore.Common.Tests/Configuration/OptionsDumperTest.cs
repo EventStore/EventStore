@@ -124,6 +124,13 @@ public class OptionsDumperTest {
 	}
 
 	[Fact]
+	public void ignores_unknown_option() {
+		var options = new TestOptions(new Dictionary<string, string>(), new[] { "--unknown-option=something" });
+		var printable = OptionsDumper.GetOptionSourceInfo(options.ConfigurationRoot);
+		Assert.False(printable.TryGetValue("UnknownOption", out _));
+	}
+
+	[Fact]
 	public void option_set_by_multiple_sources_shows_the_source_with_precedence() {
 		var expected = "foo";
 		var options = new TestOptions(new Dictionary<string, string> {
