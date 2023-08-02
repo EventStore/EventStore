@@ -124,7 +124,8 @@ namespace EventStore.ClusterNode {
 						"internal", new AuthorizationProviderFactory(components =>
 							new LegacyAuthorizationProviderFactory(components.MainQueue,
 								_options.Application.AllowAnonymousEndpointAccess,
-								_options.Application.AllowAnonymousStreamAccess))
+								_options.Application.AllowAnonymousStreamAccess,
+								_options.Application.OverrideAnonymousEndpointAccessForGossip))
 					}
 				};
 
