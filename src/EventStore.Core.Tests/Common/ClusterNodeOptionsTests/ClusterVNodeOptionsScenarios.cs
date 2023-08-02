@@ -37,7 +37,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 					new InternalAuthenticationProviderFactory(c, _options.DefaultUser)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
 					_options.Application.AllowAnonymousEndpointAccess,
-					_options.Application.AllowAnonymousStreamAccess)),
+					_options.Application.AllowAnonymousStreamAccess,
+					_options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}
@@ -73,7 +74,8 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests {
 					new InternalAuthenticationProviderFactory(_, _options.DefaultUser)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
 					_options.Application.AllowAnonymousEndpointAccess,
-					_options.Application.AllowAnonymousStreamAccess)),
+					_options.Application.AllowAnonymousStreamAccess,
+					_options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				certificateProvider: new OptionsCertificateProvider());
 			_node.Start();
 		}

@@ -25,7 +25,9 @@ namespace EventStore.Core.Tests.ClientOperations {
 				new AuthenticationProviderFactory(
 					c => new InternalAuthenticationProviderFactory(c, options.DefaultUser)),
 				new AuthorizationProviderFactory(c => new LegacyAuthorizationProviderFactory(c.MainQueue,
-					options.Application.AllowAnonymousEndpointAccess, options.Application.AllowAnonymousStreamAccess)),
+					options.Application.AllowAnonymousEndpointAccess,
+					options.Application.AllowAnonymousStreamAccess,
+					options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				certificateProvider: new OptionsCertificateProvider());
 			_node.StartAsync(true).Wait();
 		}

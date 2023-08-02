@@ -12,6 +12,7 @@ namespace EventStore.Core.Authorization {
 		private readonly IPublisher _mainQueue;
 		private readonly bool _allowAnonymousEndpointAccess;
 		private readonly bool _allowAnonymousStreamAccess;
+		private readonly bool _overrideAnonymousGossipEndpointAccess;
 
 		private static readonly Claim[] Admins =
 			{new Claim(ClaimTypes.Role, SystemRoles.Admins), new Claim(ClaimTypes.Name, SystemUsers.Admin)};
@@ -21,10 +22,11 @@ namespace EventStore.Core.Authorization {
 			new Claim(ClaimTypes.Role, SystemRoles.Operations), new Claim(ClaimTypes.Name, SystemUsers.Operations)
 		};
 
-		public LegacyAuthorizationProviderFactory(IPublisher mainQueue, bool allowAnonymousEndpointAccess, bool allowAnonymousStreamAccess) {
+		public LegacyAuthorizationProviderFactory(IPublisher mainQueue, bool allowAnonymousEndpointAccess, bool allowAnonymousStreamAccess, bool overrideAnonymousGossipEndpointAccess) {
 			_mainQueue = mainQueue;
 			_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
 			_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
+			_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
 		}
 
 		public IAuthorizationProvider Build() {
@@ -39,12 +41,17 @@ namespace EventStore.Core.Authorization {
 			policy.AllowAnonymous(Operations.Node.Information.Read);
 			policy.AllowAnonymous(Operations.Node.StaticContent);
 			policy.AllowAnonymous(Operations.Node.Redirect);
-			policy.AllowAnonymous(Operations.Node.Gossip.ClientRead);
 
 			Action<OperationDefinition> addToPolicy = _allowAnonymousEndpointAccess
 				? op => policy.AllowAnonymous(op)
 				: op => policy.RequireAuthenticated(op);
-			
+
+			if (_overrideAnonymousGossipEndpointAccess) {
+				policy.AllowAnonymous(Operations.Node.Gossip.ClientRead);
+			} else {
+				addToPolicy(Operations.Node.Gossip.ClientRead);
+			}
+
 			addToPolicy(Operations.Node.Options);
 			addToPolicy(Operations.Node.Statistics.Read);
 			addToPolicy(Operations.Node.Statistics.Replication);

@@ -75,11 +75,11 @@ For this to work, you can use the `DefaultOpsPassword` option:
 Due to security reasons the DefaultAdminPassword and DefaultOpsPassword options can only be set through environment variables. The user will receive the error message if they try to pass the options using command line or config file.
 :::
 
-### Allow anonymous access to some endpoints and streams
+### Anonymous access to streams
 
 Historically, anonymous users with network access have been allowed to read/write streams that do not have access control lists.
 
-This is now disabled by default but can be enabled with this setting.
+This is now disabled by default but can be enabled by setting `AllowAnonymousStreamAccess` to `true`.
 
 | Format               | Syntax                                     |
 |:---------------------|:-------------------------------------------|
@@ -89,11 +89,13 @@ This is now disabled by default but can be enabled with this setting.
 
 **Default**: `false`
 
-Similarly to streams above, anonymous access has historically been available to the `/stats` and `/gossip` endpoints, and the `HTTP OPTIONS` method.
+### Anonymous access to endpoints
 
-This is now disabled by default but can be enabled with this setting.
+Similarly to streams above, anonymous access has historically been available to some http endpoints.
 
-Anonymous access is still always granted to `/ping`, `/info`, the static content of the UI, and http redirects.
+Anonymous access to `/gossip`, `/stats` and the `HTTP OPTIONS` method can now be configured with the following two options. By default `/gossip` is still accessible anonymously but the others are not. Some clients currently rely on anonymous access to `/gossip`. This will likely change in the future.
+
+The `AllowAnonymousEndpointAccess` option controls anonymous access to these endpoints. Setting `OverrideAnonymousEndpointAccessForGossip` to `true` allows anonymous access to `/gossip` specifically, overriding the other option.
 
 | Format               | Syntax                                       |
 |:---------------------|:---------------------------------------------|
@@ -102,6 +104,18 @@ Anonymous access is still always granted to `/ping`, `/info`, the static content
 | Environment variable | `EVENTSTORE_ALLOW_ANONYMOUS_ENDPOINT_ACCESS` |
 
 **Default**: `false`
+
+| Format               | Syntax                                                     |
+|:---------------------|:-----------------------------------------------------------|
+| Command line         | `--override-anonymous-endpoint-access-for-gossip`          |
+| YAML                 | `OverrideAnonymousEndpointAccessForGossip`                 |
+| Environment variable | `EVENTSTORE_OVERRIDE_ANONYMOUS_ENDPOINT_ACCESS_FOR_GOSSIP` |
+
+**Default**: `true`
+
+::: tip
+Anonymous access is still always granted to `/ping`, `/info`, the static content of the UI, and http redirects.
+:::
 
 ### Certificates configuration
 
