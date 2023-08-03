@@ -178,7 +178,8 @@ namespace EventStore.Core.Tests.Helpers {
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue,
 						options.Application.AllowAnonymousEndpointAccess,
-						options.Application.AllowAnonymousStreamAccess)),
+						options.Application.AllowAnonymousStreamAccess,
+						options.Application.OverrideAnonymousEndpointAccessForGossip)),
 				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(),
 				new OptionsCertificateProvider(),
 				telemetryConfiguration: null,

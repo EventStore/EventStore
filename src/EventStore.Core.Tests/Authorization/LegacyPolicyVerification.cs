@@ -15,10 +15,14 @@ using EventStore.Plugins.Authorization;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests.Authorization {
-	[TestFixture(true, true)]
-	[TestFixture(true, false)]
-	[TestFixture(false, true)]
-	[TestFixture(false, false)]
+	[TestFixture(true, true, true)]
+	[TestFixture(true, true, false)]
+	[TestFixture(true, false, true)]
+	[TestFixture(true, false, false)]
+	[TestFixture(false, true, true)]
+	[TestFixture(false, true, false)]
+	[TestFixture(false, false, true)]
+	[TestFixture(false, false, false)]
 	public class LegacyPolicyVerification {
 		private const string _streamWithDefaultPermissions = "StreamWithDefaultPermissions";
 		private const string _streamWithCustomPermissions = "StreamWithCustomPermissions";
@@ -27,47 +31,72 @@ namespace EventStore.Core.Tests.Authorization {
 		private readonly AclResponder _aclResponder;
 		private static bool _allowAnonymousEndpointAccess;
 		private static bool _allowAnonymousStreamAccess;
+		private static bool _overrideAnonymousGossipEndpointAccess;
 
-		public LegacyPolicyVerification(bool allowAnonymousEndpointAccess, bool allowAnonymousStreamAccess) {
+		public LegacyPolicyVerification(bool allowAnonymousEndpointAccess, bool allowAnonymousStreamAccess, bool overrideAnonymousGossipEndpointAccess) {
 			_aclResponder = new AclResponder();
 			_allowAnonymousEndpointAccess = allowAnonymousEndpointAccess;
 			_allowAnonymousStreamAccess = allowAnonymousStreamAccess;
-			_authorizationProvider = new LegacyAuthorizationProviderFactory(_aclResponder, allowAnonymousEndpointAccess, allowAnonymousStreamAccess).Build();
+			_overrideAnonymousGossipEndpointAccess = overrideAnonymousGossipEndpointAccess;
+			_authorizationProvider = new LegacyAuthorizationProviderFactory(_aclResponder,
+				allowAnonymousEndpointAccess,
+				allowAnonymousStreamAccess,
+				overrideAnonymousGossipEndpointAccess).Build();
 		}
 
-		public class PolicyVerificationParameters {
+		public abstract class PolicyVerificationParameters {
 			public ClaimsPrincipal User { get; }
 			public Operation Operation { get; }
 			public string Stream { get; }
 			public StorageMessage.EffectiveAcl StreamAcl { get; }
-			public bool IsAuthorized { get; }
-			public Func<bool, bool, bool> AuthorizationCheck { get; }
-			public bool ShouldRequestAcl { get; }
-			public Func<bool, bool> AclCheck { get; }
-			public string TestName { get; }
+			public abstract string TestName { get; }
 
-			public PolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream, StorageMessage.EffectiveAcl streamAcl, bool isAuthorized, bool shouldRequestAcl) {
+			public PolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream, StorageMessage.EffectiveAcl streamAcl) {
 				User = user;
 				Operation = operation;
 				Stream = stream;
 				StreamAcl = streamAcl;
-				IsAuthorized = isAuthorized;
-				ShouldRequestAcl = shouldRequestAcl;
-				TestName = $"{User.Identity?.Name ?? "Anonymous (empty)"} {(isAuthorized ? "is" : "is not")} authorized to perform operation {Operation}";
-			}
-			public PolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream, StorageMessage.EffectiveAcl streamAcl, Func<bool, bool, bool> authorizationCheck, Func<bool, bool> aclCheck) {
-				User = user;
-				Operation = operation;
-				Stream = stream;
-				StreamAcl = streamAcl;
-				AuthorizationCheck = authorizationCheck;
-				AclCheck = aclCheck;
-				TestName = $"Verify if Anonymous user is authorized to perform operation {Operation}";
 			}
 
 			public override string ToString() => TestName;
 		}
-		
+
+		public class StaticPolicyVerificationParameters : PolicyVerificationParameters {
+			public bool IsAuthorized { get; }
+			public bool ShouldRequestAcl { get; }
+			public override string TestName => $"{User.Identity?.Name ?? "Anonymous (empty)"} {(IsAuthorized ? "is" : "is not")} authorized to perform operation {Operation}";
+
+			public StaticPolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream, StorageMessage.EffectiveAcl streamAcl, bool isAuthorized, bool shouldRequestAcl) :
+			base (user, operation, stream, streamAcl){
+				IsAuthorized = isAuthorized;
+				ShouldRequestAcl = shouldRequestAcl;
+			}
+		}
+
+		public class ConfigurablePolicyVerificationParameters : PolicyVerificationParameters {
+			public Func<bool, bool, bool> AuthorizationCheck { get; }
+			public Func<bool, bool> AclCheck { get; }
+			public override string TestName => $"Verify if Anonymous user is authorized to perform operation {Operation}";
+
+			public ConfigurablePolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream, StorageMessage.EffectiveAcl streamAcl, Func<bool, bool, bool> authorizationCheck, Func<bool, bool> aclCheck)
+			: base(user, operation, stream, streamAcl){
+				AuthorizationCheck = authorizationCheck;
+				AclCheck = aclCheck;
+			}
+		}
+
+		public class GossipPolicyVerificationParameters : PolicyVerificationParameters {
+			public Func<bool, bool, bool> AuthorizationCheck { get; }
+
+			public override string TestName =>
+				$"Verify if Anonymous user is authorized to perform gossip operation {Operation}";
+
+			public GossipPolicyVerificationParameters(ClaimsPrincipal user, Operation operation, string stream,
+				StorageMessage.EffectiveAcl streamAcl, Func<bool, bool, bool> authorizationCheck)
+				: base(user, operation, stream, streamAcl) {
+				AuthorizationCheck = authorizationCheck;
+			}
+		}
 
 		public static IEnumerable<PolicyVerificationParameters> PolicyTests() {
 			StorageMessage.EffectiveAcl systemStreamPermission = new StorageMessage.EffectiveAcl(
@@ -103,7 +132,7 @@ namespace EventStore.Core.Tests.Authorization {
 			var anonymous = new[]{new ClaimsPrincipal(), new ClaimsPrincipal(new ClaimsIdentity(new Claim[]{new Claim(ClaimTypes.Anonymous, ""), })), };
 			foreach (var user in system) {
 				foreach (var operation in SystemOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						false
@@ -112,21 +141,21 @@ namespace EventStore.Core.Tests.Authorization {
 			}
 			foreach (var user in admins) {
 				foreach (var operation in SystemOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						false
 					);
 				}
 				foreach (var operation in AdminOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						false
 					);
 				}
 				foreach (var operation in OpsOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						false
@@ -134,7 +163,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in UserOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						false
@@ -142,7 +171,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 				
 				foreach (var operation in AuthenticatedOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						false
@@ -150,7 +179,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 				
 				foreach (var operation in AnonymousOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						false
@@ -160,21 +189,21 @@ namespace EventStore.Core.Tests.Authorization {
 
 			foreach (var user in operations) {
 				foreach (var operation in SystemOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						false
 					);
 				}
 				foreach (var operation in AdminOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						operation.Item3 != null
 					);
 				}
 				foreach (var operation in OpsOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						false
@@ -182,7 +211,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in UserOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						operation.Item2 == null || operation.Item3 == defaultUseruserStreamPermission,
 						operation.Item2 != null
@@ -190,7 +219,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in AuthenticatedOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						operation.Item2 != null
@@ -198,7 +227,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in AnonymousOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						operation.Item2 != null
@@ -208,21 +237,21 @@ namespace EventStore.Core.Tests.Authorization {
 
 			foreach (var user in users) {
 				foreach (var operation in SystemOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						false
 					);
 				}
 				foreach (var operation in AdminOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						operation.Item3 != null
 					);
 				}
 				foreach (var operation in OpsOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						false
@@ -230,7 +259,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in UserOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						operation.Item2 == null || user.Identity.Name != "test2" || operation.Item3 == defaultUseruserStreamPermission,
 						operation.Item3 != null
@@ -238,14 +267,14 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in AuthenticatedOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						operation.Item3 != null
 					);
 				}
 				foreach (var operation in AnonymousOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						operation.Item3 != null
@@ -255,21 +284,21 @@ namespace EventStore.Core.Tests.Authorization {
 
 			foreach (var user in anonymous) {
 				foreach (var operation in SystemOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						false
 					);
 				}
 				foreach (var operation in AdminOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new ConfigurablePolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						(_, _) => false,
 						(allowAnonymousStreamAccess) => allowAnonymousStreamAccess
 					);
 				}
 				foreach (var operation in OpsOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						operation.Item3 != null
@@ -277,7 +306,7 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in UserOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						false
@@ -285,31 +314,39 @@ namespace EventStore.Core.Tests.Authorization {
 				}
 
 				foreach (var operation in AuthenticatedOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						false,
 						false
 					);
 				}
 				foreach (var operation in AnonymousOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new StaticPolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						true,
 						operation.Item3 != null
 					);
 				}
 				foreach (var operation in AllowAnonymousEndpointAccessOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new ConfigurablePolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						(allowAnonymousEndpointAccess, _) => allowAnonymousEndpointAccess,
 						(_) => operation.Item3 != null
 					);
 				}
 				foreach (var operation in AllowAnonymousStreamAccessOperations()) {
-					yield return new PolicyVerificationParameters(user,
+					yield return new ConfigurablePolicyVerificationParameters(user,
 						operation.Item1, operation.Item2, operation.Item3,
 						(_, allowAnonymousStreamAccess) => allowAnonymousStreamAccess,
 						(allowAnonymousStreamAccess) => allowAnonymousStreamAccess
+					);
+				}
+
+				foreach (var operation in ClientGossipOperations()) {
+					yield return new GossipPolicyVerificationParameters(user,
+						operation.Item1, operation.Item2, operation.Item3,
+						(allowAnonymousGossipAccess, overrideAnonymousGossipAccess) =>
+							overrideAnonymousGossipAccess || allowAnonymousGossipAccess
 					);
 				}
 			}
@@ -392,6 +429,9 @@ namespace EventStore.Core.Tests.Authorization {
 				yield return CreateOperation(Operations.Node.StaticContent);
 				yield return CreateOperation(Operations.Node.Ping);
 				yield return CreateOperation(Operations.Node.Information.Read);
+			}
+
+			IEnumerable<(Operation, string, StorageMessage.EffectiveAcl)> ClientGossipOperations() {
 				yield return CreateOperation(Operations.Node.Gossip.ClientRead);
 			}
 
@@ -432,29 +472,38 @@ namespace EventStore.Core.Tests.Authorization {
 			}
 		}
 
-
 		[Test]
 		public async Task VerifyPolicy([ValueSource(nameof(PolicyTests))]PolicyVerificationParameters pvp) {
 			_aclResponder.ExpectedAcl(pvp.Stream, pvp.StreamAcl);
 			var result =
 					await _authorizationProvider.CheckAccessAsync(pvp.User, pvp.Operation, CancellationToken.None);
-			if (pvp.AuthorizationCheck != null && pvp.AclCheck != null) {
-				Assert.AreEqual(pvp.AuthorizationCheck(_allowAnonymousEndpointAccess, _allowAnonymousStreamAccess), result,
-					pvp.AuthorizationCheck(_allowAnonymousEndpointAccess, _allowAnonymousStreamAccess)
-						? "was not authorized"
-						: "was authorized");
-				Assert.AreEqual(pvp.AclCheck(_allowAnonymousStreamAccess), _aclResponder.MessageReceived,
-					pvp.AclCheck(_allowAnonymousStreamAccess) ? "did not request acl" : "requested acl");
-			} else {
-				Assert.AreEqual(pvp.IsAuthorized, result,
-					pvp.IsAuthorized
-						? "was not authorized"
-						: "was authorized");
-				Assert.AreEqual(pvp.ShouldRequestAcl, _aclResponder.MessageReceived,
-					pvp.ShouldRequestAcl ? "did not request acl" : "requested acl");
+			switch (pvp) {
+				case StaticPolicyVerificationParameters staticPvp:
+					Assert.AreEqual(staticPvp.IsAuthorized, result,
+						staticPvp.IsAuthorized ? "was not authorized" : "was authorized");
+					Assert.AreEqual(staticPvp.ShouldRequestAcl, _aclResponder.MessageReceived,
+						staticPvp.ShouldRequestAcl ? "did not request acl" : "requested acl");
+					break;
+				case ConfigurablePolicyVerificationParameters confPvp:
+					Assert.AreEqual(confPvp.AuthorizationCheck(_allowAnonymousEndpointAccess, _allowAnonymousStreamAccess), result,
+						confPvp.AuthorizationCheck(_allowAnonymousEndpointAccess, _allowAnonymousStreamAccess)
+							? "was not authorized"
+							: "was authorized");
+					Assert.AreEqual(confPvp.AclCheck(_allowAnonymousStreamAccess), _aclResponder.MessageReceived,
+						confPvp.AclCheck(_allowAnonymousStreamAccess) ? "did not request acl" : "requested acl");
+					break;
+				case GossipPolicyVerificationParameters gossipPvp:
+					Assert.AreEqual(
+						gossipPvp.AuthorizationCheck(_allowAnonymousEndpointAccess,
+							_overrideAnonymousGossipEndpointAccess), result,
+						gossipPvp.AuthorizationCheck(_allowAnonymousEndpointAccess,
+							_overrideAnonymousGossipEndpointAccess)
+							? "was not authorized"
+							: "was authorized");
+					break;
 			}
 		}
-		
+
 		class AclResponder : IPublisher {
 			public bool MessageReceived { get; private set; }
 			private StorageMessage.EffectiveAcl _acl;
