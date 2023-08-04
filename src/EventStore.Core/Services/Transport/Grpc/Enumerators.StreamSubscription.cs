@@ -222,6 +222,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				async Task PumpLiveMessages() {
 					await caughtUpSource.Task.ConfigureAwait(false);
+					
+					await _channel.Writer.WriteAsync(new ReadResp {
+						CaughtUp = new ReadResp.Types.CaughtUp()
+					}, _cancellationToken).ConfigureAwait(false);
+					
 					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)
 						.ConfigureAwait(false)) {
 						await _channel.Writer.WriteAsync(new ReadResp {
