@@ -375,7 +375,7 @@ For a given _NAME_, the current status can be determined by taking the max of al
 - Cleaning
 - Idle
 
-Read more about node roles [here](cluster.html#node-roles)
+`Node` can be one of the [node roles](cluster.md#node-roles).
 
 Example Configuration:
 ```
