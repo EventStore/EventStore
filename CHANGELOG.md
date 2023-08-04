@@ -54,6 +54,7 @@ All notable changes to this project will be documented in this file.
 - Improve test stability. [EventStore#3901](https://github.com/EventStore/EventStore/pull/3901)
 - Improve test stability [EventStore#3908](https://github.com/EventStore/EventStore/pull/3908)
 - Options API correctly hides the values of the newly-added sensitive options [EventStore#3911](https://github.com/EventStore/EventStore/pull/3911)
+- Ignore unknown options when dumping startup configuration [EventStore#3917](https://github.com/EventStore/EventStore/pull/3917)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -100,6 +101,7 @@ All notable changes to this project will be documented in this file.
 - Show MiniNode logs in case test fails [EventStore#3866](https://github.com/EventStore/EventStore/pull/3866)
 - Periodically log esdb version on each node [EventStore#3882](https://github.com/EventStore/EventStore/pull/3882)
 - Allow setting projection execution timeout per projection through the UI [EventStore#3906](https://github.com/EventStore/EventStore/pull/3906)
+- New 'OverrideAnonymousGossipAccess' option which will override the 'AllowAnonymousEndpiontAccess' setting for the gossip endpoint when set to true. [EventStore#3920](https://github.com/EventStore/EventStore/pull/3920)
 
 ### Changed
 - Log warnings and errors when close to the max chunk number limit [EventStore#3643](https://github.com/EventStore/EventStore/pull/3643)
