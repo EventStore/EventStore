@@ -8,24 +8,22 @@ EventStoreDB requires regular maintenance with two operational concerns:
 You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
 and [indexes](./indexes.md), which might require some Ops attention.
 
-## Scavenging events
+## Scavenging
 
-When you delete events or streams in EventStoreDB, they aren't removed immediately. To permanently delete
-these events you need to run a 'scavenge' on your database.
+In EventStoreDB, events are no longer present in stream reads or subscriptions after they have been deleted, or they have expired according to the metadata of the stream.
 
-A scavenge operation reclaims disk space by rewriting your database chunks, minus the events to delete, and
-then deleting the old chunks. The scavenged events are also removed from the index.
+The events are, however, still present in the database and will be visible in reads and subscriptions to `$all`.
 
-Running a scavenge causes the active chunk to be completed so that it can be scavenged.
+To remove these events from the database, which may be necessary for GDPR, you need to run a 'scavenge' on each of your nodes.
+
+A scavenge operation removes events and reclaims disk space by creating a copy of the relevant chunk, minus those events, and
+then deleting the old chunk. The scavenged events are also removed from the index.
 
 ::: warning 
 Scavenging is destructive. Once a scavenge has run, you cannot recover any deleted events except from a backup.
 :::
 
 ### Starting a scavenge
-
-EventStoreDB doesn't run Scavenges automatically. We recommend that you set up a scheduled task, for example
-using cron or Windows Scheduler, to trigger a scavenge as often as you need.
 
 You start a scavenge by issuing an empty `POST` request to the HTTP API with the credentials of an `admin`
 or `ops` user:
@@ -38,8 +36,16 @@ You can also start scavenges from the _Admin_ page of the Admin UI.
 ![Start a scavenge in the Admin UI](./images/admin-scavenge.png)
 :::
 
-Each node in a cluster has its own independent database. As such, when you run a scavenge, you need to issue a
+Each node in a cluster has its own independent copy of the database. As such, when you run a scavenge, you need to issue a
 scavenge request to each node. The scavenges can be run concurrently, but can also be run in series to spread the load.
+
+### Getting the current scavenge ID
+
+Get the ID of the currently running scavenge, if there is one, by issuing a `GET` with an ID of `current`
+
+```bash:no-line-numbers
+curl -i -X GET http://127.0.0.1:2113/admin/scavenge/current -u "admin:changeit"
+```
 
 ### Stopping a scavenge
 
@@ -50,49 +56,172 @@ an `admin` or `ops` user and the ID of the scavenge you want to stop:
 curl -i -X DELETE http://localhost:2113/admin/scavenge/{scavengeId} -u "admin:changeit"
 ```
 
+Or stop the currently running scavenge by specifying an ID of `current`:
+
+```bash:no-line-numbers
+curl -i -X DELETE http://localhost:2113/admin/scavenge/current -u "admin:changeit"
+```
+
+A 200 response is returned after the scavenge has stopped.
+
 You can also stop scavenges from the _Admin_ page of the Admin UI.
 
 ::: tip 
-Scavenge is not cluster-wide Each node in a cluster has its own independent database. As such, when
-you run a scavenge, you need to issue a scavenge request to each node.
+A scavenge can be stopped at any time. Next time a scavenge is started it will then resume from the place that the stopped scavenge had reached.
 :::
 
-::: warning 
-Stop the scavenge before taking a file-copy style backup
-:::
+### Viewing progress
 
-### Scavenge progress
+The logs contain detailed information about the progress of the scavenge.
 
-As all other things in EventStoreDB, the scavenge process emit events that contain the history of scavenging.
+The current state of the scavenge can also be tracked in the [metrics](metrics.md).
+
+The [execution phase](#execution-phase) of the scavenge emits events into streams.
 Each scavenge operation will generate a new stream and the stream will contain events related to that
 operation.
-
 Refer to the `$scavenges` [stream documentation](streams.md#scavenges) to learn how you can use it to observe
 the scavenging operation progress and status.
 
+## Scavenging best practices
+
+### Backups
+
+Do not take [file-copy](#regular-file-copy) backups while scavenge is running. Stop the scavenge and resume it after the backup.
+
+[Disk snapshot](#disk-snapshotting) backups can be taken while scavenge is running.
+
 ### How often to scavenge
 
-This depends on the following:
-
+This depends on:
 - How often you delete streams.
 - How you set `$maxAge`, `$maxCount` or `$tb` metadata on your streams.
-- Have you enabled [writing stat events](diagnostics.md#write-stats-to-database) to the database.
+- How important freeing the disk space is to you.
+- Your requirements around GDPR.
 
-You should scavenge more often if you expect a lot of deleted events. For example, if you enable writing stats
-events to the database, you will get them expiring after 24 hours. Since there are potentially thousands of
-those events generated per day, you have to scavenge at least once a week.
+You can tell from the scavenge output in the logs and streams how much data it is removing. This can help guide how frequently to scavenge.
 
-### Scavenging online
+You can set up a scheduled task, for example using cron or Windows Scheduler, to trigger a scavenge as often as you need.
 
-It's safe to run a scavenge while EventStoreDB is running and processing events, as it's designed to be an
-online operation.
+### Spreading the load
 
-::: warning 
-Performance impact: Scavenging increases the number of reads/writes made to disk, and it is not
-recommended when your system is under heavy load.
+Scavenging does place extra load on the server, especially in terms of disk IO. If this is a concern, consider spreading the load with the following:
+
+- Run scavenge on one node at a time.
+- Run scavenge on the Follower nodes to avoid adding load on the Leader. Then resign the Leader node and perform scavenging on that node.
+- Stop the scavenge during peak times and resume it afterwards.
+- Use the [throttle](#throttle-percent) and [threshold](#threshold) options.
+
+## Scavenging algorithm
+
+Central to the scavenging process is the concept of _scavenge points_. Physically these are log records in the transaction log, each containing the following information:
+
+- The position in the log that the scavenge will run up to.
+- A number unique to the scavenge point (counting from 0).
+- The time ("EffectiveNow") used to determine whether the maxAge of an event has been exceeded.
+- The threshold that a chunk's weight must reach to be executed.
+
+Any run of the scavenge process is associated with a single scavenge point, and it scavenges the log up to that point.
+Log records after that scavenge point do not exist as far as that scavenge is concerned.
+
+In this way, scavenge can be run on the first node, creating a scavenge point. Then it can be run (potentially later) on other nodes, to scavenge up to the same point, producing the same effect on the log.
+
+
+The scavenging algorithm itself consists of several phases:
+
+### Beginning
+
+When a scavenge is started, it first checks to see if a previous scavenge was stopped. If so, it resumes from where the previous scavenge got up to. Otherwise it begins a fresh scavenge.
+
+When beginning a fresh scavenge, it checks to see if there already exists a scavenge point that this node has not already scavenged up to. If so, it begins scavenging up to that point. Otherwise it writes a new scavenge point to the log (which is replicated to the other nodes) and then begins a scavenge up to there. Writing a new scavenge point also causes the active chunk to be completed so that it can be scavenged.
+
+### Accumulation phase
+
+During the accumulation phase, the scavenging process reads through the chunks that have been added since the previous scavenge, up to the current scavenge point.
+It finds necessary information (such as tombstones and metadata records) and stores it in the scavenge database.
+
+In this way, any particular chunk is only accumulated once, regardless of how many times scavenge is run.
+
+::: tip
+The first time the scavenge is run it needs to accumulate all the chunks. Typically this makes the first scavenge take longer than subsequent scavenges.
 :::
 
-## Scavenging options
+### Calculation phase
+
+During the calculation phase, the scavenging process calculates, for each stream that it accumulated tombstones or metadata for, which events can be discarded, and which chunks they are located in. It assigns weight to those chunks.
+
+### Execution phase
+
+The execution phase uses the data from the calculation phase to remove events from the chunks and indexes. Small chunks are then merged together.
+
+Only chunks whose weight meets the threshold will be executed.
+
+### Cleaning phase
+
+The final phase removes data from the scavenge database that is no longer needed.
+
+## Scavenging HTTP options
+
+When starting a scavenge, the following options are available.
+
+### Threads
+
+Specify the number of threads to use for running the scavenging process. The default value is 1.
+
+Example:
+```bash:no-line-numbers
+curl -i -X POST http://127.0.0.1:2113/admin/scavenge?threads=2 -u "admin:changeit"
+```
+
+### Threshold
+
+By default, all chunks that have events to be removed are scavenged.
+
+Setting this option allows you to scavenge only the chunks that have a sufficiently large number of events expected to be removed. This allows scavenge to run more quickly by focusing on the chunks that would benefit from it most. The weights of the chunks that are being scavenged or skipped can be found in the log files by searching for the term "with weight". The weight of a chunk is approximately twice the number of records that can be removed from it.
+
+Possible values for the threshold:
+
+- `-1`: Scavenge all chunks, even if there are no event to remove. This should not be necessary in practice.
+- `0`: Default value. Scavenges every chunk that has events to remove.
+- `> 0`: The minimum weight a chunk must have in order to be scavenged.
+
+Example:
+```bash:no-line-numbers
+curl -i -X POST http://127.0.0.1:2113/admin/scavenge?threshold=2000 -u "admin:changeit"
+```
+
+::: tip
+Setting a positive threshold means that not all deleted and expired events will be removed. This may be important to consider with respect to GDPR.
+:::
+
+### Throttle percent
+
+The scavenging process can be time-consuming and resource-intensive. You can control the speed and resource usage of the scavenge process using the throttlePercent option. When set to 100 (default value), the scavenge process runs at full speed. Setting it to 50 makes the process take twice as long by pausing regularly.
+
+A scavenge can be stopped and restarted with a different throttlePercent
+
+_Throttle percent must be between 1 and 100._
+
+_Throttle percent must be 100 for a multi-threaded scavenge._
+
+Example:
+```bash:no-line-numbers
+curl -i -X POST http://127.0.0.1:2113/admin/scavenge?throttlePercent=50 -u "admin:changeit"
+```
+
+### Sync Only
+
+This option is a boolean value and is false by default. When set to true, it prevents the creation of a new scavenge point and will only run the scavenge if there is an existing scavenge point that has not yet been scavenged to. After running a scavenge on one node, this flag can be used to ensure that a subsequent node scavenges to that same point.
+
+Example:
+```bash:no-line-numbers
+curl -i -X POST http://127.0.0.1:2113/admin/scavenge?syncOnly=true -u "admin:changeit"
+```
+
+### Start From Chunk
+
+This option is deprecated. It is ignored and will be removed.
+
+## Scavenging database options
 
 Below you can find some options that change the way how scavenging works on the server node.
 
@@ -123,8 +252,51 @@ stays in the database:
 
 **Default**: `30` (days)
 
-## Backup and restore
+### Always keep scavenged (_Deprecated_)
 
+This option ensures that the newer chunk from a scavenge operation is always kept.
+
+| Format               | Syntax                             |
+|:---------------------|:-----------------------------------|
+| Command line         | `--always-keep-scavenged`          |
+| YAML                 | `AlwaysKeepScavenged`              |
+| Environment variable | `EVENTSTORE_ALWAYS_KEEP_SCAVENGED` |
+
+### Scavenge backend page size
+
+Specify the page size of the scavenge database. The default value is 16 KiB.
+
+| Format               | Syntax                                  |
+|:---------------------|:----------------------------------------|
+| Command line         | `--scavenge-backend-page-size`          |
+| YAML                 | `ScavengeBackendPageSize`               |
+| Environment variable | `EVENTSTORE_SCAVENGE_BACKEND_PAGE_SIZE` | 
+
+### Scavenge backend cache size
+
+Specify the amount of memory, in bytes, to use for backend caching during scavenging. The default value is 64 MiB.
+
+| Format               | Syntax                                   |
+|:---------------------|:-----------------------------------------|
+| Command line         | `--scavenge-backend-cache-size`          |
+| YAML                 | `ScavengeBackendCacheSize`               |
+| Environment variable | `EVENTSTORE_SCAVENGE_BACKEND_CACHE_SIZE` |                       
+
+### Scavenge hash users cache capacity
+
+Specify the number of stream hashes to remember when checking for collisions.
+If the accumulation phase is reporting a lot of cache misses, it may benefit from increasing this number.
+
+The default value is 100000.
+
+| Format               | Syntax                                          |
+|:---------------------|:------------------------------------------------|
+| Command line         | `--scavenge-hash-users-cache-capacity`          |
+| YAML                 | `ScavengeHashUsersCacheCapacity`                |
+| Environment variable | `EVENTSTORE_SCAVENGE_HASH_USERS_CACHE_CAPACITY` |
+
+
+## Backup and restore
 Backing up an EventStoreDB database is straightforward but relies on carrying out the steps below in the
 correct order.
 
@@ -151,7 +323,7 @@ Backing up one node is recommended. However, ensure that the node chosen as a ta
 
 For additional safety, you can also back up at least a quorum of nodes.
 
-Do not back up a node at the same time as running a scavenge operation.
+Do not back up a node with file copy at the same time as running a scavenge operation.
 
 [Read-only replica](./cluster.md#read-only-replica) nodes may be used as backup source.
 
@@ -250,7 +422,7 @@ Then backup the log
 7. Copy the files listed in `chunkFiles` to the backup, skipping file names already in the backup. All files
    should copy successfully - none should have been deleted since scavenge is not running.
 8. Remove any chunks from the backup that are not in the `chunksFiles` list. This will include the `.old`
-    file from step 1.
+   file from step 1.
 
 #### Restore
 
