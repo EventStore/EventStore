@@ -125,8 +125,9 @@ namespace EventStore.Common.Configuration {
 				var source = provider.GetType();
 				foreach (var key in provider.GetChildKeys(Enumerable.Empty<string>(), default)) {
 					if (provider.TryGet(key, out var value)) {
-						var opt = result[key];
-						result[key] = opt.WithValue(value, source);
+						if(result.TryGetValue(key, out var opt)) {
+							result[key] = opt.WithValue(value, source);
+						}
 					}
 				}
 			}
