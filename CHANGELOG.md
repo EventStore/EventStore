@@ -55,6 +55,7 @@ All notable changes to this project will be documented in this file.
 - Improve test stability [EventStore#3908](https://github.com/EventStore/EventStore/pull/3908)
 - Options API correctly hides the values of the newly-added sensitive options [EventStore#3911](https://github.com/EventStore/EventStore/pull/3911)
 - Ignore unknown options when dumping startup configuration [EventStore#3917](https://github.com/EventStore/EventStore/pull/3917)
+- trivial documentation adjustment [EventStore#3922](https://github.com/EventStore/EventStore/pull/3922)
 
 ### Added
 - Source generator for dynamic message type ids [EventStore#3684](https://github.com/EventStore/EventStore/pull/3684)
@@ -153,9 +154,15 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3876 [EventStore#3881](https://github.com/EventStore/EventStore/pull/3881)
 - //github.com/EventStore/EventStore/pull/3912 [EventStore#3914](https://github.com/EventStore/EventStore/pull/3914)
 - //github.com/EventStore/EventStore/pull/3911 [EventStore#3913](https://github.com/EventStore/EventStore/pull/3913)
+- //github.com/EventStore/EventStore/pull/3922 [EventStore#3925](https://github.com/EventStore/EventStore/pull/3925)
+- //github.com/EventStore/EventStore/pull/3917 [EventStore#3921](https://github.com/EventStore/EventStore/pull/3921)
+- //github.com/EventStore/EventStore/pull/3920 [EventStore#3923](https://github.com/EventStore/EventStore/pull/3923)
 
 ### Cherry-pick of https
 - //github.com/EventStore/EventStore/pull/3915 [EventStore#3916](https://github.com/EventStore/EventStore/pull/3916)
+
+### Write documentation
+- https://linear.app/eventstore/issue/DB-183/write-scavenging-documentation [EventStore#3883](https://github.com/EventStore/EventStore/pull/3883)
 
 ## [22.10.2] - 2023-05-15
 
