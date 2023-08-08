@@ -53,7 +53,14 @@ namespace EventStore.Core.Tests.Services.ElectionsService {
 		}
 
 		public bool IsCorrectEpochAt(long epochPosition, int epochNumber, Guid epochId) {
-			throw new NotImplementedException();
+			lock (_epochs) {
+				var epoch = _epochs.FirstOrDefault(e => e.EpochNumber == epochNumber);
+				if (epoch == null)
+					return false;
+
+				return epoch.EpochPosition == epochPosition &&
+				       epoch.EpochId == epochId;
+			}
 		}
 		
 		public void WriteNewEpoch(int epochNumber) {
