@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Helpers {
 	public class length_prefix_suffix_framer_should {
 		[Test]
 		public void correctly_frame_byte_array() {
-			var framer = new LengthPrefixSuffixFramer(r => { });
+			var framer = new LengthPrefixSuffixFramer();
 			var data = new byte[] {0x7, 0x17, 0x27};
 			var framedData = MergeBytes(framer.FrameData(new ArraySegment<byte>(data)));
 
@@ -44,7 +44,8 @@ namespace EventStore.Core.Tests.Helpers {
 		[Test]
 		public void unframe_record_when_provided_exactly_enough_data_in_one_call() {
 			int unframedCnt = 0;
-			var framer = new LengthPrefixSuffixFramer(r => {
+			var framer = new LengthPrefixSuffixFramer();
+			framer.RegisterMessageArrivedCallback(r => {
 				unframedCnt += 1;
 				Assert.AreEqual(new byte[] {0x07, 0x17, 0x27}, ReadAll(r));
 			});
@@ -61,7 +62,8 @@ namespace EventStore.Core.Tests.Helpers {
 		[Test]
 		public void unframe_record_when_provided_with_small_chunks_of_data_at_a_time() {
 			int unframedCnt = 0;
-			var framer = new LengthPrefixSuffixFramer(r => {
+			var framer = new LengthPrefixSuffixFramer();
+			framer.RegisterMessageArrivedCallback(r => {
 				unframedCnt += 1;
 				Assert.AreEqual(new byte[] {0x07, 0x17, 0x27}, ReadAll(r));
 			});
@@ -79,7 +81,8 @@ namespace EventStore.Core.Tests.Helpers {
 		[Test]
 		public void unframe_two_consecutive_records() {
 			int unframedCnt = 0;
-			var framer = new LengthPrefixSuffixFramer(r => {
+			var framer = new LengthPrefixSuffixFramer();
+			framer.RegisterMessageArrivedCallback(r => {
 				if (unframedCnt == 0)
 					Assert.AreEqual(new byte[] {0x07, 0x17, 0x27}, ReadAll(r));
 				else if (unframedCnt == 1)
@@ -113,7 +116,8 @@ namespace EventStore.Core.Tests.Helpers {
 		[Test]
 		public void discard_data_when_reset_and_continue_unframing_from_blank_slate() {
 			int unframedCnt = 0;
-			var framer = new LengthPrefixSuffixFramer(r => {
+			var framer = new LengthPrefixSuffixFramer();
+			framer.RegisterMessageArrivedCallback(r => {
 				if (unframedCnt == 0)
 					Assert.AreEqual(new byte[] {0x07, 0x17, 0x27}, ReadAll(r));
 				else if (unframedCnt == 1)

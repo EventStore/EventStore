@@ -7,7 +7,7 @@ using EventStore.Transport.Tcp.Framing;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Helpers {
-	public class LengthPrefixSuffixFramer {
+	public class LengthPrefixSuffixFramer : IMessageFramer<BinaryReader> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixSuffixFramer>();
 
 		private const int PrefixLength = sizeof(int);
@@ -17,7 +17,7 @@ namespace EventStore.Core.Helpers {
 		}
 
 		private readonly int _maxPackageSize;
-		private readonly Action<BinaryReader> _packageHandler;
+		private Action<BinaryReader> _packageHandler = _ => { };
 
 		private readonly MemoryStream _memStream;
 		private readonly BinaryReader _binaryReader;
@@ -25,14 +25,10 @@ namespace EventStore.Core.Helpers {
 		private int _prefixBytes;
 		private int _packageLength;
 
-		public LengthPrefixSuffixFramer(Action<BinaryReader> packageHandler,
-			int maxPackageSize = TFConsts.MaxLogRecordSize) {
-			Ensure.NotNull(packageHandler, "packageHandler");
+		public LengthPrefixSuffixFramer(int maxPackageSize = TFConsts.MaxLogRecordSize) {
 			Ensure.Positive(maxPackageSize, "maxPackageSize");
 
 			_maxPackageSize = maxPackageSize;
-			_packageHandler = packageHandler;
-
 			_memStream = new MemoryStream();
 			_binaryReader = new BinaryReader(_memStream);
 		}
@@ -44,11 +40,16 @@ namespace EventStore.Core.Helpers {
 		}
 
 		public void UnFrameData(IEnumerable<ArraySegment<byte>> data) {
-			if (data == null) throw new ArgumentNullException("data");
+			Ensure.NotNull(data, nameof(data));
 
 			foreach (ArraySegment<byte> buffer in data) {
 				Parse(buffer);
 			}
+		}
+
+		public void RegisterMessageArrivedCallback(Action<BinaryReader> packageHandler) {
+			Ensure.NotNull(packageHandler, nameof(packageHandler));
+			_packageHandler = packageHandler;
 		}
 
 		public void UnFrameData(ArraySegment<byte> data) {

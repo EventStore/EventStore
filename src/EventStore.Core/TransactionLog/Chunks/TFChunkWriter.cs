@@ -73,7 +73,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				throw new InvalidOperationException("The transaction does not fit in the current chunk.");
 		}
 
-		private bool TryWriteToTransaction(ILogRecord record, out long newPos) {
+		public bool TryWriteToTransaction(ILogRecord record, out long newPos) {
 			var result = _currentChunk.TryAppend(record);
 			if (!result.Success) {
 				newPos = default;

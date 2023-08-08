@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using EventStore.Common.Utils;
@@ -30,7 +31,7 @@ namespace EventStore.Core.Services {
 		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterStorageWriterService>();
 
 		private readonly Func<long> _getLastIndexedPosition;
-		private readonly LengthPrefixSuffixFramer _framer;
+		private readonly TransactionFramer _framer;
 
 		private Guid _subscriptionId;
 		private TFChunk _activeChunk;
@@ -60,7 +61,11 @@ namespace EventStore.Core.Services {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
 			_getLastIndexedPosition = getLastIndexedPosition;
-			_framer = new LengthPrefixSuffixFramer(OnLogRecordUnframed, TFConsts.MaxLogRecordSize);
+
+			var lengthPrefixSuffixFramer = new LengthPrefixSuffixFramer(maxPackageSize: TFConsts.MaxLogRecordSize);
+			var logRecordFramer = new LogRecordFramer(inner: lengthPrefixSuffixFramer);
+			_framer = new TransactionFramer(inner: logRecordFramer);
+			_framer.RegisterMessageArrivedCallback(OnTransactionUnframed);
 
 			SubscribeToMessage<ReplicationMessage.ReplicaSubscribed>();
 			SubscribeToMessage<ReplicationMessage.CreateChunk>();
@@ -259,6 +264,7 @@ namespace EventStore.Core.Services {
 				Log.Debug("Completing raw chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 					message.ChunkEndNumber);
 				Writer.CompleteReplicatedRawChunk(_activeChunk);
+				Flush();
 
 				_subscriptionPos = _activeChunk.ChunkHeader.ChunkEndPosition;
 				_framer.Reset();
@@ -304,6 +310,11 @@ namespace EventStore.Core.Services {
 				_subscriptionPos += message.DataBytes.Length;
 
 				if (message.CompleteChunk) {
+					// for backwards compatibility with logs having incomplete transactions at the end of a chunk
+					if (_framer.UnFramePendingLogRecords(out var numRecordsUnframed))
+						Log.Warning("Incomplete transaction consisting of {numRecords} log records was found at the end of chunk: {chunkStartNumber}-{chunkEndNumber}.",
+							numRecordsUnframed, message.ChunkStartNumber, message.ChunkEndNumber);
+
 					Log.Debug("Completing data chunk {chunkStartNumber}-{chunkEndNumber}...", message.ChunkStartNumber,
 						message.ChunkEndNumber);
 					Writer.CompleteChunk();
@@ -333,23 +344,15 @@ namespace EventStore.Core.Services {
 			}
 		}
 
-		private void OnLogRecordUnframed(BinaryReader reader) {
-			var rawLength = reader.BaseStream.Length;
-
-			if (rawLength >= int.MaxValue)
-				throw new ArgumentOutOfRangeException(
-					nameof(reader),
-					$"Length of stream was {rawLength}");
-
-			var length = (int)rawLength;
-
-			var record = LogRecord.ReadFrom(reader, length: length);
-			long newPos;
-			if (!Writer.Write(record, out newPos))
-				ReplicationFail(
-					"First write failed when writing replicated record: {0}.",
-					"First write failed when writing replicated record: {record}.",
-					record);
+		private void OnTransactionUnframed(IEnumerable<ILogRecord> records) {
+			Writer.OpenTransaction();
+			foreach (var record in records)
+				if (!Writer.TryWriteToTransaction(record, out _))
+					ReplicationFail(
+						"Failed to write replicated log record at position: {0}. Writer's position: {1}.",
+						"Failed to write replicated log record at position: {recordPos}. Writer's position: {writerPos}.",
+						record.LogPosition, Writer.Position);
+			Writer.CommitTransaction();
 		}
 
 		private void ReplicationFail(string message, string messageStructured, params object[] args) {

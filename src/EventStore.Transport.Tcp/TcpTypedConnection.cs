@@ -15,7 +15,7 @@ namespace EventStore.Transport.Tcp {
 
 		private readonly ITcpConnection _connection;
 		private readonly IMessageFormatter<T> _formatter;
-		private readonly IMessageFramer _framer;
+		private readonly IMessageFramer<ArraySegment<byte>> _framer;
 
 		private Action<TcpTypedConnection<T>, T> _receiveCallback;
 
@@ -33,7 +33,7 @@ namespace EventStore.Transport.Tcp {
 
 		public TcpTypedConnection(ITcpConnection connection,
 			IMessageFormatter<T> formatter,
-			IMessageFramer framer) {
+			IMessageFramer<ArraySegment<byte>> framer) {
 			if (formatter == null)
 				throw new ArgumentNullException("formatter");
 			if (framer == null)

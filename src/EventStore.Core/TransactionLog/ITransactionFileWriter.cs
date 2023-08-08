@@ -8,6 +8,7 @@ namespace EventStore.Core.TransactionLog {
 		bool Write(ILogRecord record, out long newPos);
 		void OpenTransaction();
 		void WriteToTransaction(ILogRecord record, out long newPos);
+		bool TryWriteToTransaction(ILogRecord record, out long newPos);
 		void CommitTransaction();
 		bool HasOpenTransaction();
 		void Flush();
