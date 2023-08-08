@@ -37,7 +37,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public bool IsCached {
-			get { return _isCached != 0; }
+			get { return GetCacheStatus() == CacheStatus.Cached; }
 		}
 
 		// the logical size of data (could be > PhysicalDataSize if scavenged chunk)
@@ -98,7 +98,17 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private volatile IntPtr _cachedData;
 		private int _cachedLength;
-		private volatile int _isCached;
+
+		private enum CacheStatus {
+			Uncached = 0,
+			Caching,
+			Cached,
+			// UnCacheFromMemory has been successfully called but not all the mem readers have been
+			// returned yet and the _cachedData has not yet been released.
+			Uncaching,
+		}
+
+		private volatile int _cacheStatus;
 
 		private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
 		private volatile bool _selfdestructin54321;
@@ -398,7 +408,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			var md5 = MD5.Create();
 
 			// ALLOCATE MEM
-			Interlocked.Exchange(ref _isCached, 1);
+			SetCacheStatus(CacheStatus.Cached);
 			_cachedLength = fileSize;
 			_cachedData = Marshal.AllocHGlobal(_cachedLength);
 			GC.AddMemoryPressure(_cachedLength);
@@ -612,9 +622,21 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return GetRawPosition(actualPosition);
 		}
 
-		// WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
+		private CacheStatus GetCacheStatus() {
+			return (CacheStatus)_cacheStatus;
+		}
+
+		private void SetCacheStatus(CacheStatus to) {
+			Interlocked.Exchange(ref _cacheStatus, (int)to);
+		}
+
+		private bool TrySwitchCacheStatus(CacheStatus from, CacheStatus to) {
+			var was = (CacheStatus)Interlocked.CompareExchange(ref _cacheStatus, (int)to, (int)from);
+			return was == from;
+		}
+
 		public void CacheInMemory() {
-			if (_inMem || Interlocked.CompareExchange(ref _isCached, 1, 0) != 0)
+			if (_inMem || !TrySwitchCacheStatus(CacheStatus.Uncached, CacheStatus.Caching))
 				return;
 
 			// we won the right to cache
@@ -623,13 +645,13 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				BuildCacheArray();
 			} catch (OutOfMemoryException) {
 				Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {chunk}.", this);
-				_isCached = 0;
+				SetCacheStatus(CacheStatus.Uncached);
 				return;
 			} catch (FileBeingDeletedException) {
 				Log.Debug(
 					"CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk {chunk}.",
 					this);
-				_isCached = 0;
+				SetCacheStatus(CacheStatus.Uncached);
 				return;
 			}
 
@@ -661,6 +683,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			if (_selfdestructin54321)
 				TryDestructMemStreams();
+
+			TrySwitchCacheStatus(CacheStatus.Caching, CacheStatus.Cached);
 		}
 
 		private void BuildCacheArray() {
@@ -702,14 +726,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		//WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
 		public void UnCacheFromMemory() {
 			if (_inMem)
 				return;
-			if (Interlocked.CompareExchange(ref _isCached, 0, 1) == 1) {
+			if (TrySwitchCacheStatus(CacheStatus.Cached, CacheStatus.Uncaching)) {
 				// we won the right to un-cache and chunk was cached
-				// NOTE: calling simultaneously cache and uncache is very dangerous
-				// NOTE: though multiple simultaneous calls to either Cache or Uncache is ok
 
 				_readSide.Cache();
 
@@ -871,7 +892,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			int mapSize = 0;
 			if (mapping != null) {
-				if (!_inMem && _isCached != 0) {
+				if (!_inMem && GetCacheStatus() != CacheStatus.Uncached) {
 					throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
 					                                    + "You probably are writing scavenged chunk as cached. "
 					                                    + "Do not do this.");
@@ -1068,7 +1089,9 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			{
 				if (!wasZero) {
 					// we are the last who should "turn the light off" for memory streams
-					FreeCachedData();
+					if (TrySwitchCacheStatus(CacheStatus.Uncaching, CacheStatus.Uncached)) {
+						FreeCachedData();
+					}
 				}
 
 				return true;
@@ -1138,7 +1161,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
 			if (item.IsMemory) {
 				_memStreams.Enqueue(item);
-				if (_isCached == 0 || _selfdestructin54321)
+				if (GetCacheStatus() == CacheStatus.Uncaching || _selfdestructin54321)
 					TryDestructMemStreams();
 			} else {
 				_fileStreams.Enqueue(item);
