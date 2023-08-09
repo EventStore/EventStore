@@ -1212,6 +1212,9 @@ namespace EventStore.Core {
 					if (logFormat is not LogFormatAbstractor<string> logFormatV2)
 						throw new NotSupportedException("Scavenge is not yet supported on Log V3");
 
+					if (options.Database.MemDb)
+						throw new NotSupportedException("Scavenge is not supported on in-memory databases");
+
 					var cancellationCheckPeriod = 1024;
 
 					var longHasher = new CompositeHasher<TStreamId>(logFormat.LowHasher, logFormat.HighHasher);
