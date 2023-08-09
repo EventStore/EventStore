@@ -37,7 +37,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		public bool IsCached {
-			get { return _isCached != 0; }
+			get { return _cacheStatus == CacheStatus.Cached; }
 		}
 
 		// the logical size of data (could be > PhysicalDataSize if scavenged chunk)
@@ -96,9 +96,33 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		private long _logicalDataSize;
 		private volatile int _physicalDataSize;
 
+		// the lock protects all three parts of the caching process:
+		// CacheInMemory, UnCacheFromMemory and TryDestructMemStreams
+		// so that the variables _cacheStatus, _cachedData, and _cachedLength are synchronized by the lock,
+		// and so is the creation and removal of the mem readers.
+		// previously TryDestructMemStreams could run concurrently with CacheInMemory,
+		// potentially causing problems.
+		private readonly object _cachedDataLock = new();
 		private volatile IntPtr _cachedData;
 		private int _cachedLength;
-		private volatile int _isCached;
+		private volatile CacheStatus _cacheStatus;
+
+		private enum CacheStatus {
+			// The default state.
+			// CacheInMemory can transition us to Cached
+			// invariants: _cachedData == IntPtr.Zero, _memStreamCount == 0
+			Uncached = 0,
+
+			// UnCacheFromMemory can transition us to Uncaching
+			// invariants: _cachedData != IntPtr.Zero, _memStreamCount == _maxReaderCount
+			Cached,
+
+			// TryDestructMemStreams can transition us to Uncached
+			// The chunk is still cached but the process of uncaching has been started by
+			// UnCacheFromMemory. We are waiting for readers to be returned.
+			// invariants: _cachedData != IntPtr.Zero, _memStreamCount > 0
+			Uncaching,
+		}
 
 		private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
 		private volatile bool _selfdestructin54321;
@@ -374,7 +398,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			var md5 = MD5.Create();
 
 			// ALLOCATE MEM
-			Interlocked.Exchange(ref _isCached, 1);
+			_cacheStatus = CacheStatus.Cached;
 			_cachedLength = fileSize;
 			_cachedData = Marshal.AllocHGlobal(_cachedLength);
 			GC.AddMemoryPressure(_cachedLength);
@@ -588,10 +612,23 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			return GetRawPosition(actualPosition);
 		}
 
-		// WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
 		public void CacheInMemory() {
-			if (_inMem || Interlocked.CompareExchange(ref _isCached, 1, 0) != 0)
+			lock (_cachedDataLock) {
+				CacheInMemoryLocked();
+			}
+		}
+
+		private void CacheInMemoryLocked() {
+			if (_inMem)
 				return;
+
+			if (_cacheStatus != CacheStatus.Uncached) {
+				// expected to be very rare
+				if (_cacheStatus == CacheStatus.Uncaching)
+					Log.Debug("CACHING TFChunk {chunk} SKIPPED because it is uncaching.", this);
+
+				return;
+			}
 
 			// we won the right to cache
 			var sw = Stopwatch.StartNew();
@@ -599,13 +636,11 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 				BuildCacheArray();
 			} catch (OutOfMemoryException) {
 				Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {chunk}.", this);
-				_isCached = 0;
 				return;
 			} catch (FileBeingDeletedException) {
 				Log.Debug(
 					"CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk {chunk}.",
 					this);
-				_isCached = 0;
 				return;
 			}
 
@@ -637,6 +672,8 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			if (_selfdestructin54321)
 				TryDestructMemStreams();
+
+			_cacheStatus = CacheStatus.Cached;
 		}
 
 		private void BuildCacheArray() {
@@ -678,24 +715,28 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			}
 		}
 
-		//WARNING CacheInMemory/UncacheFromMemory should not be called simultaneously !!!
 		public void UnCacheFromMemory() {
+			lock (_cachedDataLock) {
+				UnCacheFromMemoryLocked();
+			}
+		}
+
+		private void UnCacheFromMemoryLocked() {
 			if (_inMem)
 				return;
-			if (Interlocked.CompareExchange(ref _isCached, 0, 1) == 1) {
+			if (_cacheStatus == CacheStatus.Cached) {
 				// we won the right to un-cache and chunk was cached
-				// NOTE: calling simultaneously cache and uncache is very dangerous
-				// NOTE: though multiple simultaneous calls to either Cache or Uncache is ok
-
 				_readSide.Cache();
 
 				var writerWorkItem = _writerWorkItem;
 				if (writerWorkItem != null)
 					writerWorkItem.DisposeMemStream();
 
+				Log.Debug("UNCACHING TFChunk {chunk}.", this);
+				_cacheStatus = CacheStatus.Uncaching;
+				// this memory barrier corresponds to the barrier in ReturnReaderWorkItem
+				Thread.MemoryBarrier();
 				TryDestructMemStreams();
-
-				Log.Debug("UNCACHED TFChunk {chunk}.", this);
 			}
 		}
 
@@ -852,7 +893,7 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 						"Cannot write an in-memory chunk with a PosMap. " +
 						"Scavenge is not supported on in-memory databases");
 
-				if (_isCached != 0) {
+				if (_cacheStatus != CacheStatus.Uncached) {
 					throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
 					                                    + "You probably are writing scavenged chunk as cached. "
 					                                    + "Do not do this.");
@@ -979,6 +1020,15 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		private bool TryDestructMemStreams() {
+			lock (_cachedDataLock) {
+				return TryDestructMemStreamsLocked();
+			}
+		}
+
+		private bool TryDestructMemStreamsLocked() {
+			if (_cacheStatus != CacheStatus.Uncaching && !_selfdestructin54321)
+				return false;
+
 			var writerWorkItem = _writerWorkItem;
 			if (writerWorkItem != null)
 				writerWorkItem.DisposeMemStream();
@@ -1007,10 +1057,19 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 		}
 
 		private void FreeCachedData() {
-			var cachedData = Interlocked.Exchange(ref _cachedData, IntPtr.Zero);
+			lock (_cachedDataLock) {
+				FreeCachedDataLocked();
+			}
+		}
+		
+		private void FreeCachedDataLocked() {
+			var cachedData = _cachedData;
 			if (cachedData != IntPtr.Zero) {
 				Marshal.FreeHGlobal(cachedData);
 				GC.RemoveMemoryPressure(_cachedLength);
+				_cachedData = IntPtr.Zero;
+				_cacheStatus = CacheStatus.Uncached;
+				Log.Debug("UNCACHED TFChunk {chunk}.", this);
 			}
 		}
 
@@ -1066,8 +1125,36 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private void ReturnReaderWorkItem(ReaderWorkItem item) {
 			if (item.IsMemory) {
+				// we avoid taking the _cachedDataLock here every time because we would be
+				// contending with other reader threads also returning readerworkitems.
+				//
+				// instead we check _cacheStatus to give us a hint about whether we need to lock.
+				// but this read of _cacheStatus is not inside the lock, so it can be wrong
+				// because we read a stale value, or it changed immediately after
+				// we read it.
+				//
+				// if the check is wrong it can result in one of two outcomes:
+				// 1. we call TryDestructMemStreams when we shouldn't.
+				//    we protect against this by checking the condition again inside the lock
+				// 2. we don't call TryDestructMemStreams when we should.
+				//    the memory barrier, corresponding to the barrier in UnCacheFromMemory, protects
+				//    against this by guaranteeing ordering as emphasied in _italics_ below.
+				//    the case protected against is that another thread might call UnCacheFromMemory just as
+				//    we are returning an item here and neither thread tidys up the item we are returning.
+				//    but consider: UnCacheFromMemory sets the state to Uncaching _and then_ tidys up the
+				//    items in the pool. if it does not tidy up our item, it is because our item wasn't
+				//    in the pool. which means we hadn't enqueued it yet, which means that we will
+				//    enqueue it and then _after that_ read _cacheStatus and find it is Uncaching,
+				//    which means we will tidy it up here.
+				//    this works in the same way as the barriers in ObjectPool.cs
+				//
+				// if we do end up needing to take the lock the risk of having to wait a long time is
+				// low (or possibly none), because Caching is the only slow operation while holding
+				// the lock and it only occurs when there are no outstanding memory readers, but we know
+				// there is one currently because we are in the process of returning it.
 				_memStreams.Enqueue(item);
-				if (_isCached == 0 || _selfdestructin54321)
+				Thread.MemoryBarrier();
+				if (_cacheStatus == CacheStatus.Uncaching || _selfdestructin54321)
 					TryDestructMemStreams();
 			} else {
 				_fileStreams.Enqueue(item);
