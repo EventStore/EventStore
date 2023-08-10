@@ -17,12 +17,14 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		private readonly TFChunk.TFChunk _chunk;
 		private readonly Stream _stream;
 		private bool _disposed;
+		public bool IsMemory { get; init; }
 
-		internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse) {
+		internal TFChunkBulkReader(TFChunk.TFChunk chunk, Stream streamToUse, bool isMemory) {
 			Ensure.NotNull(chunk, "chunk");
 			Ensure.NotNull(streamToUse, "stream");
 			_chunk = chunk;
 			_stream = streamToUse;
+			IsMemory = isMemory;
 		}
 
 		~TFChunkBulkReader() {
