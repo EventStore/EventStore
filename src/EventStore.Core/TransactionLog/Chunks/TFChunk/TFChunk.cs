@@ -614,66 +614,62 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		public void CacheInMemory() {
 			lock (_cachedDataLock) {
-				CacheInMemoryLocked();
+				if (_inMem)
+					return;
+
+				if (_cacheStatus != CacheStatus.Uncached) {
+					// expected to be very rare
+					if (_cacheStatus == CacheStatus.Uncaching)
+						Log.Debug("CACHING TFChunk {chunk} SKIPPED because it is uncaching.", this);
+
+					return;
+				}
+
+				// we won the right to cache
+				var sw = Stopwatch.StartNew();
+				try {
+					BuildCacheArray();
+				} catch (OutOfMemoryException) {
+					Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {chunk}.", this);
+					return;
+				} catch (FileBeingDeletedException) {
+					Log.Debug(
+						"CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk {chunk}.",
+						this);
+					return;
+				}
+
+				bool wasZero = Interlocked.Add(ref _memStreamCount, _maxReaderCount) - _maxReaderCount == 0;
+				if (_selfdestructin54321) {
+					if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0 && !wasZero)
+						FreeCachedData();
+					Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
+					return;
+				}
+
+				var writerWorkItem = _writerWorkItem;
+				if (writerWorkItem != null) {
+					var memStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength,
+						FileAccess.ReadWrite);
+					memStream.Position = writerWorkItem.StreamPosition;
+					writerWorkItem.SetMemStream(memStream);
+				}
+
+				for (int i = 0; i < _maxReaderCount; i++) {
+					var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
+					var reader = new BinaryReader(stream);
+					_memStreams.Enqueue(new ReaderWorkItem(stream, reader, isMemory: true));
+				}
+
+				_readSide.Uncache();
+
+				Log.Debug("CACHED TFChunk {chunk} in {elapsed}.", this, sw.Elapsed);
+
+				if (_selfdestructin54321)
+					TryDestructMemStreams();
+
+				_cacheStatus = CacheStatus.Cached;
 			}
-		}
-
-		private void CacheInMemoryLocked() {
-			if (_inMem)
-				return;
-
-			if (_cacheStatus != CacheStatus.Uncached) {
-				// expected to be very rare
-				if (_cacheStatus == CacheStatus.Uncaching)
-					Log.Debug("CACHING TFChunk {chunk} SKIPPED because it is uncaching.", this);
-
-				return;
-			}
-
-			// we won the right to cache
-			var sw = Stopwatch.StartNew();
-			try {
-				BuildCacheArray();
-			} catch (OutOfMemoryException) {
-				Log.Error("CACHING FAILED due to OutOfMemory exception in TFChunk {chunk}.", this);
-				return;
-			} catch (FileBeingDeletedException) {
-				Log.Debug(
-					"CACHING FAILED due to FileBeingDeleted exception (TFChunk is being disposed) in TFChunk {chunk}.",
-					this);
-				return;
-			}
-
-			bool wasZero = Interlocked.Add(ref _memStreamCount, _maxReaderCount) - _maxReaderCount == 0;
-			if (_selfdestructin54321) {
-				if (Interlocked.Add(ref _memStreamCount, -_maxReaderCount) == 0 && !wasZero)
-					FreeCachedData();
-				Log.Debug("CACHING ABORTED for TFChunk {chunk} as TFChunk was probably marked for deletion.", this);
-				return;
-			}
-
-			var writerWorkItem = _writerWorkItem;
-			if (writerWorkItem != null) {
-				var memStream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength, _cachedLength,
-					FileAccess.ReadWrite);
-				memStream.Position = writerWorkItem.StreamPosition;
-				writerWorkItem.SetMemStream(memStream);
-			}
-
-			for (int i = 0; i < _maxReaderCount; i++) {
-				var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
-				var reader = new BinaryReader(stream);
-				_memStreams.Enqueue(new ReaderWorkItem(stream, reader, isMemory: true));
-			}
-
-			_readSide.Uncache();
-
-			Log.Debug("CACHED TFChunk {chunk} in {elapsed}.", this, sw.Elapsed);
-
-			if (_selfdestructin54321)
-				TryDestructMemStreams();
-
-			_cacheStatus = CacheStatus.Cached;
 		}
 
 		private void BuildCacheArray() {
@@ -717,26 +713,22 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		public void UnCacheFromMemory() {
 			lock (_cachedDataLock) {
-				UnCacheFromMemoryLocked();
-			}
-		}
+				if (_inMem)
+					return;
+				if (_cacheStatus == CacheStatus.Cached) {
+					// we won the right to un-cache and chunk was cached
+					_readSide.Cache();
 
-		private void UnCacheFromMemoryLocked() {
-			if (_inMem)
-				return;
-			if (_cacheStatus == CacheStatus.Cached) {
-				// we won the right to un-cache and chunk was cached
-				_readSide.Cache();
+					var writerWorkItem = _writerWorkItem;
+					if (writerWorkItem != null)
+						writerWorkItem.DisposeMemStream();
 
-				var writerWorkItem = _writerWorkItem;
-				if (writerWorkItem != null)
-					writerWorkItem.DisposeMemStream();
-
-				Log.Debug("UNCACHING TFChunk {chunk}.", this);
-				_cacheStatus = CacheStatus.Uncaching;
-				// this memory barrier corresponds to the barrier in ReturnReaderWorkItem
-				Thread.MemoryBarrier();
-				TryDestructMemStreams();
+					Log.Debug("UNCACHING TFChunk {chunk}.", this);
+					_cacheStatus = CacheStatus.Uncaching;
+					// this memory barrier corresponds to the barrier in ReturnReaderWorkItem
+					Thread.MemoryBarrier();
+					TryDestructMemStreams();
+				}
 			}
 		}
 
@@ -1021,55 +1013,47 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 		private bool TryDestructMemStreams() {
 			lock (_cachedDataLock) {
-				return TryDestructMemStreamsLocked();
-			}
-		}
+				if (_cacheStatus != CacheStatus.Uncaching && !_selfdestructin54321)
+					return false;
 
-		private bool TryDestructMemStreamsLocked() {
-			if (_cacheStatus != CacheStatus.Uncaching && !_selfdestructin54321)
-				return false;
+				var writerWorkItem = _writerWorkItem;
+				if (writerWorkItem != null)
+					writerWorkItem.DisposeMemStream();
 
-			var writerWorkItem = _writerWorkItem;
-			if (writerWorkItem != null)
-				writerWorkItem.DisposeMemStream();
+				int memStreamCount = Interlocked.CompareExchange(ref _memStreamCount, 0, 0);
+				var wasZero = memStreamCount == 0;
 
-			int memStreamCount = Interlocked.CompareExchange(ref _memStreamCount, 0, 0);
-			var wasZero = memStreamCount == 0;
-
-			ReaderWorkItem workItem;
-			while (_memStreams.TryDequeue(out workItem)) {
-				memStreamCount = Interlocked.Decrement(ref _memStreamCount);
-			}
-
-			if (memStreamCount < 0)
-				throw new Exception("Count of memory streams reduced below zero.");
-			if (memStreamCount == 0)
-			{
-				if (!wasZero) {
-					// we are the last who should "turn the light off" for memory streams
-					FreeCachedData();
+				ReaderWorkItem workItem;
+				while (_memStreams.TryDequeue(out workItem)) {
+					memStreamCount = Interlocked.Decrement(ref _memStreamCount);
 				}
 
-				return true;
-			}
+				if (memStreamCount < 0)
+					throw new Exception("Count of memory streams reduced below zero.");
+				if (memStreamCount == 0)
+				{
+					if (!wasZero) {
+						// we are the last who should "turn the light off" for memory streams
+						FreeCachedData();
+					}
 
-			return false;
+					return true;
+				}
+
+				return false;
+			}
 		}
 
 		private void FreeCachedData() {
 			lock (_cachedDataLock) {
-				FreeCachedDataLocked();
-			}
-		}
-		
-		private void FreeCachedDataLocked() {
-			var cachedData = _cachedData;
-			if (cachedData != IntPtr.Zero) {
-				Marshal.FreeHGlobal(cachedData);
-				GC.RemoveMemoryPressure(_cachedLength);
-				_cachedData = IntPtr.Zero;
-				_cacheStatus = CacheStatus.Uncached;
-				Log.Debug("UNCACHED TFChunk {chunk}.", this);
+				var cachedData = _cachedData;
+				if (cachedData != IntPtr.Zero) {
+					Marshal.FreeHGlobal(cachedData);
+					GC.RemoveMemoryPressure(_cachedLength);
+					_cachedData = IntPtr.Zero;
+					_cacheStatus = CacheStatus.Uncached;
+					Log.Debug("UNCACHED TFChunk {chunk}.", this);
+				}
 			}
 		}
 
