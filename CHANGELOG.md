@@ -158,6 +158,7 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3917 [EventStore#3921](https://github.com/EventStore/EventStore/pull/3921)
 - //github.com/EventStore/EventStore/pull/3920 [EventStore#3923](https://github.com/EventStore/EventStore/pull/3923)
 - //github.com/EventStore/EventStore/pull/3883 [EventStore#3924](https://github.com/EventStore/EventStore/pull/3924)
+- //github.com/EventStore/EventStore/pull/3929 [EventStore#3931](https://github.com/EventStore/EventStore/pull/3931)
 
 ### Cherry-pick of https
 - //github.com/EventStore/EventStore/pull/3915 [EventStore#3916](https://github.com/EventStore/EventStore/pull/3916)
