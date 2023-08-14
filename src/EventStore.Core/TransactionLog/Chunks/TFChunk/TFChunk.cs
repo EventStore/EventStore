@@ -332,30 +332,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 			_readSide = new TFChunkReadSideUnscavenged(this, tracker);
 		}
 
-
-		private void Alignv2File(string filename) {
-			//takes a v2 file and aligns it so it can be used with unbuffered
-			try {
-				SetAttributes(filename, false);
-				using (var stream =
-					new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite)) {
-					if (stream.Length % 4096 == 0) return;
-					var footerStart = stream.Length - ChunkFooter.Size;
-					var alignedSize = (stream.Length / 4096 + 1) * 4096;
-					var footer = new byte[ChunkFooter.Size];
-					stream.SetLength(alignedSize);
-					stream.Seek(footerStart, SeekOrigin.Begin);
-					stream.Read(footer, 0, ChunkFooter.Size);
-					stream.Seek(footerStart, SeekOrigin.Begin);
-					var bytes = new byte[alignedSize - footerStart - ChunkFooter.Size];
-					stream.Write(bytes, 0, bytes.Length);
-					stream.Write(footer, 0, footer.Length);
-				}
-			} finally {
-				SetAttributes(filename, true);
-			}
-		}
-
 		private void CreateReaderStreams() {
 			Interlocked.Add(ref _fileStreamCount, _internalStreamsCount);
 
@@ -871,7 +847,12 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			int mapSize = 0;
 			if (mapping != null) {
-				if (!_inMem && _isCached != 0) {
+				if (_inMem)
+					throw new InvalidOperationException(
+						"Cannot write an in-memory chunk with a PosMap. " +
+						"Scavenge is not supported on in-memory databases");
+
+				if (_isCached != 0) {
 					throw new InvalidOperationException("Trying to write mapping while chunk is cached. "
 					                                    + "You probably are writing scavenged chunk as cached. "
 					                                    + "Do not do this.");
@@ -884,8 +865,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 					map.Write(workItem.BufferWriter);
 				}
 
-				if (_inMem)
-					ResizeMemStream(workItem, mapSize);
 				WriteRawData(workItem, workItem.Buffer);
 			}
 
@@ -917,56 +896,6 @@ namespace EventStore.Core.TransactionLog.Chunks.TFChunk {
 
 			_fileSize = (int)workItem.StreamLength;
 			return footerWithHash;
-		}
-
-		private void ResizeMemStream(WriterWorkItem workItem, int mapSize) {
-			var newFileSize = (int)workItem.StreamPosition + mapSize + ChunkFooter.Size;
-			if (workItem.StreamLength < newFileSize) {
-				var pos = workItem.StreamPosition;
-				var newCachedData = Marshal.AllocHGlobal(newFileSize);
-				GC.AddMemoryPressure(newFileSize);
-
-				var memStream = new UnmanagedMemoryStream((byte*)newCachedData,
-					workItem.StreamLength,
-					newFileSize,
-					FileAccess.ReadWrite);
-				workItem.WorkingStream.Position = 0;
-				workItem.WorkingStream.CopyTo(memStream);
-
-				if (!TryDestructMemStreams()) {
-					Marshal.FreeHGlobal(newCachedData);
-					GC.RemoveMemoryPressure(newFileSize);
-					throw new Exception("MemStream readers are in use when writing scavenged chunk.");
-				}
-
-				_cachedLength = newFileSize;
-				_cachedData = newCachedData;
-
-				memStream.Position = pos;
-				workItem.SetMemStream(memStream);
-
-				// READER STREAMS
-				Interlocked.Add(ref _memStreamCount, _maxReaderCount);
-
-				if (_selfdestructin54321) {
-					Interlocked.Add(ref _memStreamCount, -_maxReaderCount);
-					TryDestructMemStreams();
-					throw new FileBeingDeletedException();
-				}
-
-				for (int i = 0; i < _maxReaderCount; i++) {
-					var stream = new UnmanagedMemoryStream((byte*)_cachedData, _cachedLength);
-					var reader = new BinaryReader(stream);
-					_memStreams.Enqueue(new ReaderWorkItem(stream, reader, isMemory: true));
-				}
-
-				Thread.MemoryBarrier();
-
-				if (_selfdestructin54321) {
-					TryDestructMemStreams();
-					throw new FileBeingDeletedException();
-				}
-			}
 		}
 
 		private void CleanUpWriterWorkItem(WriterWorkItem writerWorkItem) {
