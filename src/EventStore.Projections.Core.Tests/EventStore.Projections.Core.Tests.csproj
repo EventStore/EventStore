@@ -40,7 +40,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Protobuf Include="..\Protos\Grpc\projections.proto" Link="Protos\projections.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
-		<Protobuf Include="..\Protos\Grpc\serverfeatures.proto" Link="Protos\serverfeatures.proto" GrpcServices="Client" ProtoRoot="../Protos/Grpc" Access="Internal" />
 	</ItemGroup>
 	<ItemGroup>
 		<Content Include="Queries\1Query.js">

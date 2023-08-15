@@ -8,7 +8,7 @@ namespace EventStore.Client.Streams {
 		partial class Types {
 			partial class Options {
 				partial class Types {
-					internal partial class StreamOptions {
+					partial class StreamOptions {
 						internal StreamRevision ToStreamRevision() => RevisionOptionCase switch {
 							RevisionOptionOneofCase.End => StreamRevision.End,
 							RevisionOptionOneofCase.Start => StreamRevision.Start,
@@ -24,7 +24,7 @@ namespace EventStore.Client.Streams {
 						};
 					}
 
-					internal partial class AllOptions {
+					partial class AllOptions {
 						internal Core.Services.Transport.Grpc.Position ToPosition() => AllOptionCase switch {
 							AllOptionOneofCase.End => Core.Services.Transport.Grpc.Position.End,
 							AllOptionOneofCase.Start => Core.Services.Transport.Grpc.Position.Start,
