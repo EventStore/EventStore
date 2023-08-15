@@ -124,6 +124,7 @@ All notable changes to this project will be documented in this file.
 - Disabled anonymous access by default (AllowAnonymousStreamAccess, AllowAnonymousEndpointAccess) [EventStore#3905](https://github.com/EventStore/EventStore/pull/3905)
 - No longer log misleading error about 'Max internal streams limit' when running out of file handles [EventStore#3902](https://github.com/EventStore/EventStore/pull/3902)
 - Always allow anonymous access to gossip. [EventStore#3912](https://github.com/EventStore/EventStore/pull/3912)
+- Removed unused code paths [EventStore#3928](https://github.com/EventStore/EventStore/pull/3928)
 
 ### Removed
 - Unnecessary allocation on read [EventStore#3691](https://github.com/EventStore/EventStore/pull/3691)
