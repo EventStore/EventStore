@@ -7,6 +7,10 @@ WORKDIR /build/ci
 
 COPY ./ci ./
 
+WORKDIR /build/docs
+
+COPY ./docs ./
+
 WORKDIR /build/src
 
 COPY ./src/EventStore.sln ./src/*/*.csproj ./src/Directory.Build.* ./

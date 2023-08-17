@@ -159,7 +159,7 @@ Function Start-Build{
     if($RunTests -eq "yes"){
         (Get-ChildItem -Attributes Directory src | % FullName) -Match '.Tests' | `
         ForEach-Object {
-          dotnet test -v normal -c $Configuration --no-build --logger trx --results-directory testResults $_ -- RunConfiguration.TargetPlatform=x64
+          dotnet test -v normal -c $Configuration /p:Platform=x64 --no-build --logger trx --results-directory testResults $_
           if (-Not $?) { throw "Exit code is $?" }
         }
     }
