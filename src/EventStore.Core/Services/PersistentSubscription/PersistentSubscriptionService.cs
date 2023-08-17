@@ -1212,7 +1212,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		private void SaveConfiguration(Action continueWith) {
 			Log.Debug("Saving persistent subscription configuration");
 			var data = _config.GetSerializedForm();
-			var ev = new Event(Guid.NewGuid(), "PersistentConfig1", true, data, new byte[0]);
+			var ev = new Event(Guid.NewGuid(), "$PersistentConfig", true, data, new byte[0]);
 			var metadata = new StreamMetadata(maxCount: 2);
 			Lazy<StreamMetadata> streamMetadata = new Lazy<StreamMetadata>(() => metadata);
 			Event[] events = new Event[] {ev};
