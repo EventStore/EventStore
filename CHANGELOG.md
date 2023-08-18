@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 - Unused code around checkpoints [EventStore#3900](https://github.com/EventStore/EventStore/pull/3900)
 - Removed unused code paths [EventStore#3928](https://github.com/EventStore/EventStore/pull/3928)
 
+### Added
+- Restored OpenAPI specification for HTTP API. [EventStore#3886](https://github.com/EventStore/EventStore/pull/3886)
+
+### Fixed
+- PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
+
 ## [23.6.0] 20203-07-28
 
 ### Breaking Changes
