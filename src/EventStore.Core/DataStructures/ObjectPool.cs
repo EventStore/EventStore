@@ -73,6 +73,7 @@ namespace EventStore.Core.DataStructures {
 
 		public void Dispose() {
 			_disposing = true;
+			Thread.MemoryBarrier();
 			TryDestruct();
 		}
 
@@ -104,6 +105,7 @@ namespace EventStore.Core.DataStructures {
 
 		public void Return(T item) {
 			_queue.Enqueue(item);
+			Thread.MemoryBarrier();
 			if (_disposing)
 				TryDestruct();
 		}
