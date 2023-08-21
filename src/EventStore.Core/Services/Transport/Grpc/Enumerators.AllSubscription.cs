@@ -122,7 +122,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (startPosition == Position.End) {
 					GoLive(Position.End);
 				}
-				else if (startPosition == null) {
+				else if (startPosition == null || startPosition == Position.Start) {
 					CatchUp(Position.Start);
 				} else {
 					var (commitPosition, preparePosition) = startPosition.Value.ToInt64();
@@ -157,11 +157,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 						case ReadAllResult.Success:
 							await ConfirmSubscription().ConfigureAwait(false);
 
-							var position = Position.FromInt64(completed.CurrentPos.CommitPosition,
-								completed.CurrentPos.PreparePosition);
-
 							foreach (var @event in completed.Events) {
-								position = Position.FromInt64(
+								var position = Position.FromInt64(
 									@event.OriginalPosition.Value.CommitPosition,
 									@event.OriginalPosition.Value.PreparePosition);
 
@@ -217,13 +214,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
 
 				async Task PumpLiveMessages() {
-					var position = await caughtUpSource.Task.ConfigureAwait(false);
+					await caughtUpSource.Task.ConfigureAwait(false);
 
 					await _channel.Writer.WriteAsync(new ReadResp {
-						Checkpoint = new ReadResp.Types.Checkpoint {
-							CommitPosition = position.CommitPosition,
-							PreparePosition = position.PreparePosition
-						}
+						CaughtUp = new ReadResp.Types.CaughtUp()
 					}, _cancellationToken).ConfigureAwait(false);
 
 					await foreach (var @event in liveEvents.Reader.ReadAllAsync(_cancellationToken)

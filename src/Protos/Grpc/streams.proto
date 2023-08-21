@@ -99,7 +99,13 @@ message ReadResp {
 		uint64 first_stream_position = 5;
 		uint64 last_stream_position = 6;
 		AllStreamPosition last_all_stream_position = 7;
+		CaughtUp caught_up = 8;
+		FellBehind fell_behind = 9;
 	}
+	
+	message CaughtUp {}
+
+	message FellBehind {}
 
 	message ReadEvent {
 		RecordedEvent event = 1;

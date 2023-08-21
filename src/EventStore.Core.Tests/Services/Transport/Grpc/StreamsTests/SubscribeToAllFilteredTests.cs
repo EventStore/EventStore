@@ -123,10 +123,13 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 				var receivedTheEvent = false;
 				await foreach (var response in call.ResponseStream.ReadAllAsync()) {
+					if (response.ContentCase == ReadResp.ContentOneofCase.CaughtUp) {
+						// we have successfully transitioned to live (and will receive no more events)
+						break;
+					}
+
 					if (response.ContentCase == ReadResp.ContentOneofCase.Checkpoint) {
 						if (receivedTheEvent) {
-							// we have received the event, so this checkpoint is the one that indicates
-							// we have successfully transitioned to live (and will receive no more events)
 							break;
 						}
 						_positions.Add(new Position(response.Checkpoint.CommitPosition,
@@ -256,7 +259,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 
 			[Test]
 			public void receives_the_correct_number_of_checkpoints() {
-				Assert.AreEqual(2, CheckpointCount);
+				Assert.AreEqual(1, CheckpointCount);
 			}
 
 			[Test]

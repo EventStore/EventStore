@@ -10,10 +10,12 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
 using System.Linq;
+using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.Helpers {
 	public abstract class TestFixtureWithReadWriteDispatchers {
 		protected InMemoryBus _bus;
+		protected IQueuedHandler _publisher;
 
 		protected RequestResponseDispatcher<ClientMessage.DeleteStream, ClientMessage.DeleteStreamCompleted>
 			_streamDispatcher;
@@ -47,6 +49,11 @@ namespace EventStore.Core.Tests.Helpers {
 			_envelope = null;
 			_timeProvider = new FakeTimeProvider();
 			_bus = new InMemoryBus("bus");
+			_publisher = QueuedHandler.CreateQueuedHandler(_bus,
+				"TestQueue",
+				new QueueStatsManager(),
+				new QueueTrackers(), watchSlowMsg: false);
+			_publisher.Start();
 			_consumer = new TestHandler<Message>();
 			_bus.Subscribe(_consumer);
 			_queue = GiveInputQueue();

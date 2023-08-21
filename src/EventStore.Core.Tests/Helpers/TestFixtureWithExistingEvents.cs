@@ -20,10 +20,13 @@ namespace EventStore.Core.Tests.Helpers {
 		IHandle<ClientMessage.ReadStreamEventsBackward>,
 		IHandle<ClientMessage.ReadStreamEventsForward>,
 		IHandle<ClientMessage.ReadAllEventsForward>,
+		IHandle<ClientMessage.FilteredReadAllEventsForward>,
 		IHandle<ClientMessage.WriteEvents>,
 		IHandle<ClientMessage.TransactionStart>,
 		IHandle<ClientMessage.TransactionWrite>,
 		IHandle<ClientMessage.TransactionCommit>,
+		IHandle<ClientMessage.SubscribeToStream>,
+		IHandle<ClientMessage.FilteredSubscribeToStream>,
 		IHandle<ClientMessage.DeleteStream> {
 		public class Transaction {
 			private readonly ClientMessage.TransactionStart _startMessage;
@@ -90,6 +93,11 @@ namespace EventStore.Core.Tests.Helpers {
 
 		protected TFPos ExistingEvent(string streamName, string eventType, string eventMetadata, string eventData,
 			bool isJson = false) {
+			return WriteEvent(streamName, eventType, eventMetadata, eventData, isJson).Item2;
+		}
+		
+		protected (EventRecord, TFPos) WriteEvent(string streamName, string eventType, string eventMetadata, string eventData,
+			bool isJson = false) {
 			List<EventRecord> list;
 			if (!_streams.TryGetValue(streamName, out list) || list == null) {
 				list = new List<EventRecord>();
@@ -112,7 +120,7 @@ namespace EventStore.Core.Tests.Helpers {
 			var eventPosition = new TFPos(_fakePosition + 50, _fakePosition);
 			_all.Add(eventPosition, eventRecord);
 			_fakePosition += 100;
-			return eventPosition;
+			return (eventRecord, eventPosition);
 		}
 
 		protected void NotReady() {
@@ -209,6 +217,9 @@ namespace EventStore.Core.Tests.Helpers {
 			_bus.Subscribe<ClientMessage.ReadStreamEventsBackward>(this);
 			_bus.Subscribe<ClientMessage.ReadStreamEventsForward>(this);
 			_bus.Subscribe<ClientMessage.ReadAllEventsForward>(this);
+			_bus.Subscribe<ClientMessage.FilteredReadAllEventsForward>(this);
+			_bus.Subscribe<ClientMessage.SubscribeToStream>(this);
+			_bus.Subscribe<ClientMessage.FilteredSubscribeToStream>(this);
 			_bus.Subscribe<ClientMessage.DeleteStream>(this);
 			_bus.Subscribe<ClientMessage.TransactionStart>(this);
 			_bus.Subscribe<ClientMessage.TransactionWrite>(this);
@@ -520,6 +531,52 @@ namespace EventStore.Core.Tests.Helpers {
 					message.CorrelationId, ReadAllResult.Success, "", events, null, false, message.MaxCount, pos, next,
 					prev,
 					_fakePosition));
+		}
+		
+		public void Handle(ClientMessage.FilteredReadAllEventsForward message) {
+			if (_readsTimeOut) return;
+			if (!_readAllEnabled)
+				return;
+			var from = new TFPos(message.CommitPosition, message.PreparePosition);
+			var records = _all.SkipWhile(v => v.Key < from).Where(kvp => message.EventFilter.IsEventAllowed(kvp.Value)).Take(message.MaxCount).ToArray();
+			var list = new List<ResolvedEvent>();
+			var pos = from;
+			var next = pos;
+			var prev = new TFPos(pos.CommitPosition, Int64.MaxValue);
+			foreach (KeyValuePair<TFPos, EventRecord> record in records) {
+				pos = record.Key;
+				next = new TFPos(pos.CommitPosition, pos.PreparePosition + 1);
+				list.Add(BuildEvent(record.Value, message.ResolveLinkTos, record.Key.CommitPosition));
+			}
+
+			var events = list.ToArray();
+			message.Envelope.ReplyWith(
+				new ClientMessage.FilteredReadAllEventsForwardCompleted(
+					message.CorrelationId, FilteredReadAllResult.Success, "", events, null, false, message.MaxCount, pos, next,
+					prev, _fakePosition, list.Count < message.MaxCount, -1));
+		}
+		
+		public void Handle(ClientMessage.SubscribeToStream msg) {
+			_streams.TryGetValue(msg.EventStreamId, out var list);
+			
+			var lastEventNumber = msg.EventStreamId.IsEmptyString()
+				? (long?)null
+				: list.Safe().Any() ? list.Safe().Last().EventNumber : -1;
+			var subscribedMessage =
+				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, -1, lastEventNumber);
+			msg.Envelope.ReplyWith(subscribedMessage);
+		}
+		
+		public void Handle(ClientMessage.FilteredSubscribeToStream msg) {
+			_streams.TryGetValue(msg.EventStreamId, out var list);
+			
+			var lastEventNumber = msg.EventStreamId.IsEmptyString()
+				? (long?)null
+				: list.Safe().Any() ? list.Safe().Last().EventNumber : -1;
+			var lastCommitPos = -1;
+			var subscribedMessage =
+				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
+			msg.Envelope.ReplyWith(subscribedMessage);
 		}
 
 		public void Handle(ClientMessage.TransactionStart message) {
