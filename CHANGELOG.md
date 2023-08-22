@@ -14,9 +14,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Restored OpenAPI specification for HTTP API. [EventStore#3886](https://github.com/EventStore/EventStore/pull/3886)
+- "CaughtUp" gRPC control message for subscriptions when a subscription becomes live [EventStore#3899](https://github.com/EventStore/EventStore/pull/3899)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
+- race conditions when caching/uncaching chunks [EventStore#3930](https://github.com/EventStore/EventStore/pull/3930)
 
 ## [23.6.0] 20203-07-28
 
