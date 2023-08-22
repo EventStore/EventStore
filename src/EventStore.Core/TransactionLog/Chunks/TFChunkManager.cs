@@ -39,8 +39,8 @@ namespace EventStore.Core.TransactionLog.Chunks {
 				throw new Exception("No chunks in DB.");
 
 			lock (_chunksLocker) {
-				_cachingEnabled = _config.MaxChunksCacheSize > 0;
-				TryCacheChunk(_chunks[_chunksCount - 1]);
+				_cachingEnabled = true;
+				TriggerBackgroundCaching();
 			}
 		}
 
@@ -164,7 +164,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 
 				_chunksCount = Math.Max(chunk.ChunkHeader.ChunkEndNumber + 1, _chunksCount);
 
-				TryCacheChunk(chunk);
+				TriggerBackgroundCaching();
 			}
 		}
 
@@ -223,7 +223,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 							_chunksCount));
 				}
 
-				TryCacheChunk(newChunk);
+				TriggerBackgroundCaching();
 				return newChunk;
 			}
 		}
@@ -283,17 +283,13 @@ namespace EventStore.Core.TransactionLog.Chunks {
 			}
 		}
 
-		private void TryCacheChunk(TFChunk.TFChunk chunk) {
+		private void TriggerBackgroundCaching() {
 			if (!_cachingEnabled)
 				return;
 
 			Interlocked.Increment(ref _backgroundPassesRemaining);
 			if (Interlocked.CompareExchange(ref _backgroundRunning, 1, 0) == 0)
 				ThreadPool.QueueUserWorkItem(BackgroundCachingProcess);
-
-			if (!chunk.IsReadOnly && chunk.ChunkHeader.ChunkSize + ChunkHeader.Size + ChunkFooter.Size <=
-			    _config.MaxChunksCacheSize)
-				chunk.CacheInMemory();
 		}
 
 		public TFChunk.TFChunk GetChunkFor(long logPosition) {

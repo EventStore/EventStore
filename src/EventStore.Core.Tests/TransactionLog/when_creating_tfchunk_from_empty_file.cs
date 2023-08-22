@@ -22,8 +22,8 @@ namespace EventStore.Core.Tests.TransactionLog {
 		}
 
 		[Test]
-		public void the_chunk_is_not_cached() {
-			Assert.IsFalse(_chunk.IsCached);
+		public void the_chunk_is_cached() {
+			Assert.IsTrue(_chunk.IsCached);
 		}
 
 		[Test]
