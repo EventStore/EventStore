@@ -33,7 +33,4 @@
 	<ItemGroup>
 		<RuntimeHostConfigurationOption Include="System.IO.UseNet5CompatFileStream" Value="true" />
 	</ItemGroup>
-	<PropertyGroup>
-		<ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
-	</PropertyGroup>
 </Project>
