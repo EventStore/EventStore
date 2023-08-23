@@ -33,11 +33,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				CommitPosition = position.CommitPosition,
 				PreparePosition = position.PreparePosition,
 				Metadata = {
-					[Constants.Metadata.Type] = ByteString.CopyFromUtf8(e.EventType),
-					[Constants.Metadata.Created] = ByteString.CopyFromUtf8(e.TimeStamp.ToTicksSinceEpoch().ToString()),
+					[Constants.Metadata.Type] = e.EventType,
+					[Constants.Metadata.Created] = e.TimeStamp.ToTicksSinceEpoch().ToString(),
 					[Constants.Metadata.ContentType] = e.IsJson
-						? ByteString.CopyFrom(Constants.Metadata.ContentTypes.ApplicationJson)
-						: ByteString.CopyFrom(Constants.Metadata.ContentTypes.ApplicationOctetStream)
+						? Constants.Metadata.ContentTypes.ApplicationJson
+						: Constants.Metadata.ContentTypes.ApplicationOctetStream
 				},
 				Data = ByteString.CopyFrom(e.Data.Span),
 				CustomMetadata = ByteString.CopyFrom(e.Metadata.Span)

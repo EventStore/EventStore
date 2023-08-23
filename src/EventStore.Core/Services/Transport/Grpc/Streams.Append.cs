@@ -75,7 +75,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					events.Add(new Event(
 						Uuid.FromDto(proposedMessage.Id).ToGuid(),
 						eventTypeByteString.Span,
-						contentTypeByteString.Span.SequenceEqual(Constants.Metadata.ContentTypes.ApplicationJson),
+						contentTypeByteString == Constants.Metadata.ContentTypes.ByteStrings.ApplicationJson,
 						data,
 						metadata));
 				}

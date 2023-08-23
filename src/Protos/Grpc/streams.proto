@@ -115,7 +115,7 @@ message ReadResp {
 			uint64 stream_revision = 3;
 			uint64 prepare_position = 4;
 			uint64 commit_position = 5;
-			map<string, bytes> metadata = 6;
+			map<string, string> metadata = 6;
 			bytes custom_metadata = 7;
 			bytes data = 8;
 		}

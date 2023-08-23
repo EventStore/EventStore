@@ -30,7 +30,7 @@ namespace EventStore.Client.Messages {
 			EventStreamId = eventStreamId;
 			EventNumber = eventNumber;
 			EventId = ByteString.CopyFrom(eventId);
-			EventType = ByteString.CopyFromUtf8(eventType);
+			EventType = eventType;
 			DataContentType = dataContentType;
 			MetadataContentType = metadataContentType;
 			Data = ByteString.CopyFrom(data);

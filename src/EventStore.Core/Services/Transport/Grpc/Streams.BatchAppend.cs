@@ -295,8 +295,9 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				static Event FromProposedMessage(ProposedMessage proposedMessage) =>
 					new(Uuid.FromDto(proposedMessage.Id).ToGuid(),
 						proposedMessage.Metadata[Constants.Metadata.Type].Span,
-						proposedMessage.Metadata[Constants.Metadata.ContentType].Span.SequenceEqual(
-						Constants.Metadata.ContentTypes.ApplicationJson), proposedMessage.Data.ToByteArray(),
+						proposedMessage.Metadata[Constants.Metadata.ContentType] ==
+							Constants.Metadata.ContentTypes.ByteStrings.ApplicationJson,
+						proposedMessage.Data.ToByteArray(),
 						proposedMessage.CustomMetadata.ToByteArray());
 
 				static ClientMessage.WriteEvents ToInternalMessage(ClientWriteRequest request, IEnvelope envelope,

@@ -112,8 +112,7 @@ namespace EventStore.Core.Tests.Integration {
 								ByteString.CopyFrom("-"u8)
 							}, {
 								EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentType,
-								ByteString.CopyFrom(EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentTypes
-									.ApplicationOctetStream)
+								EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentTypes.ByteStrings.ApplicationOctetStream
 							}
 						}
 					}

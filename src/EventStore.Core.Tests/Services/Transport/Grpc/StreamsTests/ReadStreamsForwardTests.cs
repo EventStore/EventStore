@@ -48,7 +48,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 						Id = Uuid.NewUuid().ToDto(),
 						Metadata = {
 							[GrpcMetadata.Type] = ByteString.CopyFrom("$metadata"u8),
-							[GrpcMetadata.ContentType] =  ByteString.CopyFrom(GrpcMetadata.ContentTypes.ApplicationJson)
+							[GrpcMetadata.ContentType] = GrpcMetadata.ContentTypes.ByteStrings.ApplicationJson,
 						},
 						Data = ByteString.CopyFrom(StreamMetadata.Build().SetTruncateBefore(81).Build()
 							.AsJsonBytes())

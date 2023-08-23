@@ -105,7 +105,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 				if (readResp.Event != null) {
 					var @event = readResp.Event;
 
-					if (@event.OriginalEvent.Metadata[Constants.Metadata.Type].ToStringUtf8() == SystemEventTypes.StreamDeleted) {
+					if (@event.OriginalEvent.Metadata[Constants.Metadata.Type] == SystemEventTypes.StreamDeleted) {
 						Fail(RpcExceptions.StreamDeleted(_streamName));
 					}
 

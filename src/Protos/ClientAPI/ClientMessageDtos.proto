@@ -27,7 +27,7 @@ message EventRecord {
 	string event_stream_id = 1;
 	int64 event_number = 2;
 	bytes event_id = 3;
-	bytes event_type = 4;
+	string event_type = 4;
 	int32 data_content_type = 5;
 	int32 metadata_content_type = 6;
 	bytes data = 7;

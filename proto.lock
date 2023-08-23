@@ -362,7 +362,7 @@
               {
                 "id": 4,
                 "name": "event_type",
-                "type": "bytes"
+                "type": "string"
               },
               {
                 "id": 5,
@@ -3119,7 +3119,7 @@
                         "field": {
                           "id": 6,
                           "name": "metadata",
-                          "type": "bytes"
+                          "type": "string"
                         }
                       }
                     ]
@@ -5360,7 +5360,7 @@
                         "field": {
                           "id": 6,
                           "name": "metadata",
-                          "type": "bytes"
+                          "type": "string"
                         }
                       }
                     ]

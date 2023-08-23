@@ -1,4 +1,5 @@
-using System;
+using EventStore.Common.Utils;
+using Google.Protobuf;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	public static class Constants {
@@ -50,11 +51,16 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public static readonly string[] RequiredMetadata = {Type, ContentType};
 
 			public static class ContentTypes {
-				private static readonly ReadOnlyMemory<byte> _applicationJson = "application/json"u8.ToArray();
-				public static ReadOnlySpan<byte> ApplicationJson => _applicationJson.Span;
+				public const string ApplicationJson = "application/json";
+				public const string ApplicationOctetStream = "application/octet-stream";
 
-				private static readonly ReadOnlyMemory<byte> _applicationOctetStream = "application/octet-stream"u8.ToArray();
-				public static ReadOnlySpan<byte> ApplicationOctetStream => _applicationOctetStream.Span;
+				public static class ByteStrings {
+					public static ByteString ApplicationJson { get; } =
+						ByteString.CopyFrom(Helper.UTF8NoBom.GetBytes(ContentTypes.ApplicationJson));
+
+					public static ByteString ApplicationOctetStream { get; } =
+						ByteString.CopyFrom(Helper.UTF8NoBom.GetBytes(ContentTypes.ApplicationOctetStream));
+				}
 			}
 		}
 
