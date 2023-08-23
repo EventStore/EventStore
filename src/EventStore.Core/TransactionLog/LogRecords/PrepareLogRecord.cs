@@ -78,7 +78,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			}
 		}
 
-		public override int SizeOnDisk {
+		public int SizeOnDisk {
 			get {
 				if (_sizeOnDisk.HasValue)
 					return _sizeOnDisk.Value;
@@ -86,7 +86,11 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 				_eventStreamIdSize ??= Encoding.UTF8.GetBytes(EventStreamId).Length;
 				_eventTypeSize ??= Encoding.UTF8.GetBytes(EventType).Length;
 
-				_sizeOnDisk = base.SizeOnDisk
+				_sizeOnDisk =
+					2 * sizeof(int) /* Length prefix & suffix */
+					+ sizeof(byte) /* Record Type */
+					+ sizeof(byte) /* Version */
+					+ sizeof(long) /* Log Position */
 					+ sizeof(ushort) /* Flags */
 					+ sizeof(long) /* TransactionPosition */
 					+ sizeof(int) /* TransactionOffset */

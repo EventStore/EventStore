@@ -13,11 +13,6 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 		public LogRecordType RecordType { get; }
 		public byte Version { get; }
 		public long LogPosition { get; }
-		public virtual int SizeOnDisk =>
-			2 * sizeof(int) /* Length prefix & suffix */
-			+ sizeof(byte) /* Record Type */
-			+ sizeof(byte) /* Version */
-			+ sizeof(long); /* Log Position */
 
 		public long GetNextLogPosition(long logicalPosition, int length) {
 			return logicalPosition + length + 2 * sizeof(int);

@@ -5,6 +5,7 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 	// in order to handle a prepare (i.e. data) record.
 	// The V2 prepare implements it trivially
 	public interface IPrepareLogRecord : ILogRecord {
+		int SizeOnDisk { get; }
 		PrepareFlags Flags { get; }
 		long TransactionPosition { get; }
 		int TransactionOffset { get; }
