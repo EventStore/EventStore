@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- Always read the active chunk from memory instead of from the FileStream. [EventStore#3890](https://github.com/EventStore/EventStore/pull/3890)
 
 - No longer log misleading error about 'Max internal streams limit' when running out of file handles [EventStore#3902](https://github.com/EventStore/EventStore/pull/3902)
 
