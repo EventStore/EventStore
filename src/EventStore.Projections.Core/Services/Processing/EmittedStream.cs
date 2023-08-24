@@ -144,9 +144,9 @@ namespace EventStore.Projections.Core.Services.Processing {
 			if (ioDispatcher == null) throw new ArgumentNullException("ioDispatcher");
 			if (readyHandler == null) throw new ArgumentNullException("readyHandler");
 			_streamId = streamId;
-			_streamIdSize = Helper.UTF8NoBom.GetBytes(_streamId).Length;
+			_streamIdSize = Helper.UTF8NoBom.GetByteCount(_streamId);
 			_metadataStreamId = SystemStreams.MetastreamOf(streamId);
-			_metadataStreamIdSize = Helper.UTF8NoBom.GetBytes(_metadataStreamId).Length;
+			_metadataStreamIdSize = Helper.UTF8NoBom.GetByteCount(_metadataStreamId);
 			_writerConfiguration = writerConfiguration;
 			_projectionVersion = projectionVersion;
 			_writeAs = writerConfiguration.WriteAs;

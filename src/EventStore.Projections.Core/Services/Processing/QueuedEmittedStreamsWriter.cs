@@ -14,7 +14,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_writeQueueId = writeQueueId;
 		}
 
-		public void WriteEvents(string streamId, int? streamIdSize, long expectedVersion, Event[] events, ClaimsPrincipal writeAs,
+		public void WriteEvents(string streamId, int streamIdSize, long expectedVersion, Event[] events, ClaimsPrincipal writeAs,
 			Action<ClientMessage.WriteEventsCompleted> complete) {
 			_ioDispatcher.QueueWriteEvents(_writeQueueId, streamId, streamIdSize, expectedVersion, events, writeAs, complete);
 		}

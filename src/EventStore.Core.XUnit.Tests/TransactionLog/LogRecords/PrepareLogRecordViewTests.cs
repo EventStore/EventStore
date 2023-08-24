@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Text;
-using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.LogRecords;
 using Xunit;
 
@@ -30,12 +29,12 @@ namespace EventStore.Core.XUnit.Tests.TransactionLog.LogRecords {
 				TransactionPosition,
 				TransactionOffset,
 				EventStreamId,
-				Helper.UTF8NoBom.GetBytes(EventStreamId).Length,
+				null,
 				ExpectedVersion,
 				_timestamp,
 				Flags,
 				EventType,
-				Helper.UTF8NoBom.GetBytes(EventType).Length,
+				null,
 				_data,
 				_metadata,
 				Version);

@@ -78,13 +78,14 @@ namespace EventStore.Core.TransactionLog.LogRecords {
 			}
 		}
 
+		// including length and suffix
 		public int SizeOnDisk {
 			get {
 				if (_sizeOnDisk.HasValue)
 					return _sizeOnDisk.Value;
 
-				_eventStreamIdSize ??= Encoding.UTF8.GetBytes(EventStreamId).Length;
-				_eventTypeSize ??= Encoding.UTF8.GetBytes(EventType).Length;
+				_eventStreamIdSize ??= Encoding.UTF8.GetByteCount(EventStreamId);
+				_eventTypeSize ??= Encoding.UTF8.GetByteCount(EventType);
 
 				_sizeOnDisk =
 					2 * sizeof(int) /* Length prefix & suffix */

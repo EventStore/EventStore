@@ -5,7 +5,7 @@ using EventStore.Core.Messages;
 
 namespace EventStore.Projections.Core.Services.Processing {
 	public interface IEmittedStreamsWriter {
-		void WriteEvents(string streamId, int? streamIdSize, long expectedVersion, Event[] events, ClaimsPrincipal writeAs,
+		void WriteEvents(string streamId, int streamIdSize, long expectedVersion, Event[] events, ClaimsPrincipal writeAs,
 			Action<ClientMessage.WriteEventsCompleted> complete);
 	}
 }
