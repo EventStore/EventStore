@@ -317,7 +317,7 @@
               {
                 "id": 2,
                 "name": "event_type",
-                "type": "string"
+                "type": "bytes"
               },
               {
                 "id": 3,
@@ -442,7 +442,7 @@
               {
                 "id": 1,
                 "name": "event_stream_id",
-                "type": "string"
+                "type": "bytes"
               },
               {
                 "id": 2,
@@ -5490,7 +5490,7 @@
                     "field": {
                       "id": 2,
                       "name": "metadata",
-                      "type": "string"
+                      "type": "bytes"
                     }
                   }
                 ]
@@ -5705,7 +5705,7 @@
                     "field": {
                       "id": 2,
                       "name": "metadata",
-                      "type": "string"
+                      "type": "bytes"
                     }
                   }
                 ]

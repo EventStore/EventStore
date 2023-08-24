@@ -58,15 +58,15 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					var data = proposedMessage.Data.ToByteArray();
 					var metadata = proposedMessage.CustomMetadata.ToByteArray();
 
-					if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.Type, out var eventType)) {
+					if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.Type, out var eventTypeByteString)) {
 						throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.Type);
 					}
 
-					if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.ContentType, out var contentType)) {
+					if (!proposedMessage.Metadata.TryGetValue(Constants.Metadata.ContentType, out var contentTypeByteString)) {
 						throw RpcExceptions.RequiredMetadataPropertyMissing(Constants.Metadata.ContentType);
 					}
 
-					size += Event.SizeOnDisk(eventType, data, metadata);
+					size += Event.SizeOnDisk(eventTypeByteString.Span.Length, data, metadata);
 
 					if (size > _maxAppendSize) {
 						throw RpcExceptions.MaxAppendSizeExceeded(_maxAppendSize);
@@ -74,8 +74,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 					events.Add(new Event(
 						Uuid.FromDto(proposedMessage.Id).ToGuid(),
-						eventType,
-						contentType == Constants.Metadata.ContentTypes.ApplicationJson,
+						eventTypeByteString.Span,
+						contentTypeByteString == Constants.Metadata.ContentTypes.ByteStrings.ApplicationJson,
 						data,
 						metadata));
 				}
@@ -90,6 +90,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 					envelope,
 					requiresLeader,
 					streamName,
+					streamName.Size,
 					expectedVersion,
 					events.ToArray(),
 					user,

@@ -62,10 +62,12 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 				// must be 0 since only one event is supported at the moment
 				transactionOffset: 0,
 				eventStreamId: _uint3000,
+				eventStreamIdSize: null,
 				expectedVersion: _long4,
 				timeStamp: _dateTime1,
 				flags: _prepareflags,
 				eventType: _uint3000,
+				eventTypeSize: null,
 				data: _bytes1,
 				metadata: _bytes2);
 

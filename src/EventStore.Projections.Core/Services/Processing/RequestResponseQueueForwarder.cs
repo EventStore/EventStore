@@ -32,7 +32,7 @@ namespace EventStore.Projections.Core.Services.Processing {
 			_externalRequestQueue.Publish(
 				new ClientMessage.WriteEvents(
 					msg.InternalCorrId, msg.CorrelationId, new PublishToWrapEnvelop(_inputQueue, msg.Envelope), true,
-					msg.EventStreamId, msg.ExpectedVersion, msg.Events, msg.User));
+					msg.EventStreamId, msg.EventStreamIdSize, msg.ExpectedVersion, msg.Events, msg.User));
 		}
 
 		public void Handle(ClientMessage.DeleteStream msg) {

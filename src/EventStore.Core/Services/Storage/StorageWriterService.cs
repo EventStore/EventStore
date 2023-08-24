@@ -321,8 +321,8 @@ namespace EventStore.Core.Services.Storage {
 						// when IsCommitted ExpectedVersion is always explicit
 						var expectedVersion = commitCheck.CurrentVersion + i;
 						var prepare = LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, evnt.EventId,
-							transactionPosition, i, streamId,
-							expectedVersion, flags, eventTypes[i], evnt.Data, evnt.Metadata);
+							transactionPosition, i, streamId, msg.EventStreamIdSize,
+							expectedVersion, flags, eventTypes[i], evnt.EventTypeSize, evnt.Data, evnt.Metadata);
 						prepares.Add(prepare);
 
 						logPosition += prepare.SizeOnDisk;
@@ -330,9 +330,9 @@ namespace EventStore.Core.Services.Storage {
 				} else {
 					prepares.Add(
 						LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, Guid.NewGuid(), logPosition, -1,
-							streamId, commitCheck.CurrentVersion,
+							streamId, msg.EventStreamIdSize, commitCheck.CurrentVersion,
 							PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
-							_emptyEventTypeId, Empty.ByteArray, Empty.ByteArray));
+							_emptyEventTypeId, null, Empty.ByteArray, Empty.ByteArray));
 				}
 
 				var preparesSpan = CollectionsMarshal.AsSpan(prepares);
@@ -411,9 +411,9 @@ namespace EventStore.Core.Services.Storage {
 
 			var res = WritePrepareWithRetry(
 				LogRecord.Prepare(_recordFactory, logPosition, Guid.NewGuid(), Guid.NewGuid(), logPosition, 0,
-					_systemStreams.MetaStreamOf(streamId), metaLastEventNumber,
+					_systemStreams.MetaStreamOf(streamId), eventStreamIdSize: null, metaLastEventNumber,
 					PrepareFlags.SingleWrite | PrepareFlags.IsCommitted | PrepareFlags.IsJson,
-					streamMetadataEventTypeId, modifiedMeta, Empty.ByteArray));
+					streamMetadataEventTypeId, eventTypeSize: null, modifiedMeta, Empty.ByteArray));
 
 			_indexWriter.PreCommit(new[] { res.Prepare });
 		}
@@ -470,8 +470,8 @@ namespace EventStore.Core.Services.Storage {
 					const long expectedVersion = EventNumber.DeletedStream - 1;
 					var streamDeletedEventType = GetOrWriteEventType(SystemEventTypes.StreamDeleted, ref logPosition);
 					var record = LogRecord.DeleteTombstone(_recordFactory, logPosition, message.CorrelationId,
-						eventId, streamId, streamDeletedEventType,
-						expectedVersion, PrepareFlags.IsCommitted);
+						eventId, streamId, eventStreamIdSize: null, streamDeletedEventType,
+						eventTypeSize: null, expectedVersion, PrepareFlags.IsCommitted);
 					var res = WritePrepareWithRetry(record);
 					_indexWriter.PreCommit(new[] { res.Prepare });
 				} else {
@@ -495,8 +495,8 @@ namespace EventStore.Core.Services.Storage {
 					
 					var res = WritePrepareWithRetry(
 						LogRecord.Prepare(_recordFactory, logPosition, message.CorrelationId, eventId, logPosition, 0,
-							metastreamId, expectedVersion, flags, streamMetadataEventTypeId,
-							data, null));
+							metastreamId, eventStreamIdSize: null, expectedVersion, flags, streamMetadataEventTypeId,
+							eventTypeSize: null, data, null));
 					_indexWriter.PreCommit(new[] { res.Prepare });
 				}
 			} catch (Exception exc) {
@@ -517,6 +517,7 @@ namespace EventStore.Core.Services.Storage {
 				var record = LogRecord.TransactionBegin(_recordFactory, Writer.Position,
 					message.CorrelationId,
 					streamId,
+					eventStreamIdSize: null,
 					message.ExpectedVersion);
 				var res = WritePrepareWithRetry(record);
 
@@ -553,7 +554,9 @@ namespace EventStore.Core.Services.Storage {
 							message.TransactionId,
 							transactionInfo.TransactionOffset + i + 1,
 							transactionInfo.EventStreamId,
+							eventStreamIdSize: null,
 							eventType,
+							eventTypeSize: null,
 							evnt.Data,
 							evnt.Metadata,
 							evnt.IsJson);
@@ -588,7 +591,8 @@ namespace EventStore.Core.Services.Storage {
 					message.CorrelationId,
 					Guid.NewGuid(),
 					message.TransactionId,
-					transactionInfo.EventStreamId);
+					transactionInfo.EventStreamId,
+					eventStreamIdSize: null);
 				WritePrepareWithRetry(record);
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception in writer.");

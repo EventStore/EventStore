@@ -681,6 +681,21 @@ namespace EventStore.Core.Helpers {
 			long expectedVersion,
 			Event[] events,
 			ClaimsPrincipal principal,
+			Action<ClientMessage.WriteEventsCompleted> action) =>
+			WriteEvents(
+				streamId: streamId,
+				streamIdSize: null,
+				expectedVersion: expectedVersion,
+				events: events,
+				principal: principal,
+				action: action);
+
+		public Guid WriteEvents(
+			string streamId,
+			int? streamIdSize,
+			long expectedVersion,
+			Event[] events,
+			ClaimsPrincipal principal,
 			Action<ClientMessage.WriteEventsCompleted> action) {
 			var corrId = Guid.NewGuid();
 			AddPendingRequest(corrId);
@@ -692,6 +707,7 @@ namespace EventStore.Core.Helpers {
 						Writer.Envelope,
 						false,
 						streamId,
+						streamIdSize,
 						expectedVersion,
 						events,
 						principal),
@@ -811,6 +827,7 @@ namespace EventStore.Core.Helpers {
 		public Guid QueueWriteEvents(
 			Guid key,
 			string streamId,
+			int? streamIdSize,
 			long expectedVersion,
 			Event[] events,
 			ClaimsPrincipal principal,
@@ -823,6 +840,7 @@ namespace EventStore.Core.Helpers {
 				Writer.Envelope,
 				false,
 				streamId,
+				streamIdSize,
 				expectedVersion,
 				events,
 				principal);

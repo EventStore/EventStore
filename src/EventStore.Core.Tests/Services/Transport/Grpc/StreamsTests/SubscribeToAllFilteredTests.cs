@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
-						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("abcd") }
+						StreamIdentifier = new() { StreamName = ByteString.CopyFrom("abcd"u8) }
 					},
 					IsFinal = true,
 					ProposedMessages = { CreateEvents(_filteredEventCount) },
@@ -184,7 +184,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
-						StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8("abcd")}
+						StreamIdentifier = new() {StreamName = ByteString.CopyFrom("abcd"u8)}
 					},
 					IsFinal = true,
 					ProposedMessages = {CreateEvents(_filteredEventCount)},

@@ -107,10 +107,12 @@ namespace EventStore.Core.Tests.Integration {
 						CustomMetadata = ByteString.Empty,
 						Data = ByteString.Empty,
 						Metadata = {
-							{EventStore.Core.Services.Transport.Grpc.Constants.Metadata.Type, "-"}, {
+							{
+								EventStore.Core.Services.Transport.Grpc.Constants.Metadata.Type,
+								ByteString.CopyFrom("-"u8)
+							}, {
 								EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentType,
-								EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentTypes
-									.ApplicationOctetStream
+								EventStore.Core.Services.Transport.Grpc.Constants.Metadata.ContentTypes.ByteStrings.ApplicationOctetStream
 							}
 						}
 					}

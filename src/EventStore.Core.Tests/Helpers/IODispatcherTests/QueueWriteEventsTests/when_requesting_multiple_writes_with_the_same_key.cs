@@ -13,13 +13,13 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests 
 			AllWritesQueueUp();
 
 			var key = Guid.NewGuid();
-			_ioDispatcher.QueueWriteEvents(key, $"stream-{Guid.NewGuid()}", ExpectedVersion.Any,
+			_ioDispatcher.QueueWriteEvents(key, $"stream-{Guid.NewGuid()}", null, ExpectedVersion.Any,
 				new Event[] {new Event(Guid.NewGuid(), "event-type", false, string.Empty, string.Empty)},
 				SystemAccounts.System, (msg) => { });
-			_ioDispatcher.QueueWriteEvents(key, $"stream-{Guid.NewGuid()}", ExpectedVersion.Any,
+			_ioDispatcher.QueueWriteEvents(key, $"stream-{Guid.NewGuid()}", null, ExpectedVersion.Any,
 				new Event[] {new Event(Guid.NewGuid(), "event-type", false, string.Empty, string.Empty)},
 				SystemAccounts.System, (msg) => { });
-			_ioDispatcher.QueueWriteEvents(key, $"stream-{Guid.NewGuid()}", ExpectedVersion.Any,
+			_ioDispatcher.QueueWriteEvents(key, $"stream-{Guid.NewGuid()}", null, ExpectedVersion.Any,
 				new Event[] {new Event(Guid.NewGuid(), "event-type", false, string.Empty, string.Empty)},
 				SystemAccounts.System, (msg) => { });
 		}

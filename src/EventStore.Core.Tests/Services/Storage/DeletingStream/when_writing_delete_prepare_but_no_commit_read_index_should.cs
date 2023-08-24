@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Storage.DeletingStream {
 			_event0 = WriteSingleEvent("ES", 0, "bla1");
 			Assert.True(_logFormat.StreamNameIndex.GetOrReserve("ES", out var esStreamId, out _, out _));
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, Writer.Position, Guid.NewGuid(), Guid.NewGuid(),
-				esStreamId, eventTypeId, 1);
+				esStreamId, null, eventTypeId, null, 1);
 			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 

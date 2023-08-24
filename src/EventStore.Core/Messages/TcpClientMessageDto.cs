@@ -11,7 +11,7 @@ namespace EventStore.Client.Messages {
 		{
 		
 			EventId = ByteString.CopyFrom(eventId);
-			EventType = eventType;
+			EventType = ByteString.CopyFromUtf8(eventType);
 			DataContentType = dataContentType;
 			MetadataContentType = metadataContentType;
 			Data = ByteString.CopyFrom(data);
@@ -105,7 +105,7 @@ namespace EventStore.Client.Messages {
 	partial class WriteEvents {
 		public WriteEvents(string eventStreamId, long expectedVersion, NewEvent[] events, bool requireLeader)
 		{
-			EventStreamId = eventStreamId;
+			EventStreamId = ByteString.CopyFromUtf8(eventStreamId);
 			ExpectedVersion = expectedVersion;
 			Events.AddRange(events);
 			RequireLeader = requireLeader;

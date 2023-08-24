@@ -171,12 +171,13 @@ namespace EventStore.Core.Messages {
 		[DerivedMessage(CoreMessage.Client)]
 		public partial class WriteEvents : WriteRequestMessage {
 			public readonly string EventStreamId;
+			public readonly int? EventStreamIdSize;
 			public readonly long ExpectedVersion;
 			public readonly Event[] Events;
 			public readonly CancellationToken CancellationToken;
 
 			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
-				string eventStreamId, long expectedVersion, Event[] events, ClaimsPrincipal user,
+				string eventStreamId, int? eventStreamIdSize, long expectedVersion, Event[] events, ClaimsPrincipal user,
 				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
 				: base(internalCorrId, correlationId, envelope, requireLeader, user, tokens) {
 				Ensure.NotNullOrEmpty(eventStreamId, "eventStreamId");
@@ -186,10 +187,18 @@ namespace EventStore.Core.Messages {
 				Ensure.NotNull(events, "events");
 
 				EventStreamId = eventStreamId;
+				EventStreamIdSize = eventStreamIdSize;
 				ExpectedVersion = expectedVersion;
 				Events = events;
 				CancellationToken = cancellationToken;
 			}
+
+			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
+				string eventStreamId, long expectedVersion, Event[] events,
+				ClaimsPrincipal user,
+				IReadOnlyDictionary<string, string> tokens = null, CancellationToken cancellationToken = default)
+				: this(internalCorrId, correlationId, envelope, requireLeader, eventStreamId, null,
+					expectedVersion, events, user, tokens, cancellationToken) { }
 
 			public WriteEvents(Guid internalCorrId, Guid correlationId, IEnvelope envelope, bool requireLeader,
 				string eventStreamId, long expectedVersion, Event @event, ClaimsPrincipal user,

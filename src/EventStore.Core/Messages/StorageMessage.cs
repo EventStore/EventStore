@@ -29,15 +29,17 @@ namespace EventStore.Core.Messages {
 			public IEnvelope Envelope { get; private set; }
 
 			public string EventStreamId { get; private set; }
+			public int? EventStreamIdSize { get; private set; }
 			public long ExpectedVersion { get; private set; }
 			public CancellationToken CancellationToken { get; }
 			public readonly Event[] Events;
 
-			public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, long expectedVersion,
-				Event[] events, CancellationToken cancellationToken) {
+			public WritePrepares(Guid correlationId, IEnvelope envelope, string eventStreamId, int? eventStreamIdSize,
+				long expectedVersion, Event[] events, CancellationToken cancellationToken) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				EventStreamId = eventStreamId;
+				EventStreamIdSize = eventStreamIdSize;
 				ExpectedVersion = expectedVersion;
 				CancellationToken = cancellationToken;
 				Events = events;
@@ -47,6 +49,7 @@ namespace EventStore.Core.Messages {
 				$"{GetType().Name} " +
 				$"CorrelationId: {CorrelationId}, " +
 				$"EventStreamId: {EventStreamId}, " +
+				$"EventStreamIdSize: {EventStreamIdSize}, " +
 				$"ExpectedVersion: {ExpectedVersion}, " +
 				$"Envelope: {{ {Envelope} }}, " +
 				$"NumEvents: {Events?.Length}, " +

@@ -18,7 +18,7 @@ namespace EventStore.Core.Tests.Services.Storage.Scavenge {
 			GetOrReserve("ES", out var esStreamId, out var pos);
 			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos, Guid.NewGuid(), Guid.NewGuid(),
-				esStreamId, streamDeletedEventTypeId, 2);
+				esStreamId, null, streamDeletedEventTypeId, null, 2);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			_event1 = WriteSingleEvent("ES", 1, "bla1");
