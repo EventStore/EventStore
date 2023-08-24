@@ -43,7 +43,7 @@ namespace EventStore.Core.TransactionLog.Chunks {
 		}
 
 		public bool CanWrite(int numBytes) {
-			return _currentChunk.ChunkHeader.ChunkEndPosition - Position >= numBytes;
+			return _currentChunk.ChunkHeader.ChunkEndPosition - _nextRecordPosition >= numBytes;
 		}
 
 		public bool Write(ILogRecord record, out long newPos) {
