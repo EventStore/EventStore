@@ -149,6 +149,7 @@ message AppendReq {
 	}
 	message ProposedMessage {
 		event_store.client.UUID id = 1;
+		// the bytes values in metadata must be utf8 encoded strings
 		map<string, bytes> metadata = 2;
 		bytes custom_metadata = 3;
 		bytes data = 4;
@@ -223,6 +224,7 @@ message BatchAppendReq {
 
 	message ProposedMessage {
 		event_store.client.UUID id = 1;
+		// the bytes values in metadata must be utf8 encoded strings
 		map<string, bytes> metadata = 2;
 		bytes custom_metadata = 3;
 		bytes data = 4;

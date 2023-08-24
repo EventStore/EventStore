@@ -698,11 +698,17 @@ namespace EventStore.Core.Services.Storage {
 			foreach (var prepare in prepares)
 				prepareSizes += prepare.SizeOnDisk;
 
-			if (prepareSizes > Db.Config.ChunkSize)
+			if (prepareSizes > Db.Config.ChunkSize) {
+				Log.Error("Transaction size ({prepareSizes:N0}) exceeds chunk size ({chunkSize:N0})",
+					prepareSizes, Db.Config.ChunkSize);
 				return false;
+			}
 
 			if (!Writer.CanWrite(prepareSizes)) {
 				Writer.CompleteChunk();
+				if (!Writer.CanWrite(prepareSizes)) {
+					throw new Exception($"Transaction of size {prepareSizes:N0} cannot be written even after completing a chunk");
+				}
 
 				long logPos = Writer.Position;
 				long transactionPos = default;
@@ -718,7 +724,7 @@ namespace EventStore.Core.Services.Storage {
 				}
 			}
 
-			OpenTransaction();
+			Writer.OpenTransaction();
 			var writerPos = Writer.Position;
 			foreach (var prepare in prepares)
 			{
@@ -728,7 +734,7 @@ namespace EventStore.Core.Services.Storage {
 
 				writerPos = newWriterPos;
 			}
-			CommitTransaction();
+			Writer.CommitTransaction();
 
 			return true;
 		}
@@ -787,14 +793,6 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			return commit;
-		}
-
-		protected void OpenTransaction() {
-			Writer.OpenTransaction();
-		}
-
-		protected void CommitTransaction() {
-			Writer.CommitTransaction();
 		}
 
 		protected bool Flush(bool force = false) {
