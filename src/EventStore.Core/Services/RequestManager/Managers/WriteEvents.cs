@@ -8,6 +8,7 @@ using EventStore.Core.Messaging;
 namespace EventStore.Core.Services.RequestManager.Managers {
 	public class WriteEvents : RequestManagerBase {
 		private readonly string _streamId;
+		private readonly int? _streamIdSize;
 		private readonly Event[] _events;
 		private readonly CancellationToken _cancellationToken;
 		public WriteEvents(IPublisher publisher,
@@ -16,6 +17,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 			Guid internalCorrId,
 			Guid clientCorrId,
 			string streamId,
+			int? streamIdSize,
 			long expectedVersion,
 			Event[] events,
 			CommitSource commitSource,
@@ -31,6 +33,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					 prepareCount: 0,
 					 waitForCommit: true) {
 			_streamId = streamId;
+			_streamIdSize = streamIdSize;
 			_events = events;
 			_cancellationToken = cancellationToken;
 		}
@@ -40,6 +43,7 @@ namespace EventStore.Core.Services.RequestManager.Managers {
 					InternalCorrId,
 					WriteReplyEnvelope,
 					_streamId,
+					_streamIdSize,
 					ExpectedVersion,
 					_events,
 					_cancellationToken);

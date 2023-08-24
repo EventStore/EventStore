@@ -303,7 +303,7 @@ namespace EventStore.Core.Tests.Services.Storage {
 		protected IPrepareLogRecord<TStreamId> WriteTransactionBegin(string eventStreamName, long expectedVersion) {
 			LogFormatHelper<TLogFormat, TStreamId>.CheckIfExplicitTransactionsSupported();
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
-			var prepare = LogRecord.TransactionBegin(_recordFactory, pos, Guid.NewGuid(), eventStreamId,
+			var prepare = LogRecord.TransactionBegin(_recordFactory, pos, Guid.NewGuid(), eventStreamId, null,
 				expectedVersion);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			return prepare;
@@ -372,7 +372,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 				correlationId,
 				Guid.NewGuid(),
 				transactionId,
-				eventStreamId);
+				eventStreamId,
+				null);
 			long pos;
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			return prepare;
@@ -427,7 +428,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
 			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
-				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, EventNumber.DeletedStream - 1);
+				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, null, streamDeletedEventTypeId, null,
+				EventNumber.DeletedStream - 1);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 			var commit = LogRecord.Commit(Writer.Position,
 				prepare.CorrelationId,
@@ -443,7 +445,8 @@ namespace EventStore.Core.Tests.Services.Storage {
 			GetOrReserve(eventStreamName, out var eventStreamId, out var pos);
 			GetOrReserveEventType(SystemEventTypes.StreamDeleted, out var streamDeletedEventTypeId, out pos);
 			var prepare = LogRecord.DeleteTombstone(_recordFactory, pos,
-				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, streamDeletedEventTypeId, ExpectedVersion.Any);
+				Guid.NewGuid(), Guid.NewGuid(), eventStreamId, null, streamDeletedEventTypeId,
+				null, ExpectedVersion.Any);
 			Assert.IsTrue(Writer.Write(prepare, out pos));
 
 			return prepare;

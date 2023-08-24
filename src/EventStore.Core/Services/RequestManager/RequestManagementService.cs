@@ -64,6 +64,7 @@ namespace EventStore.Core.Services.RequestManager {
 								message.InternalCorrId,
 								message.CorrelationId,
 								message.EventStreamId,
+								message.EventStreamIdSize,
 								message.ExpectedVersion,
 								message.Events,
 								_commitSource,

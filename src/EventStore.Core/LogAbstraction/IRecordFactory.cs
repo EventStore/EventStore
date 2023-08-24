@@ -33,10 +33,12 @@ namespace EventStore.Core.LogAbstraction {
 			long transactionPosition,
 			int transactionOffset,
 			TStreamId eventStreamId,
+			int? eventStreamIdSize,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
 			TStreamId eventType,
+			int? eventTypeSize,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata);
 	}

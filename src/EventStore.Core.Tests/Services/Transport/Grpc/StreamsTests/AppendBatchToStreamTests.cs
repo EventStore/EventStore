@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
-						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("stream") }
+						StreamIdentifier = new() { StreamName = ByteString.CopyFrom("stream"u8) }
 					},
 					IsFinal = true,
 					ProposedMessages = { CreateEvents(1) },
@@ -61,7 +61,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
-						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("stream") }
+						StreamIdentifier = new() { StreamName = ByteString.CopyFrom("stream"u8) }
 					},
 					IsFinal = true,
 					ProposedMessages = { CreateEvents(1) },
@@ -91,7 +91,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
-						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("stream") }
+						StreamIdentifier = new() { StreamName = ByteString.CopyFrom("stream"u8) }
 					},
 					IsFinal = false,
 					ProposedMessages = { CreateEvents(1) },
@@ -125,7 +125,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
-						StreamIdentifier = new() {StreamName = ByteString.CopyFromUtf8("stream")},
+						StreamIdentifier = new() {StreamName = ByteString.CopyFrom("stream"u8)},
 						Deadline = Duration.FromTimeSpan(TimeSpan.Zero)
 					},
 					IsFinal = true,
@@ -162,7 +162,7 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 				_response = await AppendToStreamBatch(new BatchAppendReq {
 					Options = new() {
 						Any = new(),
-						StreamIdentifier = new() { StreamName = ByteString.CopyFromUtf8("stream") },
+						StreamIdentifier = new() { StreamName = ByteString.CopyFrom("stream"u8) },
 						Deadline21100 = Timestamp.FromDateTime(DateTime.UtcNow)
 					},
 					IsFinal = true,

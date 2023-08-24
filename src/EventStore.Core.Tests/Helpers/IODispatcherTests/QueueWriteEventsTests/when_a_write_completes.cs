@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Helpers.IODispatcherTests.QueueWriteEventsTests 
 		protected override void Given() {
 			AllWritesQueueUp();
 
-			_ioDispatcher.QueueWriteEvents(Guid.NewGuid(), $"stream-{Guid.NewGuid()}", ExpectedVersion.Any,
+			_ioDispatcher.QueueWriteEvents(Guid.NewGuid(), $"stream-{Guid.NewGuid()}", null, ExpectedVersion.Any,
 				new Event[] {new Event(Guid.NewGuid(), "event-type", false, string.Empty, string.Empty)},
 				SystemAccounts.System, (msg) => { _completed = true; });
 			OneWriteCompletes();

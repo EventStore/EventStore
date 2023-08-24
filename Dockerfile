@@ -1,6 +1,6 @@
 # "build" image
-ARG CONTAINER_RUNTIME=focal
-FROM mcr.microsoft.com/dotnet/sdk:6.0-focal AS build
+ARG CONTAINER_RUNTIME=jammy
+FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy AS build
 ARG RUNTIME=linux-x64
 
 WORKDIR /build/ci

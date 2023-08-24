@@ -78,10 +78,12 @@ namespace EventStore.Core.LogV3 {
 			long transactionPosition,
 			int transactionOffset,
 			StreamId eventStreamId,
+			int? eventStreamIdSize,
 			long expectedVersion,
 			DateTime timeStamp,
 			PrepareFlags flags,
 			StreamId eventType,
+			int? eventTypeSize,
 			ReadOnlyMemory<byte> data,
 			ReadOnlyMemory<byte> metadata) {
 

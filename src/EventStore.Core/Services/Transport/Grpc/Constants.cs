@@ -1,3 +1,6 @@
+using EventStore.Common.Utils;
+using Google.Protobuf;
+
 namespace EventStore.Core.Services.Transport.Grpc {
 	public static class Constants {
 		public static class Exceptions {
@@ -50,6 +53,14 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			public static class ContentTypes {
 				public const string ApplicationJson = "application/json";
 				public const string ApplicationOctetStream = "application/octet-stream";
+
+				public static class ByteStrings {
+					public static ByteString ApplicationJson { get; } =
+						ByteString.CopyFrom(Helper.UTF8NoBom.GetBytes(ContentTypes.ApplicationJson));
+
+					public static ByteString ApplicationOctetStream { get; } =
+						ByteString.CopyFrom(Helper.UTF8NoBom.GetBytes(ContentTypes.ApplicationOctetStream));
+				}
 			}
 		}
 

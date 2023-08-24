@@ -287,7 +287,7 @@ namespace EventStore.Core.Tests.Services.Transport.Tcp {
 		private EventRecord CreateDeletedEventRecord() {
 			return new EventRecord(long.MaxValue,
 				LogRecord.DeleteTombstone(new LogV2RecordFactory(), 0, Guid.NewGuid(), Guid.NewGuid(),
-					"test-stream", "test-type", long.MaxValue), "test-stream", SystemEventTypes.StreamDeleted);
+					"test-stream", null, "test-type", null, long.MaxValue), "test-stream", SystemEventTypes.StreamDeleted);
 		}
 
 		private EventRecord CreateLinkEventRecord() {

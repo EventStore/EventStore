@@ -112,8 +112,8 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 					Id = Uuid.NewUuid().ToDto(),
 					CustomMetadata = ByteString.Empty,
 					Metadata = {
-						{GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ApplicationOctetStream},
-						{GrpcMetadata.Type, "-"}
+						{GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ByteStrings.ApplicationOctetStream},
+						{GrpcMetadata.Type, ByteString.CopyFrom("-"u8)}
 					}
 				});
 

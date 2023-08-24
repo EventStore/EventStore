@@ -273,7 +273,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				ClientWriteRequest FromOptions(Guid correlationId, Options options, TimeSpan timeout,
 					CancellationToken cancellationToken) =>
-					new(correlationId, options.StreamIdentifier, options.ExpectedStreamPositionCase switch {
+					new(correlationId, options.StreamIdentifier, options.StreamIdentifier.Size,
+						options.ExpectedStreamPositionCase switch {
 						ExpectedStreamPositionOneofCase.StreamPosition => new StreamRevision(options.StreamPosition)
 							.ToInt64(),
 						ExpectedStreamPositionOneofCase.Any => AnyStreamRevision.Any.ToInt64(),
@@ -293,15 +294,17 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				static Event FromProposedMessage(ProposedMessage proposedMessage) =>
 					new(Uuid.FromDto(proposedMessage.Id).ToGuid(),
-						proposedMessage.Metadata[Constants.Metadata.Type],
+						proposedMessage.Metadata[Constants.Metadata.Type].Span,
 						proposedMessage.Metadata[Constants.Metadata.ContentType] ==
-						Constants.Metadata.ContentTypes.ApplicationJson, proposedMessage.Data.ToByteArray(),
+							Constants.Metadata.ContentTypes.ByteStrings.ApplicationJson,
+						proposedMessage.Data.ToByteArray(),
 						proposedMessage.CustomMetadata.ToByteArray());
 
 				static ClientMessage.WriteEvents ToInternalMessage(ClientWriteRequest request, IEnvelope envelope,
 					bool requiresLeader, ClaimsPrincipal user, CancellationToken token) =>
-					new(Guid.NewGuid(), request.CorrelationId, envelope, requiresLeader, request.StreamId,
-						request.ExpectedVersion, request.Events.ToArray(), user, cancellationToken: token);
+					new(Guid.NewGuid(), request.CorrelationId, envelope, requiresLeader,
+						request.StreamId, request.StreamIdSize, request.ExpectedVersion, request.Events.ToArray(),
+						user, cancellationToken: token);
 
 				static TimeSpan GetRequestedTimeout(Options options) => options.DeadlineOptionCase switch {
 					DeadlineOptionOneofCase.Deadline => options.Deadline.ToTimeSpan(),
@@ -316,16 +319,18 @@ namespace EventStore.Core.Services.Transport.Grpc {
 		private record ClientWriteRequest {
 			public Guid CorrelationId { get; }
 			public string StreamId { get; }
+			public int StreamIdSize { get; }
 			public long ExpectedVersion { get; }
 			private readonly List<Event> _events;
 			public IEnumerable<Event> Events => _events.AsEnumerable();
 			private int _size;
 			public int Size => _size;
 
-			public ClientWriteRequest(Guid correlationId, string streamId, long expectedVersion, TimeSpan timeout,
+			public ClientWriteRequest(Guid correlationId, string streamId, int streamIdSize, long expectedVersion, TimeSpan timeout,
 				Func<ValueTask> onTimeout, CancellationToken cancellationToken) {
 				CorrelationId = correlationId;
 				StreamId = streamId;
+				StreamIdSize = streamIdSize;
 				_events = new List<Event>();
 				_size = 0;
 				ExpectedVersion = expectedVersion;
@@ -335,7 +340,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 			public ClientWriteRequest AddEvents(IEnumerable<Event> events) {
 				foreach (var e in events) {
-					_size += Event.SizeOnDisk(e.EventType, e.Data, e.Metadata);
+					_size += Event.SizeOnDisk(e.EventTypeSize ?? e.EventType.Length * 2, e.Data, e.Metadata);
 					_events.Add(e);
 				}
 
