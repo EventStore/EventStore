@@ -64,15 +64,17 @@ namespace EventStore.Core.Tests.Common.ClusterNodeOptionsTests.when_building {
 			Assert.AreEqual(2000, _options.Database.PrepareTimeoutMs, "PrepareTimeout");
 			Assert.AreEqual(2000, _options.Database.CommitTimeoutMs, "CommitTimeout");
 			Assert.AreEqual(2000, _options.Database.WriteTimeoutMs, "WriteTimeout");
-
-			Assert.AreEqual(700, _options.Interface.IntTcpHeartbeatInterval,
-				"IntTcpHeartbeatInterval");
-			Assert.AreEqual(700, _options.Interface.IntTcpHeartbeatTimeout,
-				"IntTcpHeartbeatTimeout");
-			Assert.AreEqual(2000, _options.Interface.ExtTcpHeartbeatInterval,
-				"ExtTcpHeartbeatInterval");
-			Assert.AreEqual(1000, _options.Interface.ExtTcpHeartbeatTimeout,
-				"ExtTcpHeartbeatTimeout");
+			
+			Assert.AreEqual(700, _options.Interface.ReplicationHeartbeatInterval, "ReplicationHeartbeatInterval");
+			
+			Assert.AreEqual(700, _options.Interface.ReplicationHeartbeatTimeout,
+				"ReplicationHeartbeatTimeout");
+			
+			Assert.AreEqual(2000, _options.Interface.NodeHeartbeatInterval,
+				"NodeHeartbeatInterval");
+			
+			Assert.AreEqual(1000, _options.Interface.NodeHeartbeatTimeout,
+				"NodeHeartbeatTimeout");
 
 			Assert.AreEqual(TFConsts.ChunkSize, _node.Db.Config.ChunkSize, "ChunkSize");
 			Assert.AreEqual(TFConsts.ChunksCacheSize, _node.Db.Config.MaxChunksCacheSize, "MaxChunksCacheSize");

@@ -260,28 +260,34 @@ namespace EventStore.Core {
 			var disableInternalTcpTls = options.Application.Insecure;
 			var disableExternalTcpTls = options.Application.Insecure || options.Interface.DisableExternalTcpTls;
 
-			var httpEndPoint = new IPEndPoint(options.Interface.ExtIp, options.Interface.HttpPort);
+			var httpEndPoint = new IPEndPoint(options.Interface.NodeIp, options.Interface.NodePort);
+			
 			var intTcp = disableInternalTcpTls
-				? new IPEndPoint(options.Interface.IntIp, options.Interface.IntTcpPort)
+				? new IPEndPoint(options.Interface.ReplicationIp, 
+					options.Interface.ReplicationPort)
 				: null;
 			var intSecIp = !disableInternalTcpTls
-				? new IPEndPoint(options.Interface.IntIp, options.Interface.IntTcpPort)
+				? new IPEndPoint(options.Interface.ReplicationIp, 
+					options.Interface.ReplicationPort)
 				: null;
 
 			var extTcp = disableExternalTcpTls
-				? new IPEndPoint(options.Interface.ExtIp, options.Interface.ExtTcpPort)
+				? new IPEndPoint(options.Interface.NodeIp, 
+					options.Interface.NodeTcpPort)
 				: null;
 			var extSecIp = !disableExternalTcpTls
-				? new IPEndPoint(options.Interface.ExtIp, options.Interface.ExtTcpPort)
+				? new IPEndPoint(options.Interface.NodeIp, 
+					options.Interface.NodeTcpPort)
 				: null;
 
-			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.IntTcpPortAdvertiseAs : 0;
-			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.IntTcpPortAdvertiseAs : 0;
+			var intTcpPortAdvertiseAs = disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
+			var intSecTcpPortAdvertiseAs = !disableInternalTcpTls ? options.Interface.ReplicationTcpPortAdvertiseAs : 0;
+			
 			var extTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && disableExternalTcpTls
-				? options.Interface.ExtTcpPortAdvertiseAs
+				? options.Interface.NodeTcpPortAdvertiseAs
 				: 0;
 			var extSecTcpPortAdvertiseAs = options.Interface.EnableExternalTcp && !disableExternalTcpTls
-				? options.Interface.ExtTcpPortAdvertiseAs
+				? options.Interface.NodeTcpPortAdvertiseAs
 				: 0;
 
 			Log.Information("Quorum size set to {quorum}.", options.Cluster.QuorumSize);
@@ -802,22 +808,22 @@ namespace EventStore.Core {
 
 			GossipAdvertiseInfo = GetGossipAdvertiseInfo();
 			GossipAdvertiseInfo GetGossipAdvertiseInfo() {
-				IPAddress intIpAddress = options.Interface.IntIp; //this value is just opts.IntIP
+				IPAddress intIpAddress = options.Interface.ReplicationIp;
 
-				var extIpAddress = options.Interface.ExtIp; //this value is just opts.ExtIP
+				IPAddress extIpAddress = options.Interface.NodeIp;
 
-				var intHostToAdvertise = options.Interface.IntHostAdvertiseAs ?? intIpAddress.ToString();
-				var extHostToAdvertise = options.Interface.ExtHostAdvertiseAs ?? extIpAddress.ToString();
+				var intHostToAdvertise = options.Interface.ReplicationHostAdvertiseAs ?? intIpAddress.ToString();
+				var extHostToAdvertise = options.Interface.NodeHostAdvertiseAs ?? extIpAddress.ToString();
 
 				if (intIpAddress.Equals(IPAddress.Any) || extIpAddress.Equals(IPAddress.Any)) {
 					IPAddress nonLoopbackAddress = IPFinder.GetNonLoopbackAddress();
 					IPAddress addressToAdvertise = options.Cluster.ClusterSize > 1 ? nonLoopbackAddress : IPAddress.Loopback;
 
-					if (intIpAddress.Equals(IPAddress.Any) && options.Interface.IntHostAdvertiseAs == null) {
+					if (intIpAddress.Equals(IPAddress.Any) && options.Interface.ReplicationHostAdvertiseAs == null) {
 						intHostToAdvertise = addressToAdvertise.ToString();
 					}
 
-					if (extIpAddress.Equals(IPAddress.Any) && options.Interface.ExtHostAdvertiseAs == null) {
+					if (extIpAddress.Equals(IPAddress.Any) && options.Interface.NodeHostAdvertiseAs == null) {
 						extHostToAdvertise = addressToAdvertise.ToString();
 					}
 				}
@@ -825,7 +831,7 @@ namespace EventStore.Core {
 				var intTcpEndPoint = NodeInfo.InternalTcp == null
 					? null
 					: new DnsEndPoint(intHostToAdvertise, intTcpPortAdvertiseAs > 0
-						? options.Interface.IntTcpPortAdvertiseAs
+						? (options.Interface.ReplicationTcpPortAdvertiseAs)
 						: NodeInfo.InternalTcp.Port);
 
 				var intSecureTcpEndPoint = NodeInfo.InternalSecureTcp == null
@@ -845,16 +851,16 @@ namespace EventStore.Core {
 					: new DnsEndPoint(extHostToAdvertise, extSecTcpPortAdvertiseAs > 0
 						? extSecTcpPortAdvertiseAs
 						: NodeInfo.ExternalSecureTcp.Port);
-
+				
 				var httpEndPoint = new DnsEndPoint(extHostToAdvertise,
-					options.Interface.HttpPortAdvertiseAs > 0
-						? options.Interface.HttpPortAdvertiseAs
+					options.Interface.NodePortAdvertiseAs > 0
+						? options.Interface.NodePortAdvertiseAs
 						: NodeInfo.HttpEndPoint.GetPort());
 
 				return new GossipAdvertiseInfo(intTcpEndPoint, intSecureTcpEndPoint, extTcpEndPoint,
-					extSecureTcpEndPoint, httpEndPoint, options.Interface.IntHostAdvertiseAs,
-					options.Interface.ExtHostAdvertiseAs, options.Interface.HttpPortAdvertiseAs,
-					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseHttpPortToClientAs,
+					extSecureTcpEndPoint, httpEndPoint, options.Interface.ReplicationHostAdvertiseAs,
+					options.Interface.NodeHostAdvertiseAs, options.Interface.NodePortAdvertiseAs,
+					options.Interface.AdvertiseHostToClientAs, options.Interface.AdvertiseNodePortToClientAs,
 					options.Interface.AdvertiseTcpPortToClientAs);
 			}
 
@@ -902,8 +908,8 @@ namespace EventStore.Core {
 					var extTcpService = new TcpService(_mainQueue, NodeInfo.ExternalTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Normal,
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
+						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
+						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
 						_authenticationProvider, AuthorizationGateway, null, null, null,
 						options.Interface.ConnectionPendingSendBytesThreshold,
 						options.Interface.ConnectionQueueSizeThreshold);
@@ -916,8 +922,8 @@ namespace EventStore.Core {
 					var extSecTcpService = new TcpService(_mainQueue, NodeInfo.ExternalSecureTcp, _workersHandler,
 						TcpServiceType.External, TcpSecurityType.Secure,
 						new ClientTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
-						TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatTimeout),
+						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
+						TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatTimeout),
 						_authenticationProvider, AuthorizationGateway,
 						_certificateSelector, _intermediateCertsSelector, _externalClientCertificateValidator,
 						options.Interface.ConnectionPendingSendBytesThreshold,
@@ -933,8 +939,8 @@ namespace EventStore.Core {
 						var intTcpService = new TcpService(_mainQueue, NodeInfo.InternalTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Normal,
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
-							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
+							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
+							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
 							_authenticationProvider, AuthorizationGateway, null, null, null, ESConsts.UnrestrictedPendingSendBytes,
 						ESConsts.MaxConnectionQueueSize);
 						_mainBus.Subscribe<SystemMessage.SystemInit>(intTcpService);
@@ -946,8 +952,8 @@ namespace EventStore.Core {
 						var intSecTcpService = new TcpService(_mainQueue, NodeInfo.InternalSecureTcp, _workersHandler,
 							TcpServiceType.Internal, TcpSecurityType.Secure,
 							new InternalTcpDispatcher(TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs)),
-							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatInterval),
-							TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
+							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatInterval),
+							TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
 							_authenticationProvider, AuthorizationGateway,
 							_certificateSelector, _intermediateCertsSelector, _internalClientCertificateValidator,
 							ESConsts.UnrestrictedPendingSendBytes,
@@ -1428,8 +1434,8 @@ namespace EventStore.Core {
 					options.Cluster.ReadOnlyReplica,
 					!disableInternalTcpTls, _internalServerCertificateValidator,
 					_certificateSelector,
-					TimeSpan.FromMilliseconds(options.Interface.IntTcpHeartbeatTimeout),
-					TimeSpan.FromMilliseconds(options.Interface.ExtTcpHeartbeatInterval),
+					TimeSpan.FromMilliseconds(options.Interface.ReplicationHeartbeatTimeout),
+					TimeSpan.FromMilliseconds(options.Interface.NodeHeartbeatInterval),
 					TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs));
 				_mainBus.Subscribe<SystemMessage.StateChangeMessage>(replicaService);
 				_mainBus.Subscribe<ReplicationMessage.ReconnectToLeader>(replicaService);

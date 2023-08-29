@@ -15,9 +15,7 @@ namespace EventStore.Core {
 	public partial record ClusterVNodeOptions {
 		private static readonly IEnumerable<Type> OptionSections;
 		public static readonly string HelpText;
-
-		public string GetComponentName() => $"{Interface.ExtIp}-{Interface.HttpPort}-cluster-node";
-
+		public string GetComponentName() => $"{Interface.NodeIp}-{Interface.NodePort}-cluster-node";
 		static ClusterVNodeOptions() {
 			OptionSections = typeof(ClusterVNodeOptions)
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance)

@@ -14,13 +14,13 @@ public static class ClusterVNodeOptionsValidator {
 		if (options == null) {
 			throw new ArgumentNullException(nameof(options));
 		}
-
-		if (options.Interface.ExtIp == null) {
-			throw new ArgumentNullException(nameof(options.Interface.ExtIp));
+		
+		if (options.Interface.NodeIp == null) {
+			throw new ArgumentNullException(nameof(options.Interface.NodeIp));
 		}
-
-		if (options.Interface.IntIp == null) {
-			throw new ArgumentNullException(nameof(options.Interface.IntIp));
+		
+		if (options.Interface.ReplicationIp == null) {
+			throw new ArgumentNullException(nameof(options.Interface.ReplicationIp));
 		}
 
 		if (options.Cluster.ClusterSize <= 0) {

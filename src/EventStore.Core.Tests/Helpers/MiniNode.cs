@@ -100,10 +100,10 @@ namespace EventStore.Core.Tests.Helpers {
 						WorkerThreads = 1
 					},
 					Interface = new() {
-						ExtTcpHeartbeatInterval = 10_000,
-						ExtTcpHeartbeatTimeout = 10_000,
-						IntTcpHeartbeatInterval = 10_000,
-						IntTcpHeartbeatTimeout = 10_000,
+						NodeHeartbeatInterval = 10_000,
+						NodeHeartbeatTimeout = 10_000,
+						ReplicationHeartbeatInterval = 10_000,
+						ReplicationHeartbeatTimeout = 10_000,
 						EnableTrustedAuth = enableTrustedAuth,
 						EnableAtomPubOverHttp = true
 					},

@@ -100,9 +100,9 @@ namespace EventStore.Core {
 			options with {
 				Interface = options.Interface with {
 					EnableExternalTcp = true,
-					ExtIp = endPoint.Address,
+					NodeIp = endPoint.Address,
 					DisableExternalTcpTls = false,
-					ExtTcpPort = endPoint.Port
+					NodeTcpPort = endPoint.Port
 				}
 			};
 
@@ -116,9 +116,9 @@ namespace EventStore.Core {
 			this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					IntIp = endPoint.Address,
+					ReplicationIp = endPoint.Address,
 					DisableInternalTcpTls = false,
-					IntTcpPort = endPoint.Port
+					ReplicationPort = endPoint.Port
 				}
 			};
 
@@ -133,8 +133,8 @@ namespace EventStore.Core {
 			options with {
 				Interface = options.Interface with {
 					EnableExternalTcp = true,
-					ExtIp = endPoint.Address,
-					ExtTcpPort = endPoint.Port,
+					NodeIp = endPoint.Address,
+					NodeTcpPort = endPoint.Port,
 					DisableExternalTcpTls = true
 				}
 			};
@@ -149,8 +149,8 @@ namespace EventStore.Core {
 			this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					IntIp = endPoint.Address,
-					IntTcpPort = endPoint.Port,
+					ReplicationIp = endPoint.Address,
+					ReplicationPort = endPoint.Port,
 					DisableInternalTcpTls = true
 				}
 			};
@@ -165,8 +165,8 @@ namespace EventStore.Core {
 			this ClusterVNodeOptions options, IPEndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					ExtIp = endPoint.Address,
-					HttpPort = endPoint.Port
+					NodeIp = endPoint.Address,
+					NodePort = endPoint.Port
 				}
 			};
 
@@ -180,8 +180,8 @@ namespace EventStore.Core {
 			AdvertiseExternalHostAs(this ClusterVNodeOptions options, EndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					ExtHostAdvertiseAs = endPoint.GetHost(),
-					ExtTcpPortAdvertiseAs = endPoint.GetPort()
+					NodeHostAdvertiseAs = endPoint.GetHost(),
+					NodeTcpPortAdvertiseAs = endPoint.GetPort()
 				}
 			};
 
@@ -195,8 +195,8 @@ namespace EventStore.Core {
 			AdvertiseInternalHostAs(this ClusterVNodeOptions options, EndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					IntHostAdvertiseAs = endPoint.GetHost(),
-					IntTcpPortAdvertiseAs = endPoint.GetPort()
+					ReplicationHostAdvertiseAs = endPoint.GetHost(),
+					ReplicationTcpPortAdvertiseAs = endPoint.GetPort()
 				}
 			};
 
@@ -208,8 +208,8 @@ namespace EventStore.Core {
 		public static ClusterVNodeOptions AdvertiseHttpHostAs(this ClusterVNodeOptions options, EndPoint endPoint) =>
 			options with {
 				Interface = options.Interface with {
-					ExtHostAdvertiseAs = endPoint.GetHost(),
-					HttpPortAdvertiseAs = endPoint.GetPort()
+					NodeHostAdvertiseAs = endPoint.GetHost(),
+					NodePortAdvertiseAs = endPoint.GetPort()
 				}
 			};
 
