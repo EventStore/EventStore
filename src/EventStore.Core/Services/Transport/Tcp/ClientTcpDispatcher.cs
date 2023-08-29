@@ -304,7 +304,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 
 			return new ClientMessage.FilteredSubscribeToStream(Guid.NewGuid(), package.CorrelationId, envelope,
 				connection.ConnectionId, dto.EventStreamId, dto.ResolveLinkTos, user, eventFilter,
-				dto.CheckpointInterval);
+				dto.CheckpointInterval, checkpointIntervalCurrent: 0);
 		}
 
 		private ClientMessage.UnsubscribeFromStream UnwrapUnsubscribeFromStream(TcpPackage package, IEnvelope envelope,

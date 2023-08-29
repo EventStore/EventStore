@@ -258,7 +258,7 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 				_bus.Publish(new ClientMessage.FilteredSubscribeToStream(Guid.NewGuid(), _subscriptionId,
 					new ContinuationEnvelope(OnSubscriptionMessage, _semaphore, _cancellationToken), _subscriptionId,
-					string.Empty, _resolveLinks, _user, _eventFilter, (int)_checkpointInterval));
+					string.Empty, _resolveLinks, _user, _eventFilter, (int)_checkpointInterval, (int)_checkpointIntervalCounter));
 
 				Task.Factory.StartNew(PumpLiveMessages, _cancellationToken);
 

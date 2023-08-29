@@ -131,7 +131,7 @@ namespace EventStore.Core.Services {
 			var lastCommitPos = _readIndex.LastIndexedPosition;
 			SubscribeToStream(msg.CorrelationId, msg.Envelope, msg.ConnectionId, msg.EventStreamId,
 				msg.ResolveLinkTos, lastCommitPos, lastEventNumber, msg.EventFilter,
-				msg.CheckpointInterval);
+				msg.CheckpointInterval, msg.CheckpointIntervalCurrent);
 			var subscribedMessage =
 				new ClientMessage.SubscriptionConfirmation(msg.CorrelationId, lastCommitPos, lastEventNumber);
 			msg.Envelope.ReplyWith(subscribedMessage);
@@ -144,7 +144,7 @@ namespace EventStore.Core.Services {
 
 		private void SubscribeToStream(Guid correlationId, IEnvelope envelope, Guid connectionId,
 			string eventStreamId, bool resolveLinkTos, long lastIndexedPosition, long? lastEventNumber,
-			IEventFilter eventFilter, int? checkpointInterval = null) {
+			IEventFilter eventFilter, int? checkpointInterval = null, int checkpointIntervalCurrent = 0) {
 			List<Subscription> subscribers;
 			if (!_subscriptionTopics.TryGetValue(eventStreamId, out subscribers)) {
 				subscribers = new List<Subscription>();
@@ -160,7 +160,8 @@ namespace EventStore.Core.Services {
 				lastIndexedPosition,
 				lastEventNumber ?? -1,
 				eventFilter,
-				checkpointInterval);
+				checkpointInterval,
+				checkpointIntervalCurrent);
 			subscribers.Add(subscription);
 			_subscriptionsById[correlationId] = subscription;
 		}
@@ -377,7 +378,8 @@ namespace EventStore.Core.Services {
 				long lastIndexedPosition,
 				long lastEventNumber,
 				IEventFilter eventFilter,
-				int? checkpointInterval) {
+				int? checkpointInterval,
+				int checkpointIntervalCurrent) {
 				CorrelationId = correlationId;
 				Envelope = envelope;
 				ConnectionId = connectionId;
@@ -389,6 +391,7 @@ namespace EventStore.Core.Services {
 
 				EventFilter = eventFilter;
 				CheckpointInterval = checkpointInterval;
+				CheckpointIntervalCurrent = checkpointInterval == null ? 0 : checkpointIntervalCurrent;
 			}
 		}
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -106,17 +107,19 @@ namespace EventStore.Core.Tests.Services.Transport.Grpc.StreamsTests {
 			_batchAppender.Call(requests);
 
 		internal static IEnumerable<BatchAppendReq.Types.ProposedMessage> CreateEvents(int count) =>
-			Enumerable.Range(0, count)
-				.Select(_ => new BatchAppendReq.Types.ProposedMessage {
-					Data = ByteString.Empty,
-					Id = Uuid.NewUuid().ToDto(),
-					CustomMetadata = ByteString.Empty,
-					Metadata = {
-						{GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ApplicationOctetStream},
-						{GrpcMetadata.Type, "-"}
-					}
-				});
+			Enumerable.Range(0, count).Select(_ => CreateEvent());
 
+		internal static BatchAppendReq.Types.ProposedMessage CreateEvent(string type="-") =>
+			new BatchAppendReq.Types.ProposedMessage {
+				Data = ByteString.Empty,
+				Id = Uuid.NewUuid().ToDto(),
+				CustomMetadata = ByteString.Empty,
+				Metadata = {
+					{GrpcMetadata.ContentType, GrpcMetadata.ContentTypes.ApplicationOctetStream},
+					{GrpcMetadata.Type, type}
+				}
+			};
+		
 		private class BatchAppender : IAsyncDisposable {
 			private readonly Lazy<AsyncDuplexStreamingCall<BatchAppendReq, BatchAppendResp>> _batchAppendLazy;
 			private AsyncDuplexStreamingCall<BatchAppendReq, BatchAppendResp> BatchAppend => _batchAppendLazy.Value;
