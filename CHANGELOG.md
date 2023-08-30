@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
 - race conditions when caching/uncaching chunks [EventStore#3930](https://github.com/EventStore/EventStore/pull/3930)
+- Certain configuration parameters (mainly Interface options) have been renamed, which would make it more clear as to what each parameter/option does. [EventStore#3907](https://github.com/EventStore/EventStore/pull/3907)
 
 ## [23.6.0] 20203-07-28
 
