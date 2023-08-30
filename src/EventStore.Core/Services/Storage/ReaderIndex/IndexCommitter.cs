@@ -136,39 +136,68 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				var fullRebuild = startPosition == 0;
 				reader.Reposition(startPosition);
 
-				var commitedPrepares = new List<IPrepareLogRecord<TStreamId>>();
+				var committedPrepares = new List<IPrepareLogRecord<TStreamId>>();
+				const int maxPrepareBatchSize = 256;
+				void CommitBatchOfPrepares() {
+					if (committedPrepares.Count == 0)
+						return;
+
+					// we can always pass in false for isTfEof as it is not used during index rebuild.
+					// we also don't need to cache the last event number during rebuild as it is a new run.
+					Commit(committedPrepares, isTfEof: false, cacheLastEventNumber: false);
+					committedPrepares.Clear();
+				}
 
 				long processed = 0;
 				SeqReadResult result;
+
+				// assume that there is no partial implicit transaction at the end of the log as we always move the writer checkpoint
+				// after writing the whole transaction. there may still be a partial explicit transaction at the end of the log but
+				// this is fine as an explicit transaction is considered committed only when its corresponding commit log record is written.
 				while ((result = reader.TryReadNext()).Success && result.LogRecord.LogPosition < buildToPosition) {
 					switch (result.LogRecord.RecordType) {
 						case LogRecordType.Stream:
 						case LogRecordType.EventType:
-						case LogRecordType.Prepare: {
-								var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
-								if (prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {
-									if (prepare.Flags.HasAnyOf(PrepareFlags.SingleWrite)) {
-										Commit(commitedPrepares, false, false);
-										commitedPrepares.Clear();
-										Commit(new[] { prepare }, result.Eof, false);
-									} else {
-										if (prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete))
-											commitedPrepares.Add(prepare);
-										if (prepare.Flags.HasAnyOf(PrepareFlags.TransactionEnd)) {
-											Commit(commitedPrepares, result.Eof, false);
-											commitedPrepares.Clear();
-										}
-									}
-								}
+						case LogRecordType.Prepare:
+							var prepare = (IPrepareLogRecord<TStreamId>)result.LogRecord;
 
+							if (!prepare.Flags.HasAnyOf(PrepareFlags.IsCommitted)) {
+								// this prepare is part of an explicit transaction -
+								// it'll be committed to the index later when/if we find its commit log record.
 								break;
 							}
+
+							if (!prepare.Flags.HasAnyOf(PrepareFlags.Data | PrepareFlags.StreamDelete)) {
+								// this prepare is part of an implicit transaction but the transaction has no events -
+								// there is nothing to add to the index.
+								break;
+							}
+
+							bool commitBatch = false;
+
+							// check if we already have a full batch
+							commitBatch |= committedPrepares.Count >= maxPrepareBatchSize;
+
+							// check if this prepare is for a different stream - if it is, we cannot add it to the same batch
+							commitBatch |= committedPrepares.Count > 0 &&
+							               !StreamIdComparer.Equals(prepare.EventStreamId,
+								               committedPrepares[0].EventStreamId);
+
+							if (commitBatch)
+								CommitBatchOfPrepares();
+
+							// add the prepare to the current batch
+							committedPrepares.Add(prepare);
+
+							break;
 						case LogRecordType.Commit:
+							CommitBatchOfPrepares();
 							Commit((CommitLogRecord)result.LogRecord, result.Eof, false);
 							break;
 						case LogRecordType.System:
 						case LogRecordType.Partition:
 						case LogRecordType.PartitionType:
+							CommitBatchOfPrepares();
 							break;
 						default:
 							throw new Exception(string.Format("Unknown RecordType: {0}", result.LogRecord.RecordType));
@@ -192,6 +221,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 						}
 					}
 				}
+
+				// commit the last batch, if any, to the index
+				CommitBatchOfPrepares();
 
 				Log.Debug("ReadIndex rebuilding done: total processed {processed} records, time elapsed: {elapsed}.",
 					processed, DateTime.UtcNow - startTime);
