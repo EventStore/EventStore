@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -274,6 +275,7 @@ namespace EventStore.Core.Services.Storage {
 					return;
 
 				var logPosition = Writer.Position;
+				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 
 				var preExisting = _streamNameIndex.GetOrReserve(
 					recordFactory: _recordFactory,
@@ -283,8 +285,8 @@ namespace EventStore.Core.Services.Storage {
 					streamRecord: out var streamRecord);
 
 				if (streamRecord != null) {
-					var res = WritePrepareWithRetry(streamRecord);
-					logPosition = res.NewPos;
+					prepares.Add(streamRecord);
+					logPosition += streamRecord.SizeOnDisk;
 				}
 
 				var commitCheck = _indexWriter.CheckCommit(streamId, msg.ExpectedVersion,
@@ -294,15 +296,15 @@ namespace EventStore.Core.Services.Storage {
 					return;
 				}
 
-				var prepares = new List<IPrepareLogRecord<TStreamId>>();
 				if (msg.Events.Length > 0) {
-					OpenTransaction();
-
-					// get/write the eventtypes first because they go in a different stream
 					var eventTypes = new TStreamId[msg.Events.Length]; // todo: pool
 					for (int i = 0; i < msg.Events.Length; ++i) {
 						var evnt = msg.Events[i];
-						eventTypes[i] = GetOrWriteEventType(evnt.EventType, ref logPosition, inTransaction: true);
+						GetOrReserveEventType(evnt.EventType, logPosition, out eventTypes[i], out var eventTypeRecord);
+						if (eventTypeRecord != null) {
+							prepares.Add(eventTypeRecord);
+							logPosition += eventTypeRecord.SizeOnDisk;
+						}
 					}
 
 					var transactionPosition = logPosition;
@@ -318,31 +320,40 @@ namespace EventStore.Core.Services.Storage {
 
 						// when IsCommitted ExpectedVersion is always explicit
 						var expectedVersion = commitCheck.CurrentVersion + i;
-						var res = WritePrepareWithRetry(
-							LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, evnt.EventId,
-								transactionPosition, i, streamId,
-								expectedVersion, flags, eventTypes[i], evnt.Data, evnt.Metadata),
-							inTransaction: true);
-						logPosition = res.NewPos;
-						if (i == 0)
-							transactionPosition = res.WrittenPos;
-						// transaction position could be changed due to switching to new chunk
-						prepares.Add(res.Prepare);
-					}
+						var prepare = LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, evnt.EventId,
+							transactionPosition, i, streamId,
+							expectedVersion, flags, eventTypes[i], evnt.Data, evnt.Metadata);
+						prepares.Add(prepare);
 
-					CommitTransaction();
+						logPosition += prepare.SizeOnDisk;
+					}
 				} else {
-					WritePrepareWithRetry(
+					prepares.Add(
 						LogRecord.Prepare(_recordFactory, logPosition, msg.CorrelationId, Guid.NewGuid(), logPosition, -1,
 							streamId, commitCheck.CurrentVersion,
 							PrepareFlags.TransactionBegin | PrepareFlags.TransactionEnd | PrepareFlags.IsCommitted,
 							_emptyEventTypeId, Empty.ByteArray, Empty.ByteArray));
 				}
 
+				var preparesSpan = CollectionsMarshal.AsSpan(prepares);
+				if (!TryWritePreparesWithRetry(preparesSpan)) {
+					ActOnCommitCheckFailure(
+						envelope: msg.Envelope,
+						correlationId: msg.CorrelationId,
+						result: new CommitCheckResult<TStreamId>(
+							decision: CommitDecision.InvalidTransaction,
+							eventStreamId: streamId,
+							currentVersion: commitCheck.CurrentVersion,
+							startEventNumber: -1,
+							endEventNumber: -1,
+							isSoftDeleted: false));
+				}
+
 				bool softUndeleteMetastream = _systemStreams.IsMetaStream(streamId)
 											  && _indexWriter.IsSoftDeleted(_systemStreams.OriginalStreamOf(streamId));
 
-				_indexWriter.PreCommit(prepares);
+				// note: the stream & event type records are indexed separately and must not be pre-committed to the main index
+				_indexWriter.PreCommit(preparesSpan[^msg.Events.Length..]);
 
 				if (commitCheck.IsSoftDeleted)
 					SoftUndeleteStream(streamId, commitCheck.CurrentVersion + 1);
@@ -356,17 +367,22 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private TStreamId GetOrWriteEventType(string eventType, ref long logPosition, bool inTransaction = false) {
-			_eventTypeIndex.GetOrReserveEventType(
+		private bool GetOrReserveEventType(string eventType, long logPosition,
+			out TStreamId eventTypeId, out IPrepareLogRecord<TStreamId> eventTypeRecord) {
+			return _eventTypeIndex.GetOrReserveEventType(
 				recordFactory: _recordFactory,
 				eventType: eventType,
 				logPosition: logPosition,
-				eventTypeId: out var eventTypeId,
-				eventTypeRecord: out var eventTypeRecord);
+				eventTypeId: out eventTypeId,
+				eventTypeRecord: out eventTypeRecord);
+		}
+
+		private TStreamId GetOrWriteEventType(string eventType, ref long logPosition) {
+			GetOrReserveEventType(eventType, logPosition, out var eventTypeId, out var eventTypeRecord);
 
 			if (eventTypeRecord != null)
 			{
-				var result = WritePrepareWithRetry(eventTypeRecord, inTransaction);
+				var result = WritePrepareWithRetry(eventTypeRecord);
 				logPosition = result.NewPos;
 			}
 			
@@ -454,7 +470,8 @@ namespace EventStore.Core.Services.Storage {
 					const long expectedVersion = EventNumber.DeletedStream - 1;
 					var streamDeletedEventType = GetOrWriteEventType(SystemEventTypes.StreamDeleted, ref logPosition);
 					var record = LogRecord.DeleteTombstone(_recordFactory, logPosition, message.CorrelationId,
-						eventId, streamId, streamDeletedEventType, expectedVersion, PrepareFlags.IsCommitted);
+						eventId, streamId, streamDeletedEventType,
+						expectedVersion, PrepareFlags.IsCommitted);
 					var res = WritePrepareWithRetry(record);
 					_indexWriter.PreCommit(new[] { res.Prepare });
 				} else {
@@ -665,25 +682,65 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private bool WritePrepare(ILogRecord prepare, bool inTransaction, out long newPos) {
-			return inTransaction ? Writer.WriteToTransaction(prepare, out newPos) : Writer.Write(prepare, out newPos);
-		}
+		private bool TryWritePreparesWithRetry(Span<IPrepareLogRecord<TStreamId>> prepares) {
+			Ensure.Positive(prepares.Length, nameof(prepares.Length));
 
-		private void CompleteChunk(bool inTransaction, out long newPos) {
-			if (inTransaction)
-				Writer.CompleteChunkInTransaction();
-			else
+			if (prepares.Length == 1) {
+				WritePrepareWithRetry(prepares[0]);
+				return true;
+			}
+
+			var prepareSizes = 0;
+			foreach (var prepare in prepares)
+				prepareSizes += prepare.SizeOnDisk;
+
+			if (prepareSizes > Db.Config.ChunkSize) {
+				Log.Error("Transaction size ({prepareSizes:N0}) exceeds chunk size ({chunkSize:N0})",
+					prepareSizes, Db.Config.ChunkSize);
+				return false;
+			}
+
+			if (!Writer.CanWrite(prepareSizes)) {
 				Writer.CompleteChunk();
+				if (!Writer.CanWrite(prepareSizes)) {
+					throw new Exception($"Transaction of size {prepareSizes:N0} cannot be written even after completing a chunk");
+				}
 
-			newPos = Writer.Position;
+				long logPos = Writer.Position;
+				long transactionPos = default;
+
+				for (int i = 0; i < prepares.Length; i++) {
+					// the prepares may be from different streams due to the stream & event type records
+					// we thus adjust the transaction position to the correct value on each stream id change
+					if (i == 0 || !StreamIdComparer.Equals(prepares[i].EventStreamId, prepares[i - 1].EventStreamId))
+						transactionPos = logPos;
+
+					prepares[i] = prepares[i].CopyForRetry(logPos, transactionPos);
+					logPos += prepares[i].SizeOnDisk;
+				}
+			}
+
+			Writer.OpenTransaction();
+			var writerPos = Writer.Position;
+			foreach (var prepare in prepares)
+			{
+				Writer.WriteToTransaction(prepare, out var newWriterPos);
+				if (newWriterPos - writerPos != prepare.SizeOnDisk)
+					throw new Exception($"Expected writer position to be at: {writerPos + prepare.SizeOnDisk} but it was at {newWriterPos}");
+
+				writerPos = newWriterPos;
+			}
+			Writer.CommitTransaction();
+
+			return true;
 		}
 
-		private WriteResult WritePrepareWithRetry(IPrepareLogRecord<TStreamId> prepare, bool inTransaction = false) {
+		private WriteResult WritePrepareWithRetry(IPrepareLogRecord<TStreamId> prepare) {
 			long writtenPos = prepare.LogPosition;
 			long newPos;
 			var record = prepare;
 
-			if (!WritePrepare(prepare, inTransaction, out newPos)) {
+			if (!Writer.Write(prepare, out newPos)) {
 				var transactionPos = prepare.TransactionPosition == prepare.LogPosition
 					? newPos
 					: prepare.TransactionPosition;
@@ -693,7 +750,7 @@ namespace EventStore.Core.Services.Storage {
 					transactionPosition: transactionPos);
 
 				writtenPos = newPos;
-				if (!WritePrepare(record, inTransaction, out newPos)) {
+				if (!Writer.Write(record, out newPos)) {
 					throw new Exception(
 						string.Format("Second write try failed when first writing prepare at {0}, then at {1}.",
 							prepare.LogPosition,
@@ -703,7 +760,7 @@ namespace EventStore.Core.Services.Storage {
 
 			if (StreamIdComparer.Equals(prepare.EventType, _scavengePointEventTypeId) &&
 				StreamIdComparer.Equals(prepare.EventStreamId, _scavengePointsStreamId)) {
-				CompleteChunk(inTransaction, out newPos);
+				Writer.CompleteChunk();
 			}
 
 			return new WriteResult(writtenPos, newPos, record);
@@ -732,14 +789,6 @@ namespace EventStore.Core.Services.Storage {
 			}
 
 			return commit;
-		}
-
-		protected void OpenTransaction() {
-			Writer.OpenTransaction();
-		}
-
-		protected void CommitTransaction() {
-			Writer.CommitTransaction();
 		}
 
 		protected bool Flush(bool force = false) {

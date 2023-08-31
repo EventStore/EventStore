@@ -339,6 +339,64 @@ namespace EventStore.Core.Tests.ClientAPI {
 			}
 		}
 
+		[Test]
+		public async Task cannot_append_multiple_events_larger_than_chunk_size_at_once() {
+			const string stream = "cannot_append_multiple_events_larger_than_chunk_size_at_once";
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+
+				var largeData = new string(' ', 20000);
+				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(largeData, i.ToString()));
+				Assert.ThrowsAsync<InvalidTransactionException>(async () =>
+					await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events));
+			}
+		}
+
+		[Test]
+		public async Task can_append_to_stream_with_long_name() {
+			var stream = "can_append_to_stream_with_long_name" + new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				Assert.AreEqual(0, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent())).NextExpectedVersion);
+			}
+		}
+
+		[Test]
+		public async Task can_append_multiple_events_to_stream_with_long_name_at_once() {
+			var stream = "can_append_multiple_events_to_stream_with_long_name_at_once" + new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				var events = Enumerable.Range(0, 3).Select(i => TestEvent.NewTestEvent(i.ToString(), i.ToString()));
+				Assert.AreEqual(2, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, events)).NextExpectedVersion);
+			}
+		}
+
+		[Test]
+		public async Task can_append_event_with_long_event_type() {
+			const string stream = "can_append_event_with_long_event_type";
+			var eventType = new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				Assert.AreEqual(0, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(eventName: eventType))).NextExpectedVersion);
+			}
+		}
+
+		[Test]
+		public async Task can_append_multiple_events_with_long_event_type_at_once() {
+			const string stream = "can_append_multiple_events_with_long_event_type_at_once";
+			var eventType = new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				var events = Enumerable.Range(0, 3).Select(i =>
+					TestEvent.NewTestEvent(i.ToString(), i.ToString(), eventName: eventType));
+				Assert.AreEqual(2, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, events)).NextExpectedVersion);
+			}
+		}
+
 		[Test, Category("Network")]
 		public async Task returns_failure_status_when_conditionally_appending_with_version_mismatch() {
 			const string stream = "returns_failure_status_when_conditionally_appending_with_version_mismatch";
@@ -542,6 +600,64 @@ namespace EventStore.Core.Tests.ClientAPI {
 
 				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(i.ToString(), i.ToString()));
 				Assert.AreEqual(99, (await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events)).NextExpectedVersion);
+			}
+		}
+
+		[Test]
+		public async Task cannot_append_multiple_events_larger_than_chunk_size_at_once() {
+			const string stream = "cannot_append_multiple_events_larger_than_chunk_size_at_once";
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+
+				var largeData = new string(' ', 20000);
+				var events = Enumerable.Range(0, 100).Select(i => TestEvent.NewTestEvent(largeData, i.ToString()));
+				Assert.ThrowsAsync<InvalidTransactionException>(async () =>
+					await store.AppendToStreamAsync(stream, ExpectedVersion.NoStream, events));
+			}
+		}
+
+		[Test]
+		public async Task can_append_to_stream_with_long_name() {
+			var stream = "can_append_to_stream_with_long_name" + new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				Assert.AreEqual(0, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent())).NextExpectedVersion);
+			}
+		}
+
+		[Test]
+		public async Task can_append_multiple_events_to_stream_with_long_name_at_once() {
+			var stream = "can_append_multiple_events_to_stream_with_long_name_at_once" + new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				var events = Enumerable.Range(0, 3).Select(i => TestEvent.NewTestEvent(i.ToString(), i.ToString()));
+				Assert.AreEqual(2, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, events)).NextExpectedVersion);
+			}
+		}
+
+		[Test]
+		public async Task can_append_event_with_long_event_type() {
+			const string stream = "can_append_event_with_long_event_type";
+			var eventType = new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				Assert.AreEqual(0, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, TestEvent.NewTestEvent(eventName: eventType))).NextExpectedVersion);
+			}
+		}
+
+		[Test]
+		public async Task can_append_multiple_events_with_long_event_type_at_once() {
+			const string stream = "can_append_multiple_events_with_long_event_type_at_once";
+			var eventType = new string('A', 300);
+			using (var store = BuildConnection(_node)) {
+				await store.ConnectAsync();
+				var events = Enumerable.Range(0, 3).Select(i =>
+					TestEvent.NewTestEvent(i.ToString(), i.ToString(), eventName: eventType));
+				Assert.AreEqual(2, (await store.AppendToStreamAsync
+					(stream, ExpectedVersion.NoStream, events)).NextExpectedVersion);
 			}
 		}
 	}

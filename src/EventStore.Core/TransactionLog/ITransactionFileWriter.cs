@@ -4,9 +4,10 @@ using EventStore.Core.TransactionLog.LogRecords;
 namespace EventStore.Core.TransactionLog {
 	public interface ITransactionFileWriter : IDisposable {
 		void Open();
+		bool CanWrite(int numBytes);
 		bool Write(ILogRecord record, out long newPos);
 		void OpenTransaction();
-		bool WriteToTransaction(ILogRecord record, out long newPos);
+		void WriteToTransaction(ILogRecord record, out long newPos);
 		void CommitTransaction();
 		bool HasOpenTransaction();
 		void Flush();
