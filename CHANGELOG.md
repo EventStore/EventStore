@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Always read the active chunk from memory instead of from the FileStream. [EventStore#3890](https://github.com/EventStore/EventStore/pull/3890)
+- CI Unit test settings [EventStore#3943](https://github.com/EventStore/EventStore/pull/3943)
 
 - No longer log misleading error about 'Max internal streams limit' when running out of file handles [EventStore#3902](https://github.com/EventStore/EventStore/pull/3902)
 
@@ -16,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Restored OpenAPI specification for HTTP API. [EventStore#3886](https://github.com/EventStore/EventStore/pull/3886)
 - "CaughtUp" gRPC control message for subscriptions when a subscription becomes live [EventStore#3899](https://github.com/EventStore/EventStore/pull/3899)
+- Prevent implicit transactions from spanning multiple chunks [EventStore#3918](https://github.com/EventStore/EventStore/pull/3918)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
