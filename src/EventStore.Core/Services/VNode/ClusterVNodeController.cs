@@ -840,7 +840,8 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void DenyRequestBecauseNotLeader(Guid correlationId, IEnvelope envelope) {
-			var endpoints = GetLeaderInfoEndPoints();
+			LeaderInfoProvider leaderInfoProvider = new LeaderInfoProvider(_node.GossipAdvertiseInfo, _leader);
+			var endpoints = leaderInfoProvider.GetLeaderInfoEndPoints();
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
 					ClientMessage.NotHandled.Types.NotHandledReason.NotLeader,
@@ -848,38 +849,6 @@ namespace EventStore.Core.Services.VNode {
 						endpoints.IsTcpEndPointSecure,
 						endpoints.AdvertisedHttpEndPoint
 						)));
-		}
-
-		private (EndPoint AdvertisedTcpEndPoint, bool IsTcpEndPointSecure, EndPoint AdvertisedHttpEndPoint)
-			GetLeaderInfoEndPoints() {
-			var endpoints = _leader != null
-				? (TcpEndPoint: _leader.ExternalTcpEndPoint ?? _leader.ExternalSecureTcpEndPoint,
-					IsTcpEndPointSecure: _leader.ExternalSecureTcpEndPoint != null,
-					HttpEndPoint: _leader.HttpEndPoint,
-					AdvertiseHost: _leader.AdvertiseHostToClientAs,
-					AdvertiseHttpPort: _leader.AdvertiseHttpPortToClientAs,
-					AdvertiseTcpPort: _leader.AdvertiseTcpPortToClientAs)
-				: (TcpEndPoint: _nodeInfo.ExternalTcp ?? _nodeInfo.ExternalSecureTcp,
-					IsTcpEndPointSecure: _nodeInfo.ExternalSecureTcp != null,
-					HttpEndPoint: _nodeInfo.HttpEndPoint,
-					AdvertiseHost: "",
-					AdvertiseHttpPort: 0,
-					AdvertiseTcpPort: 0);
-
-			var advertisedTcpEndPoint = endpoints.TcpEndPoint == null
-				? null
-				: new DnsEndPoint(
-					string.IsNullOrEmpty(endpoints.AdvertiseHost)
-						? endpoints.TcpEndPoint.GetHost()
-						: endpoints.AdvertiseHost,
-					endpoints.AdvertiseTcpPort == 0 ? endpoints.TcpEndPoint.GetPort() : endpoints.AdvertiseTcpPort);
-
-			var advertisedHttpEndPoint = new DnsEndPoint(
-				string.IsNullOrEmpty(endpoints.AdvertiseHost)
-					? endpoints.HttpEndPoint.GetHost()
-					: endpoints.AdvertiseHost,
-				endpoints.AdvertiseHttpPort == 0 ? endpoints.HttpEndPoint.GetPort() : endpoints.AdvertiseHttpPort);
-			return (advertisedTcpEndPoint, endpoints.IsTcpEndPointSecure, advertisedHttpEndPoint);
 		}
 
 		private void HandleAsReadOnlyReplica(ClientMessage.WriteEvents message) {
@@ -956,7 +925,8 @@ namespace EventStore.Core.Services.VNode {
 		}
 
 		private void DenyRequestBecauseReadOnly(Guid correlationId, IEnvelope envelope) {
-			var endpoints = GetLeaderInfoEndPoints();
+			LeaderInfoProvider leaderInfoProvider = new LeaderInfoProvider(_node.GossipAdvertiseInfo, _leader);
+			var endpoints = leaderInfoProvider.GetLeaderInfoEndPoints();
 			envelope.ReplyWith(
 				new ClientMessage.NotHandled(correlationId,
 					ClientMessage.NotHandled.Types.NotHandledReason.IsReadOnly,
