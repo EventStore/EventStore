@@ -174,6 +174,9 @@ namespace EventStore.Core {
 			             $"Otherwise anonymous access wil be dis/allowed based on the value of the '{nameof(AllowAnonymousEndpointAccess)}' option")]
 			public bool OverrideAnonymousEndpointAccessForGossip { get; init; } = true;
 
+			[Description("Disable telemetry data collection."), EnvironmentOnly("You can only opt-out of telemetry using Environment Variables")]
+			public bool TelemetryOptout { get; init; } = false;
+
 			internal static ApplicationOptions FromConfiguration(IConfigurationRoot configurationRoot) => new() {
 				Config = configurationRoot.GetValue<string>(nameof(Config)),
 				Help = configurationRoot.GetValue<bool>(nameof(Help)),
@@ -192,7 +195,8 @@ namespace EventStore.Core {
 				Insecure = configurationRoot.GetValue<bool>(nameof(Insecure)),
 				AllowAnonymousEndpointAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousEndpointAccess)),
 				AllowAnonymousStreamAccess = configurationRoot.GetValue<bool>(key:nameof(AllowAnonymousStreamAccess)),
-				OverrideAnonymousEndpointAccessForGossip = configurationRoot.GetValue<bool>(key:nameof(OverrideAnonymousEndpointAccessForGossip))
+				OverrideAnonymousEndpointAccessForGossip = configurationRoot.GetValue<bool>(key:nameof(OverrideAnonymousEndpointAccessForGossip)),
+				TelemetryOptout = configurationRoot.GetValue<bool>(key:nameof(TelemetryOptout))
 			};
 		}
 

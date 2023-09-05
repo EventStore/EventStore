@@ -102,7 +102,7 @@ public static class ClusterVNodeOptionsValidator {
 
 		var environmentOnlyOptions = options.CheckForEnvironmentOnlyOptions();
 		if (environmentOnlyOptions != null) {
-			Log.Error($"PLAIN TEXT PASSWORD {Environment.NewLine}{environmentOnlyOptions}");
+			Log.Error($"Invalid Option {environmentOnlyOptions}");
 			return false;
 		}
 

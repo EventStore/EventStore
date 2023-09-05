@@ -54,6 +54,7 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Cluster;
 using EventStore.Core.Services.PeriodicLogs;
 using EventStore.Core.Synchronization;
+using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
@@ -1153,6 +1154,8 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<ClientMessage.ReadNextNPersistentMessages, Message>());
 			_mainBus.Subscribe(perSubscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
 			_mainBus.Subscribe(perSubscrQueue
+				.WidenFrom<TelemetryMessage.Request, Message>());
+			_mainBus.Subscribe(perSubscrQueue
 				.WidenFrom<MonitoringMessage.GetAllPersistentSubscriptionStats, Message>());
 			_mainBus.Subscribe(
 				perSubscrQueue.WidenFrom<MonitoringMessage.GetStreamPersistentSubscriptionStats, Message>());
@@ -1188,6 +1191,7 @@ namespace EventStore.Core {
 			perSubscrBus.Subscribe<MonitoringMessage.GetAllPersistentSubscriptionStats>(persistentSubscription);
 			perSubscrBus.Subscribe<MonitoringMessage.GetStreamPersistentSubscriptionStats>(persistentSubscription);
 			perSubscrBus.Subscribe<MonitoringMessage.GetPersistentSubscriptionStats>(persistentSubscription);
+			perSubscrBus.Subscribe<TelemetryMessage.Request>(persistentSubscription);
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionTimerTick>(persistentSubscription);
 			perSubscrBus.Subscribe<SubscriptionMessage.PersistentSubscriptionsRestart>(persistentSubscription);
 
@@ -1410,6 +1414,17 @@ namespace EventStore.Core {
 				GossipAdvertiseInfo.AdvertiseHttpPortToClientAs,
 				GossipAdvertiseInfo.AdvertiseTcpPortToClientAs,
 				options.Cluster.NodePriority, options.Cluster.ReadOnlyReplica, VersionInfo.Version);
+
+			// TELEMETRY
+			var telemetryService = new TelemetryService(
+				Db.Manager,
+				options,
+				_mainQueue,
+				new TelemetrySink(options.Application.TelemetryOptout),
+				Db.Config.WriterCheckpoint.AsReadOnly(),
+				memberInfo.InstanceId);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(telemetryService);
+			_mainBus.Subscribe<ElectionMessage.ElectionsDone>(telemetryService);
 
 			if (!isSingleNode) {
 				// LEADER REPLICATION
