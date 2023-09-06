@@ -1881,10 +1881,11 @@ namespace EventStore.Core.Messages {
 			public readonly bool ResolveLinkTos;
 			public readonly IEventFilter EventFilter;
 			public readonly int CheckpointInterval;
+			public readonly int CheckpointIntervalCurrent;
 
 			public FilteredSubscribeToStream(Guid internalCorrId, Guid correlationId, IEnvelope envelope,
 				Guid connectionId, string eventStreamId, bool resolveLinkTos, ClaimsPrincipal user,
-				IEventFilter eventFilter, int checkpointInterval, DateTime? expires = null)
+				IEventFilter eventFilter, int checkpointInterval, int checkpointIntervalCurrent, DateTime? expires = null)
 				: base(internalCorrId, correlationId, envelope, user, expires) {
 				Ensure.NotEmptyGuid(connectionId, "connectionId");
 				ConnectionId = connectionId;
@@ -1892,6 +1893,7 @@ namespace EventStore.Core.Messages {
 				ResolveLinkTos = resolveLinkTos;
 				EventFilter = eventFilter;
 				CheckpointInterval = checkpointInterval;
+				CheckpointIntervalCurrent = checkpointIntervalCurrent;
 			}
 		}
 
