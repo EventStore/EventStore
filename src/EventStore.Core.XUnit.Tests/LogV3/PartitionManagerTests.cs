@@ -164,6 +164,8 @@ namespace EventStore.Core.XUnit.Tests.LogV3 {
 
 		public void WriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
 
+		public bool TryWriteToTransaction(ILogRecord record, out long newPos) => throw new NotImplementedException();
+
 		public void CommitTransaction() => throw new NotImplementedException();
 
 		public bool HasOpenTransaction() => throw new NotImplementedException();

@@ -52,7 +52,7 @@ namespace EventStore.Core.Services.Transport.Tcp {
 		private readonly IEnvelope _tcpEnvelope;
 		private readonly IPublisher _publisher;
 		private readonly ITcpDispatcher _dispatcher;
-		private readonly IMessageFramer _framer;
+		private readonly IMessageFramer<ArraySegment<byte>> _framer;
 		private long _receiveProgressIndicator => _connection?.TotalBytesReceived ?? 0L;
 		private long _sendProgressIndicator => _connection?.TotalBytesSent ?? 0L;
 		private int _isClosed;

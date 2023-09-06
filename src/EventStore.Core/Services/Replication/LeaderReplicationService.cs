@@ -190,6 +190,7 @@ namespace EventStore.Core.Services.Replication {
 				} else {
 					var replicationCheckpoint = _db.Config.ReplicationCheckpoint.Read();
 					subscription.SendMessage(new ReplicationTrackingMessage.ReplicatedTo(replicationCheckpoint));
+					_flushSignal.Set();
 				}
 			}
 		}

@@ -9,7 +9,7 @@ namespace EventStore.Transport.Tcp.Framing {
 	/// incoming messages, using internal state and raising a callback once 
 	/// full message arrives.
 	/// </summary>
-	public class LengthPrefixMessageFramer : IMessageFramer {
+	public class LengthPrefixMessageFramer : IMessageFramer<ArraySegment<byte>> {
 		private static readonly ILogger Log = Serilog.Log.ForContext<LengthPrefixMessageFramer>();
 
 		public const int HeaderLength = sizeof(Int32);
@@ -29,6 +29,8 @@ namespace EventStore.Transport.Tcp.Framing {
 			Ensure.Positive(maxPackageSize, "maxPackageSize");
 			_maxPackageSize = maxPackageSize;
 		}
+
+		public bool HasData => _headerBytes > 0;
 
 		public void Reset() {
 			_messageBuffer = null;
@@ -99,9 +101,7 @@ namespace EventStore.Transport.Tcp.Framing {
 		}
 
 		public void RegisterMessageArrivedCallback(Action<ArraySegment<byte>> handler) {
-			if (handler == null)
-				throw new ArgumentNullException("handler");
-
+			Ensure.NotNull(handler, nameof(handler));
 			_receivedHandler = handler;
 		}
 	}

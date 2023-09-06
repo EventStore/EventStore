@@ -7,11 +7,12 @@ namespace EventStore.Transport.Tcp.Framing {
 	/// For decoding it uses an internal state, raising a registered 
 	/// callback, once full message arrives
 	/// </summary>
-	public interface IMessageFramer {
+	public interface IMessageFramer<TMessage> {
+		bool HasData { get; }
+		IEnumerable<ArraySegment<byte>> FrameData(ArraySegment<byte> data);
 		void UnFrameData(IEnumerable<ArraySegment<byte>> data);
 		void UnFrameData(ArraySegment<byte> data);
-		IEnumerable<ArraySegment<byte>> FrameData(ArraySegment<byte> data);
-
-		void RegisterMessageArrivedCallback(Action<ArraySegment<byte>> handler);
+		void RegisterMessageArrivedCallback(Action<TMessage> handler);
+		void Reset();
 	}
 }
