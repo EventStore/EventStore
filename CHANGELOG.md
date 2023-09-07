@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file.
 - race conditions when caching/uncaching chunks [EventStore#3930](https://github.com/EventStore/EventStore/pull/3930)
 - Certain configuration parameters (mainly Interface options) have been renamed, which would make it more clear as to what each parameter/option does. [EventStore#3907](https://github.com/EventStore/EventStore/pull/3907)
 - Server now always returns a valid address when replying with a NotHandled.NotLeader response [EventStore#3869](https://github.com/EventStore/EventStore/pull/3869)
+- Prevent torn transactions during replication [EventStore#3896](https://github.com/EventStore/EventStore/pull/3896)
+- Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#3941](https://github.com/EventStore/EventStore/pull/3941)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3943 [EventStore#3945](https://github.com/EventStore/EventStore/pull/3945)
