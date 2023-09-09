@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
 - Restored OpenAPI specification for HTTP API. [EventStore#3886](https://github.com/EventStore/EventStore/pull/3886)
 - "CaughtUp" gRPC control message for subscriptions when a subscription becomes live [EventStore#3899](https://github.com/EventStore/EventStore/pull/3899)
 - Prevent implicit transactions from spanning multiple chunks [EventStore#3918](https://github.com/EventStore/EventStore/pull/3918)
+- Documentation for FIPS 140-2 compliance [EventStore#3948](https://github.com/EventStore/EventStore/pull/3948)
+- Documentation for redaction [EventStore#3949](https://github.com/EventStore/EventStore/pull/3949)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
@@ -31,6 +33,8 @@ All notable changes to this project will be documented in this file.
 - //github.com/EventStore/EventStore/pull/3943 [EventStore#3945](https://github.com/EventStore/EventStore/pull/3945)
 - //github.com/EventStore/EventStore/pull/3943 [EventStore#3946](https://github.com/EventStore/EventStore/pull/3946)
 - //github.com/EventStore/EventStore/pull/3943 [EventStore#3944](https://github.com/EventStore/EventStore/pull/3944)
+- //github.com/EventStore/EventStore/pull/3949 [EventStore#3951](https://github.com/EventStore/EventStore/pull/3951)
+- //github.com/EventStore/EventStore/pull/3948 [EventStore#3952](https://github.com/EventStore/EventStore/pull/3952)
 
 ## [23.6.0] 20203-07-28
 
