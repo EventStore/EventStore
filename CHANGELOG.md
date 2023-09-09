@@ -29,14 +29,20 @@ All notable changes to this project will be documented in this file.
 - Prevent torn transactions during replication [EventStore#3896](https://github.com/EventStore/EventStore/pull/3896)
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#3941](https://github.com/EventStore/EventStore/pull/3941)
 
-### Cherry picked from https
-- //github.com/EventStore/EventStore/pull/3943 [EventStore#3945](https://github.com/EventStore/EventStore/pull/3945)
-- //github.com/EventStore/EventStore/pull/3943 [EventStore#3946](https://github.com/EventStore/EventStore/pull/3946)
-- //github.com/EventStore/EventStore/pull/3943 [EventStore#3944](https://github.com/EventStore/EventStore/pull/3944)
-- //github.com/EventStore/EventStore/pull/3949 [EventStore#3951](https://github.com/EventStore/EventStore/pull/3951)
-- //github.com/EventStore/EventStore/pull/3948 [EventStore#3952](https://github.com/EventStore/EventStore/pull/3952)
+## [22.10.3] 2023-08-31
 
-## [23.6.0] 20203-07-28
+### Fixed
+
+- Calling the admin/reloadconfig endpoint only reloaded/updated the LogLevel and the certificates were not updated on reloading the config.  [EventStore#3898](https://github.com/EventStore/EventStore/pull/3898)
+- Support bloom filters for 400gb+ index files. [EventStore#3881](https://github.com/EventStore/EventStore/pull/3881)
+
+### Changed
+
+- CI Unit test settings [EventStore#3943](https://github.com/EventStore/EventStore/pull/3943)
+- Bump gRPC packages for [CVE-2023-32731](https://nvd.nist.gov/vuln/detail/CVE-2023-32731) [EventStore#3895](https://github.com/EventStore/EventStore/pull/3895)
+- Bump `System.Security.Cryptography.Pkcs` from 7.0.1 to 7.0.2. [EventStore#3874](https://github.com/EventStore/EventStore/pull/3874)
+
+## [23.6.0] 2023-07-28
 
 ### Breaking Changes
 
