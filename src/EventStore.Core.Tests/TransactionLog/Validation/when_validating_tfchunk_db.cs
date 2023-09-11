@@ -130,33 +130,11 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 		}
 
 		[Test]
-		public void one_sequential_extraneous_file_does_not_throw_corrupt_database_exception() {
+		public void when_in_first_extraneous_files_throws_corrupt_database_exception() {
 			var config = TFChunkHelper.CreateDbConfig(PathName, 9000);
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
-				Assert.DoesNotThrow(() => db.Open(verifyHash: false));
-			}
-		}
-
-		[Test]
-		public void one_sequential_extraneous_file_with_non_zero_version_throws_corrupt_database_exception() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 9000);
-			using (var db = new TFChunkDb(config)) {
-				DbUtil.CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-				DbUtil.CreateSingleChunk(config, 1, GetFilePathFor("chunk-000001.000001"));
-				Assert.That(() => db.Open(verifyHash: false),
-					Throws.Exception.InstanceOf<CorruptDatabaseException>()
-						.With.InnerException.InstanceOf<ExtraneousFileFoundException>());
-			}
-		}
-
-		[Test]
-		public void one_non_sequential_extraneous_file_throws_corrupt_database_exception() {
-			var config = TFChunkHelper.CreateDbConfig(PathName, 9000);
-			using (var db = new TFChunkDb(config)) {
-				DbUtil.CreateOngoingChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
-				DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
 				Assert.That(() => db.Open(verifyHash: false),
 					Throws.Exception.InstanceOf<CorruptDatabaseException>()
 						.With.InnerException.InstanceOf<ExtraneousFileFoundException>());
@@ -169,12 +147,11 @@ namespace EventStore.Core.Tests.TransactionLog.Validation {
 			using (var db = new TFChunkDb(config)) {
 				DbUtil.CreateSingleChunk(config, 0, GetFilePathFor("chunk-000000.000000"));
 				DbUtil.CreateOngoingChunk(config, 1, GetFilePathFor("chunk-000001.000000"));
-				DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000")); // extraneous file, but valid case
-				DbUtil.CreateSingleChunk(config, 3, GetFilePathFor("chunk-000003.000000")); // extraneous file
+				DbUtil.CreateSingleChunk(config, 2, GetFilePathFor("chunk-000002.000000"));
 				Assert.That(() => db.Open(verifyHash: false),
 					Throws.Exception.InstanceOf<CorruptDatabaseException>()
 						.With.InnerException.InstanceOf<ExtraneousFileFoundException>()
-						.With.InnerException.Message.Contains("chunk-000003.000000"));
+						.With.InnerException.Message.Contains("chunk-000002.000000"));
 			}
 		}
 
