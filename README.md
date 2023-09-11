@@ -1,6 +1,7 @@
 <a href="https://www.eventstore.com/"><img src="https://lh3.googleusercontent.com/G6tLxSbJvFodjR_FHrsXs5WOIls0VfuXkWgv60vbRB0WSuJoe-m1cADCsroUHQgJUQMcwp_HNKCLfiTWuCfVwlT607G8niENuGfq5DsnEmWUx_4Szx3GAWI6X1GKRA5iwv_loW0T75cWCAZsRZm3DL4" height=50% width=50% alt="EventStoreDB" /></a>
 
 EventStoreDB is an operational database built to store events, powered by the state-transition data model, for developers building true data-driven applications for next-generation use cases.
+
 - [What is EventStoreDB ](#what-is-eventstoredb)
 - [What is EventStore Cloud ](#what-is-event-store-cloud)
 - [Licensing](#licensing)
@@ -50,10 +51,11 @@ See the online documentation: [Getting started with Event Store Cloud](https://d
 
 ## Client libraries
 
-This getting started guide shows you how to get started with EventStoreDB by setting up an instance or cluster and configuring it.
+This guide shows you how to get started with EventStoreDB by setting up an instance or cluster and configuring it.
 EventStoreDB supports two protocols: gRPC and TCP(legacy).
 
-EventStoreDB supported clients
+EventStoreDB supported gRPC clients
+
 - Go: [EventStore/EventStore-Client-Go](https://github.com/EventStore/EventStore-Client-Go)
 - .NET: [EventStore/EventStore-Client-Dotnet](https://github.com/EventStore/EventStore-Client-Dotnet)
 - Java: [(EventStore/EventStoreDB-Client-Java](https://github.com/EventStore/EventStoreDB-Client-Java)
@@ -61,21 +63,21 @@ EventStoreDB supported clients
 - Rust: [EventStore/EventStoreDB-Client-Rust](https://github.com/EventStore/EventStoreDB-Client-Rust)
 - Read more in the [gRPC clients documentation](https://developers.eventstore.com/clients/grpc)
 
-Legacy TCP Clients
-- .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
-- JVM: [EventStore.JVM](https://github.com/EventStore/EventStore.JVM)
-- Haskell: [EventStoreDB-Client-Haskell](https://github.com/EventStore/EventStoreDB-Client-Haskell)
+Community supported gRPC clients
 
-Community developed clients
 - Elixir: [NFIBrokerage/spear](https://github.com/NFIBrokerage/spear)
 - Python: (coming soon)
 - Ruby: [yousty/event_store_client](https://github.com/yousty/event_store_client)
 
 Read more in the [documentation](https://developers.eventstore.com/server/v22.10/#protocols-clients-and-sdks).
 
+Legacy TCP Clients
+
+- .Net: [EventStoreDB-Client-Dotnet-Legacy](https://github.com/EventStore/EventStoreDB-Client-Dotnet-Legacy)
+
 ## Deployment
 
-- Event Store Cloud - [steps to get started in cloud](https://developers.eventstore.com/cloud/).
+- Event Store Cloud - [steps to get started in Cloud](https://developers.eventstore.com/cloud/).
 - Self-managed - [steps to host EventStoreDB yourself](https://developers.eventstore.com/server/v22.10/#getting-started).
 
 ## Communities
@@ -100,6 +102,7 @@ If you want to switch to a particular release, you can check out the release bra
 EventStoreDB is written in a mixture of C# and JavaScript. It can run on Windows, Linux and macOS (using Docker) using the .NET Core runtime.
 
 **Prerequisites**
+
 - [.NET Core SDK 6.0](https://dotnet.microsoft.com/download/dotnet/6.0)
 
 Once you've installed the prerequisites for your system, you can launch a `Release` build of EventStore as follows:
@@ -150,16 +153,22 @@ $env:DOCKER_BUILDKIT=0; docker build --tag myeventstore . `
 --build-arg RUNTIME=linux-x64
 ```
 
-Currently we support following configurations:
+Currently, we support the following configurations:
+
 1. Bullseye slim:
-  - `CONTAINER_RUNTIME=bullseye-slim`
-  - `RUNTIME=linux-x64`
+
+- `CONTAINER_RUNTIME=bullseye-slim`
+- `RUNTIME=linux-x64`
+
 2. Focal:
-  - `CONTAINER_RUNTIME=focal`
-  - `RUNTIME=linux-x64`
+
+- `CONTAINER_RUNTIME=focal`
+- `RUNTIME=linux-x64`
+
 3. Alpine:
-  - `CONTAINER_RUNTIME=alpine`
-  - `RUNTIME=alpine-x64`
+
+- `CONTAINER_RUNTIME=alpine`
+- `RUNTIME=alpine-x64`
 
 You can verify the built image by running:
 
