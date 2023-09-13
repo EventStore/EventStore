@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - Server now always returns a valid address when replying with a NotHandled.NotLeader response [EventStore#3869](https://github.com/EventStore/EventStore/pull/3869)
 - Prevent torn transactions during replication [EventStore#3896](https://github.com/EventStore/EventStore/pull/3896)
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#3941](https://github.com/EventStore/EventStore/pull/3941)
+- Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#3950](https://github.com/EventStore/EventStore/pull/3950)
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3943 [EventStore#3945](https://github.com/EventStore/EventStore/pull/3945)
