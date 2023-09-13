@@ -61,7 +61,7 @@ Read more in the [gRPC clients documentation](@clients/grpc/README.md).
 EventStoreDB offers a low-level protocol in the form of an asynchronous TCP protocol that exchanges protobuf objects. At present this protocol has adapters for .NET and the JVM.
 
 ::: warning Deprecation Note
-TCP protocol will be available only through version 23.10. Please plan to refactor your applications that use the TCP protocol to use gRPC instead.
+TCP protocol will be available only through version 23.10. Please plan to migrate your applications that use the TCP client SDK to use the gRPC SDK instead.
 :::
 
 Find out more about configuring the TCP protocol on the [TCP configuration](networking.md#tcp-configuration) page.
@@ -73,10 +73,10 @@ Find out more about configuring the TCP protocol on the [TCP configuration](netw
 #### Community supported clients
 
 - [Node.js (x-cubed/event-store-client)](https://github.com/x-cubed/event-store-client)
-- [Node.js (nicdex/node-eventstore-client)](https://gitork.org/nicdex/node-eventstore-client)
+- [Node.js (nicdex/node-eventstore-client)](https://github.com/nicdex/node-eventstore-client)
 - [Elixir (exponentially/extreme)](https://github.com/exponentially/extreme)
 - [Java 8 (msemys/esjc)](https://github.com/msemys/esjc)
-- [Maven plugin (fuinorg/event-store-maven-plugin)](https://github.com/fuinorg/event-store-maven-plugin)
+- [Maven plugin (fuinorg/event-store-maven-plugin)](https://github.com/fuinorg/event-store-maven-plugin) (archived)
 - [Go (jdextraze/go-gesclient)](https://github.com/jdextraze/go-gesclient)
 - [PHP (prooph/event-store-client)](https://github.com/prooph/event-store-client/)
 - [JVM Client (EventStore/EventStore.JVM)](https://github.com/EventStore/EventStore.JVM)
@@ -89,7 +89,7 @@ EventStoreDB also offers an HTTP-based interface, based specifically on the [Ato
 Find out more about configuring the HTTP protocol on the [HTTP configuration](networking.md#http-configuration) page.
 
 ::: warning Deprecation Note
-The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will still be available.
+The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will remain available.
 :::
 
 As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](@clients/httpapi/README.md) for it.
