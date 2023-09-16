@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Prevent torn transactions during replication [EventStore#3896](https://github.com/EventStore/EventStore/pull/3896)
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#3941](https://github.com/EventStore/EventStore/pull/3941)
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#3950](https://github.com/EventStore/EventStore/pull/3950)
+- Revert the change allowing an extra chunk at startup [EventStore#3954](https://github.com/EventStore/EventStore/pull/3954)
 
 ## [22.10.3] 2023-08-31
 
