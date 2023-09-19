@@ -75,6 +75,34 @@ namespace EventStore.Common.Utils {
 			return cn != null && MatchesName(cn, CertificateNameType.DnsName, name);
 		}
 
+		public static bool ClientCertificateMatchesName(this X509Certificate clientCertificate, string name) {
+			// This method, as a whole, is not based on any standard and is specific to EventStoreDB.
+			// It matches a client certificate's CN against a name as follows:
+			// i)  do an exact (case-insensitive) match if the CN is a wildcard name, otherwise
+			// ii) do an RFC 6125 compliant match (with the implementation limitations mentioned above)
+			//
+			// Basic rules:
+			// CN = *.test.com MUST match with name = *.test.com
+			// CN = *.test.com MUST NOT match with name = abc.test.com
+			// CN = abc.test.com MUST match with name = *.test.com
+			// CN = abc.test.com MUST match with name = abc.test.com
+
+			if (clientCertificate is not X509Certificate2 clientCertificate2) {
+				using var c2 = new X509Certificate2(clientCertificate);
+				clientCertificate2 = c2;
+			}
+
+			var cn = clientCertificate2.GetCommonName();
+
+			// if the CN is a wildcard name, do an exact (case-insensitive) match
+			// as a standard RFC 6125 compliant match of two wildcard names will fail
+			if (cn.IsWildcardCertificateName())
+				return cn.EqualsOrdinalIgnoreCase(name);
+
+			// otherwise, do a standard RFC 6125 compliant name match
+			return MatchesName(name, CertificateNameType.DnsName, cn);
+		}
+
 		public static string GetCommonName(this X509Certificate2 certificate) => certificate.GetNameInfo(X509NameType.SimpleName, false);
 
 		// FIPS compliant PKCS #12 bundle creation
@@ -109,6 +137,15 @@ namespace EventStore.Common.Utils {
 		// since it has been deprecated by most major browsers)
 		private static bool IsValidCertificateNameFirstLabel(string label) =>
 			label == "*" || IsValidDnsNameLabel(label);
+
+		private static bool IsWildcardCertificateName(this string certName) {
+			if (!certName.StartsWith("*.", StringComparison.Ordinal))
+				return false;
+
+			// the certificate name starts with a wildcard DNS label. to verify if it's a valid wildcard name,
+			// we replace the wildcard by the letter 'a', then match it against the original certificate name
+			return MatchesName(certName, CertificateNameType.DnsName, 'a' + certName[1..]);
+		}
 
 		private static bool MatchesName(string certName, string certNameType, string name) {
 			const string Wildcard = "*";
@@ -149,7 +186,7 @@ namespace EventStore.Common.Utils {
 				return false;
 
 			// if first label is not a wildcard, check for an exact match
-			if (certNameLabels.First() != Wildcard.ToString())
+			if (certNameLabels.First() != Wildcard)
 				return certNameLabels.EqualsOrdinalIgnoreCase(dnsNameLabels);
 
 			// first label is wildcard, a wildcard FQDN should have at least 3 labels

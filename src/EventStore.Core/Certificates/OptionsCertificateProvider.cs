@@ -12,11 +12,10 @@ namespace EventStore.Core.Certificates {
 			}
 
 			var (certificate, intermediates) = options.LoadNodeCertificate();
-
-			var certificateCN = certificate.GetCommonName();
 			var reservedNodeCN = options.Certificate.CertificateReservedNodeCommonName;
 
-			if (certificateCN != reservedNodeCN) {
+			if (!certificate.ClientCertificateMatchesName(reservedNodeCN)) {
+				var certificateCN = certificate.GetCommonName();
 				Log.Error(
 					"Certificate CN: {certificateCN} does not match with the CertificateReservedNodeCommonName configuration setting: {reservedNodeCN}",
 					certificateCN, reservedNodeCN);
