@@ -72,6 +72,8 @@ Find out more about configuring the TCP protocol on the [TCP configuration](netw
 
 #### Community supported clients
 
+Community supported clients are developed and maintained by community members, not Event Store staff. Feel free to open issues and PRs, when possible, in the client's GitHub repository. **The following clients which use TCP protocol, will not be compatible with Event Store server versions after 23.10.**
+
 - [Node.js (x-cubed/event-store-client)](https://github.com/x-cubed/event-store-client)
 - [Node.js (nicdex/node-eventstore-client)](https://github.com/nicdex/node-eventstore-client)
 - [Elixir (exponentially/extreme)](https://github.com/exponentially/extreme)
