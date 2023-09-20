@@ -472,7 +472,9 @@ You can also follow the [Configurator](https://configurator.eventstore.com/) to 
 
 ### Step 2: Replace the certificates
 
-The next step is to replace the newly generated certificates in a subfolder and update the symlink to point it to the new certificates.
+The next step is to replace the outdated certificates with the newly generated certificates.
+
+ If you are using symlinks then you can update the symlink to point it to the new certificates.
 
 ### Linux OS
 
