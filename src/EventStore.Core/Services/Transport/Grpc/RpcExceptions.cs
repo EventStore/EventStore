@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using EventStore.Common.Utils;
+using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using Grpc.Core;
@@ -232,5 +233,8 @@ namespace EventStore.Core.Services.Transport.Grpc {
 
 		public static RpcException InvalidCombination<T>(T combination) where T : ITuple
 			=> new(new Status(StatusCode.InvalidArgument, $"The combination of {combination} is invalid."));
+		
+		public static RpcException InvalidPositionException() =>
+			new(new Status(StatusCode.InvalidArgument, $"Trying to read from an invalid position."));
 	}
 }

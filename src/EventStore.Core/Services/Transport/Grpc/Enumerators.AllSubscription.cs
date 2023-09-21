@@ -10,6 +10,7 @@ using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Storage.ReaderIndex;
+using EventStore.Core.TransactionLog.Chunks.TFChunk;
 using Serilog;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -131,10 +132,10 @@ namespace EventStore.Core.Services.Transport.Grpc {
 							_readIndex.ReadAllEventsForward(new TFPos(commitPosition, preparePosition), 1);
 						CatchUp(Position.FromInt64(indexResult.NextPos.CommitPosition,
 							indexResult.NextPos.PreparePosition));
-					} catch (Exception ex) {
+					} catch (InvalidReadException ex) {
+						Fail(RpcExceptions.InvalidPositionException());
 						Log.Error(ex, "Error starting catch-up subscription {subscriptionId} to $all@{position}",
 							_subscriptionId, startPosition);
-						throw;
 					}
 				}
 			}
