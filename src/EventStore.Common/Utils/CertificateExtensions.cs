@@ -111,7 +111,7 @@ namespace EventStore.Common.Utils {
 			label == "*" || IsValidDnsNameLabel(label);
 
 		private static bool MatchesName(string certName, string certNameType, string name) {
-			const char Wildcard = '*';
+			const string Wildcard = "*";
 			const char Delimiter = '.';
 
 			if (string.IsNullOrEmpty(certName) ||
@@ -152,7 +152,11 @@ namespace EventStore.Common.Utils {
 			if (certNameLabels.First() != Wildcard.ToString())
 				return certNameLabels.EqualsOrdinalIgnoreCase(dnsNameLabels);
 
-			// first label is wildcard, compare the other labels
+			// first label is wildcard, a wildcard FQDN should have at least 3 labels
+			if (certNameLabels.Length <= 2)
+				return false;
+
+			// compare the other labels of the wildcard FQDN
 			return certNameLabels.Skip(1).EqualsOrdinalIgnoreCase(dnsNameLabels.Skip(1));
 		}
 	}
