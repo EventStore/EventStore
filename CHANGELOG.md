@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Prevent implicit transactions from spanning multiple chunks [EventStore#3918](https://github.com/EventStore/EventStore/pull/3918)
 - Documentation for FIPS 140-2 compliance [EventStore#3948](https://github.com/EventStore/EventStore/pull/3948)
 - Documentation for redaction [EventStore#3949](https://github.com/EventStore/EventStore/pull/3949)
+- Add steps to update certificates [EventStore#3940](https://github.com/EventStore/EventStore/pull/3940)
 
 ### Fixed
 - PersistentConfig1 system event does not begin with $ [EventStore#3932](https://github.com/EventStore/EventStore/pull/3932)
