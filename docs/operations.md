@@ -1,9 +1,10 @@
 # Maintenance
 
-EventStoreDB requires regular maintenance with two operational concerns:
+EventStoreDB requires regular maintenance with three operational concerns:
 
 - [Scavenging](#scavenging-events) for freeing up space after deleting events
 - [Backup and restore](#backup-and-restore) for disaster recovery
+- [Certificate update](#rolling-certificate-update) to renew certificates
 
 You might also be interested learning about EventStoreDB [diagnostics](diagnostics.md)
 and [indexes](./indexes.md), which might require some Ops attention.
@@ -456,3 +457,120 @@ cluster is available in case of a disaster on the primary cluster.
 If you are using this strategy, we recommend you only support manual fail over from primary to secondary as
 automated strategies risk causing a [split brain](http://en.wikipedia.org/wiki/Split-brain_%28computing%29)
 problem.
+
+## Certificate update upon expiry
+
+In EventStoreDB, the certificates require updating when they have expired or are going to expire soon. The user has to follow the below steps to perform rolling certificate update:- 
+
+### Step 1: Generate new certificates
+
+The new certificates can be created in the same manner as you generated the existing certificates.
+You can also use the EventStore [es-gencert-cli](https://github.com/EventStore/es-gencert-cli) tool to generate the CA and node certificates. 
+You can also follow the [Configurator](https://configurator.eventstore.com/) to create commands for generating the certificates based on your cluster's configuration.
+
+### Step 2: Replace the certificates
+
+The next step is to replace the outdated certificates with the newly generated certificates.
+
+ If you are using symlinks then you can update the symlink to point it to the new certificates.
+
+### Linux OS
+
+We normally have a symlink that points to the existing certificates like:-
+
+ca -> /etc/eventstore/certs/ca
+node.crt -> /etc/eventstore/certs/node.crt
+node.key -> /etc/eventstore/certs/node.key
+
+Update the symlink so that the link points to the new certificates. For example:-
+
+ca -> /etc/eventstore/newCerts/ca
+node.crt -> /etc/eventstore/newCerts/node.crt
+node.key -> /etc/eventstore/newCerts/node.key
+
+In the above example we have the links in a folder at path /home/ubuntu/links
+
+
+### Step 3: Reload the configuration
+
+You can reload the certificate configuration without restarting the node by issuing the following curl command.
+
+```bash:no-line-numbers
+curl -k -X POST --basic https://{nodeAddress}:{HttpPort}/admin/reloadconfig -u {username}:{Password}
+```
+
+For Example:-
+```bash:no-line-numbers
+curl -k -X POST --basic https://127.0.0.1:2113/admin/reloadconfig -u admin:changeit
+```
+
+The Linux users can also send the SIGHUP signal to the EventStoreDB to reload the certificates. 
+
+For Example:-
+
+```
+kill -s SIGHUP 38956
+
+```
+
+Here "38956" is the PID of EventStoreDB on our local machine. The users can type the following command in the linux terminal to get the process id of EventStoreDB. 
+
+``` 
+pidof eventstored
+
+```
+
+Once the configuration has been reloaded successfully, the server will log the entries like:-
+
+```
+
+[108277,30,14:46:07.453,INF] Reloading the node's configuration since a request has been received on /admin/reloadconfig.
+[108277,29,14:46:07.457,INF] Loading the node's certificate(s) from file: "/home/ubuntu/links/node.crt"
+[108277,29,14:46:07.488,INF] Loading the node's certificate. Subject: "CN=eventstoredb-node", Previous thumbprint: "05526714107700C519E24794E8964A3B30EF9BD0", New thumbprint: "BE6D5CD681D7B9281D60A5969B5A7E31AF775E9F"
+[108277,29,14:46:07.488,INF] Loading intermediate certificate. Subject: "CN=EventStoreDB Intermediate CA 78ae8d5a159b247568039cf64f4b04ad, O=Event Store Ltd, C=UK", Thumbprint: "ED4AA0C5ED4AD120DDEE2FA8B3B0CCC5A30B81E3"
+[108277,29,14:46:07.489,INF] Loading trusted root certificates.
+[108277,29,14:46:07.490,INF] Loading trusted root certificate file: "/home/ubuntu/links/ca/ca.crt"
+[108277,29,14:46:07.491,INF] Loading trusted root certificate. Subject: "CN=EventStoreDB CA c39fece76b4efcb65846145c942c037c, O=Event Store Ltd, C=UK", Thumbprint: "5F020804E8D7C419F9FC69ED3B4BC72DD79A5996"
+[108277,29,14:46:07.493,INF] Certificate chain verification successful.
+[108277,29,14:46:07.493,INF] All certificates successfully loaded.
+[108277,29,14:46:07.494,INF] The node's configuration was successfully reloaded
+
+```
+
+::: tip
+If there are any errors during loading certificates, the new configuration changes will not take effect.
+:::
+
+For example:- The server logs the following error when the node certificate is not available at the path specified in the EventStore configuration file.
+
+```
+
+[108277,30,14:49:47.481,INF] Reloading the node's configuration since a request has been received on /admin/reloadconfig.
+[108277,29,14:49:47.488,INF] Loading the node's certificate(s) from file: "/home/ubuntu/links/node.crt"
+[108277,29,14:49:47.489,ERR] An error has occurred while reloading the configuration
+System.IO.FileNotFoundException: Could not find file '/home/ubuntu/links/node.key'.
+
+```
+
+### Step 4: Update the other nodes
+
+Now update the certificates on the other nodes
+
+### Step 5: Monitor the cluster
+
+The connection between nodes in EventStoreDB reset every 10 minutes so the new configuration won’t take immediate effect. The user has this timeframe to update the certificates on all the nodes. It is advisable to monitor the cluster after this timeframe to make sure everything is working fine.
+The EventStoreDB will log the certificate errors if the user is not able to reload the certificates in this timeframe on all the nodes.
+
+```
+
+[108277,29,14:59:47.489,ERR] eventstoredb-node : A certificate chain could not be built to a trusted root authority.
+[108277,29,14:59:47.489,ERR] Client certificate validation error: "The certificate (CN=eventstoredb-node) provided by the client failed validation with the following error(s): RemoteCertificateChainErrors (PartialChain)"
+
+```
+
+The above error indicates that there is some issue with the certificate because the reload process is not yet completed on all the nodes. The error can be safely ignored during the duration of the reloading certificate process, but the affected nodes will not be able to communicate with each other until the certificates have been updated on all the nodes.
+
+
+::: warning
+It can take up to 10 minutes for certificate changes to take effect. Certificates should be updated within this window to avoid connection issues
+:::
