@@ -4,14 +4,14 @@ Welcome to the EventStoreDB 21.10 documentation.
 
 EventStoreDB is a database designed for [Event Sourcing](https://eventstore.com/blog/what-is-event-sourcing/). This documentation introduces key concepts of EventStoreDB and explains its installation, configuration and operational concerns.
 
-EventStoreDB is available as both a Open-Source and an Enterprise versions:
+EventStoreDB is available in both an Open-Source and an Enterprise version:
 
-- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore) and free to use edition of EventStoreDB.
-- EventStoreDB Enterprise is available for customers with EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Enterprise adds enterprise-focused features such as LDAP integration, correlation event sequence visualisation and management CLI.
+- EventStoreDB OSS is the [open-source](https://github.com/EventStore/EventStore) and free-to-use edition of EventStoreDB.
+- EventStoreDB Enterprise is available for customers with an EventStoreDB [paid support subscription](https://eventstore.com/support/). EventStoreDB Enterprise adds enterprise-focused features such as LDAP integration, correlation event sequence visualisation, and management CLI.
 
 ## Getting started
 
-Get started by learning more about principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing the [client SDK](#protocols-clients-and-sdks).
+Get started by learning more about the principles of EventStoreDB, Event Sourcing, database installation guidelines and choosing a [client SDK](#protocols-clients-and-sdks).
 
 ## Support
 
@@ -25,11 +25,11 @@ Customers with the paid [support plan](https://eventstore.com/support/) can open
 
 ### Issues
 
-Since EventStoreDB is the open-source product, we track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
+Since EventStoreDB is an open-source product, we track most of the issues openly in the EventStoreDB [repository on GitHub](https://github.com/EventStore/EventStore). Before opening an issue, please ensure that a similar issue hasn't been opened already. Also, try searching closed issues that might contain a solution or workaround for your problem.
 
-When opening an issue, follow our guidelines for bug reports and feature requests. By doing so, you would greatly help us to solve your concerns in the most efficient way.
+When opening an issue, follow our [guidelines](../CONTRIBUTING.md) for bug reports and feature requests. By doing so, you would greatly help us to solve your concerns most efficiently.
 
-## Protocols, clients and SDKs
+## Protocols, clients, and SDKs
 
 This getting started guide shows you how to get started with EventStoreDB by setting up an instance or cluster and configuring it.
 
@@ -60,8 +60,8 @@ Read more in the [gRPC clients documentation](@clients/grpc/README.md).
 
 EventStoreDB offers a low-level protocol in the form of an asynchronous TCP protocol that exchanges protobuf objects. At present this protocol has adapters for .NET and the JVM.
 
-::: warning
-We plan to phase out the TCP protocol in later versions. Please consider migrating your applications that use the TCP protocol and refactor them to use gRPC instead.
+::: warning Deprecation Note
+TCP protocol will be available only through version 23.10. Please plan to migrate your applications that use the TCP client SDK to use the gRPC SDK instead.
 :::
 
 Find out more about configuring the TCP protocol on the [TCP configuration](networking.md#tcp-configuration) page.
@@ -69,18 +69,20 @@ Find out more about configuring the TCP protocol on the [TCP configuration](netw
 #### EventStoreDB supported clients
 
 - [.NET Framework and .NET Core](http://www.nuget.org/packages/EventStore.Client)
-- [JVM Client (EventStore/EventStore.JVM)](https://github.com/EventStore/EventStore.JVM)
-- [Haskell (EventStore/EventStoreDB-Client-Haskell)](https://github.com/EventStore/EventStoreDB-Client-Haskell)
 
-#### Community developed clients
+#### Community supported clients
+
+Community supported clients are developed and maintained by community members, not Event Store staff. Feel free to open issues and PRs, when possible, in the client's GitHub repository. **The following clients which use TCP protocol, will not be compatible with Event Store server versions after 23.10.**
 
 - [Node.js (x-cubed/event-store-client)](https://github.com/x-cubed/event-store-client)
-- [Node.js (nicdex/node-eventstore-client)](https://gitork.org/nicdex/node-eventstore-client)
+- [Node.js (nicdex/node-eventstore-client)](https://github.com/nicdex/node-eventstore-client)
 - [Elixir (exponentially/extreme)](https://github.com/exponentially/extreme)
 - [Java 8 (msemys/esjc)](https://github.com/msemys/esjc)
-- [Maven plugin (fuinorg/event-store-maven-plugin)](https://github.com/fuinorg/event-store-maven-plugin)
+- [Maven plugin (fuinorg/event-store-maven-plugin)](https://github.com/fuinorg/event-store-maven-plugin) (archived)
 - [Go (jdextraze/go-gesclient)](https://github.com/jdextraze/go-gesclient)
 - [PHP (prooph/event-store-client)](https://github.com/prooph/event-store-client/)
+- [JVM Client (EventStore/EventStore.JVM)](https://github.com/EventStore/EventStore.JVM)
+- [Haskell (EventStore/EventStoreDB-Client-Haskell)](https://github.com/EventStore/EventStoreDB-Client-Haskell)
 
 ### HTTP
 
@@ -88,15 +90,11 @@ EventStoreDB also offers an HTTP-based interface, based specifically on the [Ato
 
 Find out more about configuring the HTTP protocol on the [HTTP configuration](networking.md#http-configuration) page.
 
-::: warning "Deprecation note"
-The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration.
+::: warning Deprecation Note
+The current AtomPub-based HTTP application API is disabled by default since v20 of EventStoreDB. You can enable it by adding an [option](networking.md#atompub) to the server configuration. Although we plan to remove AtomPub support from future server versions, the server management HTTP API will remain available.
 :::
 
 As the AtomPub protocol doesn't get any changes, you can use the v5 [HTTP API documentation](@clients/httpapi/README.md) for it.
-
-::: note
-Although we plan to remove AtomPub support from the future server versions, the server management HTTP API will still be available.
-:::
 
 #### Community developed clients
 
