@@ -169,7 +169,7 @@ namespace EventStore.Core.Tests.Helpers {
 					options.Application.AllowAnonymousEndpointAccess,
 					options.Application.AllowAnonymousStreamAccess,
 					options.Application.OverrideAnonymousEndpointAccessForGossip)),
-				telemetryConfiguration: null,
+				metricsConfiguration: null,
 				expiryStrategy: expiryStrategy,
 				certificateProvider: new OptionsCertificateProvider());
 			Db = Node.Db;

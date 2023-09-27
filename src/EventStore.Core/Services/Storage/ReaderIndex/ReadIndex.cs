@@ -9,12 +9,12 @@ using EventStore.Core.DataStructures;
 using EventStore.Core.Index;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
-using static EventStore.Common.Configuration.TelemetryConfiguration;
+using static EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {

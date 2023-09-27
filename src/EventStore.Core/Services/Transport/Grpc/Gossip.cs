@@ -1,6 +1,6 @@
 using System;
 using EventStore.Core.Bus;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {

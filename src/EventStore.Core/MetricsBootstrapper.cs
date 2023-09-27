@@ -2,19 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
-using EventStore.Common.Utils;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.Index;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.VNode;
-using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Scavenging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Serilog;
-using Conf = EventStore.Common.Configuration.TelemetryConfiguration;
+using Conf = EventStore.Common.Configuration.MetricsConfiguration;
 
 namespace EventStore.Core;
 
@@ -162,7 +161,7 @@ public static class MetricsBootstrapper {
 				Conf.Checkpoint.Truncate => dbConfig.TruncateCheckpoint,
 				Conf.Checkpoint.Writer => dbConfig.WriterCheckpoint,
 				_ => throw new Exception(
-					$"Unknown checkpoint in TelemetryConfiguration. Valid values are " +
+					$"Unknown checkpoint in MetricsConfiguration. Valid values are " +
 					$"{string.Join(", ", Enum.GetValues<Conf.Checkpoint>())}"),
 			}).ToArray());
 
@@ -309,6 +308,6 @@ public static class MetricsBootstrapper {
 			Formatting.Indented,
 			jsonSerializerSettings);
 
-		Log.Information("Telemetry Configuration: " + confJson);
+		Log.Information("Metrics Configuration: " + confJson);
 	}
 }

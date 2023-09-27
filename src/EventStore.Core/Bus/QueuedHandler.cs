@@ -1,6 +1,6 @@
 ﻿using System;
 using EventStore.Core.Messaging;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 
 namespace EventStore.Core.Bus {
 	// on Windows AutoReset version is much slower, but on Linux ManualResetEventSlim version is much slower

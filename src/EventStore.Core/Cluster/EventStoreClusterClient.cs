@@ -6,8 +6,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
+using EventStore.Core.Metrics;
 using EventStore.Core.Settings;
-using EventStore.Core.Telemetry;
 using Grpc.Net.Client;
 using Serilog.Extensions.Logging;
 

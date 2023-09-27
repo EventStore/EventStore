@@ -6,7 +6,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 using Empty = EventStore.Client.Empty;

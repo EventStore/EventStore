@@ -5,8 +5,8 @@ using EventStore.Core.Bus;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Telemetry;
 using EventStore.Core.TransactionLog.Checkpoint;
 using ILogger = Serilog.ILogger;
 

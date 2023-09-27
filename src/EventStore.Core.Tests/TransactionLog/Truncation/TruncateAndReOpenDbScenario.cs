@@ -12,8 +12,8 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.FileNamingStrategy;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
+using EventStore.Core.Metrics;
 using EventStore.Core.Tests.Services;
-using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.TransactionLog.Truncation {
 	public abstract class TruncateAndReOpenDbScenario<TLogFormat, TStreamId> : TruncateScenario<TLogFormat, TStreamId> {

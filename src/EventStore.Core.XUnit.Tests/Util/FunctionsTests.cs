@@ -1,6 +1,6 @@
 ﻿using System;
 using EventStore.Core.Util;
-using EventStore.Core.XUnit.Tests.Telemetry;
+using EventStore.Core.XUnit.Tests.Metrics;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Util;

@@ -4,8 +4,8 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.VNode;
-using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.Services.Replication.LogReplication;
 

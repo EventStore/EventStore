@@ -4,8 +4,8 @@ using EventStore.Common.Utils;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.Monitoring.Stats;
-using EventStore.Core.Telemetry;
 using System.Threading.Tasks;
+using EventStore.Core.Metrics;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Bus {

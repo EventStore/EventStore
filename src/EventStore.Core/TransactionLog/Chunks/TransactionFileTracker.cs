@@ -1,5 +1,5 @@
 #nullable enable
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.TransactionLog.Chunks;
