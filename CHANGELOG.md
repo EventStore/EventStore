@@ -35,6 +35,13 @@ All notable changes to this project will be documented in this file.
 ### This PR addresses [Linear issue DEV-111](https
 - //linear.app/eventstore/issue/DEV-111/can-we-remove-eventstorejvm-from-supported-clients-in-our-docs). [EventStore#3956](https://github.com/EventStore/EventStore/pull/3956)
 
+### Cherry picked from https
+- //github.com/EventStore/EventStore/pull/3956 [EventStore#3961](https://github.com/EventStore/EventStore/pull/3961)
+
+### Cherry pick https
+- //github.com/EventStore/EventStore/pull/3940 to v22.10 [EventStore#3965](https://github.com/EventStore/EventStore/pull/3965)
+- //github.com/EventStore/EventStore/pull/3940 to v23.6 [EventStore#3964](https://github.com/EventStore/EventStore/pull/3964)
+
 ## [22.10.3] 2023-08-31
 
 ### Fixed
