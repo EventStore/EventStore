@@ -70,7 +70,7 @@ namespace EventStore.Core.Tests.Services.Transport.Http {
 						}, new TestAuthorizationProvider(),
 						new FakeReadIndex<LogFormat.V2, string>(_ => false, new LogV2SystemStreams()),
 						1024 * 1024, _timeout, expiryStrategy: null, _service,
-						new TelemetryConfiguration(),
+						new MetricsConfiguration(),
 						new Trackers(),
 						null)));
 			_httpMessageHandler = _server.CreateHandler();

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.VNode;
-using EventStore.Core.Telemetry;
-using EventStore.Core.XUnit.Tests.Telemetry;
+using EventStore.Core.XUnit.Tests.Metrics;
 using Xunit;
 
 namespace EventStore.Core.TransactionLog.Services.VNode {

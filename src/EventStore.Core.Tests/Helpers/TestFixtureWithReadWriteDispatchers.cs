@@ -10,7 +10,7 @@ using EventStore.Core.Tests.Bus.Helpers;
 using EventStore.Core.Tests.Services.TimeService;
 using NUnit.Framework;
 using System.Linq;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 
 namespace EventStore.Core.Tests.Helpers {
 	public abstract class TestFixtureWithReadWriteDispatchers {

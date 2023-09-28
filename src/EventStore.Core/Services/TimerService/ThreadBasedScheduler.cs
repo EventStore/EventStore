@@ -3,10 +3,10 @@ using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.DataStructures;
-using EventStore.Core.Telemetry;
 using EventStore.Core.Time;
 using EventStore.Core.Services.Monitoring.Stats;
 using System.Threading.Tasks;
+using EventStore.Core.Metrics;
 using Serilog;
 
 namespace EventStore.Core.Services.TimerService {

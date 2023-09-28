@@ -5,7 +5,7 @@ using EventStore.Client.Gossip;
 using EventStore.Client;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 using EventStore.Plugins.Authorization;
 using Grpc.Core;
 using ClusterInfo = EventStore.Client.Gossip.ClusterInfo;

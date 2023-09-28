@@ -6,9 +6,9 @@ using EventStore.Core.Helpers;
 using EventStore.Core.LogAbstraction;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.PersistentSubscription;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
-using EventStore.Core.Telemetry;
 using EventStore.Core.Tests.TransactionLog;
 using NUnit.Framework;
 

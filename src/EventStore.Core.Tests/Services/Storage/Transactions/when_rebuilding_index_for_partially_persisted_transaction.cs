@@ -13,7 +13,7 @@ using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]

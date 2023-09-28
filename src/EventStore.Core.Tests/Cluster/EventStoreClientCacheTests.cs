@@ -6,8 +6,8 @@ using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Cluster;
 using EventStore.Core.Messages;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.TimerService;
-using EventStore.Core.Telemetry;
 using EventStore.Core.Tests.Fakes;
 using NUnit.Framework;
 

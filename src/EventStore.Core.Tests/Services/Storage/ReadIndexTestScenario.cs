@@ -19,9 +19,9 @@ using NUnit.Framework;
 using EventStore.Core.Util;
 using EventStore.Core.Index.Hashes;
 using EventStore.Core.LogV3;
+using EventStore.Core.Metrics;
 using EventStore.Core.Tests.TransactionLog.Scavenging.Helpers;
 using EventStore.LogCommon;
-using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Tests.Services.Storage {
 	public abstract class ReadIndexTestScenario<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {

@@ -1,5 +1,5 @@
 ﻿using EventStore.Core.Data;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 
 namespace EventStore.Core.Services.VNode {
 	public interface IInaugurationStatusTracker {

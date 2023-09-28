@@ -14,6 +14,7 @@ using EventStore.Core.Bus;
 using EventStore.Core.Data;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
+using EventStore.Core.Metrics;
 using EventStore.Plugins.Authorization;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -24,7 +25,6 @@ using Status = Google.Rpc.Status;
 using static EventStore.Client.Streams.BatchAppendReq.Types;
 using static EventStore.Client.Streams.BatchAppendReq.Types.Options;
 using OperationResult = EventStore.Core.Messages.OperationResult;
-using EventStore.Core.Telemetry;
 
 namespace EventStore.Core.Services.Transport.Grpc {
 	partial class Streams<TStreamId> {

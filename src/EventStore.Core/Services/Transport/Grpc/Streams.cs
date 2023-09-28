@@ -1,8 +1,8 @@
 using System;
 using EventStore.Common.Configuration;
 using EventStore.Core.Bus;
+using EventStore.Core.Metrics;
 using EventStore.Core.Services.Storage.ReaderIndex;
-using EventStore.Core.Telemetry;
 using EventStore.Plugins.Authorization;
 
 namespace EventStore.Core.Services.Transport.Grpc {
@@ -33,11 +33,11 @@ namespace EventStore.Core.Services.Transport.Grpc {
 			_maxAppendSize = maxAppendSize;
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
-			_readTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamRead];
-			_appendTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamAppend];
-			_batchAppendTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamBatchAppend];
-			_deleteTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamDelete];
-			_tombstoneTracker = trackers[TelemetryConfiguration.GrpcMethod.StreamTombstone];
+			_readTracker = trackers[MetricsConfiguration.GrpcMethod.StreamRead];
+			_appendTracker = trackers[MetricsConfiguration.GrpcMethod.StreamAppend];
+			_batchAppendTracker = trackers[MetricsConfiguration.GrpcMethod.StreamBatchAppend];
+			_deleteTracker = trackers[MetricsConfiguration.GrpcMethod.StreamDelete];
+			_tombstoneTracker = trackers[MetricsConfiguration.GrpcMethod.StreamTombstone];
 			_provider = provider;
 		}
 	}

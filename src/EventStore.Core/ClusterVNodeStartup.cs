@@ -49,7 +49,7 @@ namespace EventStore.Core {
 		private readonly TimeSpan _writeTimeout;
 		private readonly IExpiryStrategy _expiryStrategy;
 		private readonly KestrelHttpService _httpService;
-		private readonly TelemetryConfiguration _telemetryConfiguration;
+		private readonly MetricsConfiguration _metricsConfiguration;
 		private readonly Trackers _trackers;
 		private readonly StatusCheck _statusCheck;
 
@@ -71,7 +71,7 @@ namespace EventStore.Core {
 			TimeSpan writeTimeout,
 			IExpiryStrategy expiryStrategy,
 			KestrelHttpService httpService,
-			TelemetryConfiguration telemetryConfiguration,
+			MetricsConfiguration metricsConfiguration,
 			Trackers trackers,
 			string clusterDns) {
 			if (subsystems == null) {
@@ -119,7 +119,7 @@ namespace EventStore.Core {
 			_writeTimeout = writeTimeout;
 			_expiryStrategy = expiryStrategy;
 			_httpService = httpService;
-			_telemetryConfiguration = telemetryConfiguration;
+			_metricsConfiguration = metricsConfiguration;
 			_trackers = trackers;
 			_clusterDns = clusterDns;
 
@@ -198,7 +198,7 @@ namespace EventStore.Core {
 						.AddOpenTelemetry()
 						.WithMetrics(meterOptions => meterOptions
 							.SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("eventstore"))
-							.AddMeter(_telemetryConfiguration.Meters)
+							.AddMeter(_metricsConfiguration.Meters)
 							.AddView(i => {
 								if (i.Name.StartsWith("eventstore-") &&
 									i.Name.EndsWith("-latency") &&

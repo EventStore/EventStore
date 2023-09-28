@@ -2,8 +2,8 @@
 using System.Diagnostics.Metrics;
 using System.Linq;
 using EventStore.Core.Index;
-using EventStore.Core.Telemetry;
-using EventStore.Core.XUnit.Tests.Telemetry;
+using EventStore.Core.Metrics;
+using EventStore.Core.XUnit.Tests.Metrics;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.Index {

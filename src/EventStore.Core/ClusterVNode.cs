@@ -76,7 +76,7 @@ namespace EventStore.Core {
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory> factories = null,
 			CertificateProvider certificateProvider = null,
-			TelemetryConfiguration telemetryConfiguration = null,
+			MetricsConfiguration metricsConfiguration = null,
 			Guid? instanceId = null,
 			int debugIndex = 0) {
 
@@ -87,7 +87,7 @@ namespace EventStore.Core {
 				authorizationProviderFactory,
 				factories,
 				certificateProvider,
-				telemetryConfiguration,
+				metricsConfiguration,
 				instanceId: instanceId,
 				debugIndex: debugIndex);
 		}
@@ -228,7 +228,7 @@ namespace EventStore.Core {
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
 				additionalPersistentSubscriptionConsumerStrategyFactories = null,
 			CertificateProvider certificateProvider = null,
-			TelemetryConfiguration telemetryConfiguration = null,
+			MetricsConfiguration metricsConfiguration = null,
 			IExpiryStrategy expiryStrategy = null,
 			Guid? instanceId = null, int debugIndex = 0) {
 
@@ -301,8 +301,8 @@ namespace EventStore.Core {
 				out var workerThreadsCount);
 
 			var trackers = new Trackers();
-			telemetryConfiguration ??= new();
-			MetricsBootstrapper.Bootstrap(telemetryConfiguration, dbConfig, trackers);
+			metricsConfiguration ??= new();
+			MetricsBootstrapper.Bootstrap(metricsConfiguration, dbConfig, trackers);
 
 			Db = new TFChunkDb(dbConfig, tracker: trackers.TransactionFileTracker);
 
@@ -1536,7 +1536,7 @@ namespace EventStore.Core {
 				options.Application.MaxAppendSize, TimeSpan.FromMilliseconds(options.Database.WriteTimeoutMs),
 				expiryStrategy ?? new DefaultExpiryStrategy(),
 				_httpService,
-				telemetryConfiguration,
+				metricsConfiguration,
 				trackers,
 				options.Cluster.DiscoverViaDns ? options.Cluster.ClusterDns : null);
 			_mainBus.Subscribe<SystemMessage.SystemReady>(_startup);

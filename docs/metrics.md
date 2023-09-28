@@ -1,6 +1,6 @@
 # Metrics
 
-EventStoreDB collects metrics in [prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Promethus can be configured to scrape this endpoint directly. The metrics are configured in `telemetryconfig.json`. 
+EventStoreDB collects metrics in [prometheus format](https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format), available on the `/metrics` endpoint. Promethus can be configured to scrape this endpoint directly. The metrics are configured in `metricsconfig.json`. 
 
 ::: note
 `/metrics` does not yet contain metrics for Projections and Persistent Subscriptions. To view these in Prometheus it is still recommended to use the [Prometheus exporter](./diagnostics.md#prometheus)
@@ -309,7 +309,7 @@ EventStoreDB uses various queues for asynchronous processing for which it also c
 | `eventstore_queue_queueing_duration_max_seconds{name=<QUEUE_GROUP>,range=<RANGE>}`                           | [RecentMax](#recentmax) | Recent maximum time in seconds for which any item was queued in queues belonging to the _QUEUE_GROUP_. This is essentially the length of the longest queue in the group in seconds |
 | `eventstore_queue_processing_duration_seconds_bucket{message_type=<TYPE>,queue=<QUEUE_GROUP>,le=<DURATION>}` | [Histogram](#common-types)   | Number of messages of type _TYPE_ processed by _QUEUE_GROUP_ group that took less than or equal to _DURATION_ in seconds                         |
 
-`QueueLabels` setting within `telemetryconfig.json` can be used to group queues, based on regex which gets matched on queue names, and label them for metrics reporting. Capture groups are also supported. Message types can be grouped in the same way in the `MessageTypes` setting in `telemetryconfig.json`.
+`QueueLabels` setting within `metricsconfig.json` can be used to group queues, based on regex which gets matched on queue names, and label them for metrics reporting. Capture groups are also supported. Message types can be grouped in the same way in the `MessageTypes` setting in `metricsconfig.json`.
 
 ::: note
 Enabling `Queues.Processing` can cause a lot more time series to be generated, according to the `QueueLabels` and `MessageTypes` configuration.
@@ -453,7 +453,7 @@ Please refer to [Prometheus documentation](https://prometheus.io/docs/concepts/m
 A gauge whose value represents the maximum out of a set of _recent_ measurements. It's purpose is to capture spikes that would otherwise have fallen in-between scrapes.
 
 ::: note
-The `ExpectedScrapeIntervalSeconds` setting within `telemetryconfig.json` can be used to control the size of the window that the max is calculated over. It represents the expected interval between scrapes by a consumer such as Prometheus. It can only take specific values: `0`, `1`, `5`, `10` or multiples of `15`.
+The `ExpectedScrapeIntervalSeconds` setting within `metricsconfig.json` can be used to control the size of the window that the max is calculated over. It represents the expected interval between scrapes by a consumer such as Prometheus. It can only take specific values: `0`, `1`, `5`, `10` or multiples of `15`.
 
 Setting the expected scape interval correctly ensures that spikes in the time series will be captured by at least one scrape and at most two.
 :::

@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.Metrics;
 using System.Linq;
 using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.XUnit.Tests.Telemetry;
+using EventStore.Core.XUnit.Tests.Metrics;
 using Xunit;
 
 namespace EventStore.Core.XUnit.Tests.TransactionLog.Checkpoint {

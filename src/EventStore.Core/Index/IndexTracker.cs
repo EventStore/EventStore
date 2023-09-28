@@ -1,6 +1,6 @@
 ﻿#nullable enable
 using System.Collections.Generic;
-using EventStore.Core.Telemetry;
+using EventStore.Core.Metrics;
 using EventStore.Core.TransactionLog.LogRecords;
 
 namespace EventStore.Core.Index {
