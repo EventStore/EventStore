@@ -241,6 +241,12 @@ namespace EventStore.Core.Services.Replication {
 				var subscriptionPos = SetSubscriptionPosition(replica, epochCorrectedLogPos, chunkId,
 					replicationStart: true, verbose: true, trial: 0);
 				Interlocked.Exchange(ref replica.AckedLogPosition, subscriptionPos);
+
+				if (subscriptionPos != logPosition) {
+					Log.Information("Replica is truncating. Sending it no more messages.");
+					replica.IsTruncating = true;
+				}
+
 				return true;
 			} catch (Exception exc) {
 				Log.Error(exc, "Exception while subscribing replica. Connection will be dropped.");
@@ -731,6 +737,7 @@ namespace EventStore.Core.Services.Replication {
 			public long AckedLogPosition;
 
 			public bool ShouldDispose;
+			public bool IsTruncating;
 			public ReplicaState State = ReplicaState.CatchingUp;
 			public int LagOccurences;
 
@@ -750,6 +757,9 @@ namespace EventStore.Core.Services.Replication {
 			}
 
 			public void SendMessage(Message msg) {
+				if (IsTruncating)
+					return;
+
 				_tcpSendPublisher.Publish(new TcpMessage.TcpSend(_connection, msg));
 			}
 
