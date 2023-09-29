@@ -223,7 +223,7 @@ namespace EventStore.Core.DataStructures.ProbabilisticFilter {
 			var flushedMegaBytes = (float)flushedBytes / 1000 / 1000;
 			var activeFlushRateMBperS = flushedMegaBytes / activelyFlushing.Elapsed.TotalSeconds;
 
-			Log.Information(
+			Log.Verbose(
 				"Flushed {pages:N0} pages out of {totalPages:N0}. {bytes:N0} bytes. " +
 				"Delay {delay} ms per batch. Total delay {totalDelay:N0} ms. " +
 				"Actively flushing: {activeFlushTime} {activeFlushRate:N2} MB/s. ",

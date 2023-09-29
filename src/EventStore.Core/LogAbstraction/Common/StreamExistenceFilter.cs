@@ -126,16 +126,16 @@ namespace EventStore.Core.LogAbstraction.Common {
 		public void Verify(double corruptionThreshold) => _persistentBloomFilter.Verify(corruptionThreshold);
 
 		private async Task TakeCheckpointAsync() {
+			var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
 			try {
-				var checkpoint = Interlocked.Read(ref _lastNonFlushedCheckpoint);
 				var prevCheckpoint = _checkpoint.Read();
 				var diff = checkpoint - prevCheckpoint;
 
 				var startTime = DateTime.UtcNow;
-				Log.Debug("{filterName} is flushing at {checkpoint:N0}. Diff {diff:N0} ...", _filterName, checkpoint, diff);
+				Log.Verbose("{filterName} is flushing at {checkpoint:N0}. Diff {diff:N0} ...", _filterName, checkpoint, diff);
 				_persistentBloomFilter.Flush();
 				var endTime = DateTime.UtcNow;
-				Log.Debug("{filterName} has flushed at {checkpoint:N0}. Diff {diff:N0}. Took {flushLength}",
+				Log.Verbose("{filterName} has flushed at {checkpoint:N0}. Diff {diff:N0}. Took {flushLength}",
 					       _filterName, checkpoint, diff, endTime - startTime);
 
 				// safety precaution against anything in the stack lying about the data
@@ -144,11 +144,11 @@ namespace EventStore.Core.LogAbstraction.Common {
 
 				_checkpoint.Write(checkpoint);
 				_checkpoint.Flush();
-				Log.Debug("{filterName} took checkpoint at position: {position:N0}.",
+				Log.Verbose("{filterName} took checkpoint at position: {position:N0}.",
 					_filterName,
 					_checkpoint.Read());
 			} catch (Exception ex) {
-				Log.Error(ex, "{filterName} could not take checkpoint at position: {position:N0}", _filterName, _checkpoint.Read());
+				Log.Error(ex, "{filterName} could not take checkpoint at position: {position:N0}", _filterName, checkpoint);
 			}
 		}
 

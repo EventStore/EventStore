@@ -287,21 +287,21 @@ namespace EventStore.Transport.Tcp {
 
 		private void DisplaySslStreamInfo(SslStream stream) {
 			Log.Information("[S{remoteEndPoint}, L{localEndPoint}]", RemoteEndPoint, LocalEndPoint);
-			Log.Information("Cipher: {cipherAlgorithm}", stream.CipherAlgorithm);
+			Log.Verbose("Cipher: {cipherAlgorithm}", stream.CipherAlgorithm);
 			try {
-				Log.Information("Cipher strength: {cipherStrength}", stream.CipherStrength);
+				Log.Verbose("Cipher strength: {cipherStrength}", stream.CipherStrength);
 			} catch (NotImplementedException) {
 			}
 
-			Log.Information("Hash: {hashAlgorithm}", stream.HashAlgorithm);
+			Log.Verbose("Hash: {hashAlgorithm}", stream.HashAlgorithm);
 			try {
-				Log.Information("Hash strength: {hashStrength}", stream.HashStrength);
+				Log.Verbose("Hash strength: {hashStrength}", stream.HashStrength);
 			} catch (NotImplementedException) {
 			}
 
-			Log.Information("Key exchange: {keyExchangeAlgorithm}", stream.KeyExchangeAlgorithm);
+			Log.Verbose("Key exchange: {keyExchangeAlgorithm}", stream.KeyExchangeAlgorithm);
 			try {
-				Log.Information("Key exchange strength: {keyExchangeStrength}", stream.KeyExchangeStrength);
+				Log.Verbose("Key exchange strength: {keyExchangeStrength}", stream.KeyExchangeStrength);
 			} catch (NotImplementedException) {
 			}
 
