@@ -57,5 +57,18 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 			Assert.AreEqual("foo", d.Groups[0]);
 			Assert.AreEqual("bar", d.Groups[1]);
 		}
+
+		[Test]
+		public async System.Threading.Tasks.Task creating_a_user_with_unicode_chars_can_be_readAsync() {
+			UserDetails d = null;
+			await _manager.CreateUserAsync("码ou£ro码", "ourofull", new[] { "foo", "bar" }, "ou码码ro",
+				new UserCredentials("admin", "changeit"));
+			d = await _manager.GetUserAsync("码ou£ro码", new UserCredentials("admin", "changeit"));
+
+			Assert.AreEqual("码ou£ro码", d.LoginName);
+			Assert.AreEqual("ourofull", d.FullName);
+			Assert.AreEqual("foo", d.Groups[0]);
+			Assert.AreEqual("bar", d.Groups[1]);
+		}
 	}
 }

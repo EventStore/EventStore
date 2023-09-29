@@ -27,7 +27,7 @@ namespace EventStore.Core.Services.Transport.Http.Authentication {
 		private static bool TryDecodeCredential(string value, out string username, out string password) {
 			username = password = default;
 
-			var parts = Encoding.ASCII.GetString(System.Convert.FromBase64String(value)).Split(':', 2);
+			var parts = Encoding.UTF8.GetString(System.Convert.FromBase64String(value)).Split(':', 2);
 			if (parts.Length < 2) {
 				return false;
 			}
