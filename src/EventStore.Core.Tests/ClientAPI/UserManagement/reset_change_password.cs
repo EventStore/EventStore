@@ -101,4 +101,43 @@ namespace EventStore.Core.Tests.ClientAPI.UserManagement {
 				ex.HttpStatusCode);
 		}
 	}
+
+	[TestFixture(typeof(LogFormat.V2), typeof(string), "newpassword")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint),   "newpassword")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), "n£wpasswordUnicode码")]
+	[TestFixture(typeof(LogFormat.V3), typeof(uint),   "n£wpasswordUnicode码")]
+	[TestFixture(typeof(LogFormat.V2), typeof(string), "password")] // same as old password
+	[TestFixture(typeof(LogFormat.V3), typeof(uint),   "password")] // same as old password
+	public class change_password_and_use_the_new_one<TLogFormat, TStreamId> : TestWithUser<TLogFormat, TStreamId> {
+		private readonly string _newPassword;
+		private const string OldPassword = "password";
+		private readonly TimeSpan _passwordChangeDelay = TimeSpan.FromSeconds(20);
+
+		public change_password_and_use_the_new_one(string newPassword) {
+			_newPassword = newPassword;
+		}
+
+		[Test, Category("LongRunning"), Explicit]
+		public async Task can_change_password_and_use_the_new_one() {
+			var oldCredentials = new UserCredentials(_username, OldPassword);
+			var newCredentials = new UserCredentials(_username, _newPassword);
+
+			// change the password to the new one
+			await _manager.ChangePasswordAsync(
+				login: _username,
+				oldPassword: OldPassword,
+				newPassword: _newPassword,
+				userCredentials: oldCredentials);
+
+			// wait for some time to allow the password change notification reader to detect the change
+			await Task.Delay(_passwordChangeDelay);
+
+			// change the password again but with the new credentials to see if they work
+			await _manager.ChangePasswordAsync(
+				login: _username,
+				oldPassword: _newPassword,
+				newPassword: "foobar",
+				userCredentials: newCredentials);
+		}
+	}
 }
