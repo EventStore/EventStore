@@ -32,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - Checkpoints of filtered $all subscription not always send on correct interval. [EventStore#3941](https://github.com/EventStore/EventStore/pull/3941)
 - Report same version info when using different kind of release tags (annotated or lightweight). [EventStore#3950](https://github.com/EventStore/EventStore/pull/3950)
 - Revert the change allowing an extra chunk at startup [EventStore#3954](https://github.com/EventStore/EventStore/pull/3954)
+- Allow users to login with usernames/passwords having unicode characters [EventStore#3974](https://github.com/EventStore/EventStore/pull/3974)
 
 ### This PR addresses [Linear issue DEV-111](https
 - //linear.app/eventstore/issue/DEV-111/can-we-remove-eventstorejvm-from-supported-clients-in-our-docs). [EventStore#3956](https://github.com/EventStore/EventStore/pull/3956)
