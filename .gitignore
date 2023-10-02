@@ -473,3 +473,5 @@ MigrationBackup/
 certs/
 /es-gencert-cli
 .temp/
+docs/package.json
+
