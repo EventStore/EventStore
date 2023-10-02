@@ -17,15 +17,7 @@
   },
   "scripts": {
     "dev": "vuepress dev",
-    "build": "vuepress build",
-    "debug": "vuepress dev docs --debug",
-    "docs:dev": "vuepress dev docs --clean-cache --clean-temp",
-    "docs:build": "vuepress build docs && yarn docs:copy-assets",
-    "docs:build-prod": "yarn docs:import && yarn docs:build",
-    "docs:import": "node ./import/import-client-docs.js",
-    "docs:copy-assets": "shx mkdir -p public/clients/http-api/v5/samples && shx cp -R docs/samples/clients/http-api/v5/ public/clients/http-api/v5/samples/",
-    "docs:serve": "node ./serve.js",
-    "swagger": "swagger-markdown -i docs/server/5.0/http-api/swagger.yaml"
+    "build": "vuepress build"
   }
 
   }
