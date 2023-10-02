@@ -178,20 +178,18 @@ namespace EventStore.Core.Tests.Services.Replication.LeaderReplication {
 				new Epoch(firstEpoch.EpochPosition, firstEpoch.EpochNumber, firstEpoch.EpochId)
 			};
 
-			AddSubscription(_replicaId, true, _replicaEpochs.ToArray(), _replicaEpochs[0].EpochPosition, out _replicaManager);
+			AddSubscription(_replicaId, true, _replicaEpochs.ToArray(), _replicaEpochs[1].EpochPosition, out _replicaManager);
 		}
 
 		[Test]
 		public void subscription_is_sent_replica_subscribed_message_for_epoch_after_common_epoch() {
 			var messages = GetTcpSendsFor(_replicaManager).Select(x => x.Message).ToArray();
-			Assert.IsTrue(messages.Length >= 2);
+			Assert.AreEqual(1, messages.Length);
 
 			var subscribed = (ReplicationMessage.ReplicaSubscribed)messages[0];
 			Assert.AreEqual(_replicaEpochs[0].EpochPosition, subscribed.SubscriptionPosition);
 			Assert.AreEqual(_replicaId, subscribed.SubscriptionId);
 			Assert.AreEqual(LeaderId, subscribed.LeaderId);
-
-			Assert.IsInstanceOf<ReplicationTrackingMessage.ReplicatedTo>(messages[1]);
 		}
 	}
 
