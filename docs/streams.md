@@ -2,7 +2,7 @@
 
 EventStoreDB is purpose-built for event storage. Unlike traditional state-based databases, which retain only the most recent entity state, EventStoreDB allows you to store each state alteration as an independent event.
 
-These **events** are logically organized into **streams**, only one stream per entity. 
+These **events** are logically organized into **streams**, typically only one stream per entity. 
 
 ## Metadata and reserved names
 
