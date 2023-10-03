@@ -13,9 +13,13 @@ using NUnit.Framework;
 namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 	public class TestFixtureWithClientCertificateHttpAuthenticationProvider {
 		protected ClientCertificateAuthenticationProvider _provider;
+		private readonly EndPoint[] _gossipSeeds = {
+			new DnsEndPoint("node1.eventstore.test", 1111),
+			new DnsEndPoint("node2.eventstore.test", 1112),
+		};
 
 		protected void SetUpProvider() {
-			_provider = new ClientCertificateAuthenticationProvider(Opts.CertificateReservedNodeCommonNameDefault);
+			_provider = new ClientCertificateAuthenticationProvider(Opts.CertificateReservedNodeCommonNameDefault, _gossipSeeds);
 		}
 	}
 
@@ -340,6 +344,44 @@ namespace EventStore.Core.Tests.Services.Transport.Http.Authentication {
 		[Test]
 		public void no_roles_are_assigned() {
 			Assert.AreEqual(0, _context.User.Claims.Count());
+		}
+	}
+	
+	[TestFixture]
+	public class
+		when_handling_a_request_with_a_client_certificate_having_different_node_certificate_name :
+			TestFixtureWithClientCertificateHttpAuthenticationProvider {
+		private HttpAuthenticationRequest _authenticateRequest;
+		private bool _authenticateResult;
+		private HttpContext _context;
+
+		[SetUp]
+		public void SetUp() {
+			SetUpProvider();
+			_context = new DefaultHttpContext();
+			X509Certificate2 certificate;
+
+			using (RSA rsa = RSA.Create())
+			{
+				var certReq = new CertificateRequest("C=UK, O=Event Store Ltd, CN=node2.eventstore.test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+				var sanBuilder = new SubjectAlternativeNameBuilder();
+				sanBuilder.AddIpAddress(IPAddress.Loopback);
+				certReq.CertificateExtensions.Add(sanBuilder.Build());
+				certificate = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
+			}
+
+			_context.Connection.ClientCertificate = certificate;
+			_authenticateResult = _provider.Authenticate(_context, out _authenticateRequest);
+		}
+
+		[Test]
+		public void returns_true() {
+			Assert.IsTrue(_authenticateResult);
+		}
+
+		[Test]
+		public void authentication_request_not_null() {
+			Assert.IsNotNull(_authenticateRequest);
 		}
 	}
 }

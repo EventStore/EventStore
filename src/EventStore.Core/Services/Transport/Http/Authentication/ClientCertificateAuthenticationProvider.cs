@@ -1,30 +1,47 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using EventStore.Common.Utils;
+using EventStore.Core.Cluster;
+using EventStore.Core.Services.Gossip;
 using EventStore.Core.Services.UserManagement;
 using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace EventStore.Core.Services.Transport.Http.Authentication {
 	public class ClientCertificateAuthenticationProvider : IHttpAuthenticationProvider {
-		private readonly string _certificateReservedNodeCommonName;
+		private string _certificateReservedNodeCommonName;
+		private EndPoint[] _gossipSeed;
 
-		public ClientCertificateAuthenticationProvider(string certificateReservedNodeCommonName) {
+		public ClientCertificateAuthenticationProvider(string certificateReservedNodeCommonName, EndPoint[] gossipSeed) {
 			_certificateReservedNodeCommonName = certificateReservedNodeCommonName;
+			_gossipSeed = gossipSeed;
 		}
 
 		public bool Authenticate(HttpContext context, out HttpAuthenticationRequest request) {
 			request = null;
 			var clientCertificate = context.Connection.ClientCertificate;
 			if (clientCertificate is null) return false;
-
-			bool hasReservedNodeCN;
+			
+			bool hasReservedNodeCN = false;
 			string clientCertificateCN;
+
+
 			try {
 				clientCertificateCN = clientCertificate.GetCommonName();
-				hasReservedNodeCN = clientCertificateCN == _certificateReservedNodeCommonName;
+				if (clientCertificateCN == _certificateReservedNodeCommonName) {
+					hasReservedNodeCN = true;
+				} else {
+					if (_gossipSeed != null) {
+						foreach (var node in _gossipSeed) {
+							if (node.GetHost() != clientCertificateCN) continue;
+							hasReservedNodeCN = true;
+							break;
+						}
+					}
+				}
 			} catch (CryptographicException) {
 				return false;
 			} catch (NullReferenceException) {
