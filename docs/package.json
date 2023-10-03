@@ -19,4 +19,6 @@
     "dev": "vuepress dev",
     "build": "vuepress build"
   }
-}
+
+  }
+
