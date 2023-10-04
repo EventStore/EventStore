@@ -41,6 +41,9 @@ All notable changes to this project will be documented in this file.
 
 ### Cherry picked from https
 - //github.com/EventStore/EventStore/pull/3956 [EventStore#3961](https://github.com/EventStore/EventStore/pull/3961)
+- //github.com/EventStore/EventStore/pull/3976 [EventStore#3978](https://github.com/EventStore/EventStore/pull/3978)
+- //github.com/EventStore/EventStore/pull/3976 [EventStore#3979](https://github.com/EventStore/EventStore/pull/3979)
+- //github.com/EventStore/EventStore/pull/3976 [EventStore#3977](https://github.com/EventStore/EventStore/pull/3977)
 
 ### Cherry pick https
 - //github.com/EventStore/EventStore/pull/3940 to v22.10 [EventStore#3965](https://github.com/EventStore/EventStore/pull/3965)
