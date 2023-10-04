@@ -4,7 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
-using EventStore.ClusterNode;
+using EventStore.PluginHosting;
 using NUnit.Framework;
 
 namespace EventStore.Core.Tests {

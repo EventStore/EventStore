@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace EventStore.ClusterNode {
+namespace EventStore.PluginHosting {
 	public class PluginLoader : IDisposable {
 		private readonly DirectoryInfo _rootPluginDirectory;
 		private readonly PluginLoadContext[] _contexts;

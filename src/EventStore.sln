@@ -60,6 +60,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.SourceGenerators
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.Common.Tests", "EventStore.Common.Tests\EventStore.Common.Tests.csproj", "{58219323-BD46-4F67-A83A-410F56F84EE3}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventStore.PluginHosting", "EventStore.PluginHosting\EventStore.PluginHosting.csproj", "{8B021F57-D4B1-47D6-85AA-DE2D20486840}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -358,6 +360,18 @@ Global
 		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|ARM64.Build.0 = Release|ARM64
 		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|x64.ActiveCfg = Release|x64
 		{58219323-BD46-4F67-A83A-410F56F84EE3}.Release|x64.Build.0 = Release|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Debug|Any CPU.Build.0 = Debug|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Debug|ARM64.Build.0 = Debug|ARM64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Debug|x64.ActiveCfg = Debug|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Debug|x64.Build.0 = Debug|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|Any CPU.ActiveCfg = Release|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|Any CPU.Build.0 = Release|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|ARM64.ActiveCfg = Release|ARM64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|ARM64.Build.0 = Release|ARM64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|x64.ActiveCfg = Release|x64
+		{8B021F57-D4B1-47D6-85AA-DE2D20486840}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
