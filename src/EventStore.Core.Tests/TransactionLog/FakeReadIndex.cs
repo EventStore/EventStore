@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.TransactionLog {
 		private readonly IMetastreamLookup<TStreamId> _metastreams;
 
 		public long LastIndexedPosition {
-			get { throw new NotImplementedException(); }
+			get { return 0; }
 		}
 		
 		public IIndexWriter<TStreamId> IndexWriter {

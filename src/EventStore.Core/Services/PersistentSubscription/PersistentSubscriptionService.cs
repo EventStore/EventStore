@@ -565,8 +565,9 @@ namespace EventStore.Core.Services.PersistentSubscription {
 
 		public void Handle(ClientMessage.UpdatePersistentSubscriptionToAll message) {
 			try {
+				var key = BuildSubscriptionGroupKey(SystemStreams.AllStream, message.GroupName);
 				UpdatePersistentSubscription(
-					new PersistentSubscriptionAllStreamEventSource(),
+					new PersistentSubscriptionAllStreamEventSource(_subscriptionsById[key]?.EventSource?.EventFilter),
 					message.GroupName,
 					new PersistentSubscriptionAllStreamPosition(message.StartFrom.CommitPosition,
 						message.StartFrom.PreparePosition),
