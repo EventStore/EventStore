@@ -5,12 +5,11 @@ EventStoreDB is purpose-built for event storage. Unlike traditional state-based 
 These **events** are logically organized into **streams**, typically only one stream per entity. 
 
 ## Metadata and reserved names
+#### Stream metadata ####
 
 In EventStoreDB, every stream and event is accompanied by metadata, distinguished by the **`$$`** prefix. For example, the stream metadata for a stream named **`foo`** is **`$$foo`**. You can modify specific metadata values and write your data to the metadata, which can be referenced in your code.
 
 ### Reserved names
-
-#### Stream metadata ####
 
 EventStoreDB includes a **`$`** prefix for all internal data, such as **`$maxCount`** in a stream's metadata. It's advisable to refrain from using names with a **`$`** prefix for event names, metadata keys, or stream names, except as detailed below.
 
@@ -43,7 +42,8 @@ qualify for scavenging after either 10 seconds or the accumulation of 50,000 eve
 | **`$mw`**         | Users with write permissions to stream metadata |
 | **`$mr`**         | Users with read permissions to stream metadata  |
 
-You can find more information on ACLs [here](./security.md#access-control-lists).
+
+You can find more information on ACLs in the [access control lists documentation](./security.md#access-control-lists).
 
 ### Event metadata ###
 
@@ -160,7 +160,7 @@ Learn more about the default ACL in the [access control lists](security.md#defau
 
 ### **`$stats`**
 
-EventStoreDB offers debugging and statistical information available about a cluster within the **`$stats`** stream. Find out
+EventStoreDB offers debugging and statistical information about a cluster within the **`$stats`** stream. Find out
 more in [the stats guide](diagnostics.md#statistics).
 
 ### **`$scavenges`**
