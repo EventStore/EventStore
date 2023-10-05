@@ -31,7 +31,8 @@ namespace EventStore.Core.Services.Storage {
 			IReadIndex<TStreamId> readIndex,
 			ISystemStreamLookup<TStreamId> systemStreams,
 			int threadCount,
-			IReadOnlyCheckpoint writerCheckpoint, 
+			IReadOnlyCheckpoint writerCheckpoint,
+			IInMemoryStreamReader inMemReader,
 			QueueStatsManager queueStatsManager,
 			QueueTrackers trackers) {
 
@@ -48,7 +49,7 @@ namespace EventStore.Core.Services.Storage {
 			StorageReaderWorker<TStreamId>[] readerWorkers = new StorageReaderWorker<TStreamId>[threadCount];
 			InMemoryBus[] storageReaderBuses = new InMemoryBus[threadCount];
 			for (var i = 0; i < threadCount; i++) {
-				readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, i);
+				readerWorkers[i] = new StorageReaderWorker<TStreamId>(bus, readIndex, systemStreams, writerCheckpoint, inMemReader, i);
 				storageReaderBuses[i] = new InMemoryBus("StorageReaderBus", watchSlowMsg: false);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadEvent>(readerWorkers[i]);
 				storageReaderBuses[i].Subscribe<ClientMessage.ReadStreamEventsBackward>(readerWorkers[i]);

@@ -235,6 +235,17 @@ namespace EventStore.Core.Messages {
 		}
 
 		[DerivedMessage(CoreMessage.Storage)]
+		public partial class InMemoryEventCommitted : Message {
+			public readonly long CommitPosition;
+			public readonly EventRecord Event;
+
+			public InMemoryEventCommitted(long commitPosition, EventRecord @event) {
+				CommitPosition = commitPosition;
+				Event = @event;
+			}
+		}
+
+		[DerivedMessage(CoreMessage.Storage)]
 		public partial class TfEofAtNonCommitRecord : Message {
 			public TfEofAtNonCommitRecord() {
 			}

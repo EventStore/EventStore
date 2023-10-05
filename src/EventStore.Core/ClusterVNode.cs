@@ -724,9 +724,17 @@ namespace EventStore.Core {
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
 
+			// Node state listener
+			var nodeStatusListener = new NodeStateListenerService(_mainQueue);
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(nodeStatusListener);
+
+			var inMemReader = new InMemoryStreamReader(new Dictionary<string, IInMemoryStreamReader> {
+				[SystemStreams.NodeStateStream] = nodeStatusListener,
+			});
+
 			var storageReader = new StorageReaderService<TStreamId>(_mainQueue, _mainBus, readIndex,
 				logFormat.SystemStreams,
-				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), _queueStatsManager,
+				readerThreadsCount, Db.Config.WriterCheckpoint.AsReadOnly(), inMemReader, _queueStatsManager,
 				trackers.QueueTrackers);
 
 			_mainBus.Subscribe<SystemMessage.SystemInit>(storageReader);
@@ -1113,6 +1121,7 @@ namespace EventStore.Core {
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.PollStream, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<SubscriptionMessage.CheckPollTimeout, Message>());
 			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.EventCommitted, Message>());
+			_mainBus.Subscribe(subscrQueue.WidenFrom<StorageMessage.InMemoryEventCommitted, Message>());
 
 			var subscription = new SubscriptionsService<TStreamId>(_mainQueue, subscrQueue, readIndex);
 			subscrBus.Subscribe<SystemMessage.SystemStart>(subscription);
@@ -1124,6 +1133,7 @@ namespace EventStore.Core {
 			subscrBus.Subscribe<SubscriptionMessage.PollStream>(subscription);
 			subscrBus.Subscribe<SubscriptionMessage.CheckPollTimeout>(subscription);
 			subscrBus.Subscribe<StorageMessage.EventCommitted>(subscription);
+			subscrBus.Subscribe<StorageMessage.InMemoryEventCommitted>(subscription);
 
 			// PERSISTENT SUBSCRIPTIONS
 			// IO DISPATCHER
