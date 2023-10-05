@@ -78,7 +78,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			var gotBuffer = _parent.TryGetStreamBuffer(out var streamBuffer);
 
 			return new MonitoringMessage.PersistentSubscriptionInfo() {
-				EventSource = _parent.EventSource,
+				EventSource = _parent.EventSource.ToString(),
 				GroupName = _parent.GroupName,
 				Status = _parent.State.ToString(),
 				Connections = connections,
