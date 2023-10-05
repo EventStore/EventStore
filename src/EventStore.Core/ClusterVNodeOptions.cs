@@ -43,10 +43,10 @@ namespace EventStore.Core {
 
 		public byte IndexBitnessVersion { get; init; } = Index.PTableVersions.IndexV4;
 
-		public IReadOnlyList<ISubsystem> Subsystems { get; init; } = Array.Empty<ISubsystem>();
+		public IReadOnlyList<ISubsystemFactory> Subsystems { get; init; } = Array.Empty<ISubsystemFactory>();
 
-		public ClusterVNodeOptions WithSubsystem(ISubsystem subsystem) => this with {
-			Subsystems = new List<ISubsystem>(Subsystems) { subsystem }
+		public ClusterVNodeOptions WithSubsystem(ISubsystemFactory subsystem) => this with {
+			Subsystems = new List<ISubsystemFactory>(Subsystems) { subsystem }
 		};
 
 		public X509Certificate2? ServerCertificate { get; init; }

@@ -147,7 +147,7 @@ namespace EventStore.Core.Tests.Integration {
 			bool wait = true) => new(
 			PathName, index, endpoints.InternalTcp,
 			endpoints.ExternalTcp, endpoints.HttpEndPoint,
-			subsystems: Array.Empty<ISubsystem>(), gossipSeeds: gossipSeeds, inMemDb: false);
+			subsystems: Array.Empty<ISubsystemFactory>(), gossipSeeds: gossipSeeds, inMemDb: false);
 
 		[OneTimeTearDown]
 		public override async Task TestFixtureTearDown() {
