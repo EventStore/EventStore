@@ -20,6 +20,7 @@ using EventStore.Core.Certificates;
 using EventStore.Core.Hashing;
 using EventStore.Core.PluginModel;
 using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
+using EventStore.PluginHosting;
 using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using EventStore.Projections.Core;
