@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using EventStore.Common.Options;
 using EventStore.Core.Bus;
 using EventStore.Core.Messages;
 using EventStore.Core.Messaging;
 using EventStore.Core.Services.TimerService;
+using EventStore.Core.Telemetry;
 using EventStore.Core.Tests;
 using EventStore.Core.Tests.Services.TimeService;
 using EventStore.Core.Util;
@@ -76,6 +78,27 @@ namespace EventStore.Projections.Core.Tests.Services.projections_manager {
 				ManagedProjectionState.Preparing,
 				_consumer.HandledMessages.OfType<ProjectionManagementMessage.Statistics>().SingleOrDefault(
 					v => v.Projections[0].Name == "projection1").Projections[0].LeaderStatus);
+		}
+
+		[Test]
+		public void projection_telemetry_working() {
+			_manager.Handle(
+				new TelemetryMessage.Request(
+					new PublishEnvelope(_bus)));
+
+			var actual = _consumer.HandledMessages.OfType<TelemetryMessage.Response>().Single();
+			
+			Assert.AreEqual("projections", actual.Key);
+			Assert.AreEqual(
+				new JsonObject {
+					["customProjectionCount"] = 1,
+					["standardProjectionCount"] = 0,
+					["customProjectionRunningCount"] = 0,
+					["standardProjectionRunningCount"] = 0,
+					["totalCount"] = 1,
+					["totalRunningCount"] = 0,
+				}.ToJsonString(),
+				actual.Value.ToJsonString());
 		}
 	}
 }

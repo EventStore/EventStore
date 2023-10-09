@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using EventStore.Common.Utils;
 using EventStore.Core.Bus;
 using EventStore.Core.Data;
@@ -11,6 +12,7 @@ using EventStore.Core.Services.PersistentSubscription.ConsumerStrategy;
 using EventStore.Core.Services.Storage.ReaderIndex;
 using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
+using EventStore.Core.Telemetry;
 using ILogger = Serilog.ILogger;
 using ReadStreamResult = EventStore.Core.Data.ReadStreamResult;
 
@@ -42,6 +44,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		IHandle<ClientMessage.UpdatePersistentSubscriptionToAll>,
 		IHandle<ClientMessage.DeletePersistentSubscriptionToAll>,
 		IHandle<ClientMessage.ReadNextNPersistentMessages>,
+		IHandle<TelemetryMessage.Request>,
 		IHandle<MonitoringMessage.GetAllPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetPersistentSubscriptionStats>,
 		IHandle<MonitoringMessage.GetStreamPersistentSubscriptionStats> {
@@ -1238,6 +1241,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			}
 		}
 
+		public void Handle(TelemetryMessage.Request message) {
+			message.Envelope.ReplyWith(new TelemetryMessage.Response("persistentSubscriptions", new JsonObject {
+				["count"] = _subscriptionsById?.Count ?? 0
+			}));
+		}
+		
 		public void Handle(MonitoringMessage.GetPersistentSubscriptionStats message) {
 			if (!_started) {
 				message.Envelope.ReplyWith(new MonitoringMessage.GetPersistentSubscriptionStatsCompleted(

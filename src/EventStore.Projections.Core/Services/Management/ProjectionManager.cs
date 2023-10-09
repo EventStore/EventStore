@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core;
@@ -12,6 +13,7 @@ using EventStore.Core.Services.TimerService;
 using EventStore.Core.Services.UserManagement;
 using EventStore.Projections.Core.Messages;
 using EventStore.Core.Helpers;
+using EventStore.Core.Telemetry;
 using EventStore.Projections.Core.Services.Processing;
 using EventStore.Projections.Core.Standard;
 using EventStore.Projections.Core.Common;
@@ -50,7 +52,8 @@ namespace EventStore.Projections.Core.Services.Management {
 			IHandle<CoreProjectionStatusMessage.Prepared>,
 			IHandle<CoreProjectionStatusMessage.StateReport>,
 			IHandle<CoreProjectionStatusMessage.ResultReport>,
-			IHandle<CoreProjectionStatusMessage.StatisticsReport> {
+			IHandle<CoreProjectionStatusMessage.StatisticsReport>,
+			IHandle<TelemetryMessage.Request> {
 		public const int ProjectionQueryId = -2;
 		public const int ProjectionCreationRetryCount = 1;
 		public const string ServiceName = "ProjectionManager";
@@ -1303,6 +1306,41 @@ namespace EventStore.Projections.Core.Services.Management {
 					RunAs,
 					replyEnvelope, DefaultProjectionExecutionTimeout);
 			}
+		}
+
+		public void Handle(TelemetryMessage.Request message) {
+			var customProjectionCount = 0;
+			var customProjectionRunningCount = 0;
+			var standardProjectionCount = 0;
+			var standardProjectionRunningCount = 0;
+
+			foreach (var proj in _projections.Values) {
+				if (proj.Mode != ProjectionMode.Continuous)
+					continue;
+
+				var stats = proj.GetStatistics();
+
+				if (stats.Name.StartsWith("$")) {
+					standardProjectionCount += 1;
+
+					if (stats.Status.Contains("Running"))
+						standardProjectionRunningCount += 1;
+				} else {
+					customProjectionCount += 1;
+
+					if (stats.Status.Contains("Running"))
+						customProjectionRunningCount += 1;
+				}
+			}
+
+			message.Envelope.ReplyWith(new TelemetryMessage.Response("projections", new JsonObject {
+				["customProjectionCount"] = customProjectionCount,
+				["standardProjectionCount"] = standardProjectionCount,
+				["customProjectionRunningCount"] = customProjectionRunningCount,
+				["standardProjectionRunningCount"] = standardProjectionRunningCount,
+				["totalCount"] = customProjectionCount + standardProjectionCount,
+				["totalRunningCount"] = customProjectionRunningCount + standardProjectionRunningCount,
+			}));
 		}
 	}
 }
