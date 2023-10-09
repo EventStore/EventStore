@@ -159,7 +159,8 @@ namespace EventStore.Core {
 				.UseEndpoints(ep => ep.MapGrpcService<Operations>())
 				.UseEndpoints(ep => ep.MapGrpcService<ClientGossip>())
 				.UseEndpoints(ep => ep.MapGrpcService<Monitoring>())
-				.UseEndpoints(ep => ep.MapGrpcService<ServerFeatures>());
+				.UseEndpoints(ep => ep.MapGrpcService<ServerFeatures>())
+				.UseEndpoints(ep => ep.MapGrpcService<Services.Transport.Grpc.Authorization>());
 
 			_subsystems.Aggregate(app, (b, subsystem) => subsystem.Configure(b));
 		}
@@ -192,6 +193,7 @@ namespace EventStore.Core {
 						.AddSingleton(new ClientGossip(_mainQueue, _authorizationProvider, _trackers.GossipTrackers.ProcessingRequestFromGrpcClient))
 						.AddSingleton(new Monitoring(_monitoringQueue))
 						.AddSingleton(new Redaction(_mainQueue, _authorizationProvider))
+						.AddSingleton(new Services.Transport.Grpc.Authorization(_authorizationProvider))
 						.AddSingleton<ServerFeatures>()
 
 						// OpenTelemetry

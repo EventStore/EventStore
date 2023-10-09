@@ -124,9 +124,7 @@ namespace EventStore.Core.Authorization {
 			policy.Add(Operations.Users.Read, new OrAssertion(isAdmin, matchUsername));
 			policy.Add(Operations.Users.ChangePassword, matchUsername);
 
-
 			policy.RequireAuthenticated(Operations.Projections.List);
-
 			policy.RequireAuthenticated(Operations.Projections.Abort);
 			policy.RequireAuthenticated(Operations.Projections.Create);
 			policy.RequireAuthenticated(Operations.Projections.DebugProjection);
@@ -142,6 +140,9 @@ namespace EventStore.Core.Authorization {
 			policy.RequireAuthenticated(Operations.Projections.Status);
 			policy.RequireAuthenticated(Operations.Projections.Statistics);
 			policy.AddMatchAnyAssertion(Operations.Projections.Restart, Grant.Allow, OperationsOrAdmins);
+
+			policy.AllowAnonymous(Operations.Authorization.GetClaims);
+			policy.Add(Operations.Authorization.CheckAccess, isAdmin);
 
 			return new PolicyAuthorizationProvider(new PolicyEvaluator(policy.AsReadOnly()),
 				Log.ForContext<PolicyEvaluator>(), true, false);

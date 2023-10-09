@@ -1,0 +1,51 @@
+syntax = "proto3";
+package event_store.client.authorization;
+option java_package = "com.eventstore.dbclient.proto.authorization";
+
+service Authorization {
+	rpc GetClaims (ClaimsReq) returns (ClaimsResp);
+	rpc CheckAccess (CheckAccessReq) returns (CheckAccessResp);
+}
+
+message ClaimsReq {
+}
+
+message ClaimsResp {
+	ClaimsPrincipal claimsPrincipal = 1;
+}
+
+message CheckAccessReq {
+	Operation operation = 1;
+	ClaimsPrincipal claimsPrincipal = 2;
+}
+
+message CheckAccessResp {
+	bool is_allowed = 1;
+}
+
+message ClaimsPrincipal {
+	repeated ClaimsIdentity identities = 1;
+}
+
+message ClaimsIdentity {
+	repeated Claim claims = 1;
+}
+
+message Claim {
+	string type = 1;
+	string value = 2;
+	string valueType = 3;
+	string issuer = 4;
+	string originalIssuer = 5;
+}
+
+message Operation {
+	string resource = 1;
+	string action = 2;
+	repeated OperationParameter parameters = 3;
+}
+
+message OperationParameter {
+	string name = 1;
+	string value = 2;
+}
